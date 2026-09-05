@@ -131,8 +131,24 @@ app.get('/api/archive/proxy', async (req, res) => {
       const contentLength=upstream.headers.get('content-length');
       const contentRange=upstream.headers.get('content-range');
 
+      // A bounded range is deliberate: Archive.org can terminate open-ended
+      // ranges early. Never advertise a larger body than the upstream actually
+      // supplied for the bounded request.
+      if (incomingRange && contentRange && contentLength) {
+        const m=/^bytes=(\d+)-(\d+)\/(\d+|\*)$/i.exec(contentRange);
+        const declaredLength=Number(contentLength);
+        if (m && Number.isSafeInteger(declaredLength)) {
+          const rangeLength=Number(m[2])-Number(m[1])+1;
+          if (rangeLength !== declaredLength) {
+            stats.failedRequests++;
+            return res.status(502).json({error:'Archive upstream returned inconsistent range length',contentRange,contentLength,proxyRequestId});
+          }
+        }
+      }
+
       res.status(upstream.status);
       res.setHeader('Access-Control-Allow-Origin','*');
+      res.setHeader('Cache-Control','no-store');
       res.setHeader('Access-Control-Expose-Headers','Content-Range, Content-Length, Accept-Ranges, X-Proxy-Request-Id');
       res.setHeader('Accept-Ranges',upstream.headers.get('accept-ranges')||'bytes');
       if(contentType) res.setHeader('Content-Type',contentType);

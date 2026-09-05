@@ -112,7 +112,7 @@ export function Navigation({
             })}
           </nav>
 
-          {/* Right Header Utility: Dev Mode Access & Stream Status */}
+          {/* Right Header Utility: Stream Status */}
           <div className="flex items-center gap-2.5">
             {nowPlaying && (
               <button

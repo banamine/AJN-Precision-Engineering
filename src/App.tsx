@@ -6,7 +6,6 @@ import { TvGuideView } from './components/TvGuideView';
 import { PlayerView } from './components/PlayerView';
 import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
-import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
 
 const ARCHIVE_PROXY_BASE = '/api/archive/proxy?path=';
@@ -27,10 +26,6 @@ function getDestinationFromHash(): Destination {
       return 'library';
     case 'search':
       return 'search';
-    case 'dev':
-    case 'developer':
-    case 'diagnostics':
-      return 'dev';
     default:
       return 'home';
   }
@@ -148,10 +143,6 @@ export default function App() {
 
         {destination === 'search' && (
           <SearchView onPlayProgram={handlePlayProgram} />
-        )}
-
-        {destination === 'dev' && import.meta.env.DEV && (
-          <DevModeView onNavigate={navigateTo} />
         )}
       </main>
 
