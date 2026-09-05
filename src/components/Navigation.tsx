@@ -5,7 +5,6 @@ import {
   PlayCircle,
   FolderArchive,
   Search,
-  Terminal,
   Radio,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia } from '../types';
@@ -130,22 +129,6 @@ export function Navigation({
               </button>
             )}
 
-            {/* Developer Mode Quick Button (Isolated from 5 consumer destinations) */}
-            <button
-              type="button"
-              id="nav-dev-mode-btn"
-              onClick={() => onNavigate('dev')}
-              aria-label="Developer Diagnostics Mode"
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-mono transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
-                currentDestination === 'dev'
-                  ? 'border border-amber-500/50 bg-amber-950/40 text-amber-300 shadow-sm'
-                  : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
-              }`}
-              title="Developer Diagnostics & Telemetry Mode"
-            >
-              <Terminal className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Dev Mode</span>
-            </button>
           </div>
         </div>
       </header>

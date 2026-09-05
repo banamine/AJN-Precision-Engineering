@@ -150,7 +150,7 @@ export default function App() {
           <SearchView onPlayProgram={handlePlayProgram} />
         )}
 
-        {destination === 'dev' && (
+        {destination === 'dev' && import.meta.env.DEV && (
           <DevModeView onNavigate={navigateTo} />
         )}
       </main>

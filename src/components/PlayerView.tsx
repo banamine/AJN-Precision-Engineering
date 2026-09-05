@@ -58,7 +58,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: any) {
         onErrorEvent={(err) => console.error("[AJN PLAYBACK] error", meta, err)}
       />
       {(import.meta as any).env?.DEV && (
-        <details className="rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-xs font-mono">
+        <details aria-label="Developer playback diagnostics" className="rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-xs font-mono">
           <summary className="cursor-pointer text-neutral-400">Developer playback identity</summary>
           <pre className="mt-2 text-neutral-300">{JSON.stringify(meta, null, 2)}</pre>
         </details>
