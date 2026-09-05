@@ -66,7 +66,12 @@ export default function App() {
   ) => {
 
 
-    const constructedSrc = `${ARCHIVE_PROXY_BASE}${encodeURIComponent(archivePath)}`;
+    // archivePath may already be a canonical proxy URL (the schedule/news
+    // pipeline returns /api/archive/proxy?... paths). Never proxy-wrap an
+    // already-proxied URL a second time.
+    const constructedSrc = archivePath.startsWith(ARCHIVE_PROXY_BASE)
+      ? archivePath
+      : `${ARCHIVE_PROXY_BASE}${encodeURIComponent(archivePath)}`;
     const inferredMediaType =
       mediaType || (archivePath.toLowerCase().endsWith('.mp3') || archivePath.toLowerCase().includes('audio') ? 'audio' : 'video');
 
