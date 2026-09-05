@@ -1,0 +1,1926 @@
+import { Readable } from "stream";
+import express, { Request, Response } from "express";
+import path from "path";
+import { createServer as createViteServer } from "vite";
+import { buildChannelFromSearch } from "./archive-discovery";
+import { getAllGuides, getPlaylistById, ingestM3uPlaylist, getGuideById, getChannelsByGuide, getChannelById, getChannelSources, addChannelSource, getAllPlaylists, syncPlaylist, getScheduleForGuide } from "./guideRegistry";
+import { getChannelSchedule } from "./channels";
+
+const app = express();
+const PORT = Number(process.env.PORT || 3000);
+const ARCHIVE_BASE_URL = "https://archive.org";
+const UA = "AJN-Precision-Engineering-Proxy/1.0";
+const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+
+const proxyStats = {
+  totalRequests: 0,
+  successfulRequests: 0,
+  retriedRequests: 0,
+  failedRequests: 0,
+  cacheHits: 0,
+  lastUpstreamLatencyMs: 0,
+  activeStreams: 0,
+};
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    uptime: process.uptime(),
+    stats: proxyStats,
+  });
+});
+
+function validateArchivePath(rawPath: string) {
+  if (!rawPath || !rawPath.startsWith("/download/")) {
+    return { valid: false, error: "Only Archive.org /download paths are permitted." };
+  }
+  if (rawPath.includes("..") || rawPath.includes("\\") || rawPath.includes("://")) {
+    return { valid: false, error: "Unsafe archive path." };
+  }
+  return { valid: true, cleanPath: rawPath };
+}
+
+app.get("/api/guides", (_req, res) => { const guides = getAllGuides(); res.json({ guides, total: guides.length }); });
+
+app.use(express.json());
+
+app.get('/api/guides/:guideId', (req, res) => { const g = getGuideById(req.params.guideId); if (!g) return res.status(404).json({ error: `Guide not found: ${req.params.guideId}` }); res.json(g); });
+app.get('/api/channels', (req, res) => { const guideId = req.query.guide as string | undefined; const channels = getChannelsByGuide(guideId); res.json({ guideId: guideId || 'all', total: channels.length, channels }); });
+app.get('/api/channels/:channelId', (req, res) => { const c = getChannelById(req.params.channelId); if (!c) return res.status(404).json({ error: `Channel not found: ${req.params.channelId}` }); res.json(c); });
+app.get('/api/channels/:channelId/sources', (req, res) => res.json({ channelId: req.params.channelId, total: getChannelSources(req.params.channelId).length, sources: getChannelSources(req.params.channelId) }));
+app.post('/api/channels/:channelId/sources', (req, res) => { const { url, protocol, priority, enabled, metadata } = req.body; if (!url || typeof url !== 'string') return res.status(400).json({ error: 'Source URL is required' }); res.status(201).json({ message: 'Channel source added successfully', source: addChannelSource(req.params.channelId, { url, protocol, priority, enabled, metadata }) }); });
+app.get('/api/schedule', async (req, res) => { const guideId = (req.query.guide as string) || 'cable-tv'; try { res.json({ guideId, channels: await getScheduleForGuide(guideId), generatedAt: new Date().toISOString(), source: 'archive.org-live' }); } catch (e) { console.error('[Schedule]', e); res.status(500).json({ error: 'Failed to generate schedule data', channels: [] }); } });
+app.get('/api/playlists', (_req, res) => { const playlists = getAllPlaylists(); res.json({ playlists, total: playlists.length }); });
+app.get('/api/playlists/:playlistId', (req, res) => { const p = getPlaylistById(req.params.playlistId); if (!p) return res.status(404).json({ error: `Playlist not found: ${req.params.playlistId}` }); res.json(p); });
+app.post('/api/playlists/:playlistId/sync', (req, res) => { const r = syncPlaylist(req.params.playlistId, req.body?.customM3u); if (!r.success) return res.status(400).json({ error: `Failed to sync playlist ${req.params.playlistId}`, playlist: r.playlist }); res.json({ message: `Playlist ${req.params.playlistId} synchronized successfully`, playlist: r.playlist, ingestedCount: r.count }); });
+
+
+
+app.get("/api/archive/proxy", async (req: Request, res: Response) => {
+  proxyStats.totalRequests++;
+  const proxyRequestId = crypto.randomUUID ? crypto.randomUUID() : `proxy-${Date.now()}`;
+  res.setHeader("x-proxy-request-id", proxyRequestId);
+
+  const rawPath = String(req.query.path || "");
+  const validation = validateArchivePath(rawPath);
+  if (!validation.valid) {
+    proxyStats.failedRequests++;
+    return res.status(400).json({ error: validation.error });
+  }
+
+  const upstreamUrl = `${ARCHIVE_BASE_URL}${validation.cleanPath}`;
+  const headers: Record<string, string> = {
+    "User-Agent": UA,
+    "Accept": "video/mp4,video/*;q=0.9,application/octet-stream;q=0.8,*/*;q=0.1",
+  };
+
+  // Forward only byte-range semantics that are meaningful to a media request.
+  // In particular, do NOT forward If-None-Match/If-Modified-Since: a 304 from
+  // Archive.org is not a playable media response and can surface as code 4.
+  if (req.headers.range) headers.Range = String(req.headers.range);
+  if (req.headers["if-range"]) headers["If-Range"] = String(req.headers["if-range"]);
+
+  let finished = false;
+  let activeController: AbortController | null = null;
+  let activeStream: ReturnType<typeof Readable.fromWeb> | null = null;
+  proxyStats.activeStreams++;
+
+  const abortActive = () => {
+    if (!finished) activeController?.abort();
+  };
+  req.once("close", abortActive);
+  res.once("finish", () => {
+    finished = true;
+    if (res.statusCode >= 200 && res.statusCode < 400) {
+      proxyStats.successfulRequests++;
+    } else {
+      proxyStats.failedRequests++;
+    }
+  });
+  res.once("close", () => {
+    proxyStats.activeStreams = Math.max(0, proxyStats.activeStreams - 1);
+    if (!res.writableEnded) abortActive();
+  });
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const controller = new AbortController();
+    activeController = controller;
+    let headerTimeout: ReturnType<typeof setTimeout> | null = null;
+    const startTime = Date.now();
+
+    try {
+      // Header acquisition timeout only. Once fetch resolves, the timer is
+      // cleared and the long-running media stream has no artificial deadline.
+      headerTimeout = setTimeout(() => controller.abort(), 20000);
+      const upstream = await fetch(upstreamUrl, { headers, signal: controller.signal });
+      clearTimeout(headerTimeout);
+      headerTimeout = null;
+      
+      proxyStats.lastUpstreamLatencyMs = Date.now() - startTime;
+
+      if (!upstream.ok && upstream.status !== 206) {
+        const retryable = RETRYABLE.has(upstream.status);
+        if (retryable && attempt < 3) {
+          proxyStats.retriedRequests++;
+          try { await upstream.body?.cancel(); } catch {}
+          await new Promise(resolve => setTimeout(resolve, 750 * 2 ** (attempt - 1)));
+          continue;
+        }
+        if (!res.headersSent) {
+          res.status(upstream.status >= 500 ? 503 : upstream.status)
+            .type("application/json")
+            .json({ error: "Archive upstream unavailable", upstreamStatus: upstream.status, proxyRequestId });
+        }
+        return;
+      }
+
+      if (!upstream.body) {
+        if (!res.headersSent) res.status(502).json({ error: "Archive upstream returned no body", proxyRequestId });
+        return;
+      }
+
+      const contentType = upstream.headers.get("content-type") || "";
+      // Never feed an upstream HTML/JSON error document into <video>.
+      if (/^(text\/html|application\/json|text\/plain)\b/i.test(contentType)) {
+        try { await upstream.body.cancel(); } catch {}
+        if (!res.headersSent) {
+          res.status(502).type("application/json").json({
+            error: "Archive returned a non-media response",
+            contentType,
+            upstreamStatus: upstream.status,
+            proxyRequestId,
+          });
+        }
+        return;
+      }
+
+      // Preserve Archive.org's actual media status. Never manufacture 206.
+      res.status(upstream.status);
+      res.setHeader("x-archive-status", String(upstream.status));
+      if (contentType) res.setHeader("Content-Type", contentType);
+      const contentEncoding = upstream.headers.get("content-encoding");
+      if (!contentEncoding) {
+        const contentLength = upstream.headers.get("content-length");
+        if (contentLength) res.setHeader("Content-Length", contentLength);
+      }
+      res.setHeader("Accept-Ranges", upstream.headers.get("accept-ranges") || "bytes");
+      for (const h of ["content-range", "etag", "last-modified", "cache-control"]) {
+        const v = upstream.headers.get(h);
+        if (v) res.setHeader(h, v);
+      }
+
+      const nodeStream = Readable.fromWeb(upstream.body as any);
+      activeStream = nodeStream;
+      nodeStream.once("error", (err: any) => {
+        // AbortError is expected when the browser closes/scrubs the media.
+        if (err?.name !== "AbortError") {
+          console.error("[Archive Proxy Stream Error]", {
+            proxyRequestId,
+            name: err?.name,
+            message: err?.message,
+          });
+        }
+        if (!res.writableEnded && !res.destroyed) res.destroy();
+      });
+      res.once("error", (err: any) => {
+        if (err?.name !== "AbortError") {
+          console.error("[Archive Proxy Response Error]", { proxyRequestId, message: err?.message });
+        }
+      });
+
+      nodeStream.pipe(res);
+      return;
+    } catch (err: any) {
+      if (headerTimeout) clearTimeout(headerTimeout);
+      if (err?.name === "AbortError" && req.destroyed) return;
+      if (attempt === 3) {
+        if (!res.headersSent) {
+          res.status(503).type("application/json").json({
+            error: err?.message || "Archive upstream unavailable",
+            proxyRequestId,
+          });
+        }
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 750 * 2 ** (attempt - 1)));
+    } finally {
+      if (headerTimeout) clearTimeout(headerTimeout);
+      if (activeController === controller && !activeStream) activeController = null;
+    }
+  }
+});
+
+app.get("/api/archive/metadata", async (req: Request, res: Response) => {
+  const rawPath = String(req.query.path || "");
+  const validation = validateArchivePath(rawPath);
+  if (!validation.valid) return res.status(400).json({ error: validation.error });
+  try {
+    const r = await fetch(`${ARCHIVE_BASE_URL}${validation.cleanPath}`, { headers: { "User-Agent": UA } });
+    res.json({
+      status: r.status,
+      ok: r.ok,
+      contentType: r.headers.get("content-type"),
+      contentLength: r.headers.get("content-length"),
+      acceptRanges: r.headers.get("accept-ranges"),
+      proxyUrl: `/api/archive/proxy?path=${encodeURIComponent(validation.cleanPath)}`
+    });
+  } catch (err: any) {
+    res.status(502).json({ error: err?.message || "Archive unavailable" });
+  }
+});
+
+async function startServer() {
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (_req, res) => res.sendFile(path.join(distPath, "index.html")));
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[AJN] Server listening on ${PORT}`);
+
+    // One bounded background build; never fetch every channel in parallel.
+    buildChannelFromSearch("collection:SciFi_Horror", "archive-scifi", "Sci-Fi Horror Archive")
+      .then(ch => console.log(`[AJN] Archive channel ${ch.name}: ${ch.playlist.length} assets`))
+      .catch(err => console.error("[AJN] Archive build failed:", err));
+
+    // News schedule ingestion is intentionally one bounded operation.
+    getChannelSchedule().then(schedule => {
+      const playlist = getPlaylistById("playlist-news");
+      if (!playlist) return;
+      let m3u = "#EXTM3U\n";
+      for (const ch of schedule) {
+        const prog = ch.programs?.[0];
+        if (!prog?.archivePath) continue;
+        m3u += `#EXTINF:-1 tvg-id="${ch.id}" tvg-name="${ch.name}" group-title="News",${ch.name}\n`;
+        m3u += `${prog.archivePath}\n`;
+      }
+      playlist.rawM3u = m3u;
+      ingestM3uPlaylist(playlist, m3u);
+      console.log("[AJN] News playlist reingested.");
+    }).catch(err => console.error("[AJN] News ingestion failed:", err));
+  });
+}
+
+startServer();
+import { useCallback, useEffect, useRef, useState } from "react";
+import { reportTelemetry } from "./telemetry";
+import { NowPlayingMedia } from "./types";
+import {
+  Play,
+  Pause,
+  Volume2,
+  Volume1,
+  VolumeX,
+  Maximize,
+  Minimize,
+  RotateCcw,
+  RotateCw,
+  Tv,
+  CheckCircle2,
+} from "lucide-react";
+import { useAudioNormalization } from "./use-audio-normalization";
+import { useSignalDiagnostics } from "./use-signal-diagnostics";
+
+/**
+ * MinimalPlayer — AJN Precision Engineering Canonical Broadcast Player.
+ *
+ * Architecture & Features:
+ * 1. M1 AudioController Singleton:
+ *    - useAudioNormalization is the sole owner of AudioContext & createMediaElementSource.
+ *    - useSignalDiagnostics consumes the read-only diagnosticsAnalyser tap.
+ *    - crossOrigin="anonymous" allows CORS-compliant proxy streams to connect to Web Audio.
+ *
+ * 2. Phase 2 Continuous TV News Slicing:
+ *    - Internet Archive TV News restricts full-file downloads (403 HTML), but provides
+ *      clean H.264/AAC MP4 media in 300-second (5-minute) time slices (?start=X&end=Y).
+ *    - MinimalPlayer dynamically tracks 300s segment progression across the 1-hour show (12 slices).
+ *    - Automatically transitions to the next 5-minute slice at segment boundary.
+ *    - Global scrubber spans the entire 60-minute broadcast, dynamically loading and seeking
+ *      into the correct 300s slice.
+ *
+ * 3. Full Precision Controls:
+ *    - Play / Pause (toggle with robust autoplay-policy fallback)
+ *    - Mute / Unmute & Volume slider (syncs native audio & Web Audio master fader)
+ *    - Scrub bar with buffered indicator and time tooltips
+ *    - -10s / +10s quick skip
+ *    - Fullscreen toggle with fullscreenchange listeners
+ *    - Auto-hide controls overlay on idle during playback
+ */
+
+interface MinimalPlayerProps {
+  src: string;
+  title?: string;
+  onProgramEnded?: () => void;
+  nowPlaying?: NowPlayingMedia;
+  onPlayEvent?: () => void;
+  onPauseEvent?: () => void;
+  onErrorEvent?: (err: any) => void;
+}
+
+const TV_NEWS_SLICE_SEC = 300; // 5 minutes per Archive.org TV News slice
+const TV_NEWS_TOTAL_SEC = 3600; // 60 minutes per standard broadcast block
+
+function formatTime(totalSeconds: number): string {
+  if (isNaN(totalSeconds) || totalSeconds < 0) return "00:00";
+  const m = Math.floor(totalSeconds / 60);
+  const s = Math.floor(totalSeconds % 60);
+  const mm = m < 10 ? `0${m}` : `${m}`;
+  const ss = s < 10 ? `0${s}` : `${s}`;
+  return `${mm}:${ss}`;
+}
+
+export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent }: MinimalPlayerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [statusText, setStatusText] = useState("Loading…");
+  const [probesEnabled] = useState(false);
+  const [healthScore, setHealthScore] = useState<number | null>(null);
+
+  // Time and continuous segment tracking
+  const [isTvNews, setIsTvNews] = useState(false);
+  const [baseArchivePath, setBaseArchivePath] = useState("");
+  const [currentSegment, setCurrentSegment] = useState(0);
+  const [totalSegments, setTotalSegments] = useState(1);
+  const [currentOverallTime, setCurrentOverallTime] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(TV_NEWS_TOTAL_SEC);
+  const [activeSrc, setActiveSrc] = useState(src);
+
+  // Controls UI state
+  const [showControls, setShowControls] = useState(true);
+  const [isDraggingSeek, setIsDraggingSeek] = useState(false);
+  const [seekHoverTime, setSeekHoverTime] = useState<number | null>(null);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSeekOffsetRef = useRef<number | null>(null);
+
+  // ── M1 AudioController singleton — sole owner of AudioContext/MediaElementSource ──
+  const {
+    bridgeReady,
+    audioCtxRef,
+    diagnosticsAnalyserRef,
+    diagnosticsReady,
+    setMasterVolume,
+  } = useAudioNormalization(videoRef, "video", activeSrc);
+
+  // ── Diagnostics consumer — reads the shared tap, owns nothing itself ──
+  useSignalDiagnostics({
+    videoRef,
+    probesEnabled,
+    onScore: setHealthScore,
+    onMemoryKill: () => {
+      console.warn("[MinimalPlayer] Diagnostics memory kill-switch fired");
+    },
+    onCountdownUpdate: () => {},
+    diagnosticsAudioCtx: audioCtxRef.current,
+    diagnosticsAnalyser: diagnosticsAnalyserRef.current,
+    diagnosticsReady,
+  });
+
+  // Parse incoming source and detect TV News segmented broadcasts
+  useEffect(() => {
+    try {
+      const match = src.match(/path=([^&]+)/);
+      if (match) {
+        const decodedPath = decodeURIComponent(match[1]);
+        const tvMatch = decodedPath.match(/(\/download\/[^/?#]+\/[^/?#]+\.mp4)(\?start=(\d+)&end=(\d+))?/i);
+        const isTvItem = /[A-Z0-9]+_\d{8}_\d{6}_/i.test(decodedPath) || (tvMatch && tvMatch[2] !== undefined);
+
+        if (isTvItem && tvMatch) {
+          const basePath = tvMatch[1];
+          const start = tvMatch[3] ? parseInt(tvMatch[3], 10) : 0;
+          const initialSegment = Math.floor(start / TV_NEWS_SLICE_SEC);
+          const totalSegs = Math.ceil(TV_NEWS_TOTAL_SEC / TV_NEWS_SLICE_SEC);
+
+          setIsTvNews(true);
+          setBaseArchivePath(basePath);
+          setCurrentSegment(initialSegment);
+          setTotalSegments(totalSegs);
+          setTotalDuration(TV_NEWS_TOTAL_SEC);
+          setCurrentOverallTime(initialSegment * TV_NEWS_SLICE_SEC);
+
+          const constructedPath = `${basePath}?start=${initialSegment * TV_NEWS_SLICE_SEC}&end=${(initialSegment + 1) * TV_NEWS_SLICE_SEC}`;
+          setActiveSrc(`/api/archive/proxy?path=${encodeURIComponent(constructedPath)}`);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("[MinimalPlayer] Failed to parse TV slice info:", e);
+    }
+
+    // Default standalone media
+    setIsTvNews(false);
+    setBaseArchivePath("");
+    setCurrentSegment(0);
+    setTotalSegments(1);
+    setActiveSrc(src);
+  }, [src]);
+
+  // ── robustPlay — verified autoplay-policy handling ──
+  const robustPlay = useCallback((vid: HTMLVideoElement) => {
+    vid.play()
+      .then(() => {
+        setIsPlaying(true);
+        setStatusText("Playing");
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "NotAllowedError") {
+          vid.muted = true;
+          setIsMuted(true);
+          vid.play()
+            .then(() => {
+              setIsPlaying(true);
+              setStatusText("Playing (muted — click unmute)");
+            })
+            .catch(() => {
+              setStatusText("Playback blocked — click play to start");
+            });
+        } else {
+          setStatusText(`Playback error: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      });
+  }, []);
+
+  // Reload and connect when activeSrc changes
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    setIsPlaying(false);
+    setStatusText("Loading…");
+    vid.load();
+
+    const onCanPlay = () => {
+      if (pendingSeekOffsetRef.current !== null) {
+        vid.currentTime = pendingSeekOffsetRef.current;
+        pendingSeekOffsetRef.current = null;
+      }
+      robustPlay(vid);
+    };
+
+    const onError = async () => {
+      const err = vid.error;
+      setStatusText(
+        `Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`
+      );
+      
+      // Do not issue a second HEAD request here. The failed media request has
+      // already been made, and an extra Archive request can amplify throttling
+      // or turn a transient upstream failure into another error.
+      const httpStatus = null;
+      const contentType = null;
+      const proxyRequestId = null;
+
+      reportTelemetry({
+        event: 'media.error',
+        guideId: nowPlaying?.guideId || null,
+        channelId: nowPlaying?.channelId || null,
+        sourceId: nowPlaying?.sourceId || null,
+        programId: nowPlaying?.programId || null,
+        assetId: nowPlaying?.assetId || null,
+        archiveIdentifier: nowPlaying?.archivePath ? nowPlaying.archivePath.split('/')[2] : null,
+        mediaPath: nowPlaying?.archivePath || null,
+        proxyRequestId,
+        httpStatus,
+        contentType,
+        mediaErrorCode: err?.code || null,
+        mediaErrorMessage: err?.message || null,
+        readyState: vid.readyState,
+        networkState: vid.networkState
+      });
+      onErrorEvent?.({
+        code: err?.code || null,
+        message: err?.message || null,
+        readyState: vid.readyState,
+        networkState: vid.networkState
+      });
+    };
+
+    vid.addEventListener("canplay", onCanPlay, { once: true });
+    vid.addEventListener("error", onError);
+
+    return () => {
+      vid.removeEventListener("canplay", onCanPlay);
+      vid.removeEventListener("error", onError);
+    };
+  }, [activeSrc, robustPlay]);
+
+  // Continuous TV News segment progression handler
+  const loadSegment = useCallback((segmentIndex: number, startOffsetInSegment = 0) => {
+    if (!baseArchivePath || segmentIndex >= totalSegments || segmentIndex < 0) return;
+
+    setCurrentSegment(segmentIndex);
+    pendingSeekOffsetRef.current = startOffsetInSegment;
+    const nextStart = segmentIndex * TV_NEWS_SLICE_SEC;
+    const nextEnd = (segmentIndex + 1) * TV_NEWS_SLICE_SEC;
+    const constructedPath = `${baseArchivePath}?start=${nextStart}&end=${nextEnd}`;
+    console.log(`[MinimalPlayer] Loading 5-minute segment ${segmentIndex + 1}/${totalSegments} [${nextStart}s - ${nextEnd}s]`);
+    setActiveSrc(`/api/archive/proxy?path=${encodeURIComponent(constructedPath)}`);
+  }, [baseArchivePath, totalSegments]);
+
+  // Video time updates and automatic continuous segment transition
+  const handleTimeUpdate = () => {
+    const vid = videoRef.current;
+    if (!vid || isDraggingSeek) return;
+
+    if (isTvNews) {
+      const segTime = vid.currentTime;
+      const overall = currentSegment * TV_NEWS_SLICE_SEC + segTime;
+      setCurrentOverallTime(overall);
+
+      // Auto-advance to next 5-minute segment at boundary
+      if (segTime >= TV_NEWS_SLICE_SEC - 0.5 && currentSegment < totalSegments - 1) {
+        loadSegment(currentSegment + 1, 0);
+      }
+    } else {
+      setCurrentOverallTime(vid.currentTime);
+      if (vid.duration && !isNaN(vid.duration) && vid.duration > 0) {
+        setTotalDuration(vid.duration);
+      }
+    }
+  };
+
+  const handleEnded = () => {
+    if (isTvNews && currentSegment < totalSegments - 1) {
+      loadSegment(currentSegment + 1, 0);
+    } else {
+      setIsPlaying(false);
+      setStatusText("Ended");
+      if (onProgramEnded) {
+        setTimeout(onProgramEnded, 1500); // 1.5s delay before next asset
+      }
+    }
+  };
+
+  // User interactions: Play / Pause
+  const handleTogglePlay = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (vid.paused || vid.ended) {
+      robustPlay(vid);
+    } else {
+      vid.pause();
+      setIsPlaying(false);
+      setStatusText("Paused");
+    }
+  };
+
+  // Mute / Volume controls
+  const handleToggleMute = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    const newMuted = !vid.muted;
+    vid.muted = newMuted;
+    setIsMuted(newMuted);
+    if (!newMuted && volume === 0) {
+      setVolume(0.5);
+      vid.volume = 0.5;
+      setMasterVolume(0.5);
+    }
+  };
+
+  const handleVolumeChange = (newVol: number) => {
+    const vid = videoRef.current;
+    const clamped = Math.max(0, Math.min(1, newVol));
+    setVolume(clamped);
+    if (vid) {
+      vid.volume = clamped;
+      if (clamped > 0 && vid.muted) {
+        vid.muted = false;
+        setIsMuted(false);
+      } else if (clamped === 0 && !vid.muted) {
+        vid.muted = true;
+        setIsMuted(true);
+      }
+    }
+    setMasterVolume(clamped);
+  };
+
+  // Seeking across continuous broadcast segments
+  const handleSeek = (targetSeconds: number) => {
+    const clamped = Math.max(0, Math.min(totalDuration, targetSeconds));
+    setCurrentOverallTime(clamped);
+
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    if (isTvNews) {
+      const targetSeg = Math.min(Math.floor(clamped / TV_NEWS_SLICE_SEC), totalSegments - 1);
+      const offsetInSeg = clamped % TV_NEWS_SLICE_SEC;
+
+      if (targetSeg === currentSegment) {
+        vid.currentTime = offsetInSeg;
+        if (!isPlaying) robustPlay(vid);
+      } else {
+        loadSegment(targetSeg, offsetInSeg);
+      }
+    } else {
+      vid.currentTime = clamped;
+      if (!isPlaying) robustPlay(vid);
+    }
+  };
+
+  const handleSkip = (seconds: number) => {
+    handleSeek(currentOverallTime + seconds);
+  };
+
+  // Fullscreen toggle
+  const handleToggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch((err) => {
+        console.warn("[MinimalPlayer] Fullscreen request failed:", err);
+      });
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  // Auto-hide controls overlay
+  const handleMouseMove = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        if (!isDraggingSeek) setShowControls(false);
+      }, 3000);
+    }
+  };
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setShowControls(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    }
+  }, [isPlaying]);
+
+  // Keyboard accessibility controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.code === "Space" || e.key === "k") {
+        e.preventDefault();
+        handleTogglePlay();
+      } else if (e.key === "m") {
+        e.preventDefault();
+        handleToggleMute();
+      } else if (e.key === "f") {
+        e.preventDefault();
+        handleToggleFullscreen();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        handleSkip(-10);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        handleSkip(10);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
+
+  const progressPercent = totalDuration > 0 ? (currentOverallTime / totalDuration) * 100 : 0;
+
+  return (
+    <div
+      ref={containerRef}
+      id="broadcast-player-container"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => isPlaying && setShowControls(false)}
+      className="group relative w-full max-w-4xl overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950 shadow-2xl transition-all"
+    >
+      {/* Title Bar */}
+      <div className="flex items-center justify-between border-b border-neutral-800/70 bg-neutral-900/60 px-4 py-2.5 text-xs text-neutral-300">
+        <div className="flex items-center gap-2 truncate">
+          <Tv className="h-4 w-4 text-sky-400 shrink-0" />
+          <span className="truncate font-medium text-neutral-100">{title || "Archive Broadcast Feed"}</span>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0 text-[11px]">
+          {isTvNews && (
+            <span className="rounded bg-sky-950/80 px-2 py-0.5 font-mono text-sky-300 border border-sky-800/50">
+              Seg {currentSegment + 1}/{totalSegments} ({formatTime(currentSegment * TV_NEWS_SLICE_SEC)} - {formatTime((currentSegment + 1) * TV_NEWS_SLICE_SEC)})
+            </span>
+          )}
+          {bridgeReady ? (
+            <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Audio Bridge OK
+            </span>
+          ) : (
+            <span className="text-neutral-500">Native Audio</span>
+          )}
+          {healthScore !== null && (
+            <span className="font-mono text-neutral-400">Signal: {healthScore}%</span>
+          )}
+        </div>
+      </div>
+
+      {/* Video Viewport */}
+      <div className="relative aspect-video w-full bg-black">
+        <video
+          ref={videoRef}
+          crossOrigin="anonymous"
+          src={activeSrc}
+          playsInline
+          className="h-full w-full object-contain"
+          onPlay={() => { setIsPlaying(true); onPlayEvent?.(); }}
+          onPause={() => { setIsPlaying(false); onPauseEvent?.(); }}
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleEnded}
+          onClick={handleTogglePlay}
+        />
+
+        {/* Center Big Play Button (when paused or ended) */}
+        {!isPlaying && (
+          <div
+            onClick={handleTogglePlay}
+            className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] transition-opacity cursor-pointer"
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-500/90 text-white shadow-lg transition-transform hover:scale-110 active:scale-95">
+              <Play className="h-8 w-8 translate-x-0.5 fill-current" />
+            </div>
+          </div>
+        )}
+
+        {/* Floating Controls Overlay */}
+        <div
+          className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 transition-opacity duration-300 ${
+            showControls || !isPlaying ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
+          {/* Interactive Scrubber / Seek Bar */}
+          <div className="group/scrub relative mb-3 cursor-pointer py-1">
+            <input
+              type="range"
+              min={0}
+              max={totalDuration}
+              step={1}
+              value={currentOverallTime}
+              onMouseDown={() => setIsDraggingSeek(true)}
+              onMouseUp={(e) => {
+                setIsDraggingSeek(false);
+                handleSeek(parseFloat((e.target as HTMLInputElement).value));
+              }}
+              onTouchStart={() => setIsDraggingSeek(true)}
+              onTouchEnd={(e) => {
+                setIsDraggingSeek(false);
+                handleSeek(parseFloat((e.target as HTMLInputElement).value));
+              }}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setCurrentOverallTime(val);
+                if (!isDraggingSeek) handleSeek(val);
+              }}
+              className="absolute inset-0 z-20 h-full w-full opacity-0 cursor-pointer"
+            />
+            {/* Track Background */}
+            <div className="relative h-1.5 w-full rounded-full bg-neutral-700/80 transition-all group-hover/scrub:h-2.5">
+              {/* Progress Bar */}
+              <div
+                className="absolute top-0 left-0 h-full rounded-full bg-sky-500 transition-all"
+                style={{ width: `${progressPercent}%` }}
+              />
+              {/* Scrubber Handle */}
+              <div
+                className="absolute top-1/2 -mt-2 -ml-2 h-4 w-4 rounded-full bg-white shadow-md border-2 border-sky-500 transition-transform group-hover/scrub:scale-110"
+                style={{ left: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Control Bar Actions */}
+          <div className="flex items-center justify-between text-neutral-200">
+            {/* Left: Play/Pause, Skip, Volume, Timestamp */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                id="player-play-toggle-btn"
+                onClick={handleTogglePlay}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800/80 text-white transition hover:bg-neutral-700 hover:text-sky-400"
+                title={isPlaying ? "Pause (Space/k)" : "Play (Space/k)"}
+              >
+                {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current translate-x-0.5" />}
+              </button>
+
+              <button
+                type="button"
+                id="player-skip-back-btn"
+                onClick={() => handleSkip(-10)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800/80 text-neutral-300 transition hover:bg-neutral-700 hover:text-white"
+                title="Rewind 10s (Left Arrow)"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                id="player-skip-forward-btn"
+                onClick={() => handleSkip(10)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800/80 text-neutral-300 transition hover:bg-neutral-700 hover:text-white"
+                title="Forward 10s (Right Arrow)"
+              >
+                <RotateCw className="h-4 w-4" />
+              </button>
+
+              {/* Volume Slider & Toggle */}
+              <div className="flex items-center gap-1.5 pl-1">
+                <button
+                  type="button"
+                  id="player-mute-toggle-btn"
+                  onClick={handleToggleMute}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800/80 text-neutral-300 transition hover:bg-neutral-700 hover:text-white"
+                  title={isMuted ? "Unmute (m)" : "Mute (m)"}
+                >
+                  {isMuted || volume === 0 ? (
+                    <VolumeX className="h-4 w-4 text-rose-400" />
+                  ) : volume < 0.5 ? (
+                    <Volume1 className="h-4 w-4" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                  className="h-1.5 w-16 accent-sky-500 rounded-full bg-neutral-700 cursor-pointer"
+                  title={`Volume: ${Math.round(volume * 100)}%`}
+                />
+              </div>
+
+              {/* Live Time Display */}
+              <div className="ml-2 font-mono text-xs text-neutral-300">
+                <span>{formatTime(currentOverallTime)}</span>
+                <span className="text-neutral-500"> / </span>
+                <span className="text-neutral-400">{formatTime(totalDuration)}</span>
+              </div>
+            </div>
+
+            {/* Right: Status and Fullscreen */}
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline-block text-xs text-neutral-400">
+                {statusText}
+              </span>
+              <button
+                type="button"
+                id="player-fullscreen-toggle-btn"
+                onClick={handleToggleFullscreen}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800/80 text-neutral-300 transition hover:bg-neutral-700 hover:text-white"
+                title={isFullscreen ? "Exit Fullscreen (f)" : "Fullscreen (f)"}
+              >
+                {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+import { useState, useEffect } from 'react';
+import {
+  Play,
+  Tv,
+  Radio,
+  Sparkles,
+  Info,
+  ShieldCheck,
+  Disc3,
+  Sliders,
+  Maximize2,
+  Volume2,
+  Keyboard,
+  ListVideo,
+  Headphones,
+} from 'lucide-react';
+import MinimalPlayer from '../MinimalPlayer';
+import { Destination, NowPlayingMedia, MediaType, PlayProgramCallback } from '../types';
+
+interface PlayerViewProps {
+  nowPlaying: NowPlayingMedia | null;
+  onSelectProgram: PlayProgramCallback;
+  onNavigate: (dest: Destination) => void;
+}
+
+const DEFAULT_FEATURED = [
+  {
+    title: 'NASA Apollo 11 Spaceflight Audio Highlights',
+    category: 'Historic Aerospace Vault',
+    archivePath: '/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3',
+    duration: '45 mins',
+    badge: 'Radio Audio',
+    mediaType: 'audio' as MediaType,
+  },
+  {
+    title: 'Night of the Living Dead (Master Reel)',
+    category: 'Public Domain Cinema Classics',
+    archivePath: '/download/NightOfTheLivingDead/Night_of_the_Living_Dead_512kb.mp4',
+    duration: '96 mins',
+    badge: 'Video MP4',
+    mediaType: 'video' as MediaType,
+  },
+  {
+    title: 'Flash Gordon Conquers the Universe',
+    category: 'Classic TV Series Vault',
+    archivePath: '/download/FlashGordonConquersTheUniverse1940_Chapter1/FlashGordonConquersTheUniverse1940_Chapter1_512kb.mp4',
+    duration: '20 mins',
+    badge: 'Classic TV',
+    mediaType: 'video' as MediaType,
+  },
+  {
+    title: 'War of the Worlds — Mercury Theatre',
+    category: 'Old Time Radio Audio Drama',
+    archivePath: '/download/OTRR_Mercury_Theater_on_the_Air_Singles/Mercury_381030_WarOfTheWorlds.mp3',
+    duration: '58 mins',
+    badge: 'Radio Drama',
+    mediaType: 'audio' as MediaType,
+  },
+];
+
+export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: PlayerViewProps) {
+  const [schedulePlaylist, setSchedulePlaylist] = useState<any[]>([])
+
+  const logPlaybackEvent = (event: string, err?: any) => {
+    if (!nowPlaying) return;
+    const payload = {
+      event: `playback/${event}`,
+      timestamp: new Date().toISOString(),
+      guideId: nowPlaying.guideId || null,
+      channelId: nowPlaying.channelId || null,
+      sourceId: nowPlaying.sourceId || null,
+      programId: nowPlaying.programId || null,
+      assetId: nowPlaying.assetId || null,
+      archiveIdentifier: nowPlaying.archivePath ? nowPlaying.archivePath.split('/')[2] : null,
+      mediaPath: nowPlaying.archivePath || nowPlaying.src || null,
+      title: nowPlaying.title || null,
+      ...(err ? { mediaErrorCode: err.code, mediaErrorMessage: err.message } : {})
+    };
+    console.log(`[Playback Diagnostics] ${payload.event}`, payload);
+  };
+
+  const handleProgramEnded = async () => {
+    logPlaybackEvent('ended');
+    if (!nowPlaying?.channelId) return;
+    
+    // Auto-advance to the next program in the channel schedule
+    try {
+      const res = await fetch('/api/schedule?guide=' + (nowPlaying.guideId || 'cable-tv'));
+      const data = await res.json();
+      const channel = (data.channels || []).find((c: any) => c.id === nowPlaying.channelId);
+      if (channel && channel.programs?.length) {
+        // Find current
+        const currentIdx = channel.programs.findIndex((p: any) => (p.archivePath || p.mediaUrl) === nowPlaying.src);
+        if (currentIdx !== -1) {
+          const nextIdx = (currentIdx + 1) % channel.programs.length;
+          const nextProg = channel.programs[nextIdx];
+          if (nextProg) {
+            onSelectProgram(
+              nextProg.archivePath || nextProg.mediaUrl,
+              nextProg.title,
+              channel.name,
+              nextProg.mediaType,
+              channel.id,
+              nowPlaying.guideId
+            );
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Auto-advance failed", e);
+    }
+  };;
+
+  useEffect(() => {
+    // Fetch both video and audio schedules to populate player switcher
+    Promise.all([
+      fetch('/api/schedule?guide=cable-tv').then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/schedule?guide=audio-podcasts').then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([videoData, audioData]) => {
+        const progs: any[] = [];
+        if (videoData && Array.isArray(videoData.channels)) {
+          videoData.channels.slice(0, 3).forEach((ch: any) => {
+            if (Array.isArray(ch.programs)) {
+              ch.programs.slice(0, 2).forEach((p: any) => {
+                progs.push({
+                  title: p.title,
+                  channelName: ch.name,
+                  archivePath: p.archivePath,
+                  mediaType: 'video' as MediaType,
+                  duration: `${Math.round(((p.endHour ?? p.endTime ?? 2) - (p.startHour ?? p.startTime ?? 0)) * 60)} mins`,
+                });
+              });
+            }
+          });
+        }
+        if (audioData && Array.isArray(audioData.channels)) {
+          audioData.channels.slice(0, 3).forEach((ch: any) => {
+            if (Array.isArray(ch.programs)) {
+              ch.programs.slice(0, 2).forEach((p: any) => {
+                progs.push({
+                  title: p.title,
+                  channelName: ch.name,
+                  archivePath: p.archivePath,
+                  mediaType: 'audio' as MediaType,
+                  duration: `${Math.round(((p.endHour ?? p.endTime ?? 2) - (p.startHour ?? p.startTime ?? 0)) * 60)} mins`,
+                });
+              });
+            }
+          });
+        }
+        if (progs.length > 0) setSchedulePlaylist(progs);
+      })
+      .catch(() => {});
+  }, []);
+
+  const isAudioActive = nowPlaying?.mediaType === 'audio' || nowPlaying?.archivePath?.endsWith('.mp3');
+
+  return (
+    <div className="space-y-8 pb-16">
+      {/* ── Active Player Viewport ─────────────────────────────────────────── */}
+      {nowPlaying ? (
+        <div className="space-y-6">
+          <div className="flex flex-col items-center justify-center relative">
+            
+  
+
+            <MinimalPlayer 
+              src={nowPlaying.src} 
+              title={nowPlaying.title} 
+              onProgramEnded={handleProgramEnded} 
+              nowPlaying={nowPlaying} 
+              onPlayEvent={() => logPlaybackEvent('play')}
+              onPauseEvent={() => logPlaybackEvent('pause')}
+              onErrorEvent={(err) => logPlaybackEvent('error', err)}
+            />
+
+            {(import.meta as any).env?.DEV && (
+              <div className="absolute top-4 left-4 z-50 rounded-lg bg-black/80 p-3 text-[10px] font-mono text-emerald-400 border border-emerald-500/30 backdrop-blur-sm pointer-events-none shadow-lg">
+                <div className="font-bold text-emerald-300 mb-1 border-b border-emerald-500/30 pb-1">Dev Diagnostics</div>
+                <div>Prog ID: {nowPlaying.programId || 'unresolved'}</div>
+                <div>Src ID: {nowPlaying.sourceId || 'unresolved'}</div>
+                <div>Asset ID: {nowPlaying.assetId || 'unresolved'}</div>
+                <div className="text-emerald-500/80 mt-1 pt-1 border-t border-emerald-500/20">
+                  Guide: {nowPlaying.guideId || 'unresolved'}<br/>
+                  Channel: {nowPlaying.channelId || 'unresolved'}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Broadcast Metadata & Diagnostics Strip */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Stream Info Box */}
+            <div className="lg:col-span-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5 backdrop-blur space-y-3">
+              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                <div className="flex items-center gap-2">
+                  {isAudioActive ? <Headphones className="h-4 w-4 text-amber-400" /> : <Tv className="h-4 w-4 text-sky-400" />}
+                  <h2 className="text-sm font-semibold text-neutral-100">
+                    {isAudioActive ? 'Audio & Podcast Stream Information' : 'Broadcast Video Stream Information'}
+                  </h2>
+                </div>
+                <span className={`rounded px-2 py-0.5 text-[11px] font-mono border ${
+                  isAudioActive
+                    ? 'bg-amber-950 text-amber-300 border-amber-800/60'
+                    : 'bg-sky-950 text-sky-400 border-sky-800/60'
+                }`}>
+                  {isAudioActive ? 'Audio Mode Active' : 'Video Mode Active'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span className="text-neutral-500 block">Title:</span>
+                  <span className="font-medium text-neutral-200">{nowPlaying.title}</span>
+                </div>
+                {nowPlaying.subtitle && (
+                  <div>
+                    <span className="text-neutral-500 block">Category / Channel:</span>
+                    <span className="font-medium text-neutral-200">{nowPlaying.subtitle}</span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-neutral-500 block">Media Target Type:</span>
+                  <span className="font-mono text-[11px] text-neutral-300 capitalize">
+                    {isAudioActive ? 'Audio (MP3 / Stream)' : 'Video (MP4 / HLS)'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-neutral-500 block">Audio Graph Pipeline:</span>
+                  <span className="text-emerald-400 font-medium">M1 Singleton + Limiter (-18 dBFS)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Keyboard Shortcuts Helper */}
+            <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-5 backdrop-blur space-y-3">
+              <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+                <Keyboard className="h-4 w-4 text-neutral-400" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">
+                  Player Controls
+                </h3>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between text-neutral-400">
+                  <span>Play / Pause</span>
+                  <kbd className="rounded bg-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-neutral-300">
+                    Space / K
+                  </kbd>
+                </div>
+                <div className="flex justify-between text-neutral-400">
+                  <span>Mute / Unmute</span>
+                  <kbd className="rounded bg-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-neutral-300">
+                    M
+                  </kbd>
+                </div>
+                <div className="flex justify-between text-neutral-400">
+                  <span>Skip -10s / +10s</span>
+                  <kbd className="rounded bg-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-neutral-300">
+                    ← / →
+                  </kbd>
+                </div>
+                <div className="flex justify-between text-neutral-400">
+                  <span>Fullscreen</span>
+                  <kbd className="rounded bg-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-neutral-300">
+                    F
+                  </kbd>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ── Empty State: Choose a Broadcast ─────────────────────────────── */
+        <div className="space-y-8">
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-8 text-center space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              <Tv className="h-7 w-7" />
+            </div>
+            <div className="max-w-md mx-auto space-y-1">
+              <h1 className="text-xl font-semibold text-neutral-100">No Active Stream Loaded</h1>
+              <p className="text-xs text-neutral-400">
+                Select a broadcast channel or archive audio/video reel below to start the AJN Precision player.
+              </p>
+            </div>
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                type="button"
+                id="empty-player-guide-btn"
+                onClick={() => onNavigate('tv-guide')}
+                className="flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-400 cursor-pointer"
+              >
+                <Tv className="h-3.5 w-3.5" />
+                Browse TV & Audio Guide
+              </button>
+              <button
+                type="button"
+                id="empty-player-library-btn"
+                onClick={() => onNavigate('library')}
+                className="flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-2 text-xs font-medium text-neutral-200 transition hover:bg-neutral-700 cursor-pointer"
+              >
+                <Disc3 className="h-3.5 w-3.5" />
+                Browse Library
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Start Presets */}
+          <div className="space-y-4">
+            <h2 className="text-base font-semibold text-neutral-200">Recommended Broadcast Feeds</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {DEFAULT_FEATURED.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 transition hover:border-neutral-700 hover:bg-neutral-900"
+                >
+                  <div className="space-y-2">
+                    <span className="rounded bg-neutral-800 px-2 py-0.5 text-[10px] font-mono text-neutral-300">
+                      {item.badge}
+                    </span>
+                    <h3 className="text-xs font-semibold text-neutral-100 line-clamp-2">{item.title}</h3>
+                    <p className="text-[11px] text-neutral-400">{item.category}</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-500">{item.duration}</span>
+                    <button
+                      type="button"
+                      onClick={() => onSelectProgram(item.archivePath, item.title, item.category, item.mediaType)}
+                      className="flex items-center gap-1 rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-sky-500 cursor-pointer"
+                    >
+                      <Play className="h-3 w-3 fill-current" />
+                      Play
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Quick Channel Switcher / Program List ─────────────────────────── */}
+      <div className="space-y-4 pt-4 border-t border-neutral-800">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ListVideo className="h-4 w-4 text-sky-400" />
+            <h2 className="text-sm font-semibold text-neutral-100">Schedule Quick Switcher</h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('tv-guide')}
+            className="text-xs text-sky-400 hover:text-sky-300"
+          >
+            Open Full Guide Grid →
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {(schedulePlaylist.length > 0 ? schedulePlaylist.slice(0, 6) : DEFAULT_FEATURED).map((item, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => onSelectProgram(item.archivePath, item.title, item.channelName || item.category, item.mediaType)}
+              className="group flex items-center justify-between rounded-lg border border-neutral-800/80 bg-neutral-900/40 p-3 text-left transition hover:border-neutral-700 hover:bg-neutral-800/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer"
+            >
+              <div className="min-w-0 pr-3">
+                <span className="text-[10px] font-mono text-neutral-400 block truncate">
+                  {item.channelName || item.category}
+                </span>
+                <span className="text-xs font-medium text-neutral-200 group-hover:text-sky-300 truncate block">
+                  {item.title}
+                </span>
+              </div>
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-800 text-neutral-300 group-hover:bg-sky-500 group-hover:text-white transition">
+                <Play className="h-3.5 w-3.5 fill-current" />
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { ScheduleChannel, Program, MediaType, PlayProgramCallback } from "./types";
+import { Tv, Radio, Disc3, Sparkles } from "lucide-react";
+
+const HOUR_WIDTH_PX = 160; // width of one hour column — drives horizontal scroll range
+const TIMELINE_WIDTH_PX = HOUR_WIDTH_PX * 24;
+const CHANNEL_COLUMN_WIDTH_PX = 220;
+const ROW_HEIGHT_PX = 68;
+
+function hourLabel(hour: number): string {
+  const h = Math.floor(hour) % 24;
+  const period = h < 12 ? "AM" : "PM";
+  const display = h % 12 === 0 ? 12 : h % 12;
+  return `${display}${period}`;
+}
+
+function currentHourFraction(): number {
+  const now = new Date();
+  return now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+}
+
+interface EpgGuideProps {
+  guideId?: string;
+  /** Called with archive path, title, channel name, and mediaType when a program block is clicked. */
+  onSelectProgram?: PlayProgramCallback;
+}
+
+export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgGuideProps) {
+  const [nowHour, setNowHour] = useState(currentHourFraction());
+  const [channels, setChannels] = useState<ScheduleChannel[] | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const hasAutoScrolled = useRef(false);
+
+  const fetchSchedule = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setFetchError(null);
+      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`);
+      if (!res.ok) {
+        throw new Error(`Schedule request failed: HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (!Array.isArray(data.channels)) {
+        throw new Error('Schedule response missing channels array');
+      }
+      setChannels(data.channels);
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [guideId]);
+
+  useEffect(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
+
+  // Live "now" line — updates every 30s, real time, not a static mockup.
+  useEffect(() => {
+    const interval = setInterval(() => setNowHour(currentHourFraction()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-scroll the timeline so "now" is visible on first render
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const nowPx = (nowHour / 24) * TIMELINE_WIDTH_PX;
+    scrollRef.current.scrollLeft = Math.max(0, nowPx - 200);
+  }, [nowHour, guideId]);
+
+  const hourMarkers = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  const nowLeftPx = (nowHour / 24) * TIMELINE_WIDTH_PX;
+
+  if (fetchError) {
+    return (
+      <div className="w-full rounded-xl border border-red-900/50 bg-red-950/20 p-8 text-center text-sm text-red-300 space-y-3">
+        <p>Error fetching guide: {fetchError}</p>
+        <button
+          onClick={fetchSchedule}
+          className="rounded-lg border border-red-800 bg-red-900/40 px-3 py-1.5 text-xs text-red-200 hover:bg-red-900/70 cursor-pointer"
+        >
+          Retry Fetch
+        </button>
+      </div>
+    );
+  }
+
+  if (isLoading || channels === null) {
+    return (
+      <div className="w-full rounded-xl border border-neutral-800 bg-neutral-950 p-12 text-center text-sm text-neutral-400">
+        <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent mb-3" />
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950 shadow-2xl">
+      <div className="flex">
+        {/* ── Sticky channel column ─────────────────────────────────────── */}
+        <div
+          className="flex-shrink-0 border-r border-neutral-800 bg-neutral-950 z-20"
+          style={{ width: CHANNEL_COLUMN_WIDTH_PX }}
+        >
+          {/* Spacer matching the timeline header height */}
+          <div className="h-11 border-b border-neutral-800 flex items-center px-3.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider bg-neutral-900/70">
+            Station / Feed
+          </div>
+          {channels.map((channel) => {
+            const isAudio = channel.mediaType === 'audio' || guideId === 'audio-podcasts';
+            return (
+              <div
+                key={channel.id}
+                className="flex flex-col justify-center border-b border-neutral-800 px-3.5"
+                style={{ height: ROW_HEIGHT_PX }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] ${
+                    isAudio ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+                  }`}>
+                    {isAudio ? <Radio className="h-3 w-3" /> : <Tv className="h-3 w-3" />}
+                  </div>
+                  <span className="text-xs font-semibold text-neutral-100 truncate" title={channel.name}>
+                    {channel.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-1 pl-7">
+                  <span className="text-[10px] font-mono text-neutral-400 truncate">
+                    {channel.group || (isAudio ? 'Audio Stream' : 'Video Feed')}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Scrollable timeline + program grid ───────────────────────── */}
+        <div ref={scrollRef} className="overflow-x-auto relative">
+          <div style={{ width: TIMELINE_WIDTH_PX }} className="relative">
+            {/* Hour header */}
+            <div className="sticky top-0 z-10 flex h-11 border-b border-neutral-800 bg-neutral-950/95 backdrop-blur">
+              {hourMarkers.map((h) => (
+                <div
+                  key={h}
+                  className="flex-shrink-0 border-r border-neutral-800/60 px-3 py-2.5 text-xs font-mono text-neutral-400"
+                  style={{ width: HOUR_WIDTH_PX }}
+                >
+                  {hourLabel(h)}
+                </div>
+              ))}
+            </div>
+
+            {/* Channel rows with program blocks */}
+            {channels.map((channel) => (
+              <div
+                key={channel.id}
+                className="relative border-b border-neutral-800/80"
+                style={{ height: ROW_HEIGHT_PX }}
+              >
+                {/* Hour gridlines behind the programs */}
+                {hourMarkers.map((h) => (
+                  <div
+                    key={h}
+                    className="absolute top-0 h-full border-r border-neutral-800/40 pointer-events-none"
+                    style={{ left: h * HOUR_WIDTH_PX, width: HOUR_WIDTH_PX }}
+                  />
+                ))}
+
+                {channel.programs.length === 0 ? (
+                  <div className="absolute inset-y-0 left-0 flex items-center px-4 text-xs font-medium text-neutral-500 italic bg-neutral-900/30 w-full" style={{ width: TIMELINE_WIDTH_PX }}>
+                    No programs available
+                  </div>
+                ) : (
+                  channel.programs.map((program, idx) => {
+                    const sHour = program.startHour ?? program.startTime ?? 0;
+                    const eHour = program.endHour ?? program.endTime ?? 24;
+                  const isLive = nowHour >= sHour && nowHour < eHour;
+                  const left = (sHour / 24) * TIMELINE_WIDTH_PX;
+                  const width = ((eHour - sHour) / 24) * TIMELINE_WIDTH_PX;
+                  const mediaType = program.mediaType || channel.mediaType || (guideId === 'audio-podcasts' ? 'audio' : 'video');
+
+                  return (
+                    <button
+                      key={program.id || idx}
+                      type="button"
+                      id={`epg-prog-${channel.id}-${idx}`}
+                      onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id)}
+                      className={`group absolute top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs transition hover:scale-[1.005] hover:z-10 cursor-pointer ${
+                        isLive
+                          ? mediaType === 'audio'
+                            ? "border border-amber-500/50 bg-amber-500/15 text-amber-100 shadow-md shadow-amber-500/5"
+                            : "border border-sky-500/50 bg-sky-500/15 text-sky-100 shadow-md shadow-sky-500/5"
+                          : "border border-neutral-800 bg-neutral-900/80 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-800"
+                      }`}
+                      style={{ left, width: Math.max(width - 4, 20) }}
+                    >
+                      {isLive && (
+                        <span className={`mb-0.5 inline-flex w-fit items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${
+                          mediaType === 'audio' ? 'text-amber-400' : 'text-sky-400'
+                        }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${
+                            mediaType === 'audio' ? 'bg-amber-400' : 'bg-sky-400'
+                          }`} />
+                          On Air Now
+                        </span>
+                      )}
+                      <span className="truncate font-semibold text-neutral-100 group-hover:text-white">
+                        {program.title}
+                      </span>
+                      {program.description && (
+                        <span className="truncate text-[10px] text-neutral-400">
+                          {program.description}
+                        </span>
+                      )}
+                    </button>
+                  );
+                }))}
+              </div>
+            ))}
+
+            {/* Live "now" line — real current time, sweeps across in real time */}
+            <div
+              className="pointer-events-none absolute top-0 z-20 w-px bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
+              style={{ left: nowLeftPx, height: 44 + channels.length * ROW_HEIGHT_PX }}
+            >
+              <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-red-400/40" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+import { useState, useEffect } from 'react';
+import {
+  Tv,
+  Clock,
+  Filter,
+  Calendar,
+  Sparkles,
+  Info,
+  ChevronRight,
+  Radio,
+  Layers,
+  Headphones,
+} from 'lucide-react';
+import EpgGuide from '../EpgGuide';
+import { Guide, MediaType, PlayProgramCallback } from '../types';
+
+interface TvGuideViewProps {
+  onSelectProgram: PlayProgramCallback;
+}
+
+export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
+  const [guides, setGuides] = useState<Guide[]>([
+    {
+      id: 'cable-tv',
+      name: 'Cable TV',
+      type: 'video',
+      enabled: true,
+      description: '24-Hour Broadcast Television & Classic Cinema',
+    },
+    {
+      id: 'audio-podcasts',
+      name: 'Audio & Podcasts',
+      type: 'audio',
+      enabled: true,
+      description: 'Radio streams, historic aerospace vaults, audio dramas, and podcasts',
+    },
+  ]);
+  const [selectedGuideId, setSelectedGuideId] = useState<string>('cable-tv');
+
+  useEffect(() => {
+    fetch('/api/guides')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.guides) && data.guides.length > 0) {
+          setGuides(data.guides);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const currentGuide = guides.find((g) => g.id === selectedGuideId) || guides[0];
+  const now = new Date();
+  const dateFormatted = now.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  return (
+    <div className="space-y-6 pb-16">
+      {/* ── Dual-Guide Header & Mode Switcher ──────────────────────────────── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-800 pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
+              currentGuide.type === 'audio'
+                ? 'bg-amber-500/10 text-amber-400 border-amber-500/25'
+                : 'bg-sky-500/10 text-sky-400 border-sky-500/25'
+            }`}>
+              {currentGuide.type === 'audio' ? <Headphones className="h-4 w-4" /> : <Tv className="h-4 w-4" />}
+            </div>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-50">
+              {currentGuide.name} Broadcast Grid
+            </h1>
+          </div>
+          <p className="text-xs text-neutral-400">
+            {currentGuide.description || 'Normalized 24-hour programming timeline with live sweep line. Click any segment to stream.'}
+          </p>
+        </div>
+
+        {/* Date and Live indicator */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300">
+            <Calendar className="h-3.5 w-3.5 text-neutral-400" />
+            <span>{dateFormatted}</span>
+          </div>
+
+          <div className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs ${
+            currentGuide.type === 'audio'
+              ? 'border-amber-500/30 bg-amber-950/40 text-amber-300'
+              : 'border-sky-500/30 bg-sky-950/40 text-sky-300'
+          }`}>
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="font-mono font-medium">Live Grid Active</span>
+          </div>
+        </div>
+      </div>
+
+        {/* ── Dual-Guide Selector Switcher Tabs ─────────────────────────────── */}
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-2.5 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-neutral-400 pl-2">Select Guide:</span>
+            <div className="flex items-center gap-1.5 bg-neutral-950/80 p-1 rounded-lg border border-neutral-800">
+              {guides.length === 0 ? (
+                <span className="text-xs text-neutral-500 px-3 py-1.5">Loading...</span>
+              ) : guides.map((g) => {
+              const isSelected = g.id === selectedGuideId;
+              const isAudio = g.type === 'audio';
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  id={`guide-tab-${g.id}`}
+                  onClick={() => setSelectedGuideId(g.id)}
+                  className={`flex items-center gap-2 rounded-md px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                    isSelected
+                      ? isAudio
+                        ? 'bg-amber-500 text-neutral-950 shadow-sm'
+                        : 'bg-sky-500 text-white shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60'
+                  }`}
+                >
+                  {isAudio ? <Radio className="h-3.5 w-3.5" /> : <Tv className="h-3.5 w-3.5" />}
+                  <span>{g.name}</span>
+                  <span className={`text-[10px] font-mono uppercase px-1.5 py-0.2 rounded ${
+                    isSelected
+                      ? isAudio
+                        ? 'bg-amber-600/30 text-neutral-950'
+                        : 'bg-sky-600/50 text-sky-100'
+                      : 'bg-neutral-800 text-neutral-400'
+                  }`}>
+                    {g.type}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-neutral-400 pr-2">
+          <Clock className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+          <span className="text-[11px] text-neutral-400">
+            Unified timeline contract • Single-owner Web Audio pipeline
+          </span>
+        </div>
+      </div>
+
+      {/* ── Canonical EpgGuide Grid ───────────────────────────────────────── */}
+      <div className="overflow-hidden rounded-xl shadow-2xl border border-neutral-800">
+        <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} />
+      </div>
+
+      {/* ── Guide Notes & Legend ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-neutral-200">
+            <span className={`h-2.5 w-2.5 rounded-full ${currentGuide.type === 'audio' ? 'bg-amber-400' : 'bg-sky-400'}`} />
+            <span>On Air Now (Active)</span>
+          </div>
+          <p className="mt-1.5 text-xs text-neutral-400">
+            Highlighted {currentGuide.type === 'audio' ? 'amber' : 'sky'} program blocks denote currently airing segments based on system clock.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-neutral-200">
+            <span className="h-2.5 w-2.5 rounded-full bg-neutral-700" />
+            <span>Upcoming / Archive</span>
+          </div>
+          <p className="mt-1.5 text-xs text-neutral-400">
+            Dark blocks represent earlier broadcasts or upcoming segments available on-demand.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-neutral-200">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+            <span>Red Time Sweeper</span>
+          </div>
+          <p className="mt-1.5 text-xs text-neutral-400">
+            Updates every 30 seconds to show the exact current hour across the entire 24h timeline.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+import {
+  Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
+} from './src/types';
+import { getChannelSchedule } from './channels';
+
+export const GUIDES: Guide[] = [
+  { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
+    description: '24-Hour Broadcast Television, Live News, and Classic Cinema Grid' },
+  { id: 'audio-podcasts', name: 'Audio & Podcasts', type: 'audio', enabled: true,
+    description: 'Live radio streams, historic aerospace vaults, audio dramas, and podcasts' },
+];
+
+const channelsMap = new Map<string, Channel>();
+const channelSourcesMap = new Map<string, ChannelSource[]>();
+const playlistsMap = new Map<string, Playlist>();
+
+const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
+  {
+    playlist: {
+      id: 'playlist-news',
+      name: 'Broadcast TV News Networks',
+      sourceUrl: 'https://archive.org/services/m3u/tvnews-networks.m3u',
+      category: 'News', enabled: true, lastSyncedAt: new Date().toISOString(),
+      syncStatus: 'synced', itemCount: 3,
+    },
+    m3uContent: `#EXTM3U
+#EXTINF:-1 tvg-id="fox-news" tvg-name="Fox News" tvg-logo="https://archive.org/services/img/FOXNEWSW" group-title="News",Fox News
+/download/FOXNEWSW_20260903_060000_Hannity/FOXNEWSW_20260903_060000_Hannity.mp4?start=0&end=300
+#EXTINF:-1 tvg-id="cnn" tvg-name="CNN" tvg-logo="https://archive.org/services/img/CNNW" group-title="News",CNN
+/download/CNNW_20240901_180000_The_Situation_Room/CNNW_20240901_180000_The_Situation_Room.mp4?start=0&end=300
+#EXTINF:-1 tvg-id="msnbc" tvg-name="MSNBC" tvg-logo="https://archive.org/services/img/MSNBCW" group-title="News",MSNBC
+/download/MSNBCW_20240901_180000_The_Beat_With_Ari_Melber/MSNBCW_20240901_180000_The_Beat_With_Ari_Melber.mp4?start=0&end=300`,
+  },
+  {
+    playlist: { id:'playlist-tvshows', name:'Classic TV Series & Serials',
+      sourceUrl:'https://archive.org/services/m3u/classic-tv.m3u', category:'TV Shows',
+      enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:2 },
+    m3uContent:`#EXTM3U
+#EXTINF:-1 tvg-id="classic-tv-serials" tvg-name="Classic TV Serials" group-title="TV Shows",Classic TV Serials
+/download/FlashGordonConquersTheUniverse1940_Chapter1/FlashGordonConquersTheUniverse1940_Chapter1_512kb.mp4
+#EXTINF:-1 tvg-id="vintage-broadcasts" tvg-name="Vintage Broadcast Network" group-title="TV Shows",Vintage Broadcast Network
+/download/SherlockHolmesTheSecretWeapon1942/Sherlock_Holmes_Secret_Weapon_512kb.mp4`,
+  },
+  {
+    playlist: { id:'playlist-movies', name:'Public Domain Cinema Classics',
+      sourceUrl:'https://archive.org/services/m3u/archive-movies.m3u', category:'Movies',
+      enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:2 },
+    m3uContent:`#EXTM3U
+#EXTINF:-1 tvg-id="cinema-vault" tvg-name="Cinema Classics Vault" group-title="Movies",Cinema Classics Vault
+/download/NightOfTheLivingDead/Night_of_the_Living_Dead_512kb.mp4
+#EXTINF:-1 tvg-id="prelinger-reels" tvg-name="Prelinger Archive Cinema" group-title="Movies",Prelinger Archive Cinema
+/download/HisGirlFriday1940/His_Girl_Friday_512kb.mp4`,
+  },
+  {
+    playlist: { id:'playlist-audio-radio', name:'Radio & Audio Vaults',
+      sourceUrl:'https://archive.org/services/m3u/audio-podcasts.m3u', category:'Audio & Podcasts',
+      enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:3 },
+    m3uContent:`#EXTM3U
+#EXTINF:-1 tvg-id="nasa-audio-vault" tvg-name="NASA Spaceflight Audio" group-title="Aerospace & Science",NASA Spaceflight Audio
+/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3
+#EXTINF:-1 tvg-id="radio-drama-theatre" tvg-name="Old Time Radio Theatre" group-title="Audio Drama",Old Time Radio Theatre
+/download/OTRR_Mercury_Theater_on_the_Air_Singles/Mercury_381030_WarOfTheWorlds.mp3
+#EXTINF:-1 tvg-id="global-news-radio" tvg-name="Global News Radio" group-title="News Radio",Global News Radio
+/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3`,
+  },
+];
+
+export interface ParsedM3uEntry {
+  title:string; url:string; tvgId?:string; tvgName?:string; tvgLogo?:string;
+  groupTitle?:string; duration?:number;
+}
+
+export function parseM3u(text:string):ParsedM3uEntry[] {
+  const lines=text.split(/\r?\n/); const out:ParsedM3uEntry[]=[]; let cur:Partial<ParsedM3uEntry>|null=null;
+  for (const raw of lines) {
+    const line=raw.trim(); if(!line) continue;
+    if(line.startsWith('#EXTINF:')) {
+      cur={};
+      const comma=line.lastIndexOf(',');
+      if(comma>=0) cur.title=line.slice(comma+1).trim();
+      const m=(name:string)=>line.match(new RegExp(`${name}=["']([^"']+)["']`,'i'))?.[1];
+      cur.tvgId=m('tvg-id'); cur.tvgName=m('tvg-name'); cur.tvgLogo=m('tvg-logo'); cur.groupTitle=m('group-title');
+      cur.duration=Number(line.match(/^#EXTINF:(-?\d+)/)?.[1] ?? 0);
+    } else if(!line.startsWith('#') && cur) {
+      cur.url=line;
+      if(cur.title) out.push(cur as ParsedM3uEntry);
+      cur=null;
+    }
+  }
+  return out;
+}
+
+function channelId(value:string):string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+
+export function ingestM3uPlaylist(playlist:Playlist, text:string, targetGuideId?:string) {
+  const entries=parseM3u(text); const updated:Channel[]=[];
+  const guideId=targetGuideId || (playlist.category.toLowerCase().includes('audio')?'audio-podcasts':'cable-tv');
+  const mediaType:MediaType=guideId==='audio-podcasts'?'audio':'video';
+
+  for(const entry of entries) {
+    const id=channelId(entry.tvgId || entry.tvgName || entry.title);
+    const existing=channelsMap.get(id);
+    const ch:Channel=existing ? {...existing, logo:existing.logo||entry.tvgLogo, group:existing.group||entry.groupTitle||playlist.category}
+      : {id, guideId, name:entry.tvgName || entry.title, mediaType, logo:entry.tvgLogo,
+         group:entry.groupTitle||playlist.category, tvgId:entry.tvgId, tvgName:entry.tvgName, enabled:true};
+    channelsMap.set(id,ch); updated.push(ch);
+    const sources=channelSourcesMap.get(id)||[];
+    if(!sources.some(s=>s.url===entry.url)) {
+      sources.push({
+        id:`src-${id}-${sources.length+1}`, channelId:id,
+        protocol:entry.url.includes('.m3u8')?'hls':'https', url:entry.url,
+        priority:sources.length+1, enabled:true,
+        metadata:{playlistId:playlist.id, playlistName:playlist.name, category:playlist.category,
+          durationSeconds: entry.duration && entry.duration>0 ? entry.duration : undefined},
+      });
+      channelSourcesMap.set(id,sources);
+    }
+  }
+  playlist.lastSyncedAt=new Date().toISOString(); playlist.syncStatus='synced';
+  playlist.itemCount=entries.length; playlist.rawM3u=text; playlistsMap.set(playlist.id,playlist);
+  return {ingestedCount:entries.length,channels:updated};
+}
+
+export function initializeRegistry() {
+  if(playlistsMap.size) return;
+  for(const {playlist,m3uContent} of INITIAL_PLAYLISTS) {
+    playlistsMap.set(playlist.id,playlist); ingestM3uPlaylist(playlist,m3uContent);
+  }
+}
+initializeRegistry();
+
+export function getAllGuides(){return GUIDES;}
+export function getGuideById(id:string){return GUIDES.find(g=>g.id===id);}
+export function getChannelsByGuide(id?:string){
+  return Array.from(channelsMap.values()).filter(c=>!id||c.guideId===id)
+    .map(c=>({...c,sources:channelSourcesMap.get(c.id)||[]}));
+}
+export function getChannelById(id:string){
+  const c=channelsMap.get(id); return c?{...c,sources:channelSourcesMap.get(id)||[]}:undefined;
+}
+export function getChannelSources(id:string){return channelSourcesMap.get(id)||[];}
+export function addChannelSource(channelId:string, source:Partial<ChannelSource>) {
+  const existing=channelSourcesMap.get(channelId)||[];
+  const created:ChannelSource={id:source.id||`src-${channelId}-${existing.length+1}`,channelId,
+    protocol:source.protocol||(source.url?.includes('.m3u8')?'hls':'https'),url:source.url||'',
+    priority:source.priority??existing.length+1,enabled:source.enabled??true,metadata:source.metadata};
+  existing.push(created); channelSourcesMap.set(channelId,existing); return created;
+}
+export function getAllPlaylists(){return Array.from(playlistsMap.values());}
+export function getPlaylistById(id:string){return playlistsMap.get(id);}
+export function syncPlaylist(id:string,customM3u?:string){
+  const p=playlistsMap.get(id); if(!p) return {success:false};
+  const text=customM3u||p.rawM3u||''; if(!text){p.syncStatus='failed';return {success:false,playlist:p};}
+  const r=ingestM3uPlaylist(p,text); return {success:true,playlist:p,count:r.ingestedCount};
+}
+
+/**
+ * News EPG is sourced directly from the real Archive-backed discovery provider.
+ * It intentionally does NOT derive News program titles from playlist metadata.
+ */
+export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleChannel[]> {
+  const guide=getGuideById(guideId); if(!guide) return [];
+  if(guideId==='cable-tv') {
+    const news=await getChannelSchedule();
+    return news.map(ch=>({
+      id:ch.id, guideId, name:ch.name, mediaType:'video' as MediaType,
+      group:'News', logo:`https://archive.org/services/img/${ch.id}`, 
+      programs:ch.programs.map((p:any,index:number)=>({
+        id:`${ch.id}-${index+1}`, guideId, channelId:ch.id,
+        title:p.title, description:`Archive.org broadcast: ${p.title}`,
+        startTime:p.startHour, endTime:p.endHour, startHour:p.startHour, endHour:p.endHour,
+        mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath,
+      }))
+    }));
+  }
+  return getChannelsByGuide(guideId).map(ch=>({
+    id:ch.id, guideId, name:ch.name, mediaType:ch.mediaType, group:ch.group, logo:ch.logo,
+    programs:[{
+      id:`${ch.id}-1`, guideId, channelId:ch.id, title:ch.name,
+      description:`Source: ${ch.name}`, startTime:0,endTime:24,startHour:0,endHour:24,
+      mediaType:ch.mediaType,mediaUrl:ch.sources?.[0]?.url||'',archivePath:ch.sources?.[0]?.url||''
+    }]
+  }));
+}
+
+export function addChannel(ch: Channel) {
+  channelsMap.set(ch.id, ch);
+}
+
+export function setChannelSources(id: string, sources: ChannelSource[]) {
+  channelSourcesMap.set(id, sources);
+}
+export type ArchiveAssetCategory =
+  | "feature" | "trailer" | "colorized" | "alternate"
+  | "compilation" | "short" | "restored" | "b&w";
+
+export interface MediaAsset {
+  id: string;
+  title: string;
+  source: "archive.org" | "m3u" | "fixture";
+  archiveIdentifier: string;
+  mediaUrl: string;
+  mediaType: "mp4" | "m3u8" | "mp3" | "webm";
+  category: ArchiveAssetCategory;
+  quality: { label: string };
+  durationSeconds: number;
+  playable: boolean;
+}
+
+export interface PlayoutChannel {
+  id: string;
+  name: string;
+  playlist: MediaAsset[];
+  programs?: any[];
+  loop: boolean;
+  shuffle: boolean;
+  maxAssets: number;
+}
