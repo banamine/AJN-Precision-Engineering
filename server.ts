@@ -34,7 +34,15 @@ patchServer(app);
 app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});res.json({query,network,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({error:'Search failed',items:[],total:0});}});
 app.post('/api/watchdog/heartbeat',(req,res)=>res.json({acknowledged:true,ts:Date.now()}));
 
-function validateArchivePath(raw:string){if(!raw||typeof raw!=='string')return{valid:false,error:'Path is required'};if(!raw.startsWith('/'))return{valid:false,error:'Path must begin with a forward slash (/)'};if(raw.includes('..')||raw.includes('\\'))return{valid:false,error:'Directory traversal sequences are forbidden'};if(/^https?:\/\//i.test(raw)||raw.includes('://'))return{valid:false,error:'Embedded schemes/hosts are forbidden'};return{valid:true,cleanPath:raw};}
+function validateArchivePath(raw:string){
+ if(!raw||typeof raw!=='string')return{valid:false,error:'Path is required'};
+ if(!raw.startsWith('/'))return{valid:false,error:'Path must begin with a forward slash (/)' };
+ if(raw.startsWith('/api/archive/proxy'))return{valid:false,error:'Nested archive proxy paths are forbidden'};
+ if(!raw.startsWith('/download/'))return{valid:false,error:'Only Archive.org /download paths are permitted'};
+ if(raw.includes('..')||raw.includes('\\'))return{valid:false,error:'Directory traversal sequences are forbidden'};
+ if(/^https?:\/\//i.test(raw)||raw.includes('://'))return{valid:false,error:'Embedded schemes/hosts are forbidden'};
+ return{valid:true,cleanPath:raw};
+}
 
 const ARCHIVE_BASE='https://archive.org';
 const MAX_RETRIES=3;
@@ -131,24 +139,8 @@ app.get('/api/archive/proxy', async (req, res) => {
       const contentLength=upstream.headers.get('content-length');
       const contentRange=upstream.headers.get('content-range');
 
-      // A bounded range is deliberate: Archive.org can terminate open-ended
-      // ranges early. Never advertise a larger body than the upstream actually
-      // supplied for the bounded request.
-      if (incomingRange && contentRange && contentLength) {
-        const m=/^bytes=(\d+)-(\d+)\/(\d+|\*)$/i.exec(contentRange);
-        const declaredLength=Number(contentLength);
-        if (m && Number.isSafeInteger(declaredLength)) {
-          const rangeLength=Number(m[2])-Number(m[1])+1;
-          if (rangeLength !== declaredLength) {
-            stats.failedRequests++;
-            return res.status(502).json({error:'Archive upstream returned inconsistent range length',contentRange,contentLength,proxyRequestId});
-          }
-        }
-      }
-
       res.status(upstream.status);
       res.setHeader('Access-Control-Allow-Origin','*');
-      res.setHeader('Cache-Control','no-store');
       res.setHeader('Access-Control-Expose-Headers','Content-Range, Content-Length, Accept-Ranges, X-Proxy-Request-Id');
       res.setHeader('Accept-Ranges',upstream.headers.get('accept-ranges')||'bytes');
       if(contentType) res.setHeader('Content-Type',contentType);

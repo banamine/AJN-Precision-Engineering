@@ -27,6 +27,8 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
 
+  // src is expected to be the final playable URL. Do not construct or wrap
+  // Archive proxy URLs here; App.tsx owns the single transport-resolution step.
   useAudioNormalization(videoRef, "video", src);
   useSignalDiagnostics(videoRef);
 

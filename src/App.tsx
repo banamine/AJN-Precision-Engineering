@@ -6,9 +6,50 @@ import { TvGuideView } from './components/TvGuideView';
 import { PlayerView } from './components/PlayerView';
 import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
+import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
 
 const ARCHIVE_PROXY_BASE = '/api/archive/proxy?path=';
+const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
+
+/**
+ * Convert a media reference into exactly one playable transport URL.
+ *
+ * Archive schedule/discovery code may already return /api/archive/proxy URLs.
+ * Those must pass through untouched; wrapping them again creates a nested
+ * proxy URL which Archive.org cannot resolve and results in MEDIA_ELEMENT_ERROR.
+ */
+function toPlayableSrc(rawPath: string): string {
+  const value = String(rawPath ?? '').trim();
+  if (!value) return value;
+
+  // Already our proxy URL (relative). Never proxy it a second time.
+  if (value.startsWith(ARCHIVE_PROXY_BASE)) return value;
+
+  // Also recognize an absolute URL pointing back to this app's proxy.
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.pathname === '/api/archive/proxy' && parsed.searchParams.has('path')) {
+      return `${parsed.pathname}${parsed.search}`;
+    }
+
+    // Archive.org download URLs are canonicalized through our proxy.
+    if (parsed.hostname === 'archive.org' && parsed.pathname.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) {
+      const archivePath = `${parsed.pathname}${parsed.search}`;
+      return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(archivePath)}`;
+    }
+  } catch {
+    // Fall through and preserve non-URL media references unchanged.
+  }
+
+  // Internal Archive download paths need one proxy hop.
+  if (value.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) {
+    return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(value)}`;
+  }
+
+  // HLS, DASH, remote MP4, and other direct sources remain direct sources.
+  return value;
+}
 
 function getDestinationFromHash(): Destination {
   if (typeof window === 'undefined') return 'home';
@@ -26,6 +67,10 @@ function getDestinationFromHash(): Destination {
       return 'library';
     case 'search':
       return 'search';
+    case 'dev':
+    case 'developer':
+    case 'diagnostics':
+      return 'dev';
     default:
       return 'home';
   }
@@ -66,12 +111,7 @@ export default function App() {
   ) => {
 
 
-    // archivePath may already be a canonical proxy URL (the schedule/news
-    // pipeline returns /api/archive/proxy?... paths). Never proxy-wrap an
-    // already-proxied URL a second time.
-    const constructedSrc = archivePath.startsWith(ARCHIVE_PROXY_BASE)
-      ? archivePath
-      : `${ARCHIVE_PROXY_BASE}${encodeURIComponent(archivePath)}`;
+    const constructedSrc = toPlayableSrc(archivePath);
     const inferredMediaType =
       mediaType || (archivePath.toLowerCase().endsWith('.mp3') || archivePath.toLowerCase().includes('audio') ? 'audio' : 'video');
 
@@ -148,6 +188,10 @@ export default function App() {
 
         {destination === 'search' && (
           <SearchView onPlayProgram={handlePlayProgram} />
+        )}
+
+        {destination === 'dev' && import.meta.env.DEV && (
+          <DevModeView onNavigate={navigateTo} />
         )}
       </main>
 
