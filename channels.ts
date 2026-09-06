@@ -26,7 +26,7 @@ export const NETWORK_CHANNELS: NetworkChannelConfig[] = [
   { id: "cnn", displayName: "CNN", network: "CNNW" },
   { id: "msnbc", displayName: "MSNBC", network: "MSNBCW" },
   { id: "bbc", displayName: "BBC News", network: "BBCNEWS" },
-  { id: "ntd", displayName: "NTD News", network: "NTD" }, // NTD? We'll see if the collection is NTD
+  { id: "ntd", displayName: "NTD News", network: "NTD" },
 ];
 
 export interface TVNewsItem {
@@ -46,15 +46,6 @@ export interface TVNewsItem {
 export const TV_ID_RE =
   /^([A-Z0-9]+)_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_(.+)$/;
 
-/**
- * Returns the collection identifiers that must be tested for a network.
- *
- * Example:
- *   FOXNEWSW -> [FOXNEWSW, TV-FOXNEWSW]
- *
- * If the config already contains TV-FOXNEWSW, we normalize it first so we
- * never generate TV-TV-FOXNEWSW.
- */
 export function getCollectionCandidates(network: string): string[] {
   const normalized = network.trim().replace(/^TV-/i, "");
   return [normalized, `TV-${normalized}`];
@@ -70,13 +61,6 @@ interface ArchiveCollectionProbe {
   docs: any[];
 }
 
-/**
- * Test one Archive.org collection and log the complete diagnostic result.
- *
- * This function intentionally does NOT throw for normal HTTP/API failures.
- * The caller needs to test the next collection candidate when the first
- * candidate fails or returns zero results.
- */
 async function probeArchiveCollection(
   collection: string,
   opts: {
@@ -91,58 +75,54 @@ async function probeArchiveCollection(
   const endDatePart = opts.endDate ? opts.endDate.slice(0, 10) : today;
   const effectiveEndDate = endDatePart > today ? today : endDatePart;
 
-  const parts = [`collection:${collection}`];
+  const clauses = [
+    `collection:${collection}`,
+    "-mediatype:web",
+    "-mediatype:collection",
+  ];
+
   if (opts.query?.trim()) {
-    parts.push(`title:(${opts.query.trim()})`);
+    clauses.push(`(${opts.query.trim()})`);
   }
 
-  const SOLR_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
-  const solrDate = (value: string, fallback: string): string => {
-    const cleaned = value.replace(/\.\d+Z$/, "Z");
-    if (!SOLR_DATE_RE.test(cleaned)) {
-      console.warn("[channels] Invalid Solr date format; using fallback:", value);
-      return fallback;
-    }
-    return cleaned;
-  };
+  if (opts.startDate) {
+    clauses.push(`date:[${opts.startDate}T00:00:00Z TO ${effectiveEndDate}T23:59:59Z]`);
+  }
 
-  const from = opts.startDate
-    ? opts.startDate.includes("T")
-      ? solrDate(opts.startDate, "*")
-      : `${opts.startDate}T00:00:00Z`
-    : "*";
-
-  const to = opts.endDate && opts.endDate.includes("T")
-    ? solrDate(opts.endDate, `${effectiveEndDate}T23:59:59Z`)
-    : `${effectiveEndDate}T23:59:59Z`;
-
-  parts.push(`date:[${from} TO ${to}]`);
-  const q = parts.join(" AND ");
-
+  const q = clauses.join(" AND ");
   const url =
-    "https://archive.org/advancedsearch.php" +
+    `${"https://archive.org/advancedsearch.php"}` +
     `?q=${encodeURIComponent(q)}` +
-    "&fl=identifier,title,addeddate,publicdate,description,subject" +
-    `&rows=${opts.rows ?? 50}` +
-    `&start=${opts.start ?? 0}` +
-    "&sort=addeddate%20desc" +
-    "&output=json";
+    `&fl%5B%5D=identifier` +
+    `&fl%5B%5D=title` +
+    `&fl%5B%5D=description` +
+    `&fl%5B%5D=subject` +
+    `&fl%5B%5D=publicdate` +
+    `&fl%5B%5D=addeddate` +
+    `&fl%5B%5D=collection` +
+    `&rows=${Math.min(Math.max(opts.rows ?? 12, 1), 50)}` +
+    `&start=${Math.max(opts.start ?? 0, 0)}` +
+    `&sort%5B%5D=publicdate+desc` +
+    `&output=json`;
 
-  console.log("");
-  console.log("==================================================");
   console.log(`[ARCHIVE COLLECTION TEST] collection:${collection}`);
   console.log(`[ARCHIVE COLLECTION TEST] query: ${q}`);
-  console.log(`[ARCHIVE COLLECTION TEST] URL: ${url}`);
+  console.log(`[ARCHIVE COLLECTION TEST] url: ${url}`);
 
   try {
-    const response = await fetch(url);
-    const body = await response.text();
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "AJN-Precision-Engineering/1.0",
+        Accept: "application/json",
+      },
+    });
 
     console.log(`[ARCHIVE COLLECTION TEST] collection:${collection} HTTP ${response.status}`);
 
+    const body = await response.text();
+
     if (!response.ok) {
-      console.warn(`[ARCHIVE COLLECTION TEST] collection:${collection} FAILED`);
-      console.warn(`[ARCHIVE COLLECTION TEST] response: ${body.slice(0, 500)}`);
+      console.warn(`[ARCHIVE COLLECTION TEST] collection:${collection} returned HTTP ${response.status}`);
       console.log("==================================================");
       return {
         collection,
@@ -213,17 +193,6 @@ async function probeArchiveCollection(
   }
 }
 
-/**
- * Search Archive.org TV News.
- *
- * The backend deliberately tests BOTH collection identifiers:
- *
- *   collection:FOXNEWSW
- *   collection:TV-FOXNEWSW
- *
- * Testing is sequential so the terminal output clearly establishes which
- * identifier works. The first collection returning usable results wins.
- */
 export async function searchTVNews(opts: {
   network: string;
   query?: string;
@@ -308,9 +277,6 @@ export async function searchTVNews(opts: {
   };
 }
 
-/**
- * Normalize Archive.org URLs so the proxy receives a safe path.
- */
 export function getSafeArchiveUrl(rawUrl: string): string {
   try {
     const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
@@ -327,10 +293,6 @@ export function getSafeArchiveUrl(rawUrl: string): string {
       url.pathname += `/${id}.mp4`;
     }
 
-    // Do not manufacture TV News clip parameters here. A /download/*.mp4 URL
-    // must identify the actual derived media file. Clip/window semantics belong
-    // above this transport layer and must never turn an unavailable asset into
-    // a seemingly playable URL.
     url.searchParams.delete("ignore");
 
     return url.toString();
@@ -338,11 +300,6 @@ export function getSafeArchiveUrl(rawUrl: string): string {
     return rawUrl;
   }
 }
-
-/* ──────────────────────────────────────────────
- * Archive.org media-file resolution
- * ──────────────────────────────────────────────
- */
 
 type FileCategory =
   | "video"
@@ -371,7 +328,6 @@ interface ResolvedFile {
   fallback: boolean;
 }
 
-// Browser-friendly video formats first
 const BROWSER_PLAYABLE_VIDEO = [".mp4", ".m4v", ".webm", ".ogv"];
 const OTHER_VIDEO = [".avi", ".mkv", ".mov", ".flv", ".wmv", ".3gp", ".mpg", ".mpeg", ".ts", ".m2ts", ".vob", ".divx"];
 const VIDEO_EXTENSIONS = [...BROWSER_PLAYABLE_VIDEO, ...OTHER_VIDEO];
@@ -456,9 +412,7 @@ function isInternalFile(filename: string): boolean {
     lower.includes("_thumbs\\") ||
     lower.endsWith(".torrent") ||
     lower === "_meta.xml" ||
-    lower === "_files.xml" ||
-    lower.includes(".ia.") ||
-    lower.includes(".low.")
+    lower === "_files.xml"
   );
 }
 
@@ -525,34 +479,33 @@ async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadata
   }
 }
 
+function isBrowserPlayable(filename: string): boolean {
+  const lower = filename.toLowerCase();
+
+  return (
+    BROWSER_PLAYABLE_VIDEO.some((extension) => lower.endsWith(extension)) ||
+    AUDIO_EXTENSIONS.some((extension) => lower.endsWith(extension))
+  );
+}
+
 export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {
-  // TV News is processed asynchronously by Archive.org. Never assume
-  // identifier.mp4 exists merely because the item exists in the collection.
-  // Resolve the actual file list first and only return a media URL when a
-  // browser-playable file is present.
   try {
     const data = await fetchArchiveMetadata(identifier);
     const files = data.files ?? [];
 
     const mediaFiles = files
       .filter((file) => !isInternalFile(file.name))
+      .filter((file) => isBrowserPlayable(file.name))
       .map((file) => ({
         name: file.name,
         category: categorizeFile(file.name),
         size: parseSize(file.size),
         duration: parseDuration(file.length),
         format: file.format ?? file.name.split(".").pop() ?? "",
-        isBrowserNative: BROWSER_PLAYABLE_VIDEO.some((ext) => file.name.toLowerCase().endsWith(ext)) ||
-          AUDIO_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext)),
-      }))
-      .filter((file) => PLAYABLE_PRIORITY.includes(file.category));
+      }));
 
     if (mediaFiles.length > 0) {
       mediaFiles.sort((a, b) => {
-        // Prioritize browser-playable formats (MP4/H.264) over raw MPEG/AVI
-        if (a.isBrowserNative !== b.isBrowserNative) {
-          return a.isBrowserNative ? -1 : 1;
-        }
         const categoryA = PLAYABLE_PRIORITY.indexOf(a.category);
         const categoryB = PLAYABLE_PRIORITY.indexOf(b.category);
         if (categoryA !== categoryB) {
@@ -601,11 +554,6 @@ function toProxyPath(fullUrl: string): string {
   }
 }
 
-/* ──────────────────────────────────────────────
- * Schedule
- * ──────────────────────────────────────────────
- */
-
 export interface ScheduleProgram {
   title: string;
   startHour: number;
@@ -630,8 +578,6 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
   if (items.length === 0) {
     return [];
   }
-
-  const blockHours = 24 / items.length;
 
   const resolved = await Promise.all(
     items.map(async (item) => {

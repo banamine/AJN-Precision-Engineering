@@ -1,0 +1,20 @@
+AJN Precision Engineering — surgical Archive News playback drop-in
+
+Scope: channels.ts ONLY.
+
+Fix:
+- Resolve each TV News Archive identifier through /metadata first.
+- Select a real public .mp4/.m4v reported by Archive metadata.
+- Preserve the actual filename in /download/{identifier}/{filename}.
+- Do not manufacture {identifier}.mp4.
+- Do not bake start/end clip parameters into discovery.
+- Programs without a verified media file are omitted from the playable schedule.
+- Use the discovered media duration when available.
+
+Install:
+1. Replace the existing channels.ts with this file.
+2. Run: npm run build
+3. Test FOX News first, then CNN, MSNBC, BBC News.
+4. If playback fails, capture the exact [AJN Playback Activation] archivePath/constructedSrc and browser media error before changing another file.
+
+No other files are intended to be replaced.
