@@ -1,26 +1,31 @@
-AJN surgical drop-in — channels.ts only
+# AJN Archive Proxy Surgical Drop-In
 
-Replace ONLY the existing channels.ts with channels.ts from this ZIP.
+Replace ONLY the existing `archiveProxy.ts` with the file in this ZIP.
 
-Change:
-- Adds isBrowserPlayable()
-- Hard-excludes non-browser-playable Archive derivatives before candidate selection
-- Removes isBrowserNative ranking/fallback selection
-- Preserves existing metadata resolution, URL construction, proxy path, schedule, and skip behavior
+Scope:
+- Keeps the existing Archive path validation.
+- Allows only `archive.org` and `ia<number>.us.archive.org` redirect targets.
+- Resolves the Archive `/download/...` redirect server-side.
+- Returns the validated storage-node URL to the browser with HTTP 302.
+- Does NOT proxy the MP4 byte stream through Cloud Run.
+- Does NOT modify channels, player, EPG, scheduler, or navigation.
 
-Do NOT replace:
-- server.ts
-- MinimalPlayer.tsx
-- App.tsx
-- EPG
-- scheduler
-- navigation
-- HLS
-- news.json
-- any other file
+Verification after deployment:
 
-Verification:
-1. npm run build
-2. Test FOX News first, then CNN, MSNBC, BBC News.
-3. Confirm successful activation contains the actual Archive filename.
-4. Confirm unavailable/non-browser-playable items are skipped and do not activate the player.
+curl.exe -i -H "Range: bytes=0-1023" "https://ajn-precision-engineering.ai.studio/api/archive/proxy?path=%2Fdownload%2FFOXNEWSW_20260906_080000_My_View_With_Lara_Trump%2FFOXNEWSW_20260906_080000_My_View_With_Lara_Trump.mp4"
+
+Expected:
+HTTP/1.1 302 Found
+Location: https://ia*.us.archive.org/...
+
+Then:
+curl.exe -L -i -H "Range: bytes=0-1023" "https://ajn-precision-engineering.ai.studio/api/archive/proxy?path=%2Fdownload%2FFOXNEWSW_20260906_080000_My_View_With_Lara_Trump%2FFOXNEWSW_20260906_080000_My_View_With_Lara_Trump.mp4"
+
+Expected final response:
+206 Partial Content
+Content-Type: video/mp4
+Accept-Ranges: bytes
+Content-Range matching bytes 0-1023
+Content-Length: 1024
+
+This is a surgical transport change only.
