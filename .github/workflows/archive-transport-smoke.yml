@@ -1,0 +1,40 @@
+name: AJN Archive Transport Smoke
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "AJN deployed base URL"
+        required: true
+        default: "https://ajn-precision-engineering.ai.studio"
+  push:
+    branches: ["rebuild/clean-baseline-20260906"]
+permissions:
+  contents: read
+jobs:
+  transport:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Archive proxy Range smoke test
+        shell: bash
+        env:
+          BASE_URL: ${{ inputs.base_url || 'https://ajn-precision-engineering.ai.studio' }}
+        run: |
+          set -euo pipefail
+          PATH_VALUE='/download/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump.mp4'
+          ENCODED_PATH=$(python -c 'import urllib.parse,os; print(urllib.parse.quote(os.environ["PATH_VALUE"], safe=""))')
+          URL="$BASE_URL/api/archive/proxy?path=$ENCODED_PATH"
+          echo "WHO: GitHub Actions"
+          echo "WHAT: Archive proxy Range smoke test"
+          echo "WHY: verify the endpoint does not pass HTML/JSON as media"
+          echo "TARGET: $URL"
+          curl --silent --show-error --dump-header /tmp/headers --output /tmp/body --max-time 30 -H 'Range: bytes=0-1023' "$URL" || true
+          cat /tmp/headers
+          head -c 300 /tmp/body || true
+          echo
+          CONTENT_TYPE=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' /tmp/headers | tr -d '\r' | tail -1)
+          echo "CONTENT_TYPE=$CONTENT_TYPE"
+          if echo "$CONTENT_TYPE" | grep -Eq '^text/html|^application/json'; then
+            echo "FAIL: media endpoint returned HTML/JSON"
+            exit 1
+          fi
+          echo "RESULT: terminal response is not HTML/JSON"
