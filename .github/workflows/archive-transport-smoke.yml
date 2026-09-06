@@ -8,33 +8,138 @@ on:
         default: "https://ajn-precision-engineering.ai.studio"
   push:
     branches: ["rebuild/clean-baseline-20260906"]
+
 permissions:
   contents: read
+
 jobs:
   transport:
     runs-on: ubuntu-latest
     steps:
-      - name: Archive proxy Range smoke test
+      - name: Archive proxy Range smoke tests
         shell: bash
         env:
           BASE_URL: ${{ inputs.base_url || 'https://ajn-precision-engineering.ai.studio' }}
         run: |
           set -euo pipefail
+
           PATH_VALUE='/download/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump.mp4'
-          ENCODED_PATH=$(python -c 'import urllib.parse,os; print(urllib.parse.quote(os.environ["PATH_VALUE"], safe=""))')
+          ENCODED_PATH=$(printf '%s' "$PATH_VALUE" | jq -sRr @uri)
           URL="$BASE_URL/api/archive/proxy?path=$ENCODED_PATH"
+
           echo "WHO: GitHub Actions"
-          echo "WHAT: Archive proxy Range smoke test"
-          echo "WHY: verify the endpoint does not pass HTML/JSON as media"
+          echo "WHAT: Archive proxy transport gate"
+          echo "WHY: verify real media responses, HTTP Range semantics, and no HTML/JSON leakage"
+          echo "WHEN: $(date -u +%FT%TZ)"
           echo "TARGET: $URL"
-          curl --silent --show-error --dump-header /tmp/headers --output /tmp/body --max-time 30 -H 'Range: bytes=0-1023' "$URL" || true
-          cat /tmp/headers
-          head -c 300 /tmp/body || true
+
+          run_fixed_range() {
+            local range="$1"
+            local label="$2"
+            local expected_start="$3"
+            local headers="/tmp/${label}.headers"
+            local body="/tmp/${label}.body"
+
+            echo
+            echo "=== TEST: $label ==="
+            echo "RANGE: $range"
+
+            curl --silent --show-error --fail-with-body \
+              --dump-header "$headers" \
+              --output "$body" \
+              --max-time 30 \
+              -H "Range: $range" \
+              "$URL"
+
+            cat "$headers"
+            echo "BODY_BYTES=$(wc -c < "$body")"
+
+            local status
+            status=$(awk 'NR==1 {print $2}' "$headers")
+            local content_type
+            content_type=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$headers" | tr -d '\r' | tail -1)
+            local content_range
+            content_range=$(awk -F': ' 'tolower($1)=="content-range"{print $2}' "$headers" | tr -d '\r' | tail -1)
+            local content_length
+            content_length=$(awk -F': ' 'tolower($1)=="content-length"{print $2}' "$headers" | tr -d '\r' | tail -1)
+
+            echo "STATUS=$status"
+            echo "CONTENT_TYPE=$content_type"
+            echo "CONTENT_RANGE=$content_range"
+            echo "CONTENT_LENGTH=$content_length"
+
+            [[ "$status" == "206" ]] || { echo "FAIL: expected HTTP 206"; exit 1; }
+            [[ "$content_type" == video/* ]] || { echo "FAIL: expected video/* Content-Type"; exit 1; }
+            [[ "$content_range" == bytes\ $expected_start-*/* ]] || { echo "FAIL: unexpected Content-Range"; exit 1; }
+            [[ "$content_length" =~ ^[0-9]+$ ]] || { echo "FAIL: missing numeric Content-Length"; exit 1; }
+
+            local actual
+            actual=$(wc -c < "$body")
+            [[ "$actual" == "$content_length" ]] || {
+              echo "FAIL: body byte count ($actual) != Content-Length ($content_length)"
+              exit 1
+            }
+
+            echo "PASS: $label"
+          }
+
+          run_open_ended_probe() {
+            local range="$1"
+            local label="$2"
+            local expected_start="$3"
+            local headers="/tmp/${label}.headers"
+            local body="/tmp/${label}.body"
+
+            echo
+            echo "=== TEST: $label ==="
+            echo "RANGE: $range"
+            echo "MODE: open-ended continuation probe"
+
+            set +e
+            curl --silent --show-error \
+              --dump-header "$headers" \
+              --output "$body" \
+              --max-time 30 \
+              -H "Range: $range" \
+              "$URL"
+            curl_exit=$?
+            set -e
+
+            cat "$headers"
+            echo "CURL_EXIT=$curl_exit"
+            echo "BODY_BYTES=$(wc -c < "$body")"
+
+            local status
+            status=$(awk 'NR==1 {print $2}' "$headers")
+            local content_type
+            content_type=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$headers" | tr -d '\r' | tail -1)
+            local content_range
+            content_range=$(awk -F': ' 'tolower($1)=="content-range"{print $2}' "$headers" | tr -d '\r' | tail -1)
+
+            echo "STATUS=$status"
+            echo "CONTENT_TYPE=$content_type"
+            echo "CONTENT_RANGE=$content_range"
+
+            [[ "$status" == "206" ]] || { echo "FAIL: expected HTTP 206"; exit 1; }
+            [[ "$content_type" == video/* ]] || { echo "FAIL: expected video/* Content-Type"; exit 1; }
+            [[ "$content_range" == bytes\ $expected_start-*/* ]] || { echo "FAIL: open-ended Content-Range does not start at requested byte"; exit 1; }
+
+            if [[ "$curl_exit" -ne 0 ]]; then
+              echo "INFO: curl ended before EOF; valid 206 media headers were already received."
+            fi
+
+            local actual
+            actual=$(wc -c < "$body")
+            [[ "$actual" -gt 0 ]] || { echo "FAIL: open-ended probe returned zero media bytes"; exit 1; }
+
+            echo "PASS: $label"
+          }
+
+          run_fixed_range "bytes=0-1023" "range_0_1023" "0"
+          run_fixed_range "bytes=0-65535" "range_0_65535" "0"
+          run_open_ended_probe "bytes=2097152-" "continuation_2mb" "2097152"
+          run_open_ended_probe "bytes=5000000-" "continuation_5mb" "5000000"
+
           echo
-          CONTENT_TYPE=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' /tmp/headers | tr -d '\r' | tail -1)
-          echo "CONTENT_TYPE=$CONTENT_TYPE"
-          if echo "$CONTENT_TYPE" | grep -Eq '^text/html|^application/json'; then
-            echo "FAIL: media endpoint returned HTML/JSON"
-            exit 1
-          fi
-          echo "RESULT: terminal response is not HTML/JSON"
+          echo "RESULT: all Archive transport gates passed."
+          echo "No synthetic telemetry was generated."
