@@ -1,0 +1,31 @@
+name: AJN Runtime Report
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "AJN deployed base URL"
+        required: true
+        default: "https://ajn-precision-engineering.ai.studio"
+  schedule:
+    - cron: "17 * * * *"
+permissions:
+  contents: read
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query runtime health
+        shell: bash
+        env:
+          BASE_URL: ${{ inputs.base_url || 'https://ajn-precision-engineering.ai.studio' }}
+        run: |
+          set -euo pipefail
+          echo "WHO: GitHub Actions"
+          echo "WHAT: runtime health/telemetry status"
+          echo "WHY: distinguish deployed runtime state from source/build state"
+          echo "WHEN: $(date -u +%FT%TZ)"
+          echo "ENDPOINT: $BASE_URL/api/health"
+          curl --fail --silent --show-error --max-time 20 "$BASE_URL/api/health" | tee /tmp/health.json
+          echo
+          echo "RESULT: runtime health endpoint responded successfully"
+          echo "No synthetic telemetry is generated."
