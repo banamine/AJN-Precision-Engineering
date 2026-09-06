@@ -62,7 +62,7 @@ jobs:
             echo "BODY_BYTES=$(wc -c < "$body")"
 
             local status
-            status=$(awk 'NR==1 {print $2}' "$headers" | tail -1)
+            status=$(grep '^HTTP/' "$headers" | tail -1 | awk '{print $2}')
             local content_type
             content_type=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$headers" | tr -d '\r' | tail -1)
             local content_range
@@ -117,7 +117,7 @@ jobs:
             echo "BODY_BYTES=$(wc -c < "$body")"
 
             local status
-            status=$(awk 'NR==1 {print $2}' "$headers" | tail -1)
+            status=$(grep '^HTTP/' "$headers" | tail -1 | awk '{print $2}')
             local content_type
             content_type=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$headers" | tr -d '\r' | tail -1)
             local content_range
@@ -178,7 +178,7 @@ jobs:
           BAD_HEADERS=/tmp/foxnewsw.headers
           BAD_BODY=/tmp/foxnewsw.body
           set +e
-          curl --silent --show-error             --dump-header "$BAD_HEADERS"             --output "$BAD_BODY"             --max-time 60             -H 'Range: bytes=0-1023'             "$BAD_URL"
+          curl --silent --show-error --dump-header "$BAD_HEADERS" --output "$BAD_BODY" --max-time 60 -H 'Range: bytes=0-1023' "$BAD_URL"
           BAD_CURL_EXIT=$?
           set -e
 
@@ -189,7 +189,7 @@ jobs:
           head -c 500 "$BAD_BODY" || true
           echo
 
-          BAD_STATUS=$(awk 'NR==1 {print $2}' "$BAD_HEADERS")
+          BAD_STATUS=$(grep '^HTTP/' "$BAD_HEADERS" | tail -1 | awk '{print $2}')
           BAD_CONTENT_TYPE=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$BAD_HEADERS" | tr -d '\r' | tail -1)
           echo "STATUS=$BAD_STATUS"
           echo "CONTENT_TYPE=$BAD_CONTENT_TYPE"
