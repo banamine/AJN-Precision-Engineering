@@ -19,9 +19,9 @@ interface SearchViewProps {
 }
 
 const NETWORKS = [
-  { id: 'FOXNEWSW', name: 'Fox News' },
-  { id: 'CNNW', name: 'CNN' },
-  { id: 'MSNBCW', name: 'MSNBC' },
+  { id: 'FOXNEWSW', name: 'Fox News', channelId: 'fox-news' },
+  { id: 'CNNW', name: 'CNN', channelId: 'cnn' },
+  { id: 'MSNBCW', name: 'MSNBC', channelId: 'msnbc' },
 ];
 
 const SUGGESTIONS = [
@@ -313,7 +313,7 @@ const [query, setQuery] = useState<string>('');
                         item.title || item.program,
                         `${item.network} • ${item.date}`,
                         "video",
-                        item.network.toLowerCase(),
+                        NETWORKS.find((network) => network.id === item.network)?.channelId || item.network.toLowerCase(),
                         "cable-tv",
                         item.identifier,
                         item.network,
