@@ -559,6 +559,9 @@ export interface ScheduleProgram {
   startHour: number;
   endHour: number;
   archivePath: string;
+  programId: string;
+  sourceId: string;
+  assetId: string;
 }
 
 export interface ScheduleChannel {
@@ -598,6 +601,9 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
       startHour: index * (24 / playableItems.length),
       endHour: (index + 1) * (24 / playableItems.length),
       archivePath,
+      programId: item.identifier,
+      sourceId: item.network,
+      assetId: item.identifier,
     }));
 }
 
