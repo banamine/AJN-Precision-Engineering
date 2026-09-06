@@ -42,6 +42,7 @@ jobs:
             local range="$1"
             local label="$2"
             local expected_start="$3"
+            local expected_length="$4"
             local headers="/tmp/${label}.headers"
             local body="/tmp/${label}.body"
 
@@ -156,8 +157,8 @@ jobs:
           }
           echo "PASS: fixture size gate"
 
-          run_fixed_range "bytes=0-1023" "range_0_1023" "0"
-          run_fixed_range "bytes=0-65535" "range_0_65535" "0"
+          run_fixed_range "bytes=0-1023" "range_0_1023" "0" "1024"
+          run_fixed_range "bytes=0-65535" "range_0_65535" "0" "65536"
           run_open_ended_probe "bytes=2097152-" "continuation_2mb" "2097152"
           run_open_ended_probe "bytes=5000000-" "continuation_5mb" "5000000"
 
