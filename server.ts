@@ -39,17 +39,24 @@ function validateArchivePath(raw:string){
   if(!raw.startsWith('/'))return{valid:false,error:'Path must begin with a forward slash (/)' };
   // AJN ARCHIVE RANGE REPAIR: preserve open-ended Range and upstream byte stream.
   if(raw.startsWith('/api/archive/proxy'))return{valid:false,error:'Nested archive proxy paths are forbidden'};
-  if(!raw.startsWith('/download/'))return{valid:false,error:'Only Archive.org /download paths are permitted'};
   if(raw.includes('..')||raw.includes('\\'))return{valid:false,error:'Directory traversal sequences are forbidden'};
   if(/^https?:\/\//i.test(raw)||raw.includes('://'))return{valid:false,error:'Embedded schemes/hosts are forbidden'};
-  return{valid:true,cleanPath:raw};
+
+  let cleanPath = raw;
+  const cdnMatch = raw.match(/^\/\d+\/items\/([^/?#]+)(\/.*)$/);
+  if (cdnMatch) {
+    cleanPath = `/download/${cdnMatch[1]}${cdnMatch[2]}`;
+  } else if (!raw.startsWith('/download/')) {
+    return{valid:false,error:'Only Archive.org /download paths are permitted'};
+  }
+  
+  return{valid:true,cleanPath};
 }
 
 const ARCHIVE_BASE='https://archive.org';
 const MAX_RETRIES=3;
 const BACKOFF=500;
 const RETRY=[503,429,502,504];
-const MAX_CHUNK=2*1024*1024;
 
 interface ByteRange { start:number; end:number|null; }
 
@@ -62,13 +69,6 @@ function parseRangeHeader(header:string|undefined):ByteRange|null {
   const requestedEnd=m[2] ? Number(m[2]) : null;
   if(requestedEnd!==null && (!Number.isSafeInteger(requestedEnd)||requestedEnd<start)) return null;
   return {start,end:requestedEnd};
-}
-
-function buildUpstreamRange(range:ByteRange):string {
-  const end=range.end===null
-    ? range.start+MAX_CHUNK-1
-    : Math.min(range.end,range.start+MAX_CHUNK-1);
-  return `bytes=${range.start}-${end}`;
 }
 
 app.get('/api/archive/proxy', async (req, res) => {
@@ -97,10 +97,14 @@ app.get('/api/archive/proxy', async (req, res) => {
     'Accept':'*/*',
     'Connection':'close',
   };
-  // The browser may request bytes=N-. Archive.org/browser playback is more
-  // reliable when we forward a bounded range, and the response headers then
-  // describe exactly the bytes actually delivered.
-  if(incomingRange) headers.Range=buildUpstreamRange(incomingRange);
+  // CRITICAL RANGE SEMANTICS:
+  // Forward the browser's Range header exactly as received. Do NOT impose a
+  // proxy-side 2 MB clamp or rewrite an open-ended bytes=N- request. Archive.org
+  // is the authority for the response's Content-Range and Content-Length, and
+  // the proxy must stream the entire upstream response body without truncation.
+  const incomingRangeHeader =
+    typeof req.headers.range === 'string' ? req.headers.range : undefined;
+  if(incomingRangeHeader) headers.Range=incomingRangeHeader;
 
   let responseFinished=false;
   res.once('finish',()=>{responseFinished=true;});
@@ -168,6 +172,7 @@ app.get('/api/archive/proxy', async (req, res) => {
 
       const reader=upstream.body.getReader();
       let clientClosed=false;
+      let bytesForwarded=0;
       const onResponseClose=()=>{
         if(!responseFinished){
           clientClosed=true;
@@ -180,7 +185,9 @@ app.get('/api/archive/proxy', async (req, res) => {
         while(true){
           const {done,value}=await reader.read();
           if(done||clientClosed) break;
-          if(!res.write(Buffer.from(value))){
+          const chunk=Buffer.from(value);
+          bytesForwarded += chunk.length;
+          if(!res.write(chunk)){
             await new Promise<void>(resolve=>res.once('drain',resolve));
           }
         }
@@ -188,6 +195,15 @@ app.get('/api/archive/proxy', async (req, res) => {
         res.removeListener('close',onResponseClose);
         try{await reader.cancel();}catch{}
         if(!res.writableEnded && !res.destroyed) res.end();
+        console.log(
+          '[Archive Proxy Stream Complete]',
+          proxyRequestId,
+          '| status:', upstream.status,
+          '| range:', incomingRangeHeader || 'none',
+          '| declaredLength:', contentLength || 'unknown',
+          '| contentRange:', contentRange || 'none',
+          '| bytesForwarded:', bytesForwarded
+        );
         stats.activeStreams=Math.max(0,stats.activeStreams-1);
       }
       return;
