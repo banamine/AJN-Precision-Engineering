@@ -1,0 +1,18 @@
+AJN Precision Engineering — Archive Playback Repair
+
+Drop-in files:
+- channels.ts
+- server.ts
+- src/App.tsx
+- src/MinimalPlayer.tsx
+
+Repair intent:
+1. Archive TV News items are no longer assumed to have identifier.mp4.
+2. channels.ts resolves Archive metadata first and only emits a media URL when an actual browser-playable file is listed.
+3. Missing/unprocessed same-day items are skipped instead of being handed to <video> as speculative URLs.
+4. TV News start/end query parameters are no longer fabricated by getSafeArchiveUrl().
+5. App refuses an empty media reference.
+6. MinimalPlayer no longer sets crossOrigin on same-origin proxy media, avoiding an unnecessary CORS requirement.
+7. Existing proxy/range transport and five-destination navigation are preserved.
+
+Replace only matching files. No Replit newsFeed.ts or chunking layer is required.

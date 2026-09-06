@@ -327,10 +327,13 @@ export function getSafeArchiveUrl(rawUrl: string): string {
       url.pathname += `/${id}.mp4`;
     }
 
-    // Do not manufacture TV News clip parameters here. A /download/*.mp4 URL
-    // must identify the actual derived media file. Clip/window semantics belong
-    // above this transport layer and must never turn an unavailable asset into
-    // a seemingly playable URL.
+    // Preserve start & end for TV news clip slicing (up to 300s)
+    const isTvItem = TV_ID_RE.test(parts[parts.length - 2] || "") || TV_ID_RE.test(lastPart.replace(/\.[^.]+$/, ""));
+    if (isTvItem && !url.searchParams.has("start") && !url.searchParams.has("end")) {
+      url.searchParams.set("start", "0");
+      url.searchParams.set("end", "300");
+    }
+
     url.searchParams.delete("ignore");
 
     return url.toString();
@@ -526,10 +529,10 @@ async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadata
 }
 
 export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {
-  // TV News is processed asynchronously by Archive.org. Never assume
-  // identifier.mp4 exists merely because the item exists in the collection.
-  // Resolve the actual file list first and only return a media URL when a
-  // browser-playable file is present.
+  // TV News items MUST be resolved from Archive.org metadata. Do not assume
+  // that /download/{identifier}/{identifier}.mp4 exists; processed TV News
+  // items can use a different derived filename, and newly uploaded items may
+  // have no derived MP4 yet.
   try {
     const data = await fetchArchiveMetadata(identifier);
     const files = data.files ?? [];
@@ -570,7 +573,6 @@ export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFi
       };
     }
 
-    console.warn(`[Resolver] No browser-playable media file for ${identifier}`);
     return {
       url: "",
       duration: 0,
@@ -579,7 +581,7 @@ export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFi
     };
   } catch (error) {
     console.warn(
-      `[Resolver] Metadata unavailable for identifier "${identifier}"; refusing speculative media URL:`,
+      `[Resolver] Non-critical fallback for identifier "${identifier}":`,
       error instanceof Error ? error.message : String(error),
     );
 
@@ -637,22 +639,28 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
     items.map(async (item) => {
       const resolvedFile = await resolveBestFileUrl(item.identifier);
       if (resolvedFile.fallback || !resolvedFile.url) {
-        console.warn(`[channels] skipping unavailable Archive media: ${item.identifier}`);
-        return "";
+        console.warn(
+          `[Resolver] No verified browser-playable media for ${item.identifier}; excluding from schedule`,
+        );
+        return null;
       }
       return toProxyPath(getSafeArchiveUrl(resolvedFile.url));
     }),
   );
 
-  return items
-    .map((item, index) => ({ item, archivePath: resolved[index] }))
-    .filter(({ archivePath }) => Boolean(archivePath))
-    .map(({ item, archivePath }, index, playableItems) => ({
-      title: item.title || item.program || item.identifier,
-      startHour: index * (24 / playableItems.length),
-      endHour: (index + 1) * (24 / playableItems.length),
-      archivePath,
-    }));
+  const playableItems = items
+    .map((item, index) => ({ item, mediaPath: resolved[index] }))
+    .filter((entry): entry is { item: TVNewsItem; mediaPath: string } => Boolean(entry.mediaPath));
+
+  if (playableItems.length === 0) return [];
+
+  const playableBlockHours = 24 / playableItems.length;
+  return playableItems.map(({ item, mediaPath }, index) => ({
+    title: item.title || item.program || item.identifier,
+    startHour: index * playableBlockHours,
+    endHour: (index + 1) * playableBlockHours,
+    archivePath: mediaPath,
+  }));
 }
 
 export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
