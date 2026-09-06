@@ -18,6 +18,19 @@ interface MinimalPlayerProps {
 const TV_NEWS_SLICE_SEC = 300;
 const TV_NEWS_TOTAL_SEC = 3600;
 
+function canonicalizeArchiveSource(src: string): string {
+  if (!src.startsWith("/api/archive/proxy?path=")) return src;
+  try {
+    const parsed = new URL(src, window.location.origin);
+    const archivePath = parsed.searchParams.get("path");
+    if (!archivePath || !archivePath.startsWith("/download/")) return src;
+    if (archivePath.includes("://") || archivePath.includes("..") || archivePath.includes("\\")) return src;
+    return `https://archive.org${archivePath}`;
+  } catch {
+    return src;
+  }
+}
+
 export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent }: MinimalPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,13 +39,8 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
-  const [activeSrc, setActiveSrc] = useState(src);
-  const [archiveFallbackUsed, setArchiveFallbackUsed] = useState(false);
+  const [activeSrc, setActiveSrc] = useState(() => canonicalizeArchiveSource(src));
 
-  const isArchiveProxy = activeSrc.startsWith("/api/archive/proxy?path=");
-
-  // Keep the normal audio bridge. The player itself stays same-origin for
-  // proxied Archive media and does not opt the <video> element into CORS.
   useAudioNormalization(videoRef, "video", activeSrc);
   useSignalDiagnostics(videoRef);
 
@@ -46,8 +54,7 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
   }), [nowPlaying, activeSrc]);
 
   useEffect(() => {
-    setActiveSrc(src);
-    setArchiveFallbackUsed(false);
+    setActiveSrc(canonicalizeArchiveSource(src));
     setStatusText("Loading…");
   }, [src]);
 
@@ -73,35 +80,6 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
     };
     const onError = () => {
       const err = vid.error;
-
-      // If the local Archive proxy cannot supply a browser-decodable response,
-      // retry the exact validated /download path directly from Archive.org.
-      // This is not an arbitrary URL fallback: it is derived only from the
-      // app's own /api/archive/proxy?path=/download/... transport reference.
-      if (
-        err?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
-        isArchiveProxy &&
-        !archiveFallbackUsed
-      ) {
-        try {
-          const parsed = new URL(activeSrc, window.location.origin);
-          const archivePath = parsed.searchParams.get("path");
-          if (archivePath && archivePath.startsWith("/download/") && !archivePath.includes("://") && !archivePath.includes("..")) {
-            const directArchiveSrc = `https://archive.org${archivePath}`;
-            console.warn("[AJN PLAYBACK] proxy decode failed; retrying native Archive.org transport", {
-              proxySrc: activeSrc,
-              directArchiveSrc,
-            });
-            setArchiveFallbackUsed(true);
-            setStatusText("Retrying Archive.org native transport…");
-            setActiveSrc(directArchiveSrc);
-            return;
-          }
-        } catch {
-          // Fall through to the normal error report.
-        }
-      }
-
       setStatusText(`Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`);
       reportTelemetry({
         event: "media.error",
@@ -124,7 +102,7 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
       vid.removeEventListener("ended", onEnded);
       vid.removeEventListener("error", onError);
     };
-  }, [activeSrc, archiveFallbackUsed, eventMeta, isArchiveProxy, onErrorEvent, onPauseEvent, onPlayEvent, onProgramEnded]);
+  }, [activeSrc, eventMeta, onErrorEvent, onPauseEvent, onPlayEvent, onProgramEnded]);
 
   const play = async () => {
     const vid = videoRef.current;
