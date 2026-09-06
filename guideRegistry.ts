@@ -172,6 +172,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
         title:p.title, description:`Archive.org broadcast: ${p.title}`,
         startTime:p.startHour, endTime:p.endHour, startHour:p.startHour, endHour:p.endHour,
         mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath,
+        metadata:{sourceId:p.sourceId, assetId:p.assetId},
       }))
     }));
   }
