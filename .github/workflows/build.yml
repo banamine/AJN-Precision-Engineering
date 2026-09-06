@@ -1,0 +1,28 @@
+name: AJN Build Gate
+on:
+  push:
+    branches: ["rebuild/clean-baseline-20260906"]
+  pull_request:
+    branches: ["rebuild/clean-baseline-20260906"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npm run lint
+      - run: npm run build
+      - name: Report
+        if: always()
+        run: |
+          echo "WHO: GitHub Actions"
+          echo "WHAT: build/typecheck gate"
+          echo "WHY: prove the clean branch compiles before Google import"
+          echo "RESULT: ${{ job.status }}"
