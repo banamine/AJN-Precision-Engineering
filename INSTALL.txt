@@ -1,29 +1,18 @@
-AJN ARCHIVE PROXY — RANGE STREAMING SURGICAL DROP-IN
+AJN Precision Engineering — Archive Playback Repair
 
-Scope:
-- Replace ONLY the existing server.ts with this server.ts.
-- No other application files are changed.
-- No EPG, navigation, player, channel, metadata, or scheduling changes.
+Drop-in files:
+- channels.ts
+- server.ts
+- src/App.tsx
+- src/MinimalPlayer.tsx
 
-Repair:
-- Removes the active 2 MB upstream Range rewrite.
-- Forwards browser Range headers exactly, including open-ended bytes=N-.
-- Preserves upstream Content-Length and Content-Range.
-- Streams the complete upstream response body without an artificial buffer clamp.
-- Rejects malformed Range syntax with HTTP 416.
-- Preserves the existing Archive path validation, retry behavior, media-content guard,
-  client disconnect handling, and health/schedule/channel routes.
+Repair intent:
+1. Archive TV News items are no longer assumed to have identifier.mp4.
+2. channels.ts resolves Archive metadata first and only emits a media URL when an actual browser-playable file is listed.
+3. Missing/unprocessed same-day items are skipped instead of being handed to <video> as speculative URLs.
+4. TV News start/end query parameters are no longer fabricated by getSafeArchiveUrl().
+5. App refuses an empty media reference.
+6. MinimalPlayer no longer sets crossOrigin on same-origin proxy media, avoiding an unnecessary CORS requirement.
+7. Existing proxy/range transport and five-destination navigation are preserved.
 
-Phase 3 verification:
-1. npm run build
-2. Test bounded and open-ended ranges against a known-good Archive MP4.
-3. Verify:
-   - HTTP 206 for Range requests
-   - Content-Type: video/mp4
-   - Content-Range matches the requested range
-   - Content-Length equals bytes actually delivered
-   - bytes=2097152- and bytes=5000000- do NOT return 500
-4. Test FOX -> CNN -> MSNBC -> BBC in the player.
-5. Confirm first frame, advancing currentTime, audio, and no MEDIA_ELEMENT_ERROR code 4.
-
-Do not declare PASS from build success alone.
+Replace only matching files. No Replit newsFeed.ts or chunking layer is required.
