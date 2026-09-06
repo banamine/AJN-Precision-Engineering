@@ -1,0 +1,28 @@
+{
+  "name": "AJN-NEWS-PLAYBACK-FINAL-DROPIN",
+  "baseline": "AJN-Media-Console GitHub main reference",
+  "status": "drop-in transport/resolver repair package; not a claim that the unseen Google AI Studio workspace was directly modified",
+  "files": [
+    "server/routes/archiveProxy.ts",
+    "server/archiveNewsResolver.ts",
+    "server/routes/archiveNews.ts",
+    "src/services/ArchiveNewsClient.ts",
+    "scripts/apply-archive-news-dropin.mjs",
+    "scripts/verify-archive-playback.sh",
+    "docs/INSTALL.md",
+    "docs/NEWS-SOURCE-MATRIX.md",
+    "docs/VERIFICATION.md",
+    "test/native-two-file/index.html"
+  ],
+  "changes": [
+    "native Archive Range forwarding with no artificial 2 MiB clamp",
+    "truthful upstream status/header passthrough",
+    "reject HTML/JSON as media",
+    "support /NN/items/ Archive paths",
+    "preserve clipping query parameters",
+    "metadata-first MP4 resolution",
+    "FOX/CNN/MSNBC/BBC collection matrix",
+    "no fabricated identifier.mp4 URLs",
+    "two-file native playback regression test"
+  ]
+}

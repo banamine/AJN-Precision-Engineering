@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AJN Native Two File Test</title>
+<style>
+body{margin:0;background:#111;color:#eee;font:14px system-ui;padding:24px}
+button{margin:4px;padding:10px 14px}
+video{width:min(100%,960px);background:#000;display:block;margin-top:12px}
+pre{background:#181818;padding:12px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>AJN Native Playback — Two Files</h1>
+<button onclick="play(FOX)">Play FOX</button>
+<button onclick="play(BBB)">Play Big Buck Bunny</button>
+<button onclick="stop()">Stop</button>
+<video id="v" controls playsinline></video>
+<pre id="d">Waiting...</pre>
+<script>
+const FOX="https://ia801601.us.archive.org/21/items/FOXNEWSW_20260906_060000_FOX_News_Saturday_Night_With_Jimmy_Failla/FOXNEWSW_20260906_060000_FOX_News_Saturday_Night_With_Jimmy_Failla.mp4?start=0&end=60&ignore=x.mp4&cnt=0";
+const BBB="https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4";
+const v=document.getElementById("v"),d=document.getElementById("d");
+function play(src){v.src=src;v.load();v.play().catch(e=>console.warn(e))}
+function stop(){v.pause();v.removeAttribute("src");v.load()}
+setInterval(()=>d.textContent=JSON.stringify({
+ src:v.currentSrc,readyState:v.readyState,networkState:v.networkState,
+ duration:v.duration,currentTime:v.currentTime,error:v.error
+},null,2),500);
+</script>
+</body>
+</html>
