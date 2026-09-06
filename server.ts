@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import path from 'path';
 import {createServer as createViteServer} from 'vite';
 import {searchTVNews} from './channels.js';
+import {ARCHIVE_NEWS_SOURCES, resolveArchiveItem} from './server/archiveNewsResolver.js';
 import {buildChannelFromSearch} from './archive-discovery';
 import {getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide} from './guideRegistry';
 
@@ -24,6 +25,20 @@ app.get('/api/playlists',(_req,res)=>{const playlists=getAllPlaylists();res.json
 app.get('/api/playlists/:playlistId',(req,res)=>{const p=getPlaylistById(req.params.playlistId);if(!p)return res.status(404).json({error:`Playlist not found: ${req.params.playlistId}`});res.json(p);});
 app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.params.playlistId,req.body?.customM3u);if(!r.success)return res.status(400).json({error:`Failed to sync playlist ${req.params.playlistId}`,playlist:r.playlist});res.json({message:`Playlist ${req.params.playlistId} synchronized successfully`,playlist:r.playlist,ingestedCount:r.count});});
 app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});res.json({query,network,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({error:'Search failed',items:[],total:0});}});
+app.get('/api/archive/resolve',async(req,res)=>{
+ const identifier=String(req.query.identifier||'').trim();
+ const network=String(req.query.network||'').trim().toUpperCase();
+ const source=ARCHIVE_NEWS_SOURCES.find((item)=>item.callsign===network);
+ if(!identifier||!source)return res.status(400).json({error:'identifier and supported network are required'});
+ try{
+   const item=await resolveArchiveItem(identifier,source.id);
+   if(!item)return res.status(404).json({error:'No playable Archive representation found',identifier,network});
+   res.json({success:true,item});
+ }catch(e:any){
+   console.error('[Archive Resolve]',e);
+   res.status(502).json({error:'Archive resolve failed',identifier,network});
+ }
+});
 app.post('/api/watchdog/heartbeat',(req,res)=>res.json({acknowledged:true,ts:Date.now()}));
 
 function validateArchivePath(raw:string){
