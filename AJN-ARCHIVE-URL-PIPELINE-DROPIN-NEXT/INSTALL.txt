@@ -1,0 +1,41 @@
+AJN ARCHIVE URL PIPELINE — NEXT SURGICAL DROP-IN
+
+Scope: channels.ts ONLY.
+
+Purpose:
+Make the real TV Guide schedule emit the same class of verified Archive.org
+media URL proven playable by the isolated FOX/Big Buck Bunny native <video>
+test.
+
+Changes:
+- Resolve the actual .mp4 filename from Archive metadata.
+- Prefer Archive metadata serving node (server/d1/d2 + dir) when supplied.
+- Produce https://ia*.us.archive.org/.../items/.../actual-file.mp4 when IA
+  provides the serving-node metadata.
+- Preserve the verified TV-News clip contract: start=0, end=300,
+  ignore=x.mp4, cnt=0.
+- Do not manufacture identifier.mp4.
+- Do not turn an unavailable item into a fallback URL.
+- Do not send resolved URLs back through getSafeArchiveUrl()/proxy-path
+  normalization.
+- No changes to server.ts, MinimalPlayer, EPG, schedule architecture, HLS,
+  or timeouts.
+
+Install:
+Replace the current project channels.ts with this channels.ts.
+
+Build:
+npm run build
+
+Runtime evidence:
+1. Open /api/schedule.
+2. Inspect a FOX/CNN/MSNBC/BBC program archivePath.
+3. It must be a full https:// Archive URL pointing to the actual metadata
+   filename. TV News URLs should include start=0&end=300&ignore=x.mp4&cnt=0.
+4. Select the program in the Guide.
+5. Browser video must show readyState=4, advancing currentTime, and
+   video.error=null.
+
+Important:
+This drop-in is based on the current channels.ts lineage and is intentionally
+single-file to avoid importing incompatible routes/server architectures.

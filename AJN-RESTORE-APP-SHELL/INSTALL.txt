@@ -1,0 +1,26 @@
+AJN APP SHELL RESTORE — SURGICAL DROP-IN
+
+Purpose:
+Restore the real AJN React application entry page after the two-file native playback test replaced index.html.
+
+REPLACE ONLY:
+  index.html
+
+DO NOT replace:
+  server.ts
+  channels.ts
+  archive-discovery.ts
+  src/
+  package.json
+
+The restored index.html mounts the existing React application:
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+
+After installation:
+  npm run build
+
+Expected:
+  The AJN application returns with its normal Home / TV Guide / Player / Library / Search navigation.
+
+The two-file test page is intentionally NOT included in this package.

@@ -1,0 +1,11 @@
+AJN APP SHELL RESTORE
+
+1 file changed:
+- index.html — restored real AJN React entry point
+
+Source baseline:
+- ajn-precision-engineering (6).zip
+
+Scope:
+- Surgical index.html restoration only.
+- No server/proxy/resolver/player changes.
