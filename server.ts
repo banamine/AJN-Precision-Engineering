@@ -7,9 +7,11 @@ import {buildChannelFromSearch} from './archive-discovery';
 import {getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide} from './guideRegistry';
 
 const app=express(); const PORT=3000; app.use(express.json());
+const BUILD_SHA=process.env.AJN_BUILD_SHA||'unknown';
+const BUILD_TIME=process.env.AJN_BUILD_TIME||'unknown';
 interface ProxyStats{totalRequests:number;successfulRequests:number;retriedRequests:number;failedRequests:number;cacheHits:number;lastUpstreamLatencyMs:number;activeStreams:number}
 const stats:ProxyStats={totalRequests:0,successfulRequests:0,retriedRequests:0,failedRequests:0,cacheHits:0,lastUpstreamLatencyMs:0,activeStreams:0};
-app.get('/api/health',(_req,res)=>res.json({status:'ok',service:'ajn-precision-engineering-proxy',uptime:process.uptime(),timestamp:new Date().toISOString(),stats}));
+app.get('/api/health',(_req,res)=>res.json({status:'ok',service:'ajn-precision-engineering-proxy',uptime:process.uptime(),timestamp:new Date().toISOString(),build:{commit:BUILD_SHA,time:BUILD_TIME},stats}));
 app.post('/api/health',(req,res)=>{console.log('[CLIENT ERROR]',req.body);res.json({received:true});});
 app.get('/api/guides',(_req,res)=>{const guides=getAllGuides();res.json({guides,total:guides.length});});
 app.get('/api/guides/:guideId',(req,res)=>{const g=getGuideById(req.params.guideId);if(!g)return res.status(404).json({error:`Guide not found: ${req.params.guideId}`});res.json(g);});
@@ -52,6 +54,11 @@ app.get('/api/archive/proxy',async(req,res)=>{
    const upstream=await fetch(upstreamUrl,{method:'GET',redirect:'follow',headers:{'User-Agent':'AJN-Precision-Engineering/1.0','Accept':'*/*',...(range?{Range:range}:{})}});
    stats.lastUpstreamLatencyMs=Date.now()-started;
    const contentType=upstream.headers.get('content-type');
+   if(upstream.status>=300&&upstream.status<400){
+     stats.failedRequests++;
+     console.error('[Archive Proxy] redirect escaped fetch follow',{proxyRequestId,archivePath:v.cleanPath,archiveUrl:upstreamUrl,finalUrl:upstream.url,status:upstream.status,location:upstream.headers.get('location'),range});
+     return res.status(502).json({error:'Archive upstream redirect was not resolved',upstreamStatus:upstream.status,proxyRequestId});
+   }
    if(!upstream.ok||!mediaTypeAllowed(contentType)||!upstream.body){
      const bodyPreview=await upstream.text().catch(()=> '');
      stats.failedRequests++;
