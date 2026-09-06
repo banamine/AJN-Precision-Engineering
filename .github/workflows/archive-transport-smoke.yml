@@ -178,7 +178,7 @@ jobs:
           BAD_HEADERS=/tmp/foxnewsw.headers
           BAD_BODY=/tmp/foxnewsw.body
           set +e
-          curl --silent --show-error --dump-header "$BAD_HEADERS" --output "$BAD_BODY" --max-time 60 -H 'Range: bytes=0-1023' "$BAD_URL"
+          curl --silent --show-error --dump-header "$BAD_HEADERS" --output "$BAD_BODY" --max-time 60 --location -H 'Range: bytes=0-1023' "$BAD_URL"
           BAD_CURL_EXIT=$?
           set -e
 
