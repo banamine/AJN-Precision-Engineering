@@ -62,7 +62,7 @@ jobs:
             echo "BODY_BYTES=$(wc -c < "$body")"
 
             local status
-            status=$(awk 'NR==1 {print $2}' "$headers")
+            status=$(awk 'NR==1 {print $2}' "$headers" | tail -1)
             local content_type
             content_type=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$headers" | tr -d '\r' | tail -1)
             local content_range
