@@ -1,18 +1,92 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AJN Precision Engineering</title>
-    <meta name="description" content="AJN Precision Engineering broadcast station and media engine." />
-    <meta property="og:title" content="AJN Precision Engineering" />
-    <meta property="og:description" content="AJN Precision Engineering broadcast station and media engine." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AJN Simple Two-File Playback Test</title>
+<style>
+  html,body{margin:0;background:#111;color:#eee;font:14px Arial,sans-serif}
+  body{padding:20px}
+  h1{margin:0 0 8px;font-size:22px}
+  p{color:#bbb}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+  button{padding:10px 14px;background:#222;color:#fff;border:1px solid #555;border-radius:6px;cursor:pointer}
+  button:hover{background:#333}
+  video{display:block;width:min(100%,960px);background:#000;margin:16px 0}
+  pre{white-space:pre-wrap;background:#181818;border:1px solid #333;padding:12px;border-radius:6px;max-width:960px}
+  .ok{color:#9f9}.bad{color:#f88}
+</style>
+</head>
+<body>
+<h1>AJN Native Playback Control — Two Files</h1>
+<p>This deliberately bypasses AJN scheduling, proxy, HLS.js, AudioBridge, chunking, EPG, and all other application layers.</p>
 
+<div class="bar">
+  <button id="fox">Play FOX News test</button>
+  <button id="bbb">Play Big Buck Bunny test</button>
+  <button id="stop">Stop</button>
+</div>
+
+<video id="video" controls preload="metadata" playsinline></video>
+<pre id="status">Ready. Choose one of the two files.</pre>
+
+<script>
+const SOURCES = {
+  fox: "https://ia801601.us.archive.org/21/items/FOXNEWSW_20260906_060000_FOX_News_Saturday_Night_With_Jimmy_Failla/FOXNEWSW_20260906_060000_FOX_News_Saturday_Night_With_Jimmy_Failla.mp4?start=0&end=60&ignore=x.mp4&cnt=0",
+  bbb: "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4"
+};
+
+const video = document.getElementById("video");
+const status = document.getElementById("status");
+
+function report(label) {
+  const e = video.error;
+  status.textContent =
+`${label}
+src: ${video.currentSrc || video.src || "(none)"}
+readyState: ${video.readyState}
+networkState: ${video.networkState}
+duration: ${Number.isFinite(video.duration) ? video.duration : "NaN"}
+currentTime: ${video.currentTime}
+paused: ${video.paused}
+video.error: ${e ? JSON.stringify({
+  code:e.code,
+  message:e.message || ""
+}) : "null"}`;
+}
+
+async function play(key) {
+  video.pause();
+  video.removeAttribute("src");
+  video.load();
+
+  const src = SOURCES[key];
+  status.textContent = `Loading ${key}...\\nsrc: ${src}`;
+
+  // No proxy. No URL rewriting. No HLS. No MediaSource.
+  video.src = src;
+  video.load();
+
+  try {
+    await video.play();
+    report(`PLAYING: ${key}`);
+  } catch (err) {
+    report(`PLAY FAILED: ${key}\\nJavaScript error: ${err?.name || ""}: ${err?.message || err}`);
+  }
+}
+
+document.getElementById("fox").onclick = () => play("fox");
+document.getElementById("bbb").onclick = () => play("bbb");
+document.getElementById("stop").onclick = () => {
+  video.pause();
+  video.removeAttribute("src");
+  video.load();
+  report("Stopped");
+};
+
+["loadstart","loadedmetadata","loadeddata","canplay","playing","pause","waiting","stalled","suspend","ended","error"].forEach(ev => {
+  video.addEventListener(ev, () => report(`EVENT: ${ev}`));
+});
+</script>
+</body>
+</html>
