@@ -51,6 +51,7 @@ jobs:
             echo "RANGE: $range"
 
             curl --silent --show-error --fail-with-body \
+              --location \
               --dump-header "$headers" \
               --output "$body" \
               --max-time 30 \
