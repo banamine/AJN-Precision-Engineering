@@ -1,18 +1,14 @@
-AJN Precision Engineering — Archive Media Repair Drop-In
+AJN Precision Engineering — Archive Media Repair FINAL DROP-IN v2
 
 Replace these matching files in the current project:
+  archive-discovery.ts
   channels.ts
   server.ts
-  archive-discovery.ts
   src/App.tsx
   src/MinimalPlayer.tsx
 
-Key repair:
-- TV News Archive identifiers are resolved from Archive.org metadata instead of assuming {identifier}.mp4.
-- Items without a verified browser-playable derivative are excluded instead of receiving a directory/speculative URL.
-- Existing proxy URLs are not double-wrapped by App.tsx.
-- Archive proxy requires a real HTTP 206 response for ranged media requests and rejects non-media responses.
-- Proxy Content-Range/Content-Length are passed from the actual ranged upstream response.
-- Existing five-destination navigation is preserved.
+This revision keeps the prior media-resolution/proxy repairs and increases the
+Archive metadata request timeout to 60 seconds in both resolver paths. It does
+NOT introduce speculative media URLs when metadata cannot be resolved.
 
-Do not add the files as a second copy. Replace the matching project files.
+No other files are required.

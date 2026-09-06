@@ -503,7 +503,7 @@ async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadata
 
   const metadataUrl = `https://archive.org/metadata/${identifier}`;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 60000);
 
   try {
     const response = await fetch(metadataUrl, {

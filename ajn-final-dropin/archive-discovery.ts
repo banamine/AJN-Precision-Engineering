@@ -5,7 +5,7 @@ import { ChannelSource } from "./src/types.js";
 const metadataCache = new Map<string, any>();
 const ARCHIVE_BASE = "https://archive.org";
 const USER_AGENT = "AJN-Precision-Engineering/1.0";
-const REQUEST_TIMEOUT_MS = 12000;
+const REQUEST_TIMEOUT_MS = 60000;
 const MAX_ATTEMPTS = 3;
 const RETRYABLE = new Set([429, 500, 502, 503, 504]);
 
