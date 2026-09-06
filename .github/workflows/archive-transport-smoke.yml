@@ -23,15 +23,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          PATH_VALUE='/download/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump.mp4'
-          ENCODED_PATH=$(printf '%s' "$PATH_VALUE" | jq -sRr @uri)
-          URL="$BASE_URL/api/archive/proxy?path=$ENCODED_PATH"
+          GOOD_PATH='/download/his_girl_friday/his_girl_friday_512kb.mp4'
+          BAD_PATH='/download/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump.mp4'
+          GOOD_URL="$BASE_URL/api/archive/proxy?path=$(printf '%s' "$GOOD_PATH" | jq -sRr @uri)"
+          BAD_URL="$BASE_URL/api/archive/proxy?path=$(printf '%s' "$BAD_PATH" | jq -sRr @uri)"
+          EXPECTED_SIZE=401207987
 
           echo "WHO: GitHub Actions"
           echo "WHAT: Archive proxy transport gate"
           echo "WHY: verify real media responses, HTTP Range semantics, and no HTML/JSON leakage"
           echo "WHEN: $(date -u +%FT%TZ)"
-          echo "TARGET: $URL"
+          echo "FIXTURE_A: $GOOD_PATH"
+          echo "FIXTURE_B: $BAD_PATH"
+          echo "FIXTURE_A_EXPECTED_SIZE: $EXPECTED_SIZE"
+          echo "TARGET: $GOOD_URL"
 
           run_fixed_range() {
             local range="$1"
@@ -49,7 +54,7 @@ jobs:
               --output "$body" \
               --max-time 30 \
               -H "Range: $range" \
-              "$URL"
+              "$GOOD_URL"
 
             cat "$headers"
             echo "BODY_BYTES=$(wc -c < "$body")"
@@ -101,7 +106,7 @@ jobs:
               --output "$body" \
               --max-time 30 \
               -H "Range: $range" \
-              "$URL"
+              "$GOOD_URL"
             curl_exit=$?
             set -e
 
@@ -122,7 +127,10 @@ jobs:
 
             [[ "$status" == "206" ]] || { echo "FAIL: expected HTTP 206"; exit 1; }
             [[ "$content_type" == video/* ]] || { echo "FAIL: expected video/* Content-Type"; exit 1; }
-            [[ "$content_range" == bytes\ $expected_start-*/* ]] || { echo "FAIL: open-ended Content-Range does not start at requested byte"; exit 1; }
+            [[ "$content_range" =~ ^bytes\ $expected_start-[0-9]+/$EXPECTED_SIZE$ ]] || {
+              echo "FAIL: open-ended Content-Range does not expose the complete expected fixture range"
+              exit 1
+            }
 
             if [[ "$curl_exit" -ne 0 ]]; then
               echo "INFO: curl ended before EOF; valid 206 media headers were already received."
@@ -135,10 +143,61 @@ jobs:
             echo "PASS: $label"
           }
 
+          echo
+          echo "=== FIXTURE A SIZE GATE ==="
+          echo "Expected public fixture size: $EXPECTED_SIZE bytes"
+          METADATA_URL="$BASE_URL/api/archive/metadata?path=$(printf '%s' "$GOOD_PATH" | jq -sRr @uri)"
+          METADATA=$(curl --silent --show-error --fail --max-time 30 "$METADATA_URL")
+          echo "$METADATA" | jq .
+          METADATA_SIZE=$(echo "$METADATA" | jq -r '.contentLength // empty')
+          [[ "$METADATA_SIZE" == "$EXPECTED_SIZE" ]] || {
+            echo "FAIL: Fixture A content length is '$METADATA_SIZE', expected '$EXPECTED_SIZE'"
+            exit 1
+          }
+          echo "PASS: fixture size gate"
+
           run_fixed_range "bytes=0-1023" "range_0_1023" "0"
           run_fixed_range "bytes=0-65535" "range_0_65535" "0"
           run_open_ended_probe "bytes=2097152-" "continuation_2mb" "2097152"
           run_open_ended_probe "bytes=5000000-" "continuation_5mb" "5000000"
+
+          echo
+          echo "=== TEST: unavailable_fixture_FOXNEWSW ==="
+          echo "WHO: GitHub Actions"
+          echo "WHAT: verify Archive 403 HTML is converted to AJN JSON"
+          echo "WHY: an unavailable Archive asset must never be passed to <video> as HTML"
+          echo "TARGET: $BAD_URL"
+
+          BAD_HEADERS=/tmp/foxnewsw.headers
+          BAD_BODY=/tmp/foxnewsw.body
+          set +e
+          curl --silent --show-error             --dump-header "$BAD_HEADERS"             --output "$BAD_BODY"             --max-time 60             -H 'Range: bytes=0-1023'             "$BAD_URL"
+          BAD_CURL_EXIT=$?
+          set -e
+
+          cat "$BAD_HEADERS"
+          echo "CURL_EXIT=$BAD_CURL_EXIT"
+          echo "BODY_BYTES=$(wc -c < "$BAD_BODY")"
+          echo "BODY_PREVIEW:"
+          head -c 500 "$BAD_BODY" || true
+          echo
+
+          BAD_STATUS=$(awk 'NR==1 {print $2}' "$BAD_HEADERS")
+          BAD_CONTENT_TYPE=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$BAD_HEADERS" | tr -d '\r' | tail -1)
+          echo "STATUS=$BAD_STATUS"
+          echo "CONTENT_TYPE=$BAD_CONTENT_TYPE"
+
+          [[ "$BAD_STATUS" == "403" ]] || { echo "FAIL: expected AJN HTTP 403 for unavailable Archive fixture"; exit 1; }
+          [[ "$BAD_CONTENT_TYPE" == application/json* ]] || { echo "FAIL: expected application/json, not Archive HTML"; exit 1; }
+          jq -e '.error and .upstreamStatus == 403 and .proxyRequestId' "$BAD_BODY" >/dev/null || {
+            echo "FAIL: expected structured AJN JSON error"
+            exit 1
+          }
+          ! grep -Eiq '<!doctype html|<html' "$BAD_BODY" || {
+            echo "FAIL: HTML error document leaked through proxy"
+            exit 1
+          }
+          echo "PASS: unavailable_fixture_FOXNEWSW"
 
           echo
           echo "RESULT: all Archive transport gates passed."
