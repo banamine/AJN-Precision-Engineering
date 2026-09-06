@@ -19,9 +19,9 @@ interface SearchViewProps {
 }
 
 const NETWORKS = [
-  { id: 'FOXNEWSW', name: 'Fox News' },
-  { id: 'CNNW', name: 'CNN' },
-  { id: 'MSNBCW', name: 'MSNBC' },
+  { id: 'FOXNEWSW', name: 'Fox News', channelId: 'fox-news' },
+  { id: 'CNNW', name: 'CNN', channelId: 'cnn' },
+  { id: 'MSNBCW', name: 'MSNBC', channelId: 'msnbc' },
 ];
 
 const SUGGESTIONS = [
@@ -311,7 +311,13 @@ const [query, setQuery] = useState<string>('');
                       onPlayProgram(
                         safePath,
                         item.title || item.program,
-                        `${item.network} • ${item.date}`
+                        `${item.network} • ${item.date}`,
+                        "video",
+                        NETWORKS.find((network) => network.id === item.network)?.channelId || item.network.toLowerCase(),
+                        "cable-tv",
+                        item.identifier,
+                        item.network,
+                        item.identifier
                       )
                     }
                     className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-500 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 cursor-pointer"
