@@ -42,6 +42,7 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
     sourceId: nowPlaying?.sourceId ?? null,
     programId: nowPlaying?.programId ?? null,
     assetId: nowPlaying?.assetId ?? null,
+    archiveIdentifier: nowPlaying?.assetId ?? null,
     mediaPath: nowPlaying?.archivePath ?? activeSrc ?? null,
   }), [nowPlaying, activeSrc]);
 
