@@ -1,0 +1,53 @@
+name: AJN API Contract Smoke
+
+on:
+  push:
+    branches: [fix/api-two-404s-on-5eda958]
+  workflow_dispatch:
+
+jobs:
+  api:
+    name: Verify watchdog and v1 news contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Production build
+        run: npm run build
+
+      - name: Start application server
+        run: |
+          node dist/server.cjs > /tmp/ajn-server.log 2>&1 &
+          echo $! > /tmp/ajn-server.pid
+          for i in {1..30}; do
+            if curl --fail --silent --show-error http://localhost:3000/api/health > /tmp/ajn-health.json; then
+              cat /tmp/ajn-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/ajn-server.log
+          exit 1
+
+      - name: API compatibility contract smoke
+        run: npm run test:api-contracts
+
+      - name: Stop application server
+        if: always()
+        run: |
+          if [ -f /tmp/ajn-server.pid ]; then
+            kill "$(cat /tmp/ajn-server.pid)" || true
+          fi
+          if [ -f /tmp/ajn-server.log ]; then
+            echo "--- AJN server log ---"
+            cat /tmp/ajn-server.log
+          fi
