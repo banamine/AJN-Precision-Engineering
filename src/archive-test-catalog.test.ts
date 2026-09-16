@@ -11,6 +11,7 @@ assert.equal(CLASSIC_TV_TEST_CHANNEL.group, 'TV Classics');
 assert.equal(CLASSIC_TV_TEST_PROGRAMS.length, 3);
 assert.equal(CLASSIC_TV_TEST_SOURCES.length, 3);
 
+const expectedItemIds = ['the_incredible_hulk_vhs', 'thriller_1973_1976', 'space_1999_s01e01'];
 for (let i = 0; i < 3; i += 1) {
   const program = CLASSIC_TV_TEST_PROGRAMS[i];
   const source = CLASSIC_TV_TEST_SOURCES[i];
@@ -20,7 +21,8 @@ for (let i = 0; i < 3; i += 1) {
   assert.equal(source.protocol, 'direct_archive');
   assert.equal(program.metadata?.archiveListId, '4');
   assert.equal(program.metadata?.archiveListSlug, 'tv-classics');
-  assert.equal(program.metadata?.archiveItemId, program.metadata?.archiveItemId);
+  assert.equal(program.metadata?.archiveItemId, expectedItemIds[i]);
+  assert.equal(program.metadata?.sourceId, source.id);
   assert.ok(program.title.length > 0);
 }
 
