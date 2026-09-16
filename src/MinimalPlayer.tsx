@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia } from "./types";
-import { Play, Pause, Volume2, Volume1, VolumeX, Maximize, Minimize, RotateCcw, RotateCw, Tv, CheckCircle2 } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { useAudioNormalization } from "./use-audio-normalization";
 import { useSignalDiagnostics } from "./use-signal-diagnostics";
+import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 
 interface MinimalPlayerProps {
   src: string;
@@ -31,9 +32,9 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
 
   const isArchiveProxy = activeSrc.startsWith("/api/archive/proxy?path=");
 
-  // Keep the normal audio bridge. The player itself stays same-origin for
-  // proxied Archive media and does not opt the <video> element into CORS.
-  useAudioNormalization(videoRef, "video", activeSrc);
+  const {
+    diagnosticsAnalyserRef,
+  } = useAudioNormalization(videoRef, "video", activeSrc);
   useSignalDiagnostics(videoRef);
 
   const eventMeta = useCallback(() => ({
@@ -74,10 +75,6 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
     const onError = () => {
       const err = vid.error;
 
-      // If the local Archive proxy cannot supply a browser-decodable response,
-      // retry the exact validated /download path directly from Archive.org.
-      // This is not an arbitrary URL fallback: it is derived only from the
-      // app's own /api/archive/proxy?path=/download/... transport reference.
       if (
         err?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
         isArchiveProxy &&
@@ -147,6 +144,9 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
         <button onClick={isPlaying ? pause : play} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause /> : <Play />}</button>
         <button onClick={() => { const v=videoRef.current; if(v){v.muted=!v.muted;setIsMuted(v.muted)} }} aria-label="Mute">{isMuted ? <VolumeX/> : <Volume2/>}</button>
         <span className="text-xs text-white">{statusText}</span>
+      </div>
+      <div className="absolute left-3 right-3 top-3">
+        <AudioBridgeStatus analyser={diagnosticsAnalyserRef.current} />
       </div>
     </div>
   );
