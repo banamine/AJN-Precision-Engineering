@@ -1,5 +1,6 @@
 import { Play, ArrowRight } from "lucide-react";
 import type { AjnCategoryDestination, AjnMediaRecord } from "../contracts/ajn-media";
+import { AJN_VISUAL_ASSET_MAP } from "../contracts/ajn-visual-assets";
 import type { PlayProgramCallback } from "../types";
 
 interface AjnProgramCardsProps {
@@ -22,15 +23,19 @@ const FALLBACK_ART =
   "linear-gradient(135deg, rgba(8,47,73,0.95), rgba(15,23,42,0.98))";
 
 function ProgramArtwork({ program }: { program: AjnMediaRecord }) {
-  const assetUrl = program.visualAssetKey;
-  return assetUrl ? (
+  const imageUrl = program.visualAssetKey
+    ? AJN_VISUAL_ASSET_MAP[program.visualAssetKey]?.imageUrl
+    : undefined;
+
+  return imageUrl ? (
     <img
-      src={assetUrl}
+      src={imageUrl}
       alt=""
       loading="lazy"
       className="absolute inset-0 h-full w-full object-cover"
       onError={(event) => {
         event.currentTarget.style.display = "none";
+        event.currentTarget.parentElement?.setAttribute("data-art-fallback", "true");
       }}
     />
   ) : (
