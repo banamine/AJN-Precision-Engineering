@@ -153,7 +153,6 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
 
   return (
     <div className="space-y-10 pb-16">
-      {/* ── Featured Broadcast Hero Banner ─────────────────────────────────── */}
       <section
         id="home-featured-hero"
         aria-labelledby="featured-heading"
@@ -314,7 +313,6 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
         </div>
       </section>
 
-      {/* ── Quick Access Portals Bento ──────────────────────────────────────── */
       <section aria-labelledby="portals-heading" className="space-y-4">
         <h2 id="portals-heading" className="text-lg font-semibold tracking-tight text-neutral-100">
           Broadcast Destinations
@@ -386,6 +384,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
           </div>
           <button
             type="button"
+            id="view-all-library-link"
             onClick={() => onNavigate('library')}
             className="flex items-center gap-1 text-xs font-medium text-sky-400 hover:text-sky-300 transition"
           >
@@ -405,6 +404,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
               <p className="mt-1 text-xs text-neutral-400 leading-relaxed">{item.description}</p>
               <button
                 type="button"
+                id={`play-highlight-${item.id}`}
                 onClick={() => onPlayProgram(item.archivePath, item.title, item.category, item.mediaType)}
                 className="mt-4 flex items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 transition hover:bg-sky-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer"
               >
