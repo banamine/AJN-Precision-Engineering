@@ -50,14 +50,20 @@ function tag(block: string, name: string): string | undefined {
   return m ? decodeXml(m[1].replace(/<[^>]+>/g, ' ')).replace(/\\s+/g, ' ').trim() : undefined;
 }
 
-function enclosureUrl(block: string): string | undefined {
-  const m = block.match(/<enclosure\\b[^>]*?url=["']([^"']+)["'][^>]*\/?>(?:<\/enclosure>)?/i);
+function attributeUrl(block: string, element: string): string | undefined {
+  const re = new RegExp(`<${element}\\b[^>]*?url=["']([^"']+)["'][^>]*\\/?>(?:<\\/${element}>)?`, 'i');
+  const m = block.match(re);
   return m?.[1] ? decodeXml(m[1]) : undefined;
+}
+
+function enclosureUrl(block: string): string | undefined {
+  return attributeUrl(block, 'enclosure');
 }
 
 function mediaUrl(block: string): string | undefined {
   return enclosureUrl(block)
-    || tag(block, 'media:content')
+    || attributeUrl(block, 'media:content')
+    || attributeUrl(block, 'media:player')
     || tag(block, 'link')
     || tag(block, 'guid');
 }
