@@ -51,6 +51,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: any) {
       <MinimalPlayer
         src={nowPlaying.src}
         title={nowPlaying.title}
+        mediaType={nowPlaying.mediaType ?? "video"}
         nowPlaying={nowPlaying}
         onProgramEnded={handleProgramEnded}
         onPlayEvent={() => console.log("[AJN PLAYBACK] play", meta)}
