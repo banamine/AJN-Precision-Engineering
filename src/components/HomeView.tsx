@@ -13,7 +13,9 @@ import {
   Calendar,
   Headphones,
 } from 'lucide-react';
-import { Destination, NowPlayingMedia, MediaType, PlayProgramCallback } from '../types';
+import { Destination, NowPlayingMedia, MediaType, PlayProgramCallback, Program } from '../types';
+import { AjnProgramCards } from './AjnProgramCards';
+import { AJN_FEATURED_CATEGORIES, toAjnHomePrograms } from '../contracts/ajn-home-presentation';
 
 interface HomeViewProps {
   onNavigate: (dest: Destination) => void;
@@ -108,6 +110,9 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
       isLive: true,
     },
   ]);
+  const [recentPrograms, setRecentPrograms] = useState<Program[]>([]);
+  const [recentProgramsLoading, setRecentProgramsLoading] = useState(true);
+  const [recentProgramsError, setRecentProgramsError] = useState<string | null>(null);
 
   // Fetch actual schedule from server to populate live channel cards
   useEffect(() => {
@@ -147,6 +152,47 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    setRecentProgramsLoading(true);
+    setRecentProgramsError(null);
+    fetch('/api/schedule?guide=cable-tv')
+      .then((res) => {
+        if (!res.ok) throw new Error(`Recent programs request failed: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (!mounted) return;
+        const programs = (data?.channels || []).flatMap((channel: any) =>
+          (channel.programs || []).map((program: any) => ({
+            ...program,
+            channelId: program.channelId || channel.id,
+            guideId: program.guideId || 'cable-tv',
+          } as Program))
+        );
+        setRecentPrograms(programs.slice(0, 12));
+      })
+      .catch(() => {
+        if (mounted) setRecentProgramsError('Recent programs are temporarily unavailable.');
+      })
+      .finally(() => {
+        if (mounted) setRecentProgramsLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const ajnRecentPrograms = toAjnHomePrograms(recentPrograms);
+
+  const handleBrowseCategory = (category: typeof AJN_FEATURED_CATEGORIES[number]) => {
+    if (category.destination === 'library') {
+      onNavigate('library');
+      return;
+    }
+    onNavigate('search');
+  };
 
   return (
     <div className="space-y-10 pb-16">
@@ -211,7 +257,6 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
             </div>
           </div>
 
-          {/* Right Hero Badge / Status Widget */}
           <div className="w-full lg:w-72 shrink-0 rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-5 backdrop-blur">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
@@ -313,6 +358,16 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
         </div>
       </section>
 
+      {/* ── Recent Programs / Featured Coverage (additive) ─────────────────── */}
+      <AjnProgramCards
+        programs={ajnRecentPrograms}
+        categories={AJN_FEATURED_CATEGORIES}
+        onPlayProgram={onPlayProgram}
+        onBrowseCategory={handleBrowseCategory}
+        loading={recentProgramsLoading}
+        error={recentProgramsError}
+      />
+
       {/* ── Quick Access Portals Bento ──────────────────────────────────────── */}
       <section aria-labelledby="portals-heading" className="space-y-4">
         <h2 id="portals-heading" className="text-lg font-semibold tracking-tight text-neutral-100">
@@ -360,73 +415,16 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
             onClick={() => onNavigate('search')}
             className="group flex flex-col items-start rounded-xl border border-neutral-800 bg-neutral-900/40 p-5 text-left transition hover:border-neutral-700 hover:bg-neutral-900/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 group-hover:scale-105 transition">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:scale-105 transition">
               <Search className="h-5 w-5" />
             </div>
-            <h3 className="mt-3.5 text-sm font-semibold text-neutral-100 group-hover:text-purple-300">
-              TV News Search Engine
+            <h3 className="mt-3.5 text-sm font-semibold text-neutral-100 group-hover:text-amber-300">
+              Search the Broadcast Vault
             </h3>
             <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
-              Direct querying across thousands of broadcast transcripts and historical news programs.
+              Search live channels, schedules, archive records, and curated program collections.
             </p>
           </button>
-        </div>
-      </section>
-
-      {/* ── Curated Archive Highlights ──────────────────────────────────────── */}
-      <section aria-labelledby="highlights-heading" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <Disc3 className="h-4 w-4" />
-            </div>
-            <h2 id="highlights-heading" className="text-lg font-semibold tracking-tight text-neutral-100">
-              Curated Vault Highlights
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            id="view-all-library-link"
-            onClick={() => onNavigate('library')}
-            className="flex items-center gap-1 text-xs font-medium text-sky-400 hover:text-sky-300 transition"
-          >
-            <span>Explore All in Library</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {ARCHIVE_HIGHLIGHTS.map((item) => (
-            <div
-              key={item.id}
-              className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5 transition hover:border-neutral-700 hover:bg-neutral-900/80"
-            >
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-neutral-400">{item.category}</span>
-                  <span className="rounded bg-neutral-800 px-2 py-0.5 text-[10px] font-mono text-neutral-300">
-                    {item.badge}
-                  </span>
-                </div>
-                <h3 className="text-sm font-semibold text-neutral-100">{item.title}</h3>
-                <p className="text-xs text-neutral-400 line-clamp-2">{item.description}</p>
-              </div>
-
-              <div className="mt-4 pt-3.5 border-t border-neutral-800 flex items-center justify-between">
-                <span className="text-xs text-neutral-500">{item.duration}</span>
-                <button
-                  type="button"
-                  id={`play-highlight-${item.id}`}
-                  onClick={() => onPlayProgram(item.archivePath, item.title, item.category, item.mediaType)}
-                  className="flex items-center gap-1 rounded-lg bg-neutral-800 px-2.5 py-1.5 text-xs font-medium text-neutral-200 transition hover:bg-sky-600 hover:text-white cursor-pointer"
-                >
-                  <Play className="h-3 w-3 fill-current" />
-                  Stream
-                </button>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
     </div>
