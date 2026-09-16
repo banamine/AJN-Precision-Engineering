@@ -9,7 +9,7 @@ on:
 
 jobs:
   verify:
-    name: Lint, build, playback, and audio bridge tests
+    name: Lint, build, playback, EPG, and audio bridge tests
     runs-on: ubuntu-latest
 
     steps:
@@ -45,6 +45,24 @@ jobs:
           echo "AJN server failed to become healthy"
           cat /tmp/ajn-server.log
           exit 1
+
+      - name: Bounded EPG regression
+        run: npm run test:epg
+
+      - name: EPG API low-offset evidence
+        run: |
+          curl --fail --silent --show-error 'http://localhost:3000/api/epg/channels?guide=cable-tv&offset=0&limit=100' | tee /tmp/epg-low.json
+          node -e "const d=require('fs').readFileSync('/tmp/epg-low.json','utf8'); const j=JSON.parse(d); if(j.items.length>100||j.offset!==0||j.limit!==100) process.exit(1); console.log('EPG low-offset API: PASS')"
+
+      - name: EPG API high-offset evidence
+        run: |
+          curl --fail --silent --show-error 'http://localhost:3000/api/epg/channels?guide=cable-tv&offset=4900&limit=100' | tee /tmp/epg-high.json
+          node -e "const d=require('fs').readFileSync('/tmp/epg-high.json','utf8'); const j=JSON.parse(d); if(j.items.length>100||j.offset!==4900||j.limit!==100) process.exit(1); console.log('EPG high-offset API: PASS')"
+
+      - name: EPG program window evidence
+        run: |
+          curl --fail --silent --show-error 'http://localhost:3000/api/epg/programs?channel=classic-tv-101&offset=0&limit=2' | tee /tmp/epg-programs.json
+          node -e "const d=require('fs').readFileSync('/tmp/epg-programs.json','utf8'); const j=JSON.parse(d); if(j.items.length!==2||j.items[0].id!=='classic-tv-101-1'||j.items[1].id!=='classic-tv-101-2') process.exit(1); console.log('EPG program window: PASS')"
 
       - name: Existing playback regression
         run: npm test
