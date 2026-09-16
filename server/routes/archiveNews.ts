@@ -8,10 +8,7 @@ import {
 const router = express.Router();
 
 router.get("/api/news/archive/sources", (_req, res) => {
-  res.json({
-    success: true,
-    sources: ARCHIVE_NEWS_SOURCES,
-  });
+  res.json({ success: true, sources: ARCHIVE_NEWS_SOURCES });
 });
 
 router.get("/api/news/archive/resolve/:identifier", async (req, res) => {
@@ -22,11 +19,7 @@ router.get("/api/news/archive/resolve/:identifier", async (req, res) => {
   }
 
   try {
-    const item = await resolveArchiveItem(
-      req.params.identifier,
-      sourceId as any
-    );
-
+    const item = await resolveArchiveItem(req.params.identifier, sourceId as any);
     if (!item) {
       res.status(404).json({
         success: false,
@@ -35,10 +28,9 @@ router.get("/api/news/archive/resolve/:identifier", async (req, res) => {
       });
       return;
     }
-
     res.json({ success: true, item });
   } catch (error: any) {
-    res.status(502).json({ success: false, error: error.message });
+    res.status(502).json({ success: false, error: error?.message || "Archive resolve failed" });
   }
 });
 
@@ -58,7 +50,7 @@ router.get("/api/news/archive/:source", async (req, res) => {
     res.status(502).json({
       success: false,
       error: "Archive news discovery failed",
-      detail: error.message,
+      detail: error?.message || String(error),
     });
   }
 });
