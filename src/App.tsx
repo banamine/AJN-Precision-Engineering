@@ -153,6 +153,7 @@ export default function App() {
           <HomeView
             onNavigate={navigateTo}
             onPlayProgram={handlePlayProgram}
+            nowPlaying={nowPlaying}
           />
         )}
 
