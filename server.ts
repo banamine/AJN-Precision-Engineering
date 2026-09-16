@@ -6,6 +6,8 @@ import {searchTVNews} from './channels.js';
 import {ARCHIVE_NEWS_SOURCES, resolveArchiveItem} from './server/archiveNewsResolver.js';
 import {buildChannelFromSearch} from './archive-discovery';
 import {getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide} from './guideRegistry';
+import watchdogRouter from './server/routes/watchdog.js';
+import newsV1Router from './server/routes/newsV1.js';
 
 const app=express(); const PORT=3000; app.use(express.json());
 const BUILD_SHA=process.env.AJN_BUILD_SHA||'unknown';
@@ -14,6 +16,8 @@ interface ProxyStats{totalRequests:number;successfulRequests:number;retriedReque
 const stats:ProxyStats={totalRequests:0,successfulRequests:0,retriedRequests:0,failedRequests:0,cacheHits:0,lastUpstreamLatencyMs:0,activeStreams:0};
 app.get('/api/health',(_req,res)=>res.json({status:'ok',service:'ajn-precision-engineering-proxy',uptime:process.uptime(),timestamp:new Date().toISOString(),build:{commit:BUILD_SHA,time:BUILD_TIME},stats}));
 app.post('/api/health',(req,res)=>{console.log('[CLIENT ERROR]',req.body);res.json({received:true});});
+app.use(watchdogRouter);
+app.use(newsV1Router);
 app.get('/api/guides',(_req,res)=>{const guides=getAllGuides();res.json({guides,total:guides.length});});
 app.get('/api/guides/:guideId',(req,res)=>{const g=getGuideById(req.params.guideId);if(!g)return res.status(404).json({error:`Guide not found: ${req.params.guideId}`});res.json(g);});
 app.get('/api/channels',(req,res)=>{const guideId=req.query.guide as string|undefined;const channels=getChannelsByGuide(guideId);res.json({guideId:guideId||'all',total:channels.length,channels});});
@@ -39,7 +43,6 @@ app.get('/api/archive/resolve',async(req,res)=>{
    res.status(502).json({error:'Archive resolve failed',identifier,network});
  }
 });
-app.post('/api/watchdog/heartbeat',(req,res)=>res.json({acknowledged:true,ts:Date.now()}));
 
 function validateArchivePath(raw:string){
  if(!raw||typeof raw!=='string')return{valid:false,error:'Path is required'};
