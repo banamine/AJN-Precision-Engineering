@@ -55,6 +55,9 @@ jobs:
       - name: AudioContext singleton regression
         run: npm run test:audio-singleton
 
+      - name: Archive CORS regression guard
+        run: npm run test:archive-cors
+
       - name: Stop application server
         if: always()
         run: |
