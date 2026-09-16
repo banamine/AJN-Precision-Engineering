@@ -10,8 +10,12 @@ import {
  getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,
  addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide
 } from './guideRegistry';
+import watchdogRouter from './server/routes/watchdog.js';
+import newsV1Router from './server/routes/newsV1.js';
 
 const app=express(); const PORT=3000; app.use(express.json());
+app.use(watchdogRouter);
+app.use(newsV1Router);
 
 interface ProxyStats{totalRequests:number;successfulRequests:number;retriedRequests:number;failedRequests:number;cacheHits:number;lastUpstreamLatencyMs:number;activeStreams:number}
 const stats:ProxyStats={totalRequests:0,successfulRequests:0,retriedRequests:0,failedRequests:0,cacheHits:0,lastUpstreamLatencyMs:0,activeStreams:0};
@@ -32,12 +36,10 @@ app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.
 patchServer(app);
 
 app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});res.json({query,network,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({error:'Search failed',items:[],total:0});}});
-app.post('/api/watchdog/heartbeat',(req,res)=>res.json({acknowledged:true,ts:Date.now()}));
 
 function validateArchivePath(raw:string){
   if(!raw||typeof raw!=='string')return{valid:false,error:'Path is required'};
   if(!raw.startsWith('/'))return{valid:false,error:'Path must begin with a forward slash (/)' };
-  // AJN ARCHIVE RANGE REPAIR: preserve open-ended Range and upstream byte stream.
   if(raw.startsWith('/api/archive/proxy'))return{valid:false,error:'Nested archive proxy paths are forbidden'};
   if(raw.includes('..')||raw.includes('\\'))return{valid:false,error:'Directory traversal sequences are forbidden'};
   if(/^https?:\/\//i.test(raw)||raw.includes('://'))return{valid:false,error:'Embedded schemes/hosts are forbidden'};
@@ -49,7 +51,6 @@ function validateArchivePath(raw:string){
   } else if (!raw.startsWith('/download/')) {
     return{valid:false,error:'Only Archive.org /download paths are permitted'};
   }
-  
   return{valid:true,cleanPath};
 }
 
@@ -57,9 +58,7 @@ const ARCHIVE_BASE='https://archive.org';
 const MAX_RETRIES=3;
 const BACKOFF=500;
 const RETRY=[503,429,502,504];
-
 interface ByteRange { start:number; end:number|null; }
-
 function parseRangeHeader(header:string|undefined):ByteRange|null {
   if(!header) return null;
   const m=/^bytes=(\d+)-(\d*)$/.exec(header.trim());
@@ -80,170 +79,57 @@ app.get('/api/archive/proxy', async (req, res) => {
 
   const rawPath = String(req.query.path || '');
   const v = validateArchivePath(rawPath);
-  if(!v.valid || !v.cleanPath){
-    stats.failedRequests++;
-    return res.status(400).json({error:'Invalid path parameter',details:v.error,proxyRequestId});
-  }
-
+  if(!v.valid || !v.cleanPath){ stats.failedRequests++; return res.status(400).json({error:'Invalid path parameter',details:v.error,proxyRequestId}); }
   const incomingRange = parseRangeHeader(typeof req.headers.range === 'string' ? req.headers.range : undefined);
-  if(req.headers.range && !incomingRange){
-    stats.failedRequests++;
-    return res.status(416).json({error:'Unsupported Range header',proxyRequestId});
-  }
-
+  if(req.headers.range && !incomingRange){ stats.failedRequests++; return res.status(416).json({error:'Unsupported Range header',proxyRequestId}); }
   const upstreamUrl = `${ARCHIVE_BASE}${v.cleanPath}`;
-  const headers:Record<string,string> = {
-    'User-Agent':'AJN-Precision-Engineering/1.0',
-    'Accept':'*/*',
-    'Connection':'close',
-  };
-  // CRITICAL RANGE SEMANTICS:
-  // Forward the browser's Range header exactly as received. Do NOT impose a
-  // proxy-side 2 MB clamp or rewrite an open-ended bytes=N- request. Archive.org
-  // is the authority for the response's Content-Range and Content-Length, and
-  // the proxy must stream the entire upstream response body without truncation.
-  const incomingRangeHeader =
-    typeof req.headers.range === 'string' ? req.headers.range : undefined;
+  const headers:Record<string,string> = {'User-Agent':'AJN-Precision-Engineering/1.0','Accept':'*/*','Connection':'close'};
+  const incomingRangeHeader = typeof req.headers.range === 'string' ? req.headers.range : undefined;
   if(incomingRangeHeader) headers.Range=incomingRangeHeader;
-
   let responseFinished=false;
   res.once('finish',()=>{responseFinished=true;});
-
   for(let attempt=1;attempt<=MAX_RETRIES;attempt++){
     const abortController=new AbortController();
     const onClose=()=>{ if(!responseFinished && !res.writableEnded) abortController.abort(); };
     req.once('close',onClose);
-
     try{
       const upstreamTimeout=setTimeout(()=>abortController.abort(),20000);
       let upstream:globalThis.Response;
-      try{
-        upstream=await fetch(upstreamUrl,{headers:headers as HeadersInit,signal:abortController.signal,redirect:'manual'});
-      }finally{clearTimeout(upstreamTimeout);}
-
+      try{ upstream=await fetch(upstreamUrl,{headers:headers as HeadersInit,signal:abortController.signal,redirect:'manual'}); }
+      finally{clearTimeout(upstreamTimeout);}
       if(RETRY.includes(upstream.status)){
-        if(attempt<MAX_RETRIES){
-          stats.retriedRequests++;
-          await new Promise(r=>setTimeout(r,BACKOFF*Math.pow(2,attempt-1)));
-          continue;
-        }
-        stats.failedRequests++;
-        return res.status(503).json({error:'Archive upstream unavailable',upstreamStatus:upstream.status,proxyRequestId});
+        if(attempt<MAX_RETRIES){ stats.retriedRequests++; await new Promise(r=>setTimeout(r,BACKOFF*Math.pow(2,attempt-1))); continue; }
+        stats.failedRequests++; return res.status(503).json({error:'Archive upstream unavailable',upstreamStatus:upstream.status,proxyRequestId});
       }
-
       if([301,302,303,307,308].includes(upstream.status)){
         const loc=upstream.headers.get('location');
-        if(loc){
-          res.setHeader('Cache-Control','no-store');
-          res.setHeader('X-AJN-Archive-Proxy','redirect-to-storage');
-          return res.redirect(302,loc);
-        }
+        if(loc){ res.setHeader('Cache-Control','no-store'); res.setHeader('X-AJN-Archive-Proxy','redirect-to-storage'); return res.redirect(302,loc); }
       }
-      if(!upstream.ok && upstream.status!==206){
-        stats.failedRequests++;
-        return res.status(upstream.status>=500?503:upstream.status).json({error:'Archive upstream unavailable',upstreamStatus:upstream.status,proxyRequestId});
-      }
-
-      if(incomingRange && upstream.status!==206){
-        stats.failedRequests++;
-        return res.status(502).json({error:'Archive upstream ignored requested byte range',upstreamStatus:upstream.status,proxyRequestId});
-      }
-
-      if(!upstream.body){
-        stats.failedRequests++;
-        return res.status(502).json({error:'Archive upstream returned no body',proxyRequestId});
-      }
-
-      const contentType=upstream.headers.get('content-type');
-      const contentLength=upstream.headers.get('content-length');
-      const contentRange=upstream.headers.get('content-range');
-      const acceptRanges=upstream.headers.get('accept-ranges');
-      const etag=upstream.headers.get('etag');
-      const lastModified=upstream.headers.get('last-modified');
-
-      // Never feed an HTML/JSON error document to the media element.
-      if(contentType && /^(text\/html|application\/json|text\/plain)\b/i.test(contentType)){
-        stats.failedRequests++;
-        return res.status(502).json({error:'Archive upstream returned non-media content',contentType,upstreamStatus:upstream.status,proxyRequestId});
-      }
-
-      res.status(upstream.status);
-      if(contentType) res.setHeader('Content-Type',contentType);
-      if(contentLength) res.setHeader('Content-Length',contentLength);
-      if(contentRange) res.setHeader('Content-Range',contentRange);
-      res.setHeader('Accept-Ranges',acceptRanges || 'bytes');
-      if(etag) res.setHeader('ETag',etag);
-      if(lastModified) res.setHeader('Last-Modified',lastModified);
-
-      stats.successfulRequests++;
-      stats.activeStreams++;
-
-      const reader=upstream.body.getReader();
-      let clientClosed=false;
-      let bytesForwarded=0;
-      const onResponseClose=()=>{
-        if(!responseFinished){
-          clientClosed=true;
-          void reader.cancel();
-        }
-      };
+      if(!upstream.ok && upstream.status!==206){ stats.failedRequests++; return res.status(upstream.status>=500?503:upstream.status).json({error:'Archive upstream unavailable',upstreamStatus:upstream.status,proxyRequestId}); }
+      if(incomingRange && upstream.status!==206){ stats.failedRequests++; return res.status(502).json({error:'Archive upstream ignored requested byte range',upstreamStatus:upstream.status,proxyRequestId}); }
+      if(!upstream.body){ stats.failedRequests++; return res.status(502).json({error:'Archive upstream returned no body',proxyRequestId}); }
+      const contentType=upstream.headers.get('content-type'); const contentLength=upstream.headers.get('content-length'); const contentRange=upstream.headers.get('content-range'); const acceptRanges=upstream.headers.get('accept-ranges'); const etag=upstream.headers.get('etag'); const lastModified=upstream.headers.get('last-modified');
+      if(contentType && /^(text\/html|application\/json|text\/plain)\b/i.test(contentType)){ stats.failedRequests++; return res.status(502).json({error:'Archive upstream returned non-media content',contentType,upstreamStatus:upstream.status,proxyRequestId}); }
+      res.status(upstream.status); if(contentType) res.setHeader('Content-Type',contentType); if(contentLength) res.setHeader('Content-Length',contentLength); if(contentRange) res.setHeader('Content-Range',contentRange); res.setHeader('Accept-Ranges',acceptRanges || 'bytes'); if(etag) res.setHeader('ETag',etag); if(lastModified) res.setHeader('Last-Modified',lastModified);
+      stats.successfulRequests++; stats.activeStreams++;
+      const reader=upstream.body.getReader(); let clientClosed=false; let bytesForwarded=0;
+      const onResponseClose=()=>{ if(!responseFinished){ clientClosed=true; void reader.cancel(); } };
       res.once('close',onResponseClose);
-
-      try{
-        while(true){
-          const {done,value}=await reader.read();
-          if(done||clientClosed) break;
-          const chunk=Buffer.from(value);
-          bytesForwarded += chunk.length;
-          if(!res.write(chunk)){
-            await new Promise<void>(resolve=>res.once('drain',resolve));
-          }
-        }
-      }finally{
-        res.removeListener('close',onResponseClose);
-        try{await reader.cancel();}catch{}
-        if(!res.writableEnded && !res.destroyed) res.end();
-        console.log(
-          '[Archive Proxy Stream Complete]',
-          proxyRequestId,
-          '| status:', upstream.status,
-          '| range:', incomingRangeHeader || 'none',
-          '| declaredLength:', contentLength || 'unknown',
-          '| contentRange:', contentRange || 'none',
-          '| bytesForwarded:', bytesForwarded
-        );
-        stats.activeStreams=Math.max(0,stats.activeStreams-1);
-      }
+      try{ while(true){ const {done,value}=await reader.read(); if(done||clientClosed) break; const chunk=Buffer.from(value); bytesForwarded += chunk.length; if(!res.write(chunk)) await new Promise<void>(resolve=>res.once('drain',resolve)); } }
+      finally{ res.removeListener('close',onResponseClose); try{await reader.cancel();}catch{} if(!res.writableEnded && !res.destroyed) res.end(); console.log('[Archive Proxy Stream Complete]',proxyRequestId,'| status:',upstream.status,'| range:',incomingRangeHeader || 'none','| declaredLength:',contentLength || 'unknown','| contentRange:',contentRange || 'none','| bytesForwarded:',bytesForwarded); stats.activeStreams=Math.max(0,stats.activeStreams-1); }
       return;
     }catch(err:any){
       if(abortController.signal.aborted && (req.destroyed || res.destroyed || responseFinished)) return;
-      if(attempt===MAX_RETRIES){
-        stats.failedRequests++;
-        if(!res.headersSent) return res.status(503).json({error:'Archive upstream unavailable',proxyRequestId});
-        if(!res.destroyed) res.destroy();
-        return;
-      }
-      stats.retriedRequests++;
-      await new Promise(r=>setTimeout(r,BACKOFF*Math.pow(2,attempt-1)));
-    }finally{
-      req.removeListener('close',onClose);
-    }
+      if(attempt===MAX_RETRIES){ stats.failedRequests++; if(!res.headersSent) return res.status(503).json({error:'Archive upstream unavailable',proxyRequestId}); if(!res.destroyed) res.destroy(); return; }
+      stats.retriedRequests++; await new Promise(r=>setTimeout(r,BACKOFF*Math.pow(2,attempt-1)));
+    }finally{ req.removeListener('close',onClose); }
   }
 });
 
-app.get('/api/archive/metadata',async(req,res)=>{
- const v=validateArchivePath((req.query.path as string)||'');if(!v.valid||!v.cleanPath)return res.status(400).json({error:v.error});
- try{const r=await fetch(`${ARCHIVE_BASE}${v.cleanPath}`,{method:'HEAD',headers:{'User-Agent':'AJN-Precision-Engineering-Proxy/1.0'}});res.json({status:r.status,ok:r.ok,contentType:r.headers.get('content-type'),contentLength:r.headers.get('content-length'),acceptRanges:r.headers.get('accept-ranges'),proxyUrl:`/api/archive/proxy?path=${encodeURIComponent(v.cleanPath)}`});}catch(e:any){res.status(502).json({error:e.message});}
-});
+app.get('/api/archive/metadata',async(req,res)=>{ const v=validateArchivePath((req.query.path as string)||''); if(!v.valid||!v.cleanPath)return res.status(400).json({error:v.error}); try{const r=await fetch(`${ARCHIVE_BASE}${v.cleanPath}`,{method:'HEAD',headers:{'User-Agent':'AJN-Precision-Engineering-Proxy/1.0'}});res.json({status:r.status,ok:r.ok,contentType:r.headers.get('content-type'),contentLength:r.headers.get('content-length'),acceptRanges:r.headers.get('accept-ranges'),proxyUrl:`/api/archive/proxy?path=${encodeURIComponent(v.cleanPath)}`});}catch(e:any){res.status(502).json({error:e.message});} });
 
 async function startServer(){
- if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares);}
- else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')));}
- app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`);
-   buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive')
-    .then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`))
-    .catch(e=>console.error('[AJN] Failed to build Archive channel:',e));
-   // IMPORTANT: News schedule is no longer converted back into M3U at startup.
- });
+ if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
+ app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e)); });
 }
 startServer();
