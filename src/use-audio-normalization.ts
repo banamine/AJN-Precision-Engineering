@@ -216,6 +216,8 @@ export function useAudioNormalization(
         }
       };
       ctx.addEventListener("statechange", handleContextStateChange);
+      // Retain the handler reference on the context for deterministic teardown.
+      (ctx as AudioContext & { __ajnStateChangeHandler?: () => void }).__ajnStateChangeHandler = handleContextStateChange;
 
       return ctx;
     } catch {
@@ -539,6 +541,36 @@ export function useAudioNormalization(
       samplingActiveRef.current = false;
       clearTimeout(sampleTimerRef.current);
       clearInterval(sampleIntervalRef.current);
+
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+
+      const stateHandler = (ctx as AudioContext & { __ajnStateChangeHandler?: () => void }).__ajnStateChangeHandler;
+      if (stateHandler) {
+        ctx.removeEventListener("statechange", stateHandler);
+        delete (ctx as AudioContext & { __ajnStateChangeHandler?: () => void }).__ajnStateChangeHandler;
+      }
+
+      try { sourceNodeRef.current?.disconnect(); } catch {}
+      try { preAnalyserRef.current?.disconnect(); } catch {}
+      try { diagnosticsAnalyserRef.current?.disconnect(); } catch {}
+      try { gainNodeRef.current?.disconnect(); } catch {}
+      try { masterVolumeNodeRef.current?.disconnect(); } catch {}
+      try { compressorNodeRef.current?.disconnect(); } catch {}
+
+      sourceNodeRef.current = null;
+      connectedElementRef.current = null;
+      preAnalyserRef.current = null;
+      diagnosticsAnalyserRef.current = null;
+      gainNodeRef.current = null;
+      masterVolumeNodeRef.current = null;
+      compressorNodeRef.current = null;
+      bridgeReadyRef.current = false;
+      setBridgeReady(false);
+      setDiagnosticsReady(false);
+
+      audioCtxRef.current = null;
+      void ctx.close().catch(() => {});
     };
   }, []);
 
