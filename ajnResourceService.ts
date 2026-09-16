@@ -1,5 +1,19 @@
 export type AjnFeedId = 'Alex' | 'WarRoom' | 'SundayLive' | 'AJNHourlyVideo' | 'AJNHourlyAudio';
 
+export interface AjnStreamLink {
+  id: string;
+  name: string;
+  mediaType: 'audio';
+  url: string;
+  protocol: 'aac' | 'mp3' | 'opus';
+}
+
+export interface AjnAffiliateLink {
+  id: string;
+  name: string;
+  url: string;
+}
+
 export interface AjnResourceLink {
   id: AjnFeedId;
   name: string;
@@ -28,6 +42,28 @@ const RESOURCES: AjnResourceLink[] = [
   { id: 'SundayLive', name: 'Sunday Night Live', mediaType: 'video', htmlUrl: `${BASE}/SundayLive.html`, rssUrl: `${BASE}/SundayLive.xml` },
   { id: 'AJNHourlyVideo', name: 'Network Feed Hourly Video', mediaType: 'video', htmlUrl: `${BASE}/AJNHourlyVideo.html`, rssUrl: `${BASE}/AJNHourlyVideo.xml` },
   { id: 'AJNHourlyAudio', name: 'Network Feed Hourly Audio', mediaType: 'audio', htmlUrl: `${BASE}/AJNHourlyAudio.html`, rssUrl: `${BASE}/AJNHourlyAudio.xml` },
+];
+
+const STREAMS: AjnStreamLink[] = [
+  { id: 'alex-aac', name: 'Alex Jones Show (AAC)', mediaType: 'audio', url: 'https://stream.alexjones.media/alexjonesshow', protocol: 'aac' },
+  { id: 'alex-mp3', name: 'Alex Jones Show (MP3)', mediaType: 'audio', url: 'https://stream.alexjones.media/alexjonesshow.mp3', protocol: 'mp3' },
+  { id: 'alex-opus', name: 'Alex Jones Show (OPUS)', mediaType: 'audio', url: 'https://audio.alexjoneslive.com:8443/alexjonesshow.opus', protocol: 'opus' },
+  { id: 'alex-alt-aac', name: 'Alex Jones Show (alternate AAC)', mediaType: 'audio', url: 'https://audio.alexjoneslive.com:8443/alexjonesshow.aac', protocol: 'aac' },
+  { id: 'warroom', name: 'War Room with Harrison Smith', mediaType: 'audio', url: 'https://stream.alexjones.media/warroom/', protocol: 'aac' },
+  { id: 'network-aac', name: 'Network Feed - All Live Shows (AAC)', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/7/', protocol: 'aac' },
+  { id: 'alex-stream-1', name: 'Alex Jones Show Feed', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/1/', protocol: 'aac' },
+  { id: 'alex-stream-2', name: 'Alex Jones Show Feed (MP3)', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/2/', protocol: 'mp3' },
+  { id: 'warroom-stream-4', name: 'War Room Show Feed', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/4/', protocol: 'aac' },
+  { id: 'warroom-stream-6', name: 'War Room Show Feed (MP3)', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/6/', protocol: 'mp3' },
+  { id: 'network-stream-8', name: 'Network Stream (MP3)', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/8/', protocol: 'mp3' },
+];
+
+const AFFILIATES: AjnAffiliateLink[] = [
+  { id: 'mp4-segs', name: 'MP4 Segment Files', url: `${BASE}/mp4-segs.html` },
+  { id: 'mp3-hourly', name: 'MP3 Hourly Files', url: `${BASE}/mp3-hourly.html` },
+  { id: 'mp3-segs', name: 'MP3 Segment Files', url: `${BASE}/mp3-segs.html` },
+  { id: 'mp3-segs-legacy', name: 'MP3 Segment Files - Legacy', url: `${BASE}/mp3-segs-legacy.html` },
+  { id: 'programming-clock', name: 'Affiliate Clock', url: `${BASE}/Programming-Clock.png` },
 ];
 
 const byId = new Map(RESOURCES.map(r => [r.id, r]));
@@ -77,6 +113,14 @@ function itemId(feedId: AjnFeedId, block: string, index: number): string {
 
 export function getAjnResources(): AjnResourceLink[] {
   return RESOURCES.map(resource => ({ ...resource }));
+}
+
+export function getAjnStreams(): AjnStreamLink[] {
+  return STREAMS.map(stream => ({ ...stream }));
+}
+
+export function getAjnAffiliateLinks(): AjnAffiliateLink[] {
+  return AFFILIATES.map(link => ({ ...link }));
 }
 
 export function getAjnResource(id: string): AjnResourceLink | undefined {
