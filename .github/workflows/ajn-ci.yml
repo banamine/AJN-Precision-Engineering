@@ -9,7 +9,7 @@ on:
 
 jobs:
   verify:
-    name: Lint, build, playback, and audio bridge tests
+    name: Lint, build, API, playback, and audio bridge tests
     runs-on: ubuntu-latest
 
     steps:
@@ -45,6 +45,9 @@ jobs:
           echo "AJN server failed to become healthy"
           cat /tmp/ajn-server.log
           exit 1
+
+      - name: API compatibility contract smoke
+        run: npm run test:api-contracts
 
       - name: Existing playback regression
         run: npm test
