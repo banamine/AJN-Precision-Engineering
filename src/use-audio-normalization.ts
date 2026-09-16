@@ -39,8 +39,6 @@ export interface AudioNormalizationReturn {
   diagnosticsReady: boolean;
 }
 
-// Module-level owner: the processing graph and AudioContext must survive MinimalPlayer
-// remounts when the selected media changes. This is the singleton boundary for the app.
 interface AudioRuntime {
   ctx: AudioContext;
   gainNode: GainNode;
@@ -138,17 +136,23 @@ function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | n
     runtime.connectedElement = media;
     runtime.bridgeReady = false;
     runtime.diagnosticsReady = false;
-    fetch("/api/watchdog/heartbeat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "AUDIO_NATIVE_FALLBACK",
-        ctxState: runtime.ctx.state,
-        crossOrigin: crossoriginAttr ?? "none",
-        src: media.src?.slice(0, 120),
-        ts: Date.now(),
-      }),
-    }).catch(() => {});
+
+    // Native fallback is expected for media elements without an explicit CORS mode.
+    // Do not emit a watchdog error for video/hls playback; these paths intentionally
+    // remain on native media to preserve Archive compatibility.
+    if (media instanceof HTMLAudioElement) {
+      fetch("/api/watchdog/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "AUDIO_NATIVE_FALLBACK",
+          ctxState: runtime.ctx.state,
+          crossOrigin: crossoriginAttr ?? "none",
+          src: media.src?.slice(0, 120),
+          ts: Date.now(),
+        }),
+      }).catch(() => {});
+    }
     return runtime;
   }
 
@@ -414,11 +418,9 @@ export function useAudioNormalization(
   }, [resumeAudioContext]);
 
   useEffect(() => {
-    return () => {
-      clearTimeout(sampleTimerRef.current);
-      clearInterval(sampleIntervalRef.current);
-    };
-  }, []);
+    if (!audioRuntime) return;
+    applyGain(gainDbRef.current);
+  }, [gainDb]);
 
   return {
     gainDb,
