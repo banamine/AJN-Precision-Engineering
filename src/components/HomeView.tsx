@@ -109,7 +109,6 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
     },
   ]);
 
-  // Fetch actual schedule from server to populate live channel cards
   useEffect(() => {
     let mounted = true;
     Promise.all([
@@ -125,24 +124,28 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
         if (allChannels.length === 0) return;
 
         const nowHour = new Date().getHours() + new Date().getMinutes() / 60;
-        const parsed = allChannels.slice(0, 3).map((ch: any) => {
+        const parsed = allChannels.slice(0, 3).flatMap((ch: any) => {
           const matchingProg = ch.programs?.find(
             (p: any) => nowHour >= (p.startHour ?? p.startTime ?? 0) && nowHour < (p.endHour ?? p.endTime ?? 24)
           ) || ch.programs?.[0];
-          return {
+          const archivePath = matchingProg?.archivePath || matchingProg?.mediaUrl;
+          if (!archivePath) return [];
+          return [{
             id: ch.id,
             name: ch.name,
             networkTag: (ch.mediaType === 'audio' ? 'AUDIO' : 'TV'),
             currentProgram: matchingProg?.title || 'Continuous Broadcast Stream',
             airTime: matchingProg ? `${Math.floor(matchingProg.startHour ?? 0)}:00 - ${Math.floor(matchingProg.endHour ?? 24)}:00` : 'Live Feed',
-            archivePath: matchingProg?.archivePath || matchingProg?.mediaUrl || '/download/NightOfTheLivingDead/Night_of_the_Living_Dead_512kb.mp4',
-            mediaType: ch.mediaType || (matchingProg?.archivePath?.endsWith('.mp3') ? 'audio' : 'video'),
+            archivePath,
+            mediaType: ch.mediaType || (archivePath.endsWith('.mp3') ? 'audio' : 'video'),
             isLive: true,
-          };
+          } satisfies LiveChannelPreview];
         });
-        setLiveChannels(parsed);
+        if (parsed.length > 0) setLiveChannels(parsed);
       })
-      .catch(() => {});
+      .catch(() => {
+        // Preserve the last-known configured channel previews; do not invent a media source on fetch failure.
+      });
     return () => {
       mounted = false;
     };
@@ -211,7 +214,6 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
             </div>
           </div>
 
-          {/* Right Hero Badge / Status Widget */}
           <div className="w-full lg:w-72 shrink-0 rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-5 backdrop-blur">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
@@ -240,7 +242,6 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
         </div>
       </section>
 
-      {/* ── Live Broadcast Stations Grid ───────────────────────────────────── */}
       <section aria-labelledby="live-stations-heading" className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -313,7 +314,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
         </div>
       </section>
 
-      {/* ── Quick Access Portals Bento ──────────────────────────────────────── */}
+      {/* ── Quick Access Portals Bento ──────────────────────────────────────── */
       <section aria-labelledby="portals-heading" className="space-y-4">
         <h2 id="portals-heading" className="text-lg font-semibold tracking-tight text-neutral-100">
           Broadcast Destinations
@@ -343,14 +344,14 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
             onClick={() => onNavigate('library')}
             className="group flex flex-col items-start rounded-xl border border-neutral-800 bg-neutral-900/40 p-5 text-left transition hover:border-neutral-700 hover:bg-neutral-900/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-105 transition">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 group-hover:scale-105 transition">
               <FolderArchive className="h-5 w-5" />
             </div>
-            <h3 className="mt-3.5 text-sm font-semibold text-neutral-100 group-hover:text-emerald-300">
-              Media Archive & Library
+            <h3 className="mt-3.5 text-sm font-semibold text-neutral-100 group-hover:text-indigo-300">
+              Archive Library
             </h3>
             <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
-              Curated vaults spanning aerospace recordings, historic reels, silent cinema, and radio audio.
+              Browse curated Archive.org television, news, films, radio, and podcast collections.
             </p>
           </button>
 
@@ -360,72 +361,57 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
             onClick={() => onNavigate('search')}
             className="group flex flex-col items-start rounded-xl border border-neutral-800 bg-neutral-900/40 p-5 text-left transition hover:border-neutral-700 hover:bg-neutral-900/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 group-hover:scale-105 transition">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-105 transition">
               <Search className="h-5 w-5" />
             </div>
-            <h3 className="mt-3.5 text-sm font-semibold text-neutral-100 group-hover:text-purple-300">
-              TV News Search Engine
+            <h3 className="mt-3.5 text-sm font-semibold text-neutral-100 group-hover:text-emerald-300">
+              Universal Search
             </h3>
             <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
-              Direct querying across thousands of broadcast transcripts and historical news programs.
+              Find programs, channels, archive media, and broadcast sources across the full AJN catalog.
             </p>
           </button>
         </div>
       </section>
 
-      {/* ── Curated Archive Highlights ──────────────────────────────────────── */}
-      <section aria-labelledby="highlights-heading" className="space-y-4">
+      <section aria-labelledby="archive-highlights-heading" className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400 border border-violet-500/20">
               <Disc3 className="h-4 w-4" />
             </div>
-            <h2 id="highlights-heading" className="text-lg font-semibold tracking-tight text-neutral-100">
-              Curated Vault Highlights
+            <h2 id="archive-highlights-heading" className="text-lg font-semibold tracking-tight text-neutral-100">
+              Archive Highlights
             </h2>
           </div>
-
           <button
             type="button"
-            id="view-all-library-link"
             onClick={() => onNavigate('library')}
             className="flex items-center gap-1 text-xs font-medium text-sky-400 hover:text-sky-300 transition"
           >
-            <span>Explore All in Library</span>
+            <span>Browse Full Archive</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {ARCHIVE_HIGHLIGHTS.map((item) => (
-            <div
-              key={item.id}
-              className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5 transition hover:border-neutral-700 hover:bg-neutral-900/80"
-            >
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-neutral-400">{item.category}</span>
-                  <span className="rounded bg-neutral-800 px-2 py-0.5 text-[10px] font-mono text-neutral-300">
-                    {item.badge}
-                  </span>
-                </div>
-                <h3 className="text-sm font-semibold text-neutral-100">{item.title}</h3>
-                <p className="text-xs text-neutral-400 line-clamp-2">{item.description}</p>
+            <article key={item.id} className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono text-violet-300">{item.badge}</span>
+                <span className="text-[11px] text-neutral-500">{item.duration}</span>
               </div>
-
-              <div className="mt-4 pt-3.5 border-t border-neutral-800 flex items-center justify-between">
-                <span className="text-xs text-neutral-500">{item.duration}</span>
-                <button
-                  type="button"
-                  id={`play-highlight-${item.id}`}
-                  onClick={() => onPlayProgram(item.archivePath, item.title, item.category, item.mediaType)}
-                  className="flex items-center gap-1 rounded-lg bg-neutral-800 px-2.5 py-1.5 text-xs font-medium text-neutral-200 transition hover:bg-sky-600 hover:text-white cursor-pointer"
-                >
-                  <Play className="h-3 w-3 fill-current" />
-                  Stream
-                </button>
-              </div>
-            </div>
+              <h3 className="mt-3 text-sm font-semibold text-neutral-100">{item.title}</h3>
+              <p className="mt-1 text-xs text-neutral-400 leading-relaxed">{item.description}</p>
+              <button
+                type="button"
+                onClick={() => onPlayProgram(item.archivePath, item.title, item.category, item.mediaType)}
+                className="mt-4 flex items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 transition hover:bg-sky-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer"
+              >
+                <Play className="h-3.5 w-3.5 fill-current" />
+                Play
+              </button>
+            </article>
           ))}
         </div>
       </section>
