@@ -2,6 +2,7 @@ import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
 } from './src/types';
 import { getChannelSchedule } from './channels';
+import { CLASSIC_TV_TEST_SCHEDULE } from './src/archive-test-catalog';
 
 export const GUIDES: Guide[] = [
   { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
@@ -52,9 +53,7 @@ const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
 /download/HisGirlFriday1940/His_Girl_Friday_512kb.mp4`,
   },
   {
-    playlist: { id:'playlist-audio-radio', name:'Radio & Audio Vaults',
-      sourceUrl:'https://archive.org/services/m3u/audio-podcasts.m3u', category:'Audio & Podcasts',
-      enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:3 },
+    playlist: { id:'playlist-audio-radio', name:'Radio & Audio Vaults', sourceUrl:'https://archive.org/services/m3u/audio-podcasts.m3u', category:'Audio & Podcasts', enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:3 },
     m3uContent:`#EXTM3U
 #EXTINF:-1 tvg-id="nasa-audio-vault" tvg-name="NASA Spaceflight Audio" group-title="Aerospace & Science",NASA Spaceflight Audio
 /download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3
@@ -128,6 +127,9 @@ export function initializeRegistry() {
   for(const {playlist,m3uContent} of INITIAL_PLAYLISTS) {
     playlistsMap.set(playlist.id,playlist); ingestM3uPlaylist(playlist,m3uContent);
   }
+  // Controlled Archive EPG test channel. Additive: existing News and playlist channels remain unchanged.
+  channelsMap.set(CLASSIC_TV_TEST_SCHEDULE.channel.id, CLASSIC_TV_TEST_SCHEDULE.channel);
+  channelSourcesMap.set(CLASSIC_TV_TEST_SCHEDULE.channel.id, CLASSIC_TV_TEST_SCHEDULE.sources);
 }
 initializeRegistry();
 
@@ -138,7 +140,7 @@ export function getChannelsByGuide(id?:string){
     .map(c=>({...c,sources:channelSourcesMap.get(c.id)||[]}));
 }
 export function getChannelById(id:string){
-  const c=channelsMap.get(id); return c?{...c,sources:channelSourcesMap.get(id)||[]}:undefined;
+  const c=channelsMap.get(id); return c?{...c,sources:channelSourcesMap.get(c.id)||[]}:undefined;
 }
 export function getChannelSources(id:string){return channelSourcesMap.get(id)||[];}
 export function addChannelSource(channelId:string, source:Partial<ChannelSource>) {
@@ -164,16 +166,19 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   const guide=getGuideById(guideId); if(!guide) return [];
   if(guideId==='cable-tv') {
     const news=await getChannelSchedule();
-    return news.map(ch=>({
-      id:ch.id, guideId, name:ch.name, mediaType:'video' as MediaType,
-      group:'News', logo:`https://archive.org/services/img/${ch.id}`, 
-      programs:ch.programs.map((p:any,index:number)=>({
-        id:`${ch.id}-${index+1}`, guideId, channelId:ch.id,
-        title:p.title, description:`Archive.org broadcast: ${p.title}`,
-        startTime:p.startHour, endTime:p.endHour, startHour:p.startHour, endHour:p.endHour,
-        mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath,
-      }))
-    }));
+    return [
+      ...news.map(ch=>({
+        id:ch.id, guideId, name:ch.name, mediaType:'video' as MediaType,
+        group:'News', logo:`https://archive.org/services/img/${ch.id}`,
+        programs:ch.programs.map((p:any,index:number)=>({
+          id:`${ch.id}-${index+1}`, guideId, channelId:ch.id,
+          title:p.title, description:`Archive.org broadcast: ${p.title}`,
+          startTime:p.startHour, endTime:p.endHour, startHour:p.startHour, endHour:p.endHour,
+          mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath,
+        }))
+      })),
+      CLASSIC_TV_TEST_SCHEDULE,
+    ];
   }
   return getChannelsByGuide(guideId).map(ch=>({
     id:ch.id, guideId, name:ch.name, mediaType:ch.mediaType, group:ch.group, logo:ch.logo,
