@@ -1,7 +1,7 @@
 import express from 'express';
 import { buildChannelFromSearch, searchArchiveGeneral } from './archive-discovery.js';
 import { addChannelSource } from './guideRegistry.js';
-import { fetchAjnFeed, getAjnResource, getAjnResources, type AjnFeedId } from './ajnResourceService.js';
+import { fetchAjnFeed, getAjnAffiliateLinks, getAjnResource, getAjnResources, getAjnStreams, type AjnFeedId } from './ajnResourceService.js';
 
 const AJN_FEED_IDS: AjnFeedId[] = ['Alex', 'WarRoom', 'SundayLive', 'AJNHourlyVideo', 'AJNHourlyAudio'];
 
@@ -33,6 +33,8 @@ export function patchServer(app: express.Express) {
     res.json({
       source: 'https://rss.alexjones.media/',
       resources: getAjnResources(),
+      streams: getAjnStreams(),
+      affiliates: getAjnAffiliateLinks(),
       total: getAjnResources().length,
     });
   });
