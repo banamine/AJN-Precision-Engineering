@@ -166,19 +166,26 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   const guide=getGuideById(guideId); if(!guide) return [];
   if(guideId==='cable-tv') {
     const news=await getChannelSchedule();
-    return [
-      ...news.map(ch=>({
-        id:ch.id, guideId, name:ch.name, mediaType:'video' as MediaType,
-        group:'News', logo:`https://archive.org/services/img/${ch.id}`,
-        programs:ch.programs.map((p:any,index:number)=>({
-          id:`${ch.id}-${index+1}`, guideId, channelId:ch.id,
-          title:p.title, description:`Archive.org broadcast: ${p.title}`,
-          startTime:p.startHour, endTime:p.endHour, startHour:p.startHour, endHour:p.endHour,
-          mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath,
-        }))
-      })),
-      CLASSIC_TV_TEST_SCHEDULE,
-    ];
+    const newsChannels: ScheduleChannel[] = news.map(ch=>({
+      id:ch.id, guideId, name:ch.name, mediaType:'video' as MediaType,
+      group:'News', logo:`https://archive.org/services/img/${ch.id}`,
+      programs:ch.programs.map((p:any,index:number)=>({
+        id:`${ch.id}-${index+1}`, guideId, channelId:ch.id,
+        title:p.title, description:`Archive.org broadcast: ${p.title}`,
+        startTime:p.startHour, endTime:p.endHour, startHour:p.startHour, endHour:p.endHour,
+        mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath,
+      }))
+    }));
+    const archiveChannel: ScheduleChannel = {
+      id: CLASSIC_TV_TEST_SCHEDULE.channel.id,
+      guideId,
+      name: CLASSIC_TV_TEST_SCHEDULE.channel.name,
+      mediaType: CLASSIC_TV_TEST_SCHEDULE.channel.mediaType,
+      group: CLASSIC_TV_TEST_SCHEDULE.channel.group,
+      logo: CLASSIC_TV_TEST_SCHEDULE.channel.logo,
+      programs: CLASSIC_TV_TEST_SCHEDULE.programs,
+    };
+    return [...newsChannels, archiveChannel];
   }
   return getChannelsByGuide(guideId).map(ch=>({
     id:ch.id, guideId, name:ch.name, mediaType:ch.mediaType, group:ch.group, logo:ch.logo,
