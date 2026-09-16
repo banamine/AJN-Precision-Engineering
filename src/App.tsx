@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
@@ -8,27 +8,22 @@ import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
 import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
+import { NewsViewer } from './components/NewsViewer';
+import { NEWS_VIEWER_FIXTURE } from './components/NewsViewerFixture';
 
 const ARCHIVE_PROXY_BASE = '/api/archive/proxy?path=';
 const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
 
-/** Resolve a media reference to exactly one playable transport URL. */
 function toPlayableSrc(rawPath: string): string {
   const value = String(rawPath ?? '').trim();
   if (!value) return value;
-
-  // Never double-proxy a path that is already routed through our proxy.
   if (value.startsWith(ARCHIVE_PROXY_BASE)) return value;
 
   try {
     const parsed = new URL(value, window.location.origin);
-
-    // Collapse absolute same-app proxy URLs to a relative URL.
     if (parsed.pathname === '/api/archive/proxy' && parsed.searchParams.has('path')) {
       return `${parsed.pathname}${parsed.search}`;
     }
-
-    // Canonicalize direct Archive.org downloads through the local proxy.
     if (parsed.hostname === 'archive.org' && parsed.pathname.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) {
       const archivePath = `${parsed.pathname}${parsed.search}`;
       return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(archivePath)}`;
@@ -41,7 +36,6 @@ function toPlayableSrc(rawPath: string): string {
     return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(value)}`;
   }
 
-  // Remote HLS/DASH/MP4 and other non-Archive media remain direct.
   return value;
 }
 
@@ -73,8 +67,8 @@ function getDestinationFromHash(): Destination {
 export default function App() {
   const [destination, setDestination] = useState<Destination>(() => getDestinationFromHash());
   const [nowPlaying, setNowPlaying] = useState<NowPlayingMedia | null>(null);
+  const [isNewsFixtureOpen, setIsNewsFixtureOpen] = useState(false);
 
-  // Sync destination with URL hash
   const navigateTo = useCallback((dest: Destination) => {
     setDestination(dest);
     if (typeof window !== 'undefined') {
@@ -91,7 +85,6 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Shared playback activation — updates state & routes into Player
   const handlePlayProgram = useCallback<PlayProgramCallback>((
     archivePath,
     title,
@@ -134,28 +127,24 @@ export default function App() {
       sourceId,
       assetId
     });
-    // Open full player view on direct selection
     setDestination('player');
     if (typeof window !== 'undefined') {
       window.location.hash = '#player';
     }
   }, []);
 
-  // Handle program selection from EPG Guide
   const handleEpgSelect: PlayProgramCallback = useCallback((archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId) => {
     handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId);
   }, [handlePlayProgram]);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
-      {/* ── Canonical Navigation Shell (Desktop topbar + Mobile bottom tab bar) ── */}
       <Navigation
         currentDestination={destination}
         onNavigate={navigateTo}
         nowPlaying={nowPlaying}
       />
 
-      {/* ── Active Destination Viewport ── */}
       <main
         id="canonical-main-viewport"
         className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8"
@@ -193,12 +182,28 @@ export default function App() {
         )}
       </main>
 
-      {/* ── Persistent Mini Player Dock (when playing & outside full player view) ── */}
       {nowPlaying && destination !== 'player' && (
         <MiniPlayerDock
           nowPlaying={nowPlaying}
           onOpenFullPlayer={() => navigateTo('player')}
           onDismiss={() => setNowPlaying(null)}
+        />
+      )}
+
+      <button
+        id="news-viewer-fixture-trigger"
+        type="button"
+        onClick={() => setIsNewsFixtureOpen(true)}
+        className="fixed bottom-20 left-4 z-40 rounded-lg border border-neutral-700 bg-neutral-900/95 px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-sky-400 shadow-xl backdrop-blur-md transition hover:border-sky-500/40 hover:text-sky-300"
+        title="Open controlled News Viewer layout fixture"
+      >
+        Preview News
+      </button>
+
+      {isNewsFixtureOpen && (
+        <NewsViewer
+          article={NEWS_VIEWER_FIXTURE}
+          onClose={() => setIsNewsFixtureOpen(false)}
         />
       )}
     </div>
