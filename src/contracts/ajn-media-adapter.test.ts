@@ -37,9 +37,29 @@ test("adapts an Archive video program without changing its source", () => {
   });
 });
 
-test("does not invent playback for an empty source", () => {
+test("accepts known direct media URLs as playback sources", () => {
   const program: Program = {
     id: "program-2",
+    guideId: "cable-tv",
+    channelId: "live",
+    title: "Live Channel",
+    startTime: 0,
+    endTime: 3600,
+    mediaType: "video",
+    mediaUrl: "https://example.com/live.m3u8",
+  };
+
+  const record = defaultAjnPresentationAdapter.fromProgram(program);
+
+  assert.equal(record.playable, true);
+  assert.equal(record.playbackUrl, program.mediaUrl);
+  assert.equal(record.sourceFamily, "live");
+  assert.equal(record.sourceKind, "live-video");
+});
+
+test("does not invent playback for an empty source", () => {
+  const program: Program = {
+    id: "program-3",
     guideId: "cable-tv",
     channelId: "classic-tv",
     title: "Browse Only",
@@ -52,5 +72,43 @@ test("does not invent playback for an empty source", () => {
   const record = defaultAjnPresentationAdapter.fromProgram(program);
 
   assert.equal(record.playable, false);
+  assert.equal(record.playbackUrl, null);
   assert.equal(defaultAjnPlaybackController.toPlaybackRequest(record), null);
+});
+
+test("does not treat arbitrary title text as playback media", () => {
+  const program: Program = {
+    id: "program-4",
+    guideId: "cable-tv",
+    channelId: "classic-tv",
+    title: "Browse Only",
+    startTime: 0,
+    endTime: 3600,
+    mediaType: "video",
+    mediaUrl: "Classic Episode",
+  };
+
+  const record = defaultAjnPresentationAdapter.fromProgram(program);
+
+  assert.equal(record.playable, false);
+  assert.equal(record.playbackUrl, null);
+  assert.equal(record.sourceFamily, "unknown");
+});
+
+test("does not treat an image asset URL as playback media", () => {
+  const program: Program = {
+    id: "program-5",
+    guideId: "cable-tv",
+    channelId: "classic-tv",
+    title: "Classic Archive",
+    startTime: 0,
+    endTime: 3600,
+    mediaType: "video",
+    mediaUrl: "https://archive.org/download/daily-highlights/Classic%20Archive.png",
+  };
+
+  const record = defaultAjnPresentationAdapter.fromProgram(program);
+
+  assert.equal(record.playable, false);
+  assert.equal(record.playbackUrl, null);
 });
