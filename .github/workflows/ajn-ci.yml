@@ -30,8 +30,35 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Start application server
+        run: |
+          node dist/server.cjs > /tmp/ajn-server.log 2>&1 &
+          echo $! > /tmp/ajn-server.pid
+          for i in {1..30}; do
+            if curl --fail --silent --show-error http://localhost:3000/api/health > /tmp/ajn-health.json; then
+              echo "AJN server is healthy"
+              cat /tmp/ajn-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "AJN server failed to become healthy"
+          cat /tmp/ajn-server.log
+          exit 1
+
       - name: Existing playback regression
         run: npm test
 
       - name: Audio bridge browser regression
         run: npm run test:audio
+
+      - name: Stop application server
+        if: always()
+        run: |
+          if [ -f /tmp/ajn-server.pid ]; then
+            kill "$(cat /tmp/ajn-server.pid)" || true
+          fi
+          if [ -f /tmp/ajn-server.log ]; then
+            echo "--- AJN server log ---"
+            cat /tmp/ajn-server.log
+          fi
