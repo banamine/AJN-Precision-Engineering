@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reportTelemetry } from "./telemetry";
-import { NowPlayingMedia } from "./types";
+import { NowPlayingMedia, MediaType } from "./types";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { useAudioNormalization } from "./use-audio-normalization";
 import { useSignalDiagnostics } from "./use-signal-diagnostics";
@@ -9,6 +9,7 @@ import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 interface MinimalPlayerProps {
   src: string;
   title?: string;
+  mediaType?: MediaType;
   onProgramEnded?: () => void;
   nowPlaying?: NowPlayingMedia;
   onPlayEvent?: () => void;
@@ -19,7 +20,8 @@ interface MinimalPlayerProps {
 const TV_NEWS_SLICE_SEC = 300;
 const TV_NEWS_TOTAL_SEC = 3600;
 
-export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent }: MinimalPlayerProps) {
+export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent }: MinimalPlayerProps) {
+  const mediaRef = useRef<HTMLMediaElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -30,12 +32,20 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
   const [activeSrc, setActiveSrc] = useState(src);
   const [archiveFallbackUsed, setArchiveFallbackUsed] = useState(false);
 
+  const isVideo = mediaType === "video";
   const isArchiveProxy = activeSrc.startsWith("/api/archive/proxy?path=");
+
+  const mediaElement = mediaRef.current;
+  const diagnosticsRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    diagnosticsRef.current = isVideo ? videoRef.current : (mediaRef.current as HTMLVideoElement | null);
+  }, [isVideo]);
 
   const {
     diagnosticsAnalyserRef,
-  } = useAudioNormalization(videoRef, "video", activeSrc);
-  useSignalDiagnostics(videoRef);
+  } = useAudioNormalization(mediaRef as React.RefObject<HTMLVideoElement | null>, isVideo ? "video" : "skip", activeSrc);
+  useSignalDiagnostics(mediaRef as React.RefObject<HTMLVideoElement | null>);
 
   const eventMeta = useCallback(() => ({
     guideId: nowPlaying?.guideId ?? null,
@@ -50,12 +60,12 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
     setActiveSrc(src);
     setArchiveFallbackUsed(false);
     setStatusText("Loading…");
-  }, [src]);
+  }, [src, mediaType]);
 
   useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    vid.load();
+    const media = mediaRef.current;
+    if (!media) return;
+    media.load();
 
     const onPlay = () => {
       setIsPlaying(true); setStatusText("Playing");
@@ -73,10 +83,11 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
       window.setTimeout(() => onProgramEnded?.(), 0);
     };
     const onError = () => {
-      const err = vid.error;
+      const err = media.error;
 
       if (
         err?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
+        isVideo &&
         isArchiveProxy &&
         !archiveFallbackUsed
       ) {
@@ -105,47 +116,62 @@ export default function MinimalPlayer({ src, title, onProgramEnded, nowPlaying, 
         ...eventMeta(),
         mediaErrorCode: err?.code ?? null,
         mediaErrorMessage: err?.message ?? null,
-        readyState: vid.readyState,
-        networkState: vid.networkState,
+        readyState: media.readyState,
+        networkState: media.networkState,
       });
       onErrorEvent?.(err);
     };
 
-    vid.addEventListener("play", onPlay);
-    vid.addEventListener("pause", onPause);
-    vid.addEventListener("ended", onEnded);
-    vid.addEventListener("error", onError);
+    media.addEventListener("play", onPlay);
+    media.addEventListener("pause", onPause);
+    media.addEventListener("ended", onEnded);
+    media.addEventListener("error", onError);
     return () => {
-      vid.removeEventListener("play", onPlay);
-      vid.removeEventListener("pause", onPause);
-      vid.removeEventListener("ended", onEnded);
-      vid.removeEventListener("error", onError);
+      media.removeEventListener("play", onPlay);
+      media.removeEventListener("pause", onPause);
+      media.removeEventListener("ended", onEnded);
+      media.removeEventListener("error", onError);
     };
-  }, [activeSrc, archiveFallbackUsed, eventMeta, isArchiveProxy, onErrorEvent, onPauseEvent, onPlayEvent, onProgramEnded]);
+  }, [activeSrc, archiveFallbackUsed, eventMeta, isArchiveProxy, isVideo, onErrorEvent, onPauseEvent, onPlayEvent, onProgramEnded]);
 
   const play = async () => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    try { await vid.play(); } catch { setStatusText("Playback blocked — click play to start"); }
+    const media = mediaRef.current;
+    if (!media) return;
+    try { await media.play(); } catch { setStatusText("Playback blocked — click play to start"); }
   };
-  const pause = () => videoRef.current?.pause();
+  const pause = () => mediaRef.current?.pause();
 
   return (
-    <div ref={containerRef} className="relative aspect-video w-full bg-black">
-      <video
-        key={activeSrc}
-        ref={videoRef}
-        src={activeSrc}
-        playsInline
-        preload="metadata"
-        className="h-full w-full"
-      />
-      <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/60 flex items-center gap-2">
+    <div ref={containerRef} className={`relative ${isVideo ? "aspect-video w-full bg-black" : "w-full rounded-xl bg-neutral-950 p-4"}`}>
+      {isVideo ? (
+        <video
+          key={`${mediaType}:${activeSrc}`}
+          ref={(node) => {
+            videoRef.current = node;
+            mediaRef.current = node;
+          }}
+          src={activeSrc}
+          playsInline
+          preload="metadata"
+          className="h-full w-full"
+        />
+      ) : (
+        <audio
+          key={`${mediaType}:${activeSrc}`}
+          ref={(node) => {
+            mediaRef.current = node;
+          }}
+          src={activeSrc}
+          preload="metadata"
+          className="w-full"
+        />
+      )}
+      <div className="mt-2 flex items-center gap-2 p-3 bg-black/60">
         <button onClick={isPlaying ? pause : play} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause /> : <Play />}</button>
-        <button onClick={() => { const v=videoRef.current; if(v){v.muted=!v.muted;setIsMuted(v.muted)} }} aria-label="Mute">{isMuted ? <VolumeX/> : <Volume2/>}</button>
-        <span className="text-xs text-white">{statusText}</span>
+        <button onClick={() => { const v=mediaRef.current; if(v){v.muted=!v.muted;setIsMuted(v.muted)} }} aria-label="Mute">{isMuted ? <VolumeX/> : <Volume2/>}</button>
+        <span className="text-xs text-white">{title ? `${title} — ` : ""}{statusText}</span>
       </div>
-      <div className="absolute left-3 right-3 top-3">
+      <div className="mt-3">
         <AudioBridgeStatus analyser={diagnosticsAnalyserRef.current} />
       </div>
     </div>
