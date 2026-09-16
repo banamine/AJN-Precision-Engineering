@@ -35,17 +35,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const isVideo = mediaType === "video";
   const isArchiveProxy = activeSrc.startsWith("/api/archive/proxy?path=");
 
-  const mediaElement = mediaRef.current;
-  const diagnosticsRef = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    diagnosticsRef.current = isVideo ? videoRef.current : (mediaRef.current as HTMLVideoElement | null);
-  }, [isVideo]);
-
-  const {
-    diagnosticsAnalyserRef,
-  } = useAudioNormalization(mediaRef as React.RefObject<HTMLVideoElement | null>, isVideo ? "video" : "skip", activeSrc);
-  useSignalDiagnostics(mediaRef as React.RefObject<HTMLVideoElement | null>);
+  const { diagnosticsAnalyserRef } = useAudioNormalization(
+    mediaRef,
+    isVideo ? "video" : "audio",
+    activeSrc,
+  );
+  useSignalDiagnostics(mediaRef);
 
   const eventMeta = useCallback(() => ({
     guideId: nowPlaying?.guideId ?? null,
