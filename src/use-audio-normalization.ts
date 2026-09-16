@@ -198,7 +198,7 @@ export function useAudioNormalization(
       diagnosticsAnalyserRef.current = diagnosticsAnalyser;
 
       setAudioContextSuspended(ctx.state === "suspended");
-      ctx.addEventListener("statechange", () => {
+      const handleContextStateChange = () => {
         const suspended = ctx.state !== "running";
         setAudioContextSuspended(suspended);
         // ── Mid-session recovery ──────────────────────────────────────────────
@@ -214,7 +214,8 @@ export function useAudioNormalization(
           );
           ctx.resume().catch(() => {});
         }
-      });
+      };
+      ctx.addEventListener("statechange", handleContextStateChange);
 
       return ctx;
     } catch {
