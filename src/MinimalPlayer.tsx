@@ -3,7 +3,6 @@ import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { useAudioNormalization } from "./use-audio-normalization";
-import { useSignalDiagnostics } from "./use-signal-diagnostics";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 
 interface MinimalPlayerProps {
@@ -22,7 +21,6 @@ const TV_NEWS_TOTAL_SEC = 3600;
 
 export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -40,7 +38,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     isVideo ? "video" : "audio",
     activeSrc,
   );
-  useSignalDiagnostics(mediaRef);
 
   const eventMeta = useCallback(() => ({
     guideId: nowPlaying?.guideId ?? null,
@@ -142,10 +139,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         <video
           key={`${mediaType}:${activeSrc}`}
           ref={(node) => {
-            videoRef.current = node;
             mediaRef.current = node;
           }}
           src={activeSrc}
+          crossOrigin="anonymous"
           playsInline
           preload="metadata"
           className="h-full w-full"
@@ -157,6 +154,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             mediaRef.current = node;
           }}
           src={activeSrc}
+          crossOrigin="anonymous"
           preload="metadata"
           className="w-full"
         />
