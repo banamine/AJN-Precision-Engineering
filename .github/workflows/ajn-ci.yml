@@ -52,6 +52,9 @@ jobs:
       - name: Audio bridge browser regression
         run: npm run test:audio
 
+      - name: AudioContext singleton regression
+        run: npm run test:audio-singleton
+
       - name: Stop application server
         if: always()
         run: |
