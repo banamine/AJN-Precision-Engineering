@@ -13,7 +13,8 @@
     "test": "node test.js",
     "test:audio": "node test-audio-bridge.js",
     "test:audio-singleton": "node test-audio-context-singleton.js",
-    "test:audio-video-switch": "node test-audio-video-switch.js"
+    "test:audio-video-switch": "node test-audio-video-switch.js",
+    "test:archive-cors": "node scripts/test-archive-cors-regression.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
