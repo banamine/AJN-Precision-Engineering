@@ -1,0 +1,41 @@
+name: Package AJN Full Drop-In
+
+on:
+  push:
+    branches:
+      - tmp/package-full-dropin-20260915
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create full source ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=zip --output=/tmp/AJN-Precision-Engineering-fix-audio-context-teardown.zip HEAD
+          python3 - <<'PY'
+          import zipfile
+          src = '/tmp/AJN-Precision-Engineering-fix-audio-context-teardown.zip'
+          dst = '/tmp/AJN-Precision-Engineering-fix-audio-context-teardown-clean.zip'
+          excluded = {'.github/workflows/package-dropin.yml'}
+          with zipfile.ZipFile(src, 'r') as zin, zipfile.ZipFile(dst, 'w', zipfile.ZIP_DEFLATED) as zout:
+              for item in zin.infolist():
+                  if item.filename in excluded:
+                      continue
+                  zout.writestr(item, zin.read(item.filename))
+          PY
+          mkdir -p artifact
+          mv /tmp/AJN-Precision-Engineering-fix-audio-context-teardown-clean.zip artifact/AJN-Precision-Engineering-fix-audio-context-teardown-full.zip
+
+      - name: Upload full drop-in
+        uses: actions/upload-artifact@v4
+        with:
+          name: AJN-Precision-Engineering-fix-audio-context-teardown-full
+          path: artifact/AJN-Precision-Engineering-fix-audio-context-teardown-full.zip
+          if-no-files-found: error
