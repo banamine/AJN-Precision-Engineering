@@ -35,3 +35,7 @@ jobs:
 
       - name: Audio bridge browser regression
         run: npm run test:audio
+
+      # CI trigger verification marker: no application behavior change.
+      - name: CI trigger marker
+        run: echo "AJN Application CI trigger verified"
