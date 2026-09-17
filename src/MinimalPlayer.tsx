@@ -28,7 +28,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const lastSavedPositionRef = useRef(0);
   const playingReportedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  // Autoplay starts muted on every app load. Once the user unmutes, keep that
+  // choice for the rest of this app session; a reload intentionally resets it.
+  const [isMuted, setIsMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
@@ -107,7 +109,30 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   useEffect(() => {
     const media = mediaRef.current;
     if (!media) return;
+
+    // Set the property before attempting autoplay. This is required by
+    // browser autoplay policy and avoids relying on JSX timing alone.
+    media.muted = isMuted;
     media.load();
+
+    const attemptAutoplay = async () => {
+      if (!isVideo || !media.paused) return;
+      try {
+        await media.play();
+        if (!media.paused) reportPlaying();
+      } catch (error) {
+        // Autoplay may still be blocked by the browser. Keep the real error
+        // available in the console; the normal Play control remains usable.
+        console.warn("[AJN PLAYBACK] autoplay blocked", {
+          src: media.currentSrc,
+          muted: media.muted,
+          error,
+          readyState: media.readyState,
+          networkState: media.networkState,
+        });
+        if (media.paused) setStatusText("Ready to play");
+      }
+    };
 
     const onLoadedMetadata = () => {
       const saved = readResumePosition();
@@ -116,9 +141,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         setResumePosition(saved);
         setShowResumePrompt(true);
       }
+      void attemptAutoplay();
     };
     const onCanPlay = () => {
-      if (media.paused) setStatusText("Ready to play");
+      if (media.paused) {
+        setStatusText("Ready to play");
+        void attemptAutoplay();
+      }
     };
     const onPlay = reportPlaying;
     const onPlaying = reportPlaying;
@@ -211,7 +240,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       window.removeEventListener("pagehide", saveOnExit);
       saveResumePosition(media);
     };
-  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
+  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isMuted, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
 
   const play = async () => {
     const media = mediaRef.current;
@@ -253,6 +282,14 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     if (media) media.currentTime = 0;
   };
 
+  const toggleMute = () => {
+    const media = mediaRef.current;
+    if (!media) return;
+    const nextMuted = !media.muted;
+    media.muted = nextMuted;
+    setIsMuted(nextMuted);
+  };
+
   return (
     <div ref={containerRef} className={`relative ${isVideo ? "aspect-video w-full bg-black" : "w-full rounded-xl bg-neutral-950 p-4"}`}>
       {isVideo ? (
@@ -260,8 +297,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           key={`${mediaType}:${activeSrc}`}
           ref={(node) => {
             mediaRef.current = node;
+            if (node) node.muted = isMuted;
           }}
           src={activeSrc}
+          autoPlay
+          muted={isMuted}
           playsInline
           preload="metadata"
           className="h-full w-full"
@@ -271,8 +311,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           key={`${mediaType}:${activeSrc}`}
           ref={(node) => {
             mediaRef.current = node;
+            if (node) node.muted = isMuted;
           }}
           src={activeSrc}
+          muted={isMuted}
           crossOrigin="anonymous"
           preload="metadata"
           className="w-full"
@@ -289,7 +331,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       )}
       <div className="mt-2 flex items-center gap-2 bg-black/60 p-3">
         <button onClick={isPlaying ? pause : play} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause /> : <Play />}</button>
-        <button onClick={() => { const v = mediaRef.current; if (v) { v.muted = !v.muted; setIsMuted(v.muted); } }} aria-label="Mute">{isMuted ? <VolumeX /> : <Volume2 />}</button>
+        <button onClick={toggleMute} aria-label={isMuted ? "Unmute" : "Mute"}>{isMuted ? <VolumeX /> : <Volume2 />}</button>
         <span className="text-xs text-white">{title ? `${title} — ` : ""}{statusText}</span>
       </div>
       <div className="mt-3">
