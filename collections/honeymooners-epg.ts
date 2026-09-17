@@ -1,3 +1,4 @@
+import { Program } from '../src/types';
 import { HONEYMOONERS_COLLECTION, HONEYMOONERS_CHANNEL_ID, HONEYMOONERS_CHANNEL_NAME } from './honeymooners-collection';
 
 const ARCHIVE_BASE = 'https://archive.org';
@@ -80,7 +81,7 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
 export async function buildHoneymoonersEpg() {
   const assets = await resolveHoneymoonersAssets();
   const secondsInDay = 24 * 3600;
-  const programs: Array<Record<string, unknown>> = [];
+  const programs: Program[] = [];
   let currentSecond = 0;
   let index = 0;
 
