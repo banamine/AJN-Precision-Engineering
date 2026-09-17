@@ -1,9 +1,20 @@
 import { useCallback, useMemo } from "react";
 import MinimalPlayer from "../MinimalPlayer";
 import { reportTelemetry } from "../telemetry";
+import { markCompleted, clearCompletedState } from "../use-recently-played";
 
 export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: any) {
+  const handlePlaybackStarted = useCallback(() => {
+    const itemId = nowPlaying?.archivePath || nowPlaying?.src;
+    if (itemId) clearCompletedState(itemId);
+  }, [nowPlaying]);
+
   const handleProgramEnded = useCallback(async () => {
+    // MinimalPlayer invokes onProgramEnded from the actual media `ended` event.
+    // Record completion before any schedule request or auto-advance can fail.
+    const itemId = nowPlaying?.archivePath || nowPlaying?.src;
+    if (itemId) markCompleted(itemId);
+
     const guideId = nowPlaying?.guideId || "cable-tv";
     const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`);
     if (!res.ok) return;
@@ -24,7 +35,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: any) {
       assetId: next.metadata?.assetId ?? null,
       mediaPath: (next.archivePath || next.mediaUrl) ?? null,
     });
-    
+
     onSelectProgram(
       next.archivePath || next.mediaUrl,
       next.title,
@@ -54,7 +65,10 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: any) {
         mediaType={nowPlaying.mediaType ?? "video"}
         nowPlaying={nowPlaying}
         onProgramEnded={handleProgramEnded}
-        onPlayEvent={() => console.log("[AJN PLAYBACK] play", meta)}
+        onPlayEvent={() => {
+          handlePlaybackStarted();
+          console.log("[AJN PLAYBACK] play", meta);
+        }}
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={(err) => console.error("[AJN PLAYBACK] error", meta, err)}
       />
