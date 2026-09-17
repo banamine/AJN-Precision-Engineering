@@ -183,7 +183,6 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
         guid: tag(block, 'guid') || '',
         author: tag(block, 'author') || tag(block, 'dc:creator') || '',
         sourceFeed: resource.rssUrl,
-        resourceKind: 'live',
       },
     } as AjnFeedItem;
   }).filter(item => item.url);
