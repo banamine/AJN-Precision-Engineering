@@ -18,6 +18,14 @@ export function AudioBridgeStatus({ analyser = null }: AudioBridgeStatusProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    if (analyser) {
+      // Keep the tap responsive to normal programme audio instead of relying
+      // on the browser's very wide default dB range.
+      analyser.smoothingTimeConstant = 0.72;
+      analyser.minDecibels = -90;
+      analyser.maxDecibels = -10;
+    }
+
     const frequencyData = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
 
     const render = () => {
@@ -32,26 +40,31 @@ export function AudioBridgeStatus({ analyser = null }: AudioBridgeStatusProps) {
       analyser.getByteFrequencyData(frequencyData);
 
       let peak = 0;
+      let total = 0;
       for (let i = 0; i < frequencyData.length; i += 1) {
-        if (frequencyData[i] > peak) peak = frequencyData[i];
+        peak = Math.max(peak, frequencyData[i]);
+        total += frequencyData[i];
       }
-      setSignalActive(peak > 0);
+      const average = frequencyData.length > 0 ? total / frequencyData.length : 0;
+      setSignalActive(peak > 8 || average > 3);
 
       const barWidth = canvas.width / BAR_COUNT;
       for (let bar = 0; bar < BAR_COUNT; bar += 1) {
         const start = Math.floor((bar / BAR_COUNT) * frequencyData.length);
         const end = Math.max(start + 1, Math.floor(((bar + 1) / BAR_COUNT) * frequencyData.length));
         let value = 0;
-        for (let i = start; i < end; i += 1) {
+        for (let i = start; i < end && i < frequencyData.length; i += 1) {
           value = Math.max(value, frequencyData[i]);
         }
 
-        const normalized = value / 255;
+        // Convert the real analyser byte value into a visible height while
+        // retaining a small floor so all 120 real bins remain identifiable.
+        const normalized = Math.min(1, value / 255);
         const barHeight = Math.max(2, normalized * canvas.height);
         const x = bar * barWidth;
         const y = canvas.height - barHeight;
 
-        ctx.fillStyle = value > 0 ? '#38bdf8' : '#1f2937';
+        ctx.fillStyle = value > 8 ? '#38bdf8' : '#1f2937';
         ctx.fillRect(x + 0.5, y, Math.max(1, barWidth - 1), barHeight);
       }
 
