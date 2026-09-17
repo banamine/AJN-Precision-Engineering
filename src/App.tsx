@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
+import { RecentlyPlayed } from './components/RecentlyPlayed';
 import { AjnResourcePanel } from './components/AjnResourcePanel';
 import { TvGuideView } from './components/TvGuideView';
 import { PlayerView } from './components/PlayerView';
@@ -9,6 +10,7 @@ import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
 import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
+import { updateRecentlyPlayed } from './use-recently-played';
 
 const ARCHIVE_PROXY_BASE = '/api/archive/proxy?path=';
 const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
@@ -90,6 +92,9 @@ export default function App() {
       archivePath: rawReference, constructedSrc, title, subtitle,
       mediaType: inferredMediaType, channelId, guideId
     });
+
+    updateRecentlyPlayed(rawReference, title, subtitle, inferredMediaType, constructedSrc);
+
     setNowPlaying({
       src: constructedSrc, title, subtitle, archivePath: rawReference,
       mediaType: inferredMediaType, channelId, guideId, programId, sourceId, assetId
@@ -111,6 +116,7 @@ export default function App() {
         {destination === 'home' && (
           <>
             <HomeView onNavigate={navigateTo} onPlayProgram={handlePlayProgram} nowPlaying={nowPlaying} />
+            <RecentlyPlayed onPlayProgram={handlePlayProgram} />
             <AjnResourcePanel onPlayProgram={handlePlayProgram} />
           </>
         )}
