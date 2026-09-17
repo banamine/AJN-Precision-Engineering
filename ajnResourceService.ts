@@ -47,6 +47,10 @@ export interface AjnFeedItem {
 }
 
 const BASE = 'https://rss.alexjones.media';
+const AUDIO_INDEX_FETCH_URLS: Record<AjnAudioIndex['kind'], string> = {
+  hourly: 'https://www.alexjoneslive.com/affiliates/mp3-hourly/',
+  segment: 'https://www.alexjoneslive.com/affiliates/mp3-segs/',
+};
 const RESOURCES: AjnResourceLink[] = [
   { id: 'Alex', name: 'The Alex Jones Show', mediaType: 'video', htmlUrl: `${BASE}/Alex.html`, rssUrl: `${BASE}/Alex.xml` },
   { id: 'WarRoom', name: 'War Room with Harrison Smith', mediaType: 'video', htmlUrl: `${BASE}/WarRoom.html`, rssUrl: `${BASE}/WarRoom.xml` },
@@ -240,7 +244,7 @@ export function getAjnAudioIndexes(): AjnAudioIndex[] {
 export async function fetchAjnAudioIndex(kind: 'hourly' | 'segment', signal?: AbortSignal): Promise<{ index: AjnAudioIndex; fetchedAt: string; items: AjnFeedItem[]; rawBytes: number }> {
   const index = AUDIO_INDEXES.find(item => item.kind === kind);
   if (!index) throw new Error(`Unknown AJN audio index: ${kind}`);
-  const response = await fetch(index.url, {
+  const response = await fetch(AUDIO_INDEX_FETCH_URLS[kind], {
     signal,
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; AJN-Precision-Engineering/1.0)',
