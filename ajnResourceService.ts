@@ -1,4 +1,7 @@
+import { normalizeAjnFilename } from './src/utils/ajnTitleNormalizer.js';
+
 export type AjnFeedId = 'Alex' | 'WarRoom' | 'SundayLive' | 'AJNHourlyVideo' | 'AJNHourlyAudio';
+export type AjnResourceKind = 'live' | 'hourly' | 'segment';
 
 export interface AjnStreamLink {
   id: string;
@@ -12,6 +15,14 @@ export interface AjnAffiliateLink {
   id: string;
   name: string;
   url: string;
+}
+
+export interface AjnAudioIndex {
+  id: 'mp3-hourly' | 'mp3-segs';
+  name: string;
+  url: string;
+  mediaType: 'audio';
+  kind: 'hourly' | 'segment';
 }
 
 export interface AjnResourceLink {
@@ -56,6 +67,11 @@ const STREAMS: AjnStreamLink[] = [
   { id: 'warroom-stream-4', name: 'War Room Show Feed', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/4/', protocol: 'aac' },
   { id: 'warroom-stream-6', name: 'War Room Show Feed (MP3)', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/6/', protocol: 'mp3' },
   { id: 'network-stream-8', name: 'Network Stream (MP3)', mediaType: 'audio', url: 'https://stream.alexjones.media/stream/8/', protocol: 'mp3' },
+];
+
+const AUDIO_INDEXES: AjnAudioIndex[] = [
+  { id: 'mp3-hourly', name: 'MP3 Hourly Files', url: `${BASE}/mp3-hourly.html`, mediaType: 'audio', kind: 'hourly' },
+  { id: 'mp3-segs', name: 'MP3 Segment Files', url: `${BASE}/mp3-segs.html`, mediaType: 'audio', kind: 'segment' },
 ];
 
 const AFFILIATES: AjnAffiliateLink[] = [
@@ -167,9 +183,74 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
         guid: tag(block, 'guid') || '',
         author: tag(block, 'author') || tag(block, 'dc:creator') || '',
         sourceFeed: resource.rssUrl,
+        resourceKind: 'live',
       },
     } as AjnFeedItem;
   }).filter(item => item.url);
 
   return { resource, fetchedAt: new Date().toISOString(), items, rawBytes: Buffer.byteLength(xml, 'utf8') };
+}
+
+
+function decodeHtml(value: string): string {
+  return value
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function parseAudioIndexUrl(href: string): string | undefined {
+  const value = decodeHtml(href.trim());
+  if (!/^https?:\/\//i.test(value)) return value ? new URL(value, BASE).toString() : undefined;
+  return value;
+}
+
+function parseAudioIndexItems(html: string, index: AjnAudioIndex): AjnFeedItem[] {
+  const records = new Map<string, AjnFeedItem>();
+  const hrefRe = /href=["']([^"']+\.(?:mp3|m4a|aac|ogg|opus|wav)(?:[?#][^"']*)?)["']/gi;
+  for (const match of html.matchAll(hrefRe)) {
+    const url = parseAudioIndexUrl(match[1]);
+    if (!url) continue;
+    const filename = url.split('/').filter(Boolean).pop() || url;
+    const title = normalizeAjnFilename(filename);
+    const id = `ajn:${index.kind}:${url}`;
+    if (records.has(id)) continue;
+    records.set(id, {
+      id,
+      feedId: 'AJNHourlyAudio',
+      title: title || index.name,
+      url,
+      mediaType: 'audio',
+      metadata: {
+        sourceIndex: index.url,
+        resourceKind: index.kind,
+        authoritative: 'true',
+      },
+    });
+  }
+  return [...records.values()];
+}
+
+export function getAjnAudioIndexes(): AjnAudioIndex[] {
+  return AUDIO_INDEXES.map(index => ({ ...index }));
+}
+
+export async function fetchAjnAudioIndex(kind: 'hourly' | 'segment', signal?: AbortSignal): Promise<{ index: AjnAudioIndex; fetchedAt: string; items: AjnFeedItem[]; rawBytes: number }> {
+  const index = AUDIO_INDEXES.find(item => item.kind === kind);
+  if (!index) throw new Error(`Unknown AJN audio index: ${kind}`);
+  const response = await fetch(index.url, {
+    signal,
+    headers: {
+      'User-Agent': 'AJN-Precision-Engineering/1.0',
+      'Accept': 'text/html, application/xhtml+xml;q=0.9, */*;q=0.1',
+      'Cache-Control': 'no-cache',
+    },
+  });
+  if (!response.ok) throw new Error(`AJN audio index ${kind} returned HTTP ${response.status}`);
+  const html = await response.text();
+  const items = parseAudioIndexItems(html, index);
+  return { index, fetchedAt: new Date().toISOString(), items, rawBytes: Buffer.byteLength(html, 'utf8') };
 }
