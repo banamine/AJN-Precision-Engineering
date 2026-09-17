@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Headphones, Play, RefreshCw, Tv } from 'lucide-react';
 import type { MediaType, PlayProgramCallback } from '../types';
 
@@ -37,8 +37,14 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
   const [items, setItems] = useState<AjnFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestController = useRef<AbortController | null>(null);
 
-  const load = async (signal: AbortSignal) => {
+  const load = async () => {
+    requestController.current?.abort();
+    const controller = new AbortController();
+    requestController.current = controller;
+    const { signal } = controller;
+
     setLoading(true);
     setError(null);
     try {
@@ -47,7 +53,7 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
       const nextCatalog = (await catalogResponse.json()) as AjnResourceCatalog;
       setCatalog(nextCatalog);
 
-      const feeds = await Promise.all(
+      const results = await Promise.allSettled(
         nextCatalog.resources.map(async (resource) => {
           const response = await fetch(`/api/ajn/resources/${resource.id}`, { signal });
           if (!response.ok) throw new Error(`${resource.id} HTTP ${response.status}`);
@@ -56,24 +62,39 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
         })
       );
 
+      if (signal.aborted) return;
+
+      const feeds = results
+        .filter((result): result is PromiseFulfilledResult<AjnFeedItem[]> => result.status === 'fulfilled')
+        .flatMap((result) => result.value);
+      const failures = results.filter((result) => result.status === 'rejected');
+
       const merged = feeds
-        .flat()
         .filter((item) => item.url)
         .sort((a, b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')))
         .slice(0, 12);
       setItems(merged);
+
+      if (merged.length === 0 && failures.length > 0) {
+        setError('AJN resource feeds are currently unavailable.');
+      } else if (failures.length > 0) {
+        setError(`${failures.length} AJN resource feed${failures.length === 1 ? '' : 's'} unavailable; showing available items.`);
+      }
     } catch (err) {
       if (signal.aborted) return;
       setError(err instanceof Error ? err.message : 'Unable to load AJN resources');
     } finally {
       if (!signal.aborted) setLoading(false);
+      if (requestController.current === controller) requestController.current = null;
     }
   };
 
   useEffect(() => {
-    const controller = new AbortController();
-    void load(controller.signal);
-    return () => controller.abort();
+    void load();
+    return () => {
+      requestController.current?.abort();
+      requestController.current = null;
+    };
   }, []);
 
   return (
@@ -94,10 +115,7 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
         </div>
         <button
           type="button"
-          onClick={() => {
-            const controller = new AbortController();
-            void load(controller.signal);
-          }}
+          onClick={() => void load()}
           className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
           disabled={loading}
         >
