@@ -142,7 +142,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             mediaRef.current = node;
           }}
           src={activeSrc}
-          crossOrigin="anonymous"
           playsInline
           preload="metadata"
           className="h-full w-full"
