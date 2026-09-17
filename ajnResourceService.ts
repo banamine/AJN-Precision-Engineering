@@ -243,9 +243,10 @@ export async function fetchAjnAudioIndex(kind: 'hourly' | 'segment', signal?: Ab
   const response = await fetch(index.url, {
     signal,
     headers: {
-      'User-Agent': 'AJN-Precision-Engineering/1.0',
+      'User-Agent': 'Mozilla/5.0 (compatible; AJN-Precision-Engineering/1.0)',
       'Accept': 'text/html, application/xhtml+xml;q=0.9, */*;q=0.1',
       'Cache-Control': 'no-cache',
+      'Referer': BASE + '/',
     },
   });
   if (!response.ok) throw new Error(`AJN audio index ${kind} returned HTTP ${response.status}`);
