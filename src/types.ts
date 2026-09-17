@@ -103,6 +103,20 @@ export interface NowPlayingMedia {
   isLive?: boolean;
 }
 
+export interface RecentlyPlayedItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  mediaType: MediaType;
+  src: string;
+  archivePath?: string;
+  thumbnailUrl?: string;
+  duration?: string;
+  lastPlayedAt: number;
+  completed: boolean;
+  resumePosition?: number;
+}
+
 export interface LibraryItem {
   id: string;
   title: string;
