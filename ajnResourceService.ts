@@ -104,6 +104,13 @@ function mediaUrl(block: string): string | undefined {
     || tag(block, 'guid');
 }
 
+function inferMediaType(url: string, fallback: 'video' | 'audio'): 'video' | 'audio' {
+  const normalized = url.split('?')[0].split('#')[0].toLowerCase();
+  if (/\.(mp4|m4v|webm|mov|mkv|m3u8)$/.test(normalized)) return 'video';
+  if (/\.(mp3|aac|m4a|ogg|oga|opus|wav|flac)$/.test(normalized)) return 'audio';
+  return fallback;
+}
+
 function itemId(feedId: AjnFeedId, block: string, index: number): string {
   const guid = tag(block, 'guid');
   if (guid) return `${feedId}:${guid}`;
@@ -151,7 +158,7 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
       feedId: id,
       title: tag(block, 'title') || `AJN ${resource.name}`,
       url: url || '',
-      mediaType: resource.mediaType,
+      mediaType: url ? inferMediaType(url, resource.mediaType) : resource.mediaType,
       publishedAt: tag(block, 'pubDate') || tag(block, 'dc:date'),
       description: tag(block, 'description'),
       duration: tag(block, 'itunes:duration'),
