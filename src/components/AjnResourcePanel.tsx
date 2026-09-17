@@ -32,6 +32,13 @@ interface Props {
   onPlayProgram: PlayProgramCallback;
 }
 
+function mediaTypeFromUrl(url: string, fallback: MediaType): MediaType {
+  const normalized = url.split('?')[0].split('#')[0].toLowerCase();
+  if (/\.(mp4|m4v|webm|mov|mkv|m3u8)$/.test(normalized)) return 'video';
+  if (/\.(mp3|aac|m4a|ogg|oga|opus|wav|flac)$/.test(normalized)) return 'audio';
+  return fallback;
+}
+
 export function AjnResourcePanel({ onPlayProgram }: Props) {
   const [catalog, setCatalog] = useState<AjnResourceCatalog | null>(null);
   const [items, setItems] = useState<AjnFeedItem[]>([]);
@@ -66,16 +73,23 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
 
       const feeds = results
         .filter((result): result is PromiseFulfilledResult<AjnFeedItem[]> => result.status === 'fulfilled')
-        .flatMap((result) => result.value);
+        .flatMap((result) => result.value)
+        .filter((item) => item.url)
+        .map((item) => ({ ...item, mediaType: mediaTypeFromUrl(item.url!, item.mediaType) }));
       const failures = results.filter((result) => result.status === 'rejected');
 
-      const merged = feeds
-        .filter((item) => item.url)
+      const videoItems = feeds
+        .filter((item) => item.mediaType === 'video')
         .sort((a, b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')))
-        .slice(0, 12);
-      setItems(merged);
+        .slice(0, 6);
+      const audioItems = feeds
+        .filter((item) => item.mediaType === 'audio')
+        .sort((a, b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')))
+        .slice(0, 6);
 
-      if (merged.length === 0 && failures.length > 0) {
+      setItems([...videoItems, ...audioItems]);
+
+      if (feeds.length === 0 && failures.length > 0) {
         setError('AJN resource feeds are currently unavailable.');
       } else if (failures.length > 0) {
         setError(`${failures.length} AJN resource feed${failures.length === 1 ? '' : 's'} unavailable; showing available items.`);
