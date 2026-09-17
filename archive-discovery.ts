@@ -8,21 +8,15 @@ const USER_AGENT = "AJN-Precision-Engineering/1.0";
 const REQUEST_TIMEOUT_MS = 60000;
 const MAX_ATTEMPTS = 3;
 const RETRYABLE = new Set([429, 500, 502, 503, 504]);
-
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchJson(url: string): Promise<any> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
+      const res = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
       if (res.ok) return await res.json();
       if (!RETRYABLE.has(res.status) || attempt === MAX_ATTEMPTS) return null;
-    } catch {
-      if (attempt === MAX_ATTEMPTS) return null;
-    }
+    } catch { if (attempt === MAX_ATTEMPTS) return null; }
     await sleep(500 * 2 ** (attempt - 1));
   }
   return null;
@@ -45,7 +39,7 @@ function classify(name: string): MediaAsset["category"] {
   const n = name.toLowerCase();
   if (n.includes("trailer")) return "trailer";
   if (n.includes("colorized") || n.includes("colorised")) return "colorized";
-  if (n.includes("alternate") || n.includes("alternate")) return "alternate";
+  if (n.includes("alternate")) return "alternate";
   if (n.includes("clip") || n.includes("promo")) return "compilation";
   if (n.includes("short")) return "short";
   if (n.includes("restored")) return "restored";
@@ -68,17 +62,14 @@ function durationSeconds(file: any): number {
   return Number.isFinite(raw) && raw > 0 ? Math.round(raw) : 3600;
 }
 
-export async function buildChannelFromSearch(
-  query: string,
-  channelId: string,
-  channelName: string,
-  maxAssets = 50
-): Promise<PlayoutChannel> {
+export async function buildChannelFromSearch(query: string, channelId: string, channelName: string, maxAssets = 50): Promise<PlayoutChannel> {
   const docs = await searchArchiveGeneral(query, 25);
+  return buildChannelFromDocuments(docs, channelId, channelName, maxAssets);
+}
+
+async function buildChannelFromDocuments(docs: any[], channelId: string, channelName: string, maxAssets = 50): Promise<PlayoutChannel> {
   const assets: (MediaAsset & { _fileIdentity: string })[] = [];
   const seen = new Set<string>();
-
-  // Intentionally bounded: Archive.org is queried with at most 4 concurrent metadata requests.
   let cursor = 0;
   const workers = Array.from({ length: Math.min(4, docs.length) }, async () => {
     while (cursor < docs.length) {
@@ -86,72 +77,30 @@ export async function buildChannelFromSearch(
       if (!doc?.identifier) continue;
       const meta = await fetchMetadata(doc.identifier);
       if (!meta) continue;
-
       for (const file of meta.files || []) {
         const name = String(file.name || "");
         const lower = name.toLowerCase();
         if (!(lower.endsWith(".mp4") || lower.endsWith(".m4v"))) continue;
-
         const category = classify(name);
         const q = quality(name, file);
-        // Collapse duplicate .ia.mp4/.mp4 representations, but preserve presentation/quality variants.
         const identity = `${doc.identifier}|${category}|${q}`;
         if (seen.has(identity)) continue;
         seen.add(identity);
-
-        assets.push({
-          id: `asset-${doc.identifier}-${name}`,
-          title: doc.title || doc.identifier,
-          source: "archive.org",
-          archiveIdentifier: doc.identifier,
-          mediaUrl: `/download/${doc.identifier}/${encodeURIComponent(name).replace(/%2F/g, "/")}`,
-          mediaType: "mp4",
-          category,
-          quality: { label: q },
-          durationSeconds: durationSeconds(file),
-          playable: true,
-          _fileIdentity: identity,
-        });
+        assets.push({ id: `asset-${doc.identifier}-${name}`, title: doc.title || doc.identifier, source: "archive.org", archiveIdentifier: doc.identifier, mediaUrl: `/download/${doc.identifier}/${encodeURIComponent(name).replace(/%2F/g, "/")}`, mediaType: "mp4", category, quality: { label: q }, durationSeconds: durationSeconds(file), playable: true, _fileIdentity: identity });
       }
     }
   });
-
   await Promise.all(workers);
   const playlistAssets = assets.slice(0, Math.max(1, maxAssets));
-  const playlist: any = playlistAssets.map((asset, index) => ({
-    id: `${channelId}-${index + 1}`,
-    title: asset.title,
-    archivePath: asset.mediaUrl,
-    durationSeconds: asset.durationSeconds,
-    mediaType: "video",
-    assetId: asset.id,
-    category: asset.category,
-  }));
-
-  const channel: PlayoutChannel = {
-    id: channelId,
-    name: channelName,
-    playlist: playlistAssets,
-    loop: true,
-    shuffle: false,
-    maxAssets,
-    programs: playlist,
-  } as PlayoutChannel;
-
-  const sources: ChannelSource[] = playlistAssets.map(asset => ({
-    id: `src-${asset.id}`,
-    channelId,
-    type: "direct_archive",
-    url: asset.mediaUrl,
-    title: asset.title,
-  } as ChannelSource));
-
+  const playlist: any = playlistAssets.map((asset, index) => ({ id: `${channelId}-${index + 1}`, title: asset.title, archivePath: asset.mediaUrl, durationSeconds: asset.durationSeconds, mediaType: "video", assetId: asset.id, category: asset.category }));
+  const channel: PlayoutChannel = { id: channelId, name: channelName, playlist: playlistAssets, loop: true, shuffle: false, maxAssets, programs: playlist } as PlayoutChannel;
+  const sources: ChannelSource[] = playlistAssets.map(asset => ({ id: `src-${asset.id}`, channelId, type: "direct_archive", url: asset.mediaUrl, title: asset.title } as ChannelSource));
   setChannelSources(channelId, sources);
-  addChannel({
-    id: channelId,
-    name: channelName,
-    sources,
-  } as any);
-
+  addChannel({ id: channelId, name: channelName, sources } as any);
   return channel;
+}
+
+/** Resolve a preselected Archive.org identifier list without broad search. */
+export async function buildChannelFromIdentifiers(identifiers: readonly string[], channelId: string, channelName: string, maxAssets = 100): Promise<PlayoutChannel> {
+  return buildChannelFromDocuments(identifiers.map(identifier => ({ identifier })), channelId, channelName, maxAssets);
 }
