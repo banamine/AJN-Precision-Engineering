@@ -61,7 +61,7 @@ const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
 #EXTINF:-1 tvg-id="nasa-audio-vault" tvg-name="NASA Spaceflight Audio" group-title="Aerospace & Science",NASA Spaceflight Audio
 /download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3
 #EXTINF:-1 tvg-id="radio-drama-theatre" tvg-name="Old Time Radio Theatre" group-title="Audio Drama",Old Time Radio Theatre
-/download/OTRR_Mercury_Theater_on_the_Air_Singles/Mercury_381030_WarOfTheWorlds.mp3
+/download/OTRR_Mercury_Theater_on_the_Air_Singles/Mercury_381030_WarOfTheWorlds.mp3`,
   },
 ];
 
