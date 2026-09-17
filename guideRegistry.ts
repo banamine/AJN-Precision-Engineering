@@ -62,8 +62,6 @@ const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
 /download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3
 #EXTINF:-1 tvg-id="radio-drama-theatre" tvg-name="Old Time Radio Theatre" group-title="Audio Drama",Old Time Radio Theatre
 /download/OTRR_Mercury_Theater_on_the_Air_Singles/Mercury_381030_WarOfTheWorlds.mp3
-#EXTINF:-1 tvg-id="global-news-radio" tvg-name="Global News Radio" group-title="News Radio",Global News Radio
-/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3`,
   },
 ];
 
