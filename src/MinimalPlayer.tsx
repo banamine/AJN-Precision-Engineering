@@ -18,10 +18,15 @@ interface MinimalPlayerProps {
 
 const TV_NEWS_SLICE_SEC = 300;
 const TV_NEWS_TOTAL_SEC = 3600;
+const RESUME_MIN_SEC = 5;
+const RESUME_SAVE_INTERVAL_MS = 5000;
+const RESUME_PREFIX = "ajn-playback-position:";
 
 export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastSavedPositionRef = useRef(0);
+  const playingReportedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -29,9 +34,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [statusText, setStatusText] = useState("Loading…");
   const [activeSrc, setActiveSrc] = useState(src);
   const [archiveFallbackUsed, setArchiveFallbackUsed] = useState(false);
+  const [resumePosition, setResumePosition] = useState<number | null>(null);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const isVideo = mediaType === "video";
   const isArchiveProxy = activeSrc.startsWith("/api/archive/proxy?path=");
+  const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
   const { diagnosticsAnalyserRef } = useAudioNormalization(
     mediaRef,
@@ -48,10 +56,52 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     mediaPath: nowPlaying?.archivePath ?? activeSrc ?? null,
   }), [nowPlaying, activeSrc]);
 
+  const readResumePosition = useCallback(() => {
+    try {
+      const saved = Number.parseFloat(localStorage.getItem(resumeKey) ?? "");
+      return Number.isFinite(saved) && saved >= RESUME_MIN_SEC ? saved : null;
+    } catch {
+      return null;
+    }
+  }, [resumeKey]);
+
+  const saveResumePosition = useCallback((media: HTMLMediaElement) => {
+    if (!Number.isFinite(media.currentTime) || media.currentTime < RESUME_MIN_SEC) return;
+    if (Number.isFinite(media.duration) && media.duration > 0 && media.currentTime >= media.duration - 5) {
+      try { localStorage.removeItem(resumeKey); } catch {}
+      return;
+    }
+    const now = Date.now();
+    if (now - lastSavedPositionRef.current < RESUME_SAVE_INTERVAL_MS) return;
+    lastSavedPositionRef.current = now;
+    try { localStorage.setItem(resumeKey, String(media.currentTime)); } catch {}
+  }, [resumeKey]);
+
+  const clearResumePosition = useCallback(() => {
+    try { localStorage.removeItem(resumeKey); } catch {}
+    setResumePosition(null);
+    setShowResumePrompt(false);
+  }, [resumeKey]);
+
+  const reportPlaying = useCallback(() => {
+    setIsPlaying(true);
+    setStatusText("Playing");
+    if (!playingReportedRef.current) {
+      playingReportedRef.current = true;
+      reportTelemetry({ event: "playback.started", ...eventMeta() });
+      onPlayEvent?.();
+    }
+  }, [eventMeta, onPlayEvent]);
+
   useEffect(() => {
     setActiveSrc(src);
     setArchiveFallbackUsed(false);
     setStatusText("Loading…");
+    setIsPlaying(false);
+    setResumePosition(null);
+    setShowResumePrompt(false);
+    playingReportedRef.current = false;
+    lastSavedPositionRef.current = 0;
   }, [src, mediaType]);
 
   useEffect(() => {
@@ -59,18 +109,37 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     if (!media) return;
     media.load();
 
-    const onPlay = () => {
-      setIsPlaying(true); setStatusText("Playing");
-      reportTelemetry({ event: "playback.started", ...eventMeta() });
-      onPlayEvent?.();
+    const onLoadedMetadata = () => {
+      const saved = readResumePosition();
+      setStatusText("Ready");
+      if (saved !== null && (!Number.isFinite(media.duration) || saved < media.duration - 5)) {
+        setResumePosition(saved);
+        setShowResumePrompt(true);
+      }
     };
+    const onCanPlay = () => {
+      if (media.paused) setStatusText("Ready to play");
+    };
+    const onPlay = reportPlaying;
+    const onPlaying = reportPlaying;
+    const onTimeUpdate = () => {
+      if (!media.paused) {
+        reportPlaying();
+        saveResumePosition(media);
+      }
+    };
+    const onWaiting = () => setStatusText("Buffering…");
+    const onStalled = () => setStatusText("Network stalled…");
     const onPause = () => {
       setIsPlaying(false);
+      saveResumePosition(media);
       reportTelemetry({ event: "playback.paused", ...eventMeta() });
       onPauseEvent?.();
     };
     const onEnded = () => {
       setIsPlaying(false);
+      playingReportedRef.current = false;
+      clearResumePosition();
       reportTelemetry({ event: "playback.ended", ...eventMeta() });
       window.setTimeout(() => onProgramEnded?.(), 0);
     };
@@ -114,24 +183,75 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       onErrorEvent?.(err);
     };
 
+    media.addEventListener("loadedmetadata", onLoadedMetadata);
+    media.addEventListener("canplay", onCanPlay);
     media.addEventListener("play", onPlay);
+    media.addEventListener("playing", onPlaying);
+    media.addEventListener("timeupdate", onTimeUpdate);
+    media.addEventListener("waiting", onWaiting);
+    media.addEventListener("stalled", onStalled);
     media.addEventListener("pause", onPause);
     media.addEventListener("ended", onEnded);
     media.addEventListener("error", onError);
+
+    const saveOnExit = () => saveResumePosition(media);
+    window.addEventListener("pagehide", saveOnExit);
+
     return () => {
+      media.removeEventListener("loadedmetadata", onLoadedMetadata);
+      media.removeEventListener("canplay", onCanPlay);
       media.removeEventListener("play", onPlay);
+      media.removeEventListener("playing", onPlaying);
+      media.removeEventListener("timeupdate", onTimeUpdate);
+      media.removeEventListener("waiting", onWaiting);
+      media.removeEventListener("stalled", onStalled);
       media.removeEventListener("pause", onPause);
       media.removeEventListener("ended", onEnded);
       media.removeEventListener("error", onError);
+      window.removeEventListener("pagehide", saveOnExit);
+      saveResumePosition(media);
     };
-  }, [activeSrc, archiveFallbackUsed, eventMeta, isArchiveProxy, isVideo, onErrorEvent, onPauseEvent, onPlayEvent, onProgramEnded]);
+  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
 
   const play = async () => {
     const media = mediaRef.current;
     if (!media) return;
-    try { await media.play(); } catch { setStatusText("Playback blocked — click play to start"); }
+    setStatusText("Starting playback…");
+    try {
+      await media.play();
+      if (!media.paused) reportPlaying();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setStatusText(`Playback failed — ${message}`);
+      console.error("[AJN PLAYBACK] play() rejected", {
+        src: media.currentSrc,
+        error,
+        readyState: media.readyState,
+        networkState: media.networkState,
+        mediaError: media.error,
+      });
+    }
   };
   const pause = () => mediaRef.current?.pause();
+
+  const resume = async () => {
+    const media = mediaRef.current;
+    if (!media || resumePosition === null) return;
+    try {
+      media.currentTime = Math.min(resumePosition, Math.max(0, media.duration - 1));
+      setShowResumePrompt(false);
+      await media.play();
+    } catch (error) {
+      console.error("[AJN PLAYBACK] resume() rejected", error);
+      setStatusText(`Playback failed — ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const startOver = () => {
+    const media = mediaRef.current;
+    clearResumePosition();
+    if (media) media.currentTime = 0;
+  };
 
   return (
     <div ref={containerRef} className={`relative ${isVideo ? "aspect-video w-full bg-black" : "w-full rounded-xl bg-neutral-950 p-4"}`}>
@@ -158,9 +278,18 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           className="w-full"
         />
       )}
-      <div className="mt-2 flex items-center gap-2 p-3 bg-black/60">
+      {showResumePrompt && resumePosition !== null && (
+        <div className="absolute left-3 right-3 top-3 z-10 flex items-center justify-between gap-3 rounded-lg bg-black/85 p-3 text-white shadow-lg">
+          <span className="text-sm">Resume from {Math.floor(resumePosition / 60)}:{String(Math.floor(resumePosition % 60)).padStart(2, "0")}?</span>
+          <div className="flex gap-2">
+            <button onClick={resume} className="rounded bg-white px-3 py-1 text-xs font-medium text-black">Resume</button>
+            <button onClick={startOver} className="rounded border border-white/40 px-3 py-1 text-xs">Start Over</button>
+          </div>
+        </div>
+      )}
+      <div className="mt-2 flex items-center gap-2 bg-black/60 p-3">
         <button onClick={isPlaying ? pause : play} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause /> : <Play />}</button>
-        <button onClick={() => { const v=mediaRef.current; if(v){v.muted=!v.muted;setIsMuted(v.muted)} }} aria-label="Mute">{isMuted ? <VolumeX/> : <Volume2/>}</button>
+        <button onClick={() => { const v = mediaRef.current; if (v) { v.muted = !v.muted; setIsMuted(v.muted); } }} aria-label="Mute">{isMuted ? <VolumeX /> : <Volume2 />}</button>
         <span className="text-xs text-white">{title ? `${title} — ` : ""}{statusText}</span>
       </div>
       <div className="mt-3">
