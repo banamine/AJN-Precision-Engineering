@@ -46,6 +46,12 @@ jobs:
           cat /tmp/ajn-server.log
           exit 1
 
+      - name: AJN radio resource smoke
+        run: |
+          curl --fail --silent --show-error http://localhost:3000/api/ajn/resources > /tmp/ajn-resources.json
+          curl --fail --silent --show-error http://localhost:3000/api/ajn/audio/hourly > /tmp/ajn-hourly.json
+          curl --fail --silent --show-error http://localhost:3000/api/ajn/audio/segment > /tmp/ajn-segment.json
+          node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('/tmp/ajn-resources.json')); const h=JSON.parse(fs.readFileSync('/tmp/ajn-hourly.json')); const s=JSON.parse(fs.readFileSync('/tmp/ajn-segment.json')); if(!r.audioIndexes?.some(x=>x.id==='mp3-hourly')||!r.audioIndexes?.some(x=>x.id==='mp3-segs')) throw new Error('Missing AJN audio index contract'); if(h.index?.kind!=='hourly'||!h.items?.every(x=>x.mediaType==='audio'&&x.metadata?.resourceKind==='hourly')) throw new Error('Invalid hourly resource payload'); if(s.index?.kind!=='segment'||!s.items?.every(x=>x.mediaType==='audio'&&x.metadata?.resourceKind==='segment')) throw new Error('Invalid segment resource payload'); console.log(JSON.stringify({audioIndexes:r.audioIndexes,hourlyCount:h.items.length,segmentCount:s.items.length},null,2));"
       - name: Existing playback regression
         run: npm test
 
