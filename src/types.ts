@@ -103,6 +103,12 @@ export interface NowPlayingMedia {
   isLive?: boolean;
 }
 
+export interface RecentlyPlayedItem extends NowPlayingMedia {
+  id: string;
+  progressSeconds: number;
+  updatedAt: number;
+}
+
 export interface LibraryItem {
   id: string;
   title: string;

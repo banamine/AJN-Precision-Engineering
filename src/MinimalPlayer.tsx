@@ -14,6 +14,7 @@ interface MinimalPlayerProps {
   onPlayEvent?: () => void;
   onPauseEvent?: () => void;
   onErrorEvent?: (err: MediaError | null) => void;
+  onProgressEvent?: (positionSeconds: number) => void;
 }
 
 const TV_NEWS_SLICE_SEC = 300;
@@ -22,7 +23,7 @@ const RESUME_MIN_SEC = 5;
 const RESUME_SAVE_INTERVAL_MS = 5000;
 const RESUME_PREFIX = "ajn-playback-position:";
 
-export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent }: MinimalPlayerProps) {
+export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSavedPositionRef = useRef(0);
@@ -65,9 +66,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     } catch {
       return null;
     }
-  }, [resumeKey]);
+  }, [onProgressEvent, resumeKey]);
 
   const saveResumePosition = useCallback((media: HTMLMediaElement) => {
+    if (Number.isFinite(media.currentTime)) onProgressEvent?.(media.currentTime);
     if (!Number.isFinite(media.currentTime) || media.currentTime < RESUME_MIN_SEC) return;
     if (Number.isFinite(media.duration) && media.duration > 0 && media.currentTime >= media.duration - 5) {
       try { localStorage.removeItem(resumeKey); } catch {}
