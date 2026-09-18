@@ -44,7 +44,7 @@ const PROGRAM_COLLECTIONS = [
   {
     title: 'Classic Archive',
     description: 'Classic television, cinema and historical programs.',
-    image: 'https://archive.org/download/daily-highlights/Classic%20Archive.png',
+    image: '/Classic%20Archive.png',
     accent: 'text-amber-300',
     badge: 'CLASSIC TV',
     action: 'library' as Destination,
