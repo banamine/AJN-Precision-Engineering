@@ -29,14 +29,14 @@ const FEATURED_BROADCAST = {
   duration: '45 mins',
   tag: 'Curated Feature',
   mediaType: 'audio' as MediaType,
-  image: 'https://archive.org/download/daily-highlights/Classic%20Archive.png',
+  image: '/Classic%20Archive.png',
 };
 
 const PROGRAM_COLLECTIONS = [
   {
     title: 'Special Coverage',
     description: 'Archive reports, breaking coverage and preserved broadcast material.',
-    image: 'https://dn720602.ca.archive.org/0/items/daily-highlights/Special%20Report.png',
+    image: '/Special%20Report.png',
     accent: 'text-sky-300',
     badge: 'SPECIAL REPORT',
     action: 'library' as Destination,
@@ -44,7 +44,7 @@ const PROGRAM_COLLECTIONS = [
   {
     title: 'Classic Archive',
     description: 'Classic television, cinema and historical programs.',
-    image: 'https://archive.org/download/daily-highlights/Classic%20Archive.png',
+    image: '/Classic%20Archive.png',
     accent: 'text-amber-300',
     badge: 'CLASSIC TV',
     action: 'library' as Destination,
@@ -52,7 +52,7 @@ const PROGRAM_COLLECTIONS = [
   {
     title: 'Emergency Broadcast',
     description: 'Continuous-access emergency and special broadcast presentation.',
-    image: 'https://archive.org/download/daily-highlights/Emergency%20Broadcast.png',
+    image: '/Emergency%20Broadcast.png',
     accent: 'text-rose-300',
     badge: 'EMERGENCY',
     action: 'tv-guide' as Destination,
