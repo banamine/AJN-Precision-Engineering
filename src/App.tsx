@@ -165,6 +165,11 @@ export default function App() {
     handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId);
   }, [handlePlayProgram]);
 
+  const updateRecentlyPlayedProgress = useCallback((itemId: string, positionSeconds: number) => {
+    if (!Number.isFinite(positionSeconds) || positionSeconds < 0) return;
+    setRecentlyPlayed((items) => items.map((item) => item.id === itemId ? { ...item, progressSeconds: positionSeconds, updatedAt: Date.now() } : item));
+  }, []);
+
   const resumeRecentlyPlayed = useCallback((item: RecentlyPlayedItem) => {
     setNowPlaying(item);
     setRecentlyPlayed((items) => [item, ...items.filter((candidate) => candidate.id !== item.id)].slice(0, RECENTLY_PLAYED_LIMIT));
@@ -189,7 +194,7 @@ export default function App() {
           </>
         )}
         {destination === 'tv-guide' && <TvGuideView onSelectProgram={handleEpgSelect} />}
-        {destination === 'player' && <PlayerView nowPlaying={nowPlaying} onSelectProgram={handlePlayProgram} onNavigate={navigateTo} />}
+        {destination === 'player' && <PlayerView nowPlaying={nowPlaying} onSelectProgram={handlePlayProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />}
         {destination === 'library' && <LibraryView onPlayProgram={handlePlayProgram} />}
         {destination === 'search' && <SearchView onPlayProgram={handlePlayProgram} />}
         {destination === 'dev' && <DevModeView onNavigate={navigateTo} />}
