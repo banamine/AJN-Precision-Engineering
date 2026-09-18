@@ -97,7 +97,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
   return (
     <div className="space-y-10 pb-16">
       <section className="relative isolate overflow-hidden rounded-2xl border border-sky-500/20 bg-neutral-950 shadow-2xl">
-        <img src={nowPlaying?.image || FEATURED_BROADCAST.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+        <img src={FEATURED_BROADCAST.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/90 to-neutral-950/55" />
         <div className="relative z-10 min-h-[330px] flex flex-col justify-end p-6 sm:p-8 lg:p-10">
           <div className="max-w-3xl space-y-4">
