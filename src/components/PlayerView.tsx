@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import MinimalPlayer from "../MinimalPlayer";
 import { reportTelemetry } from "../telemetry";
 
-export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: any) {
+export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress }: any) {
   const handleProgramEnded = useCallback(async () => {
     const guideId = nowPlaying?.guideId || "cable-tv";
     const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`);
@@ -57,6 +57,10 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: any) {
         onPlayEvent={() => console.log("[AJN PLAYBACK] play", meta)}
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={(err) => console.error("[AJN PLAYBACK] error", meta, err)}
+        onProgressEvent={(positionSeconds: number) => {
+          const itemId = nowPlaying.assetId || nowPlaying.programId || nowPlaying.sourceId || nowPlaying.archivePath || nowPlaying.src;
+          onProgress?.(itemId, positionSeconds);
+        }}
       />
       {(import.meta as any).env?.DEV && (
         <details aria-label="Developer playback diagnostics" className="rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-xs font-mono">
