@@ -89,11 +89,11 @@ jobs:
               await page.setViewport({ width: 1360, height: 768 });
 
               for (const [name, path] of [
-                ['home', '/'],
-                ['library', '/library'],
-                ['guide', '/guide'],
-                ['search', '/search'],
-                ['player', '/player'],
+                ['home', '/#home'],
+                ['library', '/#library'],
+                ['guide', '/#tv-guide'],
+                ['search', '/#search'],
+                ['player', '/#player'],
               ]) {
                 await page.goto(`http://localhost:3000${path}`, {
                   waitUntil: 'networkidle0',
