@@ -309,4 +309,3 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying }: HomeViewProp
     </div>
   );
 }
-}
