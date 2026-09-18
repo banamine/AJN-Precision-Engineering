@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   FolderArchive,
   Search,
@@ -14,6 +14,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { LibraryItem, PlayProgramCallback } from '../types';
+import { getArchiveNews, getArchiveNewsSources, playUrl, ArchivePlayableItem } from '../services/ArchiveNewsClient';
 
 interface LibraryViewProps {
   onPlayProgram: PlayProgramCallback;
@@ -61,78 +62,6 @@ const LIBRARY_COLLECTION: LibraryItem[] = [
     featured: true,
     tags: ['Cinema', 'Animation', 'H.264', 'Benchmark'],
   },
-  {
-    id: 'lib-foxnews-vault',
-    title: 'Fox News Special Report Broadcast Master',
-    category: 'news',
-    description: 'Archived evening news broadcast covering domestic policy, international headlines, and Capitol Hill press conferences.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '60 mins',
-    format: 'TV News Slices (300s)',
-    year: '2024',
-    source: 'Internet Archive TV News',
-    tags: ['Fox News', 'Newsroom', 'Broadcast'],
-  },
-  {
-    id: 'lib-cnn-vault',
-    title: 'CNN Situation Room Continuous Broadcast Reel',
-    category: 'news',
-    description: 'Continuous newsroom coverage and investigative reporting preserved in the Internet Archive TV News research collection.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '60 mins',
-    format: 'TV News Slices (300s)',
-    year: '2024',
-    source: 'Internet Archive TV News',
-    tags: ['CNN', 'Newsroom', 'Broadcast'],
-  },
-  {
-    id: 'lib-msnbc-vault',
-    title: 'MSNBC Prime Time News Wire Edition',
-    category: 'news',
-    description: 'Complete one-hour prime time broadcast with original teleprompter captions and anchor panel analysis.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '60 mins',
-    format: 'TV News Slices (300s)',
-    year: '2024',
-    source: 'Internet Archive TV News',
-    tags: ['MSNBC', 'Newsroom', 'Broadcast'],
-  },
-  {
-    id: 'lib-radio-audio',
-    title: 'Continuous Radio Mode Audio Stream',
-    category: 'audio',
-    description: 'Clean audio-only streaming channel routing through the single-owner M1 AudioBridge normalizer at broadcast compliance levels (-18 dBFS).',
-    archivePath: '/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3',
-    duration: '120 mins',
-    format: 'Audio Stream',
-    year: '2024',
-    source: 'AJN Radio Hub',
-    tags: ['Radio', 'Audio Only', 'Broadcast'],
-  },
-  {
-    id: 'lib-silent-era',
-    title: 'Silent Era Classic Newsreels & Motion Pictures',
-    category: 'classics',
-    description: 'Restored archival newsreels documenting historical events, transport innovations, and early 20th century cinema developments.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '35 mins',
-    format: 'H.264 MP4',
-    year: '1928',
-    source: 'Prelinger Archives',
-    tags: ['History', 'Silent Era', 'Newsreel'],
-  },
-  {
-    id: 'lib-documentary-hour',
-    title: 'Documentary Vault: Technological Innovations',
-    category: 'documentary',
-    description: 'Historical documentary exploring scientific advancements in satellite communications and global transmission networks.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '50 mins',
-    format: 'H.264 MP4',
-    year: '1975',
-    source: 'Academic Film Archive',
-    tags: ['Documentary', 'Technology', 'Science'],
-  },
 ];
 
 const CATEGORIES = [
@@ -147,9 +76,51 @@ const CATEGORIES = [
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [archiveNewsItems, setArchiveNewsItems] = useState<ArchivePlayableItem[]>([]);
+  const [archiveNewsStatus, setArchiveNewsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadArchiveNews() {
+      try {
+        const sources = await getArchiveNewsSources();
+        const results = await Promise.all(
+          sources.map((source) => getArchiveNews(source.id, 1, 4))
+        );
+        if (cancelled) return;
+        setArchiveNewsItems(results.flatMap((result) => result.playable));
+        setArchiveNewsStatus('ready');
+      } catch (error) {
+        console.error('[AJN Library] Archive news discovery failed', error);
+        if (!cancelled) setArchiveNewsStatus('error');
+      }
+    }
+
+    loadArchiveNews();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const libraryItems = useMemo<LibraryItem[]>(() => [
+    ...LIBRARY_COLLECTION,
+    ...archiveNewsItems.map((item) => ({
+      id: `archive-news-${item.sourceId}-${item.identifier}`,
+      title: item.title,
+      category: 'news' as const,
+      description: `Verified Archive.org MP4 derivative: ${item.filename}`,
+      archivePath: playUrl(item),
+      duration: 'Archive video',
+      format: 'Verified MP4',
+      year: item.timestamp ? item.timestamp.slice(0, 4) : 'Archive',
+      source: `Internet Archive — ${item.sourceId.toUpperCase()}`,
+      tags: ['Archive.org', item.sourceId.toUpperCase(), 'News'],
+    })),
+  ], [archiveNewsItems]);
 
   const filteredItems = useMemo(() => {
-    return LIBRARY_COLLECTION.filter((item) => {
+    return libraryItems.filter((item) => {
       const matchesCat = selectedCategory === 'all' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
@@ -160,7 +131,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
         item.source.toLowerCase().includes(q);
       return matchesCat && matchesQuery;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [libraryItems, selectedCategory, searchQuery]);
 
   return (
     <div className="space-y-8 pb-16">
@@ -178,6 +149,13 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-500" />
           <input type="text" id="library-filter-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Filter library items..." className="w-full rounded-xl border border-neutral-800 bg-neutral-900/90 pl-9 pr-3.5 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
         </div>
+      </div>
+
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 px-4 py-3 text-xs text-neutral-400">
+        <span className="font-medium text-neutral-200">Archive News:</span>{' '}
+        {archiveNewsStatus === 'loading' && 'resolving verified MP4 derivatives…'}
+        {archiveNewsStatus === 'ready' && `${archiveNewsItems.length} verified items loaded from the Archive News API.`}
+        {archiveNewsStatus === 'error' && 'discovery failed; no placeholder news assets were substituted.'}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-b border-neutral-800/60 pb-4">
