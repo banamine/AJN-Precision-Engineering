@@ -170,9 +170,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: PlayerVi
               title={nowPlaying.title} 
               onProgramEnded={handleProgramEnded} 
               nowPlaying={nowPlaying} 
-              onPlayEvent={() => logPlaybackEvent('play')}
-              onPauseEvent={() => logPlaybackEvent('pause')}
-              onErrorEvent={(err) => logPlaybackEvent('error', err)}
+              onPlayEvent={handlePlayEvent}
+              onPauseEvent={handlePauseEvent}
+              onErrorEvent={handleErrorEvent}
             />
 
             {(import.meta as any).env?.DEV && (
