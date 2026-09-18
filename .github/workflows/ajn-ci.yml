@@ -72,6 +72,19 @@ jobs:
       - name: AudioContext singleton regression
         run: npm run test:audio-singleton
 
+      - name: Visual regression screenshots
+        run: |
+          mkdir -p /tmp/ajn-visual
+          node -e "const puppeteer=require('puppeteer'); (async()=>{ const browser=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox']}); const page=await browser.newPage({viewport:{width:1360,height:768},deviceScaleFactor:1}); await page.goto('http://localhost:3000/',{waitUntil:'networkidle0'}); await page.screenshot({path:'/tmp/ajn-visual/home.png',fullPage:true}); await page.goto('http://localhost:3000/library',{waitUntil:'networkidle0'}).catch(()=>{}); await page.screenshot({path:'/tmp/ajn-visual/library.png',fullPage:true}); await page.goto('http://localhost:3000/guide',{waitUntil:'networkidle0'}).catch(()=>{}); await page.screenshot({path:'/tmp/ajn-visual/guide.png',fullPage:true}); await page.goto('http://localhost:3000/search',{waitUntil:'networkidle0'}).catch(()=>{}); await page.screenshot({path:'/tmp/ajn-visual/search.png',fullPage:true}); await page.goto('http://localhost:3000/player',{waitUntil:'networkidle0'}).catch(()=>{}); await page.screenshot({path:'/tmp/ajn-visual/player.png',fullPage:true}); await browser.close(); })().catch(err=>{console.error(err);process.exit(1)})()"
+
+      - name: Upload visual regression screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ajn-visual-regression
+          path: /tmp/ajn-visual/
+          if-no-files-found: error
+
       - name: Stop application server
         if: always()
         run: |
