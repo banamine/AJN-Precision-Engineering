@@ -1,7 +1,7 @@
 import express from 'express';
 import { buildChannelFromSearch, searchArchiveGeneral } from './archive-discovery.js';
 import { addChannelSource } from './guideRegistry.js';
-import { fetchAjnFeed, getAjnAffiliateLinks, getAjnResource, getAjnResources, getAjnStreams, type AjnFeedId } from './ajnResourceService.js';
+import { fetchAjnAudioIndex, fetchAjnFeed, getAjnAffiliateLinks, getAjnAudioIndexes, getAjnResource, getAjnResources, getAjnStreams, type AjnFeedId } from './ajnResourceService.js';
 
 const AJN_FEED_IDS: AjnFeedId[] = ['Alex', 'WarRoom', 'SundayLive', 'AJNHourlyVideo', 'AJNHourlyAudio'];
 
@@ -35,8 +35,29 @@ export function patchServer(app: express.Express) {
       resources: getAjnResources(),
       streams: getAjnStreams(),
       affiliates: getAjnAffiliateLinks(),
+      audioIndexes: getAjnAudioIndexes(),
       total: getAjnResources().length,
     });
+  });
+
+  app.get('/api/ajn/audio/:kind', async (req, res) => {
+    const kind = req.params.kind as 'hourly' | 'segment';
+    if (kind !== 'hourly' && kind !== 'segment') {
+      return res.status(404).json({ error: `Unknown AJN audio index: ${req.params.kind}` });
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    try {
+      const result = await fetchAjnAudioIndex(kind, controller.signal);
+      res.json(result);
+    } catch (e: any) {
+      const aborted = e?.name === 'AbortError';
+      res.status(aborted ? 504 : 502).json({
+        error: aborted ? 'AJN audio index request timed out' : e?.message || 'AJN audio index request failed',
+      });
+    } finally {
+      clearTimeout(timer);
+    }
   });
 
   app.get('/api/ajn/resources/:feedId', async (req, res) => {

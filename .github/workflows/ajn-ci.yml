@@ -46,6 +46,23 @@ jobs:
           cat /tmp/ajn-server.log
           exit 1
 
+      - name: AJN radio resource smoke
+        run: |
+          set +e
+          for endpoint in resources audio/hourly audio/segment; do
+            echo "=== /api/ajn/$endpoint ==="
+            curl --silent --show-error --dump-header /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).headers \
+              --output /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).json \
+              --write-out 'HTTP %{http_code}\n' \
+              "http://localhost:3000/api/ajn/$endpoint"
+          done
+          echo "=== resource payloads ==="
+          for file in /tmp/ajn-resources.json /tmp/ajn-audio-hourly.json /tmp/ajn-audio-segment.json; do
+            echo "--- $file ---"
+            cat "$file" 2>/dev/null || true
+            echo
+          done
+          exit 0
       - name: Existing playback regression
         run: npm test
 
