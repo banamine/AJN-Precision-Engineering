@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Play,
   Tv,
@@ -61,7 +61,7 @@ const DEFAULT_FEATURED = [
 export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: PlayerViewProps) {
   const [schedulePlaylist, setSchedulePlaylist] = useState<any[]>([])
 
-  const logPlaybackEvent = (event: string, err?: any) => {
+  const logPlaybackEvent = useCallback((event: string, err?: any) => {
     if (!nowPlaying) return;
     const payload = {
       event: `playback/${event}`,
