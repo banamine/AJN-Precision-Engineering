@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Play,
   Tv,
@@ -61,7 +61,7 @@ const DEFAULT_FEATURED = [
 export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: PlayerViewProps) {
   const [schedulePlaylist, setSchedulePlaylist] = useState<any[]>([])
 
-  const logPlaybackEvent = (event: string, err?: any) => {
+  const logPlaybackEvent = useCallback((event: string, err?: any) => {
     if (!nowPlaying) return;
     const payload = {
       event: `playback/${event}`,
@@ -77,23 +77,19 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: PlayerVi
       ...(err ? { mediaErrorCode: err.code, mediaErrorMessage: err.message } : {})
     };
     console.log(`[Playback Diagnostics] ${payload.event}`, payload);
-  };
+  }, [nowPlaying]);
 
-  const handleProgramEnded = async () => {
+  const handleProgramEnded = useCallback(async () => {
     logPlaybackEvent('ended');
     if (!nowPlaying?.channelId) return;
-    
-    // Auto-advance to the next program in the channel schedule
     try {
       const res = await fetch('/api/schedule?guide=' + (nowPlaying.guideId || 'cable-tv'));
       const data = await res.json();
       const channel = (data.channels || []).find((c: any) => c.id === nowPlaying.channelId);
       if (channel && channel.programs?.length) {
-        // Find current
         const currentIdx = channel.programs.findIndex((p: any) => (p.archivePath || p.mediaUrl) === nowPlaying.src);
         if (currentIdx !== -1) {
-          const nextIdx = (currentIdx + 1) % channel.programs.length;
-          const nextProg = channel.programs[nextIdx];
+          const nextProg = channel.programs[(currentIdx + 1) % channel.programs.length];
           if (nextProg) {
             onSelectProgram(
               nextProg.archivePath || nextProg.mediaUrl,
@@ -109,7 +105,11 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: PlayerVi
     } catch (e) {
       console.error("Auto-advance failed", e);
     }
-  };;
+  }, [nowPlaying, onSelectProgram, logPlaybackEvent]);
+
+  const handlePlayEvent = useCallback(() => logPlaybackEvent('play'), [logPlaybackEvent]);
+  const handlePauseEvent = useCallback(() => logPlaybackEvent('pause'), [logPlaybackEvent]);
+  const handleErrorEvent = useCallback((err: MediaError | null) => logPlaybackEvent('error', err), [logPlaybackEvent]);
 
   useEffect(() => {
     // Fetch both video and audio schedules to populate player switcher
@@ -170,9 +170,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate }: PlayerVi
               title={nowPlaying.title} 
               onProgramEnded={handleProgramEnded} 
               nowPlaying={nowPlaying} 
-              onPlayEvent={() => logPlaybackEvent('play')}
-              onPauseEvent={() => logPlaybackEvent('pause')}
-              onErrorEvent={(err) => logPlaybackEvent('error', err)}
+              onPlayEvent={handlePlayEvent}
+              onPauseEvent={handlePauseEvent}
+              onErrorEvent={handleErrorEvent}
             />
 
             {(import.meta as any).env?.DEV && (
