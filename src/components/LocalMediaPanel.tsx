@@ -8,6 +8,7 @@ import {
   isSupportedLocalMediaFile,
   releaseLocalMediaEntry,
 } from '../localMediaEpg';
+import { isLocalM3uFile, readLocalM3u } from '../localM3u';
 
 interface Props {
   onPlayProgram?: PlayProgramCallback;
@@ -21,7 +22,7 @@ async function collectDirectoryFiles(dir: FileSystemDirectoryHandle): Promise<Fi
   for await (const handle of values.call(dir)) {
     if (handle.kind !== 'file') continue;
     const file = await (handle as FileSystemFileHandle).getFile();
-    if (isSupportedLocalMediaFile(file)) files.push(file);
+    if (isSupportedLocalMediaFile(file) || isLocalM3uFile(file)) files.push(file);
   }
   return files;
 }
@@ -38,11 +39,17 @@ export function LocalMediaPanel({ onPlayProgram, onScheduleChange }: Props) {
 
   const addFiles = useCallback(async (files: File[], folder?: string) => {
     const supported = files.filter(isSupportedLocalMediaFile);
-    if (!supported.length) {
+    const playlists = files.filter(isLocalM3uFile);
+    if (!supported.length && !playlists.length) {
       setError('No supported local media files found.');
       return;
     }
     const next = supported.map((file) => createLocalMediaEntry(file, folder));
+    for (const playlist of playlists) {
+      const parsed = await readLocalM3u(playlist);
+      console.info('[AJN LOCAL M3U]', { file: playlist.name, entries: parsed.length });
+      setError(parsed.length ? null : `M3U contains no EXTINF entries: ${playlist.name}`);
+    }
     entries.forEach(releaseLocalMediaEntry);
     publish(next);
     setError(null);
