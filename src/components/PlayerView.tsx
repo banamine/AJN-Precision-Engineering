@@ -24,7 +24,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress
       assetId: next.metadata?.assetId ?? null,
       mediaPath: (next.archivePath || next.mediaUrl) ?? null,
     });
-    
+
     onSelectProgram(
       next.archivePath || next.mediaUrl,
       next.title,
@@ -42,7 +42,11 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress
     programId: nowPlaying.programId ?? "unknown",
     sourceId: nowPlaying.sourceId ?? "unknown",
     assetId: nowPlaying.assetId ?? "unknown",
-  }) : null, [nowPlaying]);
+  }) : null, [
+    nowPlaying?.programId,
+    nowPlaying?.sourceId,
+    nowPlaying?.assetId,
+  ]);
 
   const handlePlayEvent = useCallback(() => {
     console.log("[AJN PLAYBACK] play", meta);
@@ -59,7 +63,14 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress
   const handleProgressEvent = useCallback((positionSeconds: number) => {
     const itemId = nowPlaying?.assetId || nowPlaying?.programId || nowPlaying?.sourceId || nowPlaying?.archivePath || nowPlaying?.src;
     onProgress?.(itemId, positionSeconds);
-  }, [nowPlaying, onProgress]);
+  }, [
+    nowPlaying?.assetId,
+    nowPlaying?.programId,
+    nowPlaying?.sourceId,
+    nowPlaying?.archivePath,
+    nowPlaying?.src,
+    onProgress,
+  ]);
 
   if (!nowPlaying) return <div className="p-6">No media selected.</div>;
 
