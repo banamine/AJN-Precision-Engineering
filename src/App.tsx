@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
+import { LocalMediaPanel } from './components/LocalMediaPanel';
 import { HomeView } from './components/HomeView';
 import { AjnResourcePanel } from './components/AjnResourcePanel';
 import { TvGuideView } from './components/TvGuideView';
@@ -98,6 +99,8 @@ export default function App() {
   const [destination, setDestination] = useState<Destination>(() => getDestinationFromHash());
   const [nowPlaying, setNowPlaying] = useState<NowPlayingMedia | null>(null);
   const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedItem[]>(() => readRecentlyPlayed());
+  const [localM3uEntries, setLocalM3uEntries] = useState<Array<{ title: string; url: string; tvgId?: string; tvgName?: string; tvgLogo?: string; groupTitle?: string; duration?: number }>>([]);
+  const [localM3uSource, setLocalM3uSource] = useState('');
 
   useEffect(() => {
     writeRecentlyPlayed(recentlyPlayed);
@@ -191,6 +194,25 @@ export default function App() {
               onResumeRecentlyPlayed={resumeRecentlyPlayed}
             />
             <AjnResourcePanel onPlayProgram={handlePlayProgram} />
+            <LocalMediaPanel onPlayProgram={handlePlayProgram} onM3uEntries={(entries, sourceName) => { setLocalM3uEntries(entries); setLocalM3uSource(sourceName); }} />
+            {localM3uEntries.length > 0 && (
+              <section className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-neutral-100">Local M3U Entries</h2>
+                    <p className="text-xs text-neutral-400">{localM3uSource} · {localM3uEntries.length} entries</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {localM3uEntries.map((entry, index) => (
+                    <button key={entry.tvgId || entry.url || index} type="button" onClick={() => handlePlayProgram(entry.url, entry.tvgName || entry.title, entry.groupTitle || 'Local M3U', 'video', entry.tvgId, 'local-m3u', entry.tvgId || entry.url)} className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-3 text-left hover:border-neutral-700">
+                      <span className="block truncate text-xs font-medium text-neutral-100">{entry.tvgName || entry.title}</span>
+                      <span className="mt-1 block truncate text-[10px] text-neutral-500">{entry.groupTitle || 'Local M3U'}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
         {destination === 'tv-guide' && <TvGuideView onSelectProgram={handleEpgSelect} />}
