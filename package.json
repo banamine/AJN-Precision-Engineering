@@ -13,7 +13,9 @@
     "test": "node test.js",
     "test:audio": "node test-audio-bridge.js",
     "test:audio-singleton": "node test-audio-context-singleton.js",
-    "test:audio-video-switch": "node test-audio-video-switch.js"
+    "test:audio-video-switch": "node test-audio-video-switch.js",
+    "test:ajn-contract": "node --test src/contracts/ajn-media-adapter.test.ts",
+    "test:ajn-cards": "node --test src/components/AjnProgramCards.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
