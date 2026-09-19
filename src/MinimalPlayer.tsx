@@ -128,7 +128,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     // Set the property before attempting autoplay. This is required by
     // browser autoplay policy and avoids relying on JSX timing alone.
     media.muted = isMuted;
-    media.load();
 
     const attemptAutoplay = async () => {
       if (!isVideo || !media.paused) return;
@@ -255,7 +254,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       window.removeEventListener("pagehide", saveOnExit);
       saveResumePosition(media);
     };
-  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isMuted, isVideo, readResumePosition, reportPlaying, saveResumePosition]);
+  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isVideo, readResumePosition, reportPlaying, saveResumePosition]);
+
+  useEffect(() => {
+    const media = mediaRef.current;
+    if (media) media.muted = isMuted;
+  }, [isMuted]);
 
   const play = async () => {
     const media = mediaRef.current;
