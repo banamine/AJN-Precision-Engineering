@@ -13,6 +13,7 @@ import { isLocalM3uFile, readLocalM3u } from '../localM3u';
 interface Props {
   onPlayProgram?: PlayProgramCallback;
   onScheduleChange?: (channels: ReturnType<typeof buildLocalMediaSchedule>) => void;
+  onM3uEntries?: (entries: Awaited<ReturnType<typeof readLocalM3u>>, sourceName: string) => void;
 }
 
 async function collectDirectoryFiles(dir: FileSystemDirectoryHandle): Promise<File[]> {
@@ -27,7 +28,7 @@ async function collectDirectoryFiles(dir: FileSystemDirectoryHandle): Promise<Fi
   return files;
 }
 
-export function LocalMediaPanel({ onPlayProgram, onScheduleChange }: Props) {
+export function LocalMediaPanel({ onPlayProgram, onScheduleChange, onM3uEntries }: Props) {
   const [entries, setEntries] = useState<LocalMediaEntry[]>([]);
   const [directoryName, setDirectoryName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export function LocalMediaPanel({ onPlayProgram, onScheduleChange }: Props) {
     for (const playlist of playlists) {
       const parsed = await readLocalM3u(playlist);
       console.info('[AJN LOCAL M3U]', { file: playlist.name, entries: parsed.length });
+      onM3uEntries?.(parsed, playlist.name);
       setError(parsed.length ? null : `M3U contains no EXTINF entries: ${playlist.name}`);
     }
     entries.forEach(releaseLocalMediaEntry);
@@ -60,13 +62,12 @@ export function LocalMediaPanel({ onPlayProgram, onScheduleChange }: Props) {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
-    input.accept = '.mp3,.mp4,.m4v,.m4a,.m4,.mkv,.m3u';
+    input.accept = '.mp3,.mp4,.m4v,.m4a,.m4,.mkv,.m3u,.m3u8';
     const files = await new Promise<File[]>((resolve) => {
       input.onchange = () => resolve(Array.from(input.files || []));
       input.click();
     });
-    const mediaFiles = files.filter(isSupportedLocalMediaFile);
-    await addFiles(mediaFiles);
+    await addFiles(files);
   }, [addFiles]);
 
   const chooseFolder = useCallback(async () => {
