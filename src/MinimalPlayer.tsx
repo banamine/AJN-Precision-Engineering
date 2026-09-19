@@ -70,7 +70,15 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     programId: nowPlaying?.programId ?? null,
     assetId: nowPlaying?.assetId ?? null,
     mediaPath: nowPlaying?.archivePath ?? activeSrc ?? null,
-  }), [nowPlaying, activeSrc]);
+  }), [
+    nowPlaying?.guideId,
+    nowPlaying?.channelId,
+    nowPlaying?.sourceId,
+    nowPlaying?.programId,
+    nowPlaying?.assetId,
+    nowPlaying?.archivePath,
+    activeSrc,
+  ]);
 
   const readResumePosition = useCallback(() => {
     try {
@@ -108,7 +116,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       reportTelemetry({ event: "playback.started", ...eventMeta() });
       onPlayEventRef.current?.();
     }
-  }, [eventMeta, onPlayEvent]);
+  }, [eventMeta]);
 
   useEffect(() => {
     setActiveSrc(src);
