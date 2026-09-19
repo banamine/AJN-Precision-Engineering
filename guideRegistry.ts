@@ -3,6 +3,7 @@ import {
 } from './src/types';
 import { getChannelSchedule } from './channels';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
+import { buildClassicTvPlaylistUrl, isClassicTvTitle } from './src/classicTvCatalog';
 
 export const GUIDES: Guide[] = [
   { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
@@ -138,7 +139,35 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs}];
+    const catalogChannels = getChannelsByGuide('classic-tv')
+      .filter((channel) => channel.id !== honeymooners.id && isClassicTvTitle(channel.name));
+
+    return [
+      {id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs},
+      ...catalogChannels.map((channel) => ({
+        id: channel.id,
+        guideId,
+        name: channel.name,
+        mediaType: 'video' as MediaType,
+        group: 'Classic TV',
+        programs: (channel.sources || [])
+          .filter((source) => source.enabled && source.url)
+          .map((source, index) => ({
+            id: `${channel.id}-${index + 1}`,
+            guideId,
+            channelId: channel.id,
+            title: channel.name,
+            description: `Classic TV source: ${channel.name}`,
+            startTime: 0,
+            endTime: 24,
+            startHour: 0,
+            endHour: 24,
+            mediaType: 'video' as MediaType,
+            mediaUrl: source.url.startsWith('http') ? source.url : buildClassicTvPlaylistUrl(source.url),
+            archivePath: source.url.startsWith('http') ? source.url : buildClassicTvPlaylistUrl(source.url),
+          })),
+      })).filter((channel) => channel.programs.length > 0),
+    ];
   }
   return getChannelsByGuide(guideId).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[{id:`${ch.id}-1`,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:ch.sources?.[0]?.url||'',archivePath:ch.sources?.[0]?.url||''}]}));
 }
