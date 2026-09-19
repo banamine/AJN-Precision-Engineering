@@ -114,9 +114,3 @@ export function buildLocalMediaSchedule(entries: LocalMediaEntry[]) {
       }]
     : [];
 }
-
-export function isLikelyNativePlayable(mediaType: MediaType, file: File): boolean {
-  const element = document.createElement(mediaType);
-  const probe = file.type || (mediaType === 'audio' ? 'audio/mpeg' : 'video/mp4');
-  return element.canPlayType(probe) !== '';
-}
