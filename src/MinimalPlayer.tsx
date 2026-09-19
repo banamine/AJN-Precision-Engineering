@@ -26,6 +26,11 @@ const RESUME_PREFIX = "ajn-playback-position:";
 export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const onProgramEndedRef = useRef(onProgramEnded);
+  const onPlayEventRef = useRef(onPlayEvent);
+  const onPauseEventRef = useRef(onPauseEvent);
+  const onErrorEventRef = useRef(onErrorEvent);
+  const onProgressEventRef = useRef(onProgressEvent);
   const lastSavedPositionRef = useRef(0);
   const playingReportedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -43,6 +48,14 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const isVideo = mediaType === "video";
   const isArchiveProxy = activeSrc.startsWith("/api/archive/proxy?path=");
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
+
+  useEffect(() => {
+    onProgramEndedRef.current = onProgramEnded;
+    onPlayEventRef.current = onPlayEvent;
+    onPauseEventRef.current = onPauseEvent;
+    onErrorEventRef.current = onErrorEvent;
+    onProgressEventRef.current = onProgressEvent;
+  }, [onProgramEnded, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent]);
 
   const { diagnosticsAnalyserRef } = useAudioNormalization(
     mediaRef,
@@ -66,10 +79,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     } catch {
       return null;
     }
-  }, [onProgressEvent, resumeKey]);
+  }, [resumeKey]);
 
   const saveResumePosition = useCallback((media: HTMLMediaElement) => {
-    if (Number.isFinite(media.currentTime)) onProgressEvent?.(media.currentTime);
+    if (Number.isFinite(media.currentTime)) onProgressEventRef.current?.(media.currentTime);
     if (!Number.isFinite(media.currentTime) || media.currentTime < RESUME_MIN_SEC) return;
     if (Number.isFinite(media.duration) && media.duration > 0 && media.currentTime >= media.duration - 5) {
       try { localStorage.removeItem(resumeKey); } catch {}
@@ -93,7 +106,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     if (!playingReportedRef.current) {
       playingReportedRef.current = true;
       reportTelemetry({ event: "playback.started", ...eventMeta() });
-      onPlayEvent?.();
+      onPlayEventRef.current?.();
     }
   }, [eventMeta, onPlayEvent]);
 
@@ -115,7 +128,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     // Set the property before attempting autoplay. This is required by
     // browser autoplay policy and avoids relying on JSX timing alone.
     media.muted = isMuted;
-    media.load();
 
     const attemptAutoplay = async () => {
       if (!isVideo || !media.paused) return;
@@ -165,14 +177,14 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       setIsPlaying(false);
       saveResumePosition(media);
       reportTelemetry({ event: "playback.paused", ...eventMeta() });
-      onPauseEvent?.();
+      onPauseEventRef.current?.();
     };
     const onEnded = () => {
       setIsPlaying(false);
       playingReportedRef.current = false;
       clearResumePosition();
       reportTelemetry({ event: "playback.ended", ...eventMeta() });
-      window.setTimeout(() => onProgramEnded?.(), 0);
+      window.setTimeout(() => onProgramEndedRef.current?.(), 0);
     };
     const onError = () => {
       const err = media.error;
@@ -211,7 +223,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         readyState: media.readyState,
         networkState: media.networkState,
       });
-      onErrorEvent?.(err);
+      onErrorEventRef.current?.(err);
     };
 
     media.addEventListener("loadedmetadata", onLoadedMetadata);
@@ -242,7 +254,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       window.removeEventListener("pagehide", saveOnExit);
       saveResumePosition(media);
     };
-  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isMuted, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
+  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isVideo, readResumePosition, reportPlaying, saveResumePosition]);
+
+  useEffect(() => {
+    const media = mediaRef.current;
+    if (media) media.muted = isMuted;
+  }, [isMuted]);
 
   const play = async () => {
     const media = mediaRef.current;
