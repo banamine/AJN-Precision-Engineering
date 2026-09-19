@@ -15,7 +15,6 @@ const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
 const RECENTLY_PLAYED_STORAGE_KEY = 'ajn.recentlyPlayed.v1';
 const RECENTLY_PLAYED_LIMIT = 5;
 
-/** Resolve a media reference to exactly one playable transport URL. */
 function toPlayableSrc(rawPath: string): string {
   const value = String(rawPath ?? '').trim();
   if (!value) return value;
@@ -30,9 +29,7 @@ function toPlayableSrc(rawPath: string): string {
       const archivePath = `${parsed.pathname}${parsed.search}`;
       return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(archivePath)}`;
     }
-  } catch {
-    // Preserve non-URL references unchanged below.
-  }
+  } catch {}
 
   if (value.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) {
     return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(value)}`;
@@ -89,9 +86,7 @@ function readRecentlyPlayed(): RecentlyPlayedItem[] {
 function writeRecentlyPlayed(items: RecentlyPlayedItem[]): void {
   try {
     window.localStorage.setItem(RECENTLY_PLAYED_STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    // Storage may be unavailable; playback remains unaffected.
-  }
+  } catch {}
 }
 
 export default function App() {
@@ -136,7 +131,26 @@ export default function App() {
       assetId,
     });
 
-    const nextRecentlyPlayed: RecentlyPlayedItem = {
+    setRecentlyPlayed((items) => {
+      const nextRecentlyPlayed: RecentlyPlayedItem = {
+        id,
+        src: constructedSrc,
+        title,
+        subtitle,
+        mediaType: inferredMediaType,
+        channelId,
+        guideId,
+        programId,
+        sourceId,
+        assetId,
+        archivePath: rawReference,
+        progressSeconds: items.find((item) => item.id === id)?.progressSeconds ?? 0,
+        updatedAt: Date.now(),
+      };
+      return [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT);
+    });
+
+    const nextNowPlaying: NowPlayingMedia = {
       id,
       src: constructedSrc,
       title,
@@ -152,9 +166,7 @@ export default function App() {
       updatedAt: Date.now(),
     };
 
-    setRecentlyPlayed((items) => [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
-
-    setNowPlaying({ ...nextRecentlyPlayed });
+    setNowPlaying(nextNowPlaying);
     setDestination('player');
     if (typeof window !== 'undefined') window.location.hash = '#player';
   }, [recentlyPlayed]);
@@ -183,13 +195,7 @@ export default function App() {
       <main id="canonical-main-viewport" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
         {destination === 'home' && (
           <>
-            <HomeView
-              onNavigate={navigateTo}
-              onPlayProgram={handlePlayProgram}
-              nowPlaying={nowPlaying}
-              recentlyPlayed={recentlyPlayed}
-              onResumeRecentlyPlayed={resumeRecentlyPlayed}
-            />
+            <HomeView onNavigate={navigateTo} onPlayProgram={handlePlayProgram} nowPlaying={nowPlaying} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} />
             <AjnResourcePanel onPlayProgram={handlePlayProgram} />
           </>
         )}
