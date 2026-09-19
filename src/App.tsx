@@ -123,34 +123,11 @@ export default function App() {
       rawReference.toLowerCase().endsWith('.mp3') || rawReference.toLowerCase().includes('audio') ? 'audio' : 'video'
     );
 
-    const id = mediaIdentity({
-      src: constructedSrc,
-      archivePath: rawReference,
-      programId,
-      sourceId,
-      assetId,
-    });
+    const id = mediaIdentity({ src: constructedSrc, archivePath: rawReference, programId, sourceId, assetId });
 
-    setRecentlyPlayed((items) => {
-      const nextRecentlyPlayed: RecentlyPlayedItem = {
-        id,
-        src: constructedSrc,
-        title,
-        subtitle,
-        mediaType: inferredMediaType,
-        channelId,
-        guideId,
-        programId,
-        sourceId,
-        assetId,
-        archivePath: rawReference,
-        progressSeconds: items.find((item) => item.id === id)?.progressSeconds ?? 0,
-        updatedAt: Date.now(),
-      };
-      return [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT);
-    });
+    const previousProgress = recentlyPlayed.find((item) => item.id === id)?.progressSeconds ?? 0;
 
-    const nextNowPlaying: NowPlayingMedia = {
+    const nextNowPlaying: RecentlyPlayedItem = {
       id,
       src: constructedSrc,
       title,
@@ -162,11 +139,12 @@ export default function App() {
       sourceId,
       assetId,
       archivePath: rawReference,
-      progressSeconds: recentlyPlayed.find((item) => item.id === id)?.progressSeconds ?? 0,
+      progressSeconds: previousProgress,
       updatedAt: Date.now(),
     };
 
-    setNowPlaying(nextNowPlaying);
+    setRecentlyPlayed((items) => [nextNowPlaying, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
+    setNowPlaying({ ...nextNowPlaying });
     setDestination('player');
     if (typeof window !== 'undefined') window.location.hash = '#player';
   }, [recentlyPlayed]);
