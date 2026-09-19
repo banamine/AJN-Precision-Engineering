@@ -5,7 +5,6 @@ import {
   LocalMediaEntry,
   buildLocalMediaSchedule,
   createLocalMediaEntry,
-  isLikelyNativePlayable,
   isSupportedLocalMediaFile,
   releaseLocalMediaEntry,
 } from '../localMediaEpg';
@@ -17,7 +16,9 @@ interface Props {
 
 async function collectDirectoryFiles(dir: FileSystemDirectoryHandle): Promise<File[]> {
   const files: File[] = [];
-  for await (const [, handle] of dir.entries()) {
+  const values = (dir as unknown as { values?: () => AsyncIterableIterator<FileSystemHandle> }).values;
+  if (!values) throw new Error('Folder iteration is not supported by this browser.');
+  for await (const handle of values.call(dir)) {
     if (handle.kind !== 'file') continue;
     const file = await (handle as FileSystemFileHandle).getFile();
     if (isSupportedLocalMediaFile(file)) files.push(file);
@@ -42,12 +43,6 @@ export function LocalMediaPanel({ onPlayProgram, onScheduleChange }: Props) {
       return;
     }
     const next = supported.map((file) => createLocalMediaEntry(file, folder));
-    next.forEach((entry) => {
-      const fileType = entry.mimeType || '';
-      if (entry.name.toLowerCase().endsWith('.mkv') && !isLikelyNativePlayable('video', new File([], entry.name, { type: fileType }))) {
-        console.warn('[AJN LOCAL MEDIA] Browser may not natively decode MKV', { file: entry.name, mimeType: fileType });
-      }
-    });
     entries.forEach(releaseLocalMediaEntry);
     publish(next);
     setError(null);
