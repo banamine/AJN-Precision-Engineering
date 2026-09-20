@@ -3,6 +3,7 @@ import test from 'node:test';
 import { ingestM3uPlaylist, getChannelsByGuide, getCanonicalEpgPrograms } from './guideRegistry';
 import { normalizePlaybackIdentity } from './src/utils/identityNormalizer';
 import { buildEpgIdentity } from './src/utils/epgIdentity';
+import { getCanonicalEpgProgram, getCanonicalEpgProgramById } from './guideRegistry';
 
 test('generic live paths remain isolated by source namespace', () => {
   const a = buildEpgIdentity({ guideId:'cable-tv', channelId:'alpha', sourceId:'src-alpha', title:'Alpha', mediaUrl:'https://cdn-a.example/live.m3u8' });
@@ -60,6 +61,8 @@ test('new M3U source adds only its new channels and keeps identity stable on re-
   assert.deepEqual(secondPrograms, firstPrograms);
 
   for (const program of secondPrograms) {
+    assert.equal(getCanonicalEpgProgram(program.sourceId, program.id)?.id, program.id);
+    assert.equal(getCanonicalEpgProgramById(program.id)?.id, program.id);
     const playback = normalizePlaybackIdentity({
       guideId: 'cable-tv',
       channelId: program.channelId,
