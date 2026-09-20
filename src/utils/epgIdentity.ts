@@ -136,7 +136,8 @@ export function buildEpgIdentity(input: EpgIdentityInput): EpgIdentity {
   const programKey = stableProgramKey(input, sourceId);
 
   const programId = clean(input.programId) || `prog-${slug(channelId)}-${slug(programKey)}`;
-  const assetId = clean(input.assetId) || `asset-${slug(normalizeAssetPath(mediaUrl))}-${slug(programKey)}`;
+  const assetKey = clean(input.assetId) || clean(input.archiveIdentifier) || normalizeAssetPath(mediaUrl);
+  const assetId = clean(input.assetId) || `asset-${slug(assetKey)}`;
 
   return { sourceId, programId, assetId };
 }
