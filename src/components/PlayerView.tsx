@@ -39,9 +39,15 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress
   }, [nowPlaying, onSelectProgram]);
 
   const meta = useMemo(() => nowPlaying ? ({
-    programId: nowPlaying.programId ?? "unknown",
-    sourceId: nowPlaying.sourceId ?? "unknown",
-    assetId: nowPlaying.assetId ?? "unknown",
+    guideId: nowPlaying.identity.guideId,
+    channelId: nowPlaying.identity.channelId,
+    sourceId: nowPlaying.identity.sourceId,
+    assetId: nowPlaying.identity.assetId,
+    programId: nowPlaying.identity.programId,
+    titleId: nowPlaying.identity.titleId,
+    playbackId: nowPlaying.identity.playbackId,
+    routeId: nowPlaying.identity.routeId,
+    archiveIdentifier: nowPlaying.identity.archiveIdentifier ?? null,
   }) : null, [nowPlaying]);
 
   const handlePlayEvent = useCallback(() => {
