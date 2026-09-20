@@ -172,13 +172,14 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
                     item.mediaType,
                     'ajn-resource',
                     'ajn-archive',
-                    undefined,
-                    undefined,
-                    undefined,
+                    item.metadata?.archiveIdentifier || item.metadata?.guid || item.id,
+                    `ajn-rss-${item.feedId.toLowerCase()}`,
+                    item.metadata?.archiveIdentifier || item.metadata?.guid || item.id,
+                    item.metadata?.archiveIdentifier || item.metadata?.guid || item.id,
                     {
                       feedId: item.feedId,
                       publishedAt: item.publishedAt,
-                      archiveIdentifier: item.metadata?.archiveIdentifier || item.metadata?.guid,
+                      archiveIdentifier: item.metadata?.archiveIdentifier || item.metadata?.guid || item.id,
                     },
                   );
                 }}
