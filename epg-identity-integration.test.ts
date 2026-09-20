@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ingestM3uPlaylist, getChannelsByGuide, getCanonicalEpgPrograms, getCanonicalEpgProgram, getCanonicalEpgProgramById, getScheduleForGuide } from './guideRegistry';
+import { ingestM3uPlaylist, ingestAjnFeedItems, getChannelsByGuide, getCanonicalEpgPrograms, getCanonicalEpgProgram, getCanonicalEpgProgramById, getScheduleForGuide } from './guideRegistry';
 import { buildEpgIdentity } from './src/utils/epgIdentity';
 
 test('generic live paths remain isolated by source namespace', () => {
@@ -58,6 +58,12 @@ test('new M3U source adds only its new channels and keeps identity stable on re-
 
   assert.deepEqual(secondPrograms, firstPrograms);
 
+  const canonical = getCanonicalEpgPrograms().find((program) => program.channelId === 'ajn-test-alpha');
+  assert.equal(canonical?.sourceClass, 'm3u_live');
+  assert.equal(canonical?.isArchivedSource, false);
+  assert.equal(canonical?.metadata?.tvgLogo, undefined);
+  assert.equal(canonical?.metadata?.groupTitle, 'Test');
+
   for (const program of secondPrograms) {
     assert.equal(getCanonicalEpgProgram(program.sourceId!, program.id)?.id, program.id);
     assert.equal(getCanonicalEpgProgramById(program.id)?.id, program.id);
@@ -83,4 +89,48 @@ test('EPG playback receives canonical source and asset identities', async () => 
   assert.ok(program.sourceId);
   assert.ok(program.assetId);
   assert.equal(getCanonicalEpgProgram(program.sourceId!, program.id)?.assetId, program.assetId);
+});
+
+
+test('AJN RSS bridge writes producer-owned identity into the canonical registry', () => {
+  const before = getCanonicalEpgPrograms().length;
+  const items = [{
+    feedId: 'Alex' as const,
+    title: 'AJN Test RSS Item',
+    url: 'https://rss.alexjones.media/test.mp4',
+    mediaType: 'video' as const,
+    publishedAt: '2026-09-20T00:00:00Z',
+    description: 'test',
+    metadata: { guid: 'ajn-test-guid', sourceFeed: 'https://rss.alexjones.media/Alex.xml' },
+    sourceId: 'src-ajn-alex',
+    programId: 'ajn-test-guid',
+    assetId: 'asset-ajn-test-guid',
+  }];
+  const programs = ingestAjnFeedItems(items);
+  assert.equal(programs.length, 1);
+  const program = programs[0];
+  assert.equal(program.sourceId, 'src-ajn-alex');
+  assert.equal(program.id, 'ajn-test-guid');
+  assert.equal(program.assetId, 'asset-ajn-test-guid');
+  assert.equal(program.sourceClass, 'ajn_rss');
+  assert.equal(program.isArchivedSource, false);
+  assert.equal(getCanonicalEpgProgram('src-ajn-alex', 'ajn-test-guid')?.assetId, 'asset-ajn-test-guid');
+  assert.equal(getCanonicalEpgPrograms().length, before + 1);
+});
+
+test('canonical identity tuple remains immutable on authoritative duplicate updates', () => {
+  const first = ingestAjnFeedItems([{
+    feedId: 'WarRoom' as const, title: 'Original', url: 'https://rss.alexjones.media/original.mp4', mediaType: 'video' as const,
+    metadata: { guid: 'dup-guid', version: '1' }, sourceId: 'src-ajn-warroom', programId: 'dup-guid', assetId: 'asset-original',
+  }])[0];
+  const second = ingestAjnFeedItems([{
+    feedId: 'WarRoom' as const, title: 'Updated', url: 'https://rss.alexjones.media/updated.mp4', mediaType: 'video' as const,
+    metadata: { guid: 'dup-guid', version: '2' }, sourceId: 'src-ajn-warroom', programId: 'dup-guid', assetId: 'asset-conflicting',
+  }])[0];
+  assert.equal(second.sourceId, first.sourceId);
+  assert.equal(second.id, first.id);
+  assert.equal(second.assetId, first.assetId);
+  assert.equal(second.title, 'Updated');
+  assert.equal(second.mediaUrl, 'https://rss.alexjones.media/updated.mp4');
+  assert.equal(second.metadata?.version, '2');
 });
