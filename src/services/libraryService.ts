@@ -6,6 +6,7 @@ export const CURATED_CHANNEL_WHITELIST = new Set<string>([
   'cnn',
   'msnbc',
   'nova-wonders',
+  'classic-cinema',
 ]);
 
 const APPROVED_SOURCE_CLASSES = new Set<NonNullable<Program['sourceClass']>>([
