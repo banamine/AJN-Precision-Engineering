@@ -49,6 +49,12 @@ export interface Program {
   mediaUrl: string;
   archivePath?: string;
   metadata?: Record<string, any>;
+
+  // Canonical EPG identity fields. Producers may omit these only before
+  // identity normalization at the ingestion/playback boundary.
+  sourceId?: string;
+  assetId?: string;
+  archiveIdentifier?: string;
 }
 
 export interface Playlist {
