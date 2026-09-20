@@ -96,6 +96,8 @@ export async function buildHoneymoonersEpg() {
       description: `Archive.org collection item: ${asset.archiveIdentifier}`,
       startTime: currentSecond / 3600,
       endTime: endSecond / 3600,
+      startTimeUtc: new Date(Date.now() + currentSecond * 1000).toISOString(),
+      endTimeUtc: new Date(Date.now() + endSecond * 1000).toISOString(),
       startHour: currentSecond / 3600,
       endHour: endSecond / 3600,
       mediaType: 'video',

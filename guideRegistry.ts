@@ -17,6 +17,55 @@ export const GUIDES: Guide[] = [
 const channelsMap = new Map<string, Channel>();
 const channelSourcesMap = new Map<string, ChannelSource[]>();
 const playlistsMap = new Map<string, Playlist>();
+const programsMap = new Map<string, Program>();
+const PROGRAM_RETENTION_MS = 24 * 60 * 60 * 1000;
+
+function toUtcMs(value?: string | Date): number {
+  if (!value) return Number.NaN;
+  if (value instanceof Date) return value.getTime();
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function evictExpiredPrograms(nowMs = Date.now()): number {
+  const cutoff = nowMs - PROGRAM_RETENTION_MS;
+  let removed = 0;
+  for (const [id, program] of programsMap) {
+    const endMs = toUtcMs(program.endTimeUtc);
+    if (Number.isFinite(endMs) && endMs < cutoff) {
+      programsMap.delete(id);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
+export function upsertCanonicalProgram(program: Program): Program {
+  const identity = normalizeProgramIdentity({
+    externalId: program.metadata?.externalId,
+    channelId: program.channelId,
+    title: program.title,
+    startTime: program.startTimeUtc ?? program.startTime,
+  });
+  const canonical = identity === program.id ? program : { ...program, id: identity };
+  programsMap.set(canonical.id, canonical);
+  evictExpiredPrograms();
+  return canonical;
+}
+
+export function getCanonicalProgram(id: string): Program | undefined {
+  evictExpiredPrograms();
+  return programsMap.get(id);
+}
+
+export function getCanonicalPrograms(): Program[] {
+  evictExpiredPrograms();
+  return Array.from(programsMap.values());
+}
+
+export function sweepCanonicalPrograms(nowMs = Date.now()): number {
+  return evictExpiredPrograms(nowMs);
+}
 
 const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
   {
@@ -89,9 +138,12 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
   const entries=parseM3u(text); const updated:Channel[]=[];
   const guideId=targetGuideId || (playlist.category.toLowerCase().includes('audio')?'audio-podcasts':'cable-tv');
   const mediaType:MediaType=guideId==='audio-podcasts'?'audio':'video';
+  const currentSourceIds=new Set<string>();
+
   for(const entry of entries){
     const sanitizedUrl = sanitizeIdentityUrl(entry.url);
-    const id=normalizeChannelIdentity({ externalId: entry.tvgId, name: entry.tvgName || entry.title, guideId }); const existing=channelsMap.get(id);
+    const id=normalizeChannelIdentity({ externalId: entry.tvgId, name: entry.tvgName || entry.title, guideId });
+    const existing=channelsMap.get(id);
     const ch:Channel=existing
       ? {...existing,
           tvgId: entry.tvgId || existing.tvgId,
@@ -99,18 +151,36 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
           logo: existing.logo || entry.tvgLogo,
           group: existing.group || entry.groupTitle || playlist.category}
       : {id,guideId,name:entry.tvgName||entry.title,mediaType,logo:entry.tvgLogo,group:entry.groupTitle||playlist.category,tvgId:entry.tvgId,tvgName:entry.tvgName,enabled:true};
-    channelsMap.set(id,ch); updated.push(ch); const sources=channelSourcesMap.get(id)||[];
+    channelsMap.set(id,ch); updated.push(ch);
+
+    const sources=channelSourcesMap.get(id)||[];
     const protocol=entry.url.includes('.m3u8')?'hls':'https';
     const canonicalSourceId=normalizeSourceIdentity({channelId:id,url:sanitizedUrl,protocol});
-    if(!sources.some(s=>s.id===canonicalSourceId)){
+    currentSourceIds.add(canonicalSourceId);
+    const existingSource=sources.find(s=>s.id===canonicalSourceId);
+    if(existingSource){
+      existingSource.enabled=true;
+      existingSource.url=entry.url;
+      existingSource.metadata={...existingSource.metadata,playlistId:playlist.id,playlistName:playlist.name,category:playlist.category,retiredAt:undefined,retirementReason:undefined,durationSeconds:entry.duration&&entry.duration>0?entry.duration:undefined};
+    } else {
       sources.push({id:canonicalSourceId,channelId:id,protocol,url:entry.url,priority:sources.length+1,enabled:true,metadata:{playlistId:playlist.id,playlistName:playlist.name,category:playlist.category,durationSeconds:entry.duration&&entry.duration>0?entry.duration:undefined}});
-      channelSourcesMap.set(id,sources);
     }
+    channelSourcesMap.set(id,sources);
   }
+
+  for(const [channelId,sources] of channelSourcesMap){
+    for(const source of sources){
+      if(source.metadata?.playlistId===playlist.id && !currentSourceIds.has(source.id)){
+        source.enabled=false;
+        source.metadata={...source.metadata,retiredAt:new Date().toISOString(),retirementReason:'absent-from-latest-playlist-sync'};
+      }
+    }
+    channelSourcesMap.set(channelId,sources);
+  }
+
   playlist.lastSyncedAt=new Date().toISOString(); playlist.syncStatus='synced'; playlist.itemCount=entries.length; playlist.rawM3u=text; playlistsMap.set(playlist.id,playlist);
   return {ingestedCount:entries.length,channels:updated};
 }
-
 export function initializeRegistry(){ if(playlistsMap.size)return; for(const {playlist,m3uContent} of INITIAL_PLAYLISTS){playlistsMap.set(playlist.id,playlist);ingestM3uPlaylist(playlist,m3uContent);} }
 initializeRegistry();
 
@@ -150,18 +220,20 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
     return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any)=>{
       const id = normalizeProgramIdentity({ externalId:p.externalId, channelId:ch.id, title:p.title, startTime:typeof p.startHour==='number'?p.startHour:null });
       const assetId = normalizeAssetIdentity({ externalId:p.externalId, archiveIdentifier:p.externalId, programId:id, mediaUrl:p.archivePath });
-      return { id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } };
+      const startTimeUtc = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const endTimeUtc = new Date().toISOString();
+      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
     })}));
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs}];
+    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))}];
   }
   return getChannelsByGuide(guideId).map(ch=>{
     const sourceUrl = ch.sources?.[0]?.url || '';
     const programId = normalizeProgramIdentity({ channelId:ch.id, title:ch.name, startTime:0 });
     const assetId = normalizeAssetIdentity({ programId, mediaUrl:sourceUrl });
-    return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[{id:programId,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:sourceUrl,archivePath:sourceUrl,assetId,sourceClass:'m3u_live' as const,isArchivedSource:false,metadata:{groupTitle:ch.group,tvgId:ch.tvgId}}]};
+    return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[upsertCanonicalProgram({id:programId,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startTimeUtc:new Date().toISOString(),endTimeUtc:new Date(Date.now()+24*60*60*1000).toISOString(),startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:sourceUrl,archivePath:sourceUrl,assetId,sourceClass:'m3u_live' as const,isArchivedSource:false,sourceId: ch.sources?.[0]?.id, metadata:{groupTitle:ch.group,tvgId:ch.tvgId}})]};
   });
 }
 

@@ -43,12 +43,15 @@ export interface Program {
   description?: string;
   startTime: number;
   endTime: number;
+  startTimeUtc?: string;
+  endTimeUtc?: string;
   startHour?: number;
   endHour?: number;
   mediaType: MediaType;
   mediaUrl: string;
   archivePath?: string;
   assetId?: string;
+  sourceId?: string;
   sourceClass?: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'm3u_live';
   isArchivedSource?: boolean;
   metadata?: Record<string, any>;
