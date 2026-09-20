@@ -277,6 +277,16 @@ export async function searchTVNews(opts: {
   };
 }
 
+export function parseM3uUtcTimestamp(raw: string, offsetMinutes = 0): number {
+  const value = String(raw ?? '').trim();
+  const m = value.match(/^(\\d{4})(\\d{2})(\\d{2})(?:[T\\s]?)(\\d{2})(\\d{2})(\\d{2})(?:([+-])(\\d{2})(?::?(\\d{2}))?|Z)?$/);
+  if (!m) throw new Error(`Invalid M3U/XMLTV timestamp: ${raw}`);
+  const [, y, mo, d, hh, mm, ss, sign, oh, om] = m;
+  let offset = offsetMinutes;
+  if (sign && oh) offset = (Number(oh) * 60 + Number(om || 0)) * (sign === '-' ? -1 : 1);
+  return Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mm), Number(ss)) - offset * 60_000;
+}
+
 export function getSafeArchiveUrl(rawUrl: string): string {
   try {
     const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
