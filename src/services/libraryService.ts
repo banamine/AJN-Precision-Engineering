@@ -1,5 +1,5 @@
 import { getCanonicalPrograms } from '../../guideRegistry';
-import { LibraryItem, Program } from '../types';
+import { LibraryItem, Program } from '../../src/types';
 
 export const CURATED_CHANNEL_WHITELIST = new Set<string>();
 
