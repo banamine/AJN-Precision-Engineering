@@ -1,0 +1,18 @@
+{
+  "artifact": "AJN-FULL-REBUILD-FIXED-DROP-IN-V2",
+  "phase": "Phase 1 root-cause repair",
+  "source": "AJN full rebuild uploaded to Builder",
+  "runtime_issue": "Maximum update depth exceeded",
+  "repairs": [
+    "stabilize PlayerView playback callbacks",
+    "remove unused unstable onProgressEvent dependency from MinimalPlayer readResumePosition",
+    "stabilize App handlePlayProgram with recentlyPlayedRef",
+    "retain AudioBridge animation-frame state guard",
+    "retain audio-only AudioBridge routing"
+  ],
+  "static_tests": [
+    "node test-runtime-loop-guards.mjs",
+    "node test-player-separation.mjs"
+  ],
+  "file_count": 308
+}
