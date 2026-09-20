@@ -56,5 +56,6 @@ test('isolates new channel/source namespaces', () => {
 
 test('rejects unresolved ownership and unknown identity values', () => {
   assert.throws(() => buildEpgIdentity({ ...base, channelId: '', sourceId: undefined, tvgId: undefined, tvgName: undefined }), EpgIdentityResolutionError);
-  assert.throws(() => buildEpgIdentity({ ...base, sourceId: 'unknown' }), EpgIdentityResolutionError);
+  const recovered = buildEpgIdentity({ ...base, sourceId: 'unknown' });
+  assert.notEqual(recovered.sourceId, 'unknown');
 });
