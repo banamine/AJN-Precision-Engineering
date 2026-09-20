@@ -37,6 +37,13 @@ const rejected = expandGenreCandidates([{
 assert.equal(rejected.programs.length, 0);
 assert.equal(rejected.rejected[0].reason, 'valid sourceUrl is required');
 
+const missingChannelIdentity = expandGenreCandidates([{
+  origin: 'discovery', evidenceType: 'search-result', sourceUrl: 'https://archive.org/download/demo/', title: 'Program Title',
+  guideId: 'program-guide', mediaType: 'video', sourceClass: 'archive_org', mediaUrl: 'https://example.test/program.mp4',
+}]);
+assert.equal(missingChannelIdentity.programs.length, 0, 'program title must not become channel identity');
+assert.equal(missingChannelIdentity.rejected[0].reason, 'channelExternalId or channelName is required');
+
 const disallowedSourceClass = expandGenreCandidates([{
   origin: 'discovery', evidenceType: 'manifest', sourceUrl: 'https://archive.org/download/demo/', title: 'Live',
   channelExternalId: 'live-channel', guideId: 'live-guide', mediaType: 'video', sourceClass: 'm3u_live',
