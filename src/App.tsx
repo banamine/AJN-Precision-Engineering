@@ -129,7 +129,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const handlePlayProgram = useCallback<PlayProgramCallback>((archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId) => {
+  const handlePlayProgram = useCallback<PlayProgramCallback>((archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, identityInput) => {
     const rawReference = String(archivePath ?? '').trim();
     if (!rawReference) {
       console.warn('[AJN Playback] refused empty media reference', { title, channelId, guideId, programId, assetId });
@@ -147,11 +147,12 @@ export default function App() {
     let identity;
     try {
       identity = normalizePlaybackIdentity({
-        guideId,
-        channelId,
-        sourceId,
-        assetId,
-        programId,
+        ...identityInput,
+        guideId: guideId ?? identityInput?.guideId,
+        channelId: channelId ?? identityInput?.channelId,
+        sourceId: sourceId ?? identityInput?.sourceId,
+        assetId: assetId ?? identityInput?.assetId,
+        programId: programId ?? identityInput?.programId,
         title,
         mediaUrl: rawReference,
       });
