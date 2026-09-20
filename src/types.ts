@@ -48,6 +48,10 @@ export interface Program {
   mediaType: MediaType;
   mediaUrl: string;
   archivePath?: string;
+  sourceId?: string;
+  assetId?: string;
+  publishedAt?: string;
+  archiveIdentifier?: string;
   metadata?: Record<string, any>;
 }
 
