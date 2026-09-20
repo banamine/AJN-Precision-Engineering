@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Headphones, Play, RefreshCw, Tv } from 'lucide-react';
+
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 import type { MediaType, PlayProgramCallback } from '../types';
 
 type AjnFeedId = 'Alex' | 'WarRoom' | 'SundayLive' | 'AJNHourlyVideo' | 'AJNHourlyAudio';
@@ -44,6 +46,7 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
   const [items, setItems] = useState<AjnFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
   const requestController = useRef<AbortController | null>(null);
 
   const load = async () => {
@@ -80,7 +83,11 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
 
       const videoItems = feeds
         .filter((item) => item.mediaType === 'video')
-        .sort((a, b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')))
+        .sort((a, b) => {
+          const aTime = Date.parse(a.publishedAt || '');
+          const bTime = Date.parse(b.publishedAt || '');
+          return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+        })
         .slice(0, 6);
       const audioItems = feeds
         .filter((item) => item.mediaType === 'audio')
@@ -88,6 +95,7 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
         .slice(0, 6);
 
       setItems([...videoItems, ...audioItems]);
+      setLastCheckedAt(new Date().toISOString());
 
       if (feeds.length === 0 && failures.length > 0) {
         setError('AJN resource feeds are currently unavailable.');
@@ -109,6 +117,11 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
       requestController.current?.abort();
       requestController.current = null;
     };
+  }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => void load(), REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(interval);
   }, []);
 
   return (
@@ -173,7 +186,12 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
         </div>
       )}
 
-      {catalog && <p className="text-[10px] text-neutral-600 font-mono">Source: {catalog.source}</p>}
+      {catalog && (
+        <div className="flex items-center justify-between gap-3 text-[10px] text-neutral-600 font-mono">
+          <span>Source: {catalog.source}</span>
+          {lastCheckedAt && <span>Last checked: {new Date(lastCheckedAt).toLocaleTimeString()}</span>}
+        </div>
+      )}
     </section>
   );
 }
