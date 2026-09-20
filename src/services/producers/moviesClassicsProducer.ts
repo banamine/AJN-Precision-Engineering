@@ -1,4 +1,5 @@
 import { normalizeAssetIdentity, normalizeProgramIdentity, normalizeSourceIdentity } from '../../utils/epgIdentity';
+import { buildArchiveProxyUrl } from '../../utils/archivePlayback';
 import { Program } from '../../types';
 
 export interface RawArchiveListItem {
@@ -42,7 +43,8 @@ export function buildMoviesClassicsPrograms(manifestItems: RawArchiveListItem[])
 
     for (const file of playableFiles) {
       const externalId = `${item.identifier}:${file.name}`;
-      const mediaUrl = encodeArchivePath(item.identifier, file.name);
+      const archivePath = encodeArchivePath(item.identifier, file.name);
+      const mediaUrl = buildArchiveProxyUrl(archivePath);
       const programId = normalizeProgramIdentity({
         externalId,
         channelId: MOVIES_CLASSICS_CHANNEL_ID,
@@ -53,7 +55,7 @@ export function buildMoviesClassicsPrograms(manifestItems: RawArchiveListItem[])
         externalId,
         archiveIdentifier: item.identifier,
         programId,
-        mediaUrl,
+        mediaUrl: archivePath,
       });
       const programTitle = playableFiles.length > 1 && file.title
         ? `${item.title}: ${file.title}`
@@ -68,7 +70,7 @@ export function buildMoviesClassicsPrograms(manifestItems: RawArchiveListItem[])
         assetId,
         title: programTitle,
         mediaUrl,
-        archivePath: mediaUrl,
+        archivePath,
         mediaType: 'video',
         isArchivedSource: true,
         description: `Classic Cinema Archive: ${programTitle}`,
