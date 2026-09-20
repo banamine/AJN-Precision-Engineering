@@ -149,12 +149,24 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
           group: existing.group || entry.groupTitle || playlist.category}
       : {id,guideId,name:entry.tvgName||entry.title,mediaType,logo:entry.tvgLogo,group:entry.groupTitle||playlist.category,tvgId:entry.tvgId,tvgName:entry.tvgName,enabled:true};
     channelsMap.set(id,ch); updated.push(ch); const sources=channelSourcesMap.get(id)||[];
+    const playlistSourceIds = new Set(entries.map(e => normalizeSourceIdentity({
+      channelId: id,
+      url: sanitizeIdentityUrl(e.url),
+      protocol: e.url.includes('.m3u8') ? 'hls' : 'https',
+    })));
     const protocol=entry.url.includes('.m3u8')?'hls':'https';
     const canonicalSourceId=normalizeSourceIdentity({channelId:id,url:sanitizedUrl,protocol});
     if(!sources.some(s=>s.id===canonicalSourceId)){
       sources.push({id:canonicalSourceId,channelId:id,protocol,url:entry.url,priority:sources.length+1,enabled:true,metadata:{playlistId:playlist.id,playlistName:playlist.name,category:playlist.category,durationSeconds:entry.duration&&entry.duration>0?entry.duration:undefined}});
       channelSourcesMap.set(id,sources);
     }
+    for (const source of sources) {
+      if (source.metadata?.playlistId === playlist.id && !playlistSourceIds.has(source.id)) {
+        source.enabled = false;
+        source.metadata = { ...source.metadata, retiredAt: new Date().toISOString(), retirementReason: 'absent-from-latest-playlist-sync' };
+      }
+    }
+    channelSourcesMap.set(id, sources);
   }
   playlist.lastSyncedAt=new Date().toISOString(); playlist.syncStatus='synced'; playlist.itemCount=entries.length; playlist.rawM3u=text; playlistsMap.set(playlist.id,playlist);
   return {ingestedCount:entries.length,channels:updated};
