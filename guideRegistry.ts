@@ -3,6 +3,7 @@ import {
 } from './src/types';
 import { getChannelSchedule } from './channels';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
+import { buildEpgIdentity, EpgIdentityResolutionError } from './src/utils/epgIdentity';
 
 export const GUIDES: Guide[] = [
   { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
@@ -16,6 +17,58 @@ export const GUIDES: Guide[] = [
 const channelsMap = new Map<string, Channel>();
 const channelSourcesMap = new Map<string, ChannelSource[]>();
 const playlistsMap = new Map<string, Playlist>();
+const programsMap = new Map<string, Program>();
+
+function programRegistryKey(sourceId:string, programId:string):string {
+  return `${sourceId}:${programId}`;
+}
+
+function logEpgIdentity(outcome:'AUTHORITATIVE_MATCH'|'DETERMINISTIC_FALLBACK'|'SANITY_REJECTED', detail:Record<string,unknown>){
+  console.debug('[EpgIdentityLog]', { outcome, ...detail });
+}
+
+function upsertCanonicalProgram(candidate:{
+  guideId:string; channelId:string; title:string; mediaUrl:string; mediaType:MediaType;
+  sourceId?:string; programId?:string; assetId?:string; archiveIdentifier?:string; publishedAt?:string;
+  startTime?:number; endTime?:number; startTimeUtc?:number; endTimeUtc?:number;
+  description?:string; metadata?:Record<string,unknown>;
+}): Program | null {
+  try {
+    const identity = buildEpgIdentity(candidate);
+    const key = programRegistryKey(identity.sourceId, identity.programId);
+    const existing = programsMap.get(key);
+    const program:Program = {
+      ...(existing || {}),
+      id: identity.programId,
+      guideId: candidate.guideId,
+      channelId: candidate.channelId,
+      title: candidate.title,
+      description: candidate.description,
+      startTime: candidate.startTime ?? existing?.startTime ?? 0,
+      endTime: candidate.endTime ?? existing?.endTime ?? 24,
+      mediaType: candidate.mediaType,
+      mediaUrl: candidate.mediaUrl,
+      archivePath: candidate.mediaUrl,
+      sourceId: identity.sourceId,
+      assetId: identity.assetId,
+      publishedAt: candidate.publishedAt,
+      archiveIdentifier: candidate.archiveIdentifier,
+      metadata: { ...(existing?.metadata || {}), ...(candidate.metadata || {}) },
+    };
+    programsMap.set(key, program);
+    logEpgIdentity(candidate.programId ? 'AUTHORITATIVE_MATCH' : 'DETERMINISTIC_FALLBACK', {
+      guideId: candidate.guideId, channelId: candidate.channelId, sourceId: identity.sourceId,
+      programId: identity.programId, assetId: identity.assetId,
+    });
+    return program;
+  } catch (error) {
+    logEpgIdentity('SANITY_REJECTED', {
+      guideId: candidate.guideId, channelId: candidate.channelId,
+      reason: error instanceof EpgIdentityResolutionError ? error.message : String(error),
+    });
+    return null;
+  }
+}
 
 const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
   {
@@ -92,9 +145,15 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
   const mediaType:MediaType=guideId==='audio-podcasts'?'audio':'video';
   for(const entry of entries){
     const id=channelId(entry.tvgId || entry.tvgName || entry.title); const existing=channelsMap.get(id);
+    const sourceId = `src-${channelId(guideId)}-${id}`;
     const ch:Channel=existing?{...existing,logo:existing.logo||entry.tvgLogo,group:existing.group||entry.groupTitle||playlist.category}
       :{id,guideId,name:entry.tvgName||entry.title,mediaType,logo:entry.tvgLogo,group:entry.groupTitle||playlist.category,tvgId:entry.tvgId,tvgName:entry.tvgName,enabled:true};
     channelsMap.set(id,ch); updated.push(ch); const sources=channelSourcesMap.get(id)||[];
+    upsertCanonicalProgram({
+      guideId, channelId:id, sourceId, title:entry.title, mediaUrl:entry.url,
+      mediaType, startTime:0, endTime:24,
+      metadata:{ playlistId:playlist.id, playlistName:playlist.name, tvgId:entry.tvgId, tvgName:entry.tvgName },
+    });
     if(!sources.some(s=>s.url===entry.url)){
       sources.push({id:`src-${id}-${sources.length+1}`,channelId:id,protocol:entry.url.includes('.m3u8')?'hls':'https',url:entry.url,priority:sources.length+1,enabled:true,metadata:{playlistId:playlist.id,playlistName:playlist.name,category:playlist.category,durationSeconds:entry.duration&&entry.duration>0?entry.duration:undefined}});
       channelSourcesMap.set(id,sources);
@@ -134,14 +193,34 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv'){
     const news=await getChannelSchedule();
-    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any,index:number)=>({id:`${ch.id}-${index+1}`,guideId,channelId:ch.id,title:p.title,description:`Archive.org broadcast: ${p.title}`,startTime:p.startHour,endTime:p.endHour,startHour:p.startHour,endHour:p.endHour,mediaType:'video' as MediaType,mediaUrl:p.archivePath,archivePath:p.archivePath}))}));
+    return news.map(ch=>({
+      id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,
+      programs:ch.programs.map((p:any,index:number)=>{
+        const program = upsertCanonicalProgram({
+          guideId, channelId:ch.id, sourceId:`src-${guideId}-${ch.id}`, title:p.title, mediaUrl:p.archivePath,
+          mediaType:'video', startTime:p.startHour, endTime:p.endHour,
+          archiveIdentifier:p.archivePath,
+          metadata:{ provider:'archive', scheduleIndex:index },
+        });
+        return program ? {...program,startHour:p.startHour,endHour:p.endHour} : null;
+      }).filter(Boolean) as Program[],
+    }));
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
     return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs}];
   }
-  return getChannelsByGuide(guideId).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[{id:`${ch.id}-1`,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:ch.sources?.[0]?.url||'',archivePath:ch.sources?.[0]?.url||''}]}));
+  return getChannelsByGuide(guideId).map(ch=>{
+    const mediaUrl = ch.sources?.[0]?.url || '';
+    const program = mediaUrl ? upsertCanonicalProgram({
+      guideId, channelId:ch.id, sourceId:`src-${guideId}-${ch.id}`, title:ch.name, mediaUrl,
+      mediaType:ch.mediaType, startTime:0, endTime:24,
+    }) : null;
+    return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:program ? [{...program,startHour:0,endHour:24}] : []};
+  });
 }
 
 export function addChannel(ch:Channel){channelsMap.set(ch.id,ch);}
 export function setChannelSources(id:string,sources:ChannelSource[]){channelSourcesMap.set(id,sources);}
+export function getCanonicalEpgPrograms(): Program[]{ return Array.from(programsMap.values()); }
+export function getCanonicalEpgProgram(sourceId:string, programId:string): Program | undefined { return programsMap.get(programRegistryKey(sourceId, programId)); }
