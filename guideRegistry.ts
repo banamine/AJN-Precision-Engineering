@@ -220,7 +220,7 @@ export function getAllPlaylists(){return Array.from(playlistsMap.values());}
 export function getPlaylistById(id:string){return playlistsMap.get(id);}
 export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.get(id);if(!p)return{success:false};const text=customM3u||p.rawM3u||'';if(!text){p.syncStatus='failed';return{success:false,playlist:p};}const r=ingestM3uPlaylist(p,text);return{success:true,playlist:p,count:r.ingestedCount};}
 
-async function ingestAjnFeedItems(items: Array<{
+export function ingestAjnFeedItems(items: Array<{
   feedId: AjnFeedId;
   title: string;
   url: string;
