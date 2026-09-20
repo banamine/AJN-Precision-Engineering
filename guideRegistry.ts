@@ -3,6 +3,7 @@ import {
 } from './src/types';
 import { getChannelSchedule } from './channels';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
+import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
 
 export const GUIDES: Guide[] = [
@@ -12,6 +13,8 @@ export const GUIDES: Guide[] = [
     description: 'Curated classic television collections resolved from Archive.org metadata' },
   { id: 'audio-podcasts', name: 'Audio & Podcasts', type: 'audio', enabled: true,
     description: 'Live radio streams, historic aerospace vaults, audio dramas, and podcasts' },
+  { id: 'science-documentaries', name: 'Science Documentaries', type: 'video', enabled: true,
+    description: 'Curated science documentaries resolved from verified Archive.org manifests' },
 ];
 
 const channelsMap = new Map<string, Channel>();
@@ -181,7 +184,11 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
   playlist.lastSyncedAt=new Date().toISOString(); playlist.syncStatus='synced'; playlist.itemCount=entries.length; playlist.rawM3u=text; playlistsMap.set(playlist.id,playlist);
   return {ingestedCount:entries.length,channels:updated};
 }
-export function initializeRegistry(){ if(playlistsMap.size)return; for(const {playlist,m3uContent} of INITIAL_PLAYLISTS){playlistsMap.set(playlist.id,playlist);ingestM3uPlaylist(playlist,m3uContent);} }
+export function initializeRegistry(){
+  if(playlistsMap.size)return;
+  for(const {playlist,m3uContent} of INITIAL_PLAYLISTS){playlistsMap.set(playlist.id,playlist);ingestM3uPlaylist(playlist,m3uContent);}
+  for(const program of getNovaCanonicalPrograms()) upsertCanonicalProgram(program);
+}
 initializeRegistry();
 
 export function getAllGuides(){return GUIDES;}
