@@ -175,7 +175,6 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
                     item.metadata?.archiveIdentifier || item.metadata?.guid || item.id,
                     `ajn-rss-${item.feedId.toLowerCase()}`,
                     item.metadata?.archiveIdentifier || item.metadata?.guid || item.id,
-                    item.metadata?.archiveIdentifier || item.metadata?.guid || item.id,
                     {
                       feedId: item.feedId,
                       publishedAt: item.publishedAt,
