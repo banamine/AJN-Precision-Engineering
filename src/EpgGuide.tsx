@@ -183,7 +183,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
 
                   return (
                     <button
-                      key={program.id || idx}
+                      key={program.id}
                       type="button"
                       id={`epg-prog-${channel.id}-${idx}`}
                       onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id)}
