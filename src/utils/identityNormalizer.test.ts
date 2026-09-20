@@ -13,6 +13,7 @@ const foxInput = {
   guideId: 'cable-tv',
   channelId: 'fox-news',
   publishedAt: '2026-09-20T18:00:00Z',
+  feedId: undefined,
 };
 
 const first = normalizePlaybackIdentity(foxInput);
@@ -31,6 +32,7 @@ const ajn = normalizePlaybackIdentity({
   feedId: 'AJNHourlyVideo',
   title: 'WAR-ROOM 2026-07-29_Wed_WarRoom-Hr3',
   mediaUrl: 'https://rss.alexjones.media/download/VIDEO%20-%2020260729_Wed_WarRoom-Hr3.mp4',
+  feedId: 'AJNHourlyVideo',
 });
 
 assert(ajn.guideId === 'ajn-resource', 'AJN guideId should derive from URL');
