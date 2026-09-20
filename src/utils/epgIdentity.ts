@@ -56,6 +56,10 @@ function normalizeProgramTitle(value: string): string {
     .trim() || '';
 }
 
+const VOLATILE_QUERY_KEYS = new Set([
+  'token', 'start', 'end', 'expires', 'expiry', 'signature', 'sig', 'auth', 'hdnts',
+]);
+
 function normalizeAssetPath(value: string): string {
   try {
     const url = new URL(value, 'http://ajn.local');
@@ -63,7 +67,16 @@ function normalizeAssetPath(value: string): string {
       .replace(/\/+/g, '/')
       .replace(/\/\.\//g, '/')
       .replace(/\/[^/]+\/\.\.\//g, '/');
-    return path.toLocaleLowerCase('en-US');
+
+    const semanticQuery = Array.from(url.searchParams.entries())
+      .filter(([key]) => !VOLATILE_QUERY_KEYS.has(key.toLowerCase()))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, val]) => `${key.toLowerCase()}=${val.normalize('NFC')}`)
+      .join('&');
+
+    return semanticQuery
+      ? `${path.toLocaleLowerCase('en-US')}?${semanticQuery}`
+      : path.toLocaleLowerCase('en-US');
   } catch {
     return value.split(/[?#]/, 1)[0].normalize('NFC').trim().toLocaleLowerCase('en-US');
   }
@@ -143,8 +156,9 @@ export function buildEpgIdentity(input: EpgIdentityInput): EpgIdentity {
   const normalizedPath = normalizeAssetPath(mediaUrl);
   const genericLive = /\/(?:live(?:\.[a-z0-9]+)?|stream(?:\.[a-z0-9]+)?|index(?:\.[a-z0-9]+)?)$/i.test(normalizedPath) ||
     /\.(?:m3u8|mpd)$/i.test(normalizedPath);
+  const liveNamespace = genericLive ? `${sourceId}:${slug(channelId)}` : '';
   const assetKey = clean(input.assetId) || clean(input.archiveIdentifier) ||
-    (genericLive ? `${sourceId}:${normalizedPath}` : normalizedPath);
+    (genericLive ? `${liveNamespace}:${normalizedPath}` : normalizedPath);
   const assetId = clean(input.assetId) || `asset-${slug(assetKey)}`;
 
   return { sourceId, programId, assetId };
