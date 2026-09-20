@@ -43,6 +43,8 @@ export interface Program {
   description?: string;
   startTime: number;
   endTime: number;
+  startTimeUtc?: string;
+  endTimeUtc?: string;
   startHour?: number;
   endHour?: number;
   mediaType: MediaType;
