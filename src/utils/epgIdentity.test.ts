@@ -36,11 +36,15 @@ test('normalizes Unicode and episode notation', () => {
   assert.equal(a.programId, b.programId);
 });
 
-test('rejects floating/string schedule timestamps', () => {
-  assert.throws(
-    () => buildEpgIdentity({ ...base, startTimeUtc: undefined, endTimeUtc: undefined, publishedAt: '2026-09-20T18:00:00' } as any),
-    EpgIdentityResolutionError,
-  );
+test('rejects partial and non-integer UTC schedule windows', () => {
+  assert.throws(() => buildEpgIdentity({ ...base, endTimeUtc: undefined }), EpgIdentityResolutionError);
+  assert.throws(() => buildEpgIdentity({ ...base, startTimeUtc: 1.5 }), EpgIdentityResolutionError);
+});
+
+test('keeps asset identity stable across CDN mirrors and clipping queries', () => {
+  const a = buildEpgIdentity({ ...base, mediaUrl: 'https://cdn-a.example/path/show.mp4?token=a&start=0&end=300' });
+  const b = buildEpgIdentity({ ...base, mediaUrl: 'https://cdn-b.example/path/show.mp4?token=b&start=300&end=600' });
+  assert.equal(a.assetId, b.assetId);
 });
 
 test('isolates new channel/source namespaces', () => {
