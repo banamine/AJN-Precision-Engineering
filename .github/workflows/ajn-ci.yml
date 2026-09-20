@@ -51,10 +51,7 @@ jobs:
           set +e
           for endpoint in resources audio/hourly audio/segment; do
             echo "=== /api/ajn/$endpoint ==="
-            curl --silent --show-error --dump-header /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).headers \
-              --output /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).json \
-              --write-out 'HTTP %{http_code}\n' \
-              "http://localhost:3000/api/ajn/$endpoint"
+            curl --silent --show-error --dump-header /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).headers               --output /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).json               --write-out 'HTTP %{http_code}\n'               "http://localhost:3000/api/ajn/$endpoint"
           done
           echo "=== resource payloads ==="
           for file in /tmp/ajn-resources.json /tmp/ajn-audio-hourly.json /tmp/ajn-audio-segment.json; do
@@ -85,6 +82,9 @@ jobs:
 
       - name: AudioContext singleton regression
         run: npm run test:audio-singleton
+
+      - name: Browser journey regression
+        run: npm run test:browser-journeys
 
       - name: Visual regression screenshots
         run: |
