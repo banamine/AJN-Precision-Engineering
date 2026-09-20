@@ -22,7 +22,8 @@
     "test:epg-program-lifecycle": "tsx test-epg-program-lifecycle.js",
     "test:ajn-rss-canonical": "tsx test-ajn-rss-canonical.js",
     "test:ajn-audio-canonical": "tsx test-ajn-audio-canonical.js",
-    "test:library-integrity": "tsx test-library-integrity.js"
+    "test:library-integrity": "tsx test-library-integrity.js",
+    "test:nova-canonical": "tsx test-nova-canonical.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
