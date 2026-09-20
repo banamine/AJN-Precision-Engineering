@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ingestM3uPlaylist, getChannelsByGuide, getCanonicalEpgPrograms, getCanonicalEpgProgram, getCanonicalEpgProgramById } from './guideRegistry';
+import { ingestM3uPlaylist, getChannelsByGuide, getCanonicalEpgPrograms, getCanonicalEpgProgram, getCanonicalEpgProgramById, getScheduleForGuide } from './guideRegistry';
 import { buildEpgIdentity } from './src/utils/epgIdentity';
 
 test('generic live paths remain isolated by source namespace', () => {
@@ -76,7 +76,8 @@ test('new M3U source adds only its new channels and keeps identity stable on re-
   }
 });
 
-test('EPG playback receives canonical source and asset identities', () => {
+test('EPG playback receives canonical source and asset identities', async () => {
+  await getScheduleForGuide('classic-tv');
   const program = getCanonicalEpgPrograms().find((item) => item.guideId === 'classic-tv');
   assert.ok(program);
   assert.ok(program.sourceId);
