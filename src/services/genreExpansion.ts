@@ -45,6 +45,7 @@ export interface GenreExpansionResult {
 
 const PLAYABLE_EXTENSIONS = new Set(['.mp3', '.m4a', '.mp4', '.mkv', '.mov', '.ogv', '.webm', '.wav']);
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
+const ALLOWED_SOURCE_CLASSES = new Set<NonNullable<Program['sourceClass']>>(['archive_org', 'ajn_archive', 'ajn_rss']);
 
 function isValidUrl(value: string | undefined): boolean {
   if (!value) return false;
@@ -86,6 +87,7 @@ export function expandGenreCandidates(candidates: GenreExpansionCandidate[]): Ge
     if (!title) return rejected.push({ candidateIndex, reason: 'title is required' });
     if (!candidate.guideId.trim()) return rejected.push({ candidateIndex, reason: 'guideId is required' });
     if (!candidate.sourceClass) return rejected.push({ candidateIndex, reason: 'sourceClass is required' });
+    if (!ALLOWED_SOURCE_CLASSES.has(candidate.sourceClass)) return rejected.push({ candidateIndex, reason: 'sourceClass is not allowed for genre expansion' });
     if (!sourceUrl || !isValidUrl(sourceUrl)) return rejected.push({ candidateIndex, reason: 'valid sourceUrl is required' });
 
     const channelId = normalizeChannelIdentity({
