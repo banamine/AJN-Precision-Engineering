@@ -56,6 +56,8 @@ export interface Program {
   sourceId?: string;
   assetId?: string;
   archiveIdentifier?: string;
+  sourceClass?: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'm3u_live';
+  isArchivedSource?: boolean;
 }
 
 export interface Playlist {
