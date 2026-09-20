@@ -14,6 +14,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { LibraryItem, PlayProgramCallback } from '../types';
+import { getCuratedLibraryProjection } from '../services/libraryService';
 
 interface LibraryViewProps {
   onPlayProgram: PlayProgramCallback;
@@ -21,7 +22,7 @@ interface LibraryViewProps {
 
 const SHERLOCK_HOLMES_FOREWORD = 'https://archive.org/download/sherlock-holmes-the-adventures-of-sherlock-holmes/Chapter%2000.2%20-%20Foreword.mp3';
 
-const CURATED_LIBRARY_ITEMS: LibraryItem[] = [];
+const CURATED_LIBRARY_ITEMS: LibraryItem[] = getCuratedLibraryProjection();
 
 
 const CATEGORIES = [
