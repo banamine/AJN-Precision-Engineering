@@ -109,7 +109,7 @@ test('partial authoritative identity is completed deterministically', () => {
   });
   assert.equal(fromProgram.programId, 'prog-authoritative');
   assert.equal(fromProgram.sourceId, 'src-direct');
-  assert.equal(fromProgram.assetId, 'asset-video.mp4');
+  assert.equal(fromProgram.assetId, 'asset-video-mp4');
 
   const fromAsset = buildEpgIdentity({
     guideId: 'on-demand',
