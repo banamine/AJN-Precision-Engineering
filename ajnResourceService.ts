@@ -125,6 +125,38 @@ export function canonicalizeAjnFeedItems(items: AjnFeedItem[]): Program[] {
   return items.map(item => upsertCanonicalProgram(buildCanonicalAjnProgram(item)));
 }
 
+function buildCanonicalAjnAudioProgram(item: AjnFeedItem, kind: AjnAudioIndex['kind']): Program {
+  const externalId = item.id;
+  const startTime = Date.now();
+  const channelId = `ajn-audio-${kind}`;
+  const programId = normalizeProgramIdentity({ externalId, channelId, title: item.title, startTime });
+  const assetId = normalizeAssetIdentity({ externalId, programId, mediaUrl: item.url });
+  return {
+    id: programId,
+    guideId: 'audio-podcasts',
+    channelId,
+    title: item.title,
+    description: `AJN audio ${kind} item`,
+    startTime,
+    endTime: startTime + 60 * 60 * 1000,
+    mediaType: 'audio',
+    mediaUrl: item.url,
+    assetId,
+    sourceClass: 'ajn_archive',
+    isArchivedSource: true,
+    metadata: {
+      externalId,
+      sourceIndex: item.metadata.sourceIndex,
+      resourceKind: kind,
+      authoritative: item.metadata.authoritative,
+    },
+  };
+}
+
+export function canonicalizeAjnAudioItems(items: AjnFeedItem[], kind: AjnAudioIndex['kind']): Program[] {
+  return items.map(item => upsertCanonicalProgram(buildCanonicalAjnAudioProgram(item, kind)));
+}
+
 const entityMap: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
 function decodeXml(value: string): string {
