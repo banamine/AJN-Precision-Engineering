@@ -70,3 +70,19 @@ assert(getCanonicalProgram(m3uId)?.endTime === 24, 'M3U schedule-hour fields mus
 assert(getCanonicalProgram(m3uId)?.endTimeUtc === m3uLike.endTimeUtc, 'M3U UTC lifecycle field must be retained');
 
 assert(getCanonicalProgram(m3uId)?.sourceId === 'source-test-1', 'Canonical M3U program must preserve source identity');
+
+
+const orderedA = upsertCanonicalProgram({
+  ...makeProgram('ordered-a', new Date(now + 2 * 60 * 60 * 1000).toISOString(), 'Ordered A'),
+  startTimeUtc: new Date(now + 60 * 60 * 1000).toISOString(),
+  endTimeUtc: new Date(now + 2 * 60 * 60 * 1000).toISOString(),
+});
+const orderedB = upsertCanonicalProgram({
+  ...makeProgram('ordered-b', new Date(now + 3 * 60 * 60 * 1000).toISOString(), 'Ordered B'),
+  startTimeUtc: new Date(now + 2 * 60 * 60 * 1000).toISOString(),
+  endTimeUtc: new Date(now + 3 * 60 * 60 * 1000).toISOString(),
+});
+const channelPrograms = getCanonicalPrograms()
+  .filter((program) => program.channelId === 'test-channel')
+  .sort((a, b) => Date.parse(a.startTimeUtc || '') - Date.parse(b.startTimeUtc || '') || a.id.localeCompare(b.id));
+assert(channelPrograms.findIndex((program) => program.id === orderedA.id) < channelPrograms.findIndex((program) => program.id === orderedB.id), 'Canonical programs must sort deterministically by UTC start time');
