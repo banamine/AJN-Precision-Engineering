@@ -124,7 +124,13 @@ export function getChannelById(id:string){
 }
 export function getChannelSources(id:string){return channelSourcesMap.get(id)||[];}
 export function addChannelSource(channelId:string,source:Partial<ChannelSource>){
-  const existing=channelSourcesMap.get(channelId)||[]; const created:ChannelSource={id:source.id||`src-${channelId}-${existing.length+1}`,channelId,protocol:source.protocol||(source.url?.includes('.m3u8')?'hls':'https'),url:source.url||'',priority:source.priority??existing.length+1,enabled:source.enabled??true,metadata:source.metadata};
+  const url=source.url||''; const protocol=source.protocol||(url.includes('.m3u8')?'hls':'https');
+  if(!url) throw new Error('Channel source URL is required');
+  const canonicalId=normalizeSourceIdentity({channelId,url,protocol});
+  const existing=channelSourcesMap.get(channelId)||[];
+  const existingSource=existing.find(s=>s.id===canonicalId);
+  if(existingSource) return existingSource;
+  const created:ChannelSource={id:source.id||canonicalId,channelId,protocol,url,priority:source.priority??existing.length+1,enabled:source.enabled??true,metadata:source.metadata};
   existing.push(created); channelSourcesMap.set(channelId,existing); return created;
 }
 export function getAllPlaylists(){return Array.from(playlistsMap.values());}
