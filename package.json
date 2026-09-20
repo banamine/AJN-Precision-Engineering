@@ -19,7 +19,8 @@
     "test:api-contract": "node test-api-contracts.js",
     "test:accessibility": "node test-accessibility.js",
     "test:browser-journeys": "node test-browser-journeys.js",
-    "test:epg-program-lifecycle": "tsx test-epg-program-lifecycle.js"
+    "test:epg-program-lifecycle": "tsx test-epg-program-lifecycle.js",
+    "test:ajn-rss-canonical": "tsx test-ajn-rss-canonical.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
