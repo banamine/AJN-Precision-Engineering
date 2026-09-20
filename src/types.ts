@@ -86,9 +86,38 @@ export interface ScheduleChannel {
   programs: Program[];
 }
 
-export interface NowPlayingMedia {
-  programId?: string;
+export interface PlaybackIdentityInput {
+  guideId?: string;
+  channelId?: string;
   sourceId?: string;
+  assetId?: string;
+  programId?: string;
+  title: string;
+  mediaUrl: string;
+  publishedAt?: string;
+  archiveIdentifier?: string;
+}
+
+export interface PlaybackIdentity {
+  guideId: string;
+  channelId: string;
+  sourceId: string;
+  assetId: string;
+  programId: string;
+  titleId: string;
+  playbackId: string;
+  routeId: string;
+  archiveIdentifier?: string;
+  proxyRequestId?: string;
+}
+
+export interface NowPlayingMedia {
+  identity: PlaybackIdentity;
+  /** @deprecated Use identity.programId. Retained temporarily for player compatibility. */
+  programId?: string;
+  /** @deprecated Use identity.sourceId. Retained temporarily for player compatibility. */
+  sourceId?: string;
+  /** @deprecated Use identity.assetId. Retained temporarily for player compatibility. */
   assetId?: string;
   src: string;
   title: string;
