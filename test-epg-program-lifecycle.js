@@ -12,7 +12,9 @@ const makeProgram = (externalId, endTime, title = externalId) => ({
   title,
   description: 'Lifecycle regression',
   startTime: new Date(endTime - 60 * 60 * 1000).toISOString(),
-  endTime,
+  endTime: typeof endTime === 'string' ? Date.parse(endTime) : endTime,
+  startTimeUtc: new Date(new Date(endTime).getTime() - 60 * 60 * 1000).toISOString(),
+  endTimeUtc: new Date(endTime).toISOString(),
   mediaType: 'video',
   mediaUrl: '/download/test.mp4',
   archivePath: '/download/test.mp4',
@@ -53,3 +55,15 @@ const deleted = sweepCanonicalPrograms(now);
 assert(deleted >= 0, 'Explicit sweep must return a non-negative eviction count');
 
 console.log('Canonical program lifecycle regression: PASS');
+
+const m3uLike = {
+  ...makeProgram('lifecycle-m3u-hours', new Date(now + 60 * 60 * 1000).toISOString(), 'M3U Live'),
+  startTime: 0,
+  endTime: 24,
+  startTimeUtc: new Date(now).toISOString(),
+  endTimeUtc: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
+  sourceClass: 'm3u_live',
+};
+const m3uId = upsertCanonicalProgram(m3uLike).id;
+assert(getCanonicalProgram(m3uId)?.endTime === 24, 'M3U schedule-hour fields must remain intact');
+assert(getCanonicalProgram(m3uId)?.endTimeUtc === m3uLike.endTimeUtc, 'M3U UTC lifecycle field must be retained');
