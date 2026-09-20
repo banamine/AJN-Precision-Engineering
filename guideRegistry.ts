@@ -74,7 +74,7 @@ function upsertCanonicalProgram(candidate:{
       mediaUrl: candidate.mediaUrl,
       archivePath: candidate.mediaUrl,
       sourceId: identity.sourceId,
-      assetId: identity.assetId,
+      assetId: existing?.assetId ?? identity.assetId,
       publishedAt: candidate.publishedAt,
       archiveIdentifier: candidate.archiveIdentifier,
       metadata: { ...(existing?.metadata || {}), ...(candidate.metadata || {}) },
