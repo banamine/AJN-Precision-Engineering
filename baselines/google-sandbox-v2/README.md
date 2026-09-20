@@ -14,10 +14,10 @@ This directory is the canonical storage area for complete AJN Builder/V2 source 
 ## Current baseline
 
 Working source package supplied for this baseline:
-`AJN-FULL-REBUILD-FIXED-DROP-IN-V2.zip`
+`AJN-FULL-REBUILD-FIXED-DROP-IN-V2 (1).zip`
 
 Supplied archive SHA-256:
-`cbbacb5721ff5d4bf656a5dfd1130d48cc06a74663f62f35452c5b0841f9dda5`
+`dce90b0c7eb197a418569bea40f5673eb4ae098cf36b63fdca73f541769c7203`
 
 The source package contains historical drop-ins as well as the working V2 project. Before importing into Git, preserve the working project tree and keep historical packages separated from it.
 
