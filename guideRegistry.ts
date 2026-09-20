@@ -248,7 +248,7 @@ export async function getAjnScheduleForFeed(feedId?: AjnFeedId): Promise<Schedul
   const feedIds: AjnFeedId[] = feedId ? [feedId] : ['Alex','WarRoom','SundayLive','AJNHourlyVideo','AJNHourlyAudio'];
   const rssResults = await Promise.all(feedIds.map((id) => fetchAjnFeed(id)));
   const audioResults = feedId && feedId !== 'AJNHourlyAudio' ? [] : await Promise.all([fetchAjnAudioIndex('hourly'), fetchAjnAudioIndex('segment')]);
-  const programs = await ingestAjnFeedItems([...rssResults.flatMap((result) => result.items), ...audioResults.flatMap((result) => result.items)]);
+  const programs = ingestAjnFeedItems([...rssResults.flatMap((result) => result.items), ...audioResults.flatMap((result) => result.items)]);
   const byChannel = new Map<string, Program[]>();
   for (const program of programs) {
     const list = byChannel.get(program.channelId) || [];
