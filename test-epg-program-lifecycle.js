@@ -63,7 +63,10 @@ const m3uLike = {
   startTimeUtc: new Date(now).toISOString(),
   endTimeUtc: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
   sourceClass: 'm3u_live',
+  sourceId: 'source-test-1',
 };
 const m3uId = upsertCanonicalProgram(m3uLike).id;
 assert(getCanonicalProgram(m3uId)?.endTime === 24, 'M3U schedule-hour fields must remain intact');
 assert(getCanonicalProgram(m3uId)?.endTimeUtc === m3uLike.endTimeUtc, 'M3U UTC lifecycle field must be retained');
+
+assert(getCanonicalProgram(m3uId)?.sourceId === 'source-test-1', 'Canonical M3U program must preserve source identity');
