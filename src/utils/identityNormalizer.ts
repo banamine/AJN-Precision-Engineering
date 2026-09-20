@@ -90,7 +90,7 @@ export function normalizePlaybackIdentity(
     );
   }
 
-  const sourceId = cleanCandidate(input.sourceId) || 'src-' + slug(channelId);
+  const sourceId = cleanCandidate(input.sourceId) || (cleanCandidate(input.feedId) ? `ajn-rss-${slug(input.feedId!)}` : 'src-' + slug(channelId));
   const titleId = slug(input.title) || 'untitled-program';
   const filenameSlug = slug(mediaFilename(input.mediaUrl));
   const publishedDate = dateSlug(input);
