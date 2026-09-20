@@ -165,9 +165,6 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
               <button
                 type="button"
                 onClick={() => {
-                  const sourceId = item.metadata?.sourceId || `ajn-rss-${item.feedId.toLowerCase()}`;
-                  const assetId = item.metadata?.assetId || `ajn-asset-${item.id.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-                  const programId = item.metadata?.programId || `ajn-${item.feedId.toLowerCase()}-${item.id.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
                   onPlayProgram(
                     item.url!,
                     item.title,
@@ -175,9 +172,14 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
                     item.mediaType,
                     'ajn-resource',
                     'ajn-archive',
-                    programId,
-                    sourceId,
-                    assetId,
+                    undefined,
+                    undefined,
+                    undefined,
+                    {
+                      feedId: item.feedId,
+                      publishedAt: item.publishedAt,
+                      archiveIdentifier: item.metadata?.archiveIdentifier || item.metadata?.guid,
+                    },
                   );
                 }}
                 className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-sky-600 hover:text-white"
