@@ -77,6 +77,9 @@ jobs:
       - name: EPG identity regression
         run: npm run test:epg-identity
 
+      - name: EPG producer identity regression
+        run: npm run test:epg-identity-producers
+
       - name: Audio bridge browser regression
         run: npm run test:audio
 
