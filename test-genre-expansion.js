@@ -37,4 +37,12 @@ const rejected = expandGenreCandidates([{
 assert.equal(rejected.programs.length, 0);
 assert.equal(rejected.rejected[0].reason, 'valid sourceUrl is required');
 
+const disallowedSourceClass = expandGenreCandidates([{
+  origin: 'discovery', evidenceType: 'manifest', sourceUrl: 'https://archive.org/download/demo/', title: 'Live',
+  channelExternalId: 'live-channel', guideId: 'live-guide', mediaType: 'video', sourceClass: 'm3u_live',
+  mediaUrl: 'https://example.test/live.mp4', startTime: 1726790400000,
+}]);
+assert.equal(disallowedSourceClass.programs.length, 0, 'm3u_live must not enter genre expansion');
+assert.equal(disallowedSourceClass.rejected[0].reason, 'sourceClass is not allowed for genre expansion');
+
 console.log('Genre expansion utility regression: PASS');
