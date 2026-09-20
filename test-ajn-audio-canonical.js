@@ -25,10 +25,16 @@ assert(first[0].channelId === 'ajn-audio-hourly', 'Hourly audio must use canonic
 assert(first[0].assetId, 'Audio program must receive canonical assetId');
 
 const second = canonicalizeAjnAudioItems([
-  { ...item, url: 'https://cdn.example.test/audio/hour-001.mp3?token=beta' },
+  { ...item, url: 'https://cdn.example.test/audio/hour-001.mp3?token=beta', publishedAt: '2026-09-20T10:00:00Z' },
 ], 'hourly');
 
 assert(second[0].id === first[0].id, 'Stable audio item identity must survive transport token rotation');
+
+const later = canonicalizeAjnAudioItems([
+  { ...item, url: 'https://cdn.example.test/audio/hour-001.mp3?token=gamma', publishedAt: '2026-09-20T10:00:00Z' },
+], 'hourly');
+
+assert(later[0].id === first[0].id, 'Repeated audio ingestion must preserve program identity across polling cycles');
 assert(getCanonicalPrograms().filter(program => program.id === first[0].id).length === 1, 'Repeated audio ingestion must not duplicate canonical programs');
 
 const segment = canonicalizeAjnAudioItems([
