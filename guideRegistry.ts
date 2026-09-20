@@ -91,9 +91,14 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
   const mediaType:MediaType=guideId==='audio-podcasts'?'audio':'video';
   for(const entry of entries){
     const sanitizedUrl = sanitizeIdentityUrl(entry.url);
-    const id=normalizeChannelIdentity({ name: entry.tvgName || entry.title, guideId }); const existing=channelsMap.get(id);
-    const ch:Channel=existing?{...existing,logo:existing.logo||entry.tvgLogo,group:existing.group||entry.groupTitle||playlist.category}
-      :{id,guideId,name:entry.tvgName||entry.title,mediaType,logo:entry.tvgLogo,group:entry.groupTitle||playlist.category,tvgId:entry.tvgId,tvgName:entry.tvgName,enabled:true};
+    const id=normalizeChannelIdentity({ externalId: entry.tvgId, name: entry.tvgName || entry.title, guideId }); const existing=channelsMap.get(id);
+    const ch:Channel=existing
+      ? {...existing,
+          tvgId: entry.tvgId || existing.tvgId,
+          tvgName: entry.tvgName || existing.tvgName,
+          logo: existing.logo || entry.tvgLogo,
+          group: existing.group || entry.groupTitle || playlist.category}
+      : {id,guideId,name:entry.tvgName||entry.title,mediaType,logo:entry.tvgLogo,group:entry.groupTitle||playlist.category,tvgId:entry.tvgId,tvgName:entry.tvgName,enabled:true};
     channelsMap.set(id,ch); updated.push(ch); const sources=channelSourcesMap.get(id)||[];
     const protocol=entry.url.includes('.m3u8')?'hls':'https';
     const canonicalSourceId=normalizeSourceIdentity({channelId:id,url:sanitizedUrl,protocol});
