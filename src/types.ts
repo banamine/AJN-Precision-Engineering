@@ -41,6 +41,7 @@ export interface Program {
   channelId: string;
   title: string;
   description?: string;
+  publishedAt?: string;
   startTime: number;
   endTime: number;
   startHour?: number;
