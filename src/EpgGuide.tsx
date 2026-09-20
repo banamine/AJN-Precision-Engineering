@@ -21,7 +21,7 @@ function currentHourFraction(): number {
 
 interface EpgGuideProps {
   guideId?: string;
-  /** Called with archive path, title, channel name, and mediaType when a program block is clicked. */
+  /** Passes the canonical EPG identity tuple through to playback. */
   onSelectProgram?: PlayProgramCallback;
 }
 
@@ -186,7 +186,17 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
                       key={program.id}
                       type="button"
                       id={`epg-prog-${channel.id}-${idx}`}
-                      onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id)}
+                      onClick={() => onSelectProgram?.(
+                        program.archivePath || program.mediaUrl,
+                        program.title,
+                        channel.name,
+                        mediaType,
+                        channel.id,
+                        program.guideId,
+                        program.id,
+                        program.sourceId,
+                        program.assetId,
+                      )}
                       className={`group absolute top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs transition hover:scale-[1.005] hover:z-10 cursor-pointer ${
                         isLive
                           ? mediaType === 'audio'
