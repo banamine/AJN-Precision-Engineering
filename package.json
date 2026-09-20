@@ -14,7 +14,8 @@
     "test:audio": "node test-audio-bridge.js",
     "test:audio-singleton": "node test-audio-context-singleton.js",
     "test:audio-video-switch": "node test-audio-video-switch.js",
-    "test:epg-identity": "tsx epg-identity-integration.test.ts"
+    "test:epg-identity": "tsx epg-identity-integration.test.ts",
+    "test:epg-identity-runtime": "node test-epg-identity-runtime.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
