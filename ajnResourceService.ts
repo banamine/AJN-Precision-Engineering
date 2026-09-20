@@ -131,11 +131,23 @@ function inferMediaType(url: string, fallback: 'video' | 'audio'): 'video' | 'au
   return fallback;
 }
 
-function itemId(feedId: AjnFeedId, block: string, index: number): string {
+function itemId(feedId: AjnFeedId, block: string): string {
   const guid = tag(block, 'guid');
   if (guid) return `${feedId}:${guid}`;
-  const title = tag(block, 'title') || 'item';
-  return `${feedId}:${index}:${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+
+  const url = mediaUrl(block);
+  if (url) return `${feedId}:${url}`;
+
+  const title = tag(block, 'title') || '';
+  const publishedAt = tag(block, 'pubDate') || tag(block, 'dc:date') || '';
+  const stableTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const stableDate = publishedAt.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  if (stableTitle || stableDate) {
+    return `${feedId}:${stableTitle}:${stableDate}`;
+  }
+
+  throw new Error(`AJN feed item has no stable identity: ${feedId}`);
 }
 
 export function getAjnResources(): AjnResourceLink[] {
@@ -176,7 +188,7 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
     const rawTitle = tag(block, 'title') || `AJN ${resource.name}`;
     const displayTitle = normalizeLegacyAjnVideoTitle(rawTitle, url || '');
     const publishedAt = tag(block, 'pubDate') || tag(block, 'dc:date');
-    const itemIdentity = itemId(id, block, index);
+    const itemIdentity = itemId(id, block);
     const parsedPublishedAt = publishedAt ? Date.parse(publishedAt) : Number.NaN;
     return {
       id: itemIdentity,
