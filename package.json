@@ -14,7 +14,10 @@
     "test:audio": "node test-audio-bridge.js",
     "test:audio-singleton": "node test-audio-context-singleton.js",
     "test:audio-video-switch": "node test-audio-video-switch.js",
-    "test:epg-identity": "tsx test-epg-identity.js"
+    "test:epg-identity": "tsx test-epg-identity.js",
+    "test:api-contract": "node test-api-contracts.js",
+    "test:accessibility": "node test-accessibility.js",
+    "test:browser-journeys": "node test-browser-journeys.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
