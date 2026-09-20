@@ -231,7 +231,7 @@ export function ingestAjnFeedItems(items: Array<{
   sourceId: string;
   programId: string;
   assetId: string;
-}>): Promise<Program[]> {
+}>): Program[] {
   return items
     .map((item) => upsertCanonicalProgram({
       guideId:'ajn-archive-special-feeds', channelId:`ajn-${item.feedId}`,
