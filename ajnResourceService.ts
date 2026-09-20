@@ -129,9 +129,10 @@ export function canonicalizeAjnFeedItems(items: AjnFeedItem[]): Program[] {
 
 function buildCanonicalAjnAudioProgram(item: AjnFeedItem, kind: AjnAudioIndex['kind']): Program {
   const externalId = item.id;
-  const startTime = Date.now();
   const channelId = `ajn-audio-${kind}`;
-  const programId = normalizeProgramIdentity({ externalId, channelId, title: item.title, startTime });
+  const identityTime = publishedTimeMs(item.publishedAt);
+  const programId = normalizeProgramIdentity({ externalId, channelId, title: item.title, startTime: identityTime });
+  const startTime = identityTime;
   const assetId = normalizeAssetIdentity({ externalId, programId, mediaUrl: item.url });
   return {
     id: programId,
