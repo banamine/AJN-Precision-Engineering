@@ -175,7 +175,7 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
   const xml = await response.text();
   if (!/<(?:rss|feed)\b/i.test(xml)) throw new Error(`AJN feed ${id} did not return RSS/XML`);
 
-  const items = [...xml.matchAll(/<item\\b[^>]*>([\\s\\S]*?)<\\/item>/gi)].map((match, index) => {
+  const items = [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map((match, index) => {
     const block = match[1];
     const url = mediaUrl(block);
     if (!url) return null;
