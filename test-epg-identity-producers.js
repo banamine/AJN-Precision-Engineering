@@ -38,16 +38,16 @@ eq(new Set(secondSourceIds).size, secondSourceIds.length, 'Repeated playlist ing
 
 const fox = second.channels.find((channel) => channel.tvgId === 'producer-fox');
 
-// --- DIAGNOSTIC DUMP ---
+// --- DIAGNOSTIC STATE SNAPSHOT ---
 console.error(JSON.stringify({
   diagnostic: 'EPG_PRODUCER_STATE',
   firstChannelsCount: first.channels.length,
   secondChannelsCount: second.channels.length,
   foxChannel: fox || 'NOT_FOUND',
-  foxFirstSources: first.sources.filter((s) => s.channelId === fox?.id).map((s) => s.id),
-  foxSecondSources: second.sources.filter((s) => s.channelId === fox?.id).map((s) => s.id)
+  firstSourceIds,
+  secondSourceIds
 }, null, 2));
-// -----------------------
+// ---------------------------------
 
 assert(fox, 'Fox producer channel should remain addressable by tvg-id metadata');
 eq(fox?.logo, 'https://example.test/logo.png', 'M3U tvgLogo should be retained');
