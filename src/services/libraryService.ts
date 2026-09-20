@@ -1,48 +1,50 @@
 import { getCanonicalPrograms } from '../../guideRegistry';
 import { LibraryItem, Program } from '../../src/types';
 
-export const CURATED_CHANNEL_WHITELIST = new Set<string>();
+export const CURATED_CHANNEL_WHITELIST = new Set<string>([
+  'fox-news',
+  'cnn',
+  'msnbc',
+]);
 
-function mapChannelToCategory(program: Program): LibraryItem['category'] {
-  const channelId = program.channelId.toLowerCase();
-  if (channelId === 'nova-wonders' || channelId.includes('documentary')) return 'documentary';
-  if (channelId.includes('news') || ['fox-news', 'cnn', 'msnbc'].includes(channelId)) return 'news';
-  if (program.mediaType === 'audio' || channelId.includes('audio') || channelId.includes('radio')) return 'audio';
-  if (channelId.includes('classic') || channelId.includes('cinema') || channelId === 'honeymooners') return 'classics';
+const APPROVED_SOURCE_CLASSES = new Set<NonNullable<Program['sourceClass']>>([
+  'archive_org',
+  'ajn_archive',
+  'ajn_rss',
+]);
+
+function mapChannelToCategory(channelId: string): LibraryItem['category'] {
+  if (['fox-news', 'cnn', 'msnbc'].includes(channelId)) return 'news';
+  if (channelId.includes('audio')) return 'audio';
+  if (channelId.includes('cinema')) return 'classics';
   return 'science';
 }
 
-function formatDuration(program: Program): string {
-  if (typeof program.metadata?.durationSeconds === 'number' && Number.isFinite(program.metadata.durationSeconds)) {
-    const total = Math.max(0, Math.round(program.metadata.durationSeconds));
-    const minutes = Math.floor(total / 60);
-    return minutes > 0 ? `${minutes} mins` : `${total} secs`;
-  }
-  return 'Archive program';
-}
-
-export function getCuratedLibraryProjection(
-  channelWhitelist: ReadonlySet<string> = CURATED_CHANNEL_WHITELIST,
-): LibraryItem[] {
+export function getCuratedLibraryProjection(): LibraryItem[] {
   return getCanonicalPrograms()
-    .filter((program) => channelWhitelist.has(program.channelId))
+    .filter((program) => {
+      if (!CURATED_CHANNEL_WHITELIST.has(program.channelId)) return false;
+      if (!program.sourceClass || !APPROVED_SOURCE_CLASSES.has(program.sourceClass)) return false;
+      if (!program.sourceId?.trim() || !program.assetId?.trim()) return false;
+      return true;
+    })
     .map((program) => ({
       id: program.id,
       title: program.title,
       description: program.description || 'Curated broadcast archive item.',
-      category: mapChannelToCategory(program),
+      category: mapChannelToCategory(program.channelId),
       archivePath: program.archivePath || program.mediaUrl,
-      duration: formatDuration(program),
+      duration: 'Archive program',
       format: program.mediaType === 'audio' ? 'Audio' : 'Video',
       year: typeof program.metadata?.year === 'string' ? program.metadata.year : undefined,
-      source: program.sourceClass || 'archive_org',
-      tags: Array.isArray(program.metadata?.tags) ? program.metadata.tags : ['archive', 'curated'],
+      source: program.sourceClass,
+      tags: Array.isArray(program.metadata?.tags) ? program.metadata.tags : ['curated', 'archive'],
       channelId: program.channelId,
       guideId: program.guideId,
       isCurated: true,
-      sourceId: program.sourceId || `channel-source-${program.channelId}`,
+      sourceId: program.sourceId,
       programId: program.id,
-      assetId: program.assetId || `program-asset-${program.id}`,
-      sourceClass: program.sourceClass === 'ajn_archive' || program.sourceClass === 'ajn_rss' ? program.sourceClass : 'archive_org',
+      assetId: program.assetId,
+      sourceClass: program.sourceClass as LibraryItem['sourceClass'],
     }));
 }
