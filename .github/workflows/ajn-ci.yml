@@ -71,6 +71,9 @@ jobs:
           echo "=== AJN server log ==="
           cat /tmp/ajn-server.log || true
 
+      - name: Genre expansion regression
+        run: npm run test:genre-expansion
+
       - name: EPG identity regression
         run: npm run test:epg-identity
 
