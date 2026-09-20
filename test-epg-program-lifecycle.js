@@ -5,23 +5,29 @@ function assert(condition, message) {
 }
 
 const now = Date.now();
-const makeProgram = (externalId, endTime, title = externalId) => ({
+const makeProgram = (externalId, endTime, title = externalId) => {
+  const endTimeMs = typeof endTime === 'string' ? Date.parse(endTime) : endTime;
+  if (!Number.isFinite(endTimeMs)) throw new Error(`Invalid lifecycle endTime for ${externalId}`);
+  const startTimeMs = endTimeMs - 60 * 60 * 1000;
+
+  return {
   id: `placeholder-${externalId}`,
   guideId: 'cable-tv',
   channelId: 'test-channel',
   title,
   description: 'Lifecycle regression',
-  startTime: new Date(endTime - 60 * 60 * 1000).toISOString(),
-  endTime: typeof endTime === 'string' ? Date.parse(endTime) : endTime,
-  startTimeUtc: new Date(new Date(endTime).getTime() - 60 * 60 * 1000).toISOString(),
-  endTimeUtc: new Date(endTime).toISOString(),
+  startTime: new Date(startTimeMs).toISOString(),
+  endTime: endTimeMs,
+  startTimeUtc: new Date(startTimeMs).toISOString(),
+  endTimeUtc: new Date(endTimeMs).toISOString(),
   mediaType: 'video',
   mediaUrl: '/download/test.mp4',
   archivePath: '/download/test.mp4',
   sourceClass: 'archive_org',
   isArchivedSource: true,
   metadata: { externalId },
-});
+  };
+};
 
 console.log('Canonical program lifecycle regression: starting');
 
