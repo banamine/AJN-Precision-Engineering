@@ -18,6 +18,7 @@ const channelsMap = new Map<string, Channel>();
 const channelSourcesMap = new Map<string, ChannelSource[]>();
 const playlistsMap = new Map<string, Playlist>();
 const programsMap = new Map<string, Program>();
+const programIdIndex = new Map<string, string[]>();
 const MAX_PROGRAM_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 function programRegistryKey(sourceId:string, programId:string):string {
@@ -34,7 +35,15 @@ function pruneExpiredPrograms(maxLookbackMs = MAX_PROGRAM_RETENTION_MS): void {
     const endMs = Number.isFinite(program.endTime) && program.endTime > 1e11
       ? program.endTime
       : null;
-    if (endMs !== null && endMs < cutoff) programsMap.delete(key);
+    if (endMs !== null && endMs < cutoff) {
+      programsMap.delete(key);
+      const [, programId] = key.split(':', 2);
+      const indexed = programIdIndex.get(programId);
+      if (indexed) {
+        const next = indexed.filter((candidateKey) => candidateKey !== key);
+        if (next.length) programIdIndex.set(programId, next); else programIdIndex.delete(programId);
+      }
+    }
   }
 }
 
@@ -68,6 +77,9 @@ function upsertCanonicalProgram(candidate:{
       metadata: { ...(existing?.metadata || {}), ...(candidate.metadata || {}) },
     };
     programsMap.set(key, program);
+    const indexedKeys = programIdIndex.get(identity.programId) || [];
+    if (!indexedKeys.includes(key)) indexedKeys.push(key);
+    programIdIndex.set(identity.programId, indexedKeys);
     pruneExpiredPrograms();
     logEpgIdentity(candidate.programId ? 'AUTHORITATIVE_MATCH' : 'DETERMINISTIC_FALLBACK', {
       guideId: candidate.guideId, channelId: candidate.channelId, sourceId: identity.sourceId,
@@ -238,8 +250,10 @@ export function setChannelSources(id:string,sources:ChannelSource[]){channelSour
 export function getCanonicalEpgPrograms(): Program[]{ return Array.from(programsMap.values()); }
 export function getCanonicalEpgProgram(sourceId:string, programId:string): Program | undefined { return programsMap.get(programRegistryKey(sourceId, programId)); }
 export function getCanonicalEpgProgramById(programId:string): Program | undefined {
-  for (const [key, program] of programsMap.entries()) {
-    if (key.endsWith(`:${programId}`)) return program;
+  const keys = programIdIndex.get(programId) || [];
+  for (const key of keys) {
+    const program = programsMap.get(key);
+    if (program) return program;
   }
   return undefined;
 }
