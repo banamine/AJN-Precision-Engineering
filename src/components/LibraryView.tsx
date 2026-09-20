@@ -39,7 +39,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const filteredItems = useMemo(() => {
-    return LIBRARY_COLLECTION.filter((item) => {
+    return CURATED_LIBRARY_ITEMS.filter((item) => {
       const matchesCat = selectedCategory === 'all' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
