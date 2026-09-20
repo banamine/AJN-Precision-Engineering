@@ -1,4 +1,11 @@
-const puppeteer = require('puppeteer');
+import puppeteer from 'puppeteer';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import assert from 'node:assert';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const BASE_URL = process.env.AJN_BASE_URL || 'http://localhost:3000';
 
