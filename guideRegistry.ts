@@ -4,6 +4,7 @@ import {
 import { getChannelSchedule } from './channels';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { buildEpgIdentity, EpgIdentityResolutionError } from './src/utils/epgIdentity';
+import { fetchAjnAudioIndex, fetchAjnFeed, type AjnFeedId } from './ajnResourceService';
 
 export const GUIDES: Guide[] = [
   { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
@@ -53,6 +54,8 @@ function upsertCanonicalProgram(candidate:{
   sourceId?:string; programId?:string; assetId?:string; archiveIdentifier?:string; publishedAt?:string;
   startTime?:number; endTime?:number; startTimeUtc?:number; endTimeUtc?:number;
   description?:string; metadata?:Record<string,unknown>;
+  sourceClass?: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'm3u_live';
+  isArchivedSource?: boolean;
 }): Program | null {
   try {
     const identity = buildEpgIdentity(candidate);
@@ -75,6 +78,8 @@ function upsertCanonicalProgram(candidate:{
       publishedAt: candidate.publishedAt,
       archiveIdentifier: candidate.archiveIdentifier,
       metadata: { ...(existing?.metadata || {}), ...(candidate.metadata || {}) },
+      sourceClass: existing?.sourceClass ?? candidate.sourceClass,
+      isArchivedSource: existing?.isArchivedSource ?? candidate.isArchivedSource,
     };
     programsMap.set(key, program);
     const indexedKeys = programIdIndex.get(identity.programId) || [];
@@ -177,7 +182,8 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
     upsertCanonicalProgram({
       guideId, channelId:id, sourceId, title:entry.title, mediaUrl:entry.url,
       mediaType, startTime:0, endTime:24,
-      metadata:{ playlistId:playlist.id, playlistName:playlist.name, tvgId:entry.tvgId, tvgName:entry.tvgName },
+      sourceClass:'m3u_live', isArchivedSource:false,
+      metadata:{ playlistId:playlist.id, playlistName:playlist.name, tvgId:entry.tvgId, tvgName:entry.tvgName, tvgLogo:entry.tvgLogo, groupTitle:entry.groupTitle },
     });
     if(!sources.some(s=>s.url===entry.url)){
       sources.push({id:`src-${id}-${sources.length+1}`,channelId:id,protocol:entry.url.includes('.m3u8')?'hls':'https',url:entry.url,priority:sources.length+1,enabled:true,metadata:{playlistId:playlist.id,playlistName:playlist.name,category:playlist.category,durationSeconds:entry.duration&&entry.duration>0?entry.duration:undefined}});
@@ -214,7 +220,50 @@ export function getAllPlaylists(){return Array.from(playlistsMap.values());}
 export function getPlaylistById(id:string){return playlistsMap.get(id);}
 export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.get(id);if(!p)return{success:false};const text=customM3u||p.rawM3u||'';if(!text){p.syncStatus='failed';return{success:false,playlist:p};}const r=ingestM3uPlaylist(p,text);return{success:true,playlist:p,count:r.ingestedCount};}
 
+async function ingestAjnFeedItems(items: Array<{
+  feedId: AjnFeedId;
+  title: string;
+  url: string;
+  mediaType: MediaType;
+  publishedAt?: string;
+  description?: string;
+  metadata: Record<string, string>;
+  sourceId: string;
+  programId: string;
+  assetId: string;
+}>): Promise<Program[]> {
+  return items
+    .map((item) => upsertCanonicalProgram({
+      guideId:'ajn-archive-special-feeds', channelId:`ajn-${item.feedId}`,
+      sourceId:item.sourceId, programId:item.programId, assetId:item.assetId,
+      title:item.title, mediaUrl:item.url, mediaType:item.mediaType,
+      startTime:0, endTime:24, publishedAt:item.publishedAt, description:item.description,
+      sourceClass:'ajn_rss', isArchivedSource:false,
+      metadata:{ ...item.metadata, feedId:item.feedId },
+    }))
+    .filter((program): program is Program => Boolean(program));
+}
+
+export async function getAjnScheduleForFeed(feedId?: AjnFeedId): Promise<ScheduleChannel[]> {
+  const feedIds: AjnFeedId[] = feedId ? [feedId] : ['Alex','WarRoom','SundayLive','AJNHourlyVideo','AJNHourlyAudio'];
+  const rssResults = await Promise.all(feedIds.map((id) => fetchAjnFeed(id)));
+  const audioResults = feedId && feedId !== 'AJNHourlyAudio' ? [] : await Promise.all([fetchAjnAudioIndex('hourly'), fetchAjnAudioIndex('segment')]);
+  const programs = await ingestAjnFeedItems([...rssResults.flatMap((result) => result.items), ...audioResults.flatMap((result) => result.items)]);
+  const byChannel = new Map<string, Program[]>();
+  for (const program of programs) {
+    const list = byChannel.get(program.channelId) || [];
+    list.push(program);
+    byChannel.set(program.channelId, list);
+  }
+  return [...byChannel.entries()].map(([channelId, channelPrograms]) => ({
+    id:channelId, guideId:'ajn-archive-special-feeds', name:channelId.replace(/^ajn-/, ''),
+    mediaType:channelPrograms[0]?.mediaType || 'audio', group:'AJN RSS',
+    programs:channelPrograms.map((program) => ({ ...program, startHour:program.startTime, endHour:program.endTime })),
+  }));
+}
+
 export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleChannel[]>{
+  if(guideId==='ajn-archive-special-feeds') return getAjnScheduleForFeed();
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv'){
     const news=await getChannelSchedule();
@@ -226,6 +275,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
           mediaType:'video', startTime:p.startHour, endTime:p.endHour,
           startTimeUtc:p.startTimeUtc, endTimeUtc:p.endTimeUtc,
           archiveIdentifier:p.archivePath.split('?')[0],
+          sourceClass:'archive_org', isArchivedSource:true,
           metadata:{ provider:'archive', scheduleIndex:index },
         });
         return program ? {...program,startHour:p.startHour,endHour:p.endHour} : null;
@@ -247,6 +297,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
       endTime: program.endTime,
       archiveIdentifier: program.archiveIdentifier,
       description: program.description,
+      sourceClass:'archive_org', isArchivedSource:true,
       metadata: program.metadata,
     })).filter(Boolean).map((program) => ({
       ...program!,
@@ -260,6 +311,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
     const program = mediaUrl ? upsertCanonicalProgram({
       guideId, channelId:ch.id, sourceId:`src-${guideId}-${ch.id}`, title:ch.name, mediaUrl,
       mediaType:ch.mediaType, startTime:0, endTime:24,
+      sourceClass:'m3u_live', isArchivedSource:false,
     }) : null;
     return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:program ? [{...program,startHour:0,endHour:24}] : []};
   });
