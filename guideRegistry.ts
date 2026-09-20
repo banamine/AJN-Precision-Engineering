@@ -199,7 +199,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
         const program = upsertCanonicalProgram({
           guideId, channelId:ch.id, sourceId:`src-${guideId}-${ch.id}`, title:p.title, mediaUrl:p.archivePath,
           mediaType:'video', startTime:p.startHour, endTime:p.endHour,
-          archiveIdentifier:p.archivePath,
+          archiveIdentifier:p.archivePath.split('?')[0],
           metadata:{ provider:'archive', scheduleIndex:index },
         });
         return program ? {...program,startHour:p.startHour,endHour:p.endHour} : null;
