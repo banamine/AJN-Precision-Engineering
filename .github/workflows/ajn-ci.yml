@@ -65,6 +65,14 @@ jobs:
           exit 0
       - name: Existing playback regression
         run: npm test
+        env:
+          AJN_TEST_URL: http://localhost:3000
+
+      - name: Dump server log after playback regression
+        if: failure()
+        run: |
+          echo "=== AJN server log ==="
+          cat /tmp/ajn-server.log || true
 
       - name: EPG identity regression
         run: npm run test:epg-identity
