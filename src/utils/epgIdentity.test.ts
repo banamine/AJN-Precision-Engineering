@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildEpgIdentity, EpgIdentityResolutionError } from './epgIdentity';
+import { parseM3uUtcTimestamp } from '../../channels';
 
 const base = {
   guideId: 'cable-tv',
@@ -28,6 +29,12 @@ test('normalizes UTC windows and rejects invalid schedule bounds', () => {
   assert.equal(a.programId, b.programId);
   assert.equal(a.assetId, b.assetId);
   assert.throws(() => buildEpgIdentity({ ...base, startTimeUtc: base.endTimeUtc }), EpgIdentityResolutionError);
+});
+
+test('parses floating feed timestamps explicitly as UTC unless an offset is supplied', () => {
+  assert.equal(parseM3uUtcTimestamp('20260920120000'), Date.UTC(2026, 8, 20, 12, 0, 0));
+  assert.equal(parseM3uUtcTimestamp('20260920120000+0200'), Date.UTC(2026, 8, 20, 10, 0, 0));
+  assert.throws(() => parseM3uUtcTimestamp('2026-09-20T12:00:00Z-unknown'));
 });
 
 test('normalizes Unicode and episode notation', () => {
