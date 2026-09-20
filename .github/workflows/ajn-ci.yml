@@ -66,6 +66,9 @@ jobs:
       - name: Existing playback regression
         run: npm test
 
+      - name: EPG runtime identity browser regression
+        run: npm run test:epg-identity-runtime
+
       - name: Audio bridge browser regression
         run: npm run test:audio
 
