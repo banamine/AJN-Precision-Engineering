@@ -128,6 +128,13 @@ export interface LibraryItem {
   thumbnailUrl?: string;
   featured?: boolean;
   tags: string[];
+  channelId: string;
+  guideId: string;
+  isCurated: boolean;
+  sourceId: string;
+  programId: string;
+  assetId: string;
+  sourceClass: 'archive_org' | 'ajn_archive' | 'ajn_rss';
 }
 
 export interface ProxyStats {

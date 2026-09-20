@@ -3,6 +3,9 @@ import {
 } from './src/types';
 import { getChannelSchedule } from './channels';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
+import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
+import { buildMoviesClassicsPrograms } from './src/services/producers/moviesClassicsProducer';
+import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
 
 export const GUIDES: Guide[] = [
@@ -12,6 +15,10 @@ export const GUIDES: Guide[] = [
     description: 'Curated classic television collections resolved from Archive.org metadata' },
   { id: 'audio-podcasts', name: 'Audio & Podcasts', type: 'audio', enabled: true,
     description: 'Live radio streams, historic aerospace vaults, audio dramas, and podcasts' },
+  { id: 'science-documentaries', name: 'Science Documentaries', type: 'video', enabled: true,
+    description: 'Curated science documentaries resolved from verified Archive.org manifests' },
+  { id: 'movies-classics-vault', name: 'Movies & Cinema Classics', type: 'video', enabled: true,
+    description: 'Curated classic cinema resolved from the verified Movies Classics Archive manifest' },
 ];
 
 const channelsMap = new Map<string, Channel>();
@@ -181,7 +188,12 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
   playlist.lastSyncedAt=new Date().toISOString(); playlist.syncStatus='synced'; playlist.itemCount=entries.length; playlist.rawM3u=text; playlistsMap.set(playlist.id,playlist);
   return {ingestedCount:entries.length,channels:updated};
 }
-export function initializeRegistry(){ if(playlistsMap.size)return; for(const {playlist,m3uContent} of INITIAL_PLAYLISTS){playlistsMap.set(playlist.id,playlist);ingestM3uPlaylist(playlist,m3uContent);} }
+export function initializeRegistry(){
+  if(playlistsMap.size)return;
+  for(const {playlist,m3uContent} of INITIAL_PLAYLISTS){playlistsMap.set(playlist.id,playlist);ingestM3uPlaylist(playlist,m3uContent);}
+  for(const program of getNovaCanonicalPrograms()) upsertCanonicalProgram(program);
+  for(const program of buildMoviesClassicsPrograms(moviesClassicsManifest)) upsertCanonicalProgram(program);
+}
 initializeRegistry();
 
 export function getAllGuides(){return GUIDES;}
@@ -220,14 +232,26 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
     return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any)=>{
       const id = normalizeProgramIdentity({ externalId:p.externalId, channelId:ch.id, title:p.title, startTime:typeof p.startHour==='number'?p.startHour:null });
       const assetId = normalizeAssetIdentity({ externalId:p.externalId, archiveIdentifier:p.externalId, programId:id, mediaUrl:p.archivePath });
+      const sourceId = normalizeSourceIdentity({ channelId: ch.id, url: p.archivePath, protocol: 'direct_archive' });
       const startTimeUtc = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const endTimeUtc = new Date().toISOString();
-      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
+      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
     })}));
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
     return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))}];
+  }
+  if(guideId==='movies-classics-vault'){
+    const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');
+    return [{
+      id:'classic-cinema',
+      guideId,
+      name:'Cinema Classics Vault',
+      mediaType:'video',
+      group:'Movies',
+      programs,
+    }];
   }
   return getChannelsByGuide(guideId).map(ch=>{
     const sourceUrl = ch.sources?.[0]?.url || '';

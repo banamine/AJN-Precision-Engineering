@@ -14,126 +14,13 @@ import {
   Layers,
 } from 'lucide-react';
 import { LibraryItem, PlayProgramCallback } from '../types';
+import { getCuratedLibraryProjection } from '../services/libraryService';
 
 interface LibraryViewProps {
   onPlayProgram: PlayProgramCallback;
 }
 
 const SHERLOCK_HOLMES_FOREWORD = 'https://archive.org/download/sherlock-holmes-the-adventures-of-sherlock-holmes/Chapter%2000.2%20-%20Foreword.mp3';
-
-const LIBRARY_COLLECTION: LibraryItem[] = [
-  {
-    id: 'lib-apollo11',
-    title: 'NASA Apollo 11 Lunar Landing Audio Highlights',
-    category: 'science',
-    description: 'Direct audio recordings of communications between Mission Control in Houston and Apollo 11 astronauts Neil Armstrong and Buzz Aldrin during the first lunar landing.',
-    archivePath: '/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3',
-    duration: '45 mins',
-    format: 'MP3 Audio (64kbps)',
-    year: '1969',
-    source: 'NASA Public Audio Archives',
-    featured: true,
-    tags: ['NASA', 'Apollo 11', 'Spaceflight', 'Radio'],
-  },
-  {
-    id: 'lib-sherlock-adventures',
-    title: 'Adventures of Sherlock Holmes Audio Vault',
-    category: 'audio',
-    description: 'Archive.org audiobook collection for The Adventures of Sherlock Holmes. Starts with the verified MP3 Foreword asset and can be expanded with the collection chapters.',
-    archivePath: SHERLOCK_HOLMES_FOREWORD,
-    duration: 'Archive collection',
-    format: 'MP3 Audio',
-    year: 'Archive',
-    source: 'Internet Archive — sherlock-holmes-the-adventures-of-sherlock-holmes',
-    featured: true,
-    tags: ['Sherlock Holmes', 'Audiobook', 'Audio', 'Archive.org'],
-  },
-  {
-    id: 'lib-bigbuck',
-    title: 'Big Buck Bunny High-Definition Master',
-    category: 'classics',
-    description: 'Open source computer animated short film by the Blender Institute, widely used as an open-standard video playback calibration benchmark.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '10 mins',
-    format: 'H.264 / AAC MP4',
-    year: '2008',
-    source: 'Blender Foundation',
-    featured: true,
-    tags: ['Cinema', 'Animation', 'H.264', 'Benchmark'],
-  },
-  {
-    id: 'lib-foxnews-vault',
-    title: 'Fox News Special Report Broadcast Master',
-    category: 'news',
-    description: 'Archived evening news broadcast covering domestic policy, international headlines, and Capitol Hill press conferences.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '60 mins',
-    format: 'TV News Slices (300s)',
-    year: '2024',
-    source: 'Internet Archive TV News',
-    tags: ['Fox News', 'Newsroom', 'Broadcast'],
-  },
-  {
-    id: 'lib-cnn-vault',
-    title: 'CNN Situation Room Continuous Broadcast Reel',
-    category: 'news',
-    description: 'Continuous newsroom coverage and investigative reporting preserved in the Internet Archive TV News research collection.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '60 mins',
-    format: 'TV News Slices (300s)',
-    year: '2024',
-    source: 'Internet Archive TV News',
-    tags: ['CNN', 'Newsroom', 'Broadcast'],
-  },
-  {
-    id: 'lib-msnbc-vault',
-    title: 'MSNBC Prime Time News Wire Edition',
-    category: 'news',
-    description: 'Complete one-hour prime time broadcast with original teleprompter captions and anchor panel analysis.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '60 mins',
-    format: 'TV News Slices (300s)',
-    year: '2024',
-    source: 'Internet Archive TV News',
-    tags: ['MSNBC', 'Newsroom', 'Broadcast'],
-  },
-  {
-    id: 'lib-radio-audio',
-    title: 'Continuous Radio Mode Audio Stream',
-    category: 'audio',
-    description: 'Clean audio-only streaming channel routing through the single-owner M1 AudioBridge normalizer at broadcast compliance levels (-18 dBFS).',
-    archivePath: '/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3',
-    duration: '120 mins',
-    format: 'Audio Stream',
-    year: '2024',
-    source: 'AJN Radio Hub',
-    tags: ['Radio', 'Audio Only', 'Broadcast'],
-  },
-  {
-    id: 'lib-silent-era',
-    title: 'Silent Era Classic Newsreels & Motion Pictures',
-    category: 'classics',
-    description: 'Restored archival newsreels documenting historical events, transport innovations, and early 20th century cinema developments.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '35 mins',
-    format: 'H.264 MP4',
-    year: '1928',
-    source: 'Prelinger Archives',
-    tags: ['History', 'Silent Era', 'Newsreel'],
-  },
-  {
-    id: 'lib-documentary-hour',
-    title: 'Documentary Vault: Technological Innovations',
-    category: 'documentary',
-    description: 'Historical documentary exploring scientific advancements in satellite communications and global transmission networks.',
-    archivePath: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4',
-    duration: '50 mins',
-    format: 'H.264 MP4',
-    year: '1975',
-    source: 'Academic Film Archive',
-    tags: ['Documentary', 'Technology', 'Science'],
-  },
-];
 
 const CATEGORIES = [
   { id: 'all', label: 'All Media' },
@@ -147,9 +34,10 @@ const CATEGORIES = [
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const curatedLibraryItems = useMemo(() => getCuratedLibraryProjection(), []);
 
   const filteredItems = useMemo(() => {
-    return LIBRARY_COLLECTION.filter((item) => {
+    return curatedLibraryItems.filter((item) => {
       const matchesCat = selectedCategory === 'all' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
@@ -160,7 +48,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
         item.source.toLowerCase().includes(q);
       return matchesCat && matchesQuery;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [curatedLibraryItems, selectedCategory, searchQuery]);
 
   return (
     <div className="space-y-8 pb-16">
