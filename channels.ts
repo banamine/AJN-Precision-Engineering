@@ -277,6 +277,22 @@ export async function searchTVNews(opts: {
   };
 }
 
+export function parseM3uUtcTimestamp(raw: string, offsetMinutes = 0): number {
+  const value = String(raw ?? '').trim();
+  const m = value.match(/^(\\d{4})(\\d{2})(\\d{2})(?:[T\\s]?)(\\d{2})(\\d{2})(\\d{2})(?:([+-])(\\d{2})(?::?(\\d{2}))?|Z)?$/);
+  if (!m) throw new Error(`Invalid M3U/XMLTV timestamp: ${raw}`);
+  const [, y, mo, d, hh, mm, ss, sign, oh, om] = m;
+  let offset = offsetMinutes;
+  if (sign && oh) offset = (Number(oh) * 60 + Number(om || 0)) * (sign === '-' ? -1 : 1);
+  return Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mm), Number(ss)) - offset * 60_000;
+}
+
+
+export function normalizeEpochMilliseconds(timestamp: number): number {
+  if (!Number.isFinite(timestamp) || timestamp <= 0) throw new Error(`Invalid epoch timestamp: ${timestamp}`);
+  return timestamp < 1_000_000_000_000 ? Math.trunc(timestamp * 1000) : Math.trunc(timestamp);
+}
+
 export function getSafeArchiveUrl(rawUrl: string): string {
   try {
     const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
@@ -559,6 +575,8 @@ export interface ScheduleProgram {
   startHour: number;
   endHour: number;
   archivePath: string;
+  startTimeUtc?: number;
+  endTimeUtc?: number;
 }
 
 export interface ScheduleChannel {
@@ -593,12 +611,26 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
   return items
     .map((item, index) => ({ item, archivePath: resolved[index] }))
     .filter(({ archivePath }) => Boolean(archivePath))
-    .map(({ item, archivePath }, index, playableItems) => ({
-      title: item.title || item.program || item.identifier,
-      startHour: index * (24 / playableItems.length),
-      endHour: (index + 1) * (24 / playableItems.length),
-      archivePath,
-    }));
+    .map(({ item, archivePath }, index, playableItems) => {
+      const startTimeUtc = item.date && item.time !== 'Unknown'
+        ? Date.parse(`${item.date}T${item.time}:00Z`)
+        : Number.NaN;
+      const durationMs = Math.max(1, item.durationMins) * 60_000;
+      const endTimeUtc = Number.isFinite(startTimeUtc) ? startTimeUtc + durationMs : Number.NaN;
+
+      return {
+        title: item.title || item.program || item.identifier,
+        startHour: index * (24 / playableItems.length),
+        endHour: (index + 1) * (24 / playableItems.length),
+        archivePath,
+        ...(Number.isFinite(startTimeUtc) && Number.isFinite(endTimeUtc)
+          ? {
+              startTimeUtc: normalizeEpochMilliseconds(startTimeUtc),
+              endTimeUtc: normalizeEpochMilliseconds(endTimeUtc),
+            }
+          : {}),
+      };
+    });
 }
 
 export async function getChannelSchedule(): Promise<ScheduleChannel[]> {

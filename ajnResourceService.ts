@@ -1,4 +1,5 @@
 import { normalizeAjnFilename } from './src/utils/ajnTitleNormalizer.js';
+import { buildEpgIdentity } from './src/utils/epgIdentity.js';
 
 export type AjnFeedId = 'Alex' | 'WarRoom' | 'SundayLive' | 'AJNHourlyVideo' | 'AJNHourlyAudio';
 export type AjnResourceKind = 'live' | 'hourly' | 'segment';
@@ -44,6 +45,10 @@ export interface AjnFeedItem {
   duration?: string;
   thumbnailUrl?: string;
   metadata: Record<string, string>;
+  sourceId: string;
+  programId: string;
+  assetId: string;
+  archiveIdentifier?: string;
 }
 
 const BASE = 'https://rss.alexjones.media';
@@ -173,23 +178,39 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
   const items = [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map((match, index) => {
     const block = match[1];
     const url = mediaUrl(block);
+    if (!url) return null;
+
+    const title = tag(block, 'title') || `AJN ${resource.name}`;
+    const guid = tag(block, 'guid');
+    const identity = buildEpgIdentity({
+      guideId: 'ajn-archive-special-feeds',
+      channelId: `ajn-${id}`,
+      sourceId: `src-ajn-${id.toLowerCase()}`,
+      externalId: guid,
+      title,
+      mediaUrl: url,
+    });
+
     return {
       id: itemId(id, block, index),
       feedId: id,
-      title: tag(block, 'title') || `AJN ${resource.name}`,
-      url: url || '',
-      mediaType: url ? inferMediaType(url, resource.mediaType) : resource.mediaType,
+      title,
+      url,
+      mediaType: inferMediaType(url, resource.mediaType),
       publishedAt: tag(block, 'pubDate') || tag(block, 'dc:date'),
       description: tag(block, 'description'),
       duration: tag(block, 'itunes:duration'),
       thumbnailUrl: undefined,
       metadata: {
-        guid: tag(block, 'guid') || '',
+        guid: guid || '',
         author: tag(block, 'author') || tag(block, 'dc:creator') || '',
         sourceFeed: resource.rssUrl,
       },
+      sourceId: identity.sourceId,
+      programId: identity.programId,
+      assetId: identity.assetId,
     } as AjnFeedItem;
-  }).filter(item => item.url);
+  }).filter((item): item is AjnFeedItem => Boolean(item));
 
   return { resource, fetchedAt: new Date().toISOString(), items, rawBytes: Buffer.byteLength(xml, 'utf8') };
 }
@@ -218,15 +239,25 @@ function parseAudioIndexItems(html: string, index: AjnAudioIndex): AjnFeedItem[]
     const url = parseAudioIndexUrl(match[1]);
     if (!url) continue;
     const filename = url.split('/').filter(Boolean).pop() || url;
-    const title = normalizeAjnFilename(filename);
+    const title = normalizeAjnFilename(filename) || index.name;
     const id = `ajn:${index.kind}:${url}`;
     if (records.has(id)) continue;
+    const identity = buildEpgIdentity({
+      guideId: 'ajn-archive-special-feeds',
+      channelId: `ajn-audio-${index.kind}`,
+      sourceId: `src-ajn-hourly-audio-${index.kind}`,
+      title,
+      mediaUrl: url,
+    });
     records.set(id, {
       id,
       feedId: 'AJNHourlyAudio',
       title: title || index.name,
       url,
       mediaType: 'audio',
+      sourceId: identity.sourceId,
+      programId: identity.programId,
+      assetId: identity.assetId,
       metadata: {
         sourceIndex: index.url,
         resourceKind: index.kind,

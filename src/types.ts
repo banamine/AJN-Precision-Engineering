@@ -41,6 +41,7 @@ export interface Program {
   channelId: string;
   title: string;
   description?: string;
+  publishedAt?: string;
   startTime: number;
   endTime: number;
   startHour?: number;
@@ -49,6 +50,14 @@ export interface Program {
   mediaUrl: string;
   archivePath?: string;
   metadata?: Record<string, any>;
+
+  // Canonical EPG identity fields. Producers may omit these only before
+  // identity normalization at the ingestion/playback boundary.
+  sourceId?: string;
+  assetId?: string;
+  archiveIdentifier?: string;
+  sourceClass?: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'm3u_live';
+  isArchivedSource?: boolean;
 }
 
 export interface Playlist {

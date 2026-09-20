@@ -9,6 +9,7 @@ import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
 import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
+import { buildEpgIdentity } from './utils/epgIdentity';
 
 const ARCHIVE_PROXY_BASE = '/api/archive/proxy?path=';
 const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
@@ -46,16 +47,22 @@ function getDestinationFromHash(): Destination {
   switch (hash) {
     case 'tv-guide':
     case 'guide':
-    case 'epg': return 'tv-guide';
+    case 'epg':
+      return 'tv-guide';
     case 'player':
-    case 'watch': return 'player';
+    case 'watch':
+      return 'player';
     case 'library':
-    case 'archive': return 'library';
-    case 'search': return 'search';
+    case 'archive':
+      return 'library';
+    case 'search':
+      return 'search';
     case 'dev':
     case 'developer':
-    case 'diagnostics': return 'dev';
-    default: return 'home';
+    case 'diagnostics':
+      return 'dev';
+    default:
+      return 'home';
   }
 }
 
@@ -128,12 +135,37 @@ export default function App() {
       rawReference.toLowerCase().endsWith('.mp3') || rawReference.toLowerCase().includes('audio') ? 'audio' : 'video'
     );
 
+    // All playback activations use the same canonical identity engine.
+    // Supplied program/source/asset fields are inputs, not a second identity path.
+    const resolvedIdentity = buildEpgIdentity({
+      guideId: guideId || 'on-demand',
+      channelId: channelId || 'direct-stream',
+      sourceId: sourceId || undefined,
+      programId: programId || undefined,
+      assetId: assetId || undefined,
+      title: title || rawReference,
+      mediaUrl: constructedSrc,
+    });
+
+    console.log('[AJN Playback Activation]', {
+      archivePath: rawReference,
+      constructedSrc,
+      title,
+      subtitle,
+      mediaType: inferredMediaType,
+      channelId: channelId || 'direct-stream',
+      guideId: guideId || 'on-demand',
+      programId: resolvedIdentity.programId,
+      sourceId: resolvedIdentity.sourceId,
+      assetId: resolvedIdentity.assetId,
+    });
+
     const id = mediaIdentity({
       src: constructedSrc,
       archivePath: rawReference,
-      programId,
-      sourceId,
-      assetId,
+      programId: resolvedIdentity.programId,
+      sourceId: resolvedIdentity.sourceId,
+      assetId: resolvedIdentity.assetId,
     });
 
     const nextRecentlyPlayed: RecentlyPlayedItem = {
@@ -142,11 +174,11 @@ export default function App() {
       title,
       subtitle,
       mediaType: inferredMediaType,
-      channelId,
-      guideId,
-      programId,
-      sourceId,
-      assetId,
+      channelId: channelId || 'direct-stream',
+      guideId: guideId || 'on-demand',
+      programId: resolvedIdentity.programId,
+      sourceId: resolvedIdentity.sourceId,
+      assetId: resolvedIdentity.assetId,
       archivePath: rawReference,
       progressSeconds: recentlyPlayed.find((item) => item.id === id)?.progressSeconds ?? 0,
       updatedAt: Date.now(),

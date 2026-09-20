@@ -26,6 +26,9 @@ interface AjnFeedItem {
   thumbnailUrl?: string;
   mediaType: MediaType;
   feedId: AjnFeedId;
+  sourceId?: string;
+  programId?: string;
+  assetId?: string;
 }
 
 interface Props {
@@ -162,7 +165,7 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
               {item.description && <p className="mt-1.5 text-xs text-neutral-500 line-clamp-2">{item.description}</p>}
               <button
                 type="button"
-                onClick={() => onPlayProgram(item.url!, item.title, item.feedId, item.mediaType, undefined, `ajn-${item.feedId}`, item.id)}
+                onClick={() => onPlayProgram(item.url!, item.title, item.feedId, item.mediaType, `ajn-${item.feedId}`, 'ajn-archive-special-feeds', item.programId, item.sourceId, item.assetId)}
                 className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-sky-600 hover:text-white"
               >
                 <Play className="h-3.5 w-3.5 fill-current" />

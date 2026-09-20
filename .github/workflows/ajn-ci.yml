@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: npm install
@@ -65,6 +65,9 @@ jobs:
           exit 0
       - name: Existing playback regression
         run: npm test
+
+      - name: EPG runtime identity browser regression
+        run: npm run test:epg-identity-runtime
 
       - name: Audio bridge browser regression
         run: npm run test:audio
