@@ -26,6 +26,7 @@ interface AjnFeedItem {
   thumbnailUrl?: string;
   mediaType: MediaType;
   feedId: AjnFeedId;
+  metadata?: Record<string, string>;
 }
 
 interface Props {
@@ -55,14 +56,15 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const catalogResponse = await fetch('/api/ajn/resources', { signal });
+      const refreshToken = Date.now();
+      const catalogResponse = await fetch(`/api/ajn/resources?refresh=${refreshToken}`, { signal, cache: 'no-store' });
       if (!catalogResponse.ok) throw new Error(`Resource catalog HTTP ${catalogResponse.status}`);
       const nextCatalog = (await catalogResponse.json()) as AjnResourceCatalog;
       setCatalog(nextCatalog);
 
       const results = await Promise.allSettled(
         nextCatalog.resources.map(async (resource) => {
-          const response = await fetch(`/api/ajn/resources/${resource.id}`, { signal });
+          const response = await fetch(`/api/ajn/resources/${resource.id}?refresh=${refreshToken}`, { signal, cache: 'no-store' });
           if (!response.ok) throw new Error(`${resource.id} HTTP ${response.status}`);
           const feed = await response.json();
           return (feed.items || []) as AjnFeedItem[];
@@ -162,7 +164,22 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
               {item.description && <p className="mt-1.5 text-xs text-neutral-500 line-clamp-2">{item.description}</p>}
               <button
                 type="button"
-                onClick={() => onPlayProgram(item.url!, item.title, item.feedId, item.mediaType, undefined, `ajn-${item.feedId}`, item.id)}
+                onClick={() => {
+                  const sourceId = item.metadata?.sourceId || `ajn-rss-${item.feedId.toLowerCase()}`;
+                  const assetId = item.metadata?.assetId || `ajn-asset-${item.id.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                  const programId = item.metadata?.programId || `ajn-${item.feedId.toLowerCase()}-${item.id.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                  onPlayProgram(
+                    item.url!,
+                    item.title,
+                    item.description || item.feedId,
+                    item.mediaType,
+                    'ajn-resource',
+                    'ajn-archive',
+                    programId,
+                    sourceId,
+                    assetId,
+                  );
+                }}
                 className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-sky-600 hover:text-white"
               >
                 <Play className="h-3.5 w-3.5 fill-current" />
