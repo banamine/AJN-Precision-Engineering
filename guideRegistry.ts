@@ -17,6 +17,8 @@ export const GUIDES: Guide[] = [
     description: 'Live radio streams, historic aerospace vaults, audio dramas, and podcasts' },
   { id: 'science-documentaries', name: 'Science Documentaries', type: 'video', enabled: true,
     description: 'Curated science documentaries resolved from verified Archive.org manifests' },
+  { id: 'movies-classics-vault', name: 'Movies & Cinema Classics', type: 'video', enabled: true,
+    description: 'Curated classic cinema resolved from the verified Movies Classics Archive manifest' },
 ];
 
 const channelsMap = new Map<string, Channel>();
@@ -239,6 +241,17 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
     return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))}];
+  }
+  if(guideId==='movies-classics-vault'){
+    const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');
+    return [{
+      id:'classic-cinema',
+      guideId,
+      name:'Cinema Classics Vault',
+      mediaType:'video',
+      group:'Movies',
+      programs,
+    }];
   }
   return getChannelsByGuide(guideId).map(ch=>{
     const sourceUrl = ch.sources?.[0]?.url || '';
