@@ -11,6 +11,7 @@ export function AudioBridgeStatus({ analyser = null }: AudioBridgeStatusProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [signalActive, setSignalActive] = useState(false);
+  const signalActiveRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,7 +33,10 @@ export function AudioBridgeStatus({ analyser = null }: AudioBridgeStatusProps) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (!analyser || !frequencyData) {
-        setSignalActive(false);
+        if (signalActiveRef.current) {
+          signalActiveRef.current = false;
+          setSignalActive(false);
+        }
         animationFrameRef.current = requestAnimationFrame(render);
         return;
       }
@@ -46,7 +50,11 @@ export function AudioBridgeStatus({ analyser = null }: AudioBridgeStatusProps) {
         total += frequencyData[i];
       }
       const average = frequencyData.length > 0 ? total / frequencyData.length : 0;
-      setSignalActive(peak > 8 || average > 3);
+      const nextSignalActive = peak > 8 || average > 3;
+      if (nextSignalActive !== signalActiveRef.current) {
+        signalActiveRef.current = nextSignalActive;
+        setSignalActive(nextSignalActive);
+      }
 
       const barWidth = canvas.width / BAR_COUNT;
       for (let bar = 0; bar < BAR_COUNT; bar += 1) {

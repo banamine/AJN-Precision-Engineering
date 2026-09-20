@@ -30,6 +30,9 @@ export function patchServer(app: express.Express) {
   // AJN Resource Contract: the application consumes the authoritative RSS indexes
   // published at rss.alexjones.media instead of substituting Archive.org discovery.
   app.get('/api/ajn/resources', (_req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.json({
       source: 'https://rss.alexjones.media/',
       resources: getAjnResources(),
@@ -61,6 +64,9 @@ export function patchServer(app: express.Express) {
   });
 
   app.get('/api/ajn/resources/:feedId', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     const feedId = req.params.feedId as AjnFeedId;
     const resource = getAjnResource(feedId);
     if (!resource || !AJN_FEED_IDS.includes(feedId)) {
