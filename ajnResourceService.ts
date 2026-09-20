@@ -1,4 +1,4 @@
-import { normalizeAjnFilename } from './src/utils/ajnTitleNormalizer.js';
+import { normalizeAjnFilename, renameLegacyAjnVideoFilename } from './src/utils/ajnTitleNormalizer.js';
 
 export type AjnFeedId = 'Alex' | 'WarRoom' | 'SundayLive' | 'AJNHourlyVideo' | 'AJNHourlyAudio';
 export type AjnResourceKind = 'live' | 'hourly' | 'segment';
@@ -131,6 +131,24 @@ function inferMediaType(url: string, fallback: 'video' | 'audio'): 'video' | 'au
   return fallback;
 }
 
+function legacyVideoPrefix(feedId: AjnFeedId): string | undefined {
+  if (feedId === 'WarRoom') return 'WAR-ROOM';
+  if (feedId === 'Alex') return 'ALEX-JONES';
+  return undefined;
+}
+
+function renameLegacyVideoTitle(feedId: AjnFeedId, title: string, url: string): string {
+  const prefix = legacyVideoPrefix(feedId);
+  if (!prefix) return title;
+
+  const renamedTitle = renameLegacyAjnVideoFilename(title, prefix);
+  if (renamedTitle !== title) return renamedTitle;
+
+  const filename = url.split('#', 1)[0].split('?', 1)[0].split('/').filter(Boolean).pop() || '';
+  const renamedFilename = renameLegacyAjnVideoFilename(filename, prefix);
+  return renamedFilename !== filename ? renamedFilename : title;
+}
+
 function itemId(feedId: AjnFeedId, block: string, index: number): string {
   const guid = tag(block, 'guid');
   if (guid) return `${feedId}:${guid}`;
@@ -173,10 +191,13 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
   const items = [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map((match, index) => {
     const block = match[1];
     const url = mediaUrl(block);
+    const title = tag(block, 'title') || `AJN ${resource.name}`;
+    const displayTitle = renameLegacyVideoTitle(id, title, url || '');
+
     return {
       id: itemId(id, block, index),
       feedId: id,
-      title: tag(block, 'title') || `AJN ${resource.name}`,
+      title: displayTitle,
       url: url || '',
       mediaType: url ? inferMediaType(url, resource.mediaType) : resource.mediaType,
       publishedAt: tag(block, 'pubDate') || tag(block, 'dc:date'),
