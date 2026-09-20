@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildEpgIdentity, EpgIdentityResolutionError } from './epgIdentity';
-import { parseM3uUtcTimestamp } from '../../channels';
+import { parseM3uUtcTimestamp, normalizeEpochMilliseconds } from '../../channels';
 
 const base = {
   guideId: 'cable-tv',
@@ -33,7 +33,8 @@ test('normalizes UTC windows and rejects invalid schedule bounds', () => {
 
 test('normalizes epoch seconds to milliseconds', () => {
   const seconds = 1758369600;
-  assert.equal(seconds * 1000, Date.parse('2025-09-20T12:00:00.000Z'));
+  assert.equal(normalizeEpochMilliseconds(seconds), 1758369600000);
+  assert.equal(normalizeEpochMilliseconds(1758369600000), 1758369600000);
 });
 
 test('parses floating feed timestamps explicitly as UTC unless an offset is supplied', () => {
