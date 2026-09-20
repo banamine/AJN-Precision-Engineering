@@ -1,4 +1,5 @@
 import { normalizeAssetIdentity, normalizeProgramIdentity, normalizeSourceIdentity } from '../../utils/epgIdentity';
+import { buildArchiveProxyUrl } from '../../utils/archivePlayback';
 import { Program } from '../../types';
 
 const NOVA_ITEM_ID = 'nova-wonders';
@@ -20,10 +21,11 @@ export function getNovaCanonicalPrograms(): Program[] {
   const sourceId = normalizeSourceIdentity({ channelId: NOVA_ITEM_ID, url: sourceUrl, protocol: 'direct_archive' });
 
   return NOVA_FILES.map((item) => {
-    const mediaUrl = encodeArchivePath(item.file);
+    const archivePath = encodeArchivePath(item.file);
+    const mediaUrl = buildArchiveProxyUrl(archivePath);
     const externalId = `${NOVA_ITEM_ID}:${item.file}`;
     const programId = normalizeProgramIdentity({ externalId, channelId: NOVA_ITEM_ID, title: item.title, startTime: item.ep });
-    const assetId = normalizeAssetIdentity({ externalId, archiveIdentifier: NOVA_ITEM_ID, programId, mediaUrl });
+    const assetId = normalizeAssetIdentity({ externalId, archiveIdentifier: NOVA_ITEM_ID, programId, mediaUrl: archivePath });
 
     return {
       id: programId,
@@ -37,7 +39,7 @@ export function getNovaCanonicalPrograms(): Program[] {
       startTime: item.ep,
       endTime: item.ep,
       mediaUrl,
-      archivePath: mediaUrl,
+      archivePath,
       mediaType: 'video',
       isArchivedSource: true,
       metadata: {
