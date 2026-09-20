@@ -36,8 +36,7 @@ eq(firstChannelIds.join('|'), secondChannelIds.join('|'), 'Reordered M3U entries
 eq(firstSourceIds.join('|'), secondSourceIds.join('|'), 'Reordered M3U entries and rotated auth tokens must preserve source identities');
 eq(new Set(secondSourceIds).size, secondSourceIds.length, 'Repeated playlist ingestion must not duplicate canonical sources');
 
-const producerChannels = getChannelsByGuide('cable-tv');
-const fox = producerChannels.find((channel) => channel.tvgId === 'producer-fox');
+const fox = second.channels.find((channel) => channel.tvgId === 'producer-fox');
 assert(fox, 'Fox producer channel should remain addressable by tvg-id metadata');
 eq(fox?.logo, 'https://example.test/logo.png', 'M3U tvgLogo should be retained');
 eq(fox?.group, 'News', 'M3U groupTitle should be retained');
