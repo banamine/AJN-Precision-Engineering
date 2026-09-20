@@ -90,9 +90,13 @@ export function expandGenreCandidates(candidates: GenreExpansionCandidate[]): Ge
     if (!ALLOWED_SOURCE_CLASSES.has(candidate.sourceClass)) return rejected.push({ candidateIndex, reason: 'sourceClass is not allowed for genre expansion' });
     if (!sourceUrl || !isValidUrl(sourceUrl)) return rejected.push({ candidateIndex, reason: 'valid sourceUrl is required' });
 
+    if (!candidate.channelExternalId && !candidate.channelName?.trim()) {
+      return rejected.push({ candidateIndex, reason: 'channelExternalId or channelName is required' });
+    }
+
     const channelId = normalizeChannelIdentity({
       externalId: candidate.channelExternalId,
-      name: candidate.channelName || candidate.title,
+      name: candidate.channelName,
       guideId: candidate.guideId,
     });
     const sourceId = normalizeSourceIdentity({ channelId, url: sourceUrl, protocol: candidate.sourceClass === 'archive_org' ? 'direct_archive' : 'https' });
