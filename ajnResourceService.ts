@@ -233,7 +233,9 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
   const resource = byId.get(id);
   if (!resource) throw new Error(`Unknown AJN feed: ${id}`);
 
-  const response = await fetch(resource.rssUrl, {
+  const feedUrl = new URL(resource.rssUrl);
+  feedUrl.searchParams.set('_ajn_ts', String(Date.now()));
+  const response = await fetch(feedUrl.toString(), {
     signal,
     headers: {
       'User-Agent': 'AJN-Precision-Engineering/1.0',
