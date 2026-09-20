@@ -51,6 +51,7 @@ export interface Program {
   mediaUrl: string;
   archivePath?: string;
   assetId?: string;
+  sourceId?: string;
   sourceClass?: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'm3u_live';
   isArchivedSource?: boolean;
   metadata?: Record<string, any>;
