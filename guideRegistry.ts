@@ -141,7 +141,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv'){
     const news=await getChannelSchedule();
-    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any)=>({id:normalizeProgramIdentity({externalId:p.archivePath,channelId:ch.id,title:p.title,startTime:typeof p.startHour==='number'?p.startHour:null}),guideId,channelId:ch.id,title:p.title,description:`Archive.org broadcast: ${p.title}`,startTime:p.startHour,endTime:p.endHour,startHour:p.startHour,endHour:p.endHour,mediaType:'video' as MediaType,mediaUrl:p.archivePath,archivePath:p.archivePath}))}));
+    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any)=>({id:normalizeProgramIdentity({externalId:p.externalId,channelId:ch.id,title:p.title,startTime:typeof p.startHour==='number'?p.startHour:null}),guideId,channelId:ch.id,title:p.title,description:`Archive.org broadcast: ${p.title}`,startTime:p.startHour,endTime:p.endHour,startHour:p.startHour,endHour:p.endHour,mediaType:'video' as MediaType,mediaUrl:p.archivePath,archivePath:p.archivePath}))}));
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
