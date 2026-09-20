@@ -96,3 +96,30 @@ test('preserves semantic live query identity while ignoring volatile auth and cl
   assert.notEqual(a.assetId, b.assetId);
   assert.equal(a.assetId, c.assetId);
 });
+
+
+test('partial authoritative identity is completed deterministically', () => {
+  const fromProgram = buildEpgIdentity({
+    guideId: 'on-demand',
+    channelId: 'direct-stream',
+    sourceId: 'src-direct',
+    programId: 'prog-authoritative',
+    title: 'Example Program',
+    mediaUrl: 'https://cdn.example/video.mp4',
+  });
+  assert.equal(fromProgram.programId, 'prog-authoritative');
+  assert.equal(fromProgram.sourceId, 'src-direct');
+  assert.equal(fromProgram.assetId, 'asset-video.mp4');
+
+  const fromAsset = buildEpgIdentity({
+    guideId: 'on-demand',
+    channelId: 'direct-stream',
+    sourceId: 'src-direct',
+    assetId: 'asset-authoritative',
+    title: 'Example Program',
+    mediaUrl: 'https://cdn.example/video.mp4',
+  });
+  assert.equal(fromAsset.programId, 'prog-direct-stream-example-program');
+  assert.equal(fromAsset.sourceId, 'src-direct');
+  assert.equal(fromAsset.assetId, 'asset-authoritative');
+});
