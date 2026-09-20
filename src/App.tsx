@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
+import { normalizePlaybackIdentity, IdentityResolutionError } from './utils/identityNormalizer';
+import { reportTelemetry } from './telemetry';
 import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
 import { AjnResourcePanel } from './components/AjnResourcePanel';
@@ -43,8 +45,8 @@ function getDestinationFromHash(): Destination {
   }
 }
 
-function mediaIdentity(media: Pick<NowPlayingMedia, 'src' | 'archivePath' | 'programId' | 'sourceId' | 'assetId'>): string {
-  return media.assetId || media.programId || media.sourceId || media.archivePath || media.src;
+function mediaIdentity(media: NowPlayingMedia): string {
+  return media.identity.assetId;
 }
 
 function normalizeRecentlyPlayed(value: unknown): RecentlyPlayedItem[] {
@@ -86,17 +88,89 @@ export default function App() {
 
   const handlePlayProgram = useCallback<PlayProgramCallback>((archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId) => {
     const rawReference = String(archivePath ?? '').trim();
-    if (!rawReference) { console.warn('[AJN Playback] refused empty media reference', { title, channelId, guideId, programId, assetId }); return; }
+    if (!rawReference) {
+      console.warn('[AJN Playback] refused empty media reference', { title, channelId, guideId, programId, assetId });
+      return;
+    }
+
     const constructedSrc = toPlayableSrc(rawReference);
-    const inferredMediaType = mediaType || (rawReference.toLowerCase().endsWith('.mp3') || rawReference.toLowerCase().includes('audio') ? 'audio' : 'video');
-    const id = mediaIdentity({ src: constructedSrc, archivePath: rawReference, programId, sourceId, assetId });
+    const inferredMediaType = mediaType || (
+      rawReference.toLowerCase().endsWith('.mp3') ||
+      rawReference.toLowerCase().includes('audio')
+        ? 'audio'
+        : 'video'
+    );
+
+    let identity;
+    try {
+      identity = normalizePlaybackIdentity({
+        guideId,
+        channelId,
+        sourceId,
+        assetId,
+        programId,
+        title,
+        mediaUrl: rawReference,
+      });
+    } catch (error) {
+      const reason = error instanceof IdentityResolutionError ? error.message : String(error);
+      console.error('[AJN PLAYBACK] canonical identity resolution failed', {
+        title,
+        mediaUrl: rawReference,
+        guideId,
+        channelId,
+        programId,
+        sourceId,
+        assetId,
+        reason,
+      });
+      reportTelemetry({
+        event: 'playback.identity_unresolved',
+        guideId: guideId ?? null,
+        channelId: channelId ?? null,
+        sourceId: sourceId ?? null,
+        programId: programId ?? null,
+        assetId: assetId ?? null,
+        archiveIdentifier: null,
+        mediaPath: rawReference,
+        proxyRequestId: null,
+        unresolved: {
+          kind: 'file',
+          field: 'playbackIdentity',
+          reason,
+        },
+      });
+      return;
+    }
+
+    const nowPlayingBase: NowPlayingMedia = {
+      identity,
+      src: constructedSrc,
+      title,
+      subtitle,
+      mediaType: inferredMediaType,
+      channelId: identity.channelId,
+      guideId: identity.guideId,
+      programId: identity.programId,
+      sourceId: identity.sourceId,
+      assetId: identity.assetId,
+      archivePath: rawReference,
+    };
+
+    const id = mediaIdentity(nowPlayingBase);
     const existing = recentlyPlayedRef.current.find((item) => item.id === id);
     const nextRecentlyPlayed: RecentlyPlayedItem = {
-      id, src: constructedSrc, title, subtitle, mediaType: inferredMediaType, channelId, guideId, programId, sourceId, assetId,
-      archivePath: rawReference, progressSeconds: existing?.progressSeconds ?? 0, updatedAt: Date.now(),
+      ...nowPlayingBase,
+      id,
+      progressSeconds: existing?.progressSeconds ?? 0,
+      updatedAt: Date.now(),
     };
+
     setNowPlaying(nextRecentlyPlayed);
-    setRecentlyPlayed((items) => [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
+    setRecentlyPlayed((items) => [
+      nextRecentlyPlayed,
+      ...items.filter((item) => item.id !== id),
+    ].slice(0, RECENTLY_PLAYED_LIMIT));
     setDestination('player');
     if (typeof window !== 'undefined') window.location.hash = '#player';
   }, []);
