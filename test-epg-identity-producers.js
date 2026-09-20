@@ -37,6 +37,18 @@ eq(firstSourceIds.join('|'), secondSourceIds.join('|'), 'Reordered M3U entries a
 eq(new Set(secondSourceIds).size, secondSourceIds.length, 'Repeated playlist ingestion must not duplicate canonical sources');
 
 const fox = second.channels.find((channel) => channel.tvgId === 'producer-fox');
+
+// --- DIAGNOSTIC DUMP ---
+console.error(JSON.stringify({
+  diagnostic: 'EPG_PRODUCER_STATE',
+  firstChannelsCount: first.channels.length,
+  secondChannelsCount: second.channels.length,
+  foxChannel: fox || 'NOT_FOUND',
+  foxFirstSources: first.sources.filter((s) => s.channelId === fox?.id).map((s) => s.id),
+  foxSecondSources: second.sources.filter((s) => s.channelId === fox?.id).map((s) => s.id)
+}, null, 2));
+// -----------------------
+
 assert(fox, 'Fox producer channel should remain addressable by tvg-id metadata');
 eq(fox?.logo, 'https://example.test/logo.png', 'M3U tvgLogo should be retained');
 eq(fox?.group, 'News', 'M3U groupTitle should be retained');
