@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeAjnFilename } from "./ajnTitleNormalizer";
+import {
+  normalizeAjnFilename,
+  renameLegacyAjnVideoFilename,
+} from "./ajnTitleNormalizer";
 
 test("decodes a URL-encoded filename and removes extension", () => {
   assert.equal(
@@ -25,4 +28,34 @@ test("strips query strings and fragments", () => {
 
 test("returns an empty string for empty input", () => {
   assert.equal(normalizeAjnFilename(""), "");
+});
+
+test("renames legacy War Room filenames with positional regex groups", () => {
+  assert.equal(
+    renameLegacyAjnVideoFilename(
+      "VIDEO - 20260729_Wed_WarRoom-Hr3.mp4",
+      "WAR-ROOM",
+    ),
+    "WAR-ROOM 2026-07-29_Wed_WarRoom-Hr3.mp4",
+  );
+});
+
+test("renames legacy Alex Jones filenames while preserving the extension", () => {
+  assert.equal(
+    renameLegacyAjnVideoFilename(
+      "VIDEO - 20260624_Wed_AlexJones-Hr1.mp4",
+      "ALEX-JONES",
+    ),
+    "ALEX-JONES 2026-06-24_Wed_AlexJones-Hr1.mp4",
+  );
+});
+
+test("leaves non-matching filenames unchanged", () => {
+  assert.equal(
+    renameLegacyAjnVideoFilename(
+      "WAR-ROOM 2026-07-29_Wed_WarRoom-Hr3.mp4",
+      "WAR-ROOM",
+    ),
+    "WAR-ROOM 2026-07-29_Wed_WarRoom-Hr3.mp4",
+  );
 });
