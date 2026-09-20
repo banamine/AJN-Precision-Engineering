@@ -1,4 +1,7 @@
 import { normalizeAjnFilename } from './src/utils/ajnTitleNormalizer.js';
+import { normalizeProgramIdentity, normalizeAssetIdentity } from './src/utils/epgIdentity.js';
+import { upsertCanonicalProgram } from './guideRegistry.ts';
+import type { Program } from './src/types.js';
 
 export type AjnFeedId = 'Alex' | 'WarRoom' | 'SundayLive' | 'AJNHourlyVideo' | 'AJNHourlyAudio';
 export type AjnResourceKind = 'live' | 'hourly' | 'segment';
@@ -87,6 +90,41 @@ const AFFILIATES: AjnAffiliateLink[] = [
 ];
 
 const byId = new Map(RESOURCES.map(r => [r.id, r]));
+
+function publishedTimeMs(value?: string): number {
+  if (!value) return Date.now();
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Date.now();
+}
+
+function buildCanonicalAjnProgram(item: AjnFeedItem): Program {
+  const externalId = item.metadata.guid || item.id;
+  const startTime = publishedTimeMs(item.publishedAt);
+  const endTime = startTime + 60 * 60 * 1000;
+  const channelId = `ajn-feed-${item.feedId.toLowerCase()}`;
+  const programId = normalizeProgramIdentity({ externalId, channelId, title: item.title, startTime });
+  const assetId = normalizeAssetIdentity({ externalId, programId, mediaUrl: item.url });
+  return {
+    id: programId,
+    guideId: 'audio-podcasts',
+    channelId,
+    title: item.title,
+    description: item.description,
+    startTime,
+    endTime,
+    mediaType: item.mediaType,
+    mediaUrl: item.url,
+    assetId,
+    sourceClass: 'ajn_rss',
+    isArchivedSource: false,
+    metadata: { externalId, feedId: item.feedId, guid: item.metadata.guid, sourceFeed: item.metadata.sourceFeed },
+  };
+}
+
+export function canonicalizeAjnFeedItems(items: AjnFeedItem[]): Program[] {
+  return items.map(item => upsertCanonicalProgram(buildCanonicalAjnProgram(item)));
+}
+
 const entityMap: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
 function decodeXml(value: string): string {
