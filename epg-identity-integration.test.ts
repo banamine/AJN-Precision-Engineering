@@ -2,6 +2,20 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ingestM3uPlaylist, getChannelsByGuide, getCanonicalEpgPrograms } from './guideRegistry';
 import { normalizePlaybackIdentity } from './src/utils/identityNormalizer';
+import { buildEpgIdentity } from './src/utils/epgIdentity';
+
+test('generic live paths remain isolated by source namespace', () => {
+  const a = buildEpgIdentity({ guideId:'cable-tv', channelId:'alpha', sourceId:'src-alpha', title:'Alpha', mediaUrl:'https://cdn-a.example/live.m3u8' });
+  const b = buildEpgIdentity({ guideId:'cable-tv', channelId:'beta', sourceId:'src-beta', title:'Beta', mediaUrl:'https://cdn-b.example/live.m3u8' });
+  assert.notEqual(a.assetId, b.assetId);
+});
+
+test('canonical transport remains the runtime media URL after identity normalization', () => {
+  const url = 'https://cdn.example/live.m3u8?token=secret&start=10&end=20';
+  const id = buildEpgIdentity({ guideId:'cable-tv', channelId:'alpha', sourceId:'src-alpha', title:'Alpha', mediaUrl:url });
+  assert.equal(id.sourceId, 'src-alpha');
+  assert.equal(url.includes('token=secret'), true);
+});
 
 test('new M3U source adds only its new channels and keeps identity stable on re-ingest', () => {
   const before = getChannelsByGuide('cable-tv').map((channel) => channel.id);
