@@ -52,6 +52,7 @@ export interface Program {
   assetId?: string;
   publishedAt?: string;
   archiveIdentifier?: string;
+  feedId?: string;
   metadata?: Record<string, any>;
 }
 
@@ -96,6 +97,7 @@ export interface PlaybackIdentityInput {
   sourceId?: string;
   assetId?: string;
   programId?: string;
+  feedId?: string;
   title: string;
   mediaUrl: string;
   publishedAt?: string;
