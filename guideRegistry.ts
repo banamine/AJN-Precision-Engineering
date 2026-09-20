@@ -250,10 +250,7 @@ export function setChannelSources(id:string,sources:ChannelSource[]){channelSour
 export function getCanonicalEpgPrograms(): Program[]{ return Array.from(programsMap.values()); }
 export function getCanonicalEpgProgram(sourceId:string, programId:string): Program | undefined { return programsMap.get(programRegistryKey(sourceId, programId)); }
 export function getCanonicalEpgProgramById(programId:string): Program | undefined {
-  const keys = programIdIndex.get(programId) || [];
-  for (const key of keys) {
-    const program = programsMap.get(key);
-    if (program) return program;
-  }
-  return undefined;
+  const keys = programIdIndex.get(programId);
+  if (!keys || keys.length !== 1) return undefined;
+  return programsMap.get(keys[0]);
 }
