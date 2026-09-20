@@ -22,9 +22,6 @@ interface LibraryViewProps {
 
 const SHERLOCK_HOLMES_FOREWORD = 'https://archive.org/download/sherlock-holmes-the-adventures-of-sherlock-holmes/Chapter%2000.2%20-%20Foreword.mp3';
 
-const CURATED_LIBRARY_ITEMS: LibraryItem[] = getCuratedLibraryProjection();
-
-
 const CATEGORIES = [
   { id: 'all', label: 'All Media' },
   { id: 'news', label: 'Newsroom Feeds' },
@@ -37,9 +34,10 @@ const CATEGORIES = [
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const curatedLibraryItems = useMemo(() => getCuratedLibraryProjection(), []);
 
   const filteredItems = useMemo(() => {
-    return CURATED_LIBRARY_ITEMS.filter((item) => {
+    return curatedLibraryItems.filter((item) => {
       const matchesCat = selectedCategory === 'all' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
@@ -50,7 +48,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
         item.source.toLowerCase().includes(q);
       return matchesCat && matchesQuery;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [curatedLibraryItems, selectedCategory, searchQuery]);
 
   return (
     <div className="space-y-8 pb-16">
