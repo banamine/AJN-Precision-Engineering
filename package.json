@@ -15,6 +15,7 @@
     "test:audio-singleton": "node test-audio-context-singleton.js",
     "test:audio-video-switch": "node test-audio-video-switch.js",
     "test:epg-identity": "tsx test-epg-identity.js",
+    "test:epg-identity-producers": "tsx test-epg-identity-producers.js",
     "test:api-contract": "node test-api-contracts.js",
     "test:accessibility": "node test-accessibility.js",
     "test:browser-journeys": "node test-browser-journeys.js"
