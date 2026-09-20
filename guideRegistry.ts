@@ -4,6 +4,8 @@ import {
 import { getChannelSchedule } from './channels';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
+import { buildMoviesClassicsPrograms } from './src/services/producers/moviesClassicsProducer';
+import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
 
 export const GUIDES: Guide[] = [
@@ -188,6 +190,7 @@ export function initializeRegistry(){
   if(playlistsMap.size)return;
   for(const {playlist,m3uContent} of INITIAL_PLAYLISTS){playlistsMap.set(playlist.id,playlist);ingestM3uPlaylist(playlist,m3uContent);}
   for(const program of getNovaCanonicalPrograms()) upsertCanonicalProgram(program);
+  for(const program of buildMoviesClassicsPrograms(moviesClassicsManifest)) upsertCanonicalProgram(program);
 }
 initializeRegistry();
 
