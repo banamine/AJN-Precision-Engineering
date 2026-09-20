@@ -604,7 +604,7 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
       endHour: (index + 1) * (24 / playableItems.length),
       archivePath,
       archiveIdentifier: item.identifier,
-      sourceId: item.network || item.identifier.split("_")[0] || "unknown",
+      sourceId: item.network || item.identifier.split("_")[0],
       assetId: item.identifier,
       programId: item.identifier,
       publishedAt: item.publicdate || undefined,
