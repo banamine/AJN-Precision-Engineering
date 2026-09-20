@@ -28,13 +28,14 @@ assert(first.programId === second.programId, 'programId must be deterministic');
 assert(first.playbackId === second.playbackId, 'playbackId must be deterministic');
 
 const ajn = normalizePlaybackIdentity({
+  feedId: 'AJNHourlyVideo',
   title: 'WAR-ROOM 2026-07-29_Wed_WarRoom-Hr3',
   mediaUrl: 'https://rss.alexjones.media/download/VIDEO%20-%2020260729_Wed_WarRoom-Hr3.mp4',
 });
 
 assert(ajn.guideId === 'ajn-resource', 'AJN guideId should derive from URL');
 assert(ajn.channelId === 'ajn-archive', 'AJN channelId should derive from URL');
-assert(ajn.sourceId !== 'unknown', 'AJN sourceId must be resolved');
+assert(ajn.sourceId === 'ajn-rss-ajnhourlyvideo', 'AJN sourceId should derive from raw feed metadata');
 assert(ajn.assetId !== 'unknown', 'AJN assetId must be resolved');
 assert(ajn.programId !== 'unknown', 'AJN programId must be resolved');
 
