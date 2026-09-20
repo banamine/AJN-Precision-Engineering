@@ -287,6 +287,12 @@ export function parseM3uUtcTimestamp(raw: string, offsetMinutes = 0): number {
   return Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mm), Number(ss)) - offset * 60_000;
 }
 
+
+export function normalizeEpochMilliseconds(timestamp: number): number {
+  if (!Number.isFinite(timestamp) || timestamp <= 0) throw new Error(`Invalid epoch timestamp: ${timestamp}`);
+  return timestamp < 1_000_000_000_000 ? Math.trunc(timestamp * 1000) : Math.trunc(timestamp);
+}
+
 export function getSafeArchiveUrl(rawUrl: string): string {
   try {
     const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
