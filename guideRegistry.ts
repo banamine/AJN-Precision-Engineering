@@ -18,6 +18,7 @@ const channelsMap = new Map<string, Channel>();
 const channelSourcesMap = new Map<string, ChannelSource[]>();
 const playlistsMap = new Map<string, Playlist>();
 const programsMap = new Map<string, Program>();
+const MAX_PROGRAM_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 function programRegistryKey(sourceId:string, programId:string):string {
   return `${sourceId}:${programId}`;
@@ -26,6 +27,17 @@ function programRegistryKey(sourceId:string, programId:string):string {
 function logEpgIdentity(outcome:'AUTHORITATIVE_MATCH'|'DETERMINISTIC_FALLBACK'|'SANITY_REJECTED', detail:Record<string,unknown>){
   console.debug('[EpgIdentityLog]', { outcome, ...detail });
 }
+
+function pruneExpiredPrograms(maxLookbackMs = MAX_PROGRAM_RETENTION_MS): void {
+  const cutoff = Date.now() - maxLookbackMs;
+  for (const [key, program] of programsMap.entries()) {
+    const endMs = Number.isFinite(program.endTime) && program.endTime > 1e11
+      ? program.endTime
+      : Date.now();
+    if (endMs < cutoff) programsMap.delete(key);
+  }
+}
+
 
 function upsertCanonicalProgram(candidate:{
   guideId:string; channelId:string; title:string; mediaUrl:string; mediaType:MediaType;
@@ -56,6 +68,7 @@ function upsertCanonicalProgram(candidate:{
       metadata: { ...(existing?.metadata || {}), ...(candidate.metadata || {}) },
     };
     programsMap.set(key, program);
+    pruneExpiredPrograms();
     logEpgIdentity(candidate.programId ? 'AUTHORITATIVE_MATCH' : 'DETERMINISTIC_FALLBACK', {
       guideId: candidate.guideId, channelId: candidate.channelId, sourceId: identity.sourceId,
       programId: identity.programId, assetId: identity.assetId,
@@ -224,3 +237,9 @@ export function addChannel(ch:Channel){channelsMap.set(ch.id,ch);}
 export function setChannelSources(id:string,sources:ChannelSource[]){channelSourcesMap.set(id,sources);}
 export function getCanonicalEpgPrograms(): Program[]{ return Array.from(programsMap.values()); }
 export function getCanonicalEpgProgram(sourceId:string, programId:string): Program | undefined { return programsMap.get(programRegistryKey(sourceId, programId)); }
+export function getCanonicalEpgProgramById(programId:string): Program | undefined {
+  for (const [key, program] of programsMap.entries()) {
+    if (key.endsWith(`:${programId}`)) return program;
+  }
+  return undefined;
+}
