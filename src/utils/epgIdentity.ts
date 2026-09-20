@@ -21,6 +21,10 @@ export interface EpgIdentity {
   assetId: string;
 }
 
+export interface EpgIdentityWithTransport extends EpgIdentity {
+  mediaUrl: string;
+}
+
 export class EpgIdentityResolutionError extends Error {
   constructor(message: string, public readonly input: EpgIdentityInput) {
     super(message);
@@ -136,7 +140,11 @@ export function buildEpgIdentity(input: EpgIdentityInput): EpgIdentity {
   const programKey = stableProgramKey(input, sourceId);
 
   const programId = clean(input.programId) || `prog-${slug(channelId)}-${slug(programKey)}`;
-  const assetKey = clean(input.assetId) || clean(input.archiveIdentifier) || normalizeAssetPath(mediaUrl);
+  const normalizedPath = normalizeAssetPath(mediaUrl);
+  const genericLive = /\/(?:live(?:\.[a-z0-9]+)?|stream(?:\.[a-z0-9]+)?|index(?:\.[a-z0-9]+)?)$/i.test(normalizedPath) ||
+    /\.(?:m3u8|mpd)$/i.test(normalizedPath);
+  const assetKey = clean(input.assetId) || clean(input.archiveIdentifier) ||
+    (genericLive ? `${sourceId}:${normalizedPath}` : normalizedPath);
   const assetId = clean(input.assetId) || `asset-${slug(assetKey)}`;
 
   return { sourceId, programId, assetId };
