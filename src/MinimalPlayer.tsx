@@ -66,7 +66,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     } catch {
       return null;
     }
-  }, [onProgressEvent, resumeKey]);
+  }, [resumeKey]);
 
   const saveResumePosition = useCallback((media: HTMLMediaElement) => {
     if (Number.isFinite(media.currentTime)) onProgressEvent?.(media.currentTime);
