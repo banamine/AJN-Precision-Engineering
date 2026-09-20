@@ -178,7 +178,8 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
     const publishedAt = tag(block, 'pubDate') || tag(block, 'dc:date');
     const itemIdentity = itemId(id, block, index);
     const programSlug = displayTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const dateSlug = publishedAt ? new Date(publishedAt).toISOString().slice(0, 10) : 'undated';
+    const parsedPublishedAt = publishedAt ? Date.parse(publishedAt) : Number.NaN;
+    const dateSlug = Number.isFinite(parsedPublishedAt) ? new Date(parsedPublishedAt).toISOString().slice(0, 10) : 'undated';
     const programId = `ajn-${id.toLowerCase()}-${dateSlug}-${programSlug || index}`;
     const sourceId = `ajn-rss-${id.toLowerCase()}`;
     const assetId = `ajn-asset-${itemIdentity.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
