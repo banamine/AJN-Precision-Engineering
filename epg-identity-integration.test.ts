@@ -77,3 +77,11 @@ test('new M3U source adds only its new channels and keeps identity stable on re-
     assert.equal(playback.assetId, program.assetId);
   }
 });
+
+test('EPG playback receives canonical source and asset identities', () => {
+  const program = getCanonicalEpgPrograms().find((item) => item.guideId === 'classic-tv');
+  assert.ok(program);
+  assert.ok(program.sourceId);
+  assert.ok(program.assetId);
+  assert.equal(getCanonicalEpgProgram(program.sourceId!, program.id)?.assetId, program.assetId);
+});
