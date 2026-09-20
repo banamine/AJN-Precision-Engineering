@@ -186,7 +186,26 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
                       key={program.id || idx}
                       type="button"
                       id={`epg-prog-${channel.id}-${idx}`}
-                      onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id)}
+                      onClick={() => onSelectProgram?.(
+                        program.archivePath || program.mediaUrl,
+                        program.title,
+                        channel.name,
+                        mediaType,
+                        channel.id,
+                        program.guideId,
+                        program.id,
+                        program.sourceId,
+                        program.assetId,
+                        {
+                          guideId: program.guideId,
+                          channelId: channel.id,
+                          sourceId: program.sourceId,
+                          assetId: program.assetId,
+                          programId: program.id,
+                          publishedAt: program.publishedAt,
+                          archiveIdentifier: program.archiveIdentifier,
+                        },
+                      )}
                       className={`group absolute top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs transition hover:scale-[1.005] hover:z-10 cursor-pointer ${
                         isLive
                           ? mediaType === 'audio'

@@ -134,7 +134,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv'){
     const news=await getChannelSchedule();
-    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any,index:number)=>({id:`${ch.id}-${index+1}`,guideId,channelId:ch.id,title:p.title,description:`Archive.org broadcast: ${p.title}`,startTime:p.startHour,endTime:p.endHour,startHour:p.startHour,endHour:p.endHour,mediaType:'video' as MediaType,mediaUrl:p.archivePath,archivePath:p.archivePath}))}));
+    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any)=>({id:p.programId,guideId,channelId:ch.id,title:p.title,description:`Archive.org broadcast: ${p.title}`,startTime:p.startHour,endTime:p.endHour,startHour:p.startHour,endHour:p.endHour,mediaType:'video' as MediaType,mediaUrl:p.archivePath,archivePath:p.archivePath,sourceId:p.sourceId,assetId:p.assetId,publishedAt:p.publishedAt,archiveIdentifier:p.archiveIdentifier}))}));
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();

@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
+import { normalizePlaybackIdentity, IdentityResolutionError } from './utils/identityNormalizer';
+import { reportTelemetry } from './telemetry';
 import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
 import { AjnResourcePanel } from './components/AjnResourcePanel';
@@ -15,28 +17,18 @@ const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
 const RECENTLY_PLAYED_STORAGE_KEY = 'ajn.recentlyPlayed.v1';
 const RECENTLY_PLAYED_LIMIT = 5;
 
-/** Resolve a media reference to exactly one playable transport URL. */
 function toPlayableSrc(rawPath: string): string {
   const value = String(rawPath ?? '').trim();
   if (!value) return value;
   if (value.startsWith(ARCHIVE_PROXY_BASE)) return value;
-
   try {
     const parsed = new URL(value, window.location.origin);
-    if (parsed.pathname === '/api/archive/proxy' && parsed.searchParams.has('path')) {
-      return `${parsed.pathname}${parsed.search}`;
-    }
+    if (parsed.pathname === '/api/archive/proxy' && parsed.searchParams.has('path')) return `${parsed.pathname}${parsed.search}`;
     if (parsed.hostname === 'archive.org' && parsed.pathname.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) {
-      const archivePath = `${parsed.pathname}${parsed.search}`;
-      return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(archivePath)}`;
+      return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(`${parsed.pathname}${parsed.search}`)}`;
     }
-  } catch {
-    // Preserve non-URL references unchanged below.
-  }
-
-  if (value.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) {
-    return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(value)}`;
-  }
+  } catch {}
+  if (value.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(value)}`;
   return value;
 }
 
@@ -44,34 +36,65 @@ function getDestinationFromHash(): Destination {
   if (typeof window === 'undefined') return 'home';
   const hash = window.location.hash.replace('#', '').toLowerCase();
   switch (hash) {
-    case 'tv-guide':
-    case 'guide':
-    case 'epg': return 'tv-guide';
-    case 'player':
-    case 'watch': return 'player';
-    case 'library':
-    case 'archive': return 'library';
+    case 'tv-guide': case 'guide': case 'epg': return 'tv-guide';
+    case 'player': case 'watch': return 'player';
+    case 'library': case 'archive': return 'library';
     case 'search': return 'search';
-    case 'dev':
-    case 'developer':
-    case 'diagnostics': return 'dev';
+    case 'dev': case 'developer': case 'diagnostics': return 'dev';
     default: return 'home';
   }
 }
 
-function mediaIdentity(media: Pick<NowPlayingMedia, 'src' | 'archivePath' | 'programId' | 'sourceId' | 'assetId'>): string {
-  return media.assetId || media.programId || media.sourceId || media.archivePath || media.src;
+function mediaIdentity(media: NowPlayingMedia): string {
+  return media.identity.assetId;
 }
 
 function normalizeRecentlyPlayed(value: unknown): RecentlyPlayedItem[] {
   if (!Array.isArray(value)) return [];
+
   return value
-    .filter((item): item is RecentlyPlayedItem => Boolean(item && typeof item === 'object' && 'id' in item && 'title' in item && 'src' in item))
-    .map((item) => ({
-      ...item,
-      progressSeconds: Number.isFinite(item.progressSeconds) && item.progressSeconds >= 0 ? item.progressSeconds : 0,
-      updatedAt: Number.isFinite(item.updatedAt) ? item.updatedAt : Date.now(),
-    }))
+    .filter((item): item is Record<string, any> =>
+      Boolean(item && typeof item === 'object' && 'title' in item && 'src' in item)
+    )
+    .flatMap((item) => {
+      try {
+        const mediaUrl = String(item.archivePath || item.src || '').trim();
+        if (!mediaUrl) return [];
+
+        const identity = item.identity?.guideId &&
+          item.identity?.channelId &&
+          item.identity?.sourceId &&
+          item.identity?.assetId &&
+          item.identity?.programId
+          ? item.identity
+          : normalizePlaybackIdentity({
+              guideId: item.guideId,
+              channelId: item.channelId,
+              sourceId: item.sourceId,
+              assetId: item.assetId,
+              programId: item.programId,
+              title: String(item.title),
+              mediaUrl,
+              archiveIdentifier: item.archiveIdentifier,
+            });
+
+        const id = String(item.id || identity.assetId);
+        return [{
+          ...item,
+          id,
+          identity,
+          guideId: identity.guideId,
+          channelId: identity.channelId,
+          sourceId: identity.sourceId,
+          assetId: identity.assetId,
+          programId: identity.programId,
+          progressSeconds: Number.isFinite(item.progressSeconds) && item.progressSeconds >= 0 ? item.progressSeconds : 0,
+          updatedAt: Number.isFinite(item.updatedAt) ? item.updatedAt : Date.now(),
+        } as RecentlyPlayedItem];
+      } catch {
+        return [];
+      }
+    })
     .filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index)
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, RECENTLY_PLAYED_LIMIT);
@@ -79,29 +102,21 @@ function normalizeRecentlyPlayed(value: unknown): RecentlyPlayedItem[] {
 
 function readRecentlyPlayed(): RecentlyPlayedItem[] {
   if (typeof window === 'undefined') return [];
-  try {
-    return normalizeRecentlyPlayed(JSON.parse(window.localStorage.getItem(RECENTLY_PLAYED_STORAGE_KEY) || '[]'));
-  } catch {
-    return [];
-  }
+  try { return normalizeRecentlyPlayed(JSON.parse(window.localStorage.getItem(RECENTLY_PLAYED_STORAGE_KEY) || '[]')); } catch { return []; }
 }
 
 function writeRecentlyPlayed(items: RecentlyPlayedItem[]): void {
-  try {
-    window.localStorage.setItem(RECENTLY_PLAYED_STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    // Storage may be unavailable; playback remains unaffected.
-  }
+  try { window.localStorage.setItem(RECENTLY_PLAYED_STORAGE_KEY, JSON.stringify(items)); } catch {}
 }
 
 export default function App() {
   const [destination, setDestination] = useState<Destination>(() => getDestinationFromHash());
   const [nowPlaying, setNowPlaying] = useState<NowPlayingMedia | null>(null);
   const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedItem[]>(() => readRecentlyPlayed());
+  const recentlyPlayedRef = useRef(recentlyPlayed);
+  recentlyPlayedRef.current = recentlyPlayed;
 
-  useEffect(() => {
-    writeRecentlyPlayed(recentlyPlayed);
-  }, [recentlyPlayed]);
+  useEffect(() => { writeRecentlyPlayed(recentlyPlayed); }, [recentlyPlayed]);
 
   const navigateTo = useCallback((dest: Destination) => {
     setDestination(dest);
@@ -114,9 +129,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const handlePlayProgram = useCallback<PlayProgramCallback>((
-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId
-  ) => {
+  const handlePlayProgram = useCallback<PlayProgramCallback>((archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, identityInput) => {
     const rawReference = String(archivePath ?? '').trim();
     if (!rawReference) {
       console.warn('[AJN Playback] refused empty media reference', { title, channelId, guideId, programId, assetId });
@@ -125,43 +138,88 @@ export default function App() {
 
     const constructedSrc = toPlayableSrc(rawReference);
     const inferredMediaType = mediaType || (
-      rawReference.toLowerCase().endsWith('.mp3') || rawReference.toLowerCase().includes('audio') ? 'audio' : 'video'
+      rawReference.toLowerCase().endsWith('.mp3') ||
+      rawReference.toLowerCase().includes('audio')
+        ? 'audio'
+        : 'video'
     );
 
-    const id = mediaIdentity({
-      src: constructedSrc,
-      archivePath: rawReference,
-      programId,
-      sourceId,
-      assetId,
-    });
+    let identity;
+    try {
+      identity = normalizePlaybackIdentity({
+        ...identityInput,
+        guideId: guideId ?? identityInput?.guideId,
+        channelId: channelId ?? identityInput?.channelId,
+        sourceId: sourceId ?? identityInput?.sourceId,
+        assetId: assetId ?? identityInput?.assetId,
+        programId: programId ?? identityInput?.programId,
+        title,
+        mediaUrl: rawReference,
+      });
+    } catch (error) {
+      const reason = error instanceof IdentityResolutionError ? error.message : String(error);
+      console.error('[AJN PLAYBACK] canonical identity resolution failed', {
+        title,
+        mediaUrl: rawReference,
+        guideId,
+        channelId,
+        programId,
+        sourceId,
+        assetId,
+        reason,
+      });
+      reportTelemetry({
+        event: 'playback.identity_unresolved',
+        guideId: guideId ?? null,
+        channelId: channelId ?? null,
+        sourceId: sourceId ?? null,
+        programId: programId ?? null,
+        assetId: assetId ?? null,
+        archiveIdentifier: null,
+        mediaPath: rawReference,
+        proxyRequestId: null,
+        unresolved: {
+          kind: 'file',
+          field: 'playbackIdentity',
+          reason,
+        },
+      });
+      return;
+    }
 
-    const nextRecentlyPlayed: RecentlyPlayedItem = {
-      id,
+    const nowPlayingBase: NowPlayingMedia = {
+      identity,
       src: constructedSrc,
       title,
       subtitle,
       mediaType: inferredMediaType,
-      channelId,
-      guideId,
-      programId,
-      sourceId,
-      assetId,
+      channelId: identity.channelId,
+      guideId: identity.guideId,
+      programId: identity.programId,
+      sourceId: identity.sourceId,
+      assetId: identity.assetId,
       archivePath: rawReference,
-      progressSeconds: recentlyPlayed.find((item) => item.id === id)?.progressSeconds ?? 0,
+    };
+
+    const id = mediaIdentity(nowPlayingBase);
+    const existing = recentlyPlayedRef.current.find((item) => item.id === id);
+    const nextRecentlyPlayed: RecentlyPlayedItem = {
+      ...nowPlayingBase,
+      id,
+      progressSeconds: existing?.progressSeconds ?? 0,
       updatedAt: Date.now(),
     };
 
-    setRecentlyPlayed((items) => [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
-
-    setNowPlaying({ ...nextRecentlyPlayed });
+    setNowPlaying(nextRecentlyPlayed);
+    setRecentlyPlayed((items) => [
+      nextRecentlyPlayed,
+      ...items.filter((item) => item.id !== id),
+    ].slice(0, RECENTLY_PLAYED_LIMIT));
     setDestination('player');
     if (typeof window !== 'undefined') window.location.hash = '#player';
-  }, [recentlyPlayed]);
+  }, []);
 
-  const handleEpgSelect: PlayProgramCallback = useCallback((
-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId
-  ) => {
+  const handleEpgSelect: PlayProgramCallback = useCallback((archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId) => {
     handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId);
   }, [handlePlayProgram]);
 
@@ -181,27 +239,14 @@ export default function App() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} />
       <main id="canonical-main-viewport" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
-        {destination === 'home' && (
-          <>
-            <HomeView
-              onNavigate={navigateTo}
-              onPlayProgram={handlePlayProgram}
-              nowPlaying={nowPlaying}
-              recentlyPlayed={recentlyPlayed}
-              onResumeRecentlyPlayed={resumeRecentlyPlayed}
-            />
-            <AjnResourcePanel onPlayProgram={handlePlayProgram} />
-          </>
-        )}
+        {destination === 'home' && (<><HomeView onNavigate={navigateTo} onPlayProgram={handlePlayProgram} nowPlaying={nowPlaying} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} /><AjnResourcePanel onPlayProgram={handlePlayProgram} /></>)}
         {destination === 'tv-guide' && <TvGuideView onSelectProgram={handleEpgSelect} />}
         {destination === 'player' && <PlayerView nowPlaying={nowPlaying} onSelectProgram={handlePlayProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />}
         {destination === 'library' && <LibraryView onPlayProgram={handlePlayProgram} />}
         {destination === 'search' && <SearchView onPlayProgram={handlePlayProgram} />}
         {destination === 'dev' && <DevModeView onNavigate={navigateTo} />}
       </main>
-      {nowPlaying && destination !== 'player' && (
-        <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} />
-      )}
+      {nowPlaying && destination !== 'player' && <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} />}
     </div>
   );
 }

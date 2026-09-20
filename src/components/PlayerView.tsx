@@ -39,10 +39,33 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress
   }, [nowPlaying, onSelectProgram]);
 
   const meta = useMemo(() => nowPlaying ? ({
-    programId: nowPlaying.programId ?? "unknown",
-    sourceId: nowPlaying.sourceId ?? "unknown",
-    assetId: nowPlaying.assetId ?? "unknown",
+    guideId: nowPlaying.identity.guideId,
+    channelId: nowPlaying.identity.channelId,
+    sourceId: nowPlaying.identity.sourceId,
+    assetId: nowPlaying.identity.assetId,
+    programId: nowPlaying.identity.programId,
+    titleId: nowPlaying.identity.titleId,
+    playbackId: nowPlaying.identity.playbackId,
+    routeId: nowPlaying.identity.routeId,
+    archiveIdentifier: nowPlaying.identity.archiveIdentifier ?? null,
   }) : null, [nowPlaying]);
+
+  const handlePlayEvent = useCallback(() => {
+    console.log("[AJN PLAYBACK] play", meta);
+  }, [meta]);
+
+  const handlePauseEvent = useCallback(() => {
+    console.log("[AJN PLAYBACK] pause", meta);
+  }, [meta]);
+
+  const handleErrorEvent = useCallback((err: MediaError | null) => {
+    console.error("[AJN PLAYBACK] error", meta, err);
+  }, [meta]);
+
+  const handleProgressEvent = useCallback((positionSeconds: number) => {
+    const itemId = nowPlaying.assetId || nowPlaying.programId || nowPlaying.sourceId || nowPlaying.archivePath || nowPlaying.src;
+    onProgress?.(itemId, positionSeconds);
+  }, [nowPlaying, onProgress]);
 
   if (!nowPlaying) return <div className="p-6">No media selected.</div>;
 
@@ -54,13 +77,10 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress
         mediaType={nowPlaying.mediaType ?? "video"}
         nowPlaying={nowPlaying}
         onProgramEnded={handleProgramEnded}
-        onPlayEvent={() => console.log("[AJN PLAYBACK] play", meta)}
-        onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
-        onErrorEvent={(err) => console.error("[AJN PLAYBACK] error", meta, err)}
-        onProgressEvent={(positionSeconds: number) => {
-          const itemId = nowPlaying.assetId || nowPlaying.programId || nowPlaying.sourceId || nowPlaying.archivePath || nowPlaying.src;
-          onProgress?.(itemId, positionSeconds);
-        }}
+        onPlayEvent={handlePlayEvent}
+        onPauseEvent={handlePauseEvent}
+        onErrorEvent={handleErrorEvent}
+        onProgressEvent={handleProgressEvent}
       />
       {(import.meta as any).env?.DEV && (
         <details aria-label="Developer playback diagnostics" className="rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-xs font-mono">
