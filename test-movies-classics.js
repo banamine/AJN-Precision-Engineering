@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json' with { type: 'json' };
 import { buildMoviesClassicsPrograms, MOVIES_CLASSICS_CHANNEL_ID, MOVIES_CLASSICS_GUIDE_ID } from './src/services/producers/moviesClassicsProducer.ts';
-import { getCanonicalPrograms } from './guideRegistry.ts';
+import { getCanonicalPrograms, getAllGuides, getScheduleForGuide } from './guideRegistry.ts';
 import { getCuratedLibraryProjection } from './src/services/libraryService.ts';
 
 const programs = buildMoviesClassicsPrograms(moviesClassicsManifest);
@@ -20,6 +20,15 @@ assert.ok(programs.every((program) => !program.mediaUrl.includes('BigBuckBunny')
 const wormwood = programs.filter((program) => program.sourceId === programs.find((p) => p.mediaUrl.includes('wormwood_frank-olson'))?.sourceId);
 assert.equal(wormwood.length, 6, 'Wormwood multi-file item must expand to six Programs sharing one parent source identity');
 assert.equal(new Set(wormwood.map((program) => program.assetId)).size, 6, 'Wormwood files must have six distinct assets');
+
+assert.ok(getAllGuides().some((guide) => guide.id === MOVIES_CLASSICS_GUIDE_ID), 'Movies Classics guide must be registered');
+
+const schedule = await getScheduleForGuide(MOVIES_CLASSICS_GUIDE_ID);
+assert.equal(schedule.length, 1, 'Movies Classics schedule must expose one curated channel');
+assert.equal(schedule[0].id, MOVIES_CLASSICS_CHANNEL_ID);
+assert.equal(schedule[0].guideId, MOVIES_CLASSICS_GUIDE_ID);
+assert.equal(schedule[0].programs.length, 34, 'Movies Classics schedule must expose all 34 bounded Programs');
+assert.ok(schedule[0].programs.every((program) => program.sourceClass === 'archive_org'));
 
 const canonicalMovies = getCanonicalPrograms().filter((program) => program.channelId === MOVIES_CLASSICS_CHANNEL_ID);
 assert.equal(canonicalMovies.length, 34, 'Registry must hydrate all 34 bounded Movies Classics Programs');
