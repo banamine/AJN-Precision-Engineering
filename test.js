@@ -14,9 +14,19 @@ import puppeteer from 'puppeteer';
       console.log(`[Network] Media requested: ${request.url()}`);
     }
   });
+  page.on('console', (msg) => console.log(`[Browser ${msg.type()}] ${msg.text()}`));
+  page.on('pageerror', (error) => console.error('[Browser pageerror]', error));
+  page.on('requestfailed', (request) => {
+    console.error(`[Browser requestfailed] ${request.method()} ${request.url()} :: ${request.failure()?.errorText ?? 'unknown'}`);
+  });
+  page.on('response', (response) => {
+    if (response.status() >= 400) {
+      console.error(`[Browser HTTP ${response.status()}] ${response.request().method()} ${response.url()}`);
+    }
+  });
 
   try {
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle2' });
+    await page.goto('http://localhost:3000', { waitUntil: 'networkidle2', timeout: 30000 });
     console.log('Page loaded');
     
     // Check News regression
@@ -52,8 +62,9 @@ import puppeteer from 'puppeteer';
     console.log('\\n--- TEST 3: Actual Browser Playback ---');
     console.log('Video element progresses, onEnded fires, which calls handleProgramEnded.');
     
-  } catch(e) {
-    console.error('Error during test:', e);
+  } catch (e) {
+    console.error('[Playback regression FAILED]', e);
+    throw e;
   } finally {
     await browser.close();
   }

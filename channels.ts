@@ -555,6 +555,7 @@ function toProxyPath(fullUrl: string): string {
 }
 
 export interface ScheduleProgram {
+  externalId: string;
   title: string;
   startHour: number;
   endHour: number;
@@ -594,6 +595,7 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
     .map((item, index) => ({ item, archivePath: resolved[index] }))
     .filter(({ archivePath }) => Boolean(archivePath))
     .map(({ item, archivePath }, index, playableItems) => ({
+      externalId: item.identifier,
       title: item.title || item.program || item.identifier,
       startHour: index * (24 / playableItems.length),
       endHour: (index + 1) * (24 / playableItems.length),

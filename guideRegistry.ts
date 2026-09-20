@@ -3,6 +3,7 @@ import {
 } from './src/types';
 import { getChannelSchedule } from './channels';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
+import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
 
 export const GUIDES: Guide[] = [
   { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
@@ -84,19 +85,25 @@ export function parseM3u(text:string):ParsedM3uEntry[] {
   return out;
 }
 
-function channelId(value:string):string { return value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
-
 export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:string){
   const entries=parseM3u(text); const updated:Channel[]=[];
   const guideId=targetGuideId || (playlist.category.toLowerCase().includes('audio')?'audio-podcasts':'cable-tv');
   const mediaType:MediaType=guideId==='audio-podcasts'?'audio':'video';
   for(const entry of entries){
-    const id=channelId(entry.tvgId || entry.tvgName || entry.title); const existing=channelsMap.get(id);
-    const ch:Channel=existing?{...existing,logo:existing.logo||entry.tvgLogo,group:existing.group||entry.groupTitle||playlist.category}
-      :{id,guideId,name:entry.tvgName||entry.title,mediaType,logo:entry.tvgLogo,group:entry.groupTitle||playlist.category,tvgId:entry.tvgId,tvgName:entry.tvgName,enabled:true};
+    const sanitizedUrl = sanitizeIdentityUrl(entry.url);
+    const id=normalizeChannelIdentity({ externalId: entry.tvgId, name: entry.tvgName || entry.title, guideId }); const existing=channelsMap.get(id);
+    const ch:Channel=existing
+      ? {...existing,
+          tvgId: entry.tvgId || existing.tvgId,
+          tvgName: entry.tvgName || existing.tvgName,
+          logo: existing.logo || entry.tvgLogo,
+          group: existing.group || entry.groupTitle || playlist.category}
+      : {id,guideId,name:entry.tvgName||entry.title,mediaType,logo:entry.tvgLogo,group:entry.groupTitle||playlist.category,tvgId:entry.tvgId,tvgName:entry.tvgName,enabled:true};
     channelsMap.set(id,ch); updated.push(ch); const sources=channelSourcesMap.get(id)||[];
-    if(!sources.some(s=>s.url===entry.url)){
-      sources.push({id:`src-${id}-${sources.length+1}`,channelId:id,protocol:entry.url.includes('.m3u8')?'hls':'https',url:entry.url,priority:sources.length+1,enabled:true,metadata:{playlistId:playlist.id,playlistName:playlist.name,category:playlist.category,durationSeconds:entry.duration&&entry.duration>0?entry.duration:undefined}});
+    const protocol=entry.url.includes('.m3u8')?'hls':'https';
+    const canonicalSourceId=normalizeSourceIdentity({channelId:id,url:sanitizedUrl,protocol});
+    if(!sources.some(s=>s.id===canonicalSourceId)){
+      sources.push({id:canonicalSourceId,channelId:id,protocol,url:entry.url,priority:sources.length+1,enabled:true,metadata:{playlistId:playlist.id,playlistName:playlist.name,category:playlist.category,durationSeconds:entry.duration&&entry.duration>0?entry.duration:undefined}});
       channelSourcesMap.set(id,sources);
     }
   }
@@ -123,7 +130,13 @@ export function getChannelById(id:string){
 }
 export function getChannelSources(id:string){return channelSourcesMap.get(id)||[];}
 export function addChannelSource(channelId:string,source:Partial<ChannelSource>){
-  const existing=channelSourcesMap.get(channelId)||[]; const created:ChannelSource={id:source.id||`src-${channelId}-${existing.length+1}`,channelId,protocol:source.protocol||(source.url?.includes('.m3u8')?'hls':'https'),url:source.url||'',priority:source.priority??existing.length+1,enabled:source.enabled??true,metadata:source.metadata};
+  const url=source.url||''; const protocol=source.protocol||(url.includes('.m3u8')?'hls':'https');
+  if(!url) throw new Error('Channel source URL is required');
+  const canonicalId=normalizeSourceIdentity({channelId,url,protocol});
+  const existing=channelSourcesMap.get(channelId)||[];
+  const existingSource=existing.find(s=>s.id===canonicalId);
+  if(existingSource) return existingSource;
+  const created:ChannelSource={id:source.id||canonicalId,channelId,protocol,url,priority:source.priority??existing.length+1,enabled:source.enabled??true,metadata:source.metadata};
   existing.push(created); channelSourcesMap.set(channelId,existing); return created;
 }
 export function getAllPlaylists(){return Array.from(playlistsMap.values());}
@@ -134,13 +147,22 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv'){
     const news=await getChannelSchedule();
-    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any,index:number)=>({id:`${ch.id}-${index+1}`,guideId,channelId:ch.id,title:p.title,description:`Archive.org broadcast: ${p.title}`,startTime:p.startHour,endTime:p.endHour,startHour:p.startHour,endHour:p.endHour,mediaType:'video' as MediaType,mediaUrl:p.archivePath,archivePath:p.archivePath}))}));
+    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any)=>{
+      const id = normalizeProgramIdentity({ externalId:p.externalId, channelId:ch.id, title:p.title, startTime:typeof p.startHour==='number'?p.startHour:null });
+      const assetId = normalizeAssetIdentity({ externalId:p.externalId, archiveIdentifier:p.externalId, programId:id, mediaUrl:p.archivePath });
+      return { id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } };
+    })}));
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
     return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs}];
   }
-  return getChannelsByGuide(guideId).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[{id:`${ch.id}-1`,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:ch.sources?.[0]?.url||'',archivePath:ch.sources?.[0]?.url||''}]}));
+  return getChannelsByGuide(guideId).map(ch=>{
+    const sourceUrl = ch.sources?.[0]?.url || '';
+    const programId = normalizeProgramIdentity({ channelId:ch.id, title:ch.name, startTime:0 });
+    const assetId = normalizeAssetIdentity({ programId, mediaUrl:sourceUrl });
+    return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[{id:programId,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:sourceUrl,archivePath:sourceUrl,assetId,sourceClass:'m3u_live' as const,isArchivedSource:false,metadata:{groupTitle:ch.group,tvgId:ch.tvgId}}]};
+  });
 }
 
 export function addChannel(ch:Channel){channelsMap.set(ch.id,ch);}

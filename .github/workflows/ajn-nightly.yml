@@ -1,0 +1,69 @@
+name: AJN Nightly Regression
+
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    name: Nightly regression
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+      - name: Start application server
+        run: |
+          node dist/server.cjs > /tmp/ajn-server.log 2>&1 &
+          echo $! > /tmp/ajn-server.pid
+          for i in {1..30}; do
+            if curl --fail --silent --show-error http://localhost:3000/api/health >/tmp/ajn-health.json; then
+              cat /tmp/ajn-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/ajn-server.log
+          exit 1
+
+      - name: Core regression suite
+        run: |
+          npm test
+          npm run test:epg-identity
+          npm run test:audio
+          npm run test:audio-singleton
+          npm run test:audio-video-switch
+          npm run test:api-contract
+          npm run test:browser-journeys
+          npm run test:accessibility
+
+      - name: Upload nightly server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ajn-nightly-server-log
+          path: /tmp/ajn-server.log
+          if-no-files-found: warn
+
+      - name: Stop application server
+        if: always()
+        run: |
+          if [ -f /tmp/ajn-server.pid ]; then
+            kill "$(cat /tmp/ajn-server.pid)" || true
+          fi

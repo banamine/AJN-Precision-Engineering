@@ -51,10 +51,7 @@ jobs:
           set +e
           for endpoint in resources audio/hourly audio/segment; do
             echo "=== /api/ajn/$endpoint ==="
-            curl --silent --show-error --dump-header /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).headers \
-              --output /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).json \
-              --write-out 'HTTP %{http_code}\n' \
-              "http://localhost:3000/api/ajn/$endpoint"
+            curl --silent --show-error --dump-header /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).headers               --output /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).json               --write-out 'HTTP %{http_code}\n'               "http://localhost:3000/api/ajn/$endpoint"
           done
           echo "=== resource payloads ==="
           for file in /tmp/ajn-resources.json /tmp/ajn-audio-hourly.json /tmp/ajn-audio-segment.json; do
@@ -65,12 +62,29 @@ jobs:
           exit 0
       - name: Existing playback regression
         run: npm test
+        env:
+          AJN_TEST_URL: http://localhost:3000
+
+      - name: Dump server log after playback regression
+        if: failure()
+        run: |
+          echo "=== AJN server log ==="
+          cat /tmp/ajn-server.log || true
+
+      - name: EPG identity regression
+        run: npm run test:epg-identity
+
+      - name: EPG producer identity regression
+        run: npm run test:epg-identity-producers
 
       - name: Audio bridge browser regression
         run: npm run test:audio
 
       - name: AudioContext singleton regression
         run: npm run test:audio-singleton
+
+      - name: Browser journey regression
+        run: npm run test:browser-journeys
 
       - name: Visual regression screenshots
         run: |
@@ -89,7 +103,7 @@ jobs:
                 ['search', '#search'],
                 ['player', '#player'],
               ]) {
-                await page.goto(`http://localhost:3000/${hash}`, { waitUntil: 'networkidle0', timeout: 30000 }).catch(() => {});
+                await page.goto(`http://localhost:3000/${hash}`, { waitUntil: 'networkidle0', timeout: 30000 });
                 await page.screenshot({ path: `/tmp/ajn-visual/${name}.png`, fullPage: true });
               }
             } finally {
