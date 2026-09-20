@@ -192,5 +192,6 @@ export type PlayProgramCallback = (
   guideId?: string,
   programId?: string,
   sourceId?: string,
-  assetId?: string
+  assetId?: string,
+  identityInput?: Partial<PlaybackIdentityInput>
 ) => void;
