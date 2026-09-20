@@ -15,10 +15,11 @@ const APPROVED_SOURCE_CLASSES = new Set<NonNullable<Program['sourceClass']>>([
   'ajn_rss',
 ]);
 
-function mapChannelToCategory(channelId: string): LibraryItem['category'] {
+function mapChannelToCategory(channelId: string, guideId: string, tags: string[]): LibraryItem['category'] {
   if (['fox-news', 'cnn', 'msnbc'].includes(channelId)) return 'news';
-  if (channelId.includes('audio')) return 'audio';
-  if (channelId.includes('cinema')) return 'classics';
+  if (channelId.includes('audio') || guideId.includes('audio')) return 'audio';
+  if (channelId.includes('cinema') || guideId.includes('movies-classics')) return 'classics';
+  if (guideId === 'science-documentaries' || tags.includes('documentary')) return 'documentary';
   return 'science';
 }
 
@@ -34,7 +35,11 @@ export function getCuratedLibraryProjection(): LibraryItem[] {
       id: program.id,
       title: program.title,
       description: program.description || 'Curated broadcast archive item.',
-      category: mapChannelToCategory(program.channelId),
+      category: mapChannelToCategory(
+        program.channelId,
+        program.guideId,
+        Array.isArray(program.metadata?.tags) ? program.metadata.tags : [],
+      ),
       archivePath: program.archivePath || program.mediaUrl,
       duration: 'Archive program',
       format: program.mediaType === 'audio' ? 'Audio' : 'Video',
