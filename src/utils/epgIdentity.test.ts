@@ -31,6 +31,11 @@ test('normalizes UTC windows and rejects invalid schedule bounds', () => {
   assert.throws(() => buildEpgIdentity({ ...base, startTimeUtc: base.endTimeUtc }), EpgIdentityResolutionError);
 });
 
+test('normalizes epoch seconds to milliseconds', () => {
+  const seconds = 1758369600;
+  assert.equal(seconds * 1000, Date.parse('2025-09-20T12:00:00.000Z'));
+});
+
 test('parses floating feed timestamps explicitly as UTC unless an offset is supplied', () => {
   assert.equal(parseM3uUtcTimestamp('20260920120000'), Date.UTC(2026, 8, 20, 12, 0, 0));
   assert.equal(parseM3uUtcTimestamp('20260920120000+0200'), Date.UTC(2026, 8, 20, 10, 0, 0));
