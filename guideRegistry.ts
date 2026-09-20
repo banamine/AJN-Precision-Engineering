@@ -233,7 +233,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
     const sourceUrl = ch.sources?.[0]?.url || '';
     const programId = normalizeProgramIdentity({ channelId:ch.id, title:ch.name, startTime:0 });
     const assetId = normalizeAssetIdentity({ programId, mediaUrl:sourceUrl });
-    return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[upsertCanonicalProgram({id:programId,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startTimeUtc:new Date().toISOString(),endTimeUtc:new Date(Date.now()+24*60*60*1000).toISOString(),startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:sourceUrl,archivePath:sourceUrl,assetId,sourceClass:'m3u_live' as const,isArchivedSource:false,metadata:{groupTitle:ch.group,tvgId:ch.tvgId}})]};
+    return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[upsertCanonicalProgram({id:programId,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startTimeUtc:new Date().toISOString(),endTimeUtc:new Date(Date.now()+24*60*60*1000).toISOString(),startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:sourceUrl,archivePath:sourceUrl,assetId,sourceClass:'m3u_live' as const,isArchivedSource:false,sourceId: ch.sources?.[0]?.id, metadata:{groupTitle:ch.group,tvgId:ch.tvgId}})]};
   });
 }
 
