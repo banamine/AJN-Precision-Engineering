@@ -575,6 +575,8 @@ export interface ScheduleProgram {
   startHour: number;
   endHour: number;
   archivePath: string;
+  startTimeUtc?: number;
+  endTimeUtc?: number;
 }
 
 export interface ScheduleChannel {
@@ -614,6 +616,14 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
       startHour: index * (24 / playableItems.length),
       endHour: (index + 1) * (24 / playableItems.length),
       archivePath,
+      startTimeUtc: normalizeEpochMilliseconds(
+        Date.parse(item.date && item.time !== 'Unknown' ? `${item.date}T${item.time}:00Z` : new Date().toISOString()),
+      ),
+      endTimeUtc: normalizeEpochMilliseconds(
+        Date.parse(item.date && item.time !== 'Unknown'
+          ? new Date(Date.parse(`${item.date}T${item.time}:00Z`) + 60 * 60 * 1000).toISOString()
+          : new Date().toISOString()),
+      ),
     }));
 }
 
