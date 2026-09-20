@@ -30,7 +30,7 @@ test('new M3U source adds only its new channels and keeps identity stable on re-
   };
 
   const m3u = `#EXTM3U
-#EXTINF:-1 tvg-id="ajn-test-alpha" tvg-name="AJN Test Alpha" group-title="Test",AJN Test Alpha
+#EXTINF:-1 tvg-id="ajn-test-alpha" tvg-name="AJN Test Alpha" tvg-logo="https://example.test/logo.png" group-title="Test",AJN Test Alpha
 /download/AJNTEST/alpha.mp4
 #EXTINF:-1 tvg-id="ajn-test-beta" tvg-name="AJN Test Beta" group-title="Test",AJN Test Beta
 /download/AJNTEST/beta.mp4
@@ -61,7 +61,7 @@ test('new M3U source adds only its new channels and keeps identity stable on re-
   const canonical = getCanonicalEpgPrograms().find((program) => program.channelId === 'ajn-test-alpha');
   assert.equal(canonical?.sourceClass, 'm3u_live');
   assert.equal(canonical?.isArchivedSource, false);
-  assert.equal(canonical?.metadata?.tvgLogo, undefined);
+  assert.equal(canonical?.metadata?.tvgLogo, 'https://example.test/logo.png');
   assert.equal(canonical?.metadata?.groupTitle, 'Test');
 
   for (const program of secondPrograms) {
