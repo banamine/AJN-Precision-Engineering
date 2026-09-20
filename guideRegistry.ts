@@ -233,7 +233,26 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs}];
+    const programs = honeymooners.programs.map((program) => upsertCanonicalProgram({
+      guideId,
+      channelId: honeymooners.id,
+      sourceId: program.sourceId,
+      programId: program.id,
+      assetId: program.assetId,
+      title: program.title,
+      mediaUrl: program.mediaUrl,
+      mediaType: program.mediaType,
+      startTime: program.startTime,
+      endTime: program.endTime,
+      archiveIdentifier: program.archiveIdentifier,
+      description: program.description,
+      metadata: program.metadata,
+    })).filter(Boolean).map((program) => ({
+      ...program!,
+      startHour: program!.startTime,
+      endHour: program!.endTime,
+    })) as Program[];
+    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs}];
   }
   return getChannelsByGuide(guideId).map(ch=>{
     const mediaUrl = ch.sources?.[0]?.url || '';
