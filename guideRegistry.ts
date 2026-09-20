@@ -33,8 +33,8 @@ function pruneExpiredPrograms(maxLookbackMs = MAX_PROGRAM_RETENTION_MS): void {
   for (const [key, program] of programsMap.entries()) {
     const endMs = Number.isFinite(program.endTime) && program.endTime > 1e11
       ? program.endTime
-      : Date.now();
-    if (endMs < cutoff) programsMap.delete(key);
+      : null;
+    if (endMs !== null && endMs < cutoff) programsMap.delete(key);
   }
 }
 
