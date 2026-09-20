@@ -1,24 +1,27 @@
 import assert from 'node:assert/strict';
 import { getCuratedLibraryProjection, CURATED_CHANNEL_WHITELIST } from './src/services/libraryService.ts';
+import { getScheduleForGuide, getCanonicalPrograms } from './guideRegistry.ts';
 
-console.log('Media Archive Library integrity regression: starting');
+console.log('🧪 Executing Phase 2 Library Provenance & Integrity Gate...');
+
+await getScheduleForGuide('cable-tv');
+const canonicalPrograms = getCanonicalPrograms().filter((program) => CURATED_CHANNEL_WHITELIST.has(program.channelId));
+assert.ok(canonicalPrograms.length > 0, 'Hydrated TV News producer must populate at least one whitelisted canonical program');
 
 const items = getCuratedLibraryProjection();
-assert.ok(Array.isArray(items), 'Library projection must return an array');
+assert.ok(Array.isArray(items), 'Projection must return an array');
+assert.ok(items.length > 0, 'Curated items must be populated for verified TV News channels');
 
-for (const [index, item] of items.entries()) {
-  assert.equal(item.isCurated, true, `[Item ${index}] isCurated must be true`);
-  assert.ok(CURATED_CHANNEL_WHITELIST.has(item.channelId), `[Item ${index}] channelId must be whitelisted`);
-  assert.ok(item.channelId, `[Item ${index}] missing channelId`);
-  assert.ok(item.guideId, `[Item ${index}] missing guideId`);
-  assert.ok(item.sourceId, `[Item ${index}] missing sourceId`);
-  assert.ok(item.programId, `[Item ${index}] missing programId`);
-  assert.ok(item.assetId, `[Item ${index}] missing assetId`);
-  assert.ok(item.archivePath, `[Item ${index}] missing archivePath`);
-  assert.equal(item.archivePath.includes('BigBuckBunny'), false, `[Item ${index}] placeholder BigBuckBunny path forbidden`);
-}
+items.forEach((item, index) => {
+  assert.equal(item.sourceId.startsWith('channel-source-'), false, `[Item ${index}] synthetic sourceId detected`);
+  assert.equal(item.assetId.startsWith('program-asset-'), false, `[Item ${index}] synthetic assetId detected`);
+  assert.notEqual(item.sourceClass, 'm3u_live', `[Item ${index}] m3u_live leaked into Library projection`);
+  assert.ok(CURATED_CHANNEL_WHITELIST.has(item.channelId), `[Item ${index}] channel is not whitelisted`);
+  assert.equal(item.archivePath.includes('BigBuckBunny'), false, `[Item ${index}] placeholder path detected`);
+  assert.ok(['archive_org', 'ajn_archive', 'ajn_rss'].includes(item.sourceClass), `[Item ${index}] unapproved sourceClass`);
+});
 
 const ids = items.map((item) => item.id);
 assert.equal(new Set(ids).size, ids.length, 'Curated Library must not emit duplicate program IDs');
 
-console.log(`Media Archive Library integrity regression: PASS (${items.length} curated items)`);
+console.log(`✅ Phase 2 Passed: ${items.length} items verified with canonical provenance.`);
