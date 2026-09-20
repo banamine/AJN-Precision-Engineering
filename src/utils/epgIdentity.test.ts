@@ -72,3 +72,27 @@ test('rejects unresolved ownership and unknown identity values', () => {
   const recovered = buildEpgIdentity({ ...base, sourceId: 'unknown' });
   assert.notEqual(recovered.sourceId, 'unknown');
 });
+
+
+test('preserves semantic live query identity while ignoring volatile auth and clipping values', () => {
+  const a = buildEpgIdentity({
+    ...base,
+    channelId: 'alpha',
+    sourceId: 'src-shared',
+    mediaUrl: 'https://cdn-a.example/live.m3u8?channel=alpha&token=one&start=10',
+  });
+  const b = buildEpgIdentity({
+    ...base,
+    channelId: 'beta',
+    sourceId: 'src-shared',
+    mediaUrl: 'https://cdn-a.example/live.m3u8?channel=beta&token=two&start=20',
+  });
+  const c = buildEpgIdentity({
+    ...base,
+    channelId: 'alpha',
+    sourceId: 'src-shared',
+    mediaUrl: 'https://cdn-b.example/live.m3u8?channel=alpha&token=three&start=30',
+  });
+  assert.notEqual(a.assetId, b.assetId);
+  assert.equal(a.assetId, c.assetId);
+});
