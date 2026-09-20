@@ -611,20 +611,26 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
   return items
     .map((item, index) => ({ item, archivePath: resolved[index] }))
     .filter(({ archivePath }) => Boolean(archivePath))
-    .map(({ item, archivePath }, index, playableItems) => ({
-      title: item.title || item.program || item.identifier,
-      startHour: index * (24 / playableItems.length),
-      endHour: (index + 1) * (24 / playableItems.length),
-      archivePath,
-      startTimeUtc: normalizeEpochMilliseconds(
-        Date.parse(item.date && item.time !== 'Unknown' ? `${item.date}T${item.time}:00Z` : new Date().toISOString()),
-      ),
-      endTimeUtc: normalizeEpochMilliseconds(
-        Date.parse(item.date && item.time !== 'Unknown'
-          ? new Date(Date.parse(`${item.date}T${item.time}:00Z`) + 60 * 60 * 1000).toISOString()
-          : new Date().toISOString()),
-      ),
-    }));
+    .map(({ item, archivePath }, index, playableItems) => {
+      const startTimeUtc = item.date && item.time !== 'Unknown'
+        ? Date.parse(`${item.date}T${item.time}:00Z`)
+        : Number.NaN;
+      const durationMs = Math.max(1, item.durationMins) * 60_000;
+      const endTimeUtc = Number.isFinite(startTimeUtc) ? startTimeUtc + durationMs : Number.NaN;
+
+      return {
+        title: item.title || item.program || item.identifier,
+        startHour: index * (24 / playableItems.length),
+        endHour: (index + 1) * (24 / playableItems.length),
+        archivePath,
+        ...(Number.isFinite(startTimeUtc) && Number.isFinite(endTimeUtc)
+          ? {
+              startTimeUtc: normalizeEpochMilliseconds(startTimeUtc),
+              endTimeUtc: normalizeEpochMilliseconds(endTimeUtc),
+            }
+          : {}),
+      };
+    });
 }
 
 export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
