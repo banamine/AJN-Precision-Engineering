@@ -51,10 +51,53 @@ function mediaIdentity(media: NowPlayingMedia): string {
 
 function normalizeRecentlyPlayed(value: unknown): RecentlyPlayedItem[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is RecentlyPlayedItem => Boolean(item && typeof item === 'object' && 'id' in item && 'title' in item && 'src' in item))
-    .map((item) => ({ ...item, progressSeconds: Number.isFinite(item.progressSeconds) && item.progressSeconds >= 0 ? item.progressSeconds : 0, updatedAt: Number.isFinite(item.updatedAt) ? item.updatedAt : Date.now() }))
+
+  return value
+    .filter((item): item is Record<string, any> =>
+      Boolean(item && typeof item === 'object' && 'title' in item && 'src' in item)
+    )
+    .flatMap((item) => {
+      try {
+        const mediaUrl = String(item.archivePath || item.src || '').trim();
+        if (!mediaUrl) return [];
+
+        const identity = item.identity?.guideId &&
+          item.identity?.channelId &&
+          item.identity?.sourceId &&
+          item.identity?.assetId &&
+          item.identity?.programId
+          ? item.identity
+          : normalizePlaybackIdentity({
+              guideId: item.guideId,
+              channelId: item.channelId,
+              sourceId: item.sourceId,
+              assetId: item.assetId,
+              programId: item.programId,
+              title: String(item.title),
+              mediaUrl,
+              archiveIdentifier: item.archiveIdentifier,
+            });
+
+        const id = String(item.id || identity.assetId);
+        return [{
+          ...item,
+          id,
+          identity,
+          guideId: identity.guideId,
+          channelId: identity.channelId,
+          sourceId: identity.sourceId,
+          assetId: identity.assetId,
+          programId: identity.programId,
+          progressSeconds: Number.isFinite(item.progressSeconds) && item.progressSeconds >= 0 ? item.progressSeconds : 0,
+          updatedAt: Number.isFinite(item.updatedAt) ? item.updatedAt : Date.now(),
+        } as RecentlyPlayedItem];
+      } catch {
+        return [];
+      }
+    })
     .filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index)
-    .sort((a, b) => b.updatedAt - a.updatedAt).slice(0, RECENTLY_PLAYED_LIMIT);
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, RECENTLY_PLAYED_LIMIT);
 }
 
 function readRecentlyPlayed(): RecentlyPlayedItem[] {
