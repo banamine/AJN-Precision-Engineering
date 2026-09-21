@@ -564,13 +564,20 @@ function isBrowserPlayable(filename: string): boolean {
 
 async function verifyDeterministicTvNewsFallback(identifier: string): Promise<string> {
   const fallbackUrl = "https://archive.org/download/" + encodeURIComponent(identifier) + "/" + encodeURIComponent(identifier) + ".mp4";
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
   try {
-    const response = await fetch(fallbackUrl, { method: "HEAD", headers: { "User-Agent": "AJN-Precision-Engineering/1.0" } });
-    return response.ok ? fallbackUrl : "";
+    const response = await fetch(fallbackUrl, { method: "HEAD", headers: { "User-Agent": "AJN-Precision-Engineering/1.0", Accept: "video/mp4,*/*" }, signal: controller.signal });
+    return response.ok && /^(video\\/|application\\/octet-stream)/i.test(response.headers.get("content-type") || "video/mp4") ? fallbackUrl : "";
   } catch { return ""; }
+  finally { clearTimeout(timeout); }
 }
 
 export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {
+  const verifiedFallback = await verifyDeterministicTvNewsFallback(identifier);
+  if (verifiedFallback) {
+    return { url: verifiedFallback, duration: 0, format: "mp4", fallback: true };
+  }
   try {
     const data = await fetchArchiveMetadata(identifier);
     const files = data.files ?? [];
