@@ -1,5 +1,5 @@
 import { canonicalizeAjnFeedItems } from './ajnResourceService.ts';
-import { getCanonicalPrograms } from './guideRegistry.ts';
+import { getCanonicalPrograms } from './src/services/canonicalProgramRegistry.ts';
 import { normalizeProgramIdentity, normalizeAssetIdentity } from './src/utils/epgIdentity.ts';
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
