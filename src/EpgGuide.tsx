@@ -71,6 +71,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
   }, [nowHour, guideId]);
 
   const hourMarkers = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  const showList = useMemo(() => channels?.flatMap((channel) => channel.programs.map((program) => ({ channel, program }))) ?? [], [channels]);
   const nowLeftPx = (nowHour / 24) * TIMELINE_WIDTH_PX;
 
   if (fetchError) {
@@ -230,6 +231,27 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
           </div>
         </div>
       </div>
+      {guideId === 'classic-tv' && (
+        <section className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950 shadow-xl" aria-label="Classic TV full show list">
+          <div className="border-b border-neutral-800 px-4 py-3">
+            <h2 className="text-sm font-semibold text-neutral-100">Classic TV — Full Show List</h2>
+            <p className="mt-1 text-xs text-neutral-500">All resolved Archive.org programs in this guide, independent of timeline width.</p>
+          </div>
+          <div className="divide-y divide-neutral-800">
+            {showList.length === 0 ? (
+              <div className="px-4 py-6 text-sm text-neutral-500">No verified Archive.org programs are currently available.</div>
+            ) : showList.map(({ channel, program }, index) => (
+              <button key={program.id || index} type="button" className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-neutral-900" onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, program.mediaType || channel.mediaType, channel.id, program.guideId, program.id)}>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-neutral-100">{program.title}</span>
+                  <span className="block truncate text-[11px] text-neutral-500">{channel.name} · {program.metadata?.archiveIdentifier || program.archivePath || 'Archive.org'}</span>
+                </span>
+                <span className="shrink-0 rounded-md border border-sky-500/30 px-2.5 py-1 text-[11px] text-sky-300">Play</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
