@@ -79,8 +79,8 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
   return assets;
 }
 
-export async function buildHoneymoonersEpg() {
-  const assets = await resolveHoneymoonersAssets();
+export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolvedAsset[]) {
+  const assets = resolvedAssets ?? await resolveHoneymoonersAssets();
   const secondsInDay = 24 * 3600;
   const programs: Program[] = [];
   let currentSecond = 0;
