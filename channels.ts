@@ -274,7 +274,117 @@ async function probeArchiveCollection(
   }
 }
 
-export async function searchTVNews(opts: {\n  network: string;\n  query?: string;\n  rows?: number;\n  start?: number;\n}): Promise<{\n  items: TVNewsItem[];\n  total: number;\n  safeEndDate: string;\n  freshness: NewsFreshnessTelemetry;\n}> {\n  const window = buildNewsWindow();\n  const candidates = getCollectionCandidates(opts.network);\n  const target = Math.min(Math.max(opts.rows ?? NEWS_TARGET_ITEMS, 1), NEWS_TARGET_ITEMS);\n  let staleRejected = 0;\n  let selectedCollection = "";\n  let selectedDocs: any[] = [];\n  let availableCurrentCount = 0;\n\n  console.log("[NEWS WINDOW] network=" + opts.network + " hours=" + NEWS_WINDOW_HOURS + " start=" + window.start.toISOString() + " end=" + window.end.toISOString());\n\n  for (const collection of candidates) {\n    let pageStart = 0;\n    const docs: any[] = [];\n    let archiveTotal = 0;\n    let currentCount = 0;\n\n    while (pageStart < 1000 && currentCount < target) {\n      const result = await probeArchiveCollection(collection, {\n        query: opts.query,\n        startDate: window.startDate,\n        endDate: window.endDate,\n        rows: NEWS_PAGE_SIZE,\n        start: pageStart,\n      });\n\n      if (!result.ok) break;\n      archiveTotal = result.total;\n      docs.push(...result.docs);\n      const page = filterCurrentDocs(result.docs, window);\n      staleRejected += page.staleRejected;\n      currentCount += page.current.length;\n\n      if (result.docs.length < NEWS_PAGE_SIZE || pageStart + result.docs.length >= archiveTotal) break;\n      pageStart += result.docs.length;\n    }\n\n    const filtered = filterCurrentDocs(docs, window);\n    currentCount = filtered.current.length;\n    console.log("[NEWS COLLECTION] network=" + opts.network + " collection=" + collection + " archiveTotal=" + archiveTotal + " currentWindowCount=" + currentCount);\n\n    if (currentCount > 0) {\n      selectedCollection = collection;\n      selectedDocs = docs;\n      availableCurrentCount = currentCount;\n      break;\n    }\n  }\n\n  const unique = new Map<string, { doc: any; airTimestamp: string; airDateSource: "identifier" | "publicdate" | "addeddate" }>();\n  if (selectedCollection) {\n    for (const entry of filterCurrentDocs(selectedDocs, window).current) {\n      const id = String(entry.doc.identifier ?? "");\n      if (id && !unique.has(id)) unique.set(id, entry);\n    }\n  }\n\n  const currentEntries = [...unique.values()].sort((a, b) => b.airTimestamp.localeCompare(a.airTimestamp)).slice(0, target);\n  const items: TVNewsItem[] = currentEntries.map(({ doc, airTimestamp, airDateSource }) => {\n    const id: string = doc.identifier ?? "";\n    const match = id.match(TV_ID_RE);\n    const rawDescription = doc.description ?? doc.subject;\n    const description = rawDescription\n      ? (Array.isArray(rawDescription) ? rawDescription[0] : String(rawDescription))\n          .replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim() || undefined\n      : undefined;\n    return {\n      identifier: id,\n      title: doc.title ?? id,\n      network: match ? match[1] : id.split("_")[0] ?? "",\n      date: airTimestamp.slice(0, 10),\n      time: airTimestamp.slice(11, 16),\n      program: match ? match[8].replace(/_/g, " ") : doc.title ?? id,\n      durationMins: 60,\n      thumbnailUrl: "https://archive.org/services/img/" + id,\n      publicdate: airTimestamp,\n      airDateSource: airDateSource === "identifier" ? "identifier" : "publicdate",\n      ...(description ? { description } : {}),\n    };\n  });\n\n  const freshness: NewsFreshnessTelemetry = {\n    requestedWindowHours: NEWS_WINDOW_HOURS,\n    windowStart: window.start.toISOString(),\n    windowEnd: window.end.toISOString(),\n    returnedCount: items.length,\n    availableCurrentCount,\n    staleRejected,\n    metadataFailures: 0,\n  };\n  console.log("[NEWS RESULT] network=" + opts.network + " collection=" + (selectedCollection || "none") + " returnedCount=" + items.length + " availableCurrentCount=" + availableCurrentCount + " staleRejected=" + staleRejected + " metadataFailures=0");\n\n  return {\n    items,\n    total: availableCurrentCount,\n    safeEndDate: window.end.toISOString(),\n    freshness,\n  };\n}\n\nexport function getSafeArchiveUrl(rawUrl: string): string {
+export async function searchTVNews(opts: {
+  network: string;
+  query?: string;
+  rows?: number;
+  start?: number;
+}): Promise<{
+  items: TVNewsItem[];
+  total: number;
+  safeEndDate: string;
+  freshness: NewsFreshnessTelemetry;
+}> {
+  const window = buildNewsWindow();
+  const candidates = getCollectionCandidates(opts.network);
+  const target = Math.min(Math.max(opts.rows ?? NEWS_TARGET_ITEMS, 1), NEWS_TARGET_ITEMS);
+  let staleRejected = 0;
+  let selectedCollection = "";
+  let selectedDocs: any[] = [];
+  let availableCurrentCount = 0;
+
+  console.log("[NEWS WINDOW] network=" + opts.network + " hours=" + NEWS_WINDOW_HOURS + " start=" + window.start.toISOString() + " end=" + window.end.toISOString());
+
+  for (const collection of candidates) {
+    let pageStart = 0;
+    const docs: any[] = [];
+    let archiveTotal = 0;
+    let currentCount = 0;
+
+    while (pageStart < 1000 && currentCount < target) {
+      const result = await probeArchiveCollection(collection, {
+        query: opts.query,
+        startDate: window.startDate,
+        endDate: window.endDate,
+        rows: NEWS_PAGE_SIZE,
+        start: pageStart,
+      });
+
+      if (!result.ok) break;
+      archiveTotal = result.total;
+      docs.push(...result.docs);
+      const page = filterCurrentDocs(result.docs, window);
+      staleRejected += page.staleRejected;
+      currentCount += page.current.length;
+
+      if (result.docs.length < NEWS_PAGE_SIZE || pageStart + result.docs.length >= archiveTotal) break;
+      pageStart += result.docs.length;
+    }
+
+    const filtered = filterCurrentDocs(docs, window);
+    currentCount = filtered.current.length;
+    console.log("[NEWS COLLECTION] network=" + opts.network + " collection=" + collection + " archiveTotal=" + archiveTotal + " currentWindowCount=" + currentCount);
+
+    if (currentCount > 0) {
+      selectedCollection = collection;
+      selectedDocs = docs;
+      availableCurrentCount = currentCount;
+      break;
+    }
+  }
+
+  const unique = new Map<string, { doc: any; airTimestamp: string; airDateSource: "identifier" | "publicdate" | "addeddate" }>();
+  if (selectedCollection) {
+    for (const entry of filterCurrentDocs(selectedDocs, window).current) {
+      const id = String(entry.doc.identifier ?? "");
+      if (id && !unique.has(id)) unique.set(id, entry);
+    }
+  }
+
+  const currentEntries = [...unique.values()].sort((a, b) => b.airTimestamp.localeCompare(a.airTimestamp)).slice(0, target);
+  const items: TVNewsItem[] = currentEntries.map(({ doc, airTimestamp, airDateSource }) => {
+    const id: string = doc.identifier ?? "";
+    const match = id.match(TV_ID_RE);
+    const rawDescription = doc.description ?? doc.subject;
+    const description = rawDescription
+      ? (Array.isArray(rawDescription) ? rawDescription[0] : String(rawDescription))
+          .replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim() || undefined
+      : undefined;
+    return {
+      identifier: id,
+      title: doc.title ?? id,
+      network: match ? match[1] : id.split("_")[0] ?? "",
+      date: airTimestamp.slice(0, 10),
+      time: airTimestamp.slice(11, 16),
+      program: match ? match[8].replace(/_/g, " ") : doc.title ?? id,
+      durationMins: 60,
+      thumbnailUrl: "https://archive.org/services/img/" + id,
+      publicdate: airTimestamp,
+      airDateSource: airDateSource === "identifier" ? "identifier" : "publicdate",
+      ...(description ? { description } : {}),
+    };
+  });
+
+  const freshness: NewsFreshnessTelemetry = {
+    requestedWindowHours: NEWS_WINDOW_HOURS,
+    windowStart: window.start.toISOString(),
+    windowEnd: window.end.toISOString(),
+    returnedCount: items.length,
+    availableCurrentCount,
+    staleRejected,
+    metadataFailures: 0,
+  };
+  console.log("[NEWS RESULT] network=" + opts.network + " collection=" + (selectedCollection || "none") + " returnedCount=" + items.length + " availableCurrentCount=" + availableCurrentCount + " staleRejected=" + staleRejected + " metadataFailures=0");
+
+  return {
+    items,
+    total: availableCurrentCount,
+    safeEndDate: window.end.toISOString(),
+    freshness,
+  };
+}
+
+export function getSafeArchiveUrl(rawUrl: string): string {
   try {
     const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
     const cdnMatch = httpsUrl.match(
@@ -443,7 +553,81 @@ const metadataCache = new Map<
   }
 >();
 
-async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadataResponse> {\n  const cached = metadataCache.get(identifier);\n  if (cached && cached.expiresAt > Date.now()) return cached.data;\n  const metadataUrl = "https://archive.org/metadata/" + encodeURIComponent(identifier);\n  let lastError: unknown = new Error("Archive.org metadata request failed");\n  for (let attempt = 1; attempt <= METADATA_RETRIES; attempt++) {\n    const controller = new AbortController();\n    const timeout = setTimeout(() => controller.abort(), 8000);\n    try {\n      const response = await fetch(metadataUrl, { signal: controller.signal, headers: { "User-Agent": "AJN-Precision-Engineering/1.0", Accept: "application/json" } });\n      if (!response.ok) throw new Error("Archive.org metadata request failed: HTTP " + response.status);\n      const data = (await response.json()) as ArchiveMetadataResponse;\n      metadataCache.set(identifier, { data, expiresAt: Date.now() + METADATA_CACHE_TTL_MS });\n      return data;\n    } catch (error) {\n      lastError = error;\n      if (attempt < METADATA_RETRIES) await new Promise((resolve) => setTimeout(resolve, 250 * attempt));\n    } finally { clearTimeout(timeout); }\n  }\n  throw lastError;\n}\n\nfunction isBrowserPlayable(filename: string): boolean {\n  const lower = filename.toLowerCase();\n  return BROWSER_PLAYABLE_VIDEO.some((extension) => lower.endsWith(extension)) || AUDIO_EXTENSIONS.some((extension) => lower.endsWith(extension));\n}\n\nasync function verifyDeterministicTvNewsFallback(identifier: string): Promise<string> {\n  const fallbackUrl = "https://archive.org/download/" + encodeURIComponent(identifier) + "/" + encodeURIComponent(identifier) + ".mp4";\n  try {\n    const response = await fetch(fallbackUrl, { method: "HEAD", headers: { "User-Agent": "AJN-Precision-Engineering/1.0" } });\n    return response.ok ? fallbackUrl : "";\n  } catch { return ""; }\n}\n\nexport async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {\n  try {\n    const data = await fetchArchiveMetadata(identifier);\n    const files = data.files ?? [];\n    const mediaFiles = files\n      .filter((file) => !isInternalFile(file.name))\n      .filter((file) => isBrowserPlayable(file.name))\n      .map((file) => ({\n        name: file.name,\n        category: categorizeFile(file.name),\n        size: parseSize(file.size),\n        duration: parseDuration(file.length),\n        format: file.format ?? file.name.split(".").pop() ?? "",\n      }));\n\n    if (mediaFiles.length > 0) {\n      mediaFiles.sort((a, b) => {\n        const categoryA = PLAYABLE_PRIORITY.indexOf(a.category);\n        const categoryB = PLAYABLE_PRIORITY.indexOf(b.category);\n        if (categoryA !== categoryB) return categoryA - categoryB;\n        return b.size - a.size;\n      });\n      const best = mediaFiles[0];\n      return { url: buildFileUrl(identifier, best.name), duration: best.duration, format: best.format, fallback: false };\n    }\n\n    const verifiedFallback = await verifyDeterministicTvNewsFallback(identifier);\n    if (verifiedFallback) return { url: verifiedFallback, duration: 0, format: "mp4", fallback: true };\n    return { url: "", duration: 0, format: "", fallback: true };\n  } catch (error) {\n    const verifiedFallback = await verifyDeterministicTvNewsFallback(identifier);\n    if (verifiedFallback) {\n      console.log(`[Resolver] Metadata unavailable; verified deterministic TV news fallback for ${identifier}`);\n      return { url: verifiedFallback, duration: 0, format: "mp4", fallback: true };\n    }\n    console.warn(`[Resolver] Metadata unavailable for identifier "${identifier}"; no verified media URL:`, error instanceof Error ? error.message : String(error));\n    return { url: "", duration: 0, format: "", fallback: true };\n  }\n}\nfunction toProxyPath(fullUrl: string): string {
+async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadataResponse> {
+  const cached = metadataCache.get(identifier);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+  const metadataUrl = "https://archive.org/metadata/" + encodeURIComponent(identifier);
+  let lastError: unknown = new Error("Archive.org metadata request failed");
+  for (let attempt = 1; attempt <= METADATA_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const response = await fetch(metadataUrl, { signal: controller.signal, headers: { "User-Agent": "AJN-Precision-Engineering/1.0", Accept: "application/json" } });
+      if (!response.ok) throw new Error("Archive.org metadata request failed: HTTP " + response.status);
+      const data = (await response.json()) as ArchiveMetadataResponse;
+      metadataCache.set(identifier, { data, expiresAt: Date.now() + METADATA_CACHE_TTL_MS });
+      return data;
+    } catch (error) {
+      lastError = error;
+      if (attempt < METADATA_RETRIES) await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    } finally { clearTimeout(timeout); }
+  }
+  throw lastError;
+}
+
+function isBrowserPlayable(filename: string): boolean {
+  const lower = filename.toLowerCase();
+  return BROWSER_PLAYABLE_VIDEO.some((extension) => lower.endsWith(extension)) || AUDIO_EXTENSIONS.some((extension) => lower.endsWith(extension));
+}
+
+async function verifyDeterministicTvNewsFallback(identifier: string): Promise<string> {
+  const fallbackUrl = "https://archive.org/download/" + encodeURIComponent(identifier) + "/" + encodeURIComponent(identifier) + ".mp4";
+  try {
+    const response = await fetch(fallbackUrl, { method: "HEAD", headers: { "User-Agent": "AJN-Precision-Engineering/1.0" } });
+    return response.ok ? fallbackUrl : "";
+  } catch { return ""; }
+}
+
+export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {
+  try {
+    const data = await fetchArchiveMetadata(identifier);
+    const files = data.files ?? [];
+    const mediaFiles = files
+      .filter((file) => !isInternalFile(file.name))
+      .filter((file) => isBrowserPlayable(file.name))
+      .map((file) => ({
+        name: file.name,
+        category: categorizeFile(file.name),
+        size: parseSize(file.size),
+        duration: parseDuration(file.length),
+        format: file.format ?? file.name.split(".").pop() ?? "",
+      }));
+
+    if (mediaFiles.length > 0) {
+      mediaFiles.sort((a, b) => {
+        const categoryA = PLAYABLE_PRIORITY.indexOf(a.category);
+        const categoryB = PLAYABLE_PRIORITY.indexOf(b.category);
+        if (categoryA !== categoryB) return categoryA - categoryB;
+        return b.size - a.size;
+      });
+      const best = mediaFiles[0];
+      return { url: buildFileUrl(identifier, best.name), duration: best.duration, format: best.format, fallback: false };
+    }
+
+    const verifiedFallback = await verifyDeterministicTvNewsFallback(identifier);
+    if (verifiedFallback) return { url: verifiedFallback, duration: 0, format: "mp4", fallback: true };
+    return { url: "", duration: 0, format: "", fallback: true };
+  } catch (error) {
+    const verifiedFallback = await verifyDeterministicTvNewsFallback(identifier);
+    if (verifiedFallback) {
+      console.log(`[Resolver] Metadata unavailable; verified deterministic TV news fallback for ${identifier}`);
+      return { url: verifiedFallback, duration: 0, format: "mp4", fallback: true };
+    }
+    console.warn(`[Resolver] Metadata unavailable for identifier "${identifier}"; no verified media URL:`, error instanceof Error ? error.message : String(error));
+    return { url: "", duration: 0, format: "", fallback: true };
+  }
+}
+function toProxyPath(fullUrl: string): string {
   try {
     const url = new URL(fullUrl);
     return `${url.pathname}${url.search}`;
@@ -473,7 +657,43 @@ let _cache: {
   expiresAt: number;
 } | null = null;
 
-async function mapWithConcurrency<T, R>(items: T[], concurrency: number, worker: (item: T) => Promise<R>): Promise<R[]> {\n  const results: R[] = new Array(items.length);\n  let nextIndex = 0;\n  async function runWorker() {\n    while (true) {\n      const index = nextIndex++;\n      if (index >= items.length) return;\n      results[index] = await worker(items[index]);\n    }\n  }\n  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()));\n  return results;\n}\n\nasync function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgram[]> {\n  if (items.length === 0) return [];\n  const resolved = await mapWithConcurrency(items, METADATA_CONCURRENCY, async (item) => {\n    const resolvedFile = await resolveBestFileUrl(item.identifier);\n    if (!resolvedFile.url) {\n      console.warn(`[channels] skipping unavailable Archive media: ${item.identifier}`);\n      return "";\n    }\n    return toProxyPath(getSafeArchiveUrl(resolvedFile.url));\n  });\n\n  return items\n    .map((item, index) => ({ item, archivePath: resolved[index] }))\n    .filter(({ archivePath }) => Boolean(archivePath))\n    .map(({ item, archivePath }, index, playableItems) => ({\n      externalId: item.identifier,\n      title: item.title || item.program || item.identifier,\n      startHour: index * (24 / playableItems.length),\n      endHour: (index + 1) * (24 / playableItems.length),\n      archivePath,\n    }));\n}\nexport async function getChannelSchedule(): Promise<ScheduleChannel[]> {
+async function mapWithConcurrency<T, R>(items: T[], concurrency: number, worker: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+  async function runWorker() {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      results[index] = await worker(items[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()));
+  return results;
+}
+
+async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgram[]> {
+  if (items.length === 0) return [];
+  const resolved = await mapWithConcurrency(items, METADATA_CONCURRENCY, async (item) => {
+    const resolvedFile = await resolveBestFileUrl(item.identifier);
+    if (!resolvedFile.url) {
+      console.warn(`[channels] skipping unavailable Archive media: ${item.identifier}`);
+      return "";
+    }
+    return toProxyPath(getSafeArchiveUrl(resolvedFile.url));
+  });
+
+  return items
+    .map((item, index) => ({ item, archivePath: resolved[index] }))
+    .filter(({ archivePath }) => Boolean(archivePath))
+    .map(({ item, archivePath }, index, playableItems) => ({
+      externalId: item.identifier,
+      title: item.title || item.program || item.identifier,
+      startHour: index * (24 / playableItems.length),
+      endHour: (index + 1) * (24 / playableItems.length),
+      archivePath,
+    }));
+}
+export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
   if (_cache && Date.now() < _cache.expiresAt) {
     return _cache.data;
   }
