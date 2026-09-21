@@ -96,7 +96,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                 </div>
                 <div className="mt-5 pt-3.5 border-t border-neutral-800 flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500"><Clock className="h-3.5 w-3.5" /><span>{item.duration}</span></div>
-                  <button type="button" id={`play-lib-item-${item.id}`} onClick={() => onPlayProgram(item.archivePath, item.title, item.source)} className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 cursor-pointer"><Play className="h-3 w-3 fill-current" />Watch / Listen</button>
+                  <button type="button" id={`play-lib-item-${item.id}`} onClick={() => onPlayProgram(item.archivePath, item.title, item.source, isAudio ? 'audio' : 'video', item.channelId, item.guideId, item.programId, item.sourceId, item.assetId)} className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 cursor-pointer"><Play className="h-3 w-3 fill-current" />Watch / Listen</button>
                 </div>
               </div>
             );
