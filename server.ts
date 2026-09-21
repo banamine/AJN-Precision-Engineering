@@ -105,9 +105,6 @@ app.get('/api/archive/proxy', async (req, res) => {
         if(redirectUrl.protocol==='http:') redirectUrl.protocol='https:';
         if(redirectUrl.protocol!=='https:' || !(redirectUrl.hostname==='archive.org' || redirectUrl.hostname.toLowerCase().endsWith('.archive.org'))){
           stats.failedRequests++;
-          return res.status(502).json({error:'Archive redirect target rejected',proxyRequestId});
-        }
-          return res.status(502).json({error:'Archive redirect target rejected',proxyRequestId});
         }
         requestUrl=redirectUrl.toString();
       }
