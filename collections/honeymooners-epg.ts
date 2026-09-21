@@ -104,6 +104,7 @@ export async function buildHoneymoonersEpg() {
       mediaUrl: asset.mediaUrl,
       archivePath: asset.mediaUrl,
       metadata: {
+        externalId: asset.archiveIdentifier,
         archiveIdentifier: asset.archiveIdentifier,
         assetId: asset.id,
         quality: asset.quality,
