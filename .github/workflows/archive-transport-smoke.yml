@@ -1,4 +1,5 @@
 name: AJN Archive Transport Smoke
+
 on:
   workflow_dispatch:
     inputs:
@@ -15,115 +16,131 @@ permissions:
 jobs:
   transport:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Archive proxy Range smoke tests
+      - name: Live Archive TV News transport contract
         shell: bash
         env:
           BASE_URL: ${{ inputs.base_url || 'https://ajn-precision-engineering.ai.studio' }}
         run: |
           set -euo pipefail
 
-          GOOD_PATH='/download/his_girl_friday/his_girl_friday_512kb.mp4'
-          BAD_PATH='/download/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump/FOXNEWSW_20260906_080000_My_View_With_Lara_Trump.mp4'
-          GOOD_URL="$BASE_URL/api/archive/proxy?path=$(printf '%s' "$GOOD_PATH" | jq -sRr @uri)"
-          BAD_URL="$BASE_URL/api/archive/proxy?path=$(printf '%s' "$BAD_PATH" | jq -sRr @uri)"
-          EXPECTED_SIZE=401207987
-
           echo "WHO: GitHub Actions"
-          echo "WHAT: Archive proxy transport gate"
-          echo "WHY: verify real media responses, HTTP Range semantics, and no HTML/JSON leakage"
+          echo "WHAT: AJN Archive TV News end-to-end transport gate"
+          echo "WHY: verify the current production contract rather than a stale hard-coded Archive fixture"
           echo "WHEN: $(date -u +%FT%TZ)"
-          echo "FIXTURE_A: $GOOD_PATH"
-          echo "FIXTURE_B: $BAD_PATH"
-          echo "FIXTURE_A_EXPECTED_SIZE: $EXPECTED_SIZE"
-          echo "TARGET: $GOOD_URL"
+          echo "BASE_URL: $BASE_URL"
 
-          run_fixed_range() {
-            local range="$1"
-            local label="$2"
-            local expected_start="$3"
-            local expected_length="$4"
-            local headers="/tmp/${label}.headers"
-            local body="/tmp/${label}.body"
-
-            echo
-            echo "=== TEST: $label ==="
-            echo "RANGE: $range"
-
-            curl --silent --show-error --fail-with-body \
-              --location \
-              --dump-header "$headers" \
-              --output "$body" \
-              --max-time 30 \
-              -H "Range: $range" \
-              "$GOOD_URL"
-
-            cat "$headers"
-            echo "BODY_BYTES=$(wc -c < "$body")"
-
-            local status
-            status=$(grep '^HTTP' "$headers" | tail -1 | awk '{print $2}')
-            local content_type
-            content_type=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$headers" | tr -d '\r' | tail -1)
-            local content_range
-            content_range=$(awk -F': ' 'tolower($1)=="content-range"{print $2}' "$headers" | tr -d '\r' | tail -1)
-            local content_length
-            content_length=$(awk -F': ' 'tolower($1)=="content-length"{print $2}' "$headers" | tr -d '\r' | tail -1)
-
-            echo "STATUS=$status"
-            echo "CONTENT_TYPE=$content_type"
-            echo "CONTENT_RANGE=$content_range"
-            echo "CONTENT_LENGTH=$content_length"
-
-            [[ "$status" == "206" ]] || { echo "FAIL: expected HTTP 206"; exit 1; }
-            [[ "$content_type" == video/* ]] || { echo "FAIL: expected video/* Content-Type"; exit 1; }
-            [[ "$content_range" == bytes\ $expected_start-*/* ]] || { echo "FAIL: unexpected Content-Range"; exit 1; }
-            [[ "$content_length" =~ ^[0-9]+$ ]] || { echo "FAIL: missing numeric Content-Length"; exit 1; }
-
-            local actual
-            actual=$(wc -c < "$body")
-            [[ "$actual" == "$content_length" ]] || {
-              echo "FAIL: body byte count ($actual) != Content-Length ($content_length)"
+          require_json() {
+            local label="$1"
+            local body="$2"
+            echo "$body" | jq -e . >/dev/null || {
+              echo "FAIL: $label did not return valid JSON"
+              echo "$body" | head -c 1000 || true
               exit 1
             }
-
-            echo "PASS: $label"
           }
 
-          run_open_ended_probe() {
+          echo
+          echo "=== TEST: health ==="
+          HEALTH=$(curl --silent --show-error --fail --max-time 30 "$BASE_URL/api/health")
+          require_json "health" "$HEALTH"
+          echo "$HEALTH" | jq .
+          [[ "$(echo "$HEALTH" | jq -r '.status')" == "ok" ]] || {
+            echo "FAIL: /api/health status is not ok"
+            exit 1
+          }
+          echo "PASS: health"
+
+          echo
+          echo "=== TEST: live TV News search ==="
+          SEARCH=$(curl --silent --show-error --fail --max-time 30             "$BASE_URL/api/search?network=FOXNEWSW&rows=24")
+          require_json "TV News search" "$SEARCH"
+          echo "$SEARCH" | jq '{network,total,itemCount:(.items|length),safeEndDate}'
+          SEARCH_COUNT=$(echo "$SEARCH" | jq '.items | length')
+          [[ "$SEARCH_COUNT" -gt 0 ]] || {
+            echo "FAIL: FOXNEWSW search returned no current Archive items"
+            exit 1
+          }
+
+          echo
+          echo "=== TEST: resolve a real playable TV News item ==="
+          RESOLVED=""
+          IDENTIFIER=""
+          while IFS= read -r candidate; do
+            [[ -n "$candidate" ]] || continue
+            echo "TRY_IDENTIFIER=$candidate"
+            set +e
+            candidate_json=$(curl --silent --show-error --max-time 30               "$BASE_URL/api/archive/resolve?identifier=$(printf '%s' "$candidate" | jq -sRr @uri)&network=FOXNEWSW")
+            candidate_exit=$?
+            set -e
+            if [[ "$candidate_exit" -eq 0 ]] && echo "$candidate_json" | jq -e '.success == true and .item.state == "PLAYABLE" and .item.contentType == "video/mp4" and (.item.mediaPath | startswith("/download/"))' >/dev/null 2>&1; then
+              RESOLVED="$candidate_json"
+              IDENTIFIER="$candidate"
+              break
+            fi
+            echo "SKIP: $candidate was not playable through the AJN resolver"
+          done < <(echo "$SEARCH" | jq -r '.items[].identifier')
+
+          [[ -n "$RESOLVED" ]] || {
+            echo "FAIL: no searchable FOXNEWSW item resolved to a PLAYABLE video/mp4 item"
+            exit 1
+          }
+
+          echo "$RESOLVED" | jq '{success,item:{identifier,title,filename,size,contentType,mediaPath,durationSeconds,state}}'
+          MEDIA_PATH=$(echo "$RESOLVED" | jq -r '.item.mediaPath')
+          MEDIA_TYPE=$(echo "$RESOLVED" | jq -r '.item.contentType')
+          DURATION=$(echo "$RESOLVED" | jq -r '.item.durationSeconds')
+          [[ "$MEDIA_TYPE" == "video/mp4" ]] || { echo "FAIL: resolver contentType=$MEDIA_TYPE"; exit 1; }
+          [[ "$DURATION" == "300" ]] || { echo "FAIL: TV News clip duration=$DURATION, expected 300"; exit 1; }
+          [[ "$MEDIA_PATH" == /download/*".mp4?start=0&end=300" ]] || {
+            echo "FAIL: resolver did not return the canonical 300-second TV News derivative path"
+            exit 1
+          }
+          echo "PASS: resolve identifier=$IDENTIFIER"
+
+          ENCODED_PATH=$(printf '%s' "$MEDIA_PATH" | jq -sRr @uri)
+          PROXY_URL="$BASE_URL/api/archive/proxy?path=$ENCODED_PATH"
+          METADATA_URL="$BASE_URL/api/archive/metadata?path=$ENCODED_PATH"
+
+          echo
+          echo "=== TEST: live derivative metadata ==="
+          METADATA=$(curl --silent --show-error --fail --max-time 30 "$METADATA_URL")
+          require_json "Archive derivative metadata" "$METADATA"
+          echo "$METADATA" | jq .
+          META_STATUS=$(echo "$METADATA" | jq -r '.status')
+          META_TYPE=$(echo "$METADATA" | jq -r '.contentType // empty')
+          META_LENGTH=$(echo "$METADATA" | jq -r '.contentLength // empty')
+          [[ "$META_STATUS" =~ ^2[0-9][0-9]$ ]] || { echo "FAIL: metadata HTTP status=$META_STATUS"; exit 1; }
+          [[ "$META_TYPE" == video/mp4* ]] || { echo "FAIL: metadata contentType=$META_TYPE"; exit 1; }
+          [[ "$META_LENGTH" =~ ^[0-9]+$ && "$META_LENGTH" -gt 0 ]] || { echo "FAIL: metadata contentLength=$META_LENGTH"; exit 1; }
+          echo "PASS: derivative metadata"
+
+          run_range() {
             local range="$1"
-            local label="$2"
-            local expected_start="$3"
-            local expected_end="$4"
-            local expected_length="$5"
-            local headers="/tmp/${label}.headers"
-            local body="/tmp/${label}.body"
+            local expected_start="$2"
+            local expected_length="$3"
+            local label="$4"
+            local headers="/tmp/$${label}.headers"
+            local body="/tmp/$${label}.body"
 
             echo
             echo "=== TEST: $label ==="
-            echo "RANGE: $range"
-            echo "MODE: bounded continuation probe"
-            echo "WHY: validate continuation offsets without downloading the remaining ~400 MB fixture"
+            echo "RANGE=$range"
 
-            curl --silent --show-error --fail-with-body \
-              --location \
-              --dump-header "$headers" \
-              --output "$body" \
-              --max-time 30 \
-              -H "Range: $range" \
-              "$GOOD_URL"
+            curl --silent --show-error --fail-with-body               --dump-header "$headers"               --output "$body"               --max-time 60               -H "Range: $range"               "$PROXY_URL"
 
             cat "$headers"
-            echo "BODY_BYTES=$(wc -c < "$body")"
-
             local status
-            status=$(grep '^HTTP' "$headers" | tail -1 | awk '{print $2}')
+            status=$(grep '^HTTP/' "$headers" | tail -1 | awk '{print $2}')
             local content_type
             content_type=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$headers" | tr -d '\r' | tail -1)
             local content_range
             content_range=$(awk -F': ' 'tolower($1)=="content-range"{print $2}' "$headers" | tr -d '\r' | tail -1)
             local content_length
             content_length=$(awk -F': ' 'tolower($1)=="content-length"{print $2}' "$headers" | tr -d '\r' | tail -1)
+            local proxy_id
+            proxy_id=$(awk -F': ' 'tolower($1)=="x-proxy-request-id"{print $2}' "$headers" | tr -d '\r' | tail -1)
             local actual
             actual=$(wc -c < "$body")
 
@@ -131,11 +148,13 @@ jobs:
             echo "CONTENT_TYPE=$content_type"
             echo "CONTENT_RANGE=$content_range"
             echo "CONTENT_LENGTH=$content_length"
+            echo "X_PROXY_REQUEST_ID=$proxy_id"
+            echo "BODY_BYTES=$actual"
 
             [[ "$status" == "206" ]] || { echo "FAIL: expected HTTP 206"; exit 1; }
-            [[ "$content_type" == video/* ]] || { echo "FAIL: expected video/* Content-Type"; exit 1; }
-            [[ "$content_range" == "bytes $expected_start-$expected_end/$EXPECTED_SIZE" ]] || {
-              echo "FAIL: expected Content-Range bytes $expected_start-$expected_end/$EXPECTED_SIZE"
+            [[ "$content_type" == video/mp4* ]] || { echo "FAIL: expected video/mp4"; exit 1; }
+            [[ "$content_range" == "bytes $expected_start-"*/* ]] || {
+              echo "FAIL: invalid Content-Range: $content_range"
               exit 1
             }
             [[ "$content_length" == "$expected_length" ]] || {
@@ -143,69 +162,85 @@ jobs:
               exit 1
             }
             [[ "$actual" == "$expected_length" ]] || {
-              echo "FAIL: body byte count ($actual) != expected length ($expected_length)"
+              echo "FAIL: body byte count $actual != Content-Length $content_length"
               exit 1
             }
-
+            [[ "$proxy_id" =~ ^[0-9a-fA-F-]{36}$ ]] || {
+              echo "FAIL: missing/invalid X-Proxy-Request-Id"
+              exit 1
+            }
+            if grep -Eiq '<!doctype html|<html' "$body"; then
+              echo "FAIL: HTML leaked into media response"
+              exit 1
+            fi
             echo "PASS: $label"
           }
 
-          echo
-          echo "=== FIXTURE A SIZE GATE ==="
-          echo "Expected public fixture size: $EXPECTED_SIZE bytes"
-          METADATA_URL="$BASE_URL/api/archive/metadata?path=$(printf '%s' "$GOOD_PATH" | jq -sRr @uri)"
-          METADATA=$(curl --silent --show-error --fail --max-time 30 "$METADATA_URL")
-          echo "$METADATA" | jq .
-          METADATA_SIZE=$(echo "$METADATA" | jq -r '.contentLength // empty')
-          [[ "$METADATA_SIZE" == "$EXPECTED_SIZE" ]] || {
-            echo "FAIL: Fixture A content length is '$METADATA_SIZE', expected '$EXPECTED_SIZE'"
-            exit 1
-          }
-          echo "PASS: fixture size gate"
-
-          run_fixed_range "bytes=0-1023" "range_0_1023" "0" "1024"
-          run_fixed_range "bytes=0-65535" "range_0_65535" "0" "65536"
-          run_open_ended_probe "bytes=2097152-2099199" "continuation_2mb" "2097152" "2099199" "2048"
-          run_open_ended_probe "bytes=5000000-5002047" "continuation_5mb" "5000000" "5002047" "2048"
+          run_range "bytes=0-1023" "0" "1024" "range_0_1023"
+          run_range "bytes=2097152-2099199" "2097152" "2048" "range_2mb"
 
           echo
-          echo "=== TEST: unavailable_fixture_FOXNEWSW ==="
-          echo "WHO: GitHub Actions"
-          echo "WHAT: verify Archive 403 HTML is converted to AJN JSON"
-          echo "WHY: an unavailable Archive asset must never be passed to <video> as HTML"
-          echo "TARGET: $BAD_URL"
+          echo "=== TEST: unavailable fixture stays structured JSON ==="
+          BAD_IDENTIFIER="AJN_SMOKE_NONEXISTENT_$(date -u +%Y%m%d%H%M%S)"
+          BAD_PATH="/download/$BAD_IDENTIFIER/$BAD_IDENTIFIER.mp4"
+          BAD_URL="$BASE_URL/api/archive/proxy?path=$(printf '%s' "$BAD_PATH" | jq -sRr @uri)"
+          BAD_HEADERS=/tmp/unavailable.headers
+          BAD_BODY=/tmp/unavailable.body
 
-          BAD_HEADERS=/tmp/foxnewsw.headers
-          BAD_BODY=/tmp/foxnewsw.body
           set +e
-          curl --silent --show-error --dump-header "$BAD_HEADERS" --output "$BAD_BODY" --max-time 60 --location -H 'Range: bytes=0-1023' "$BAD_URL"
+          curl --silent --show-error             --dump-header "$BAD_HEADERS"             --output "$BAD_BODY"             --max-time 30             -H 'Range: bytes=0-1023'             "$BAD_URL"
           BAD_CURL_EXIT=$?
           set -e
 
           cat "$BAD_HEADERS"
           echo "CURL_EXIT=$BAD_CURL_EXIT"
           echo "BODY_BYTES=$(wc -c < "$BAD_BODY")"
-          echo "BODY_PREVIEW:"
-          head -c 500 "$BAD_BODY" || true
+          head -c 1000 "$BAD_BODY" || true
           echo
 
-          BAD_STATUS=$(grep '^HTTP' "$BAD_HEADERS" | tail -1 | awk '{print $2}')
+          BAD_STATUS=$(grep '^HTTP/' "$BAD_HEADERS" | tail -1 | awk '{print $2}')
           BAD_CONTENT_TYPE=$(awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}' "$BAD_HEADERS" | tr -d '\r' | tail -1)
           echo "STATUS=$BAD_STATUS"
           echo "CONTENT_TYPE=$BAD_CONTENT_TYPE"
 
-          [[ "$BAD_STATUS" == "403" ]] || { echo "FAIL: expected AJN HTTP 403 for unavailable Archive fixture"; exit 1; }
-          [[ "$BAD_CONTENT_TYPE" == application/json* ]] || { echo "FAIL: expected application/json, not Archive HTML"; exit 1; }
-          jq -e '.error and .upstreamStatus == 403 and .proxyRequestId' "$BAD_BODY" >/dev/null || {
-            echo "FAIL: expected structured AJN JSON error"
+          [[ "$BAD_STATUS" == "404" || "$BAD_STATUS" == "403" || "$BAD_STATUS" == "502" ]] || {
+            echo "FAIL: unexpected unavailable-fixture HTTP status=$BAD_STATUS"
+            exit 1
+          }
+          [[ "$BAD_CONTENT_TYPE" == application/json* ]] || {
+            echo "FAIL: expected application/json for unavailable Archive media"
+            exit 1
+          }
+          jq -e '.error and .proxyRequestId' "$BAD_BODY" >/dev/null || {
+            echo "FAIL: expected structured AJN JSON error with proxyRequestId"
             exit 1
           }
           ! grep -Eiq '<!doctype html|<html' "$BAD_BODY" || {
-            echo "FAIL: HTML error document leaked through proxy"
+            echo "FAIL: Archive HTML error leaked through proxy"
             exit 1
           }
-          echo "PASS: unavailable_fixture_FOXNEWSW"
+          echo "PASS: unavailable fixture contract"
 
           echo
-          echo "RESULT: all Archive transport gates passed."
+          echo "=== TEST: path hardening ==="
+          TRAVERSAL_URL="$BASE_URL/api/archive/proxy?path=$(printf '%s' '/download/../../etc/passwd' | jq -sRr @uri)"
+          TRAVERSAL_HEADERS=/tmp/traversal.headers
+          TRAVERSAL_BODY=/tmp/traversal.body
+          set +e
+          curl --silent --show-error --dump-header "$TRAVERSAL_HEADERS" --output "$TRAVERSAL_BODY" --max-time 30 "$TRAVERSAL_URL"
+          TRAVERSAL_EXIT=$?
+          set -e
+          TRAVERSAL_STATUS=$(grep '^HTTP/' "$TRAVERSAL_HEADERS" | tail -1 | awk '{print $2}')
+          echo "CURL_EXIT=$TRAVERSAL_EXIT"
+          echo "STATUS=$TRAVERSAL_STATUS"
+          jq -e '.error == "Invalid path parameter"' "$TRAVERSAL_BODY" >/dev/null || {
+            echo "FAIL: traversal path was not rejected with structured AJN JSON"
+            exit 1
+          }
+          [[ "$TRAVERSAL_STATUS" == "400" ]] || { echo "FAIL: traversal status=$TRAVERSAL_STATUS"; exit 1; }
+          echo "PASS: path hardening"
+
+          echo
+          echo "RESULT: all live Archive TV News transport gates passed."
+          echo "The smoke test now validates the current resolver -> 300-second derivative -> proxy -> HTTP Range contract."
           echo "No synthetic telemetry was generated."
