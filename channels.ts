@@ -69,6 +69,7 @@ export const NEWS_TARGET_ITEMS = 25;
 const NEWS_PAGE_SIZE = 50;
 const METADATA_CONCURRENCY = 6;
 const METADATA_RETRIES = 3;
+const ARCHIVE_SEARCH_TIMEOUT_MS = 12000;
 
 interface NewsWindow {
   start: Date;
@@ -172,12 +173,15 @@ async function probeArchiveCollection(
   console.log(`[ARCHIVE COLLECTION TEST] query: ${q}`);
   console.log(`[ARCHIVE COLLECTION TEST] url: ${url}`);
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ARCHIVE_SEARCH_TIMEOUT_MS);
   try {
     const response = await fetch(url, {
       headers: {
         "User-Agent": "AJN-Precision-Engineering/1.0",
         Accept: "application/json",
       },
+      signal: controller.signal,
     });
 
     console.log(`[ARCHIVE COLLECTION TEST] collection:${collection} HTTP ${response.status}`);
@@ -253,6 +257,8 @@ async function probeArchiveCollection(
       total: 0,
       docs: [],
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
