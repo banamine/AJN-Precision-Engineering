@@ -48,7 +48,7 @@ import puppeteer from 'puppeteer';
     if (novaProbe.status !== 206 || novaProbe.bytes !== 1024 || !novaProbe.contentRange || !novaProbe.acceptRanges) {
       throw new Error('NOVA Archive proxy did not return a valid 206 byte range');
     }
-    if (novaProbe.contentType && /^(text\\/html|application\\/json|text\\/plain)\\b/i.test(novaProbe.contentType)) {
+    if (novaProbe.contentType && /^(text\/html|application\/json|text\/plain)\b/i.test(novaProbe.contentType)) {
       throw new Error('NOVA Archive proxy returned non-media content type: ' + novaProbe.contentType);
     }
 
