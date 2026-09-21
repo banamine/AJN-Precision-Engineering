@@ -8,10 +8,29 @@ function assert(condition, message) {
 async function main() {
   console.log('Classic TV canonical identity regression: starting');
 
-  const first = await buildHoneymoonersEpg();
+  const fixtureAssets = [
+    {
+      id: 'asset-honeymooners-1',
+      title: 'The Honeymooners — Episode One',
+      archiveIdentifier: 'TheHoneymoonersFixtureOne',
+      mediaUrl: '/download/TheHoneymoonersFixtureOne/episode-one.mp4',
+      durationSeconds: 1800,
+      quality: 'HD',
+    },
+    {
+      id: 'asset-honeymooners-2',
+      title: 'The Honeymooners — Episode Two',
+      archiveIdentifier: 'TheHoneymoonersFixtureTwo',
+      mediaUrl: '/download/TheHoneymoonersFixtureTwo/episode-two.mp4',
+      durationSeconds: 1800,
+      quality: 'HD',
+    },
+  ];
+
+  const first = await buildHoneymoonersEpg(fixtureAssets);
   assert(first.programs.length > 0, 'Classic TV producer must resolve at least one program');
 
-  const second = await buildHoneymoonersEpg();
+  const second = await buildHoneymoonersEpg(fixtureAssets);
   assert(second.programs.length === first.programs.length, 'Repeated Classic TV builds must produce the same program count');
 
   const firstByArchive = new Map(first.programs.map((program) => [program.metadata?.archiveIdentifier, program]));
