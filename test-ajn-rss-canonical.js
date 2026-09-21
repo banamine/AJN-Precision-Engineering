@@ -44,6 +44,7 @@ const second = canonicalizeAjnFeedItems([
   { ...items[0], url: 'https://cdn.example.test/show.mp4?token=rotated' },
 ]);
 assert(second[0].id === first[0].id, 'Transport token rotation must not change RSS program identity');
+console.log('RSS identity diagnostics', { firstId: first[0].id, secondId: second[0].id, matchingPrograms: getCanonicalPrograms().filter(program => program.id === first[0].id).map(program => ({ id: program.id, externalId: program.metadata?.externalId, url: program.mediaUrl })) });
 assert(getCanonicalPrograms().filter(program => program.id === first[0].id).length === 1, 'Repeated RSS ingestion must not duplicate canonical programs');
 
 console.log('AJN RSS canonical producer regression: PASS');
