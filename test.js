@@ -35,13 +35,15 @@ import puppeteer from 'puppeteer';
       const response = await fetch('/api/archive/proxy?path=' + encodeURIComponent('/download/nova-wonders/NOVA Wonders 2 Living in You.mp4'), {
         headers: { Range: 'bytes=0-1023' }
       });
+      const body = await response.arrayBuffer();
       return {
         status: response.status,
         contentType: response.headers.get('content-type'),
         contentLength: response.headers.get('content-length'),
         contentRange: response.headers.get('content-range'),
         acceptRanges: response.headers.get('accept-ranges'),
-        bytes: (await response.arrayBuffer()).byteLength
+        bytes: body.byteLength,
+        errorBody: response.status === 206 ? null : new TextDecoder().decode(body)
       };
     });
     console.log('[NOVA proxy probe]', JSON.stringify(novaProbe));
