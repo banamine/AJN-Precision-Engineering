@@ -8,7 +8,7 @@ import {searchTVNews} from './channels.js';
 import {buildChannelFromSearch} from './archive-discovery';
 import {
  getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,
- addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide
+ addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide,ingestM3uPlaylist
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import newsV1Router from './server/routes/newsV1.js';
