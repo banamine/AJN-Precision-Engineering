@@ -18,12 +18,20 @@ export function isArchiveTvNewsIdentifier(identifier: string): boolean {
   return /^[A-Z0-9]+_\d{8}_\d{6}_.+$/.test(identifier);
 }
 
-export function buildArchiveTvNewsClipPath(identifier: string, startSec = 0, endSec = TV_NEWS_CLIP_SEC): string {
+export function buildArchiveTvNewsClipPath(
+  identifier: string,
+  filename: string,
+  startSec = 0,
+  endSec = TV_NEWS_CLIP_SEC,
+): string {
   const safeStart = Math.max(0, Math.floor(startSec));
   const safeEnd = Math.max(safeStart + 1, Math.floor(endSec));
   const encodedId = encodePathPart(identifier);
-  const filename = encodePathPart(`${identifier}.mp4`);
-  return `/download/${encodedId}/${filename}?start=${safeStart}&end=${safeEnd}`;
+  const encodedFilename = filename
+    .split("/")
+    .map(encodePathPart)
+    .join("/");
+  return `/download/${encodedId}/${encodedFilename}?start=${safeStart}&end=${safeEnd}`;
 }
 
 function pickMp4(files: any[]): any | null {
@@ -87,14 +95,17 @@ export async function resolveArchiveItem(
     const files = Array.isArray(data?.files) ? data.files : [];
 
     if (isArchiveTvNewsIdentifier(identifier)) {
-      const expectedFilename = `${identifier}.mp4`;
-      const file = files.find((candidate: any) => String(candidate?.name || "") === expectedFilename);
+      // Archive TV News items are processed asynchronously and do not
+      // guarantee identifier.mp4. Metadata is authoritative: choose the
+      // actual browser-playable MP4 derivative that Archive lists.
+      const file = pickMp4(files);
       if (!file) {
-        console.warn(`[ArchiveResolver] ${identifier}: expected TV News MP4 derivative not present in metadata`);
+        console.warn(`[ArchiveResolver] ${identifier}: no browser-playable MP4 derivative present in metadata`);
         return null;
       }
 
-      const mediaPath = buildArchiveTvNewsClipPath(identifier);
+      const filename = String(file.name);
+      const mediaPath = buildArchiveTvNewsClipPath(identifier, filename);
       const base = typeof window === "undefined" ? "" : window.location.origin;
       const proxyUrl = `${base}/api/archive/proxy?path=${encodeURIComponent(mediaPath)}`;
 
@@ -104,7 +115,7 @@ export async function resolveArchiveItem(
         identifier,
         title: String(data?.metadata?.title || identifier.replace(/_/g, " ")),
         timestamp: data?.metadata?.date || undefined,
-        filename: expectedFilename,
+        filename,
         size: Number(file.size || 0) || undefined,
         contentType: "video/mp4",
         mediaPath,
