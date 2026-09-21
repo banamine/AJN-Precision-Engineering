@@ -55,6 +55,7 @@ export function upsertCanonicalProgram(program: Program): Program {
     startTime: program.startTimeUtc ?? program.startTime,
   });
   const canonical = identity === program.id ? program : { ...program, id: identity };
+  if (canonical.id !== program.id) programsMap.delete(program.id);
   programsMap.set(canonical.id, canonical);
   evictExpiredPrograms();
   return canonical;
