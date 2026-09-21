@@ -14,6 +14,8 @@
  * To add a new channel: add one entry to NETWORK_CHANNELS below.
  */
 
+import { calculate48HourUtcWindow, filterArchiveResultsTo48HourWindow } from "./archive-discovery.js";
+
 export interface NetworkChannelConfig {
   id: string;
   displayName: string;
@@ -86,14 +88,7 @@ export interface NewsFreshnessTelemetry {
 }
 
 function buildNewsWindow(now = new Date()): NewsWindow {
-  const end = new Date(now);
-  const start = new Date(end.getTime() - NEWS_WINDOW_HOURS * 60 * 60 * 1000);
-  return {
-    start,
-    end,
-    startDate: start.toISOString().slice(0, 10),
-    endDate: end.toISOString().slice(0, 10),
-  };
+  return calculate48HourUtcWindow(now);
 }
 
 function parseAirTimestamp(doc: any): { timestamp: string; source: "identifier" | "publicdate" | "addeddate" } | null {
@@ -120,26 +115,13 @@ function parseAirTimestamp(doc: any): { timestamp: string; source: "identifier" 
 
 function filterCurrentDocs(docs: any[], window: NewsWindow) {
   const current: Array<{ doc: any; airTimestamp: string; airDateSource: "identifier" | "publicdate" | "addeddate" }> = [];
-  let staleRejected = 0;
-
-  for (const doc of docs) {
+  const filtered = filterArchiveResultsTo48HourWindow(docs, window);
+  for (const doc of filtered) {
     const air = parseAirTimestamp(doc);
-    if (!air) {
-      staleRejected++;
-      continue;
-    }
-
-    const time = new Date(air.timestamp).getTime();
-    if (time < window.start.getTime() || time > window.end.getTime()) {
-      staleRejected++;
-      continue;
-    }
-
-    current.push({ doc, airTimestamp: air.timestamp, airDateSource: air.source });
+    if (air) current.push({ doc, airTimestamp: air.timestamp, airDateSource: air.source });
   }
-
   current.sort((a, b) => b.airTimestamp.localeCompare(a.airTimestamp));
-  return { current, staleRejected };
+  return { current, staleRejected: docs.length - current.length };
 }
 
 async function probeArchiveCollection(
