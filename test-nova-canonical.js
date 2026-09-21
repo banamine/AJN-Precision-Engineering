@@ -13,8 +13,9 @@ assert.ok(nova.every((program) => program.sourceId?.trim()));
 assert.ok(nova.every((program) => program.assetId?.trim()));
 assert.equal(new Set(nova.map((program) => program.programId ?? program.id)).size, 6, 'Nova programs must be unique');
 assert.equal(new Set(nova.map((program) => program.assetId)).size, 6, 'Nova assets must be unique');
-assert.ok(nova.every((program) => program.mediaUrl.startsWith('/download/nova-wonders/')));
-assert.ok(nova.every((program) => program.mediaUrl.endsWith('.mp4')));
+assert.ok(nova.every((program) => program.archivePath?.startsWith('/download/nova-wonders/')));
+assert.ok(nova.every((program) => program.archivePath?.endsWith('.mp4')));
+assert.ok(nova.every((program) => program.mediaUrl.startsWith('/api/archive/proxy?path=')));
 assert.ok(nova.every((program) => !program.mediaUrl.includes('BigBuckBunny')));
 
 const canonicalNova = getCanonicalPrograms().filter((program) => program.channelId === 'nova-wonders');
