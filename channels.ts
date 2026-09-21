@@ -39,7 +39,7 @@ export interface TVNewsItem {
   durationMins: number;
   thumbnailUrl: string;
   publicdate: string;
-  airDateSource: "identifier" | "publicdate";
+  airDateSource: "identifier" | "publicdate" | "addeddate";
   description?: string;
 }
 
@@ -348,7 +348,7 @@ export async function searchTVNews(opts: {
     const rawDescription = doc.description ?? doc.subject;
     const description = rawDescription
       ? (Array.isArray(rawDescription) ? rawDescription[0] : String(rawDescription))
-          .replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim() || undefined
+          .replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || undefined
       : undefined;
     return {
       identifier: id,
@@ -360,7 +360,7 @@ export async function searchTVNews(opts: {
       durationMins: 60,
       thumbnailUrl: "https://archive.org/services/img/" + id,
       publicdate: airTimestamp,
-      airDateSource: airDateSource === "identifier" ? "identifier" : "publicdate",
+      airDateSource: airDateSource,
       ...(description ? { description } : {}),
     };
   });
