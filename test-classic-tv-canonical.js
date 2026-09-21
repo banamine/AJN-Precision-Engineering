@@ -25,7 +25,7 @@ async function main() {
     assert(repeat.metadata?.externalId === archiveIdentifier, `Repeated Classic TV build must retain externalId for ${archiveIdentifier}`);
 
     const expectedProgramId = normalizeProgramIdentity({
-      externalId: archiveIdentifier,
+      externalId: `${archiveIdentifier}|slot:${program.startHour ?? 0}`,
       channelId: program.channelId,
       title: program.title,
       startTime: program.startTimeUtc,
