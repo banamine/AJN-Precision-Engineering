@@ -104,3 +104,45 @@ async function buildChannelFromDocuments(docs: any[], channelId: string, channel
 export async function buildChannelFromIdentifiers(identifiers: readonly string[], channelId: string, channelName: string, maxAssets = 100): Promise<PlayoutChannel> {
   return buildChannelFromDocuments(identifiers.map(identifier => ({ identifier })), channelId, channelName, maxAssets);
 }
+
+
+export interface Archive48HourUtcWindow {
+  start: Date;
+  end: Date;
+  startDate: string;
+  endDate: string;
+}
+
+/** Build the rolling UTC window used by time-sensitive Archive.org discovery. */
+export function calculate48HourUtcWindow(now = new Date()): Archive48HourUtcWindow {
+  const end = new Date(now);
+  const start = new Date(end.getTime() - 48 * 60 * 60 * 1000);
+  return { start, end, startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+}
+
+function archiveAirTimestamp(doc: any): string | null {
+  const identifier = String(doc?.identifier ?? "");
+  const match = identifier.match(/^([A-Z0-9]+)_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_(.+)$/);
+  if (match) {
+    const parsed = new Date(match[2] + "-" + match[3] + "-" + match[4] + "T" + match[5] + ":" + match[6] + ":" + match[7] + "Z");
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+  for (const field of ["publicdate", "addeddate"] as const) {
+    if (!doc?.[field]) continue;
+    const parsed = new Date(String(doc[field]));
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+  return null;
+}
+
+/** Keep only Archive records inside the rolling 48-hour UTC window. */
+export function filterArchiveResultsTo48HourWindow<T extends Record<string, any>>(docs: T[], window = calculate48HourUtcWindow()): T[] {
+  const start = window.start.getTime();
+  const end = window.end.getTime();
+  return docs.filter((doc) => {
+    const timestamp = archiveAirTimestamp(doc);
+    if (!timestamp) return false;
+    const time = Date.parse(timestamp);
+    return time >= start && time <= end;
+  });
+}
