@@ -1,4 +1,5 @@
 import { Program } from '../src/types';
+import { normalizeProgramIdentity, normalizeAssetIdentity } from '../src/utils/epgIdentity';
 import { HONEYMOONERS_COLLECTION, HONEYMOONERS_CHANNEL_ID, HONEYMOONERS_CHANNEL_NAME } from './honeymooners-collection';
 
 const ARCHIVE_BASE = 'https://archive.org';
@@ -78,8 +79,8 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
   return assets;
 }
 
-export async function buildHoneymoonersEpg() {
-  const assets = await resolveHoneymoonersAssets();
+export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolvedAsset[]) {
+  const assets = resolvedAssets ?? await resolveHoneymoonersAssets();
   const secondsInDay = 24 * 3600;
   const programs: Program[] = [];
   let currentSecond = 0;
@@ -89,7 +90,12 @@ export async function buildHoneymoonersEpg() {
     const asset = assets[index % assets.length];
     const endSecond = Math.min(secondsInDay, currentSecond + asset.durationSeconds);
     programs.push({
-      id: `${HONEYMOONERS_CHANNEL_ID}-${programs.length + 1}`,
+      id: normalizeProgramIdentity({
+        externalId: `${asset.archiveIdentifier}|slot:${currentSecond}`,
+        channelId: HONEYMOONERS_CHANNEL_ID,
+        title: asset.title,
+        startTime: currentSecond,
+      }),
       guideId: 'classic-tv',
       channelId: HONEYMOONERS_CHANNEL_ID,
       title: asset.title,
@@ -101,11 +107,13 @@ export async function buildHoneymoonersEpg() {
       startHour: currentSecond / 3600,
       endHour: endSecond / 3600,
       mediaType: 'video',
+      assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
       mediaUrl: asset.mediaUrl,
       archivePath: asset.mediaUrl,
       metadata: {
+        externalId: asset.archiveIdentifier,
         archiveIdentifier: asset.archiveIdentifier,
-        assetId: asset.id,
+        assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
         quality: asset.quality,
         durationSeconds: asset.durationSeconds,
         collectionId: 'honeymooners',

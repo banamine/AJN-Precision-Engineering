@@ -77,6 +77,36 @@ jobs:
       - name: EPG producer identity regression
         run: npm run test:epg-identity-producers
 
+      - name: Classic TV canonical identity regression
+        run: npm run test:classic-tv-canonical
+
+      - name: Library integrity regression
+        run: npm run test:library-integrity
+
+      - name: Nova canonical regression
+        run: npm run test:nova-canonical
+
+      - name: Movies Classics producer regression
+        run: npm run test:movies-classics-producer
+
+      - name: Movies Classics integration regression
+        run: npm run test:movies-classics
+
+      - name: AJN RSS canonical regression
+        run: npm run test:ajn-rss-canonical
+
+      - name: AJN audio canonical regression
+        run: npm run test:ajn-audio-canonical
+
+      - name: API contract regression
+        run: npm run test:api-contract
+
+      - name: Accessibility regression
+        run: npm run test:accessibility
+
+      - name: Audio/video switch regression
+        run: npm run test:audio-video-switch
+
       - name: Audio bridge browser regression
         run: npm run test:audio
 
