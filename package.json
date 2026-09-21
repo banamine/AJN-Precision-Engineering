@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "node test.js && npm run test:epg-program-lifecycle",
+    "test": "node test.js && npm run test:epg-program-lifecycle && npm run test:news-freshness",
     "test:audio": "node test-audio-bridge.js",
     "test:audio-singleton": "node test-audio-context-singleton.js",
     "test:audio-video-switch": "node test-audio-video-switch.js",
@@ -26,7 +26,8 @@
     "test:nova-canonical": "tsx test-nova-canonical.js",
     "test:movies-classics-producer": "tsx test-movies-classics-producer.js",
     "test:movies-classics": "tsx test-movies-classics.js",
-    "test:classic-tv-canonical": "tsx test-classic-tv-canonical.js"
+    "test:classic-tv-canonical": "tsx test-classic-tv-canonical.js",
+    "test:news-freshness": "tsx test-news-freshness.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
