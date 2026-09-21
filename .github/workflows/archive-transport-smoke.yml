@@ -18,10 +18,44 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Checkout source under test
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install and type-check source
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund
+          npm run lint
+
+      - name: Start local AJN server for push verification
+        if: ${{ !inputs.base_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup npm run dev > /tmp/ajn-server.log 2>&1 &
+          echo $! > /tmp/ajn-server.pid
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail --max-time 3 http://127.0.0.1:3000/api/health >/tmp/ajn-health.json; then
+              cat /tmp/ajn-health.json | jq .
+              echo "PASS: local AJN server is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "FAIL: local AJN server did not become ready"
+          cat /tmp/ajn-server.log || true
+          exit 1
+
       - name: Live Archive TV News transport contract
         shell: bash
         env:
-          BASE_URL: ${{ inputs.base_url || 'https://ajn-precision-engineering.ai.studio' }}
+          BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:3000' }}
         run: |
           set -euo pipefail
 
