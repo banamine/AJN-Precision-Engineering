@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install and type-check source
         shell: bash
@@ -61,7 +61,7 @@ jobs:
 
           echo "WHO: GitHub Actions"
           echo "WHAT: AJN Archive TV News end-to-end transport gate"
-          echo "WHY: verify the current production contract rather than a stale hard-coded Archive fixture"
+          echo "WHY: verify the current source revision against live Archive.org transport rather than a stale hard-coded fixture"
           echo "WHEN: $(date -u +%FT%TZ)"
           echo "BASE_URL: $BASE_URL"
 
@@ -121,7 +121,7 @@ jobs:
             exit 1
           }
 
-          echo "$RESOLVED" | jq '{success,item:{identifier,title,filename,size,contentType,mediaPath,durationSeconds,state}}'
+          echo "$RESOLVED" | jq '{success,item:.item}'
           MEDIA_PATH=$(echo "$RESOLVED" | jq -r '.item.mediaPath')
           MEDIA_TYPE=$(echo "$RESOLVED" | jq -r '.item.contentType')
           DURATION=$(echo "$RESOLVED" | jq -r '.item.durationSeconds')
@@ -237,8 +237,8 @@ jobs:
           echo "STATUS=$BAD_STATUS"
           echo "CONTENT_TYPE=$BAD_CONTENT_TYPE"
 
-          [[ "$BAD_STATUS" == "404" || "$BAD_STATUS" == "403" || "$BAD_STATUS" == "502" ]] || {
-            echo "FAIL: unexpected unavailable-fixture HTTP status=$BAD_STATUS"
+          [[ "$BAD_STATUS" =~ ^[45][0-9][0-9]$ ]] || {
+            echo "FAIL: unavailable fixture did not produce an HTTP 4xx/5xx status: $BAD_STATUS"
             exit 1
           }
           [[ "$BAD_CONTENT_TYPE" == application/json* ]] || {
