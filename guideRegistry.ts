@@ -6,7 +6,7 @@ import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
 import { buildMoviesClassicsPrograms } from './src/services/producers/moviesClassicsProducer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
-import { normalizeChannelIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
+import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
 import { upsertCanonicalProgram, getCanonicalProgram, getCanonicalPrograms, sweepCanonicalPrograms } from './src/services/canonicalProgramRegistry';
 export { upsertCanonicalProgram, getCanonicalProgram, getCanonicalPrograms, sweepCanonicalPrograms } from './src/services/canonicalProgramRegistry';
 
