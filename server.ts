@@ -159,7 +159,7 @@ async function refreshNewsPlaylist(){
   for(const channel of schedule){
    const first=channel.programs?.[0];
    if(!first?.archivePath) continue;
-   const identifier=String(first.externalId || first.archivePath.split('/')[2] || '');
+   const identifier=String(first.metadata?.externalId || first.archivePath.split('/')[2] || '');
    const logo=identifier ? `https://archive.org/services/img/${identifier}` : '';
    m3u += `#EXTINF:-1 tvg-id="${channel.id}" tvg-name="${channel.name}"${logo ? ` tvg-logo="${logo}"` : ''} group-title="News",${channel.name}\\n${first.archivePath}\\n`;
   }
