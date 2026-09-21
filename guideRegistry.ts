@@ -56,6 +56,9 @@ export function upsertCanonicalProgram(program: Program): Program {
   });
   const canonical = identity === program.id ? program : { ...program, id: identity };
   if (canonical.id !== program.id) programsMap.delete(program.id);
+  for (const [key, existing] of programsMap) {
+    if (key !== canonical.id && existing.id === canonical.id) programsMap.delete(key);
+  }
   programsMap.set(canonical.id, canonical);
   evictExpiredPrograms();
   return canonical;
