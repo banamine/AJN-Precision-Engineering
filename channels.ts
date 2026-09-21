@@ -684,7 +684,7 @@ export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
     NETWORK_CHANNELS.map(async (config) => {
       const { items } = await searchTVNews({
         network: config.network,
-        rows: 12,
+        rows: NEWS_TARGET_ITEMS,
       });
 
       return {
