@@ -107,6 +107,7 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
       startHour: currentSecond / 3600,
       endHour: endSecond / 3600,
       mediaType: 'video',
+      assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
       mediaUrl: asset.mediaUrl,
       archivePath: asset.mediaUrl,
       metadata: {
