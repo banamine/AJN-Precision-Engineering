@@ -568,7 +568,7 @@ async function verifyDeterministicTvNewsFallback(identifier: string): Promise<st
   const timeout = setTimeout(() => controller.abort(), 4000);
   try {
     const response = await fetch(fallbackUrl, { method: "HEAD", headers: { "User-Agent": "AJN-Precision-Engineering/1.0", Accept: "video/mp4,*/*" }, signal: controller.signal });
-    return response.ok && /^(video\\/|application\\/octet-stream)/i.test(response.headers.get("content-type") || "video/mp4") ? fallbackUrl : "";
+    return response.ok && /^(video\/|application\/octet-stream)/i.test(response.headers.get("content-type") || "video/mp4") ? fallbackUrl : "";
   } catch { return ""; }
   finally { clearTimeout(timeout); }
 }
