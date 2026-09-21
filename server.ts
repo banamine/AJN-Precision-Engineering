@@ -95,15 +95,27 @@ app.get('/api/archive/proxy', async (req, res) => {
     try{
       const upstreamTimeout=setTimeout(()=>abortController.abort(),20000);
       let upstream:globalThis.Response;
-      try{ upstream=await fetch(upstreamUrl,{headers:headers as HeadersInit,signal:abortController.signal,redirect:'manual'}); }
-      finally{clearTimeout(upstreamTimeout);}
+      let requestUrl = upstreamUrl;
+      for(let redirectAttempt=0; redirectAttempt<4; redirectAttempt++){
+        upstream=await fetch(requestUrl,{headers:headers as HeadersInit,signal:abortController.signal,redirect:'manual'});
+        if(![301,302,303,307,308].includes(upstream.status)) break;
+        const location=upstream.headers.get('location');
+        if(!location) break;
+        const redirectUrl=new URL(location,requestUrl);
+        if(redirectUrl.protocol!=='https:' || !(/^(?:archive\\.org|ia\\d+\\.us\\.archive\\.org)$/.test(redirectUrl.hostname))){
+          stats.failedRequests++;
+          return res.status(502).json({error:'Archive redirect target rejected',proxyRequestId});
+        }
+        requestUrl=redirectUrl.toString();
+      }
+      if([301,302,303,307,308].includes(upstream.status)){
+        stats.failedRequests++;
+        return res.status(502).json({error:'Archive redirect chain exceeded limit',proxyRequestId});
+      }
+      clearTimeout(upstreamTimeout);
       if(RETRY.includes(upstream.status)){
         if(attempt<MAX_RETRIES){ stats.retriedRequests++; await new Promise(r=>setTimeout(r,BACKOFF*Math.pow(2,attempt-1))); continue; }
         stats.failedRequests++; return res.status(503).json({error:'Archive upstream unavailable',upstreamStatus:upstream.status,proxyRequestId});
-      }
-      if([301,302,303,307,308].includes(upstream.status)){
-        const loc=upstream.headers.get('location');
-        if(loc){ res.setHeader('Cache-Control','no-store'); res.setHeader('X-AJN-Archive-Proxy','redirect-to-storage'); return res.redirect(302,loc); }
       }
       if(!upstream.ok && upstream.status!==206){ stats.failedRequests++; return res.status(upstream.status>=500?503:upstream.status).json({error:'Archive upstream unavailable',upstreamStatus:upstream.status,proxyRequestId}); }
       if(incomingRange && upstream.status!==206){ stats.failedRequests++; return res.status(502).json({error:'Archive upstream ignored requested byte range',upstreamStatus:upstream.status,proxyRequestId}); }
