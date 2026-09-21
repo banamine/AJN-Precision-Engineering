@@ -108,6 +108,7 @@ app.get('/api/archive/proxy', async (req, res) => {
         }
         requestUrl=redirectUrl.toString();
       }
+      console.log('[Archive Proxy Upstream]',proxyRequestId,'| status:',upstream.status,'| url:',requestUrl,'| range:',incomingRangeHeader || 'none');
       if([301,302,303,307,308].includes(upstream.status)){
         stats.failedRequests++;
         return res.status(502).json({error:'Archive redirect chain exceeded limit',proxyRequestId});
