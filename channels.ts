@@ -51,6 +51,7 @@ export function getCollectionCandidates(network: string): string[] {
   return [normalized, `TV-${normalized}`];
 }
 
+
 interface ArchiveCollectionProbe {
   collection: string;
   query: string;
@@ -59,6 +60,86 @@ interface ArchiveCollectionProbe {
   ok: boolean;
   total: number;
   docs: any[];
+}
+
+export const NEWS_WINDOW_HOURS = 48;
+export const NEWS_TARGET_ITEMS = 25;
+const NEWS_PAGE_SIZE = 50;
+const METADATA_CONCURRENCY = 6;
+const METADATA_RETRIES = 3;
+
+interface NewsWindow {
+  start: Date;
+  end: Date;
+  startDate: string;
+  endDate: string;
+}
+
+export interface NewsFreshnessTelemetry {
+  requestedWindowHours: number;
+  windowStart: string;
+  windowEnd: string;
+  returnedCount: number;
+  availableCurrentCount: number;
+  staleRejected: number;
+  metadataFailures: number;
+}
+
+function buildNewsWindow(now = new Date()): NewsWindow {
+  const end = new Date(now);
+  const start = new Date(end.getTime() - NEWS_WINDOW_HOURS * 60 * 60 * 1000);
+  return {
+    start,
+    end,
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+  };
+}
+
+function parseAirTimestamp(doc: any): { timestamp: string; source: "identifier" | "publicdate" | "addeddate" } | null {
+  const identifier = String(doc?.identifier ?? "");
+  const match = identifier.match(TV_ID_RE);
+  if (match) {
+    const parsed = new Date(`${match[2]}-${match[3]}-${match[4]}T${match[5]}:${match[6]}:${match[7]}Z`);
+    if (!Number.isNaN(parsed.getTime())) {
+      return { timestamp: parsed.toISOString(), source: "identifier" };
+    }
+  }
+
+  for (const source of ["publicdate", "addeddate"] as const) {
+    const raw = doc?.[source];
+    if (!raw) continue;
+    const parsed = new Date(String(raw));
+    if (!Number.isNaN(parsed.getTime())) {
+      return { timestamp: parsed.toISOString(), source };
+    }
+  }
+
+  return null;
+}
+
+function filterCurrentDocs(docs: any[], window: NewsWindow) {
+  const current: Array<{ doc: any; airTimestamp: string; airDateSource: "identifier" | "publicdate" | "addeddate" }> = [];
+  let staleRejected = 0;
+
+  for (const doc of docs) {
+    const air = parseAirTimestamp(doc);
+    if (!air) {
+      staleRejected++;
+      continue;
+    }
+
+    const time = new Date(air.timestamp).getTime();
+    if (time < window.start.getTime() || time > window.end.getTime()) {
+      staleRejected++;
+      continue;
+    }
+
+    current.push({ doc, airTimestamp: air.timestamp, airDateSource: air.source });
+  }
+
+  current.sort((a, b) => b.airTimestamp.localeCompare(a.airTimestamp));
+  return { current, staleRejected };
 }
 
 async function probeArchiveCollection(
