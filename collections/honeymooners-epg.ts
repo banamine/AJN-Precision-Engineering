@@ -3,7 +3,7 @@ import { normalizeProgramIdentity, normalizeAssetIdentity } from '../src/utils/e
 import { HONEYMOONERS_COLLECTION, HONEYMOONERS_CHANNEL_ID, HONEYMOONERS_CHANNEL_NAME } from './honeymooners-collection';
 
 const ARCHIVE_BASE = 'https://archive.org';
-const REQUEST_TIMEOUT_MS = 60000;
+const REQUEST_TIMEOUT_MS = 15000;
 
 export interface HoneymoonersResolvedAsset {
   id: string;
@@ -82,6 +82,9 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
 export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolvedAsset[]) {
   const assets = resolvedAssets ?? await resolveHoneymoonersAssets();
   const secondsInDay = 24 * 3600;
+  const now = new Date();
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
   const programs: Program[] = [];
   let currentSecond = 0;
   let index = 0;
@@ -102,8 +105,8 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
       description: `Archive.org collection item: ${asset.archiveIdentifier}`,
       startTime: currentSecond / 3600,
       endTime: endSecond / 3600,
-      startTimeUtc: new Date(Date.now() + currentSecond * 1000).toISOString(),
-      endTimeUtc: new Date(Date.now() + endSecond * 1000).toISOString(),
+      startTimeUtc: new Date(dayStart.getTime() + currentSecond * 1000).toISOString(),
+      endTimeUtc: new Date(dayStart.getTime() + endSecond * 1000).toISOString(),
       startHour: currentSecond / 3600,
       endHour: endSecond / 3600,
       mediaType: 'video',
