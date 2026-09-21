@@ -1,4 +1,5 @@
 import { Program } from '../src/types';
+import { normalizeProgramIdentity, normalizeAssetIdentity } from '../src/utils/epgIdentity';
 import { HONEYMOONERS_COLLECTION, HONEYMOONERS_CHANNEL_ID, HONEYMOONERS_CHANNEL_NAME } from './honeymooners-collection';
 
 const ARCHIVE_BASE = 'https://archive.org';
@@ -89,7 +90,12 @@ export async function buildHoneymoonersEpg() {
     const asset = assets[index % assets.length];
     const endSecond = Math.min(secondsInDay, currentSecond + asset.durationSeconds);
     programs.push({
-      id: `${HONEYMOONERS_CHANNEL_ID}-${programs.length + 1}`,
+      id: normalizeProgramIdentity({
+        externalId: `${asset.archiveIdentifier}|slot:${currentSecond}`,
+        channelId: HONEYMOONERS_CHANNEL_ID,
+        title: asset.title,
+        startTime: currentSecond,
+      }),
       guideId: 'classic-tv',
       channelId: HONEYMOONERS_CHANNEL_ID,
       title: asset.title,
@@ -105,8 +111,9 @@ export async function buildHoneymoonersEpg() {
       archivePath: asset.mediaUrl,
       metadata: {
         externalId: asset.archiveIdentifier,
+        externalId: asset.archiveIdentifier,
         archiveIdentifier: asset.archiveIdentifier,
-        assetId: asset.id,
+        assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
         quality: asset.quality,
         durationSeconds: asset.durationSeconds,
         collectionId: 'honeymooners',
