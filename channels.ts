@@ -473,35 +473,7 @@ let _cache: {
   expiresAt: number;
 } | null = null;
 
-async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgram[]> {
-  if (items.length === 0) {
-    return [];
-  }
-
-  const resolved = await Promise.all(
-    items.map(async (item) => {
-      const resolvedFile = await resolveBestFileUrl(item.identifier);
-      if (resolvedFile.fallback || !resolvedFile.url) {
-        console.warn(`[channels] skipping unavailable Archive media: ${item.identifier}`);
-        return "";
-      }
-      return toProxyPath(getSafeArchiveUrl(resolvedFile.url));
-    }),
-  );
-
-  return items
-    .map((item, index) => ({ item, archivePath: resolved[index] }))
-    .filter(({ archivePath }) => Boolean(archivePath))
-    .map(({ item, archivePath }, index, playableItems) => ({
-      externalId: item.identifier,
-      title: item.title || item.program || item.identifier,
-      startHour: index * (24 / playableItems.length),
-      endHour: (index + 1) * (24 / playableItems.length),
-      archivePath,
-    }));
-}
-
-export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
+async function mapWithConcurrency<T, R>(items: T[], concurrency: number, worker: (item: T) => Promise<R>): Promise<R[]> {\n  const results: R[] = new Array(items.length);\n  let nextIndex = 0;\n  async function runWorker() {\n    while (true) {\n      const index = nextIndex++;\n      if (index >= items.length) return;\n      results[index] = await worker(items[index]);\n    }\n  }\n  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()));\n  return results;\n}\n\nasync function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgram[]> {\n  if (items.length === 0) return [];\n  const resolved = await mapWithConcurrency(items, METADATA_CONCURRENCY, async (item) => {\n    const resolvedFile = await resolveBestFileUrl(item.identifier);\n    if (!resolvedFile.url) {\n      console.warn(`[channels] skipping unavailable Archive media: ${item.identifier}`);\n      return "";\n    }\n    return toProxyPath(getSafeArchiveUrl(resolvedFile.url));\n  });\n\n  return items\n    .map((item, index) => ({ item, archivePath: resolved[index] }))\n    .filter(({ archivePath }) => Boolean(archivePath))\n    .map(({ item, archivePath }, index, playableItems) => ({\n      externalId: item.identifier,\n      title: item.title || item.program || item.identifier,\n      startHour: index * (24 / playableItems.length),\n      endHour: (index + 1) * (24 / playableItems.length),\n      archivePath,\n    }));\n}\nexport async function getChannelSchedule(): Promise<ScheduleChannel[]> {
   if (_cache && Date.now() < _cache.expiresAt) {
     return _cache.data;
   }
