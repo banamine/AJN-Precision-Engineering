@@ -121,8 +121,8 @@ jobs:
             local expected_start="$2"
             local expected_length="$3"
             local label="$4"
-            local headers="/tmp/$${label}.headers"
-            local body="/tmp/$${label}.body"
+            local headers="/tmp/$label.headers"
+            local body="/tmp/$label.body"
 
             echo
             echo "=== TEST: $label ==="
