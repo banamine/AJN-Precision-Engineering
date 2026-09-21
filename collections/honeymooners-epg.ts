@@ -111,7 +111,6 @@ export async function buildHoneymoonersEpg() {
       archivePath: asset.mediaUrl,
       metadata: {
         externalId: asset.archiveIdentifier,
-        externalId: asset.archiveIdentifier,
         archiveIdentifier: asset.archiveIdentifier,
         assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
         quality: asset.quality,
