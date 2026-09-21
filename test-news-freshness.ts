@@ -1,10 +1,26 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { NEWS_TARGET_ITEMS, NEWS_WINDOW_HOURS, searchTVNews, TV_ID_RE } from "./channels.ts";
+import { calculate48HourUtcWindow, filterArchiveResultsTo48HourWindow } from "./archive-discovery.ts";
 
 assert.equal(NEWS_WINDOW_HOURS, 48);
 assert.equal(NEWS_TARGET_ITEMS, 25);
 assert.ok(TV_ID_RE.test("FOXNEWSW_20260921_120000_Test_Show"));
+
+const windowEnd = new Date("2026-09-21T15:00:00.000Z");
+const window = calculate48HourUtcWindow(windowEnd);
+assert.equal(window.start.toISOString(), "2026-09-19T15:00:00.000Z");
+assert.equal(window.end.toISOString(), "2026-09-21T15:00:00.000Z");
+const boundaryDocs = [
+  { identifier: "FOXNEWSW_20260919_150000_Boundary" },
+  { identifier: "FOXNEWSW_20260919_145959_Stale" },
+  { identifier: "FOXNEWSW_20260921_150001_Future" },
+  { identifier: "FOXNEWSW_20260920_120000_Current" },
+];
+assert.deepEqual(
+  filterArchiveResultsTo48HourWindow(boundaryDocs, window).map((doc) => doc.identifier),
+  ["FOXNEWSW_20260919_150000_Boundary", "FOXNEWSW_20260920_120000_Current"],
+);
 
 const now = Date.now();
 function idAt(hoursAgo: number, suffix: string) {
