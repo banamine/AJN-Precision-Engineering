@@ -131,6 +131,7 @@ app.get('/api/archive/proxy', async (req, res) => {
       finally{ res.removeListener('close',onResponseClose); try{await reader.cancel();}catch{} if(!res.writableEnded && !res.destroyed) res.end(); console.log('[Archive Proxy Stream Complete]',proxyRequestId,'| status:',upstream.status,'| range:',incomingRangeHeader || 'none','| declaredLength:',contentLength || 'unknown','| contentRange:',contentRange || 'none','| bytesForwarded:',bytesForwarded); stats.activeStreams=Math.max(0,stats.activeStreams-1); }
       return;
     }catch(err:any){
+      console.error('[Archive Proxy Upstream Failure]', proxyRequestId, err?.name || 'Error', err?.message || String(err));
       if(abortController.signal.aborted && (req.destroyed || res.destroyed || responseFinished)) return;
       if(attempt===MAX_RETRIES){ stats.failedRequests++; if(!res.headersSent) return res.status(503).json({error:'Archive upstream unavailable',proxyRequestId}); if(!res.destroyed) res.destroy(); return; }
       stats.retriedRequests++; await new Promise(r=>setTimeout(r,BACKOFF*Math.pow(2,attempt-1)));
