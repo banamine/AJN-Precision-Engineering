@@ -59,6 +59,14 @@ async function waitForMedia(page, src, label) {
   assert.ok(movieChannel.programs.every((program) => program.mediaUrl?.startsWith('/api/archive/proxy?path=')),
     'Movies & Cinema Classics contains non-proxied media');
 
+  // Use the repository's known Archive movie samples rather than assuming the
+  // first manifest item is currently served by the Archive mirror.
+  const movieSamples = [
+    movieChannel.programs.find((program) => program.archivePath.includes('/NightOfTheLivingDead/')),
+    movieChannel.programs.find((program) => program.archivePath.includes('/HisGirlFriday1940/')),
+  ].filter(Boolean);
+  assert.equal(movieSamples.length, 2, 'Known working Movies Classics samples are missing from the schedule');
+
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   try {
     const page = await browser.newPage();
