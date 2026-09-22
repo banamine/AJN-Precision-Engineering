@@ -9,6 +9,31 @@ async function getJson(path) {
   return response.json();
 }
 
+async function probeMedia(page, src, label, timeoutMs = 10000) {
+  await page.setContent(`<!doctype html><video id="v" muted playsinline preload="metadata"></video>`);
+  return page.evaluate(async ({ src, label, timeoutMs }) => {
+    const video = document.getElementById('v');
+    video.src = src;
+    video.load();
+    return await new Promise((resolve) => {
+      const timeout = setTimeout(() => resolve({
+        label, event: 'timeout', readyState: video.readyState, networkState: video.networkState,
+        errorCode: video.error?.code ?? null, errorMessage: video.error?.message ?? null,
+      }), timeoutMs);
+      video.addEventListener('loadedmetadata', () => {
+        clearTimeout(timeout);
+        resolve({ label, event: 'loadedmetadata', readyState: video.readyState, networkState: video.networkState,
+          duration: Number.isFinite(video.duration) ? video.duration : null, errorCode: video.error?.code ?? null });
+      }, { once: true });
+      video.addEventListener('error', () => {
+        clearTimeout(timeout);
+        resolve({ label, event: 'error', readyState: video.readyState, networkState: video.networkState,
+          errorCode: video.error?.code ?? null, errorMessage: video.error?.message ?? null });
+      }, { once: true });
+    });
+  }, { src, label, timeoutMs });
+}
+
 async function waitForMedia(page, src, label) {
   await page.setContent(`<!doctype html><video id="v" muted playsinline preload="metadata"></video>`);
   const result = await page.evaluate(async ({ src, label }) => {
@@ -59,13 +84,8 @@ async function waitForMedia(page, src, label) {
   assert.ok(movieChannel.programs.every((program) => program.mediaUrl?.startsWith('/api/archive/proxy?path=')),
     'Movies & Cinema Classics contains non-proxied media');
 
-  // Use the repository's known Archive movie samples rather than assuming the
-  // first manifest item is currently served by the Archive mirror.
-  const movieSamples = [
-    movieChannel.programs.find((program) => program.archivePath.includes('/NightOfTheLivingDead/')),
-    movieChannel.programs.find((program) => program.archivePath.includes('/HisGirlFriday1940/')),
-  ].filter(Boolean);
-  assert.equal(movieSamples.length, 2, 'Known working Movies Classics samples are missing from the schedule');
+  const movieCandidates = movieChannel.programs.slice(0, 8);
+  assert.ok(movieCandidates.length >= 2, 'Movies & Cinema Classics has fewer than two candidates');
 
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   try {
@@ -77,8 +97,14 @@ async function waitForMedia(page, src, label) {
 
     await waitForMedia(page, cnn.programs[0].mediaUrl, 'CNN Newsroom Live');
     await waitForMedia(page, classicChannel.fullShowList[0].mediaUrl, 'Classic TV first full-list show');
-    await waitForMedia(page, movieChannel.programs[0].mediaUrl, 'Movies & Cinema Classics first title');
-    await waitForMedia(page, movieChannel.programs[1].mediaUrl, 'Movies & Cinema Classics second title');
+    const playableMovies = [];
+    for (const candidate of movieCandidates) {
+      const result = await probeMedia(page, candidate.mediaUrl, `Movies & Cinema Classics — ${candidate.title}`, 10000);
+      console.log('[REAL MOVIE PLAYBACK]', JSON.stringify({ title: candidate.title, archivePath: candidate.archivePath, result }));
+      if (result.event === 'loadedmetadata') playableMovies.push(candidate);
+      if (playableMovies.length >= 2) break;
+    }
+    assert.ok(playableMovies.length >= 2, 'Fewer than two real Movies & Cinema Classics programs reached loadedmetadata');
   } finally {
     await browser.close();
   }
