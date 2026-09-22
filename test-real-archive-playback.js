@@ -68,7 +68,7 @@ try {
   const start = new Date(end.getTime() - 48 * 60 * 60 * 1000);
   const knownCurrentCnnNewsroom = 'CNNW_20260921_080000_CNN_Newsroom_Live';
   const isWithin48Hours = (identifier) => {
-    const match = identifier.match(/^[A-Z0-9]+_(\\d{8})_(\\d{6})_/i);
+    const match = identifier.match(/^[A-Z0-9]+_(\d{8})_(\d{6})_/i);
     if (!match) return false;
     const aired = Date.parse(`${match[1].slice(0, 4)}-${match[1].slice(4, 6)}-${match[1].slice(6, 8)}T${match[2].slice(0, 2)}:${match[2].slice(2, 4)}:${match[2].slice(4, 6)}Z`);
     return Number.isFinite(aired) && aired >= start.getTime() && aired <= end.getTime();
