@@ -83,14 +83,14 @@ jobs:
           for endpoint in resources audio/hourly audio/segment; do
             safe_name="$(echo "$endpoint" | tr / -)"
             echo "=== /api/ajn/$endpoint ==="
-            code="$(curl --silent --show-error --max-time 15               --dump-header "/tmp/ajn-\${safe_name}.headers"               --output "/tmp/ajn-\${safe_name}.json"               --write-out '%{http_code}'               "http://localhost:3000/api/ajn/$endpoint")"
+            code="$(curl --silent --show-error --max-time 15               --dump-header "/tmp/ajn-${safe_name}.headers"               --output "/tmp/ajn-${safe_name}.json"               --write-out '%{http_code}'               "http://localhost:3000/api/ajn/$endpoint")"
             echo "HTTP $code"
             if [ "$code" = "200" ]; then
               echo "PASS: /api/ajn/$endpoint returned HTTP 200"
 
             else
               echo "FAILED: /api/ajn/$endpoint returned HTTP $code"
-              cat "/tmp/ajn-\${safe_name}.json" || true
+              cat "/tmp/ajn-${safe_name}.json" || true
               FAILED=1
             fi
           done
