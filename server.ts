@@ -133,17 +133,54 @@ app.get('/api/archive/proxy', async (req,res)=>{
   }
 
   try{
-    const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
-    const redirectUrl=await resolveArchiveMediaRedirect(upstreamUrl);
-    if(!redirectUrl){
+    const upstreamUrl=`\${ARCHIVE_BASE}\${v.cleanPath}`;
+    const resolvedUrl=await resolveArchiveMediaRedirect(upstreamUrl);
+    if(!resolvedUrl){
       stats.failedRequests++;
-      return res.status(502).json({error:'Archive did not return a validated media redirect',proxyRequestId});
+      return res.status(502).json({error:'Archive did not return a validated media response',proxyRequestId});
     }
+
+    const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Media-Console/ArchiveProxy','Accept':'*/*'};
+    const range=String(req.headers.range || '');
+    if(range) upstreamHeaders.Range=range;
+
+    let mediaResponse=await fetch(resolvedUrl,{method:'GET',redirect:'manual',headers:upstreamHeaders});
+    if(REDIRECT_STATUSES.has(mediaResponse.status)){
+      const retryUrl=await resolveArchiveMediaRedirect(resolvedUrl);
+      if(!retryUrl){
+        stats.failedRequests++;
+        return res.status(502).json({error:'Archive redirect changed during media fetch',proxyRequestId});
+      }
+      mediaResponse=await fetch(retryUrl,{method:'GET',redirect:'manual',headers:upstreamHeaders});
+    }
+
+    if(!mediaResponse.ok || mediaResponse.status < 200 || mediaResponse.status >= 300){
+      stats.failedRequests++;
+      return res.status(502).json({error:`Archive media returned HTTP \${mediaResponse.status}`,proxyRequestId});
+    }
+
+    const contentType=mediaResponse.headers.get('content-type');
+    const contentLength=mediaResponse.headers.get('content-length');
+    const contentRange=mediaResponse.headers.get('content-range');
+    const acceptRanges=mediaResponse.headers.get('accept-ranges');
+    if(contentType) res.setHeader('Content-Type',contentType);
+    if(contentLength) res.setHeader('Content-Length',contentLength);
+    if(contentRange) res.setHeader('Content-Range',contentRange);
+    if(acceptRanges) res.setHeader('Accept-Ranges',acceptRanges);
+    const etag=mediaResponse.headers.get('etag');
+    if(etag) res.setHeader('ETag',etag);
+    const lastModified=mediaResponse.headers.get('last-modified');
+    if(lastModified) res.setHeader('Last-Modified',lastModified);
 
     stats.successfulRequests++;
     res.setHeader('Cache-Control','no-store');
-    res.setHeader('X-AJN-Archive-Proxy','redirect-to-storage');
-    return res.redirect(302,redirectUrl);
+    res.setHeader('X-AJN-Archive-Proxy','stream-from-validated-storage');
+    res.status(mediaResponse.status);
+    if(mediaResponse.body){
+      const {Readable}=await import('node:stream');
+      return Readable.fromWeb(mediaResponse.body as any).pipe(res);
+    }
+    return res.end();
   }catch(err:any){
     stats.failedRequests++;
     console.error('[Archive Proxy Redirect Failure]',proxyRequestId,err?.message || String(err));
