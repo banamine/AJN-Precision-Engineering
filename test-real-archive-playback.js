@@ -68,17 +68,19 @@ try {
   const start = new Date(end.getTime() - 48 * 60 * 60 * 1000);
   const news = await searchTVNews({
     network: 'CNNW',
+    query: 'CNN_Newsroom_Live',
     startDate: start.toISOString().slice(0, 10),
     endDate: end.toISOString().slice(0, 10),
     rows: 25,
   });
-  assert.ok(news.items.length > 0, 'CNN Newsroom Live gate found no current-window items');
+  assert.ok(news.items.length > 0, 'CNN Newsroom Live gate found no current-window CNN Newsroom Live item');
 
   const newsCandidates = news.items
-    .map((item) => ({ item, timestamp: item.identifier.match(/^[A-Z0-9]+_(\d{8})_(\d{6})_/i) }))
-    .filter(({ timestamp }) => timestamp)
+    .map((item) => ({ item, timestamp: item.identifier.match(/^[A-Z0-9]+_(\\d{8})_(\\d{6})_/i) }))
+    .filter(({ item, timestamp }) => timestamp && /newsroom.?live/i.test(item.identifier))
     .sort((a, b) => `${b.timestamp[1]}T${b.timestamp[2]}`.localeCompare(`${a.timestamp[1]}T${a.timestamp[2]}`));
-  const cnnItem = (newsCandidates[0]?.item ?? news.items[0]);
+  const cnnItem = newsCandidates[0]?.item;
+  assert.ok(cnnItem, 'CNN Newsroom Live gate found no timestamped current-window CNN Newsroom Live identifier');
   const cnnResolved = await resolveBestFileUrl(cnnItem.identifier);
   assert.ok(cnnResolved.url, `CNN media could not be resolved for ${cnnItem.identifier}`);
   await waitForMedia(page, buildArchiveProxyUrl(proxyPathFromArchiveUrl(cnnResolved.url)), 'CNN Newsroom Live');
