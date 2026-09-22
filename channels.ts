@@ -618,21 +618,51 @@ async function verifyDeterministicTvNewsFallback(identifier: string): Promise<st
 }
 
 export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {
-  // TV News identifiers use a stable Archive.org MP4 naming convention. Keep
-  // schedule generation independent of slow metadata endpoints; the playback
-  // proxy remains the authoritative availability/format gate.
+  // TV News still uses metadata as the authoritative filename source. The
+  // deterministic filename is only the final fallback when Archive metadata is
+  // temporarily unavailable.
   if (TV_ID_RE.test(identifier)) {
+    try {
+      const data = await fetchArchiveMetadata(identifier);
+      const mediaFiles = (data.files ?? [])
+        .filter((file) => !isInternalFile(file.name))
+        .filter((file) => isBrowserPlayable(file.name))
+        .map((file) => ({
+          name: file.name,
+          size: parseSize(file.size),
+          duration: parseDuration(file.length),
+          format: file.format ?? file.name.split(".").pop() ?? "mp4",
+        }))
+        .sort((a, b) => b.size - a.size);
+
+      if (mediaFiles.length > 0) {
+        const best = mediaFiles[0];
+        const url = new URL(buildFileUrl(identifier, best.name));
+        url.searchParams.set("start", "0");
+        url.searchParams.set("end", String(NEWS_SLICE_SECONDS));
+        return {
+          url: url.toString(),
+          duration: best.duration || NEWS_DEFAULT_DURATION_SECONDS,
+          format: best.format,
+          fallback: false,
+        };
+      }
+    } catch (error) {
+      console.warn(`[Resolver] TV News metadata unavailable for ${identifier}; trying directory/deterministic fallback:`, error instanceof Error ? error.message : String(error));
+    }
+
     const discovered = await discoverTvNewsMediaFromDirectory(identifier);
     if (discovered) {
       const url = new URL(discovered);
-      url.searchParams.set('start', '0');
-      url.searchParams.set('end', String(NEWS_SLICE_SECONDS));
-      return { url: url.toString(), duration: NEWS_DEFAULT_DURATION_SECONDS, format: 'mp4', fallback: false };
+      url.searchParams.set("start", "0");
+      url.searchParams.set("end", String(NEWS_SLICE_SECONDS));
+      return { url: url.toString(), duration: NEWS_DEFAULT_DURATION_SECONDS, format: "mp4", fallback: false };
     }
+
     return {
       url: `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(identifier)}.mp4?start=0&end=${NEWS_SLICE_SECONDS}`,
       duration: NEWS_DEFAULT_DURATION_SECONDS,
-      format: 'mp4',
+      format: "mp4",
       fallback: true,
     };
   }
