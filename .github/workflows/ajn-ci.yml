@@ -14,12 +14,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Cache npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node20-npm-
       - name: Install dependencies
         run: npm install
       - name: TypeScript check
         run: npm run lint
 
   pure-regressions:
+    needs: lint
     name: Pure regression suite
     runs-on: ubuntu-latest
     steps:
@@ -49,6 +57,7 @@ jobs:
         run: npm run test:ajn-audio-canonical
 
   integration:
+    needs: [lint, pure-regressions]
     name: Build, server, playback, API, and visual regression
     runs-on: ubuntu-latest
     timeout-minutes: 30
