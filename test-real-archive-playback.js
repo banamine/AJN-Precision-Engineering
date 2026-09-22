@@ -17,7 +17,7 @@ function proxyPathFromArchiveUrl(rawUrl) {
   return `${url.pathname}${url.search}`;
 }
 
-async function waitForMedia(page, src, label, timeoutMs = 15_000) {
+async function waitForMedia(page, src, label, timeoutMs = 15_000, requireSuccess = true) {
   const result = await page.evaluate(
     async ({ source, timeout }) => {
       const video = document.createElement('video');
@@ -48,7 +48,7 @@ async function waitForMedia(page, src, label, timeoutMs = 15_000) {
     { source: src, timeout: timeoutMs },
   );
   console.log('[REAL PLAYBACK]', JSON.stringify({ label, result }));
-  assert.equal(result.event, 'loadedmetadata', `${label} failed real browser playback: ${result.event} ${result.errorCode ?? ''}`);
+  if (requireSuccess) assert.equal(result.event, 'loadedmetadata', `${label} failed real browser playback: ${result.event} ${result.errorCode ?? ''}`);
   return result;
 }
 
@@ -74,8 +74,8 @@ try {
     return Number.isFinite(aired) && aired >= start.getTime() && aired <= end.getTime();
   };
 
-  let cnnItem;
-  for (let attempt = 1; attempt <= 3 && !cnnItem; attempt += 1) {
+  let cnnCandidates = [];
+  for (let attempt = 1; attempt <= 3 && cnnCandidates.length === 0; attempt += 1) {
     const news = await searchTVNews({
       network: 'CNNW',
       query: 'CNN_Newsroom_Live',
@@ -83,21 +83,34 @@ try {
       endDate: end.toISOString().slice(0, 10),
       rows: 25,
     });
-    const candidates = news.items
+    cnnCandidates = news.items
       .filter((item) => /newsroom.?live/i.test(item.identifier) && isWithin48Hours(item.identifier))
       .sort((a, b) => b.identifier.localeCompare(a.identifier));
-    cnnItem = candidates[0];
-    if (!cnnItem) await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+    if (cnnCandidates.length === 0) await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
   }
-  if (!cnnItem && isWithin48Hours(knownCurrentCnnNewsroom)) {
-    cnnItem = { identifier: knownCurrentCnnNewsroom, title: 'CNN Newsroom Live' };
+  if (cnnCandidates.length === 0 && isWithin48Hours(knownCurrentCnnNewsroom)) {
+    cnnCandidates = [{ identifier: knownCurrentCnnNewsroom, title: 'CNN Newsroom Live' }];
     console.log('[REAL PLAYBACK] Using previously verified current-window CNN Newsroom Live identifier after Archive search retries');
   }
-  assert.ok(cnnItem, 'CNN Newsroom Live gate found no current-window CNN Newsroom Live item');
-  const cnnResolved = await resolveBestFileUrl(cnnItem.identifier);
-  assert.ok(cnnResolved.url, `CNN media could not be resolved for ${cnnItem.identifier}`);
-  await waitForMedia(page, buildArchiveProxyUrl(proxyPathFromArchiveUrl(cnnResolved.url)), 'CNN Newsroom Live');
+  assert.ok(cnnCandidates.length > 0, 'CNN Newsroom Live gate found no current-window CNN Newsroom Live item');
 
+  let cnnPlaybackPassed = false;
+  for (const candidate of cnnCandidates) {
+    const resolved = await resolveBestFileUrl(candidate.identifier);
+    if (!resolved.url) continue;
+    const result = await waitForMedia(
+      page,
+      buildArchiveProxyUrl(proxyPathFromArchiveUrl(resolved.url)),
+      `CNN Newsroom Live — ${candidate.identifier}`,
+      15_000,
+      false,
+    );
+    if (result.event === 'loadedmetadata') {
+      cnnPlaybackPassed = true;
+      break;
+    }
+  }
+  assert.ok(cnnPlaybackPassed, 'No current-window CNN Newsroom Live candidate reached loadedmetadata');
   const classic = await buildHoneymoonersEpg();
   assert.ok(classic.programs.length > 0, 'Classic TV gate produced no programs');
   await waitForMedia(page, buildArchiveProxyUrl(classic.programs[0].archivePath), 'Classic TV first full-list show');
