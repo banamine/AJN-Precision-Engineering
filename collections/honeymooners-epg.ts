@@ -149,7 +149,7 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
     endHour: assetIndex + 1,
     mediaType: 'video' as const,
     assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
-    mediaUrl: buildArchiveProxyUrl(asset.mediaUrl),
+    mediaUrl: asset.mediaUrl,
     archivePath: asset.archivePath,
     metadata: {
       externalId: asset.archiveIdentifier,
