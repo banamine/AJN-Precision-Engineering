@@ -82,7 +82,7 @@ async function resolveArchiveMediaRedirect(upstreamUrl:string):Promise<string|nu
   const target=new URL(location,upstreamUrl);
   if(target.protocol!=='https:') throw new Error('Archive redirect target must use HTTPS');
   const host=target.hostname.toLowerCase();
-  if(!(host==='archive.org' || /^ia\\d+\\.us\\.archive\\.org$/.test(host))){
+  if(!(host==='archive.org' || host.endsWith('.archive.org'))){
     throw new Error(`Archive redirect target rejected: ${target.hostname}`);
   }
   return target.toString();
