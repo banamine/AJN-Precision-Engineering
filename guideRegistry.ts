@@ -7,6 +7,7 @@ import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer'
 import { buildMoviesClassicsPrograms } from './src/services/producers/moviesClassicsProducer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
+import { buildArchiveProxyUrl } from './src/utils/archivePlayback';
 import { upsertCanonicalProgram, getCanonicalProgram, getCanonicalPrograms, sweepCanonicalPrograms } from './src/services/canonicalProgramRegistry';
 export { upsertCanonicalProgram, getCanonicalProgram, getCanonicalPrograms, sweepCanonicalPrograms } from './src/services/canonicalProgramRegistry';
 
@@ -187,7 +188,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
       const sourceId = normalizeSourceIdentity({ channelId: ch.id, url: p.archivePath, protocol: 'direct_archive' });
       const startTimeUtc = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const endTimeUtc = new Date().toISOString();
-      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
+      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:buildArchiveProxyUrl(p.archivePath), archivePath:p.archivePath, assetId, sourceId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
     })}));
   }
   if(guideId==='classic-tv'){
