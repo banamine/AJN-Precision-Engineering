@@ -33,7 +33,7 @@ const second = canonicalizeAjnAudioItems([
 assert(second[0].id === first[0].id, 'Stable audio item identity must survive transport token rotation');
 
 const later = canonicalizeAjnAudioItems([
-  { ...item, url: 'https://cdn.example.test/audio/hour-001.mp3?token=gamma', publishedAt: '2026-09-20T10:00:00Z' },
+  { ...item, url: 'https://cdn.example.test/audio/hour-001.mp3?token=gamma', publishedAt },
 ], 'hourly');
 
 assert(later[0].id === first[0].id, 'Repeated audio ingestion must preserve program identity across polling cycles');
