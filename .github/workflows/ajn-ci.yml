@@ -5,6 +5,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
@@ -28,15 +33,30 @@ jobs:
 
   pure-regressions:
     needs: lint
-    name: Pure regression suite
+    name: Build and pure regression suite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Cache npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node20-npm-
       - name: Install dependencies
         run: npm install
+      - name: Production build
+        run: npm run build
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ajn-production-dist
+          path: dist/
+          if-no-files-found: error
       - name: EPG identity regression
         run: npm run test:epg-identity
       - name: EPG producer identity regression
@@ -58,7 +78,7 @@ jobs:
 
   integration:
     needs: [lint, pure-regressions]
-    name: Build, server, playback, API, and visual regression
+    name: Server, playback, API, and visual regression
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -66,10 +86,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Cache npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node20-npm-
       - name: Install dependencies
         run: npm install
-      - name: Production build
-        run: npm run build
+      - name: Download production build
+        uses: actions/download-artifact@v4
+        with:
+          name: ajn-production-dist
+          path: dist/
+      - name: Verify downloaded production build
+        run: test -f dist/server.cjs && test -f dist/index.html
       - name: Start application server
         run: |
           node dist/server.cjs > /tmp/ajn-server.log 2>&1 &
@@ -98,8 +130,9 @@ jobs:
               echo "PASS: /api/ajn/$endpoint returned HTTP 200"
             elif [ "$code" = "403" ] && { [ "$endpoint" = "audio/hourly" ] || [ "$endpoint" = "audio/segment" ]; }; then
               echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403; this is recorded as an upstream availability warning."
-            elif [ "$code" = "502" ] && grep -Eq '"error":"AJN audio index (hourly|segment) returned HTTP 403"' "/tmp/ajn-\${safe_name}.json"; then
+            elif [ "$code" = "502" ] && grep -Eq '"error":"AJN audio index (hourly|segment) returned HTTP 403"' "/tmp/ajn-${safe_name}.json"; then
               echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403; endpoint translated the known upstream restriction to HTTP 502."
+            
             else
               echo "FAILED: /api/ajn/$endpoint returned HTTP $code"
               cat "/tmp/ajn-${safe_name}.json" || true
