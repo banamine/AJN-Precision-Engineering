@@ -743,7 +743,7 @@ export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
   });
 
   const coreChannelsReady = channels
-    .filter((channel) => channel.id !== 'ntd-news')
+    .filter((channel) => channel.id !== 'ntd')
     .every((channel) => channel.programs.length > 0);
   if (coreChannelsReady) {
     _cache = {
