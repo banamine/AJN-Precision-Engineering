@@ -550,7 +550,7 @@ async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadata
   let lastError: unknown = new Error("Archive.org metadata request failed");
   for (let attempt = 1; attempt <= METADATA_RETRIES; attempt++) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 20000);
     try {
       const response = await fetch(metadataUrl, { signal: controller.signal, headers: { "User-Agent": "AJN-Precision-Engineering/1.0", Accept: "application/json" } });
       if (!response.ok) throw new Error("Archive.org metadata request failed: HTTP " + response.status);
@@ -745,60 +745,59 @@ async function itemsToProgramBlocks(items: TVNewsItem[]): Promise<ScheduleProgra
       archivePath,
     }));
 }
+let _inFlightSchedule: Promise<ScheduleChannel[]> | null = null;
+
 export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
-  if (_cache && Date.now() < _cache.expiresAt) {
-    return _cache.data;
-  }
+  if (_cache && Date.now() < _cache.expiresAt) return _cache.data;
+  if (_inFlightSchedule) return _inFlightSchedule;
 
-  const results = await Promise.allSettled(
-    NETWORK_CHANNELS.map(async (config) => {
-      const { items } = await searchTVNews({
-        network: config.network,
-        rows: NEWS_TARGET_ITEMS,
-      });
+  _inFlightSchedule = (async () => {
+    const results = await Promise.allSettled(
+      NETWORK_CHANNELS.map(async (config) => {
+        const { items } = await searchTVNews({
+          network: config.network,
+          rows: NEWS_TARGET_ITEMS,
+        });
 
-      return {
-        id: config.id,
-        name: config.displayName,
-        programs: await itemsToProgramBlocks(items),
-      };
-    }),
-  );
-
-  const channels: ScheduleChannel[] = [];
-
-  results.forEach((result, index) => {
-    const config = NETWORK_CHANNELS[index];
-
-    if (result.status === "fulfilled") {
-      channels.push(result.value);
-      return;
-    }
-
-    console.warn(
-      `[channels] Failed to fetch schedule for ${config.displayName}:`,
-      result.reason instanceof Error ? result.reason.message : result.reason,
+        return {
+          id: config.id,
+          name: config.displayName,
+          programs: await itemsToProgramBlocks(items),
+        };
+      }),
     );
 
-    channels.push({
-      id: config.id,
-      name: config.displayName,
-      programs: [],
+    const channels: ScheduleChannel[] = [];
+    results.forEach((result, index) => {
+      const config = NETWORK_CHANNELS[index];
+      if (result.status === "fulfilled") {
+        channels.push(result.value);
+        return;
+      }
+      console.warn(
+        `[channels] Failed to fetch schedule for ${config.displayName}:`,
+        result.reason instanceof Error ? result.reason.message : result.reason,
+      );
+      channels.push({ id: config.id, name: config.displayName, programs: [] });
     });
-  });
 
-  const coreChannelsReady = channels
-    .filter((channel) => channel.id !== 'ntd')
-    .every((channel) => channel.programs.length > 0);
-  if (coreChannelsReady) {
-    _cache = {
-      data: channels,
-      expiresAt: Date.now() + CACHE_TTL_MS,
-    };
-  } else {
-    console.warn('[channels] schedule contains an unavailable core news channel; not caching partial/empty schedule');
-    _cache = null;
+    const coreChannelsReady = channels
+      .filter((channel) => channel.id !== 'ntd')
+      .every((channel) => channel.programs.length > 0);
+
+    if (coreChannelsReady) {
+      _cache = { data: channels, expiresAt: Date.now() + CACHE_TTL_MS };
+    } else {
+      console.warn('[channels] schedule contains an unavailable core news channel; not caching partial/empty schedule');
+      _cache = null;
+    }
+
+    return channels;
+  })();
+
+  try {
+    return await _inFlightSchedule;
+  } finally {
+    _inFlightSchedule = null;
   }
-
-  return channels;
 }
