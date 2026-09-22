@@ -88,6 +88,7 @@ function validateArchiveRedirect(target:URL):void{
 
 async function resolveArchiveMediaRedirect(initialUrl:string,maxRedirects=5):Promise<string|null>{
   let currentUrl=new URL(initialUrl);
+  validateArchiveRedirect(currentUrl);
 
   for(let redirectCount=0; redirectCount<maxRedirects; redirectCount++){
     const response=await fetch(currentUrl,{
@@ -98,6 +99,10 @@ async function resolveArchiveMediaRedirect(initialUrl:string,maxRedirects=5):Pro
         Accept:'*/*',
       },
     });
+
+    if(response.status >= 200 && response.status < 300){
+      return currentUrl.toString();
+    }
 
     if(!REDIRECT_STATUSES.has(response.status)) return null;
 
