@@ -11,6 +11,7 @@ export interface HoneymoonersResolvedAsset {
   title: string;
   archiveIdentifier: string;
   mediaUrl: string;
+  archivePath: string;
   durationSeconds: number;
   quality: string;
 }
@@ -70,7 +71,8 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
         id: `asset-${item.id}`,
         title: item.title,
         archiveIdentifier: item.archiveIdentifier,
-        mediaUrl: `/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`,
+        archivePath: `/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`,
+        mediaUrl: buildArchiveProxyUrl(`/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`),
         durationSeconds: duration,
         quality: quality(selected.name, selected.file),
       });
@@ -82,6 +84,24 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
 
 export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolvedAsset[]) {
   const assets = resolvedAssets ?? await resolveHoneymoonersAssets();
+  const fullShowList: Program[] = assets.map((asset, index) => ({
+    id: normalizeProgramIdentity({ externalId: asset.archiveIdentifier, channelId: HONEYMOONERS_CHANNEL_ID, title: asset.title, startTime: index }),
+    guideId: 'classic-tv',
+    channelId: HONEYMOONERS_CHANNEL_ID,
+    title: asset.title,
+    description: `Archive.org collection item: ${asset.archiveIdentifier}`,
+    startTime: index,
+    endTime: index + 1,
+    startTimeUtc: new Date(Date.now()).toISOString(),
+    endTimeUtc: new Date(Date.now() + asset.durationSeconds * 1000).toISOString(),
+    startHour: index,
+    endHour: index + 1,
+    mediaType: 'video',
+    assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.archivePath }),
+    mediaUrl: asset.mediaUrl,
+    archivePath: asset.archivePath,
+    metadata: { externalId: asset.archiveIdentifier, archiveIdentifier: asset.archiveIdentifier, quality: asset.quality, durationSeconds: asset.durationSeconds, collectionId: 'honeymooners' },
+  }));
   const secondsInDay = 24 * 3600;
   const now = new Date();
   const dayStart = new Date(now);
