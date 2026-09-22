@@ -133,7 +133,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
   }
 
   try{
-    const upstreamUrl=`\${ARCHIVE_BASE}\${v.cleanPath}`;
+    const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
     const resolvedUrl=await resolveArchiveMediaRedirect(upstreamUrl);
     if(!resolvedUrl){
       stats.failedRequests++;
@@ -156,7 +156,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
 
     if(!mediaResponse.ok || mediaResponse.status < 200 || mediaResponse.status >= 300){
       stats.failedRequests++;
-      return res.status(502).json({error:`Archive media returned HTTP \${mediaResponse.status}`,proxyRequestId});
+      return res.status(502).json({error:`Archive media returned HTTP ${mediaResponse.status}`,proxyRequestId});
     }
 
     const contentType=mediaResponse.headers.get('content-type');
