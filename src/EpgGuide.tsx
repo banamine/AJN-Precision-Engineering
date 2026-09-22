@@ -71,7 +71,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
   }, [nowHour, guideId]);
 
   const hourMarkers = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
-  const showList = useMemo(() => channels?.flatMap((channel) => channel.programs.map((program) => ({ channel, program }))) ?? [], [channels]);
+  const showList = useMemo(() => channels?.flatMap((channel) => (channel.fullShowList ?? channel.programs).map((program) => ({ channel, program }))) ?? [], [channels]);
   const nowLeftPx = (nowHour / 24) * TIMELINE_WIDTH_PX;
 
   if (fetchError) {
