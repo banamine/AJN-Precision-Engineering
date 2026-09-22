@@ -84,7 +84,7 @@ async function waitForMedia(page, src, label) {
   assert.ok(movieChannel.programs.every((program) => program.mediaUrl?.startsWith('/api/archive/proxy?path=')),
     'Movies & Cinema Classics contains non-proxied media');
 
-  const movieCandidates = movieChannel.programs.slice(0, 8);
+  const movieCandidates = movieChannel.programs;
   assert.ok(movieCandidates.length >= 2, 'Movies & Cinema Classics has fewer than two candidates');
 
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -99,7 +99,7 @@ async function waitForMedia(page, src, label) {
     await waitForMedia(page, classicChannel.fullShowList[0].mediaUrl, 'Classic TV first full-list show');
     const playableMovies = [];
     for (const candidate of movieCandidates) {
-      const result = await probeMedia(page, candidate.mediaUrl, `Movies & Cinema Classics — ${candidate.title}`, 10000);
+      const result = await probeMedia(page, candidate.mediaUrl, `Movies & Cinema Classics — ${candidate.title}`, 5000);
       console.log('[REAL MOVIE PLAYBACK]', JSON.stringify({ title: candidate.title, archivePath: candidate.archivePath, result }));
       if (result.event === 'loadedmetadata') playableMovies.push(candidate);
       if (playableMovies.length >= 2) break;
