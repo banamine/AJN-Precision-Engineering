@@ -580,6 +580,18 @@ async function verifyDeterministicTvNewsFallback(identifier: string): Promise<st
 }
 
 export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {
+  // TV News identifiers use a stable Archive.org MP4 naming convention. Keep
+  // schedule generation independent of slow metadata endpoints; the playback
+  // proxy remains the authoritative availability/format gate.
+  if (TV_ID_RE.test(identifier)) {
+    return {
+      url: `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(identifier)}.mp4?start=0&end=${TV_NEWS_SLICE_SEC}`,
+      duration: TV_NEWS_TOTAL_SEC,
+      format: 'mp4',
+      fallback: true,
+    };
+  }
+
   const verifiedFallback = await verifyDeterministicTvNewsFallback(identifier);
   if (verifiedFallback) {
     return { url: verifiedFallback, duration: 0, format: "mp4", fallback: true };
@@ -730,10 +742,18 @@ export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
     });
   });
 
-  _cache = {
-    data: channels,
-    expiresAt: Date.now() + CACHE_TTL_MS,
-  };
+  const coreChannelsReady = channels
+    .filter((channel) => channel.id !== 'ntd-news')
+    .every((channel) => channel.programs.length > 0);
+  if (coreChannelsReady) {
+    _cache = {
+      data: channels,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    };
+  } else {
+    console.warn('[channels] schedule contains an unavailable core news channel; not caching partial/empty schedule');
+    _cache = null;
+  }
 
   return channels;
 }
