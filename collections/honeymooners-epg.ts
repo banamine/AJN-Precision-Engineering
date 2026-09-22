@@ -1,5 +1,6 @@
 import { Program } from '../src/types';
 import { normalizeProgramIdentity, normalizeAssetIdentity } from '../src/utils/epgIdentity';
+import { buildArchiveProxyUrl } from '../src/utils/archivePlayback';
 import { HONEYMOONERS_COLLECTION, HONEYMOONERS_CHANNEL_ID, HONEYMOONERS_CHANNEL_NAME } from './honeymooners-collection';
 
 const ARCHIVE_BASE = 'https://archive.org';
@@ -111,7 +112,7 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
       endHour: endSecond / 3600,
       mediaType: 'video',
       assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
-      mediaUrl: asset.mediaUrl,
+      mediaUrl: buildArchiveProxyUrl(asset.mediaUrl),
       archivePath: asset.mediaUrl,
       metadata: {
         externalId: asset.archiveIdentifier,
@@ -127,6 +128,36 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
     if (asset.durationSeconds <= 0) break;
   }
 
+  const fullShowList: Program[] = assets.map((asset, assetIndex) => ({
+    id: normalizeProgramIdentity({
+      externalId: `${asset.archiveIdentifier}|full-list`,
+      channelId: HONEYMOONERS_CHANNEL_ID,
+      title: asset.title,
+      startTime: assetIndex,
+    }),
+    guideId: 'classic-tv',
+    channelId: HONEYMOONERS_CHANNEL_ID,
+    title: asset.title,
+    description: `Archive.org collection item: ${asset.archiveIdentifier}`,
+    startTime: assetIndex,
+    endTime: assetIndex + 1,
+    startTimeUtc: new Date().toISOString(),
+    endTimeUtc: new Date().toISOString(),
+    startHour: assetIndex,
+    endHour: assetIndex + 1,
+    mediaType: 'video' as const,
+    assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
+    mediaUrl: buildArchiveProxyUrl(asset.mediaUrl),
+    archivePath: asset.mediaUrl,
+    metadata: {
+      externalId: asset.archiveIdentifier,
+      archiveIdentifier: asset.archiveIdentifier,
+      quality: asset.quality,
+      durationSeconds: asset.durationSeconds,
+      collectionId: 'honeymooners',
+      fullShowList: true,
+    },
+  }));
   return {
     id: HONEYMOONERS_CHANNEL_ID,
     guideId: 'classic-tv',
@@ -134,6 +165,7 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
     mediaType: 'video' as const,
     group: 'Classic TV',
     programs,
+    fullShowList,
     assetCount: assets.length,
     manifestItemCount: HONEYMOONERS_COLLECTION.length,
   };
