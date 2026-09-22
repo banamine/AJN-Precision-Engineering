@@ -11,6 +11,7 @@ jobs:
   verify:
     name: Lint, build, playback, and audio bridge tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -34,13 +35,16 @@ jobs:
         run: |
           node dist/server.cjs > /tmp/ajn-server.log 2>&1 &
           echo $! > /tmp/ajn-server.pid
-          for i in {1..30}; do
-            if curl --fail --silent --show-error http://localhost:3000/api/health > /tmp/ajn-health.json; then
-              echo "AJN server is healthy"
+          for i in {1..40}; do
+            if curl --fail --silent --show-error --max-time 5 http://localhost:3000/api/health > /tmp/ajn-health.json; then
+              echo "AJN server is healthy after $i attempt(s)"
               cat /tmp/ajn-health.json
               exit 0
             fi
-            sleep 1
+            delay=$((i / 10 + 1))
+            [ "$delay" -gt 5 ] && delay=5
+            echo "Health check attempt $i/40 failed; retrying in ${delay}s"
+            sleep "$delay"
           done
           echo "AJN server failed to become healthy"
           cat /tmp/ajn-server.log
@@ -48,10 +52,21 @@ jobs:
 
       - name: AJN radio resource smoke
         run: |
-          set +e
+          set -euo pipefail
+          FAILED=0
           for endpoint in resources audio/hourly audio/segment; do
+            safe_name="$(echo "$endpoint" | tr / -)"
             echo "=== /api/ajn/$endpoint ==="
-            curl --silent --show-error --dump-header /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).headers               --output /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).json               --write-out 'HTTP %{http_code}\n'               "http://localhost:3000/api/ajn/$endpoint"
+            code="$(curl --silent --show-error --max-time 15 \
+              --dump-header "/tmp/ajn-${safe_name}.headers" \
+              --output "/tmp/ajn-${safe_name}.json" \
+              --write-out '%{http_code}' \
+              "http://localhost:3000/api/ajn/$endpoint")"
+            echo "HTTP $code"
+            if [ "$code" != "200" ]; then
+              echo "FAILED: /api/ajn/$endpoint returned HTTP $code"
+              FAILED=1
+            fi
           done
           echo "=== resource payloads ==="
           for file in /tmp/ajn-resources.json /tmp/ajn-audio-hourly.json /tmp/ajn-audio-segment.json; do
@@ -59,37 +74,45 @@ jobs:
             cat "$file" 2>/dev/null || true
             echo
           done
-          exit 0
+          [ "$FAILED" -eq 0 ]
       - name: Existing playback regression
+        timeout-minutes: 5
         run: npm test
         env:
           AJN_TEST_URL: http://localhost:3000
 
-      - name: Dump server log after playback regression
-        if: failure()
+      - name: Capture server log after playback regression
+        if: always()
         run: |
           echo "=== AJN server log ==="
           cat /tmp/ajn-server.log || true
 
       - name: EPG identity regression
+        timeout-minutes: 5
         run: npm run test:epg-identity
 
       - name: EPG producer identity regression
+        timeout-minutes: 5
         run: npm run test:epg-identity-producers
 
       - name: Classic TV canonical identity regression
+        timeout-minutes: 5
         run: npm run test:classic-tv-canonical
 
       - name: Library integrity regression
+        timeout-minutes: 5
         run: npm run test:library-integrity
 
       - name: Nova canonical regression
+        timeout-minutes: 5
         run: npm run test:nova-canonical
 
       - name: Movies Classics producer regression
+        timeout-minutes: 5
         run: npm run test:movies-classics-producer
 
       - name: Movies Classics integration regression
+        timeout-minutes: 5
         run: npm run test:movies-classics
 
       - name: Real Archive playback gates
@@ -98,30 +121,43 @@ jobs:
           AJN_TEST_URL: http://localhost:3000
 
       - name: AJN RSS canonical regression
+        timeout-minutes: 5
         run: npm run test:ajn-rss-canonical
 
       - name: AJN audio canonical regression
+        timeout-minutes: 5
         run: npm run test:ajn-audio-canonical
 
       - name: API contract regression
+        timeout-minutes: 5
         run: npm run test:api-contract
 
       - name: Accessibility regression
+        timeout-minutes: 5
         run: npm run test:accessibility
 
       - name: Audio/video switch regression
+        timeout-minutes: 5
         run: npm run test:audio-video-switch
 
       - name: Audio bridge browser regression
+        timeout-minutes: 5
         run: npm run test:audio
 
       - name: AudioContext singleton regression
+        timeout-minutes: 5
         run: npm run test:audio-singleton
 
       - name: Browser journey regression
+        timeout-minutes: 5
         run: npm run test:browser-journeys
 
+      - name: Real Archive playback gates
+        timeout-minutes: 10
+        run: npm run test:real-archive-playback
+
       - name: Visual regression screenshots
+        timeout-minutes: 10
         run: |
           mkdir -p /tmp/ajn-visual
           node <<'NODE'
