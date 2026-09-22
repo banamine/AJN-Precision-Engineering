@@ -193,7 +193,7 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))}];
+    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program)), fullShowList:honeymooners.fullShowList.map((program) => upsertCanonicalProgram(program))}];
   }
   if(guideId==='movies-classics-vault'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');
