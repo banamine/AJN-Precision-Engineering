@@ -70,23 +70,48 @@ function parseRangeHeader(header:string|undefined):ByteRange|null {
   return {start,end:requestedEnd};
 }
 
-async function resolveArchiveMediaRedirect(upstreamUrl:string):Promise<string|null>{
-  const response=await fetch(upstreamUrl,{
-    method:'GET',
-    redirect:'manual',
-    headers:{'User-Agent':'AJN-Precision-Engineering/1.0','Accept':'*/*'},
-  });
-  if(![301,302,303,307,308].includes(response.status)) return null;
-  const location=response.headers.get('location');
-  if(!location) return null;
-  const target=new URL(location,upstreamUrl);
-  if(target.protocol!=='https:') throw new Error('Archive redirect target must use HTTPS');
-  const host=target.hostname.toLowerCase();
-  if(!(host==='archive.org' || host.endsWith('.archive.org'))){
-    throw new Error(`Archive redirect target rejected: ${target.hostname}`);
-  }
-  return target.toString();
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+function isAllowedArchiveHost(hostname:string):boolean{
+  const host=hostname.toLowerCase();
+  return host === 'archive.org' || host.endsWith('.archive.org');
 }
+
+function validateArchiveRedirect(target:URL):void{
+  if(target.protocol !== 'https:'){
+    throw new Error('Archive redirect rejected: HTTPS is required');
+  }
+  if(!isAllowedArchiveHost(target.hostname)){
+    throw new Error(`Archive redirect rejected: ${target.hostname}`);
+  }
+}
+
+async function resolveArchiveMediaRedirect(initialUrl:string,maxRedirects=5):Promise<string|null>{
+  let currentUrl=new URL(initialUrl);
+
+  for(let redirectCount=0; redirectCount<maxRedirects; redirectCount++){
+    const response=await fetch(currentUrl,{
+      method:'GET',
+      redirect:'manual',
+      headers:{
+        'User-Agent':'AJN-Media-Console/ArchiveProxy',
+        Accept:'*/*',
+      },
+    });
+
+    if(!REDIRECT_STATUSES.has(response.status)) return null;
+
+    const location=response.headers.get('location');
+    if(!location) return null;
+
+    const nextUrl=new URL(location,currentUrl);
+    validateArchiveRedirect(nextUrl);
+    currentUrl=nextUrl;
+  }
+
+  throw new Error('Archive redirect chain exceeded limit');
+}
+
 
 app.get('/api/archive/proxy', async (req,res)=>{
   stats.totalRequests++;
