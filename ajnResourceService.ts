@@ -51,8 +51,8 @@ export interface AjnFeedItem {
 
 const BASE = 'https://rss.alexjones.media';
 const AUDIO_INDEX_FETCH_URLS: Record<AjnAudioIndex['kind'], string> = {
-  hourly: 'https://www.alexjoneslive.com/affiliates/mp3-hourly/',
-  segment: 'https://www.alexjoneslive.com/affiliates/mp3-segs/',
+  hourly: `${BASE}/mp3-hourly.html`,
+  segment: `${BASE}/mp3-segs.html`,
 };
 const RESOURCES: AjnResourceLink[] = [
   { id: 'Alex', name: 'The Alex Jones Show', mediaType: 'video', htmlUrl: `${BASE}/Alex.html`, rssUrl: `${BASE}/Alex.xml` },
