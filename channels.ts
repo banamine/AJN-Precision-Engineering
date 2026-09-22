@@ -660,9 +660,9 @@ export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFi
     }
 
     return {
-      url: `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(identifier)}.mp4?start=0&end=${NEWS_SLICE_SECONDS}`,
-      duration: NEWS_DEFAULT_DURATION_SECONDS,
-      format: "mp4",
+      url: "",
+      duration: 0,
+      format: "",
       fallback: true,
     };
   }
