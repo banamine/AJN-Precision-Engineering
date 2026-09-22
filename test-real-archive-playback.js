@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json' with { type: 'json' };
-import { searchTVNews, resolveBestFileUrl, getSafeArchiveUrl } from './channels.ts';
+import { searchTVNews, resolveArchiveMediaCandidates, getSafeArchiveUrl } from './channels.ts';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg.ts';
 import {
   buildMoviesClassicsFromVerified,
@@ -107,19 +107,22 @@ try {
 
   let cnnPlaybackPassed = false;
   for (const candidate of cnnCandidates) {
-    const resolved = await resolveBestFileUrl(candidate.identifier);
-    if (!resolved.url) continue;
-    const result = await waitForMedia(
-      page,
-      buildArchiveProxyUrl(proxyPathFromArchiveUrl(resolved.url)),
-      `CNN Newsroom Live — ${candidate.identifier}`,
-      15_000,
-      false,
-    );
-    if (result.event === 'loadedmetadata') {
-      cnnPlaybackPassed = true;
-      break;
+    const mediaCandidates = await resolveArchiveMediaCandidates(candidate.identifier);
+    console.log(`[CNN Resolver] ${candidate.identifier}: ${mediaCandidates.length} browser-playable media candidates`);
+    for (const resolved of mediaCandidates) {
+      const result = await waitForMedia(
+        page,
+        buildArchiveProxyUrl(proxyPathFromArchiveUrl(resolved.url)),
+        `CNN Newsroom Live — ${candidate.identifier} — ${resolved.filename}`,
+        15_000,
+        false,
+      );
+      if (result.event === 'loadedmetadata') {
+        cnnPlaybackPassed = true;
+        break;
+      }
     }
+    if (cnnPlaybackPassed) break;
   }
   assert.ok(cnnPlaybackPassed, 'No current-window CNN Newsroom Live candidate reached loadedmetadata');
   const classic = await buildHoneymoonersEpg();
