@@ -192,7 +192,7 @@ jobs:
         with:
           name: ajn-visual-regression-recently-played
           path: /tmp/ajn-visual/
-          if-no-files-found: error
+          if-no-files-found: ignore
 
       - name: Stop application server
         if: always()
