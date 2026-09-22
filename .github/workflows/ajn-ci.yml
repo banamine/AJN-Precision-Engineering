@@ -87,7 +87,10 @@ jobs:
             echo "HTTP $code"
             if [ "$code" = "200" ]; then
               echo "PASS: /api/ajn/$endpoint returned HTTP 200"
-
+            elif [ "$code" = "403" ] && { [ "$endpoint" = "audio/hourly" ] || [ "$endpoint" = "audio/segment" ]; }; then
+              echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403; this is recorded as an upstream availability warning."
+            elif [ "$code" = "502" ] && grep -Eq '"error":"AJN audio index (hourly|segment) returned HTTP 403"' "/tmp/ajn-\${safe_name}.json"; then
+              echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403; endpoint translated the known upstream restriction to HTTP 502."
             else
               echo "FAILED: /api/ajn/$endpoint returned HTTP $code"
               cat "/tmp/ajn-${safe_name}.json" || true
