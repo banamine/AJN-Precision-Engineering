@@ -92,6 +92,11 @@ jobs:
       - name: Movies Classics integration regression
         run: npm run test:movies-classics
 
+      - name: Real Archive playback gates
+        run: npm run test:real-archive-playback
+        env:
+          AJN_TEST_URL: http://localhost:3000
+
       - name: AJN RSS canonical regression
         run: npm run test:ajn-rss-canonical
 
