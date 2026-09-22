@@ -1,35 +1,66 @@
 name: AJN Application CI
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
-
 jobs:
-  verify:
-    name: Lint, build, playback, and audio bridge tests
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Install dependencies
         run: npm install
-
       - name: TypeScript check
         run: npm run lint
 
+  pure-regressions:
+    name: Pure regression suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: EPG identity regression
+        run: npm run test:epg-identity
+      - name: EPG producer identity regression
+        run: npm run test:epg-identity-producers
+      - name: Classic TV canonical identity regression
+        run: npm run test:classic-tv-canonical
+      - name: Library integrity regression
+        run: npm run test:library-integrity
+      - name: Nova canonical regression
+        run: npm run test:nova-canonical
+      - name: Movies Classics producer regression
+        run: npm run test:movies-classics-producer
+      - name: Movies Classics integration regression
+        run: npm run test:movies-classics
+      - name: AJN RSS canonical regression
+        run: npm run test:ajn-rss-canonical
+      - name: AJN audio canonical regression
+        run: npm run test:ajn-audio-canonical
+
+  integration:
+    name: Build, server, playback, API, and visual regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
       - name: Production build
         run: npm run build
-
       - name: Start application server
         run: |
           node dist/server.cjs > /tmp/ajn-server.log 2>&1 &
@@ -45,78 +76,59 @@ jobs:
           echo "AJN server failed to become healthy"
           cat /tmp/ajn-server.log
           exit 1
-
       - name: AJN radio resource smoke
         run: |
-          set +e
+          set -euo pipefail
+          FAILED=0
           for endpoint in resources audio/hourly audio/segment; do
+            safe_name="$(echo "$endpoint" | tr / -)"
             echo "=== /api/ajn/$endpoint ==="
-            curl --silent --show-error --dump-header /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).headers               --output /tmp/ajn-$([ "$endpoint" = resources ] && echo resources || echo "$endpoint" | tr / -).json               --write-out 'HTTP %{http_code}\n'               "http://localhost:3000/api/ajn/$endpoint"
+            code="$(curl --silent --show-error --max-time 15               --dump-header "/tmp/ajn-\${safe_name}.headers"               --output "/tmp/ajn-\${safe_name}.json"               --write-out '%{http_code}'               "http://localhost:3000/api/ajn/$endpoint")"
+            echo "HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "PASS: /api/ajn/$endpoint returned HTTP 200"
+
+            else
+              echo "FAILED: /api/ajn/$endpoint returned HTTP $code"
+              cat "/tmp/ajn-\${safe_name}.json" || true
+              FAILED=1
+            fi
           done
-          echo "=== resource payloads ==="
-          for file in /tmp/ajn-resources.json /tmp/ajn-audio-hourly.json /tmp/ajn-audio-segment.json; do
-            echo "--- $file ---"
-            cat "$file" 2>/dev/null || true
-            echo
-          done
-          exit 0
+          [ "$FAILED" -eq 0 ]
       - name: Existing playback regression
         run: npm test
         env:
           AJN_TEST_URL: http://localhost:3000
-
-      - name: Dump server log after playback regression
-        if: failure()
-        run: |
-          echo "=== AJN server log ==="
-          cat /tmp/ajn-server.log || true
-
-      - name: EPG identity regression
-        run: npm run test:epg-identity
-
-      - name: EPG producer identity regression
-        run: npm run test:epg-identity-producers
-
-      - name: Classic TV canonical identity regression
-        run: npm run test:classic-tv-canonical
-
-      - name: Library integrity regression
-        run: npm run test:library-integrity
-
-      - name: Nova canonical regression
-        run: npm run test:nova-canonical
-
-      - name: Movies Classics producer regression
-        run: npm run test:movies-classics-producer
-
-      - name: Movies Classics integration regression
-        run: npm run test:movies-classics
-
-      - name: AJN RSS canonical regression
-        run: npm run test:ajn-rss-canonical
-
-      - name: AJN audio canonical regression
-        run: npm run test:ajn-audio-canonical
-
       - name: API contract regression
         run: npm run test:api-contract
-
+        env:
+          AJN_TEST_URL: http://localhost:3000
       - name: Accessibility regression
         run: npm run test:accessibility
-
+        env:
+          AJN_TEST_URL: http://localhost:3000
       - name: Audio/video switch regression
         run: npm run test:audio-video-switch
-
+        env:
+          AJN_TEST_URL: http://localhost:3000
       - name: Audio bridge browser regression
         run: npm run test:audio
-
+        env:
+          AJN_TEST_URL: http://localhost:3000
       - name: AudioContext singleton regression
         run: npm run test:audio-singleton
-
+        env:
+          AJN_TEST_URL: http://localhost:3000
       - name: Browser journey regression
         run: npm run test:browser-journeys
-
+        env:
+          AJN_TEST_URL: http://localhost:3000
+      - name: Real Archive playback gates
+        run: npm run test:real-archive-playback
+        env:
+          AJN_TEST_URL: http://localhost:3000
       - name: Visual regression screenshots
+        if: always()
         run: |
           mkdir -p /tmp/ajn-visual
           node <<'NODE'
@@ -126,40 +138,23 @@ jobs:
             try {
               const page = await browser.newPage();
               await page.setViewport({ width: 1360, height: 768 });
-              for (const [name, hash] of [
-                ['home', ''],
-                ['library', '#library'],
-                ['guide', '#tv-guide'],
-                ['search', '#search'],
-                ['player', '#player'],
-              ]) {
+              for (const [name, hash] of [['home',''],['library','#library'],['guide','#tv-guide'],['search','#search'],['player','#player']]) {
                 await page.goto(`http://localhost:3000/${hash}`, { waitUntil: 'networkidle0', timeout: 30000 });
                 await page.screenshot({ path: `/tmp/ajn-visual/${name}.png`, fullPage: true });
               }
-            } finally {
-              await browser.close();
-            }
-          })().catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
+            } finally { await browser.close(); }
+          })().catch((error) => { console.error(error); process.exit(1); });
           NODE
-
       - name: Upload visual regression screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ajn-visual-regression-recently-played
           path: /tmp/ajn-visual/
-          if-no-files-found: error
-
+          if-no-files-found: ignore
+      - name: Capture server log
+        if: always()
+        run: cat /tmp/ajn-server.log || true
       - name: Stop application server
         if: always()
-        run: |
-          if [ -f /tmp/ajn-server.pid ]; then
-            kill "$(cat /tmp/ajn-server.pid)" || true
-          fi
-          if [ -f /tmp/ajn-server.log ]; then
-            echo "--- AJN server log ---"
-            cat /tmp/ajn-server.log
-          fi
+        run: if [ -f /tmp/ajn-server.pid ]; then kill "$(cat /tmp/ajn-server.pid)" || true; fi
