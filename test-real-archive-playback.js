@@ -74,6 +74,17 @@ try {
     return Number.isFinite(aired) && aired >= start.getTime() && aired <= end.getTime();
   };
 
+  const verifiedCandidates = await validateMoviesClassicsPrograms(moviesClassicsManifest, page);
+  assert.ok(
+    verifiedCandidates.length >= 2,
+    `Fewer than two verified Movies & Cinema Classics programs: only ${verifiedCandidates.length} passed real browser validation`,
+  );
+
+  const verifiedPrograms = buildMoviesClassicsFromVerified(verifiedCandidates);
+  assert.equal(verifiedPrograms.length, verifiedCandidates.length);
+  assert.ok(verifiedPrograms.every((program) => program.mediaUrl.startsWith('/api/archive/proxy?path=')));
+
+
   let cnnCandidates = [];
   for (let attempt = 1; attempt <= 3 && cnnCandidates.length === 0; attempt += 1) {
     const news = await searchTVNews({
@@ -114,16 +125,6 @@ try {
   const classic = await buildHoneymoonersEpg();
   assert.ok(classic.programs.length > 0, 'Classic TV gate produced no programs');
   await waitForMedia(page, buildArchiveProxyUrl(classic.programs[0].archivePath), 'Classic TV first full-list show');
-
-  const verifiedCandidates = await validateMoviesClassicsPrograms(moviesClassicsManifest, page);
-  assert.ok(
-    verifiedCandidates.length >= 2,
-    `Fewer than two verified Movies & Cinema Classics programs: only ${verifiedCandidates.length} passed real browser validation`,
-  );
-
-  const verifiedPrograms = buildMoviesClassicsFromVerified(verifiedCandidates);
-  assert.equal(verifiedPrograms.length, verifiedCandidates.length);
-  assert.ok(verifiedPrograms.every((program) => program.mediaUrl.startsWith('/api/archive/proxy?path=')));
 
   console.log(`[Real Archive Playback Gates] Verified catalog has ${verifiedPrograms.length} playable programs`);
   console.log('REAL ARCHIVE PLAYBACK GATES PASSED');
