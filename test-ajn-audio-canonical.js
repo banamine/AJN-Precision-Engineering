@@ -5,12 +5,14 @@ function assert(condition, message) { if (!condition) throw new Error(message); 
 
 console.log('AJN audio canonical producer regression: starting');
 
+const publishedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 const item = {
   id: 'ajn:hourly:https://cdn.example.test/audio/hour-001.mp3?token=alpha',
   feedId: 'AJNHourlyAudio',
   title: 'Hourly Test Segment',
   url: 'https://cdn.example.test/audio/hour-001.mp3?token=alpha',
   mediaType: 'audio',
+  publishedAt,
   metadata: {
     sourceIndex: 'https://rss.alexjones.media/mp3-hourly.html',
     resourceKind: 'hourly',
@@ -25,7 +27,7 @@ assert(first[0].channelId === 'ajn-audio-hourly', 'Hourly audio must use canonic
 assert(first[0].assetId, 'Audio program must receive canonical assetId');
 
 const second = canonicalizeAjnAudioItems([
-  { ...item, url: 'https://cdn.example.test/audio/hour-001.mp3?token=beta', publishedAt: '2026-09-20T10:00:00Z' },
+  { ...item, url: 'https://cdn.example.test/audio/hour-001.mp3?token=beta', publishedAt },
 ], 'hourly');
 
 assert(second[0].id === first[0].id, 'Stable audio item identity must survive transport token rotation');
