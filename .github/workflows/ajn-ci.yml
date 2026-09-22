@@ -65,6 +65,11 @@ jobs:
         env:
           AJN_TEST_URL: http://localhost:3000
 
+      - name: Real Archive playback gates
+        run: npm run test:real-archive-playback
+        env:
+          AJN_TEST_URL: http://localhost:3000
+
       - name: Dump server log after playback regression
         if: failure()
         run: |

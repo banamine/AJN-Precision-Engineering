@@ -1,17 +1,36 @@
 import { Program } from '../src/types';
 import { normalizeProgramIdentity, normalizeAssetIdentity } from '../src/utils/epgIdentity';
+import { buildArchiveProxyUrl } from '../src/utils/archivePlayback';
 import { HONEYMOONERS_COLLECTION, HONEYMOONERS_CHANNEL_ID, HONEYMOONERS_CHANNEL_NAME } from './honeymooners-collection';
 
 const ARCHIVE_BASE = 'https://archive.org';
-const REQUEST_TIMEOUT_MS = 60000;
+const REQUEST_TIMEOUT_MS = 15000;
 
 export interface HoneymoonersResolvedAsset {
   id: string;
   title: string;
   archiveIdentifier: string;
   mediaUrl: string;
+  archivePath: string;
   durationSeconds: number;
   quality: string;
+}
+
+async function verifyMediaPath(path: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`${ARCHIVE_BASE}${path}`, {
+      headers: { Accept: 'video/mp4,*/*', Range: 'bytes=0-1023', 'User-Agent': 'AJN-Precision-Engineering/1.0' },
+      signal: controller.signal,
+    });
+    return (response.status === 200 || response.status === 206) &&
+      !/^(text\/html|application\/json|text\/plain)\b/i.test(response.headers.get('content-type') || '');
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function fetchMetadata(identifier: string): Promise<any | null> {
@@ -58,18 +77,27 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
           const bDuration = durationSeconds(b.file);
           return bDuration - aDuration;
         });
-      const selected = candidates[0];
+      let selected: { file: any; name: string } | null = null;
+      for (const candidate of candidates) {
+        const candidatePath = `/download/${item.archiveIdentifier}/${encodeURIComponent(candidate.name).replace(/%2F/g, '/')}`;
+        if (await verifyMediaPath(candidatePath)) {
+          selected = candidate;
+          break;
+        }
+      }
       if (!selected) continue;
       const duration = durationSeconds(selected.file);
       if (duration <= 0) continue;
       const identity = `${item.archiveIdentifier}|${selected.name}`;
       if (seen.has(identity)) continue;
       seen.add(identity);
+      const archivePath = `/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`;
       assets.push({
         id: `asset-${item.id}`,
         title: item.title,
         archiveIdentifier: item.archiveIdentifier,
-        mediaUrl: `/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`,
+        archivePath,
+        mediaUrl: buildArchiveProxyUrl(archivePath),
         durationSeconds: duration,
         quality: quality(selected.name, selected.file),
       });
@@ -82,6 +110,9 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
 export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolvedAsset[]) {
   const assets = resolvedAssets ?? await resolveHoneymoonersAssets();
   const secondsInDay = 24 * 3600;
+  const now = new Date();
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
   const programs: Program[] = [];
   let currentSecond = 0;
   let index = 0;
@@ -102,14 +133,14 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
       description: `Archive.org collection item: ${asset.archiveIdentifier}`,
       startTime: currentSecond / 3600,
       endTime: endSecond / 3600,
-      startTimeUtc: new Date(Date.now() + currentSecond * 1000).toISOString(),
-      endTimeUtc: new Date(Date.now() + endSecond * 1000).toISOString(),
+      startTimeUtc: new Date(dayStart.getTime() + currentSecond * 1000).toISOString(),
+      endTimeUtc: new Date(dayStart.getTime() + endSecond * 1000).toISOString(),
       startHour: currentSecond / 3600,
       endHour: endSecond / 3600,
       mediaType: 'video',
       assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
       mediaUrl: asset.mediaUrl,
-      archivePath: asset.mediaUrl,
+      archivePath: asset.archivePath,
       metadata: {
         externalId: asset.archiveIdentifier,
         archiveIdentifier: asset.archiveIdentifier,
@@ -124,6 +155,36 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
     if (asset.durationSeconds <= 0) break;
   }
 
+  const fullShowList: Program[] = assets.map((asset, assetIndex) => ({
+    id: normalizeProgramIdentity({
+      externalId: `${asset.archiveIdentifier}|full-list`,
+      channelId: HONEYMOONERS_CHANNEL_ID,
+      title: asset.title,
+      startTime: assetIndex,
+    }),
+    guideId: 'classic-tv',
+    channelId: HONEYMOONERS_CHANNEL_ID,
+    title: asset.title,
+    description: `Archive.org collection item: ${asset.archiveIdentifier}`,
+    startTime: assetIndex,
+    endTime: assetIndex + 1,
+    startTimeUtc: new Date().toISOString(),
+    endTimeUtc: new Date().toISOString(),
+    startHour: assetIndex,
+    endHour: assetIndex + 1,
+    mediaType: 'video' as const,
+    assetId: normalizeAssetIdentity({ externalId: asset.archiveIdentifier, mediaUrl: asset.mediaUrl }),
+    mediaUrl: asset.mediaUrl,
+    archivePath: asset.archivePath,
+    metadata: {
+      externalId: asset.archiveIdentifier,
+      archiveIdentifier: asset.archiveIdentifier,
+      quality: asset.quality,
+      durationSeconds: asset.durationSeconds,
+      collectionId: 'honeymooners',
+      fullShowList: true,
+    },
+  }));
   return {
     id: HONEYMOONERS_CHANNEL_ID,
     guideId: 'classic-tv',
@@ -131,6 +192,7 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
     mediaType: 'video' as const,
     group: 'Classic TV',
     programs,
+    fullShowList,
     assetCount: assets.length,
     manifestItemCount: HONEYMOONERS_COLLECTION.length,
   };

@@ -1,6 +1,6 @@
 import { normalizeAjnFilename } from './src/utils/ajnTitleNormalizer.js';
 import { normalizeProgramIdentity, normalizeAssetIdentity } from './src/utils/epgIdentity.js';
-import { upsertCanonicalProgram } from './guideRegistry.ts';
+import { upsertCanonicalProgram } from './src/services/canonicalProgramRegistry';
 import type { Program } from './src/types.js';
 
 export type AjnFeedId = 'Alex' | 'WarRoom' | 'SundayLive' | 'AJNHourlyVideo' | 'AJNHourlyAudio';

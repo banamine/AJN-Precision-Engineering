@@ -7,6 +7,9 @@ import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer'
 import { buildMoviesClassicsPrograms } from './src/services/producers/moviesClassicsProducer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
+import { buildArchiveProxyUrl } from './src/utils/archivePlayback';
+import { upsertCanonicalProgram, getCanonicalProgram, getCanonicalPrograms, sweepCanonicalPrograms } from './src/services/canonicalProgramRegistry';
+export { upsertCanonicalProgram, getCanonicalProgram, getCanonicalPrograms, sweepCanonicalPrograms } from './src/services/canonicalProgramRegistry';
 
 export const GUIDES: Guide[] = [
   { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
@@ -24,56 +27,6 @@ export const GUIDES: Guide[] = [
 const channelsMap = new Map<string, Channel>();
 const channelSourcesMap = new Map<string, ChannelSource[]>();
 const playlistsMap = new Map<string, Playlist>();
-const programsMap = new Map<string, Program>();
-const PROGRAM_RETENTION_MS = 24 * 60 * 60 * 1000;
-
-function toUtcMs(value?: string | Date): number {
-  if (!value) return Number.NaN;
-  if (value instanceof Date) return value.getTime();
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
-}
-
-function evictExpiredPrograms(nowMs = Date.now()): number {
-  const cutoff = nowMs - PROGRAM_RETENTION_MS;
-  let removed = 0;
-  for (const [id, program] of programsMap) {
-    const endMs = toUtcMs(program.endTimeUtc);
-    if (Number.isFinite(endMs) && endMs < cutoff) {
-      programsMap.delete(id);
-      removed += 1;
-    }
-  }
-  return removed;
-}
-
-export function upsertCanonicalProgram(program: Program): Program {
-  const identity = normalizeProgramIdentity({
-    externalId: program.metadata?.externalId,
-    channelId: program.channelId,
-    title: program.title,
-    startTime: program.startTimeUtc ?? program.startTime,
-  });
-  const canonical = identity === program.id ? program : { ...program, id: identity };
-  programsMap.set(canonical.id, canonical);
-  evictExpiredPrograms();
-  return canonical;
-}
-
-export function getCanonicalProgram(id: string): Program | undefined {
-  evictExpiredPrograms();
-  return programsMap.get(id);
-}
-
-export function getCanonicalPrograms(): Program[] {
-  evictExpiredPrograms();
-  return Array.from(programsMap.values());
-}
-
-export function sweepCanonicalPrograms(nowMs = Date.now()): number {
-  return evictExpiredPrograms(nowMs);
-}
-
 const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
   {
     playlist: {
@@ -235,12 +188,12 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
       const sourceId = normalizeSourceIdentity({ channelId: ch.id, url: p.archivePath, protocol: 'direct_archive' });
       const startTimeUtc = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const endTimeUtc = new Date().toISOString();
-      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
+      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:buildArchiveProxyUrl(p.archivePath), archivePath:p.archivePath, assetId, sourceId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
     })}));
   }
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))}];
+    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program)), fullShowList:honeymooners.fullShowList.map((program) => upsertCanonicalProgram(program))}];
   }
   if(guideId==='movies-classics-vault'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');

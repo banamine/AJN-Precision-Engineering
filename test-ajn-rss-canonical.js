@@ -1,11 +1,12 @@
 import { canonicalizeAjnFeedItems } from './ajnResourceService.ts';
-import { getCanonicalPrograms } from './guideRegistry.ts';
+import { getCanonicalPrograms } from './src/services/canonicalProgramRegistry.ts';
 import { normalizeProgramIdentity, normalizeAssetIdentity } from './src/utils/epgIdentity.ts';
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
 console.log('AJN RSS canonical producer regression: starting');
 
+const publishedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 const items = [
   {
     id: 'Alex:guid-123',
@@ -13,7 +14,7 @@ const items = [
     title: 'AJN Test Show',
     url: 'https://cdn.example.test/show.mp4?token=rotating',
     mediaType: 'video',
-    publishedAt: '2026-09-20T10:00:00Z',
+    publishedAt,
     description: 'Test item',
     metadata: { guid: 'guid-123', author: 'Test', sourceFeed: 'https://rss.example.test/Alex.xml' },
   },
@@ -29,7 +30,7 @@ const expectedProgramId = normalizeProgramIdentity({
   externalId: 'guid-123',
   channelId: 'ajn-feed-alex',
   title: 'AJN Test Show',
-  startTime: '2026-09-20T10:00:00Z',
+  startTime: publishedAt,
 });
 assert(first[0].id === expectedProgramId, 'RSS guid must deterministically define programId');
 
@@ -44,6 +45,7 @@ const second = canonicalizeAjnFeedItems([
   { ...items[0], url: 'https://cdn.example.test/show.mp4?token=rotated' },
 ]);
 assert(second[0].id === first[0].id, 'Transport token rotation must not change RSS program identity');
+console.log('RSS identity diagnostics', { firstId: first[0].id, secondId: second[0].id, matchingPrograms: getCanonicalPrograms().filter(program => program.id === first[0].id).map(program => ({ id: program.id, externalId: program.metadata?.externalId, url: program.mediaUrl })) });
 assert(getCanonicalPrograms().filter(program => program.id === first[0].id).length === 1, 'Repeated RSS ingestion must not duplicate canonical programs');
 
 console.log('AJN RSS canonical producer regression: PASS');

@@ -90,6 +90,7 @@ export interface ScheduleChannel {
   group?: string;
   logo?: string;
   programs: Program[];
+  fullShowList?: Program[];
 }
 
 export interface NowPlayingMedia {
