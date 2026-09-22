@@ -6,6 +6,7 @@ function assert(condition, message) { if (!condition) throw new Error(message); 
 
 console.log('AJN RSS canonical producer regression: starting');
 
+const publishedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 const items = [
   {
     id: 'Alex:guid-123',
@@ -13,7 +14,7 @@ const items = [
     title: 'AJN Test Show',
     url: 'https://cdn.example.test/show.mp4?token=rotating',
     mediaType: 'video',
-    publishedAt: '2026-09-20T10:00:00Z',
+    publishedAt,
     description: 'Test item',
     metadata: { guid: 'guid-123', author: 'Test', sourceFeed: 'https://rss.example.test/Alex.xml' },
   },
@@ -29,7 +30,7 @@ const expectedProgramId = normalizeProgramIdentity({
   externalId: 'guid-123',
   channelId: 'ajn-feed-alex',
   title: 'AJN Test Show',
-  startTime: '2026-09-20T10:00:00Z',
+  startTime: publishedAt,
 });
 assert(first[0].id === expectedProgramId, 'RSS guid must deterministically define programId');
 
