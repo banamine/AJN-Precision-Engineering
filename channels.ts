@@ -67,6 +67,8 @@ interface ArchiveCollectionProbe {
 export const NEWS_WINDOW_HOURS = 48;
 export const NEWS_TARGET_ITEMS = 25;
 const NEWS_PAGE_SIZE = 50;
+const NEWS_SLICE_SECONDS = 300;
+const NEWS_DEFAULT_DURATION_SECONDS = 3600;
 const METADATA_CONCURRENCY = 6;
 const METADATA_RETRIES = 3;
 const ARCHIVE_SEARCH_TIMEOUT_MS = 12000;
@@ -585,8 +587,8 @@ export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFi
   // proxy remains the authoritative availability/format gate.
   if (TV_ID_RE.test(identifier)) {
     return {
-      url: `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(identifier)}.mp4?start=0&end=${TV_NEWS_SLICE_SEC}`,
-      duration: TV_NEWS_TOTAL_SEC,
+      url: `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(identifier)}.mp4?start=0&end=${NEWS_SLICE_SECONDS}`,
+      duration: NEWS_DEFAULT_DURATION_SECONDS,
       format: 'mp4',
       fallback: true,
     };
