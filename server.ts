@@ -85,11 +85,11 @@ app.get('/api/archive/proxy', async (req, res) => {
   if(req.headers.range && !incomingRange){ stats.failedRequests++; return res.status(416).json({error:'Unsupported Range header',proxyRequestId}); }
   const upstreamRange = incomingRange
     ? `bytes=${incomingRange.start}-${incomingRange.end === null ? incomingRange.start + MAX_PROXY_CHUNK_BYTES - 1 : Math.min(incomingRange.end, incomingRange.start + MAX_PROXY_CHUNK_BYTES - 1)}`
-    : `bytes=0-${MAX_PROXY_CHUNK_BYTES - 1}`;
+    : undefined;
   const upstreamUrl = `${ARCHIVE_BASE}${v.cleanPath}`;
   const headers:Record<string,string> = {'User-Agent':'AJN-Precision-Engineering/1.0','Accept':'*/*','Connection':'close'};
   const incomingRangeHeader = typeof req.headers.range === 'string' ? req.headers.range : undefined;
-  headers.Range=upstreamRange;
+  if (upstreamRange) headers.Range=upstreamRange;
   let responseFinished=false;
   res.once('finish',()=>{responseFinished=true;});
   for(let attempt=1;attempt<=MAX_RETRIES;attempt++){
@@ -124,7 +124,7 @@ app.get('/api/archive/proxy', async (req, res) => {
         stats.failedRequests++; return res.status(503).json({error:'Archive upstream unavailable',upstreamStatus:upstream.status,proxyRequestId});
       }
       if(!upstream.ok && upstream.status!==206){ stats.failedRequests++; return res.status(upstream.status>=500?503:upstream.status).json({error:'Archive upstream unavailable',upstreamStatus:upstream.status,proxyRequestId}); }
-      if(upstream.status!==206){
+      if(incomingRange && upstream.status!==206){
         stats.failedRequests++;
         if(attempt<MAX_RETRIES){ stats.retriedRequests++; await new Promise(r=>setTimeout(r,BACKOFF*Math.pow(2,attempt-1))); continue; }
         return res.status(502).json({error:'Archive upstream did not honor required byte range',upstreamStatus:upstream.status,proxyRequestId});
