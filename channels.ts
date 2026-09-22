@@ -570,6 +570,42 @@ function isBrowserPlayable(filename: string): boolean {
   return BROWSER_PLAYABLE_VIDEO.some((extension) => lower.endsWith(extension)) || AUDIO_EXTENSIONS.some((extension) => lower.endsWith(extension));
 }
 
+const directoryMediaCache = new Map<string, { url: string; expiresAt: number }>();
+
+async function discoverTvNewsMediaFromDirectory(identifier: string): Promise<string> {
+  const cached = directoryMediaCache.get(identifier);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
+  try {
+    const response = await fetch(`https://archive.org/download/${encodeURIComponent(identifier)}/`, {
+      headers: { 'User-Agent': 'AJN-Precision-Engineering/1.0', Accept: 'text/html' },
+      signal: controller.signal,
+    });
+    if (!response.ok) return '';
+    const html = await response.text();
+    const names = [...html.matchAll(/href=["']([^"'?#]+\\.(?:mp4|m4v))["']/gi)]
+      .map((match) => decodeURIComponent(match[1]))
+      .filter((name) => !name.includes('..') && !/_thumb|__ia_thumb/i.test(name));
+    if (!names.length) return '';
+    names.sort((a, b) => {
+      const aScore = (a.toLowerCase().startsWith(identifier.toLowerCase()) ? 0 : 1) + (a.toLowerCase().includes('512kb') ? 1 : 0);
+      const bScore = (b.toLowerCase().startsWith(identifier.toLowerCase()) ? 0 : 1) + (b.toLowerCase().includes('512kb') ? 1 : 0);
+      return aScore - bScore || a.length - b.length;
+    });
+    const file = names[0];
+    const url = `https://archive.org/download/${encodeURIComponent(identifier)}/${file.split('/').map(encodeURIComponent).join('/')}`;
+    directoryMediaCache.set(identifier, { url, expiresAt: Date.now() + 30 * 60 * 1000 });
+    console.log(`[Resolver] Directory-discovered TV News media for ${identifier}: ${file}`);
+    return url;
+  } catch (error) {
+    console.warn(`[Resolver] TV News directory discovery failed for ${identifier}:`, error instanceof Error ? error.message : String(error));
+    return '';
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function verifyDeterministicTvNewsFallback(identifier: string): Promise<string> {
   const fallbackUrl = "https://archive.org/download/" + encodeURIComponent(identifier) + "/" + encodeURIComponent(identifier) + ".mp4";
   const controller = new AbortController();
@@ -586,6 +622,13 @@ export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFi
   // schedule generation independent of slow metadata endpoints; the playback
   // proxy remains the authoritative availability/format gate.
   if (TV_ID_RE.test(identifier)) {
+    const discovered = await discoverTvNewsMediaFromDirectory(identifier);
+    if (discovered) {
+      const url = new URL(discovered);
+      url.searchParams.set('start', '0');
+      url.searchParams.set('end', String(NEWS_SLICE_SECONDS));
+      return { url: url.toString(), duration: NEWS_DEFAULT_DURATION_SECONDS, format: 'mp4', fallback: false };
+    }
     return {
       url: `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(identifier)}.mp4?start=0&end=${NEWS_SLICE_SECONDS}`,
       duration: NEWS_DEFAULT_DURATION_SECONDS,
