@@ -187,7 +187,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
                       key={program.id || idx}
                       type="button"
                       id={`epg-prog-${channel.id}-${idx}`}
-                      onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id)}
+                      onClick={() => onSelectProgram?.(program.mediaUrl || program.archivePath, program.title, channel.name, mediaType, channel.id, program.guideId, program.id)}
                       className={`group absolute top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs transition hover:scale-[1.005] hover:z-10 cursor-pointer ${
                         isLive
                           ? mediaType === 'audio'
@@ -241,7 +241,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
             {showList.length === 0 ? (
               <div className="px-4 py-6 text-sm text-neutral-500">No verified Archive.org programs are currently available.</div>
             ) : showList.map(({ channel, program }, index) => (
-              <button key={program.id || index} type="button" className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-neutral-900" onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, program.mediaType || channel.mediaType, channel.id, program.guideId, program.id)}>
+              <button key={program.id || index} type="button" className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-neutral-900" onClick={() => onSelectProgram?.(program.mediaUrl || program.archivePath, program.title, channel.name, program.mediaType || channel.mediaType, channel.id, program.guideId, program.id)}>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-neutral-100">{program.title}</span>
                   <span className="block truncate text-[11px] text-neutral-500">{channel.name} · {program.metadata?.archiveIdentifier || program.archivePath || 'Archive.org'}</span>
