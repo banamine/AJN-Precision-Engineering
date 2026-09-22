@@ -16,6 +16,23 @@ export interface HoneymoonersResolvedAsset {
   quality: string;
 }
 
+async function verifyMediaPath(path: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`${ARCHIVE_BASE}${path}`, {
+      headers: { Accept: 'video/mp4,*/*', Range: 'bytes=0-1023', 'User-Agent': 'AJN-Precision-Engineering/1.0' },
+      signal: controller.signal,
+    });
+    return (response.status === 200 || response.status === 206) &&
+      !/^(text\/html|application\/json|text\/plain)\b/i.test(response.headers.get('content-type') || '');
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function fetchMetadata(identifier: string): Promise<any | null> {
   try {
     const response = await fetch(`${ARCHIVE_BASE}/metadata/${encodeURIComponent(identifier)}`, {
@@ -60,19 +77,27 @@ export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedA
           const bDuration = durationSeconds(b.file);
           return bDuration - aDuration;
         });
-      const selected = candidates[0];
+      let selected: { file: any; name: string } | null = null;
+      for (const candidate of candidates) {
+        const candidatePath = `/download/${item.archiveIdentifier}/${encodeURIComponent(candidate.name).replace(/%2F/g, '/')}`;
+        if (await verifyMediaPath(candidatePath)) {
+          selected = candidate;
+          break;
+        }
+      }
       if (!selected) continue;
       const duration = durationSeconds(selected.file);
       if (duration <= 0) continue;
       const identity = `${item.archiveIdentifier}|${selected.name}`;
       if (seen.has(identity)) continue;
       seen.add(identity);
+      const archivePath = `/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`;
       assets.push({
         id: `asset-${item.id}`,
         title: item.title,
         archiveIdentifier: item.archiveIdentifier,
-        archivePath: `/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`,
-        mediaUrl: buildArchiveProxyUrl(`/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`),
+        archivePath,
+        mediaUrl: buildArchiveProxyUrl(archivePath),
         durationSeconds: duration,
         quality: quality(selected.name, selected.file),
       });
