@@ -1,4 +1,6 @@
 name: AJN Application CI
+# Puppeteer 25 requires Node >=22.12; keep CI runtime aligned with the browser validator.
+# Re-run gate after main CI baseline refresh.
 on:
   push:
     branches: [main]
@@ -18,14 +20,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Cache npm downloads
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
           restore-keys: |
-            ${{ runner.os }}-node20-npm-
+            ${{ runner.os }}-node22-npm-
       - name: Install dependencies
         run: npm install
       - name: TypeScript check
@@ -39,14 +41,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Cache npm downloads
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
           restore-keys: |
-            ${{ runner.os }}-node20-npm-
+            ${{ runner.os }}-node22-npm-
       - name: Install dependencies
         run: npm install
       - name: Production build
@@ -85,14 +87,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Cache npm downloads
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
           restore-keys: |
-            ${{ runner.os }}-node20-npm-
+            ${{ runner.os }}-node22-npm-
       - name: Install dependencies
         run: npm install
       - name: Download production build
@@ -129,10 +131,11 @@ jobs:
             if [ "$code" = "200" ]; then
               echo "PASS: /api/ajn/$endpoint returned HTTP 200"
             elif [ "$code" = "403" ] && { [ "$endpoint" = "audio/hourly" ] || [ "$endpoint" = "audio/segment" ]; }; then
-              echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403; this is recorded as an upstream availability warning."
-            elif [ "$code" = "502" ] && grep -Eq '"error":"AJN audio index (hourly|segment) returned HTTP 403"' "/tmp/ajn-${safe_name}.json"; then
+              echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403."
+            elif [ "$code" = "403" ] && { [ "$endpoint" = "audio/hourly" ] || [ "$endpoint" = "audio/segment" ]; }; then
+              echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403."
+            elif [ "$code" = "502" ] && jq -e '.error | test("^AJN audio index (hourly|segment) returned HTTP 403$")' "/tmp/ajn-${safe_name}.json" >/dev/null; then
               echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403; endpoint translated the known upstream restriction to HTTP 502."
-            
             else
               echo "FAILED: /api/ajn/$endpoint returned HTTP $code"
               cat "/tmp/ajn-${safe_name}.json" || true
@@ -169,12 +172,7 @@ jobs:
         env:
           AJN_TEST_URL: http://localhost:3000
       - name: Real Archive playback gates
-        run: |
-          if [ -f test-real-archive-playback.js ]; then
-            npm run test:real-archive-playback
-          else
-            echo "SKIP: real Archive playback gate is supplied by the Movies & Cinema Classics validation change and will run when test-real-archive-playback.js is present."
-          fi
+        run: npm run test:real-archive-playback
         env:
           AJN_TEST_URL: http://localhost:3000
       - name: Visual regression screenshots
