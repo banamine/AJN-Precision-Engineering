@@ -1,10 +1,10 @@
 import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
 } from './src/types';
-import { getChannelSchedule } from './channels';
+import { getChannelSchedule, tryResolveArchiveMediaCandidates } from './channels';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
-import { buildMoviesClassicsPrograms } from './src/services/producers/moviesClassicsProducer';
+import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
 
@@ -195,6 +195,20 @@ export function initializeRegistry(){
   for(const program of buildMoviesClassicsPrograms(moviesClassicsManifest)) upsertCanonicalProgram(program);
 }
 initializeRegistry();
+
+/**
+ * Replace the Movies & Classics programs with ones whose files were confirmed in
+ * Archive's live metadata. Called once after the server starts; until it finishes
+ * the guide shows the stored manifest.
+ */
+export async function refreshMoviesClassicsFromArchive(){
+  const {items,report}=await resolveMoviesClassicsManifest(moviesClassicsManifest,tryResolveArchiveMediaCandidates);
+  for(const [id,program] of programsMap){
+    if(program.guideId==='movies-classics-vault'&&program.channelId==='classic-cinema')programsMap.delete(id);
+  }
+  for(const program of buildMoviesClassicsPrograms(items))upsertCanonicalProgram(program);
+  return report;
+}
 
 export function getAllGuides(){return GUIDES;}
 export function getGuideById(id:string){return GUIDES.find(g=>g.id===id);}

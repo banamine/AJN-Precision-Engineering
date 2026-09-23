@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json' with { type: 'json' };
-import { searchTVNews, resolveArchiveMediaCandidates, getSafeArchiveUrl } from './channels.ts';
+import { searchTVNews, resolveArchiveMediaCandidates, tryResolveArchiveMediaCandidates, getSafeArchiveUrl } from './channels.ts';
+import { resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer.ts';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg.ts';
 import {
   buildMoviesClassicsFromVerified,
@@ -77,7 +78,15 @@ try {
     return Number.isFinite(aired) && aired >= start.getTime() && aired <= end.getTime();
   };
 
-  const verifiedCandidates = await validateMoviesClassicsPrograms(moviesClassicsManifest, page);
+  // Resolve stored filenames against live Archive metadata before probing playback.
+  const resolvedManifest = await resolveMoviesClassicsManifest(moviesClassicsManifest, tryResolveArchiveMediaCandidates);
+  console.log('[MovieResolver]', JSON.stringify({
+    kept: resolvedManifest.report.kept.length,
+    unverified: resolvedManifest.report.unverified.length,
+    replaced: resolvedManifest.report.replaced,
+    dropped: resolvedManifest.report.dropped.map((d) => d.identifier),
+  }));
+  const verifiedCandidates = await validateMoviesClassicsPrograms(resolvedManifest.items, page);
   assert.ok(
     verifiedCandidates.length >= 2,
     `Fewer than two verified Movies & Cinema Classics programs: only ${verifiedCandidates.length} passed real browser validation`,

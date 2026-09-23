@@ -81,6 +81,8 @@ jobs:
         run: npm run test:archive-retry
       - name: Archive exact-URL regression
         run: npm run test:archive-url-exact
+      - name: Movies manifest resolve regression
+        run: npm run test:movies-manifest-resolve
 
   integration:
     needs: [lint, pure-regressions]

@@ -7,7 +7,7 @@ import {createServer as createViteServer} from 'vite';
 import {searchTVNews} from './channels.js';
 import {buildChannelFromSearch} from './archive-discovery';
 import {
- getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,
+ getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,refreshMoviesClassicsFromArchive,
  addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
@@ -162,6 +162,6 @@ app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.origi
 
 async function startServer(){
  if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
- app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e)); });
+ app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e)); });
 }
 startServer();

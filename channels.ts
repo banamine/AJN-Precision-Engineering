@@ -492,6 +492,16 @@ export interface ResolvedMediaCandidate extends ResolvedFile {
   size: number;
 }
 
+/** Like resolveArchiveMediaCandidates, but returns null when Archive metadata could not be fetched. */
+export async function tryResolveArchiveMediaCandidates(identifier: string): Promise<ResolvedMediaCandidate[] | null> {
+  try {
+    await fetchArchiveMetadata(identifier);
+  } catch {
+    return null;
+  }
+  return resolveArchiveMediaCandidates(identifier);
+}
+
 export async function resolveArchiveMediaCandidates(identifier: string): Promise<ResolvedMediaCandidate[]> {
   try {
     const data = await fetchArchiveMetadata(identifier);

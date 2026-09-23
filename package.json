@@ -29,7 +29,8 @@
     "test:classic-tv-canonical": "tsx test-classic-tv-canonical.js",
     "test:real-archive-playback": "tsx test-real-archive-playback.js",
     "test:archive-retry": "tsx test-archive-retry.ts",
-    "test:archive-url-exact": "tsx test-archive-url-exact.ts"
+    "test:archive-url-exact": "tsx test-archive-url-exact.ts",
+    "test:movies-manifest-resolve": "tsx test-movies-manifest-resolve.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
