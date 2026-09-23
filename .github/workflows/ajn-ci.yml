@@ -170,10 +170,10 @@ jobs:
           AJN_TEST_URL: http://localhost:3000
       - name: Real Archive playback gates
         run: |
-          if [ -f test-real-archive-playback.js ]; then
+          if npm run | grep -q "test:real-archive-playback"; then
             npm run test:real-archive-playback
           else
-            echo "SKIP: real Archive playback gate is supplied by the Movies & Cinema Classics validation change and will run when test-real-archive-playback.js is present."
+            echo "SKIP: real Archive playback gate is not defined on this branch; it runs when the real Archive validator is present."
           fi
         env:
           AJN_TEST_URL: http://localhost:3000
