@@ -5,7 +5,7 @@
 - **Port:** 3000
 - **`/api/health` result:** `{"uptime":1842.257978386,"stats":{"totalRequests":1,"successfulRequests":0,"retriedRequests":0,"failedRequests":0,"cacheHits":0,"lastUpstreamLatencyMs":599,"activeStreams":0}}`
 - **HTTP status:** 200 OK
-- **Content-Type:** `application/json; charset=utf-8`
+- **Content-Type:** application/json; charset=utf-8
 - **Valid JSON:** Yes
 
 ## 2. EXACT CURRENT SOURCE FILES
@@ -42,35 +42,30 @@ Below are the details for the targeted files:
 - `/src/components/PlayerView.tsx`
   - **Exists:** Yes
   - **Approx Line Count:** 384 lines
-  - **Modification Timestamp:** ~08:00
   - **Current Function:** Wrapper for `MinimalPlayer`, includes Dev Diagnostics UI, playback event logging (`logPlaybackEvent`), and schedule auto-advance logic (`handleProgramEnded`).
   - **Relates to recent playback/telemetry changes:** Yes (Telemetry logging and playlist advancement).
 
 - `/src/components/TvGuideView.tsx`
   - **Exists:** Yes
   - **Approx Line Count:** 188 lines
-  - **Modification Timestamp:** ~07:59
   - **Current Function:** Renders guide tabs and controls dual-guide selector switcher.
   - **Relates to recent playback/telemetry changes:** No.
 
 - `/src/EpgGuide.tsx`
   - **Exists:** Yes
   - **Approx Line Count:** 236 lines
-  - **Modification Timestamp:** ~07:59
   - **Current Function:** Displays the EPG grid and handles clicks to launch a program.
   - **Relates to recent playback/telemetry changes:** No.
 
 - `/src/telemetry.ts`
   - **Exists:** Yes
   - **Approx Line Count:** 41 lines
-  - **Modification Timestamp:** ~07:12
   - **Current Function:** Telemetry payload typing and the `reportTelemetry` wrapper.
   - **Relates to recent playback/telemetry changes:** Yes.
 
 - `/src/types.ts`
   - **Exists:** Yes
   - **Approx Line Count:** 161 lines
-  - **Modification Timestamp:** ~07:12
   - **Current Function:** Shared TypeScript types and interfaces.
   - **Relates to recent playback/telemetry changes:** No.
 
@@ -112,7 +107,7 @@ Programs returned via `/api/schedule`:
 
 ## 7. CURRENT ERRORS
 Observations without interacting in browser:
-- Evidence of protective error handling in `server.ts` catching `[Archive Proxy Stream Error]` and `[Archive Proxy Response Error]`.
+- Evidence of protective error handling in `server.ts` catching [Archive Proxy Stream Error] and [Archive Proxy Response Error].
 - No massive crash on startup (the `/api/health` endpoint successfully boots and resolves).
 - Possible regression points in `PlayerView.tsx` during array indexing for next programs, given the silent failure behaviors in `handleProgramEnded`.
 
