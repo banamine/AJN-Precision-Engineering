@@ -353,11 +353,13 @@ export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now
   const day=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
   const end=day+24*3600_000;
   const out:Program[]=[];let t=day;let slot=0;
-  while(t<end&&slot<maxSlots){
+  // Every program appears at least once (a long list may run past midnight);
+  // a short list repeats until the day is full.
+  while((slot<programs.length||t<end)&&slot<maxSlots){
     for(const p of programs){
-      if(t>=end||slot>=maxSlots)break;
+      if((slot>=programs.length&&t>=end)||slot>=maxSlots)break;
       const secs=Number((p.metadata as any)?.durationSeconds)>0?Number((p.metadata as any).durationSeconds):defaultMinutes*60;
-      const stop=Math.min(t+secs*1000,end);
+      const stop=slot<programs.length?t+secs*1000:Math.min(t+secs*1000,end);
       const h=(ms:number)=>(ms-day)/3600_000;
       out.push({...p,metadata:{...(p.metadata??{}),airedUtc:(p.metadata as any)?.airedUtc??p.startTimeUtc},id:`${p.id}:d${slot}`,startTimeUtc:new Date(t).toISOString(),endTimeUtc:new Date(stop).toISOString(),startTime:h(t),endTime:h(stop),startHour:h(t),endHour:h(stop)});
       t=stop;slot++;
