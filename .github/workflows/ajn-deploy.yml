@@ -1,7 +1,9 @@
 name: AJN Cloud Run Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["AJN Application CI"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -12,7 +14,7 @@ on:
       region:
         description: Cloud Run region
         required: false
-        default: us-east1
+        default: us-west2
         type: string
       service:
         description: Cloud Run service name
@@ -25,25 +27,40 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ajn-cloud-run-deploy-${{ github.ref }}
+  group: ajn-cloud-run-deploy-main
   cancel-in-progress: true
 
 env:
-  GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
-  GCP_REGION: ${{ inputs.region || vars.GCP_REGION || 'us-east1' }}
+  GCP_REGION: ${{ inputs.region || vars.GCP_REGION || 'us-west2' }}
   GCP_SERVICE: ${{ inputs.service || vars.GCP_CLOUD_RUN_SERVICE || 'ajn-precision-engineering' }}
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     name: Build and deploy to Cloud Run
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - name: Checkout exact commit
+      - name: Resolve exact CI commit
+        id: revision
+        env:
+          CI_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "${CI_SHA}" ]; then
+            echo "sha=${CI_SHA}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "sha=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Checkout exact CI commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.revision.outputs.sha }}
 
       - name: Validate deployment configuration
         env:
+          GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
           WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
@@ -54,7 +71,7 @@ jobs:
           echo "Project: ${GCP_PROJECT_ID}"
           echo "Region: ${GCP_REGION}"
           echo "Service: ${GCP_SERVICE}"
-          echo "Commit: ${GITHUB_SHA}"
+          echo "Commit: ${{ steps.revision.outputs.sha }}"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -66,12 +83,14 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Verify Google Cloud access
+        env:
+          GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
         run: |
           gcloud config set project "${GCP_PROJECT_ID}"
           gcloud projects describe "${GCP_PROJECT_ID}" --format='value(projectId)'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: TypeScript check
         run: npm run lint
@@ -79,11 +98,16 @@ jobs:
       - name: Production build
         run: npm run build
 
-      - name: Deploy source to Cloud Run
+      - name: Deploy exact source to Cloud Run
+        env:
+          GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
         run: |
+          set -euo pipefail
           gcloud run deploy "${GCP_SERVICE}"             --source .             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --platform managed             --allow-unauthenticated             --quiet
 
       - name: Verify deployed revision
+        env:
+          GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
         run: |
           set -euo pipefail
           SERVICE_URL="$(gcloud run services describe "${GCP_SERVICE}"             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --format='value(status.url)')"
@@ -91,9 +115,16 @@ jobs:
           echo "SERVICE_URL=${SERVICE_URL}" >> "${GITHUB_ENV}"
           gcloud run services describe "${GCP_SERVICE}"             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --format='yaml(metadata.name,status.latestCreatedRevisionName,status.latestReadyRevisionName,status.url)'
 
-      - name: Production health smoke
+      - name: Production health and contract smoke
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --retry 6 --retry-delay 5 "${SERVICE_URL}/api/health"
           echo
           curl --fail --silent --show-error --retry 3 --retry-delay 2 "${SERVICE_URL}/api/guides" | jq '.total'
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 "${SERVICE_URL}/api/channels" | jq '.total'
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 "${SERVICE_URL}/api/schedule?guide=cable-tv" | jq '.channels | length'
+
+      - name: Production browser playback gate
+        env:
+          AJN_TEST_URL: ${{ env.SERVICE_URL }}
+        run: npm run test:real-archive-playback
