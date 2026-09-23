@@ -135,7 +135,7 @@ try {
         }
       } catch (error) {
         throw error;
-      }      }
+      }
     }
     if (cnnPlaybackPassed) break;
   }
