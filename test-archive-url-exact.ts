@@ -17,4 +17,13 @@ assert.equal(
   getSafeArchiveUrl('https://ia800.us.archive.org/12/items/abc/My%20File%20(1).mp4?start=0&end=300'),
   'https://archive.org/download/abc/My%20File%20(1).mp4?start=0&end=300',
 );
+// Item-level TV News identifiers keep the <ID>/<ID>.mp4 convention (clip params preserved).
+assert.equal(
+  getSafeArchiveUrl('https://archive.org/details/CNNW_20240901_180000_The_Situation_Room'),
+  'https://archive.org/download/CNNW_20240901_180000_The_Situation_Room/CNNW_20240901_180000_The_Situation_Room.mp4',
+);
+assert.equal(
+  getSafeArchiveUrl('https://archive.org/download/FOXNEWSW_20260903_060000_Hannity?start=0&end=300&ignore=x.mp4'),
+  'https://archive.org/download/FOXNEWSW_20260903_060000_Hannity/FOXNEWSW_20260903_060000_Hannity.mp4?start=0&end=300&ignore=x.mp4',
+);
 console.log('archive exact-URL regression: all passed');

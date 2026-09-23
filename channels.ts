@@ -287,7 +287,16 @@ export function getSafeArchiveUrl(rawUrl: string): string {
   const cdnMatch = httpsUrl.match(
     /^https:\/\/ia\d+\.us\.archive\.org\/\d+\/items\/([^?#]+)(\?[^#]*)?$/,
   );
-  return cdnMatch ? `https://archive.org/download/${cdnMatch[1]}${cdnMatch[2] ?? ""}` : httpsUrl;
+  const canonical = cdnMatch ? `https://archive.org/download/${cdnMatch[1]}${cdnMatch[2] ?? ""}` : httpsUrl;
+
+  // Item-level TV News URL (archive.org/details/<ID> or /download/<ID>): Archive
+  // stores the broadcast as <ID>/<ID>.mp4. This is the one documented naming
+  // convention (from M3UStripTool); deeper folder URLs are never guessed.
+  const itemMatch = canonical.match(/^https:\/\/archive\.org\/(?:details|download)\/([A-Za-z0-9._-]+)\/?(\?[^#]*)?$/);
+  if (itemMatch && !itemMatch[1].includes(".")) {
+    return `https://archive.org/download/${itemMatch[1]}/${itemMatch[1]}.mp4${itemMatch[2] ?? ""}`;
+  }
+  return canonical;
 }
 
 type FileCategory =
