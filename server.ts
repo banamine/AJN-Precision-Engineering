@@ -12,6 +12,7 @@ import {
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import newsV1Router from './server/routes/newsV1.js';
+import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
 
 const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(express.json());
 app.use(watchdogRouter);
@@ -55,9 +56,6 @@ function validateArchivePath(raw:string){
 }
 
 const ARCHIVE_BASE='https://archive.org';
-const MAX_RETRIES=3;
-const BACKOFF=500;
-const RETRY=[503,429,502,504];
 interface ByteRange { start:number; end:number|null; }
 function parseRangeHeader(header:string|undefined):ByteRange|null {
   if(!header) return null;
@@ -68,56 +66,6 @@ function parseRangeHeader(header:string|undefined):ByteRange|null {
   const requestedEnd=m[2] ? Number(m[2]) : null;
   if(requestedEnd!==null && (!Number.isSafeInteger(requestedEnd)||requestedEnd<start)) return null;
   return {start,end:requestedEnd};
-}
-
-const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
-
-function isAllowedArchiveHost(hostname:string):boolean{
-  const host=hostname.toLowerCase();
-  return host === 'archive.org' || host.endsWith('.archive.org');
-}
-
-function validateArchiveRedirect(target:URL):void{
-  if(target.protocol !== 'https:'){
-    throw new Error('Archive redirect rejected: HTTPS is required');
-  }
-  if(!isAllowedArchiveHost(target.hostname)){
-    throw new Error(`Archive redirect rejected: ${target.hostname}`);
-  }
-}
-
-async function resolveArchiveMediaRedirect(initialUrl:string,maxRedirects=5):Promise<string|null>{
-  let currentUrl=new URL(initialUrl);
-  validateArchiveRedirect(currentUrl);
-
-  for(let redirectCount=0; redirectCount<maxRedirects; redirectCount++){
-    const response=await fetch(currentUrl,{
-      method:'GET',
-      redirect:'manual',
-      headers:{
-        'User-Agent':'AJN-Media-Console/ArchiveProxy',
-        Accept:'*/*',
-      },
-    });
-
-    // Never read the probe body: this request only discovers the final URL.
-    await response.body?.cancel().catch(()=>{});
-
-    if(response.status >= 200 && response.status < 300){
-      return currentUrl.toString();
-    }
-
-    if(!REDIRECT_STATUSES.has(response.status)) return null;
-
-    const location=response.headers.get('location');
-    if(!location) return null;
-
-    const nextUrl=new URL(location,currentUrl);
-    validateArchiveRedirect(nextUrl);
-    currentUrl=nextUrl;
-  }
-
-  throw new Error('Archive redirect chain exceeded limit');
 }
 
 
@@ -137,12 +85,6 @@ app.get('/api/archive/proxy', async (req,res)=>{
 
   try{
     const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
-    const resolvedUrl=await resolveArchiveMediaRedirect(upstreamUrl);
-    if(!resolvedUrl){
-      stats.failedRequests++;
-      return res.status(502).json({error:'Archive did not return a validated media response',proxyRequestId});
-    }
-
     const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Media-Console/ArchiveProxy','Accept':'*/*'};
     const range=String(req.headers.range || '');
     if(range) upstreamHeaders.Range=range;
@@ -150,21 +92,22 @@ app.get('/api/archive/proxy', async (req,res)=>{
     const upstreamAbort=new AbortController();
     res.on('close',()=>{ if(!res.writableFinished) upstreamAbort.abort(); });
 
-    let mediaResponse=await fetch(resolvedUrl,{method:'GET',redirect:'manual',headers:upstreamHeaders,signal:upstreamAbort.signal});
-    if(REDIRECT_STATUSES.has(mediaResponse.status)){
-      const retryUrl=await resolveArchiveMediaRedirect(resolvedUrl);
-      if(!retryUrl){
-        stats.failedRequests++;
-        return res.status(502).json({error:'Archive redirect changed during media fetch',proxyRequestId});
-      }
-      await mediaResponse.body?.cancel().catch(()=>{});
-      mediaResponse=await fetch(retryUrl,{method:'GET',redirect:'manual',headers:upstreamHeaders,signal:upstreamAbort.signal});
-    }
+    const upstream=await fetchArchiveMediaWithRetry(upstreamUrl,{
+      headers:upstreamHeaders,
+      signal:upstreamAbort.signal,
+      requestId:proxyRequestId,
+    });
+    if(upstream.attempts>1) stats.retriedRequests++;
+    const mediaResponse=upstream.response;
 
-    if(!mediaResponse.ok || mediaResponse.status < 200 || mediaResponse.status >= 300){
-      await mediaResponse.body?.cancel().catch(()=>{});
+    if(!mediaResponse || upstream.failure){
+      await mediaResponse?.body?.cancel().catch(()=>{});
       stats.failedRequests++;
-      return res.status(502).json({error:`Archive media returned HTTP ${mediaResponse.status}`,proxyRequestId});
+      console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:upstream.status,stage:upstream.failure,attempts:upstream.attempts,path:v.cleanPath}));
+      const error=upstream.failure==='resolve'
+        ? 'Archive did not return a validated media response'
+        : `Archive media returned HTTP ${upstream.status}`;
+      return res.status(502).json({error,upstreamStatus:upstream.status,attempts:upstream.attempts,proxyRequestId});
     }
 
     const contentType=mediaResponse.headers.get('content-type');

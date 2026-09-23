@@ -77,6 +77,8 @@ jobs:
         run: npm run test:ajn-rss-canonical
       - name: AJN audio canonical regression
         run: npm run test:ajn-audio-canonical
+      - name: Archive proxy retry regression
+        run: npm run test:archive-retry
 
   integration:
     needs: [lint, pure-regressions]

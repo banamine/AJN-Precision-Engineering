@@ -27,7 +27,8 @@
     "test:movies-classics-producer": "tsx test-movies-classics-producer.js",
     "test:movies-classics": "tsx test-movies-classics.js",
     "test:classic-tv-canonical": "tsx test-classic-tv-canonical.js",
-    "test:real-archive-playback": "tsx test-real-archive-playback.js"
+    "test:real-archive-playback": "tsx test-real-archive-playback.js",
+    "test:archive-retry": "tsx test-archive-retry.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
