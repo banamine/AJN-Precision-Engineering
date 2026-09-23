@@ -13,7 +13,7 @@ import {
 import watchdogRouter from './server/routes/watchdog.js';
 import newsV1Router from './server/routes/newsV1.js';
 
-const app=express(); const PORT=Number(process.env.PORT || 8080); app.use(express.json());
+const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(express.json());
 app.use(watchdogRouter);
 app.use(newsV1Router);
 
