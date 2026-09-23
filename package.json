@@ -34,7 +34,8 @@
     "test:program-store-bounded": "tsx test-program-store-bounded.ts",
     "test:source-contracts": "tsx test-source-contracts.ts",
     "test:source-archive-news": "tsx test-source-archive-news.ts",
-    "test:cable-news-guide": "tsx test-cable-news-guide.ts"
+    "test:cable-news-guide": "tsx test-cable-news-guide.ts",
+    "test:source-ajn-audio": "tsx test-source-ajn-audio.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

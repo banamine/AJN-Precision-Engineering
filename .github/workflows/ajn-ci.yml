@@ -91,6 +91,8 @@ jobs:
         run: npm run test:source-archive-news
       - name: Cable TV guide from Archive News contract (mocked)
         run: npm run test:cable-news-guide
+      - name: AJN Audio contract regression (mocked)
+        run: npm run test:source-ajn-audio
 
   integration:
     needs: [lint, pure-regressions]

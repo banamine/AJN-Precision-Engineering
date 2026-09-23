@@ -288,15 +288,17 @@ function parseAudioIndexUrl(href: string): string | undefined {
   return value;
 }
 
-function parseAudioIndexItems(html: string, index: AjnAudioIndex): AjnFeedItem[] {
+export function parseAudioIndexItems(html: string, index: AjnAudioIndex): AjnFeedItem[] {
   const records = new Map<string, AjnFeedItem>();
   const hrefRe = /href=["']([^"']+\.(?:mp3|m4a|aac|ogg|opus|wav)(?:[?#][^"']*)?)["']/gi;
   for (const match of html.matchAll(hrefRe)) {
     const url = parseAudioIndexUrl(match[1]);
     if (!url) continue;
-    const filename = url.split('/').filter(Boolean).pop() || url;
-    const title = normalizeAjnFilename(filename);
-    const id = `ajn:${index.kind}:${url}`;
+    // Identity must survive CDN token rotation: use the URL without query/fragment.
+    const stableUrl = url.split('#')[0].split('?')[0];
+    const filename = stableUrl.split('/').filter(Boolean).pop() || stableUrl;
+    const title = normalizeAjnFilename(decodeURIComponent(filename));
+    const id = `ajn:${index.kind}:${stableUrl}`;
     if (records.has(id)) continue;
     records.set(id, {
       id,
