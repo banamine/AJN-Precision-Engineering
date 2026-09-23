@@ -38,3 +38,10 @@ const down = await dailyHighlightsContract.hook({ guideId: 'classic-tv', fetchIm
 assert.equal(down.status, 'upstream_error');
 assert.equal(down.error, 'metadata HTTP 503');
 console.log('daily highlights regression: all passed');
+{
+  const { displayTitle } = await import('./server/sources/dailyHighlights.ts');
+  assert.equal(displayTitle('Канал 31', 'https://archive.org/download/x/Odd%20Couple%20S01E05.mp4', 'Odd'), 'Odd Couple S01E05');
+  assert.equal(displayTitle('https://archive.org/download/x/a_b.mp4', 'https://archive.org/download/x/a_b.mp4', 'S'), 'a b');
+  assert.equal(displayTitle('Real Title', 'https://x/y.mp4', 'S'), 'Real Title');
+  console.log('display titles: passed');
+}

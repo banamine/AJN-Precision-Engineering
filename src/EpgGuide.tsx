@@ -33,11 +33,18 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasAutoScrolled = useRef(false);
 
+  const requestRef = useRef<AbortController | null>(null);
   const fetchSchedule = useCallback(async () => {
+    // Only the latest guide request may update the grid; switching guides aborts
+    // the previous one so a slow guide can't overwrite the one on screen.
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
     try {
       setIsLoading(true);
       setFetchError(null);
-      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`);
+      setChannels(null);
+      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`, { signal: controller.signal });
       if (!res.ok) {
         throw new Error(`Schedule request failed: HTTP ${res.status}`);
       }
@@ -45,16 +52,19 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
       if (!Array.isArray(data.channels)) {
         throw new Error('Schedule response missing channels array');
       }
+      if (controller.signal.aborted) return;
       setChannels(data.channels);
     } catch (err) {
+      if (controller.signal.aborted) return;
       setFetchError(err instanceof Error ? err.message : String(err));
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
   }, [guideId]);
 
   useEffect(() => {
     fetchSchedule();
+    return () => requestRef.current?.abort();
   }, [fetchSchedule]);
 
   // Live "now" line — updates every 30s, real time, not a static mockup.
@@ -170,7 +180,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
 
                 {channel.programs.length === 0 ? (
                   <div className="absolute inset-y-0 left-0 flex items-center px-4 text-xs font-medium text-neutral-500 italic bg-neutral-900/30 w-full" style={{ width: TIMELINE_WIDTH_PX }}>
-                    No programs available
+                    {channel.sourceError ? `Unavailable — ${channel.sourceError}` : channel.sourceStatus === 'restricted' ? 'Restricted by Archive' : 'No programs available'}
                   </div>
                 ) : (
                   channel.programs.map((program, idx) => {

@@ -36,7 +36,7 @@ interface ArchiveMetadata {
 }
 
 const USER_AGENT = 'AJN-Precision-Engineering/ArchiveNews';
-const METADATA_CONCURRENCY = 6;
+const METADATA_CONCURRENCY = 2; // Archive answers 429 when 7 networks x 6 hit it at once
 /** Clip length for restricted TV News items. Matches the known-good reference M3U
  *  (…/<ID>/<ID>.mp4?exact=1&start=0&end=282). Archive serves these windows even
  *  when the full-length file answers 403. */
@@ -99,7 +99,14 @@ export function pickPlayableFile(files: ArchiveFile[]): { file: ArchiveFile | nu
 }
 
 async function getJson<T>(fetchImpl: typeof fetch, url: string, signal: AbortSignal): Promise<{ status: number; body: T | null }> {
-  const res = await fetchImpl(url, { signal, headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } });
+  let res = await fetchImpl(url, { signal, headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } });
+  if (res.status === 429 && !signal.aborted) {
+    // Rate limited: one polite retry, honoring Retry-After up to 5s.
+    await res.body?.cancel().catch(() => {});
+    const wait = Math.min(Number(res.headers.get('retry-after')) * 1000 || 1500, 5000);
+    await new Promise((r) => setTimeout(r, wait));
+    res = await fetchImpl(url, { signal, headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } });
+  }
   if (!res.ok) {
     await res.body?.cancel().catch(() => {});
     return { status: res.status, body: null };

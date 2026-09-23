@@ -11,8 +11,8 @@ import { playableUrl, slug } from './archiveLinks';
 import type { RejectedItem, SourceContract, SourceResult } from './contract';
 
 export const DAILY_HIGHLIGHTS_ITEM = 'daily-highlights';
-const MAX_PLAYLISTS = 60;
-const CONCURRENCY = 6;
+const MAX_PLAYLISTS = 40;
+const CONCURRENCY = 2; // stay under Archive's rate limit
 
 interface ArchiveFile { name: string; source?: string; format?: string; length?: string; private?: string | boolean }
 export interface HighlightsInput { guideId: string; item?: string; fetchImpl?: typeof fetch }
@@ -25,6 +25,19 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Prom
   const out = new Array<R>(items.length); let i = 0;
   await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k]); } }));
   return out;
+}
+
+/** Playlist titles are sometimes a URL or a generic "Канал 12"/"Channel 12":
+ *  show the file name instead (display only; the link itself is untouched). */
+export function displayTitle(title: string, url: string, show: string): string {
+  const t = (title ?? '').trim();
+  const generic = !t || /^https?:\/\//i.test(t) || /^(канал|channel|ch\.?)\s*\d+$/i.test(t);
+  if (!generic) return t;
+  const file = url.split('?')[0].split('/').pop() ?? '';
+  let name = file;
+  try { name = decodeURIComponent(file); } catch { /* keep raw */ }
+  name = name.replace(/\.[a-z0-9]{2,4}$/i, '').replace(/[_]+/g, ' ').trim();
+  return name || show;
 }
 
 /** Group programs into channels by metadata.show. */
@@ -79,7 +92,7 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
         const externalId = key.season !== undefined ? `${show}|S${key.season}E${key.episode}` : `${show}|${entry.url}`;
         const programId = normalizeProgramIdentity({ externalId, channelId, title: entry.title, startTime: 0 });
         add({
-          id: programId, guideId: input.guideId, channelId, title: entry.title || show, description: show,
+          id: programId, guideId: input.guideId, channelId, title: displayTitle(entry.title, entry.url, show), description: show,
           startTime: 0, endTime: 0, mediaType: 'video', mediaUrl, archivePath,
           assetId: normalizeAssetIdentity({ externalId, programId, mediaUrl: archivePath ?? entry.url }),
           sourceId: normalizeSourceIdentity({ channelId, url: `archive:${item}/${t.f.name}`, protocol: 'm3u' }),

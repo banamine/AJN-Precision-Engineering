@@ -51,6 +51,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // Read in effects without re-running them: toggling mute must not reload media.
   const isMutedRef = useRef(isMuted);
   isMutedRef.current = isMuted;
+  // Latest callbacks, read by the media effect so parent re-renders never re-run
+  // it (a re-run calls load(), which aborts the play() in flight).
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
   const { diagnosticsAnalyserRef } = useAudioNormalization(
@@ -106,6 +108,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     }
   }, [eventMeta, onPlayEvent]);
 
+  const fnRef = useRef({ eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent });
+  fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent };
+
   useEffect(() => {
     setActiveSrc(src);
     setStatusText("Loading…");
@@ -117,6 +122,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   }, [src, mediaType]);
 
   useEffect(() => {
+    const fx = () => fnRef.current;
     const media = mediaRef.current;
     if (!media) return;
 
@@ -129,14 +135,15 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       if (!isVideo || !media.paused) return;
       try {
         await media.play();
-        if (!media.paused) reportPlaying();
+        if (!media.paused) fx().reportPlaying();
       } catch (error) {
+        if ((error as DOMException)?.name === "AbortError") return;
         // Unmuted autoplay refused (no user gesture yet in this tab): play muted
         // rather than stall the schedule. The session preference is unchanged.
         if (!media.muted && (error as DOMException)?.name === 'NotAllowedError') {
           media.muted = true;
           setIsMuted(true);
-          try { await media.play(); if (!media.paused) { reportPlaying(); return; } } catch { /* fall through */ }
+          try { await media.play(); if (!media.paused) { fx().reportPlaying(); return; } } catch { /* fall through */ }
         }
         // Autoplay may still be blocked by the browser. Keep the real error
         // available in the console; the normal Play control remains usable.
@@ -153,7 +160,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
 
     const onLoadedMetadata = () => {
       // Live streams have no fixed duration: never offer a resume position.
-      const saved = Number.isFinite(media.duration) ? readResumePosition() : null;
+      const saved = Number.isFinite(media.duration) ? fx().readResumePosition() : null;
       setStatusText("Ready");
       if (saved !== null && (!Number.isFinite(media.duration) || saved < media.duration - 5)) {
         setResumePosition(saved);
@@ -167,28 +174,28 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         void attemptAutoplay();
       }
     };
-    const onPlay = reportPlaying;
-    const onPlaying = reportPlaying;
+    const onPlay = (...a: []) => fx().reportPlaying(...a);
+    const onPlaying = (...a: []) => fx().reportPlaying(...a);
     const onTimeUpdate = () => {
       if (!media.paused) {
-        reportPlaying();
-        saveResumePosition(media);
+        fx().reportPlaying();
+        fx().saveResumePosition(media);
       }
     };
     const onWaiting = () => setStatusText("Buffering…");
     const onStalled = () => setStatusText("Network stalled…");
     const onPause = () => {
       setIsPlaying(false);
-      saveResumePosition(media);
+      fx().saveResumePosition(media);
       reportTelemetry({ event: "playback.paused", ...eventMeta() });
-      onPauseEvent?.();
+      fx().onPauseEvent?.();
     };
     const onEnded = () => {
       setIsPlaying(false);
       playingReportedRef.current = false;
-      clearResumePosition();
+      fx().clearResumePosition();
       reportTelemetry({ event: "playback.ended", ...eventMeta() });
-      window.setTimeout(() => onProgramEnded?.(), 0);
+      window.setTimeout(() => fx().onProgramEnded?.(), 0);
     };
     const onError = () => {
       const err = media.error;
@@ -205,7 +212,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         readyState: media.readyState,
         networkState: media.networkState,
       });
-      onErrorEvent?.(err);
+      fx().onErrorEvent?.(err);
     };
 
     media.addEventListener("loadedmetadata", onLoadedMetadata);
@@ -219,7 +226,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     media.addEventListener("ended", onEnded);
     media.addEventListener("error", onError);
 
-    const saveOnExit = () => saveResumePosition(media);
+    const saveOnExit = () => fx().saveResumePosition(media);
     window.addEventListener("pagehide", saveOnExit);
 
     return () => {
@@ -234,9 +241,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       media.removeEventListener("ended", onEnded);
       media.removeEventListener("error", onError);
       window.removeEventListener("pagehide", saveOnExit);
-      saveResumePosition(media);
+      fx().saveResumePosition(media);
     };
-  }, [activeSrc, clearResumePosition, eventMeta, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
+  // Deliberately keyed on the source only: re-running calls load(), which
+  // aborts any play() in flight ("interrupted by a new load request").
+  }, [activeSrc, isVideo]);
 
   // HLS (.m3u8): native where the browser supports it (Safari), otherwise hls.js.
   // Teardown order is fixed: stopLoad -> detachMedia -> destroy -> null. Skipping
@@ -261,8 +270,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       if (data.type === Hls.ErrorTypes.NETWORK_ERROR && recoveries < 2) { recoveries++; hls.startLoad(); return; }
       if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recoveries < 2) { recoveries++; hls.recoverMediaError(); return; }
       setStatusText(`Failed to load — HLS ${data.type}: ${data.details}`);
-      reportTelemetry({ event: "media.error", ...eventMeta(), hlsType: data.type, hlsDetails: data.details, httpStatus: (data.response as { code?: number } | undefined)?.code ?? null });
-      onErrorEvent?.(null);
+      reportTelemetry({ event: "media.error", ...fnRef.current.eventMeta(), hlsType: data.type, hlsDetails: data.details, httpStatus: (data.response as { code?: number } | undefined)?.code ?? null });
+      fnRef.current.onErrorEvent?.(null);
     });
     hls.loadSource(activeSrc);
     hls.attachMedia(media);
@@ -272,7 +281,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       hls.destroy();
       hlsRef.current = null;
     };
-  }, [activeSrc, isHls, eventMeta, onErrorEvent]);
+  }, [activeSrc, isHls]);
 
   const play = async () => {
     const media = mediaRef.current;
@@ -282,6 +291,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       await media.play();
       if (!media.paused) reportPlaying();
     } catch (error) {
+      // A newer load superseded this play(); the new source starts on its own.
+      if ((error as DOMException)?.name === "AbortError") return;
       const message = error instanceof Error ? error.message : String(error);
       setStatusText(`Playback failed — ${message}`);
       console.error("[AJN PLAYBACK] play() rejected", {
