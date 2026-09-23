@@ -244,6 +244,24 @@ export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.g
 // Cable TV news comes from the Archive News source contract (layer 3): real air
 // times, restricted items reported per channel. Complete results are cached for
 // 15 minutes; if any network came back empty or failed, only for 60 seconds.
+import { dailyHighlightsContract, toChannels as highlightChannels } from './server/sources/dailyHighlights';
+import { getDocumentaryChannels } from './src/services/producers/documentariesProducer';
+
+let highlightsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
+let highlightsFetch:typeof fetch|undefined;
+export function setHighlightsFetchForTests(impl?:typeof fetch){highlightsFetch=impl;highlightsCache=null;}
+
+/** Classic TV shows from archive.org/download/daily-highlights (folders + M3Us). */
+async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChannel[]>{
+  if(highlightsCache&&Date.now()<highlightsCache.expiresAt)return highlightsCache.data;
+  const [r]=await runSources([{contract:dailyHighlightsContract,input:{guideId,fetchImpl:highlightsFetch}}],{timeoutMs:25_000});
+  const data:ScheduleChannel[]=r.programs.length
+    ? highlightChannels(r.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:r.status,rejected:r.rejected}))
+    : [{id:'classic-daily-highlights',guideId,name:'Daily Highlights',mediaType:'video' as MediaType,group:'Classic TV',programs:[],sourceStatus:r.status,rejected:r.rejected,sourceError:r.error}];
+  highlightsCache={data,expiresAt:Date.now()+(r.programs.length?60*60_000:60_000)};
+  return data;
+}
+
 let cableNewsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
 let cableNewsFetch:typeof fetch|undefined;
 export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;cableNewsCache=null;}
@@ -271,14 +289,14 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
 
 /** Lay on-demand programs back-to-back across today's UTC day (repeating the
  *  list if it is shorter than 24h) so the grid shows real, non-zero slots. */
-export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now=new Date()):Program[]{
+export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now=new Date(),maxSlots=150):Program[]{
   if(programs.length===0)return[];
   const day=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
   const end=day+24*3600_000;
   const out:Program[]=[];let t=day;let slot=0;
-  while(t<end){
+  while(t<end&&slot<maxSlots){
     for(const p of programs){
-      if(t>=end)break;
+      if(t>=end||slot>=maxSlots)break;
       const secs=Number((p.metadata as any)?.durationSeconds)>0?Number((p.metadata as any).durationSeconds):defaultMinutes*60;
       const stop=Math.min(t+secs*1000,end);
       const h=(ms:number)=>(ms-day)/3600_000;
@@ -294,7 +312,8 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   if(guideId==='cable-tv') return getCableNewsChannels(guideId);
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))}];
+    const highlights=await getDailyHighlightsChannels(guideId);
+    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))},...highlights];
   }
   if(guideId==='movies-classics-vault'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');
@@ -309,7 +328,8 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   }
   if(guideId==='science-documentaries'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='nova-wonders');
-    return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)}];
+    return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)},
+      ...getDocumentaryChannels().map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Documentaries',logo:ch.logo,programs:layoutDailySchedule(ch.programs,50)}))];
   }
   // Whole-day block anchored to 00:00 UTC. Using "now" here gave each request a new
   // program identity, so the program store grew on every /api/schedule call.
