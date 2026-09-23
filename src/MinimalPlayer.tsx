@@ -36,12 +36,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
   const [activeSrc, setActiveSrc] = useState(src);
-  const [archiveFallbackUsed, setArchiveFallbackUsed] = useState(false);
   const [resumePosition, setResumePosition] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const isVideo = mediaType === "video";
-  const isArchiveProxy = activeSrc.startsWith("/api/archive/proxy?path=");
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
   const { diagnosticsAnalyserRef } = useAudioNormalization(
@@ -99,7 +97,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
 
   useEffect(() => {
     setActiveSrc(src);
-    setArchiveFallbackUsed(false);
     setStatusText("Loading…");
     setIsPlaying(false);
     setResumePosition(null);
@@ -177,31 +174,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     const onError = () => {
       const err = media.error;
 
-      if (
-        err?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
-        isVideo &&
-        isArchiveProxy &&
-        !archiveFallbackUsed
-      ) {
-        try {
-          const parsed = new URL(activeSrc, window.location.origin);
-          const archivePath = parsed.searchParams.get("path");
-          if (archivePath && archivePath.startsWith("/download/") && !archivePath.includes("://") && !archivePath.includes("..")) {
-            const directArchiveSrc = `https://archive.org${archivePath}`;
-            console.warn("[AJN PLAYBACK] proxy decode failed; retrying native Archive.org transport", {
-              proxySrc: activeSrc,
-              directArchiveSrc,
-            });
-            setArchiveFallbackUsed(true);
-            setStatusText("Retrying Archive.org native transport…");
-            setActiveSrc(directArchiveSrc);
-            return;
-          }
-        } catch {
-          // Fall through to the normal error report.
-        }
-      }
-
+      // No silent switch to direct archive.org: that bypassed proxy validation,
+      // retries and telemetry, and a cross-origin source silences the audio chain.
+      // A failure is shown as a failure.
       setStatusText(`Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`);
       reportTelemetry({
         event: "media.error",
@@ -242,7 +217,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       window.removeEventListener("pagehide", saveOnExit);
       saveResumePosition(media);
     };
-  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isMuted, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
+  }, [activeSrc, clearResumePosition, eventMeta, isMuted, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
 
   const play = async () => {
     const media = mediaRef.current;
@@ -302,6 +277,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             if (node) node.muted = isMuted;
           }}
           src={activeSrc}
+          crossOrigin="anonymous"
           autoPlay
           muted={isMuted}
           playsInline
