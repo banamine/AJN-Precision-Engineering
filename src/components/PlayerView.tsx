@@ -11,12 +11,26 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress
     const channels = Array.isArray(data.channels) ? data.channels : [];
     const channel = channels.find((c: any) => c.id === nowPlaying?.channelId);
     const programs = Array.isArray(channel?.programs) ? channel.programs : [];
-    const index = programs.findIndex((p: any) => p.mediaUrl === nowPlaying?.src || p.archivePath === nowPlaying?.src || (nowPlaying.archivePath && p.archivePath === nowPlaying.archivePath));
-    const next = programs[(index + 1) % programs.length];
+    if (programs.length === 0) return;
+
+    const currentIndex = programs.findIndex((p: any) =>
+      (nowPlaying?.programId && p.id === nowPlaying.programId) ||
+      (nowPlaying?.assetId && p.metadata?.assetId === nowPlaying.assetId) ||
+      (nowPlaying?.sourceId && p.metadata?.sourceId === nowPlaying.sourceId &&
+        (p.mediaUrl === nowPlaying?.src || p.archivePath === nowPlaying?.archivePath)) ||
+      p.mediaUrl === nowPlaying?.src ||
+      p.archivePath === nowPlaying?.src ||
+      (nowPlaying?.archivePath && p.archivePath === nowPlaying.archivePath)
+    );
+
+    if (currentIndex < 0) return;
+
+    const nextIndex = (currentIndex + 1) % programs.length;
+    const next = programs[nextIndex];
     if (!next) return;
 
     reportTelemetry({
-      event: index + 1 >= programs.length ? "playback.loop" : "playback.advance",
+      event: nextIndex === 0 ? "playback.loop" : "playback.advance",
       guideId: next.guideId ?? null,
       channelId: next.channelId ?? null,
       programId: next.id ?? null,
@@ -24,7 +38,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onNavigate, onProgress
       assetId: next.metadata?.assetId ?? null,
       mediaPath: (next.archivePath || next.mediaUrl) ?? null,
     });
-    
+
     onSelectProgram(
       next.archivePath || next.mediaUrl,
       next.title,
