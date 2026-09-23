@@ -37,6 +37,27 @@ interface ArchiveMetadata {
 
 const USER_AGENT = 'AJN-Precision-Engineering/ArchiveNews';
 const METADATA_CONCURRENCY = 6;
+/** Clip length for restricted TV News items. Matches the known-good reference M3U
+ *  (…/<ID>/<ID>.mp4?exact=1&start=0&end=282). Archive serves these windows even
+ *  when the full-length file answers 403. */
+export const CLIP_SECONDS = 282;
+
+function parseRuntime(v: unknown): number | undefined {
+  const s = String(v ?? '').trim();
+  if (!s) return undefined;
+  if (/^\d+(\.\d+)?$/.test(s)) return Number(s);
+  const parts = s.split(':').map(Number);
+  if (parts.some((n) => !Number.isFinite(n))) return undefined;
+  return parts.reduce((acc, n) => acc * 60 + n, 0) || undefined;
+}
+
+/** Item-level clip windows: [start, end) seconds, each at most CLIP_SECONDS. */
+export function clipWindows(durationSeconds: number, clip = CLIP_SECONDS): Array<[number, number]> {
+  const total = Math.max(1, Math.floor(durationSeconds));
+  const out: Array<[number, number]> = [];
+  for (let start = 0; start < total; start += clip) out.push([start, Math.min(start + clip, total)]);
+  return out;
+}
 
 async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const out = new Array<R>(items.length);
@@ -141,12 +162,46 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
       const { id, doc, aired } = candidates[i];
       const { status, body: meta } = metas[i];
       if (!meta) { rejected.push({ id, reason: `metadata HTTP ${status}` }); continue; }
-      if (isRestrictedItem(meta)) { restricted++; rejected.push({ id, reason: 'restricted: access-restricted item' }); continue; }
+      if (meta.is_dark) { restricted++; rejected.push({ id, reason: 'restricted: dark item' }); continue; }
 
       const { file, allPrivate } = pickPlayableFile(meta.files ?? []);
-      if (!file) {
-        if (allPrivate) restricted++;
-        rejected.push({ id, reason: allPrivate ? 'restricted: all MP4 files are private' : 'no browser-playable MP4' });
+      if (!file || isRestrictedItem(meta)) {
+        // TV News norm: full file is restricted, but exact clip windows of the
+        // item-level MP4 are served. Emit those, exactly as the reference M3U does.
+        const mp4 = (meta.files ?? []).find((f) => /\.mp4$/i.test(f.name));
+        if (!mp4 && !isRestrictedItem(meta) && !allPrivate) {
+          rejected.push({ id, reason: 'no browser-playable MP4' });
+          continue;
+        }
+        const duration = Number(mp4?.length) > 0 ? Number(mp4?.length) : parseRuntime(meta.metadata?.runtime) ?? 3600;
+        const title = String(meta.metadata?.title ?? doc.title ?? aired.show);
+        clipWindows(duration).forEach(([start, end], n) => {
+          const clipStart = new Date(aired.airedUtc.getTime() + start * 1000);
+          const clipEnd = new Date(aired.airedUtc.getTime() + end * 1000);
+          const archivePath = `/download/${id}/${id}.mp4?exact=1&start=${start}&end=${end}`;
+          const clipId = `${id}_c${n}`;
+          const programId = normalizeProgramIdentity({ externalId: clipId, channelId: input.channelId, title: aired.show, startTime: clipStart.toISOString() });
+          const hh = (d: Date) => d.getUTCHours() + d.getUTCMinutes() / 60;
+          const mm = (sec: number) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+          programs.push({
+            id: programId,
+            guideId: input.guideId,
+            channelId: input.channelId,
+            title: `${title} ${mm(start)}`,
+            description: `${input.channelName} broadcast: ${aired.show} (clip ${n + 1})`,
+            startTime: hh(clipStart), endTime: hh(clipEnd), startHour: hh(clipStart), endHour: hh(clipEnd),
+            startTimeUtc: clipStart.toISOString(),
+            endTimeUtc: clipEnd.toISOString(),
+            mediaType: 'video',
+            mediaUrl: buildArchiveProxyUrl(archivePath),
+            archivePath,
+            assetId: normalizeAssetIdentity({ externalId: clipId, archiveIdentifier: id, programId, mediaUrl: archivePath }),
+            sourceId: normalizeSourceIdentity({ channelId: input.channelId, url: `archive:${network}`, protocol: 'direct_archive' }),
+            sourceClass: 'archive_org',
+            isArchivedSource: true,
+            metadata: { externalId: clipId, network, show: aired.show, durationSeconds: end - start, durationSource: 'clip', clip: { index: n, start, end, itemDurationSeconds: duration } },
+          });
+        });
         continue;
       }
 
@@ -193,4 +248,6 @@ export const NEWS_NETWORKS: Array<[string, string, string]> = [
   ['MSNBCW', 'msnbc', 'MSNBC'],
   ['BBCNEWS', 'bbc', 'BBC News'],
   ['NTD', 'ntd', 'NTD News'],
+  ['RT', 'rt', 'RT'],
+  ['KPIX', 'kpix', 'KPIX CBS'],
 ];

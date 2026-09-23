@@ -27,7 +27,7 @@ setCableNewsFetchForTests((async (input: any) => {
 
 const channels = await getScheduleForGuide('cable-tv');
 const by = Object.fromEntries(channels.map((c) => [c.id, c]));
-assert.deepEqual(channels.map((c) => c.id), ['fox-news', 'cnn', 'msnbc', 'bbc', 'ntd']);
+assert.deepEqual(channels.map((c) => c.id), ['fox-news', 'cnn', 'msnbc', 'bbc', 'ntd', 'rt', 'kpix']);
 
 const cnn = by['cnn'];
 assert.equal(cnn.sourceStatus, 'ok');
@@ -39,8 +39,11 @@ assert.ok(Math.abs(aired - (today.getTime() - 30 * 3600_000)) < 3600_000, 'real 
 assert.equal(Date.parse(prog.endTimeUtc!) - aired, 3600_000);
 assert.equal(cnn.logo, 'https://archive.org/services/img/CNNW');
 
-assert.equal(by['fox-news'].sourceStatus, 'restricted');
-assert.equal(by['fox-news'].rejected?.[0].reason, 'restricted: access-restricted item');
+// Restricted TV News item -> 282s exact clips of the item-level MP4 (reference M3U format).
+const fox = by['fox-news'];
+assert.equal(fox.sourceStatus, 'ok');
+assert.equal(fox.programs.length, 13);
+assert.equal(fox.programs[0].archivePath, `/download/${foxId}/${foxId}.mp4?exact=1&start=0&end=282`);
 assert.equal(by['msnbc'].sourceStatus, 'upstream_error');
 assert.equal(by['msnbc'].sourceError, 'advancedsearch HTTP 503');
 assert.equal(by['bbc'].programs.length, 0);

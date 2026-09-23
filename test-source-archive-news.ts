@@ -1,6 +1,6 @@
 // Offline regression for the Archive News source contract (mocked Archive JSON).
 import assert from 'node:assert/strict';
-import { archiveNewsContract, parseAirTime, pickPlayableFile } from './server/sources/archiveNews.ts';
+import { archiveNewsContract, clipWindows, CLIP_SECONDS, parseAirTime, pickPlayableFile } from './server/sources/archiveNews.ts';
 
 const now = new Date('2026-09-23T12:00:00Z');
 const ctx = { now, signal: new AbortController().signal };
@@ -13,6 +13,10 @@ assert.equal(pickPlayableFile([
   { name: 'a.ia.mp4', source: 'derivative' },
 ]).file?.name, 'a.ia.mp4');
 assert.deepEqual(pickPlayableFile([{ name: 'a.mp4', source: 'original', private: 'true' }]), { file: null, allPrivate: true });
+
+assert.equal(CLIP_SECONDS, 282);
+assert.deepEqual(clipWindows(600), [[0, 282], [282, 564], [564, 600]]);
+assert.equal(clipWindows(3600).length, 13);
 
 type Routes = Record<string, { status: number; body?: unknown }>;
 function mockFetch(routes: Routes) {
@@ -42,13 +46,26 @@ const input = (fetchImpl: typeof fetch) => ({ network: 'CNNW', channelId: 'cnn',
       { name: 'CNNW_20260922_150000_CNN_News_Central.mp4', source: 'original', length: '3600' },
       { name: 'CNNW_20260922_150000_CNN_News_Central.ia.mp4', source: 'derivative', length: '3599.5' },
     ] } },
-    'metadata/CNNW_20260921_080000_CNN_Newsroom_Live': { status: 200, body: { metadata: { 'access-restricted-item': 'true' }, files: [] } },
-    'metadata/CNNW_20260920_010000_Private_Show': { status: 200, body: { files: [{ name: 'x.mp4', source: 'original', private: 'true' }] } },
+    'metadata/CNNW_20260921_080000_CNN_Newsroom_Live': { status: 200, body: { metadata: { 'access-restricted-item': 'true', title: 'CNN Newsroom Live' }, files: [
+      { name: 'CNNW_20260921_080000_CNN_Newsroom_Live.mp4', source: 'original', private: 'true', length: '600' },
+    ] } },
+    'metadata/CNNW_20260920_010000_Private_Show': { status: 200, body: { is_dark: true } },
   });
   const r = await archiveNewsContract.hook(input(impl), ctx);
   assert.equal(r.status, 'partial');
-  assert.equal(r.programs.length, 1);
-  const p = r.programs[0];
+  // 1 full derivative + 3 clips (600s restricted item) = 4, sorted by air time.
+  assert.equal(r.programs.length, 4);
+  const clips = r.programs.filter((x) => x.archivePath?.includes('exact=1'));
+  assert.deepEqual(clips.map((c) => c.archivePath), [
+    '/download/CNNW_20260921_080000_CNN_Newsroom_Live/CNNW_20260921_080000_CNN_Newsroom_Live.mp4?exact=1&start=0&end=282',
+    '/download/CNNW_20260921_080000_CNN_Newsroom_Live/CNNW_20260921_080000_CNN_Newsroom_Live.mp4?exact=1&start=282&end=564',
+    '/download/CNNW_20260921_080000_CNN_Newsroom_Live/CNNW_20260921_080000_CNN_Newsroom_Live.mp4?exact=1&start=564&end=600',
+  ]);
+  assert.equal(clips[0].title, 'CNN Newsroom Live 00:00');
+  assert.equal(clips[1].startTimeUtc, '2026-09-21T08:04:42.000Z');
+  assert.equal(clips[0].mediaUrl, '/api/archive/proxy?path=' + encodeURIComponent(clips[0].archivePath!));
+  assert.equal(new Set(r.programs.map((x) => x.id)).size, 4, 'unique clip ids');
+  const p = r.programs.find((x) => x.title === 'CNN News Central')!;
   assert.equal(p.title, 'CNN News Central');
   assert.equal(p.startTimeUtc, '2026-09-22T15:00:00.000Z');
   assert.equal(p.endTimeUtc, '2026-09-22T15:59:59.500Z');
@@ -56,8 +73,7 @@ const input = (fetchImpl: typeof fetch) => ({ network: 'CNNW', channelId: 'cnn',
   assert.ok(p.mediaUrl.startsWith('/api/archive/proxy?path='));
   assert.deepEqual(r.rejected.map((x) => x.reason), [
     'aired outside the 7-day window',
-    'restricted: access-restricted item',
-    'restricted: all MP4 files are private',
+    'restricted: dark item',
   ]);
   assert.ok(calls.every((u) => !u.includes('/details/')), 'JSON APIs only');
   assert.ok(!calls.some((u) => u.includes('metadata/CNNW_20260901')), 'no metadata call for out-of-window items');
