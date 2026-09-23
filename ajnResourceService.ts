@@ -229,6 +229,31 @@ export function getAjnResource(id: string): AjnResourceLink | undefined {
   return byId.get(id as AjnFeedId);
 }
 
+/** Parse RSS XML into feed items (the publisher's RSS is XML; parsing stays here). */
+export function parseAjnFeedXml(xml: string, resource: AjnResourceLink): AjnFeedItem[] {
+  return [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map((match, index) => {
+    const block = match[1];
+    const url = mediaUrl(block);
+    return {
+      id: itemId(resource.id, block, index),
+      feedId: resource.id,
+      title: tag(block, 'title') || `AJN ${resource.name}`,
+      url: url || '',
+      mediaType: url ? inferMediaType(url, resource.mediaType) : resource.mediaType,
+      publishedAt: tag(block, 'pubDate') || tag(block, 'dc:date'),
+      description: tag(block, 'description'),
+      duration: tag(block, 'itunes:duration'),
+      thumbnailUrl: undefined,
+      metadata: {
+        guid: tag(block, 'guid') || '',
+        author: tag(block, 'author') || tag(block, 'dc:creator') || '',
+        sourceFeed: resource.rssUrl,
+      },
+    } as AjnFeedItem;
+  }).filter(item => item.url);
+
+}
+
 export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise<{ resource: AjnResourceLink; fetchedAt: string; items: AjnFeedItem[]; rawBytes: number }> {
   const resource = byId.get(id);
   if (!resource) throw new Error(`Unknown AJN feed: ${id}`);
@@ -247,27 +272,7 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
   const xml = await response.text();
   if (!/<(?:rss|feed)\b/i.test(xml)) throw new Error(`AJN feed ${id} did not return RSS/XML`);
 
-  const items = [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map((match, index) => {
-    const block = match[1];
-    const url = mediaUrl(block);
-    return {
-      id: itemId(id, block, index),
-      feedId: id,
-      title: tag(block, 'title') || `AJN ${resource.name}`,
-      url: url || '',
-      mediaType: url ? inferMediaType(url, resource.mediaType) : resource.mediaType,
-      publishedAt: tag(block, 'pubDate') || tag(block, 'dc:date'),
-      description: tag(block, 'description'),
-      duration: tag(block, 'itunes:duration'),
-      thumbnailUrl: undefined,
-      metadata: {
-        guid: tag(block, 'guid') || '',
-        author: tag(block, 'author') || tag(block, 'dc:creator') || '',
-        sourceFeed: resource.rssUrl,
-      },
-    } as AjnFeedItem;
-  }).filter(item => item.url);
-
+  const items = parseAjnFeedXml(xml, resource);
   return { resource, fetchedAt: new Date().toISOString(), items, rawBytes: Buffer.byteLength(xml, 'utf8') };
 }
 

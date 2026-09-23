@@ -93,6 +93,8 @@ jobs:
         run: npm run test:cable-news-guide
       - name: AJN Audio contract regression (mocked)
         run: npm run test:source-ajn-audio
+      - name: AJN Media RSS contract regression (mocked)
+        run: npm run test:source-ajn-media
 
   integration:
     needs: [lint, pure-regressions]
