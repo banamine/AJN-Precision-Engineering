@@ -48,6 +48,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const isVideo = mediaType === "video";
   const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "");
   const hlsRef = useRef<Hls | null>(null);
+  // Only request CORS for our own origin (the Archive proxy). Hosts such as
+  // archive.alexjoneslive.com send no CORS headers, so crossOrigin={corsMode}
+  // makes the browser refuse the file outright. Without it the file plays and
+  // the audio bridge falls back to native output.
+  const corsMode = (activeSrc ?? "").startsWith("/") ? "anonymous" : undefined;
   // Read in effects without re-running them: toggling mute must not reload media.
   const isMutedRef = useRef(isMuted);
   isMutedRef.current = isMuted;
@@ -345,7 +350,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             if (node) node.muted = isMuted;
           }}
           src={isHls ? undefined : activeSrc}
-          crossOrigin="anonymous"
+          crossOrigin={corsMode}
           autoPlay
           muted={isMuted}
           playsInline
@@ -361,7 +366,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           }}
           src={activeSrc}
           muted={isMuted}
-          crossOrigin="anonymous"
+          crossOrigin={corsMode}
           preload="metadata"
           className="w-full"
         />

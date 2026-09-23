@@ -176,8 +176,10 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
         // TV News norm: full file is restricted, but exact clip windows of the
         // item-level MP4 are served. Emit those, exactly as the reference M3U does.
         const mp4 = (meta.files ?? []).find((f) => /\.mp4$/i.test(f.name));
-        if (!mp4 && !isRestrictedItem(meta) && !allPrivate) {
-          rejected.push({ id, reason: 'no browser-playable MP4' });
+        // No MP4 listed yet = recording still processing; Archive serves an HTML
+        // page for its clips until then (seen live for items < ~3h old).
+        if (!mp4) {
+          rejected.push({ id, reason: isRestrictedItem(meta) || allPrivate ? 'not yet published (no MP4 listed)' : 'no browser-playable MP4' });
           continue;
         }
         const duration = Number(mp4?.length) > 0 ? Number(mp4?.length) : parseRuntime(meta.metadata?.runtime) ?? 3600;

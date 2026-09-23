@@ -115,6 +115,15 @@ app.get('/api/archive/proxy', async (req,res)=>{
     }
 
     const contentType=mediaResponse.headers.get('content-type');
+    // Archive answers not-yet-published or unavailable media with an HTML page
+    // (still 200/206). Passing that on makes the browser report a demuxer error;
+    // report it as what it is instead.
+    if(/text\/html/i.test(contentType||'')){
+      await mediaResponse.body?.cancel().catch(()=>{});
+      stats.failedRequests++;
+      console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:mediaResponse.status,stage:'not_media',contentType,path:v.cleanPath}));
+      return res.status(502).json({error:'Archive returned a web page, not media (not yet published or unavailable)',upstreamStatus:mediaResponse.status,proxyRequestId});
+    }
     const contentLength=mediaResponse.headers.get('content-length');
     const contentRange=mediaResponse.headers.get('content-range');
     const acceptRanges=mediaResponse.headers.get('accept-ranges');

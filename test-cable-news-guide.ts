@@ -21,7 +21,7 @@ setCableNewsFetchForTests((async (input: any) => {
     return json(200, { response: { docs: [] } });
   }
   if (url.includes(`metadata/${cnnId}`)) return json(200, { metadata: { title: 'CNN News Central' }, files: [{ name: `${cnnId}.mp4`, source: 'derivative', length: '3600' }] });
-  if (url.includes(`metadata/${foxId}`)) return json(200, { metadata: { 'access-restricted-item': 'true' } });
+  if (url.includes(`metadata/${foxId}`)) return json(200, { metadata: { 'access-restricted-item': 'true' }, files: [{ name: `${foxId}.mp4`, source: 'original', private: 'true', length: '3600' }] });
   return json(404);
 }) as typeof fetch);
 
