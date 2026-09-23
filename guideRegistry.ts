@@ -287,6 +287,10 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
       programs,
     }];
   }
+  if(guideId==='science-documentaries'){
+    const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='nova-wonders');
+    return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs}];
+  }
   // Whole-day block anchored to 00:00 UTC. Using "now" here gave each request a new
   // program identity, so the program store grew on every /api/schedule call.
   const now=new Date();
