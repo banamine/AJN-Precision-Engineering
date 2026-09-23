@@ -11,12 +11,10 @@ import {
  addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
-import newsV1Router from './server/routes/newsV1.js';
 import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
 
 const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(express.json());
 app.use(watchdogRouter);
-app.use(newsV1Router);
 
 interface ProxyStats{totalRequests:number;successfulRequests:number;retriedRequests:number;failedRequests:number;cacheHits:number;lastUpstreamLatencyMs:number;activeStreams:number}
 const stats:ProxyStats={totalRequests:0,successfulRequests:0,retriedRequests:0,failedRequests:0,cacheHits:0,lastUpstreamLatencyMs:0,activeStreams:0};
