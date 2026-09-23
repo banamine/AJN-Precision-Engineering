@@ -1,2 +1,0 @@
-channels.ts — surgical fix to TV News Archive media resolution
-INSTALL.txt — installation and verification instructions
