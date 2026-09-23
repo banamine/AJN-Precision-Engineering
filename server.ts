@@ -100,6 +100,9 @@ async function resolveArchiveMediaRedirect(initialUrl:string,maxRedirects=5):Pro
       },
     });
 
+    // Never read the probe body: this request only discovers the final URL.
+    await response.body?.cancel().catch(()=>{});
+
     if(response.status >= 200 && response.status < 300){
       return currentUrl.toString();
     }
@@ -144,17 +147,22 @@ app.get('/api/archive/proxy', async (req,res)=>{
     const range=String(req.headers.range || '');
     if(range) upstreamHeaders.Range=range;
 
-    let mediaResponse=await fetch(resolvedUrl,{method:'GET',redirect:'manual',headers:upstreamHeaders});
+    const upstreamAbort=new AbortController();
+    res.on('close',()=>{ if(!res.writableFinished) upstreamAbort.abort(); });
+
+    let mediaResponse=await fetch(resolvedUrl,{method:'GET',redirect:'manual',headers:upstreamHeaders,signal:upstreamAbort.signal});
     if(REDIRECT_STATUSES.has(mediaResponse.status)){
       const retryUrl=await resolveArchiveMediaRedirect(resolvedUrl);
       if(!retryUrl){
         stats.failedRequests++;
         return res.status(502).json({error:'Archive redirect changed during media fetch',proxyRequestId});
       }
-      mediaResponse=await fetch(retryUrl,{method:'GET',redirect:'manual',headers:upstreamHeaders});
+      await mediaResponse.body?.cancel().catch(()=>{});
+      mediaResponse=await fetch(retryUrl,{method:'GET',redirect:'manual',headers:upstreamHeaders,signal:upstreamAbort.signal});
     }
 
     if(!mediaResponse.ok || mediaResponse.status < 200 || mediaResponse.status >= 300){
+      await mediaResponse.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       return res.status(502).json({error:`Archive media returned HTTP ${mediaResponse.status}`,proxyRequestId});
     }
@@ -177,11 +185,21 @@ app.get('/api/archive/proxy', async (req,res)=>{
     res.setHeader('X-AJN-Archive-Proxy','stream-from-validated-storage');
     res.status(mediaResponse.status);
     if(mediaResponse.body){
-      const {Readable}=await import('node:stream');
-      return Readable.fromWeb(mediaResponse.body as any).pipe(res);
+      stats.activeStreams++;
+      const body=Readable.fromWeb(mediaResponse.body as any);
+      const done=()=>{ stats.activeStreams=Math.max(0,stats.activeStreams-1); };
+      body.once('end',done);
+      body.once('error',(streamErr)=>{
+        done();
+        if(!upstreamAbort.signal.aborted) console.error('[Archive Proxy Stream Error]',proxyRequestId,streamErr?.message);
+        res.destroy();
+      });
+      res.once('close',()=>{ if(!body.destroyed){ body.destroy(); } });
+      return body.pipe(res);
     }
     return res.end();
   }catch(err:any){
+    if(err?.name==='AbortError'||res.headersSent) return;
     stats.failedRequests++;
     console.error('[Archive Proxy Redirect Failure]',proxyRequestId,err?.message || String(err));
     return res.status(502).json({
@@ -192,6 +210,8 @@ app.get('/api/archive/proxy', async (req,res)=>{
   }
 });
 app.get('/api/archive/metadata',async(req,res)=>{ const v=validateArchivePath((req.query.path as string)||''); if(!v.valid||!v.cleanPath)return res.status(400).json({error:v.error}); try{const r=await fetch(`${ARCHIVE_BASE}${v.cleanPath}`,{method:'HEAD',headers:{'User-Agent':'AJN-Precision-Engineering-Proxy/1.0'}});res.json({status:r.status,ok:r.ok,contentType:r.headers.get('content-type'),contentLength:r.headers.get('content-length'),acceptRanges:r.headers.get('accept-ranges'),proxyUrl:`/api/archive/proxy?path=${encodeURIComponent(v.cleanPath)}`});}catch(e:any){res.status(502).json({error:e.message});} });
+
+app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.originalUrl}));
 
 async function startServer(){
  if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
