@@ -23,6 +23,11 @@ const RESUME_MIN_SEC = 5;
 const RESUME_SAVE_INTERVAL_MS = 5000;
 const RESUME_PREFIX = "ajn-playback-position:";
 
+// Session-wide sound choice: once the user unmutes, every later program
+// (including scheduler auto-advance, which remounts this player) stays unmuted
+// until the app is closed or reloaded.
+let sessionUnmuted = false;
+
 export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +36,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [isPlaying, setIsPlaying] = useState(false);
   // Autoplay starts muted on every app load. Once the user unmutes, keep that
   // choice for the rest of this app session; a reload intentionally resets it.
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(() => !sessionUnmuted);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
@@ -120,6 +125,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         await media.play();
         if (!media.paused) reportPlaying();
       } catch (error) {
+        // Unmuted autoplay refused (no user gesture yet in this tab): play muted
+        // rather than stall the schedule. The session preference is unchanged.
+        if (!media.muted && (error as DOMException)?.name === 'NotAllowedError') {
+          media.muted = true;
+          setIsMuted(true);
+          try { await media.play(); if (!media.paused) { reportPlaying(); return; } } catch { /* fall through */ }
+        }
         // Autoplay may still be blocked by the browser. Keep the real error
         // available in the console; the normal Play control remains usable.
         console.warn("[AJN PLAYBACK] autoplay blocked", {
@@ -264,6 +276,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     if (!media) return;
     const nextMuted = !media.muted;
     media.muted = nextMuted;
+    sessionUnmuted = !nextMuted;
     setIsMuted(nextMuted);
   };
 

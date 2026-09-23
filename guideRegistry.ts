@@ -269,6 +269,26 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
   return data;
 }
 
+/** Lay on-demand programs back-to-back across today's UTC day (repeating the
+ *  list if it is shorter than 24h) so the grid shows real, non-zero slots. */
+export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now=new Date()):Program[]{
+  if(programs.length===0)return[];
+  const day=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
+  const end=day+24*3600_000;
+  const out:Program[]=[];let t=day;let slot=0;
+  while(t<end){
+    for(const p of programs){
+      if(t>=end)break;
+      const secs=Number((p.metadata as any)?.durationSeconds)>0?Number((p.metadata as any).durationSeconds):defaultMinutes*60;
+      const stop=Math.min(t+secs*1000,end);
+      const h=(ms:number)=>(ms-day)/3600_000;
+      out.push({...p,id:`${p.id}:d${slot}`,startTimeUtc:new Date(t).toISOString(),endTimeUtc:new Date(stop).toISOString(),startTime:h(t),endTime:h(stop),startHour:h(t),endHour:h(stop)});
+      t=stop;slot++;
+    }
+  }
+  return out;
+}
+
 export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleChannel[]>{
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv') return getCableNewsChannels(guideId);
@@ -284,12 +304,12 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
       name:'Cinema Classics Vault',
       mediaType:'video',
       group:'Movies',
-      programs,
+      programs:layoutDailySchedule(programs,100),
     }];
   }
   if(guideId==='science-documentaries'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='nova-wonders');
-    return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs}];
+    return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)}];
   }
   // Whole-day block anchored to 00:00 UTC. Using "now" here gave each request a new
   // program identity, so the program store grew on every /api/schedule call.
