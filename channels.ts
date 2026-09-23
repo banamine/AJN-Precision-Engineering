@@ -312,6 +312,7 @@ interface ArchiveFile {
   format?: string;
   size?: string;
   length?: string;
+  source?: string;
 }
 
 interface ArchiveMetadataResponse {
@@ -494,9 +495,22 @@ export interface ResolvedMediaCandidate extends ResolvedFile {
 export async function resolveArchiveMediaCandidates(identifier: string): Promise<ResolvedMediaCandidate[]> {
   try {
     const data = await fetchArchiveMetadata(identifier);
-    const mediaFiles = (data.files ?? [])
+    const eligibleFiles = (data.files ?? [])
       .filter((file) => !isInternalFile(file.name))
-      .filter((file) => isBrowserPlayable(file.name))
+      .filter((file) => String(file.source ?? "").toLowerCase() !== "metadata")
+      .filter((file) => isBrowserPlayable(file.name));
+
+    // Archive metadata explicitly marks generated browser-playable derivatives.
+    // Prefer those derivatives over originals; never select an original when a
+    // usable MP4/WebM derivative exists for the item.
+    const derivativeFiles = eligibleFiles.filter((file) => {
+      const source = String(file.source ?? "").toLowerCase();
+      const lower = String(file.name).toLowerCase();
+      return source === "derivative" && (lower.endsWith(".mp4") || lower.endsWith(".webm"));
+    });
+    const selectedFiles = derivativeFiles.length > 0 ? derivativeFiles : eligibleFiles;
+
+    const mediaFiles = selectedFiles
       .map((file) => ({
         filename: file.name,
         url: buildFileUrl(identifier, file.name),
@@ -505,13 +519,16 @@ export async function resolveArchiveMediaCandidates(identifier: string): Promise
         size: parseSize(file.size),
         fallback: false,
         category: categorizeFile(file.name),
+        derivative: String(file.source ?? "").toLowerCase() === "derivative",
       }))
       .sort((a, b) => {
         const categoryA = PLAYABLE_PRIORITY.indexOf(a.category);
         const categoryB = PLAYABLE_PRIORITY.indexOf(b.category);
-        return categoryA - categoryB || b.size - a.size;
+        return categoryA - categoryB ||
+          Number(b.derivative) - Number(a.derivative) ||
+          a.filename.localeCompare(b.filename);
       })
-      .map(({ category: _category, ...candidate }) => candidate);
+      .map(({ category: _category, derivative: _derivative, ...candidate }) => candidate);
 
     return mediaFiles;
   } catch (error) {

@@ -16,13 +16,22 @@ function encodePathPart(value: string): string {
 }
 
 function pickMp4(files: any[]): any | null {
-  const candidates = files.filter((file) => {
+  const eligible = files.filter((file) => {
     const name = String(file?.name || "");
     const format = String(file?.format || "").toLowerCase();
-    return /\.mp4$/i.test(name) && !/metadata|itemimage|thumb/i.test(name) &&
+    const source = String(file?.source || "").toLowerCase();
+    return /\.mp4$/i.test(name) &&
+      source !== "metadata" &&
+      !/metadata|itemimage|thumb|\.torrent$|\.ia\.|\.low\.|_meta\.xml$|_files\.xml$/i.test(name) &&
       (format.includes("video") || format.includes("mp4") || !format);
   });
-  candidates.sort((a, b) => Number(b?.size || 0) - Number(a?.size || 0));
+  const derivatives = eligible.filter((file) => String(file?.source || "").toLowerCase() === "derivative");
+  const candidates = derivatives.length ? derivatives : eligible;
+  candidates.sort((a, b) => {
+    const sizeA = Number(a?.size || 0);
+    const sizeB = Number(b?.size || 0);
+    return sizeB - sizeA;
+  });
   return candidates[0] || null;
 }
 
