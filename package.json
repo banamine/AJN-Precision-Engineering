@@ -33,7 +33,8 @@
     "test:movies-manifest-resolve": "tsx test-movies-manifest-resolve.ts",
     "test:program-store-bounded": "tsx test-program-store-bounded.ts",
     "test:source-contracts": "tsx test-source-contracts.ts",
-    "test:source-archive-news": "tsx test-source-archive-news.ts"
+    "test:source-archive-news": "tsx test-source-archive-news.ts",
+    "test:cable-news-guide": "tsx test-cable-news-guide.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

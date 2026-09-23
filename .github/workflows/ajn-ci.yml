@@ -89,6 +89,8 @@ jobs:
         run: npm run test:source-contracts
       - name: Archive News contract regression (mocked)
         run: npm run test:source-archive-news
+      - name: Cable TV guide from Archive News contract (mocked)
+        run: npm run test:cable-news-guide
 
   integration:
     needs: [lint, pure-regressions]

@@ -1,7 +1,9 @@
 import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
 } from './src/types';
-import { getChannelSchedule, tryResolveArchiveMediaCandidates } from './channels';
+import { tryResolveArchiveMediaCandidates } from './channels';
+import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './server/sources/archiveNews';
+import { runSources } from './server/sources/runner';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
 import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
@@ -239,19 +241,37 @@ export function getAllPlaylists(){return Array.from(playlistsMap.values());}
 export function getPlaylistById(id:string){return playlistsMap.get(id);}
 export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.get(id);if(!p)return{success:false};const text=customM3u||p.rawM3u||'';if(!text){p.syncStatus='failed';return{success:false,playlist:p};}const r=ingestM3uPlaylist(p,text);return{success:true,playlist:p,count:r.ingestedCount};}
 
+// Cable TV news comes from the Archive News source contract (layer 3): real air
+// times, restricted items reported per channel. Complete results are cached for
+// 15 minutes; if any network came back empty or failed, only for 60 seconds.
+let cableNewsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
+let cableNewsFetch:typeof fetch|undefined;
+export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;cableNewsCache=null;}
+
+async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
+  if(cableNewsCache&&Date.now()<cableNewsCache.expiresAt)return cableNewsCache.data;
+  const jobs=NEWS_NETWORKS.map(([network,channelId,channelName])=>({
+    contract:archiveNewsContract,
+    input:{network,channelId,channelName,guideId,rows:12,fetchImpl:cableNewsFetch} as ArchiveNewsInput,
+  }));
+  const results=await runSources(jobs,{timeoutMs:45_000});
+  const data:ScheduleChannel[]=results.map((r,i)=>{
+    const [network,channelId,channelName]=NEWS_NETWORKS[i];
+    return {
+      id:channelId,guideId,name:channelName,mediaType:'video' as MediaType,group:'News',
+      logo:`https://archive.org/services/img/${network}`,
+      programs:r.programs.map(p=>upsertCanonicalProgram(p)),
+      sourceStatus:r.status,rejected:r.rejected,sourceError:r.error,
+    };
+  });
+  const complete=data.every(ch=>ch.programs.length>0);
+  cableNewsCache={data,expiresAt:Date.now()+(complete?15*60_000:60_000)};
+  return data;
+}
+
 export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleChannel[]>{
   const guide=getGuideById(guideId);if(!guide)return[];
-  if(guideId==='cable-tv'){
-    const news=await getChannelSchedule();
-    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any)=>{
-      const id = normalizeProgramIdentity({ externalId:p.externalId, channelId:ch.id, title:p.title, startTime:typeof p.startHour==='number'?p.startHour:null });
-      const assetId = normalizeAssetIdentity({ externalId:p.externalId, archiveIdentifier:p.externalId, programId:id, mediaUrl:p.archivePath });
-      const sourceId = normalizeSourceIdentity({ channelId: ch.id, url: p.archivePath, protocol: 'direct_archive' });
-      const startTimeUtc = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      const endTimeUtc = new Date().toISOString();
-      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
-    })}));
-  }
+  if(guideId==='cable-tv') return getCableNewsChannels(guideId);
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
     return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))}];

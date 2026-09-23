@@ -5,16 +5,9 @@ import express from 'express';
 import path from 'node:path';
 import { runSources, type SourceJob } from './runner';
 import { localFilesContract } from './localFiles';
-import { archiveNewsContract } from './archiveNews';
+import { archiveNewsContract, NEWS_NETWORKS } from './archiveNews';
 import type { SourceResult } from './contract';
 
-const NEWS_NETWORKS: Array<[string, string, string]> = [
-  ['FOXNEWSW', 'fox-news', 'Fox News'],
-  ['CNNW', 'cnn', 'CNN'],
-  ['MSNBCW', 'msnbc', 'MSNBC'],
-  ['BBCNEWS', 'bbc', 'BBC News'],
-  ['NTD', 'ntd', 'NTD News'],
-];
 
 export function localMediaRoot(): string | null {
   const dir = process.env.AJN_LOCAL_MEDIA_DIR?.trim();

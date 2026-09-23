@@ -87,19 +87,20 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
     const network = input.network.trim().replace(/^TV-/i, '');
     const day = (d: Date) => d.toISOString().slice(0, 10);
     let docs: Array<{ identifier: string; title?: string }> = [];
-    let searchStatus = 0;
+    const searchErrors: number[] = [];
     for (const collection of [network, `TV-${network}`]) {
       const q = `collection:${collection} AND mediatype:movies AND date:[${day(windowStart)} TO ${day(ctx.now)}]`;
       const url = 'https://archive.org/advancedsearch.php'
         + `?q=${encodeURIComponent(q)}&fl[]=identifier&fl[]=title`
         + `&rows=${Math.min(Math.max(input.rows ?? 25, 1), 100)}&sort[]=date+desc&output=json`;
       const { status, body } = await getJson<{ response?: { docs?: typeof docs } }>(fetchImpl, url, ctx.signal);
-      searchStatus = status;
+      if (status >= 400) searchErrors.push(status);
       docs = body?.response?.docs ?? [];
       if (docs.length > 0) break;
     }
-    if (searchStatus >= 400) {
-      return { ...base, status: 'upstream_error', programs, rejected, error: `advancedsearch HTTP ${searchStatus}` };
+    // One collection failing and the other returning nothing is not "no news": report it.
+    if (docs.length === 0 && searchErrors.length > 0) {
+      return { ...base, status: 'upstream_error', programs, rejected, error: `advancedsearch HTTP ${searchErrors.join(', ')}` };
     }
 
     // 2. Check each item's metadata; keep only public, playable, in-window recordings.
@@ -136,6 +137,8 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
         description: `${input.channelName} broadcast: ${aired.show}`,
         startTime: aired.airedUtc.getUTCHours() + aired.airedUtc.getUTCMinutes() / 60,
         endTime: endUtc.getUTCHours() + endUtc.getUTCMinutes() / 60,
+        startHour: aired.airedUtc.getUTCHours() + aired.airedUtc.getUTCMinutes() / 60,
+        endHour: endUtc.getUTCHours() + endUtc.getUTCMinutes() / 60,
         startTimeUtc: aired.airedUtc.toISOString(),
         endTimeUtc: endUtc.toISOString(),
         mediaType: 'video',
@@ -157,3 +160,12 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
     return { ...base, status, programs, rejected };
   },
 };
+
+/** Networks shown on the Cable TV guide: [Archive network code, channelId, display name]. */
+export const NEWS_NETWORKS: Array<[string, string, string]> = [
+  ['FOXNEWSW', 'fox-news', 'Fox News'],
+  ['CNNW', 'cnn', 'CNN'],
+  ['MSNBCW', 'msnbc', 'MSNBC'],
+  ['BBCNEWS', 'bbc', 'BBC News'],
+  ['NTD', 'ntd', 'NTD News'],
+];
