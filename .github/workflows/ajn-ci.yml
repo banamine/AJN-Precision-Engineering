@@ -1,5 +1,6 @@
 name: AJN Application CI
 # Puppeteer 25 requires Node >=22.12; keep CI runtime aligned with the browser validator.
+# Re-run gate after main CI baseline refresh.
 on:
   push:
     branches: [main]
