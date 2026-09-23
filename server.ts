@@ -12,6 +12,7 @@ import {
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
+import { registerSourceRoutes } from './server/sources/routes.js';
 
 const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(express.json());
 app.use(watchdogRouter);
@@ -33,6 +34,7 @@ app.get('/api/playlists/:playlistId',(req,res)=>{const p=getPlaylistById(req.par
 app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.params.playlistId,req.body?.customM3u);if(!r.success)return res.status(400).json({error:`Failed to sync playlist ${req.params.playlistId}`,playlist:r.playlist});res.json({message:`Playlist ${req.params.playlistId} synchronized successfully`,playlist:r.playlist,ingestedCount:r.count});});
 
 patchServer(app);
+registerSourceRoutes(app);
 
 app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});res.json({query,network,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({error:'Search failed',items:[],total:0});}});
 

@@ -85,6 +85,8 @@ jobs:
         run: npm run test:movies-manifest-resolve
       - name: Program store bounded regression
         run: npm run test:program-store-bounded
+      - name: Source contracts regression (offline layers)
+        run: npm run test:source-contracts
 
   integration:
     needs: [lint, pure-regressions]
