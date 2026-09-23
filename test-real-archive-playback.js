@@ -124,23 +124,18 @@ try {
         break;
       }
       try {
-        const probe = await fetch(new URL(buildArchiveProxyUrl(archivePath), BASE_URL), {
-          headers: { Range: 'bytes=0-1023' },
-        });
-        const body = await probe.text();
-        if (probe.status === 502 && /Archive media returned HTTP 403/i.test(body)) {
+        const metadataUrl = `/api/archive/metadata?path=${encodeURIComponent(archivePath)}`;
+        const metadataResponse = await fetch(new URL(metadataUrl, BASE_URL));
+        const metadata = await metadataResponse.json();
+        if (metadataResponse.ok && Number(metadata.status) === 403) {
           cnnUpstreamUnavailable += 1;
           console.log(`[CNN upstream] ${candidate.identifier} media is unavailable at Archive storage (HTTP 403)`);
-        } else if (!probe.ok) {
-          throw new Error(`CNN proxy returned HTTP ${probe.status}: ${body.slice(0, 200)}`);
+        } else if (!metadataResponse.ok || Number(metadata.status) >= 400) {
+          throw new Error(`CNN archive metadata returned HTTP ${metadata.status ?? metadataResponse.status}`);
         }
       } catch (error) {
-        if (error instanceof Error && /Archive storage (HTTP 403)/i.test(error.message)) {
-          cnnUpstreamUnavailable += 1;
-        } else {
-          throw error;
-        }
-      }
+        throw error;
+      }      }
     }
     if (cnnPlaybackPassed) break;
   }
