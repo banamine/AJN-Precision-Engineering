@@ -166,7 +166,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
     if(contentType) res.setHeader('Content-Type',contentType);
     if(contentLength) res.setHeader('Content-Length',contentLength);
     if(contentRange) res.setHeader('Content-Range',contentRange);
-    if(acceptRanges) res.setHeader('Accept-Ranges',acceptRanges);
+    res.setHeader('Accept-Ranges',acceptRanges || 'bytes');
     const etag=mediaResponse.headers.get('etag');
     if(etag) res.setHeader('ETag',etag);
     const lastModified=mediaResponse.headers.get('last-modified');
