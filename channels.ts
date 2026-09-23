@@ -278,27 +278,16 @@ export async function searchTVNews(opts: {
 }
 
 export function getSafeArchiveUrl(rawUrl: string): string {
-  try {
-    const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
-    const cdnMatch = httpsUrl.match(
-      /^(https?:\/\/)ia\d+\.us\.archive\.org\/\d+\/items\/([^/?#]+\/[^?#]*)/,
-    );
-    const normalized = cdnMatch ? `https://archive.org/download/${cdnMatch[2]}` : httpsUrl;
-    const url = new URL(normalized.replace("/embed/", "/download/"));
-    const parts = url.pathname.replace(/\/$/, "").split("/");
-    const lastPart = parts[parts.length - 1];
-
-    if (!lastPart.includes(".")) {
-      const id = lastPart;
-      url.pathname += `/${id}.mp4`;
-    }
-
-    url.searchParams.delete("ignore");
-
-    return url.toString();
-  } catch {
-    return rawUrl;
-  }
+  // Use the Archive URL exactly as given. The only rewrites allowed are
+  // http -> https and a storage-node URL (iaNNN.us.archive.org/N/items/...)
+  // back to its canonical archive.org/download/... form. The path, its
+  // percent-encoding and the query string are never decoded, re-encoded or
+  // guessed: a URL without a filename stays without one and fails honestly.
+  const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
+  const cdnMatch = httpsUrl.match(
+    /^https:\/\/ia\d+\.us\.archive\.org\/\d+\/items\/([^?#]+)(\?[^#]*)?$/,
+  );
+  return cdnMatch ? `https://archive.org/download/${cdnMatch[1]}${cdnMatch[2] ?? ""}` : httpsUrl;
 }
 
 type FileCategory =

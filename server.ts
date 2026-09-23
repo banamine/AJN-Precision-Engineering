@@ -42,7 +42,11 @@ function validateArchivePath(raw:string){
   if(!raw||typeof raw!=='string')return{valid:false,error:'Path is required'};
   if(!raw.startsWith('/'))return{valid:false,error:'Path must begin with a forward slash (/)' };
   if(raw.startsWith('/api/archive/proxy'))return{valid:false,error:'Nested archive proxy paths are forbidden'};
-  if(raw.includes('..')||raw.includes('\\'))return{valid:false,error:'Directory traversal sequences are forbidden'};
+  // Reject only real dot segments (/../, /./, also percent-encoded). Archive
+  // filenames may legitimately contain "..", e.g. "Vol...1.mp4".
+  const segments=raw.split('?')[0].split('/');
+  const isDotSegment=(seg:string)=>/^(\.|%2e){1,2}$/i.test(seg);
+  if(segments.some(isDotSegment)||raw.includes('\\'))return{valid:false,error:'Directory traversal sequences are forbidden'};
   if(/^https?:\/\//i.test(raw)||raw.includes('://'))return{valid:false,error:'Embedded schemes/hosts are forbidden'};
 
   let cleanPath = raw;

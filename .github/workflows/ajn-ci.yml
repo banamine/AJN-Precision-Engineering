@@ -79,6 +79,8 @@ jobs:
         run: npm run test:ajn-audio-canonical
       - name: Archive proxy retry regression
         run: npm run test:archive-retry
+      - name: Archive exact-URL regression
+        run: npm run test:archive-url-exact
 
   integration:
     needs: [lint, pure-regressions]
