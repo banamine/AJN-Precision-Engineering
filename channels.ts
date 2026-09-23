@@ -563,6 +563,7 @@ export interface ScheduleChannel {
 }
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
+const EMPTY_CACHE_TTL_MS = 60 * 1000;
 
 let _cache: {
   data: ScheduleChannel[];
@@ -639,9 +640,13 @@ export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
     });
   });
 
+  // A channel with no programs means the upstream search failed or returned
+  // nothing playable. Cache that state only briefly so empty feeds recover on
+  // the next minute instead of being served as success for 15 minutes.
+  const complete = channels.every((channel) => channel.programs.length > 0);
   _cache = {
     data: channels,
-    expiresAt: Date.now() + CACHE_TTL_MS,
+    expiresAt: Date.now() + (complete ? CACHE_TTL_MS : EMPTY_CACHE_TTL_MS),
   };
 
   return channels;
