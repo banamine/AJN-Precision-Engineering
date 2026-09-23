@@ -1,0 +1,99 @@
+name: AJN Cloud Run Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: Google Cloud project ID
+        required: true
+        type: string
+      region:
+        description: Cloud Run region
+        required: false
+        default: us-east1
+        type: string
+      service:
+        description: Cloud Run service name
+        required: false
+        default: ajn-precision-engineering
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ajn-cloud-run-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ inputs.region || vars.GCP_REGION || 'us-east1' }}
+  GCP_SERVICE: ${{ inputs.service || vars.GCP_CLOUD_RUN_SERVICE || 'ajn-precision-engineering' }}
+
+jobs:
+  deploy:
+    name: Build and deploy to Cloud Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "${GCP_PROJECT_ID}" || { echo "::error::Missing GCP_PROJECT_ID workflow_dispatch input or repository secret"; exit 1; }
+          test -n "${WIF_PROVIDER}" || { echo "::error::Missing GCP_WORKLOAD_IDENTITY_PROVIDER repository secret"; exit 1; }
+          test -n "${GCP_SERVICE_ACCOUNT}" || { echo "::error::Missing GCP_SERVICE_ACCOUNT repository secret"; exit 1; }
+          echo "Project: ${GCP_PROJECT_ID}"
+          echo "Region: ${GCP_REGION}"
+          echo "Service: ${GCP_SERVICE}"
+          echo "Commit: ${GITHUB_SHA}"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify Google Cloud access
+        run: |
+          gcloud config set project "${GCP_PROJECT_ID}"
+          gcloud projects describe "${GCP_PROJECT_ID}" --format='value(projectId)'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+      - name: Deploy source to Cloud Run
+        run: |
+          gcloud run deploy "${GCP_SERVICE}"             --source .             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --platform managed             --allow-unauthenticated             --quiet
+
+      - name: Verify deployed revision
+        run: |
+          set -euo pipefail
+          SERVICE_URL="$(gcloud run services describe "${GCP_SERVICE}"             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --format='value(status.url)')"
+          test -n "${SERVICE_URL}"
+          echo "SERVICE_URL=${SERVICE_URL}" >> "${GITHUB_ENV}"
+          gcloud run services describe "${GCP_SERVICE}"             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --format='yaml(metadata.name,status.latestCreatedRevisionName,status.latestReadyRevisionName,status.url)'
+
+      - name: Production health smoke
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 6 --retry-delay 5 "${SERVICE_URL}/api/health"
+          echo
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 "${SERVICE_URL}/api/guides" | jq '.total'
