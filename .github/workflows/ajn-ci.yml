@@ -87,6 +87,8 @@ jobs:
         run: npm run test:program-store-bounded
       - name: Source contracts regression (offline layers)
         run: npm run test:source-contracts
+      - name: Archive News contract regression (mocked)
+        run: npm run test:source-archive-news
 
   integration:
     needs: [lint, pure-regressions]

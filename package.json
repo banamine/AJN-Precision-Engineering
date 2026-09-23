@@ -32,7 +32,8 @@
     "test:archive-url-exact": "tsx test-archive-url-exact.ts",
     "test:movies-manifest-resolve": "tsx test-movies-manifest-resolve.ts",
     "test:program-store-bounded": "tsx test-program-store-bounded.ts",
-    "test:source-contracts": "tsx test-source-contracts.ts"
+    "test:source-contracts": "tsx test-source-contracts.ts",
+    "test:source-archive-news": "tsx test-source-archive-news.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

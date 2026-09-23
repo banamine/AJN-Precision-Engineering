@@ -5,7 +5,16 @@ import express from 'express';
 import path from 'node:path';
 import { runSources, type SourceJob } from './runner';
 import { localFilesContract } from './localFiles';
+import { archiveNewsContract } from './archiveNews';
 import type { SourceResult } from './contract';
+
+const NEWS_NETWORKS: Array<[string, string, string]> = [
+  ['FOXNEWSW', 'fox-news', 'Fox News'],
+  ['CNNW', 'cnn', 'CNN'],
+  ['MSNBCW', 'msnbc', 'MSNBC'],
+  ['BBCNEWS', 'bbc', 'BBC News'],
+  ['NTD', 'ntd', 'NTD News'],
+];
 
 export function localMediaRoot(): string | null {
   const dir = process.env.AJN_LOCAL_MEDIA_DIR?.trim();
@@ -17,12 +26,20 @@ export function registerSourceRoutes(app: express.Express, extraJobs: () => Sour
     const jobs: SourceJob[] = [];
     const root = localMediaRoot();
     if (root) jobs.push({ contract: localFilesContract, input: { root, guideId: 'local-files' } });
+    if (_req.query.news !== '0') {
+      for (const [network, channelId, channelName] of NEWS_NETWORKS) {
+        jobs.push({ contract: archiveNewsContract, input: { network, channelId, channelName, guideId: 'cable-tv', rows: 10 } });
+      }
+    }
     jobs.push(...extraJobs());
     const results: SourceResult[] = await runSources(jobs);
+    const labels = [...jobs].sort((a, b) => a.contract.priority - b.contract.priority)
+      .map((j: any) => j.input?.network ?? j.input?.playlistId ?? j.contract.sourceClass);
     res.json({
       checkedAt: new Date().toISOString(),
-      sources: results.map((r) => ({
+      sources: results.map((r, i) => ({
         sourceClass: r.sourceClass,
+        label: labels[i],
         status: r.status,
         programs: r.programs.length,
         rejected: r.rejected,
