@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
 import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
@@ -45,6 +46,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const isVideo = mediaType === "video";
+  const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "");
+  const hlsRef = useRef<Hls | null>(null);
+  // Read in effects without re-running them: toggling mute must not reload media.
+  const isMutedRef = useRef(isMuted);
+  isMutedRef.current = isMuted;
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
   const { diagnosticsAnalyserRef } = useAudioNormalization(
@@ -116,7 +122,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
 
     // Set the property before attempting autoplay. This is required by
     // browser autoplay policy and avoids relying on JSX timing alone.
-    media.muted = isMuted;
+    media.muted = isMutedRef.current;
     media.load();
 
     const attemptAutoplay = async () => {
@@ -146,7 +152,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     };
 
     const onLoadedMetadata = () => {
-      const saved = readResumePosition();
+      // Live streams have no fixed duration: never offer a resume position.
+      const saved = Number.isFinite(media.duration) ? readResumePosition() : null;
       setStatusText("Ready");
       if (saved !== null && (!Number.isFinite(media.duration) || saved < media.duration - 5)) {
         setResumePosition(saved);
@@ -229,7 +236,43 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       window.removeEventListener("pagehide", saveOnExit);
       saveResumePosition(media);
     };
-  }, [activeSrc, clearResumePosition, eventMeta, isMuted, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
+  }, [activeSrc, clearResumePosition, eventMeta, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
+
+  // HLS (.m3u8): native where the browser supports it (Safari), otherwise hls.js.
+  // Teardown order is fixed: stopLoad -> detachMedia -> destroy -> null. Skipping
+  // it leaves SourceBuffers and loaders running and memory grows on long sessions.
+  useEffect(() => {
+    const media = mediaRef.current;
+    if (!media || !isHls) return;
+    if (media.canPlayType("application/vnd.apple.mpegurl")) {
+      media.src = activeSrc;
+      return;
+    }
+    if (!Hls.isSupported()) {
+      setStatusText("Failed to load — this browser cannot play HLS streams");
+      return;
+    }
+    const hls = new Hls({ liveDurationInfinity: true, lowLatencyMode: false, backBufferLength: 30 });
+    hlsRef.current = hls;
+    let recoveries = 0;
+    hls.on(Hls.Events.ERROR, (_event, data) => {
+      if (!data.fatal) return;
+      // One recovery attempt per kind before reporting a real failure.
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR && recoveries < 2) { recoveries++; hls.startLoad(); return; }
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recoveries < 2) { recoveries++; hls.recoverMediaError(); return; }
+      setStatusText(`Failed to load — HLS ${data.type}: ${data.details}`);
+      reportTelemetry({ event: "media.error", ...eventMeta(), hlsType: data.type, hlsDetails: data.details, httpStatus: (data.response as { code?: number } | undefined)?.code ?? null });
+      onErrorEvent?.(null);
+    });
+    hls.loadSource(activeSrc);
+    hls.attachMedia(media);
+    return () => {
+      hls.stopLoad();
+      hls.detachMedia();
+      hls.destroy();
+      hlsRef.current = null;
+    };
+  }, [activeSrc, isHls, eventMeta, onErrorEvent]);
 
   const play = async () => {
     const media = mediaRef.current;
@@ -289,7 +332,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             mediaRef.current = node;
             if (node) node.muted = isMuted;
           }}
-          src={activeSrc}
+          src={isHls ? undefined : activeSrc}
           crossOrigin="anonymous"
           autoPlay
           muted={isMuted}

@@ -4,7 +4,7 @@ import type { Program } from '../../src/types';
 
 export type SourceClass =
   | 'local_file' | 'classic_m3u' | 'archive_search'
-  | 'archive_news' | 'ajn_audio' | 'ajn_media';
+  | 'archive_news' | 'ajn_audio' | 'ajn_media' | 'live_tv';
 
 export type SourceStatus = 'ok' | 'partial' | 'restricted' | 'upstream_error' | 'offline';
 

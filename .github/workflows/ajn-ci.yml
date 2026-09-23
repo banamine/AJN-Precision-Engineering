@@ -95,6 +95,8 @@ jobs:
         run: npm run test:science-guide
       - name: Classic TV daily-highlights source (mocked)
         run: npm run test:daily-highlights
+      - name: Live TV contract regression (mocked)
+        run: npm run test:live-tv
       - name: AJN Audio contract regression (mocked)
         run: npm run test:source-ajn-audio
       - name: AJN Media RSS contract regression (mocked)

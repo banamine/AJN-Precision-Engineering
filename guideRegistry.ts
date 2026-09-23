@@ -19,6 +19,8 @@ export const GUIDES: Guide[] = [
     description: 'Live radio streams, historic aerospace vaults, audio dramas, and podcasts' },
   { id: 'science-documentaries', name: 'Science Documentaries', type: 'video', enabled: true,
     description: 'Curated science documentaries resolved from verified Archive.org manifests' },
+  { id: 'live-tv', name: 'Live TV', type: 'video', enabled: true,
+    description: 'Free public live channels, refreshed from the upstream channel list every few hours' },
   { id: 'movies-classics-vault', name: 'Movies & Cinema Classics', type: 'video', enabled: true,
     description: 'Curated classic cinema resolved from the verified Movies Classics Archive manifest' },
 ];
@@ -247,6 +249,38 @@ export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.g
 import { dailyHighlightsContract, toChannels as highlightChannels } from './server/sources/dailyHighlights';
 import { getDocumentaryChannels } from './src/services/producers/documentariesProducer';
 
+import { liveTvContract, LIVE_REFRESH_MS } from './server/sources/liveTv';
+
+// Live TV: stale-while-revalidate. The last good list is served while a refresh
+// runs in the background; a failed refresh keeps the last good list (marked).
+let liveCache:{data:ScheduleChannel[];fetchedAt:number;refreshing?:Promise<void>}|null=null;
+let liveFetch:typeof fetch|undefined;
+export function setLiveTvFetchForTests(impl?:typeof fetch){liveFetch=impl;liveCache=null;}
+
+async function refreshLiveTv(guideId:string):Promise<void>{
+  const [r]=await runSources([{contract:liveTvContract,input:{guideId,fetchImpl:liveFetch}}],{timeoutMs:30_000});
+  if(r.programs.length===0&&liveCache?.data.length){
+    liveCache={data:liveCache.data.map(ch=>({...ch,sourceStatus:'upstream_error',sourceError:`refresh failed, showing list from ${new Date(liveCache!.fetchedAt).toISOString()}: ${r.error}`})),fetchedAt:liveCache.fetchedAt};
+    return;
+  }
+  const data:ScheduleChannel[]=r.programs.map(p=>{
+    const m=(p.metadata??{}) as any;
+    return {id:p.channelId,guideId,name:p.title,mediaType:'video' as MediaType,group:m.group,logo:m.logo,programs:[p],sourceStatus:r.status};
+  }).sort((a,b)=>String(a.group).localeCompare(String(b.group))||a.name.localeCompare(b.name));
+  if(data.length===0)data.push({id:'live-tv-status',guideId,name:'Live TV',mediaType:'video',group:'Live',programs:[],sourceStatus:r.status,sourceError:r.error,rejected:r.rejected.slice(0,50)});
+  liveCache={data,fetchedAt:Date.now()};
+}
+
+async function getLiveTvChannels(guideId:string):Promise<ScheduleChannel[]>{
+  if(!liveCache){await refreshLiveTv(guideId);return liveCache!.data;}
+  const stale=Date.now()-liveCache.fetchedAt>LIVE_REFRESH_MS||liveCache.data[0]?.id==='live-tv-status';
+  if(stale&&!liveCache.refreshing){
+    const cache=liveCache;
+    cache.refreshing=refreshLiveTv(guideId).catch(()=>{}).finally(()=>{cache.refreshing=undefined;});
+  }
+  return liveCache.data;
+}
+
 let highlightsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
 let highlightsFetch:typeof fetch|undefined;
 export function setHighlightsFetchForTests(impl?:typeof fetch){highlightsFetch=impl;highlightsCache=null;}
@@ -310,6 +344,7 @@ export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now
 export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleChannel[]>{
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv') return getCableNewsChannels(guideId);
+  if(guideId==='live-tv') return getLiveTvChannels(guideId);
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
     const highlights=await getDailyHighlightsChannels(guideId);
