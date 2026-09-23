@@ -488,61 +488,55 @@ function isBrowserPlayable(filename: string): boolean {
   );
 }
 
-export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {
+export interface ResolvedMediaCandidate extends ResolvedFile {
+  filename: string;
+  size: number;
+}
+
+export async function resolveArchiveMediaCandidates(identifier: string): Promise<ResolvedMediaCandidate[]> {
   try {
     const data = await fetchArchiveMetadata(identifier);
-    const files = data.files ?? [];
-
-    const mediaFiles = files
+    const mediaFiles = (data.files ?? [])
       .filter((file) => !isInternalFile(file.name))
       .filter((file) => isBrowserPlayable(file.name))
       .map((file) => ({
-        name: file.name,
-        category: categorizeFile(file.name),
-        size: parseSize(file.size),
+        filename: file.name,
+        url: buildFileUrl(identifier, file.name),
         duration: parseDuration(file.length),
         format: file.format ?? file.name.split(".").pop() ?? "",
-      }));
-
-    if (mediaFiles.length > 0) {
-      mediaFiles.sort((a, b) => {
+        size: parseSize(file.size),
+        fallback: false,
+        category: categorizeFile(file.name),
+      }))
+      .sort((a, b) => {
         const categoryA = PLAYABLE_PRIORITY.indexOf(a.category);
         const categoryB = PLAYABLE_PRIORITY.indexOf(b.category);
-        if (categoryA !== categoryB) {
-          return categoryA - categoryB;
-        }
-        return b.size - a.size;
-      });
+        return categoryA - categoryB || b.size - a.size;
+      })
+      .map(({ category: _category, ...candidate }) => candidate);
 
-      const best = mediaFiles[0];
-      return {
-        url: buildFileUrl(identifier, best.name),
-        duration: best.duration,
-        format: best.format,
-        fallback: false,
-      };
-    }
-
-    console.warn(`[Resolver] No browser-playable media file for ${identifier}`);
-    return {
-      url: "",
-      duration: 0,
-      format: "",
-      fallback: true,
-    };
+    return mediaFiles;
   } catch (error) {
     console.warn(
       `[Resolver] Metadata unavailable for identifier "${identifier}"; refusing speculative media URL:`,
       error instanceof Error ? error.message : String(error),
     );
-
-    return {
-      url: "",
-      duration: 0,
-      format: "",
-      fallback: true,
-    };
+    return [];
   }
+}
+
+export async function resolveBestFileUrl(identifier: string): Promise<ResolvedFile> {
+  const candidates = await resolveArchiveMediaCandidates(identifier);
+  const best = candidates[0];
+  if (best) return best;
+
+  console.warn(`[Resolver] No browser-playable media file for ${identifier}`);
+  return {
+    url: "",
+    duration: 0,
+    format: "",
+    fallback: true,
+  };
 }
 
 function toProxyPath(fullUrl: string): string {
