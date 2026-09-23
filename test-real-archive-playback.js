@@ -65,9 +65,12 @@ try {
   await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 30_000 });
 
   const end = new Date();
-  const start = new Date(end.getTime() - 48 * 60 * 60 * 1000);
-  const knownCurrentCnnNewsroom = 'CNNW_20260921_080000_CNN_Newsroom_Live';
-  const isWithin48Hours = (identifier) => {
+  // Archive.org publishes TV News recordings with a delay of one to several days,
+  // so a fixed 48h window regularly contains nothing. Use a 7-day window and pick
+  // the newest item; no hard-coded identifier (it expires as time passes).
+  const CNN_WINDOW_DAYS = 7;
+  const start = new Date(end.getTime() - CNN_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const isWithinWindow = (identifier) => {
     const match = identifier.match(/^[A-Z0-9]+_(\d{8})_(\d{6})_/i);
     if (!match) return false;
     const aired = Date.parse(`${match[1].slice(0, 4)}-${match[1].slice(4, 6)}-${match[1].slice(6, 8)}T${match[2].slice(0, 2)}:${match[2].slice(2, 4)}:${match[2].slice(4, 6)}Z`);
@@ -95,15 +98,11 @@ try {
       rows: 25,
     });
     cnnCandidates = news.items
-      .filter((item) => /newsroom.?live/i.test(item.identifier) && isWithin48Hours(item.identifier))
+      .filter((item) => /newsroom.?live/i.test(item.identifier) && isWithinWindow(item.identifier))
       .sort((a, b) => b.identifier.localeCompare(a.identifier));
     if (cnnCandidates.length === 0) await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
   }
-  if (cnnCandidates.length === 0 && isWithin48Hours(knownCurrentCnnNewsroom)) {
-    cnnCandidates = [{ identifier: knownCurrentCnnNewsroom, title: 'CNN Newsroom Live' }];
-    console.log('[REAL PLAYBACK] Using previously verified current-window CNN Newsroom Live identifier after Archive search retries');
-  }
-  assert.ok(cnnCandidates.length > 0, 'CNN Newsroom Live gate found no current-window CNN Newsroom Live item');
+  assert.ok(cnnCandidates.length > 0, `CNN Newsroom Live gate found no CNN Newsroom Live item aired in the last ${CNN_WINDOW_DAYS} days`);
 
   let cnnPlaybackPassed = false;
   let cnnUpstreamUnavailable = 0;
