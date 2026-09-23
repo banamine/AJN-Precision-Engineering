@@ -18,14 +18,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Cache npm downloads
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
           restore-keys: |
-            ${{ runner.os }}-node20-npm-
+            ${{ runner.os }}-node22-npm-
       - name: Install dependencies
         run: npm install
       - name: TypeScript check
@@ -39,14 +39,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Cache npm downloads
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
           restore-keys: |
-            ${{ runner.os }}-node20-npm-
+            ${{ runner.os }}-node22-npm-
       - name: Install dependencies
         run: npm install
       - name: Production build
@@ -85,14 +85,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Cache npm downloads
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node20-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
           restore-keys: |
-            ${{ runner.os }}-node20-npm-
+            ${{ runner.os }}-node22-npm-
       - name: Install dependencies
         run: npm install
       - name: Download production build
@@ -128,9 +128,8 @@ jobs:
             echo "HTTP $code"
             if [ "$code" = "200" ]; then
               echo "PASS: /api/ajn/$endpoint returned HTTP 200"
-            elif [ "$code" = "502" ] && grep -Eq '"error":"AJN audio index (hourly|segment) returned HTTP 403"' "/tmp/ajn-${safe_name}.json"; then
+            elif [ "$code" = "502" ] && jq -e '.error | test("^AJN audio index (hourly|segment) returned HTTP 403$")' "/tmp/ajn-${safe_name}.json" >/dev/null; then
               echo "WARN: /api/ajn/$endpoint upstream AJN index returned HTTP 403; endpoint translated the known upstream restriction to HTTP 502."
-            
             else
               echo "FAILED: /api/ajn/$endpoint returned HTTP $code"
               cat "/tmp/ajn-${safe_name}.json" || true
