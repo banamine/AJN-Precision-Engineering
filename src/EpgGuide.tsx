@@ -80,6 +80,24 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
     scrollRef.current.scrollLeft = Math.max(0, nowPx - 200);
   }, [nowHour, guideId]);
 
+  // Large guides (Live TV ~1,300 rows, documentaries) render in pages of 40
+  // rows; the next page loads when the bottom sentinel scrolls into view.
+  const PAGE_ROWS = 40;
+  const [visibleCount, setVisibleCount] = useState(PAGE_ROWS);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { setVisibleCount(PAGE_ROWS); }, [guideId]);
+  const visible = useMemo(() => (channels ?? []).slice(0, visibleCount), [channels, visibleCount]);
+  const hasMore = (channels?.length ?? 0) > visibleCount;
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) setVisibleCount((n) => n + PAGE_ROWS);
+    }, { rootMargin: '400px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, visible.length]);
+
   const hourMarkers = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
   const nowLeftPx = (nowHour / 24) * TIMELINE_WIDTH_PX;
 
@@ -118,7 +136,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
           <div className="h-11 border-b border-neutral-800 flex items-center px-3.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider bg-neutral-900/70">
             Station / Feed
           </div>
-          {channels.map((channel) => {
+          {visible.map((channel) => {
             const isAudio = channel.mediaType === 'audio' || guideId === 'audio-podcasts';
             return (
               <div
@@ -163,7 +181,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
             </div>
 
             {/* Channel rows with program blocks */}
-            {channels.map((channel) => (
+            {visible.map((channel) => (
               <div
                 key={channel.id}
                 className="relative border-b border-neutral-800/80"
@@ -193,10 +211,10 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
 
                   return (
                     <button
-                      key={program.id || idx}
+                      key={`${program.id}-${idx}`}
                       type="button"
                       id={`epg-prog-${channel.id}-${idx}`}
-                      onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id)}
+                      onClick={() => onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id, program.sourceId ?? (program.metadata as any)?.sourceId, program.assetId ?? (program.metadata as any)?.assetId)}
                       className={`group absolute top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs transition hover:scale-[1.005] hover:z-10 cursor-pointer ${
                         isLive
                           ? mediaType === 'audio'
@@ -233,13 +251,19 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
             {/* Live "now" line — real current time, sweeps across in real time */}
             <div
               className="pointer-events-none absolute top-0 z-20 w-px bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
-              style={{ left: nowLeftPx, height: 44 + channels.length * ROW_HEIGHT_PX }}
+              style={{ left: nowLeftPx, height: 44 + visible.length * ROW_HEIGHT_PX }}
             >
               <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-red-400/40" />
             </div>
           </div>
         </div>
       </div>
+      {hasMore && (
+        <div ref={sentinelRef} className="border-t border-neutral-800 p-3 text-center text-xs text-neutral-500">
+          Showing {visible.length} of {channels.length} channels — scroll for more
+          <button type="button" onClick={() => setVisibleCount((n) => n + PAGE_ROWS)} className="ml-3 rounded border border-neutral-700 px-2 py-0.5 text-neutral-300 hover:bg-neutral-800 cursor-pointer">Load more</button>
+        </div>
+      )}
     </div>
   );
 }

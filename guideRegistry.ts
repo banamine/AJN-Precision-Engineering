@@ -298,27 +298,52 @@ async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChanne
 
 let cableNewsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
 let cableNewsFetch:typeof fetch|undefined;
-export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;cableNewsCache=null;}
+export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;cableNewsCache=null;cableNewsLastGood=new Map();}
 
-async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
-  if(cableNewsCache&&Date.now()<cableNewsCache.expiresAt)return cableNewsCache.data;
+let cableNewsLastGood=new Map<string,Program[]>();
+let cableNewsRefreshing:Promise<void>|null=null;
+
+/** Cable TV news: last 48h of Archive TV News, laid back-to-back across today so
+ *  every network row is always filled and plays 24/7. A network whose refresh
+ *  fails or comes back empty keeps its last good clips (marked stale). */
+async function refreshCableNews(guideId:string):Promise<ScheduleChannel[]>{
   const jobs=NEWS_NETWORKS.map(([network,channelId,channelName])=>({
     contract:archiveNewsContract,
-    input:{network,channelId,channelName,guideId,rows:12,fetchImpl:cableNewsFetch} as ArchiveNewsInput,
+    input:{network,channelId,channelName,guideId,rows:12,windowDays:2,fetchImpl:cableNewsFetch} as ArchiveNewsInput,
   }));
   const results=await runSources(jobs,{timeoutMs:25_000,parallel:true});
   const data:ScheduleChannel[]=results.map((r,i)=>{
     const [network,channelId,channelName]=NEWS_NETWORKS[i];
+    let programs=r.programs.map(p=>upsertCanonicalProgram(p));
+    let sourceStatus:string=r.status, sourceError=r.error;
+    if(programs.length){cableNewsLastGood.set(channelId,programs);}
+    else if(cableNewsLastGood.get(channelId)?.length){
+      programs=cableNewsLastGood.get(channelId)!;
+      sourceStatus='stale';
+      sourceError=`showing last known clips; refresh: ${r.error ?? r.status}`;
+    }
+    // Oldest first so the day plays in broadcast order, then loops.
+    const ordered=[...programs].sort((a,b)=>String(a.startTimeUtc).localeCompare(String(b.startTimeUtc)));
     return {
       id:channelId,guideId,name:channelName,mediaType:'video' as MediaType,group:'News',
       logo:`https://archive.org/services/img/${network}`,
-      programs:r.programs.map(p=>upsertCanonicalProgram(p)),
-      sourceStatus:r.status,rejected:r.rejected,sourceError:r.error,
+      programs:layoutDailySchedule(ordered,5,new Date(),320),
+      sourceStatus,rejected:r.rejected,sourceError,
     };
   });
-  const complete=data.every(ch=>ch.programs.length>0);
+  const complete=data.every(ch=>ch.programs.length>0&&ch.sourceStatus!=='stale');
   cableNewsCache={data,expiresAt:Date.now()+(complete?15*60_000:60_000)};
   return data;
+}
+
+async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
+  if(cableNewsCache&&Date.now()<cableNewsCache.expiresAt)return cableNewsCache.data;
+  // Serve the previous grid immediately while a refresh runs in the background.
+  if(cableNewsCache){
+    if(!cableNewsRefreshing)cableNewsRefreshing=refreshCableNews(guideId).then(()=>{}).catch(()=>{}).finally(()=>{cableNewsRefreshing=null;});
+    return cableNewsCache.data;
+  }
+  return refreshCableNews(guideId);
 }
 
 /** Lay on-demand programs back-to-back across today's UTC day (repeating the
@@ -334,7 +359,7 @@ export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now
       const secs=Number((p.metadata as any)?.durationSeconds)>0?Number((p.metadata as any).durationSeconds):defaultMinutes*60;
       const stop=Math.min(t+secs*1000,end);
       const h=(ms:number)=>(ms-day)/3600_000;
-      out.push({...p,id:`${p.id}:d${slot}`,startTimeUtc:new Date(t).toISOString(),endTimeUtc:new Date(stop).toISOString(),startTime:h(t),endTime:h(stop),startHour:h(t),endHour:h(stop)});
+      out.push({...p,metadata:{...(p.metadata??{}),airedUtc:(p.metadata as any)?.airedUtc??p.startTimeUtc},id:`${p.id}:d${slot}`,startTimeUtc:new Date(t).toISOString(),endTimeUtc:new Date(stop).toISOString(),startTime:h(t),endTime:h(stop),startHour:h(t),endHour:h(stop)});
       t=stop;slot++;
     }
   }

@@ -31,18 +31,20 @@ assert.deepEqual(channels.map((c) => c.id), ['fox-news', 'cnn', 'msnbc', 'bbc', 
 
 const cnn = by['cnn'];
 assert.equal(cnn.sourceStatus, 'ok');
-assert.equal(cnn.programs.length, 1);
+// Always filled: the one known broadcast loops across today (24 x 1h), keeping its real air time.
+assert.equal(cnn.programs.length, 24);
 const prog = cnn.programs[0];
 assert.equal(prog.title, 'CNN News Central');
-const aired = Date.parse(prog.startTimeUtc!);
-assert.ok(Math.abs(aired - (today.getTime() - 30 * 3600_000)) < 3600_000, 'real air time, not "now minus one hour"');
-assert.equal(Date.parse(prog.endTimeUtc!) - aired, 3600_000);
+assert.equal(prog.startTimeUtc!.slice(11), '00:00:00.000Z');
+const aired = Date.parse((prog.metadata as any).airedUtc);
+assert.ok(Math.abs(aired - (today.getTime() - 30 * 3600_000)) < 3600_000, 'real air time kept in metadata');
+assert.equal(Date.parse(prog.endTimeUtc!) - Date.parse(prog.startTimeUtc!), 3600_000);
 assert.equal(cnn.logo, 'https://archive.org/services/img/CNNW');
 
 // Restricted TV News item -> 282s exact clips of the item-level MP4 (reference M3U format).
 const fox = by['fox-news'];
 assert.equal(fox.sourceStatus, 'ok');
-assert.equal(fox.programs.length, 13);
+assert.ok(fox.programs.length >= 13, 'clips fill the day');
 assert.equal(fox.programs[0].archivePath, `/download/${foxId}/${foxId}.mp4?exact=1&start=0&end=282`);
 assert.equal(by['msnbc'].sourceStatus, 'upstream_error');
 assert.equal(by['msnbc'].sourceError, 'advancedsearch HTTP 503');

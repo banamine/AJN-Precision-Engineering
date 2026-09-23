@@ -66,9 +66,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     channelId: nowPlaying?.channelId ?? null,
     sourceId: nowPlaying?.sourceId ?? null,
     programId: nowPlaying?.programId ?? null,
+    titleId: `${nowPlaying?.channelId || 'none'}/${String(nowPlaying?.title ?? title ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'untitled'}`,
     assetId: nowPlaying?.assetId ?? null,
     mediaPath: nowPlaying?.archivePath ?? activeSrc ?? null,
-  }), [nowPlaying, activeSrc]);
+  }), [nowPlaying, activeSrc, title]);
 
   const readResumePosition = useCallback(() => {
     try {
