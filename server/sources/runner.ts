@@ -9,9 +9,13 @@ export interface SourceJob<T = unknown> {
 
 export async function runSources(
   jobs: SourceJob<any>[],
-  opts: { now?: Date; timeoutMs?: number } = {},
+  opts: { now?: Date; timeoutMs?: number; parallel?: boolean } = {},
 ): Promise<SourceResult[]> {
   const ordered = [...jobs].sort((a, b) => a.contract.priority - b.contract.priority);
+  if (opts.parallel) {
+    // Independent sources: run together, results still in priority order.
+    return Promise.all(ordered.map((job) => runSources([job], { ...opts, parallel: false }).then((r) => r[0])));
+  }
   const results: SourceResult[] = [];
 
   for (const { contract, input } of ordered) {

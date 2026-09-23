@@ -36,6 +36,20 @@ interface ArchiveMetadata {
 }
 
 const USER_AGENT = 'AJN-Precision-Engineering/ArchiveNews';
+const METADATA_CONCURRENCY = 6;
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
 const TV_ID = /^([A-Z0-9]+)_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_(.+)$/;
 
 export function parseAirTime(identifier: string): { airedUtc: Date; show: string } | null {
@@ -103,8 +117,10 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
       return { ...base, status: 'upstream_error', programs, rejected, error: `advancedsearch HTTP ${searchErrors.join(', ')}` };
     }
 
-    // 2. Check each item's metadata; keep only public, playable, in-window recordings.
-    let restricted = 0;
+    // 2. Window check first (no network), then metadata for the rest in parallel
+    //    (bounded), then evaluate in the original order so output is deterministic.
+    type Candidate = { id: string; doc: (typeof docs)[number]; aired: NonNullable<ReturnType<typeof parseAirTime>> };
+    const candidates: Candidate[] = [];
     for (const doc of docs) {
       const id = doc.identifier;
       const aired = parseAirTime(id);
@@ -113,8 +129,17 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
         rejected.push({ id, reason: `aired outside the ${windowDays}-day window` });
         continue;
       }
+      candidates.push({ id, doc, aired });
+    }
+    const metas = await mapWithConcurrency(candidates, METADATA_CONCURRENCY, (c) =>
+      getJson<ArchiveMetadata>(fetchImpl, `https://archive.org/metadata/${encodeURIComponent(c.id)}`, ctx.signal)
+        .catch((err) => ({ status: 0, body: null as ArchiveMetadata | null, err: String(err?.message ?? err) })),
+    );
 
-      const { status, body: meta } = await getJson<ArchiveMetadata>(fetchImpl, `https://archive.org/metadata/${encodeURIComponent(id)}`, ctx.signal);
+    let restricted = 0;
+    for (let i = 0; i < candidates.length; i++) {
+      const { id, doc, aired } = candidates[i];
+      const { status, body: meta } = metas[i];
       if (!meta) { rejected.push({ id, reason: `metadata HTTP ${status}` }); continue; }
       if (isRestrictedItem(meta)) { restricted++; rejected.push({ id, reason: 'restricted: access-restricted item' }); continue; }
 

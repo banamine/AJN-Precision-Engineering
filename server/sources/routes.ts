@@ -29,7 +29,7 @@ export function registerSourceRoutes(app: express.Express, extraJobs: () => Sour
     for (const kind of ['hourly', 'segment'] as const) jobs.push({ contract: ajnAudioContract, input: { kind } });
     for (const feedId of ['Alex', 'WarRoom', 'SundayLive', 'AJNHourlyVideo', 'AJNHourlyAudio'] as const) jobs.push({ contract: ajnMediaContract, input: { feedId } });
     jobs.push(...extraJobs());
-    const results: SourceResult[] = await runSources(jobs);
+    const results: SourceResult[] = await runSources(jobs, { parallel: true, timeoutMs: 25_000 });
     const labels = [...jobs].sort((a, b) => a.contract.priority - b.contract.priority)
       .map((j: any) => j.input?.network ?? j.input?.kind ?? j.input?.feedId ?? j.input?.playlistId ?? j.contract.sourceClass);
     res.json({

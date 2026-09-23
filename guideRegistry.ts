@@ -254,7 +254,7 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
     contract:archiveNewsContract,
     input:{network,channelId,channelName,guideId,rows:12,fetchImpl:cableNewsFetch} as ArchiveNewsInput,
   }));
-  const results=await runSources(jobs,{timeoutMs:45_000});
+  const results=await runSources(jobs,{timeoutMs:25_000,parallel:true});
   const data:ScheduleChannel[]=results.map((r,i)=>{
     const [network,channelId,channelName]=NEWS_NETWORKS[i];
     return {

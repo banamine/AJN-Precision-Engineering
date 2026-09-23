@@ -55,8 +55,8 @@ const input = (fetchImpl: typeof fetch) => ({ network: 'CNNW', channelId: 'cnn',
   assert.equal(p.archivePath, '/download/CNNW_20260922_150000_CNN_News_Central/CNNW_20260922_150000_CNN_News_Central.ia.mp4');
   assert.ok(p.mediaUrl.startsWith('/api/archive/proxy?path='));
   assert.deepEqual(r.rejected.map((x) => x.reason), [
-    'restricted: access-restricted item',
     'aired outside the 7-day window',
+    'restricted: access-restricted item',
     'restricted: all MP4 files are private',
   ]);
   assert.ok(calls.every((u) => !u.includes('/details/')), 'JSON APIs only');
@@ -83,5 +83,25 @@ const input = (fetchImpl: typeof fetch) => ({ network: 'CNNW', channelId: 'cnn',
   assert.equal(r.status, 'upstream_error');
   assert.equal(r.error, 'advancedsearch HTTP 503, 503');
   console.log('PASS search outage -> upstream_error');
+}
+
+// Metadata requests run concurrently (bounded), not one after another.
+{
+  let inFlight = 0, peak = 0;
+  const docs = Array.from({ length: 12 }, (_, i) => ({ identifier: `CNNW_20260922_${String(10 + i).padStart(2, '0')}0000_Show` }));
+  const impl = (async (input: any) => {
+    const url = String(input);
+    if (url.includes('advancedsearch')) return new Response(JSON.stringify({ response: { docs } }), { status: 200 });
+    inFlight++; peak = Math.max(peak, inFlight);
+    await new Promise((r) => setTimeout(r, 20));
+    inFlight--;
+    return new Response(JSON.stringify({ files: [{ name: 'x.mp4', source: 'derivative', length: '60' }] }), { status: 200 });
+  }) as typeof fetch;
+  const t0 = Date.now();
+  const r = await archiveNewsContract.hook({ network: 'CNNW', channelId: 'cnn', channelName: 'CNN', guideId: 'cable-tv', fetchImpl: impl }, ctx);
+  assert.equal(r.programs.length, 12);
+  assert.ok(peak > 1 && peak <= 6, `metadata concurrency ${peak}`);
+  assert.ok(Date.now() - t0 < 200, 'bounded-parallel metadata');
+  console.log('PASS metadata fetched in parallel (peak', peak, ')');
 }
 console.log('archive news contract regression: all passed');
