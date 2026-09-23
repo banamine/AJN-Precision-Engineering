@@ -125,7 +125,7 @@ try {
       }
       try {
         const metadataUrl = `/api/archive/metadata?path=${encodeURIComponent(archivePath)}`;
-        const metadataResponse = await fetch(new URL(metadataUrl, BASE_URL));
+        const metadataResponse = await fetch(new URL(metadataUrl, BASE_URL), { signal: AbortSignal.timeout(10_000) });
         const metadata = await metadataResponse.json();
         if (metadataResponse.ok && Number(metadata.status) === 403) {
           cnnUpstreamUnavailable += 1;
@@ -134,7 +134,12 @@ try {
           throw new Error(`CNN archive metadata returned HTTP ${metadata.status ?? metadataResponse.status}`);
         }
       } catch (error) {
-        throw error;
+        if (error instanceof DOMException && error.name === 'TimeoutError') {
+          cnnUpstreamUnavailable += 1;
+          console.warn(`[CNN upstream] ${candidate.identifier} metadata probe timed out; recorded as external Archive availability condition.`);
+        } else {
+          throw error;
+        }
       }
     }
     if (cnnPlaybackPassed) break;
