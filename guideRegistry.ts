@@ -205,8 +205,15 @@ initializeRegistry();
  * Archive's live metadata. Called once after the server starts; until it finishes
  * the guide shows the stored manifest.
  */
+let moviesRetry=0;
 export async function refreshMoviesClassicsFromArchive(){
   const {items,report}=await resolveMoviesClassicsManifest(moviesClassicsManifest,tryResolveArchiveMediaCandidates);
+  // Items whose metadata couldn't be read (timeout/rate limit at boot) stay
+  // "unverified". Re-check them a few times so dead items get dropped.
+  if(report.unverified.length&&moviesRetry<4&&process.env.NODE_ENV!=='test'){
+    moviesRetry++;
+    setTimeout(()=>{refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies re-verify',moviesRetry,JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(()=>{});},180_000).unref?.();
+  }
   for(const [id,program] of programsMap){
     if(program.guideId==='movies-classics-vault'&&program.channelId==='classic-cinema')programsMap.delete(id);
   }
@@ -311,7 +318,7 @@ async function refreshCableNews(guideId:string):Promise<ScheduleChannel[]>{
     contract:archiveNewsContract,
     input:{network,channelId,channelName,guideId,rows:12,windowDays:2,fetchImpl:cableNewsFetch} as ArchiveNewsInput,
   }));
-  const results=await runSources(jobs,{timeoutMs:25_000,parallel:true});
+  const results=await runSources(jobs,{timeoutMs:90_000,parallel:true});
   const data:ScheduleChannel[]=results.map((r,i)=>{
     const [network,channelId,channelName]=NEWS_NETWORKS[i];
     let programs=r.programs.map(p=>upsertCanonicalProgram(p));
@@ -348,7 +355,7 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
 
 /** Lay on-demand programs back-to-back across today's UTC day (repeating the
  *  list if it is shorter than 24h) so the grid shows real, non-zero slots. */
-export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now=new Date(),maxSlots=150):Program[]{
+export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now=new Date(),maxSlots=60):Program[]{
   if(programs.length===0)return[];
   const day=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
   const end=day+24*3600_000;
@@ -368,7 +375,16 @@ export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now
   return out;
 }
 
+function toProxy(u?:string){return u&&u.startsWith('/download/')?`/api/archive/proxy?path=${encodeURIComponent(u)}`:u;}
+/** Every program leaves the server with a playable URL: raw Archive paths go
+ *  through the proxy (archivePath keeps the exact path for tracing). */
+function normalizeChannels(chs:ScheduleChannel[]):ScheduleChannel[]{
+  return chs.map(ch=>({...ch,programs:ch.programs.map(p=>p.mediaUrl?.startsWith('/download/')?{...p,archivePath:p.archivePath??p.mediaUrl,mediaUrl:toProxy(p.mediaUrl)!}:p)}));
+}
 export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleChannel[]>{
+  return normalizeChannels(await getScheduleForGuideRaw(guideId));
+}
+async function getScheduleForGuideRaw(guideId='cable-tv'):Promise<ScheduleChannel[]>{
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv') return getCableNewsChannels(guideId);
   if(guideId==='live-tv') return getLiveTvChannels(guideId);

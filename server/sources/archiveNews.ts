@@ -159,8 +159,11 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
       }
       candidates.push({ id, doc, aired });
     }
+    // Deadline: stop starting metadata requests after 45s and keep what we have,
+    // so one slow network can't turn the whole row into a timeout.
+    const deadline = Date.now() + 45_000;
     const metas = await mapWithConcurrency(candidates, METADATA_CONCURRENCY, (c) =>
-      getJson<ArchiveMetadata>(fetchImpl, `https://archive.org/metadata/${encodeURIComponent(c.id)}`, ctx.signal)
+      Date.now() > deadline ? Promise.resolve({ status: 0, body: null as ArchiveMetadata | null }) : getJson<ArchiveMetadata>(fetchImpl, `https://archive.org/metadata/${encodeURIComponent(c.id)}`, ctx.signal)
         .catch((err) => ({ status: 0, body: null as ArchiveMetadata | null, err: String(err?.message ?? err) })),
     );
 
@@ -168,7 +171,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
     for (let i = 0; i < candidates.length; i++) {
       const { id, doc, aired } = candidates[i];
       const { status, body: meta } = metas[i];
-      if (!meta) { rejected.push({ id, reason: `metadata HTTP ${status}` }); continue; }
+      if (!meta) { rejected.push({ id, reason: status === 0 ? "skipped: metadata time budget used" : `metadata HTTP ${status}` }); continue; }
       if (meta.is_dark) { restricted++; rejected.push({ id, reason: 'restricted: dark item' }); continue; }
 
       const { file, allPrivate } = pickPlayableFile(meta.files ?? []);
