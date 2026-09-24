@@ -201,7 +201,9 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
                     {channel.sourceError ? `Unavailable — ${channel.sourceError}` : channel.sourceStatus === 'restricted' ? 'Restricted by Archive' : 'No programs available'}
                   </div>
                 ) : (
-                  channel.programs.map((program, idx) => {
+                  // Only today's 24h window is drawn; later slots stay in the data
+                  // (auto-advance still reaches them) but add no DOM.
+                  channel.programs.filter((p) => (p.startHour ?? p.startTime ?? 0) < 24).map((program, idx) => {
                     const sHour = program.startHour ?? program.startTime ?? 0;
                     const eHour = program.endHour ?? program.endTime ?? 24;
                   const isLive = nowHour >= sHour && nowHour < eHour;
