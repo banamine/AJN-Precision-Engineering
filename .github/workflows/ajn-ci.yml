@@ -25,11 +25,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node22-npm-
       - name: Install dependencies
-        run: npm install
+        run: npm ci --no-audit --no-fund
       - name: TypeScript check
         run: npm run lint
 
@@ -46,11 +46,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node22-npm-
       - name: Install dependencies
-        run: npm install
+        run: npm ci --no-audit --no-fund
       - name: Production build
         run: npm run build
       - name: Upload production build
@@ -77,6 +77,30 @@ jobs:
         run: npm run test:ajn-rss-canonical
       - name: AJN audio canonical regression
         run: npm run test:ajn-audio-canonical
+      - name: Archive proxy retry regression
+        run: npm run test:archive-retry
+      - name: Archive exact-URL regression
+        run: npm run test:archive-url-exact
+      - name: Movies manifest resolve regression
+        run: npm run test:movies-manifest-resolve
+      - name: Program store bounded regression
+        run: npm run test:program-store-bounded
+      - name: Source contracts regression (offline layers)
+        run: npm run test:source-contracts
+      - name: Archive News contract regression (mocked)
+        run: npm run test:source-archive-news
+      - name: Cable TV guide from Archive News contract (mocked)
+        run: npm run test:cable-news-guide
+      - name: Science Documentaries guide regression
+        run: npm run test:science-guide
+      - name: Classic TV daily-highlights source (mocked)
+        run: npm run test:daily-highlights
+      - name: Live TV contract regression (mocked)
+        run: npm run test:live-tv
+      - name: AJN Audio contract regression (mocked)
+        run: npm run test:source-ajn-audio
+      - name: AJN Media RSS contract regression (mocked)
+        run: npm run test:source-ajn-media
 
   integration:
     needs: [lint, pure-regressions]
@@ -92,11 +116,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node22-npm-
       - name: Install dependencies
-        run: npm install
+        run: npm ci --no-audit --no-fund
       - name: Download production build
         uses: actions/download-artifact@v4
         with:
@@ -185,7 +209,9 @@ jobs:
               const page = await browser.newPage();
               await page.setViewport({ width: 1360, height: 768 });
               for (const [name, hash] of [['home',''],['library','#library'],['guide','#tv-guide'],['search','#search'],['player','#player']]) {
-                await page.goto(`http://localhost:3000/${hash}`, { waitUntil: 'networkidle0', timeout: 30000 });
+                // The app streams media and polls, so the network never goes fully idle.
+                await page.goto(`http://localhost:3000/${hash}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+                await page.waitForNetworkIdle({ idleTime: 1000, timeout: 15000, concurrency: 2 }).catch(() => {});
                 await page.screenshot({ path: `/tmp/ajn-visual/${name}.png`, fullPage: true });
               }
             } finally { await browser.close(); }

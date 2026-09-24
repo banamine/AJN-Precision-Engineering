@@ -6,6 +6,7 @@ export interface AjnTelemetryEvent {
   channelId: string | null;
   sourceId: string | null;
   programId: string | null;
+  titleId?: string | null;
   assetId: string | null;
   archiveIdentifier: string | null;
   mediaPath: string | null;

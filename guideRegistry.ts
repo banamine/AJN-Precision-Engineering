@@ -1,10 +1,12 @@
 import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
 } from './src/types';
-import { getChannelSchedule } from './channels';
+import { tryResolveArchiveMediaCandidates } from './channels';
+import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './server/sources/archiveNews';
+import { runSources } from './server/sources/runner';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
-import { buildMoviesClassicsPrograms } from './src/services/producers/moviesClassicsProducer';
+import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
 
@@ -17,6 +19,8 @@ export const GUIDES: Guide[] = [
     description: 'Live radio streams, historic aerospace vaults, audio dramas, and podcasts' },
   { id: 'science-documentaries', name: 'Science Documentaries', type: 'video', enabled: true,
     description: 'Curated science documentaries resolved from verified Archive.org manifests' },
+  { id: 'live-tv', name: 'Live TV', type: 'video', enabled: true,
+    description: 'Free public live channels, refreshed from the upstream channel list every few hours' },
   { id: 'movies-classics-vault', name: 'Movies & Cinema Classics', type: 'video', enabled: true,
     description: 'Curated classic cinema resolved from the verified Movies Classics Archive manifest' },
 ];
@@ -196,6 +200,20 @@ export function initializeRegistry(){
 }
 initializeRegistry();
 
+/**
+ * Replace the Movies & Classics programs with ones whose files were confirmed in
+ * Archive's live metadata. Called once after the server starts; until it finishes
+ * the guide shows the stored manifest.
+ */
+export async function refreshMoviesClassicsFromArchive(){
+  const {items,report}=await resolveMoviesClassicsManifest(moviesClassicsManifest,tryResolveArchiveMediaCandidates);
+  for(const [id,program] of programsMap){
+    if(program.guideId==='movies-classics-vault'&&program.channelId==='classic-cinema')programsMap.delete(id);
+  }
+  for(const program of buildMoviesClassicsPrograms(items))upsertCanonicalProgram(program);
+  return report;
+}
+
 export function getAllGuides(){return GUIDES;}
 export function getGuideById(id:string){return GUIDES.find(g=>g.id===id);}
 export function getChannelsByGuide(id?:string){
@@ -225,22 +243,139 @@ export function getAllPlaylists(){return Array.from(playlistsMap.values());}
 export function getPlaylistById(id:string){return playlistsMap.get(id);}
 export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.get(id);if(!p)return{success:false};const text=customM3u||p.rawM3u||'';if(!text){p.syncStatus='failed';return{success:false,playlist:p};}const r=ingestM3uPlaylist(p,text);return{success:true,playlist:p,count:r.ingestedCount};}
 
+// Cable TV news comes from the Archive News source contract (layer 3): real air
+// times, restricted items reported per channel. Complete results are cached for
+// 15 minutes; if any network came back empty or failed, only for 60 seconds.
+import { dailyHighlightsContract, toChannels as highlightChannels } from './server/sources/dailyHighlights';
+import { getDocumentaryChannels } from './src/services/producers/documentariesProducer';
+
+import { liveTvContract, LIVE_REFRESH_MS } from './server/sources/liveTv';
+
+// Live TV: stale-while-revalidate. The last good list is served while a refresh
+// runs in the background; a failed refresh keeps the last good list (marked).
+let liveCache:{data:ScheduleChannel[];fetchedAt:number;refreshing?:Promise<void>}|null=null;
+let liveFetch:typeof fetch|undefined;
+export function setLiveTvFetchForTests(impl?:typeof fetch){liveFetch=impl;liveCache=null;}
+
+async function refreshLiveTv(guideId:string):Promise<void>{
+  const [r]=await runSources([{contract:liveTvContract,input:{guideId,fetchImpl:liveFetch}}],{timeoutMs:30_000});
+  if(r.programs.length===0&&liveCache?.data.length){
+    liveCache={data:liveCache.data.map(ch=>({...ch,sourceStatus:'upstream_error',sourceError:`refresh failed, showing list from ${new Date(liveCache!.fetchedAt).toISOString()}: ${r.error}`})),fetchedAt:liveCache.fetchedAt};
+    return;
+  }
+  const data:ScheduleChannel[]=r.programs.map(p=>{
+    const m=(p.metadata??{}) as any;
+    return {id:p.channelId,guideId,name:p.title,mediaType:'video' as MediaType,group:m.group,logo:m.logo,programs:[p],sourceStatus:r.status};
+  }).sort((a,b)=>String(a.group).localeCompare(String(b.group))||a.name.localeCompare(b.name));
+  if(data.length===0)data.push({id:'live-tv-status',guideId,name:'Live TV',mediaType:'video',group:'Live',programs:[],sourceStatus:r.status,sourceError:r.error,rejected:r.rejected.slice(0,50)});
+  liveCache={data,fetchedAt:Date.now()};
+}
+
+async function getLiveTvChannels(guideId:string):Promise<ScheduleChannel[]>{
+  if(!liveCache){await refreshLiveTv(guideId);return liveCache!.data;}
+  const stale=Date.now()-liveCache.fetchedAt>LIVE_REFRESH_MS||liveCache.data[0]?.id==='live-tv-status';
+  if(stale&&!liveCache.refreshing){
+    const cache=liveCache;
+    cache.refreshing=refreshLiveTv(guideId).catch(()=>{}).finally(()=>{cache.refreshing=undefined;});
+  }
+  return liveCache.data;
+}
+
+let highlightsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
+let highlightsFetch:typeof fetch|undefined;
+export function setHighlightsFetchForTests(impl?:typeof fetch){highlightsFetch=impl;highlightsCache=null;}
+
+/** Classic TV shows from archive.org/download/daily-highlights (folders + M3Us). */
+async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChannel[]>{
+  if(highlightsCache&&Date.now()<highlightsCache.expiresAt)return highlightsCache.data;
+  const [r]=await runSources([{contract:dailyHighlightsContract,input:{guideId,fetchImpl:highlightsFetch}}],{timeoutMs:25_000});
+  const data:ScheduleChannel[]=r.programs.length
+    ? highlightChannels(r.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:r.status,rejected:r.rejected}))
+    : [{id:'classic-daily-highlights',guideId,name:'Daily Highlights',mediaType:'video' as MediaType,group:'Classic TV',programs:[],sourceStatus:r.status,rejected:r.rejected,sourceError:r.error}];
+  highlightsCache={data,expiresAt:Date.now()+(r.programs.length?60*60_000:60_000)};
+  return data;
+}
+
+let cableNewsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
+let cableNewsFetch:typeof fetch|undefined;
+export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;cableNewsCache=null;cableNewsLastGood=new Map();}
+
+let cableNewsLastGood=new Map<string,Program[]>();
+let cableNewsRefreshing:Promise<void>|null=null;
+
+/** Cable TV news: last 48h of Archive TV News, laid back-to-back across today so
+ *  every network row is always filled and plays 24/7. A network whose refresh
+ *  fails or comes back empty keeps its last good clips (marked stale). */
+async function refreshCableNews(guideId:string):Promise<ScheduleChannel[]>{
+  const jobs=NEWS_NETWORKS.map(([network,channelId,channelName])=>({
+    contract:archiveNewsContract,
+    input:{network,channelId,channelName,guideId,rows:12,windowDays:2,fetchImpl:cableNewsFetch} as ArchiveNewsInput,
+  }));
+  const results=await runSources(jobs,{timeoutMs:25_000,parallel:true});
+  const data:ScheduleChannel[]=results.map((r,i)=>{
+    const [network,channelId,channelName]=NEWS_NETWORKS[i];
+    let programs=r.programs.map(p=>upsertCanonicalProgram(p));
+    let sourceStatus:string=r.status, sourceError=r.error;
+    if(programs.length){cableNewsLastGood.set(channelId,programs);}
+    else if(cableNewsLastGood.get(channelId)?.length){
+      programs=cableNewsLastGood.get(channelId)!;
+      sourceStatus='stale';
+      sourceError=`showing last known clips; refresh: ${r.error ?? r.status}`;
+    }
+    // Oldest first so the day plays in broadcast order, then loops.
+    const ordered=[...programs].sort((a,b)=>String(a.startTimeUtc).localeCompare(String(b.startTimeUtc)));
+    return {
+      id:channelId,guideId,name:channelName,mediaType:'video' as MediaType,group:'News',
+      logo:`https://archive.org/services/img/${network}`,
+      programs:layoutDailySchedule(ordered,5,new Date(),320),
+      sourceStatus,rejected:r.rejected,sourceError,
+    };
+  });
+  const complete=data.every(ch=>ch.programs.length>0&&ch.sourceStatus!=='stale');
+  cableNewsCache={data,expiresAt:Date.now()+(complete?15*60_000:60_000)};
+  return data;
+}
+
+async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
+  if(cableNewsCache&&Date.now()<cableNewsCache.expiresAt)return cableNewsCache.data;
+  // Serve the previous grid immediately while a refresh runs in the background.
+  if(cableNewsCache){
+    if(!cableNewsRefreshing)cableNewsRefreshing=refreshCableNews(guideId).then(()=>{}).catch(()=>{}).finally(()=>{cableNewsRefreshing=null;});
+    return cableNewsCache.data;
+  }
+  return refreshCableNews(guideId);
+}
+
+/** Lay on-demand programs back-to-back across today's UTC day (repeating the
+ *  list if it is shorter than 24h) so the grid shows real, non-zero slots. */
+export function layoutDailySchedule(programs:Program[],defaultMinutes:number,now=new Date(),maxSlots=150):Program[]{
+  if(programs.length===0)return[];
+  const day=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
+  const end=day+24*3600_000;
+  const out:Program[]=[];let t=day;let slot=0;
+  // Every program appears at least once (a long list may run past midnight);
+  // a short list repeats until the day is full.
+  while((slot<programs.length||t<end)&&slot<maxSlots){
+    for(const p of programs){
+      if((slot>=programs.length&&t>=end)||slot>=maxSlots)break;
+      const secs=Number((p.metadata as any)?.durationSeconds)>0?Number((p.metadata as any).durationSeconds):defaultMinutes*60;
+      const stop=slot<programs.length?t+secs*1000:Math.min(t+secs*1000,end);
+      const h=(ms:number)=>(ms-day)/3600_000;
+      out.push({...p,metadata:{...(p.metadata??{}),airedUtc:(p.metadata as any)?.airedUtc??p.startTimeUtc},id:`${p.id}:d${slot}`,startTimeUtc:new Date(t).toISOString(),endTimeUtc:new Date(stop).toISOString(),startTime:h(t),endTime:h(stop),startHour:h(t),endHour:h(stop)});
+      t=stop;slot++;
+    }
+  }
+  return out;
+}
+
 export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleChannel[]>{
   const guide=getGuideById(guideId);if(!guide)return[];
-  if(guideId==='cable-tv'){
-    const news=await getChannelSchedule();
-    return news.map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'News',logo:`https://archive.org/services/img/${ch.id}`,programs:ch.programs.map((p:any)=>{
-      const id = normalizeProgramIdentity({ externalId:p.externalId, channelId:ch.id, title:p.title, startTime:typeof p.startHour==='number'?p.startHour:null });
-      const assetId = normalizeAssetIdentity({ externalId:p.externalId, archiveIdentifier:p.externalId, programId:id, mediaUrl:p.archivePath });
-      const sourceId = normalizeSourceIdentity({ channelId: ch.id, url: p.archivePath, protocol: 'direct_archive' });
-      const startTimeUtc = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      const endTimeUtc = new Date().toISOString();
-      return upsertCanonicalProgram({ id, guideId, channelId:ch.id, title:p.title, description:`Archive.org broadcast: ${p.title}`, startTime:p.startHour, endTime:p.endHour, startTimeUtc, endTimeUtc, startHour:p.startHour, endHour:p.endHour, mediaType:'video' as MediaType, mediaUrl:p.archivePath, archivePath:p.archivePath, assetId, sourceId, sourceClass:'archive_org' as const, isArchivedSource:true, metadata:{ externalId:p.externalId } });
-    })}));
-  }
+  if(guideId==='cable-tv') return getCableNewsChannels(guideId);
+  if(guideId==='live-tv') return getLiveTvChannels(guideId);
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))}];
+    const highlights=await getDailyHighlightsChannels(guideId);
+    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))},...highlights];
   }
   if(guideId==='movies-classics-vault'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');
@@ -250,14 +385,23 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
       name:'Cinema Classics Vault',
       mediaType:'video',
       group:'Movies',
-      programs,
+      programs:layoutDailySchedule(programs,100),
     }];
   }
+  if(guideId==='science-documentaries'){
+    const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='nova-wonders');
+    return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)},
+      ...getDocumentaryChannels().map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Documentaries',logo:ch.logo,programs:layoutDailySchedule(ch.programs,50)}))];
+  }
+  // Whole-day block anchored to 00:00 UTC. Using "now" here gave each request a new
+  // program identity, so the program store grew on every /api/schedule call.
+  const now=new Date();
+  const dayStartUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
   return getChannelsByGuide(guideId).map(ch=>{
     const sourceUrl = ch.sources?.[0]?.url || '';
     const programId = normalizeProgramIdentity({ channelId:ch.id, title:ch.name, startTime:0 });
     const assetId = normalizeAssetIdentity({ programId, mediaUrl:sourceUrl });
-    return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[upsertCanonicalProgram({id:programId,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startTimeUtc:new Date().toISOString(),endTimeUtc:new Date(Date.now()+24*60*60*1000).toISOString(),startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:sourceUrl,archivePath:sourceUrl,assetId,sourceClass:'m3u_live' as const,isArchivedSource:false,sourceId: ch.sources?.[0]?.id, metadata:{groupTitle:ch.group,tvgId:ch.tvgId}})]};
+    return {id:ch.id,guideId,name:ch.name,mediaType:ch.mediaType,group:ch.group,logo:ch.logo,programs:[upsertCanonicalProgram({id:programId,guideId,channelId:ch.id,title:ch.name,description:`Source: ${ch.name}`,startTime:0,endTime:24,startTimeUtc:dayStartUtc.toISOString(),endTimeUtc:new Date(dayStartUtc.getTime()+24*60*60*1000).toISOString(),startHour:0,endHour:24,mediaType:ch.mediaType,mediaUrl:sourceUrl,archivePath:sourceUrl,assetId,sourceClass:'m3u_live' as const,isArchivedSource:false,sourceId: ch.sources?.[0]?.id, metadata:{groupTitle:ch.group,tvgId:ch.tvgId}})]};
   });
 }
 

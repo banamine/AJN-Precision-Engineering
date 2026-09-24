@@ -90,6 +90,11 @@ export interface ScheduleChannel {
   group?: string;
   logo?: string;
   programs: Program[];
+  /** Source layer health for this channel (ok | partial | restricted | upstream_error | offline). */
+  sourceStatus?: string;
+  /** Why items were left out, e.g. "restricted: all MP4 files are private". */
+  rejected?: Array<{ id: string; reason: string }>;
+  sourceError?: string;
 }
 
 export interface NowPlayingMedia {

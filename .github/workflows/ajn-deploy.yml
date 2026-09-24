@@ -90,7 +90,8 @@ jobs:
           gcloud projects describe "${GCP_PROJECT_ID}" --format='value(projectId)'
 
       - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+        # Scripts must run: Puppeteer downloads Chrome for the production browser playback gate.
+        run: npm ci --no-audit --no-fund
 
       - name: TypeScript check
         run: npm run lint
@@ -103,7 +104,7 @@ jobs:
           GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
         run: |
           set -euo pipefail
-          gcloud run deploy "${GCP_SERVICE}"             --source .             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --platform managed             --allow-unauthenticated             --quiet
+          gcloud run deploy "${GCP_SERVICE}"             --source .             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --platform managed             --allow-unauthenticated             --timeout 3600             --quiet
 
       - name: Verify deployed revision
         env:

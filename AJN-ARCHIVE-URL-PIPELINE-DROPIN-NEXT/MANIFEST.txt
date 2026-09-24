@@ -1,3 +1,0 @@
-AJN Archive URL Pipeline — Next Surgical Drop-in
-Replacement: channels.ts
-Goal: verified Archive metadata -> actual MP4 -> direct playable Archive URL

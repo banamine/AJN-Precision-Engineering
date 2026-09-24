@@ -229,6 +229,31 @@ export function getAjnResource(id: string): AjnResourceLink | undefined {
   return byId.get(id as AjnFeedId);
 }
 
+/** Parse RSS XML into feed items (the publisher's RSS is XML; parsing stays here). */
+export function parseAjnFeedXml(xml: string, resource: AjnResourceLink): AjnFeedItem[] {
+  return [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map((match, index) => {
+    const block = match[1];
+    const url = mediaUrl(block);
+    return {
+      id: itemId(resource.id, block, index),
+      feedId: resource.id,
+      title: tag(block, 'title') || `AJN ${resource.name}`,
+      url: url || '',
+      mediaType: url ? inferMediaType(url, resource.mediaType) : resource.mediaType,
+      publishedAt: tag(block, 'pubDate') || tag(block, 'dc:date'),
+      description: tag(block, 'description'),
+      duration: tag(block, 'itunes:duration'),
+      thumbnailUrl: undefined,
+      metadata: {
+        guid: tag(block, 'guid') || '',
+        author: tag(block, 'author') || tag(block, 'dc:creator') || '',
+        sourceFeed: resource.rssUrl,
+      },
+    } as AjnFeedItem;
+  }).filter(item => item.url);
+
+}
+
 export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise<{ resource: AjnResourceLink; fetchedAt: string; items: AjnFeedItem[]; rawBytes: number }> {
   const resource = byId.get(id);
   if (!resource) throw new Error(`Unknown AJN feed: ${id}`);
@@ -247,27 +272,7 @@ export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise
   const xml = await response.text();
   if (!/<(?:rss|feed)\b/i.test(xml)) throw new Error(`AJN feed ${id} did not return RSS/XML`);
 
-  const items = [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map((match, index) => {
-    const block = match[1];
-    const url = mediaUrl(block);
-    return {
-      id: itemId(id, block, index),
-      feedId: id,
-      title: tag(block, 'title') || `AJN ${resource.name}`,
-      url: url || '',
-      mediaType: url ? inferMediaType(url, resource.mediaType) : resource.mediaType,
-      publishedAt: tag(block, 'pubDate') || tag(block, 'dc:date'),
-      description: tag(block, 'description'),
-      duration: tag(block, 'itunes:duration'),
-      thumbnailUrl: undefined,
-      metadata: {
-        guid: tag(block, 'guid') || '',
-        author: tag(block, 'author') || tag(block, 'dc:creator') || '',
-        sourceFeed: resource.rssUrl,
-      },
-    } as AjnFeedItem;
-  }).filter(item => item.url);
-
+  const items = parseAjnFeedXml(xml, resource);
   return { resource, fetchedAt: new Date().toISOString(), items, rawBytes: Buffer.byteLength(xml, 'utf8') };
 }
 
@@ -288,15 +293,17 @@ function parseAudioIndexUrl(href: string): string | undefined {
   return value;
 }
 
-function parseAudioIndexItems(html: string, index: AjnAudioIndex): AjnFeedItem[] {
+export function parseAudioIndexItems(html: string, index: AjnAudioIndex): AjnFeedItem[] {
   const records = new Map<string, AjnFeedItem>();
   const hrefRe = /href=["']([^"']+\.(?:mp3|m4a|aac|ogg|opus|wav)(?:[?#][^"']*)?)["']/gi;
   for (const match of html.matchAll(hrefRe)) {
     const url = parseAudioIndexUrl(match[1]);
     if (!url) continue;
-    const filename = url.split('/').filter(Boolean).pop() || url;
-    const title = normalizeAjnFilename(filename);
-    const id = `ajn:${index.kind}:${url}`;
+    // Identity must survive CDN token rotation: use the URL without query/fragment.
+    const stableUrl = url.split('#')[0].split('?')[0];
+    const filename = stableUrl.split('/').filter(Boolean).pop() || stableUrl;
+    const title = normalizeAjnFilename(decodeURIComponent(filename));
+    const id = `ajn:${index.kind}:${stableUrl}`;
     if (records.has(id)) continue;
     records.set(id, {
       id,

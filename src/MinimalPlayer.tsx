@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
 import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
@@ -23,6 +24,11 @@ const RESUME_MIN_SEC = 5;
 const RESUME_SAVE_INTERVAL_MS = 5000;
 const RESUME_PREFIX = "ajn-playback-position:";
 
+// Session-wide sound choice: once the user unmutes, every later program
+// (including scheduler auto-advance, which remounts this player) stays unmuted
+// until the app is closed or reloaded.
+let sessionUnmuted = false;
+
 export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,17 +37,27 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [isPlaying, setIsPlaying] = useState(false);
   // Autoplay starts muted on every app load. Once the user unmutes, keep that
   // choice for the rest of this app session; a reload intentionally resets it.
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(() => !sessionUnmuted);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
   const [activeSrc, setActiveSrc] = useState(src);
-  const [archiveFallbackUsed, setArchiveFallbackUsed] = useState(false);
   const [resumePosition, setResumePosition] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const isVideo = mediaType === "video";
-  const isArchiveProxy = activeSrc.startsWith("/api/archive/proxy?path=");
+  const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "");
+  const hlsRef = useRef<Hls | null>(null);
+  // Only request CORS for our own origin (the Archive proxy). Hosts such as
+  // archive.alexjoneslive.com send no CORS headers, so crossOrigin={corsMode}
+  // makes the browser refuse the file outright. Without it the file plays and
+  // the audio bridge falls back to native output.
+  const corsMode = (activeSrc ?? "").startsWith("/") ? "anonymous" : undefined;
+  // Read in effects without re-running them: toggling mute must not reload media.
+  const isMutedRef = useRef(isMuted);
+  isMutedRef.current = isMuted;
+  // Latest callbacks, read by the media effect so parent re-renders never re-run
+  // it (a re-run calls load(), which aborts the play() in flight).
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
   const { diagnosticsAnalyserRef } = useAudioNormalization(
@@ -55,9 +71,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     channelId: nowPlaying?.channelId ?? null,
     sourceId: nowPlaying?.sourceId ?? null,
     programId: nowPlaying?.programId ?? null,
+    titleId: `${nowPlaying?.channelId || 'none'}/${String(nowPlaying?.title ?? title ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'untitled'}`,
     assetId: nowPlaying?.assetId ?? null,
     mediaPath: nowPlaying?.archivePath ?? activeSrc ?? null,
-  }), [nowPlaying, activeSrc]);
+  }), [nowPlaying, activeSrc, title]);
 
   const readResumePosition = useCallback(() => {
     try {
@@ -97,9 +114,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     }
   }, [eventMeta, onPlayEvent]);
 
+  const fnRef = useRef({ eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent });
+  fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent };
+
   useEffect(() => {
     setActiveSrc(src);
-    setArchiveFallbackUsed(false);
     setStatusText("Loading…");
     setIsPlaying(false);
     setResumePosition(null);
@@ -109,20 +128,29 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   }, [src, mediaType]);
 
   useEffect(() => {
+    const fx = () => fnRef.current;
     const media = mediaRef.current;
     if (!media) return;
 
     // Set the property before attempting autoplay. This is required by
     // browser autoplay policy and avoids relying on JSX timing alone.
-    media.muted = isMuted;
+    media.muted = isMutedRef.current;
     media.load();
 
     const attemptAutoplay = async () => {
       if (!isVideo || !media.paused) return;
       try {
         await media.play();
-        if (!media.paused) reportPlaying();
+        if (!media.paused) fx().reportPlaying();
       } catch (error) {
+        if ((error as DOMException)?.name === "AbortError") return;
+        // Unmuted autoplay refused (no user gesture yet in this tab): play muted
+        // rather than stall the schedule. The session preference is unchanged.
+        if (!media.muted && (error as DOMException)?.name === 'NotAllowedError') {
+          media.muted = true;
+          setIsMuted(true);
+          try { await media.play(); if (!media.paused) { fx().reportPlaying(); return; } } catch { /* fall through */ }
+        }
         // Autoplay may still be blocked by the browser. Keep the real error
         // available in the console; the normal Play control remains usable.
         console.warn("[AJN PLAYBACK] autoplay blocked", {
@@ -137,7 +165,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     };
 
     const onLoadedMetadata = () => {
-      const saved = readResumePosition();
+      // Live streams have no fixed duration: never offer a resume position.
+      const saved = Number.isFinite(media.duration) ? fx().readResumePosition() : null;
       setStatusText("Ready");
       if (saved !== null && (!Number.isFinite(media.duration) || saved < media.duration - 5)) {
         setResumePosition(saved);
@@ -151,57 +180,35 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         void attemptAutoplay();
       }
     };
-    const onPlay = reportPlaying;
-    const onPlaying = reportPlaying;
+    const onPlay = (...a: []) => fx().reportPlaying(...a);
+    const onPlaying = (...a: []) => fx().reportPlaying(...a);
     const onTimeUpdate = () => {
       if (!media.paused) {
-        reportPlaying();
-        saveResumePosition(media);
+        fx().reportPlaying();
+        fx().saveResumePosition(media);
       }
     };
     const onWaiting = () => setStatusText("Buffering…");
     const onStalled = () => setStatusText("Network stalled…");
     const onPause = () => {
       setIsPlaying(false);
-      saveResumePosition(media);
+      fx().saveResumePosition(media);
       reportTelemetry({ event: "playback.paused", ...eventMeta() });
-      onPauseEvent?.();
+      fx().onPauseEvent?.();
     };
     const onEnded = () => {
       setIsPlaying(false);
       playingReportedRef.current = false;
-      clearResumePosition();
+      fx().clearResumePosition();
       reportTelemetry({ event: "playback.ended", ...eventMeta() });
-      window.setTimeout(() => onProgramEnded?.(), 0);
+      window.setTimeout(() => fx().onProgramEnded?.(), 0);
     };
     const onError = () => {
       const err = media.error;
 
-      if (
-        err?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
-        isVideo &&
-        isArchiveProxy &&
-        !archiveFallbackUsed
-      ) {
-        try {
-          const parsed = new URL(activeSrc, window.location.origin);
-          const archivePath = parsed.searchParams.get("path");
-          if (archivePath && archivePath.startsWith("/download/") && !archivePath.includes("://") && !archivePath.includes("..")) {
-            const directArchiveSrc = `https://archive.org${archivePath}`;
-            console.warn("[AJN PLAYBACK] proxy decode failed; retrying native Archive.org transport", {
-              proxySrc: activeSrc,
-              directArchiveSrc,
-            });
-            setArchiveFallbackUsed(true);
-            setStatusText("Retrying Archive.org native transport…");
-            setActiveSrc(directArchiveSrc);
-            return;
-          }
-        } catch {
-          // Fall through to the normal error report.
-        }
-      }
-
+      // No silent switch to direct archive.org: that bypassed proxy validation,
+      // retries and telemetry, and a cross-origin source silences the audio chain.
+      // A failure is shown as a failure.
       setStatusText(`Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`);
       reportTelemetry({
         event: "media.error",
@@ -211,7 +218,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         readyState: media.readyState,
         networkState: media.networkState,
       });
-      onErrorEvent?.(err);
+      fx().onErrorEvent?.(err);
     };
 
     media.addEventListener("loadedmetadata", onLoadedMetadata);
@@ -225,7 +232,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     media.addEventListener("ended", onEnded);
     media.addEventListener("error", onError);
 
-    const saveOnExit = () => saveResumePosition(media);
+    const saveOnExit = () => fx().saveResumePosition(media);
     window.addEventListener("pagehide", saveOnExit);
 
     return () => {
@@ -240,9 +247,47 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       media.removeEventListener("ended", onEnded);
       media.removeEventListener("error", onError);
       window.removeEventListener("pagehide", saveOnExit);
-      saveResumePosition(media);
+      fx().saveResumePosition(media);
     };
-  }, [activeSrc, archiveFallbackUsed, clearResumePosition, eventMeta, isArchiveProxy, isMuted, isVideo, onErrorEvent, onPauseEvent, onProgramEnded, readResumePosition, reportPlaying, saveResumePosition]);
+  // Deliberately keyed on the source only: re-running calls load(), which
+  // aborts any play() in flight ("interrupted by a new load request").
+  }, [activeSrc, isVideo]);
+
+  // HLS (.m3u8): native where the browser supports it (Safari), otherwise hls.js.
+  // Teardown order is fixed: stopLoad -> detachMedia -> destroy -> null. Skipping
+  // it leaves SourceBuffers and loaders running and memory grows on long sessions.
+  useEffect(() => {
+    const media = mediaRef.current;
+    if (!media || !isHls) return;
+    if (media.canPlayType("application/vnd.apple.mpegurl")) {
+      media.src = activeSrc;
+      return;
+    }
+    if (!Hls.isSupported()) {
+      setStatusText("Failed to load — this browser cannot play HLS streams");
+      return;
+    }
+    const hls = new Hls({ liveDurationInfinity: true, lowLatencyMode: false, backBufferLength: 30 });
+    hlsRef.current = hls;
+    let recoveries = 0;
+    hls.on(Hls.Events.ERROR, (_event, data) => {
+      if (!data.fatal) return;
+      // One recovery attempt per kind before reporting a real failure.
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR && recoveries < 2) { recoveries++; hls.startLoad(); return; }
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recoveries < 2) { recoveries++; hls.recoverMediaError(); return; }
+      setStatusText(`Failed to load — HLS ${data.type}: ${data.details}`);
+      reportTelemetry({ event: "media.error", ...fnRef.current.eventMeta(), hlsType: data.type, hlsDetails: data.details, httpStatus: (data.response as { code?: number } | undefined)?.code ?? null });
+      fnRef.current.onErrorEvent?.(null);
+    });
+    hls.loadSource(activeSrc);
+    hls.attachMedia(media);
+    return () => {
+      hls.stopLoad();
+      hls.detachMedia();
+      hls.destroy();
+      hlsRef.current = null;
+    };
+  }, [activeSrc, isHls]);
 
   const play = async () => {
     const media = mediaRef.current;
@@ -252,6 +297,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       await media.play();
       if (!media.paused) reportPlaying();
     } catch (error) {
+      // A newer load superseded this play(); the new source starts on its own.
+      if ((error as DOMException)?.name === "AbortError") return;
       const message = error instanceof Error ? error.message : String(error);
       setStatusText(`Playback failed — ${message}`);
       console.error("[AJN PLAYBACK] play() rejected", {
@@ -289,6 +336,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     if (!media) return;
     const nextMuted = !media.muted;
     media.muted = nextMuted;
+    sessionUnmuted = !nextMuted;
     setIsMuted(nextMuted);
   };
 
@@ -301,7 +349,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             mediaRef.current = node;
             if (node) node.muted = isMuted;
           }}
-          src={activeSrc}
+          src={isHls ? undefined : activeSrc}
+          crossOrigin={corsMode}
           autoPlay
           muted={isMuted}
           playsInline
@@ -317,7 +366,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           }}
           src={activeSrc}
           muted={isMuted}
-          crossOrigin="anonymous"
+          crossOrigin={corsMode}
           preload="metadata"
           className="w-full"
         />

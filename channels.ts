@@ -278,27 +278,25 @@ export async function searchTVNews(opts: {
 }
 
 export function getSafeArchiveUrl(rawUrl: string): string {
-  try {
-    const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
-    const cdnMatch = httpsUrl.match(
-      /^(https?:\/\/)ia\d+\.us\.archive\.org\/\d+\/items\/([^/?#]+\/[^?#]*)/,
-    );
-    const normalized = cdnMatch ? `https://archive.org/download/${cdnMatch[2]}` : httpsUrl;
-    const url = new URL(normalized.replace("/embed/", "/download/"));
-    const parts = url.pathname.replace(/\/$/, "").split("/");
-    const lastPart = parts[parts.length - 1];
+  // Use the Archive URL exactly as given. The only rewrites allowed are
+  // http -> https and a storage-node URL (iaNNN.us.archive.org/N/items/...)
+  // back to its canonical archive.org/download/... form. The path, its
+  // percent-encoding and the query string are never decoded, re-encoded or
+  // guessed: a URL without a filename stays without one and fails honestly.
+  const httpsUrl = rawUrl.replace(/^http:\/\//i, "https://");
+  const cdnMatch = httpsUrl.match(
+    /^https:\/\/ia\d+\.us\.archive\.org\/\d+\/items\/([^?#]+)(\?[^#]*)?$/,
+  );
+  const canonical = cdnMatch ? `https://archive.org/download/${cdnMatch[1]}${cdnMatch[2] ?? ""}` : httpsUrl;
 
-    if (!lastPart.includes(".")) {
-      const id = lastPart;
-      url.pathname += `/${id}.mp4`;
-    }
-
-    url.searchParams.delete("ignore");
-
-    return url.toString();
-  } catch {
-    return rawUrl;
+  // Item-level TV News URL (archive.org/details/<ID> or /download/<ID>): Archive
+  // stores the broadcast as <ID>/<ID>.mp4. This is the one documented naming
+  // convention (from M3UStripTool); deeper folder URLs are never guessed.
+  const itemMatch = canonical.match(/^https:\/\/archive\.org\/(?:details|download)\/([A-Za-z0-9._-]+)\/?(\?[^#]*)?$/);
+  if (itemMatch && !itemMatch[1].includes(".")) {
+    return `https://archive.org/download/${itemMatch[1]}/${itemMatch[1]}.mp4${itemMatch[2] ?? ""}`;
   }
+  return canonical;
 }
 
 type FileCategory =
@@ -314,6 +312,7 @@ interface ArchiveFile {
   format?: string;
   size?: string;
   length?: string;
+  source?: string;
 }
 
 interface ArchiveMetadataResponse {
@@ -493,12 +492,35 @@ export interface ResolvedMediaCandidate extends ResolvedFile {
   size: number;
 }
 
+/** Like resolveArchiveMediaCandidates, but returns null when Archive metadata could not be fetched. */
+export async function tryResolveArchiveMediaCandidates(identifier: string): Promise<ResolvedMediaCandidate[] | null> {
+  try {
+    await fetchArchiveMetadata(identifier);
+  } catch {
+    return null;
+  }
+  return resolveArchiveMediaCandidates(identifier);
+}
+
 export async function resolveArchiveMediaCandidates(identifier: string): Promise<ResolvedMediaCandidate[]> {
   try {
     const data = await fetchArchiveMetadata(identifier);
-    const mediaFiles = (data.files ?? [])
+    const eligibleFiles = (data.files ?? [])
       .filter((file) => !isInternalFile(file.name))
-      .filter((file) => isBrowserPlayable(file.name))
+      .filter((file) => String(file.source ?? "").toLowerCase() !== "metadata")
+      .filter((file) => isBrowserPlayable(file.name));
+
+    // Archive metadata explicitly marks generated browser-playable derivatives.
+    // Prefer those derivatives over originals; never select an original when a
+    // usable MP4/WebM derivative exists for the item.
+    const derivativeFiles = eligibleFiles.filter((file) => {
+      const source = String(file.source ?? "").toLowerCase();
+      const lower = String(file.name).toLowerCase();
+      return source === "derivative" && (lower.endsWith(".mp4") || lower.endsWith(".webm"));
+    });
+    const selectedFiles = derivativeFiles.length > 0 ? derivativeFiles : eligibleFiles;
+
+    const mediaFiles = selectedFiles
       .map((file) => ({
         filename: file.name,
         url: buildFileUrl(identifier, file.name),
@@ -507,13 +529,16 @@ export async function resolveArchiveMediaCandidates(identifier: string): Promise
         size: parseSize(file.size),
         fallback: false,
         category: categorizeFile(file.name),
+        derivative: String(file.source ?? "").toLowerCase() === "derivative",
       }))
       .sort((a, b) => {
         const categoryA = PLAYABLE_PRIORITY.indexOf(a.category);
         const categoryB = PLAYABLE_PRIORITY.indexOf(b.category);
-        return categoryA - categoryB || b.size - a.size;
+        return categoryA - categoryB ||
+          Number(b.derivative) - Number(a.derivative) ||
+          a.filename.localeCompare(b.filename);
       })
-      .map(({ category: _category, ...candidate }) => candidate);
+      .map(({ category: _category, derivative: _derivative, ...candidate }) => candidate);
 
     return mediaFiles;
   } catch (error) {
@@ -563,6 +588,7 @@ export interface ScheduleChannel {
 }
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
+const EMPTY_CACHE_TTL_MS = 60 * 1000;
 
 let _cache: {
   data: ScheduleChannel[];
@@ -639,9 +665,13 @@ export async function getChannelSchedule(): Promise<ScheduleChannel[]> {
     });
   });
 
+  // A channel with no programs means the upstream search failed or returned
+  // nothing playable. Cache that state only briefly so empty feeds recover on
+  // the next minute instead of being served as success for 15 minutes.
+  const complete = channels.every((channel) => channel.programs.length > 0);
   _cache = {
     data: channels,
-    expiresAt: Date.now() + CACHE_TTL_MS,
+    expiresAt: Date.now() + (complete ? CACHE_TTL_MS : EMPTY_CACHE_TTL_MS),
   };
 
   return channels;

@@ -134,3 +134,70 @@ export function buildMoviesClassicsFromVerified(verified: CandidateFile[]): Prog
     buildProgram(candidate.item, candidate.file, candidate.archivePath),
   );
 }
+
+export interface ResolvedArchiveFile {
+  filename: string;
+}
+
+/** Returns candidates, or null when Archive metadata is unavailable (item is then kept unchanged). */
+export type ArchiveCandidateResolver = (identifier: string) => Promise<ResolvedArchiveFile[] | null>;
+
+export interface ManifestResolutionReport {
+  kept: string[];
+  unverified: string[];
+  replaced: Array<{ identifier: string; from: string; to: string }>;
+  dropped: Array<{ identifier: string; file: string; reason: string }>;
+}
+
+/**
+ * Check every manifest file against Archive's live metadata instead of trusting
+ * the stored filename. A listed file that still exists and is playable is kept.
+ * If it is gone, the best browser-playable file (derivative MP4/WebM first, via
+ * the resolver) replaces it. Items with no playable file are dropped and reported:
+ * nothing is guessed.
+ */
+export async function resolveMoviesClassicsManifest(
+  manifestItems: RawArchiveListItem[],
+  resolveCandidates: ArchiveCandidateResolver,
+): Promise<{ items: RawArchiveListItem[]; report: ManifestResolutionReport }> {
+  const report: ManifestResolutionReport = { kept: [], unverified: [], replaced: [], dropped: [] };
+  const items: RawArchiveListItem[] = [];
+
+  for (const item of manifestItems) {
+    if (!item.identifier.trim() || !item.title.trim()) continue;
+    const candidates = await resolveCandidates(item.identifier);
+    if (candidates === null) {
+      // Metadata unreachable: this says nothing about the file, so keep it as listed.
+      items.push(item);
+      report.unverified.push(item.identifier);
+      continue;
+    }
+    const available = new Set(candidates.map((c) => c.filename));
+    const files: RawArchiveListItem['files'] = [];
+
+    for (const file of item.files.filter(isPlayableVideo)) {
+      if (available.has(file.name)) {
+        files.push(file);
+        report.kept.push(`${item.identifier}/${file.name}`);
+      }
+    }
+
+    if (files.length === 0) {
+      const best = candidates[0];
+      if (best) {
+        const listed = item.files[0]?.name ?? '(none)';
+        files.push({ name: best.filename, format: best.filename.split('.').pop() ?? '', title: item.title });
+        report.replaced.push({ identifier: item.identifier, from: listed, to: best.filename });
+      } else {
+        for (const file of item.files) {
+          report.dropped.push({ identifier: item.identifier, file: file.name, reason: 'no browser-playable file in Archive metadata' });
+        }
+        continue;
+      }
+    }
+
+    items.push({ ...item, files });
+  }
+
+  return { items, report };
+}
