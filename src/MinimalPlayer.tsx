@@ -210,6 +210,22 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       // retries and telemetry, and a cross-origin source silences the audio chain.
       // A failure is shown as a failure.
       setStatusText(`Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`);
+      // The browser only reports "code 4"; ask the proxy why (403 restricted,
+      // 404/503 removed, not media) so the failure names its real cause.
+      const failedSrc = media.currentSrc || activeSrc;
+      if (failedSrc && failedSrc.includes("/api/archive/proxy")) {
+        fetch(failedSrc, { headers: { Range: "bytes=0-0" } })
+          .then(async (r) => {
+            if (r.ok) return;
+            const body = await r.json().catch(() => ({} as any));
+            const why = body.upstreamStatus === 403 ? "restricted by Archive (403)"
+              : body.upstreamStatus === 404 || body.upstreamStatus === 503 ? `not available on Archive (${body.upstreamStatus})`
+              : body.error || `HTTP ${r.status}`;
+            setStatusText(`Unavailable — ${why}. Skipping…`);
+            reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), httpStatus: body.upstreamStatus ?? r.status, proxyRequestId: body.proxyRequestId ?? null });
+          })
+          .catch(() => {});
+      }
       reportTelemetry({
         event: "media.error",
         ...eventMeta(),

@@ -93,7 +93,7 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
         const programId = normalizeProgramIdentity({ externalId, channelId, title: entry.title, startTime: 0 });
         add({
           id: programId, guideId: input.guideId, channelId, title: displayTitle(entry.title, entry.url, show), description: show,
-          startTime: 0, endTime: 0, mediaType: 'video', mediaUrl, archivePath,
+          startTime: 0, endTime: 0, mediaType: /\.(mp3|m4a|aac|ogg|opus|flac|wav)(\?|$)/i.test(entry.url) ? 'audio' : 'video', mediaUrl, archivePath,
           assetId: normalizeAssetIdentity({ externalId, programId, mediaUrl: archivePath ?? entry.url }),
           sourceId: normalizeSourceIdentity({ channelId, url: `archive:${item}/${t.f.name}`, protocol: 'm3u' }),
           sourceClass: 'archive_org', isArchivedSource: true,
