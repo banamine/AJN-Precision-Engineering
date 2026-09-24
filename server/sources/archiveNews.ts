@@ -1,3 +1,4 @@
+import { archiveApiFetch } from '../archiveLimiter';
 // Layer 3 — Archive News (TV News collections: CNN, Fox, MSNBC, BBC, NTD).
 // Structured JSON only: advancedsearch.php?output=json and /metadata/{id}. No HTML.
 // Restricted recordings are the normal case for TV News and are reported as
@@ -118,7 +119,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
   sourceClass: 'archive_news',
   priority: 3,
   async hook(input, ctx): Promise<SourceResult> {
-    const fetchImpl = input.fetchImpl ?? fetch;
+    const fetchImpl = input.fetchImpl ?? archiveApiFetch;
     const windowDays = input.windowDays ?? 7;
     const windowStart = new Date(ctx.now.getTime() - windowDays * 86_400_000);
     const programs: Program[] = [];
