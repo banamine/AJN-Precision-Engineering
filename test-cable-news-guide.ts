@@ -47,9 +47,9 @@ assert.equal(fox.sourceStatus, 'ok');
 // Clips are grouped into one full-length show block; clips ride in metadata.segments.
 const show = fox.programs[0];
 const segs = (show.metadata as any).segments;
-assert.equal(fox.programs.length, 1, 'clips are grouped into one show block');
+assert.equal(fox.programs.length, 24, 'the grouped show repeats as 24 full-length daily blocks');
 assert.ok(Array.isArray(segs), 'grouped show carries metadata.segments');
-assert.ok(segs.length >= 13, 'one show block carries all its clips');
+assert.ok(segs.length >= 13, 'each show block carries all its clips');
 assert.equal(show.archivePath, `/download/${foxId}/${foxId}.mp4?exact=1&start=0&end=282`);
 assert.equal(segs[0].index, 0);
 assert.equal(segs[1].index, 1);
