@@ -1,3 +1,4 @@
+import { proxySliceRange } from './server/proxyRange';
 import { unplayableReason } from './server/sources/archiveLinks';
 import { Readable } from 'node:stream';
 import crypto from 'node:crypto';
@@ -94,8 +95,13 @@ app.get('/api/archive/proxy', async (req,res)=>{
   try{
     const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
     const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Media-Console/ArchiveProxy','Accept':'*/*'};
-    const range=String(req.headers.range || '');
-    if(range) upstreamHeaders.Range=range;
+    // Cloud Run rejects any HTTP/1 response larger than 32 MiB with an empty 500.
+    // Browsers open media with "Range: bytes=0-" (or no Range), which asked for the
+    // whole 500 MB file and died there, reported by the video element as
+    // MediaError 4. Serve bounded 206 slices instead; the browser requests the
+    // next slice itself as it plays or seeks.
+    const slice=proxySliceRange(req.headers.range);
+    upstreamHeaders.Range=`bytes=${slice.start}-${slice.end}`;
 
     const upstreamAbort=new AbortController();
     res.on('close',()=>{ if(!res.writableFinished) upstreamAbort.abort(); });

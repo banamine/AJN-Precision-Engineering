@@ -97,6 +97,8 @@ jobs:
         run: npm run test:daily-highlights
       - name: Live TV contract regression (mocked)
         run: npm run test:live-tv
+      - name: Proxy range slicing regression
+        run: npm run test:proxy-range
       - name: AJN Audio contract regression (mocked)
         run: npm run test:source-ajn-audio
       - name: AJN Media RSS contract regression (mocked)

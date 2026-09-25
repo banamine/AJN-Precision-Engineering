@@ -47,6 +47,19 @@ import puppeteer from 'puppeteer';
       };
     });
     console.log('[NOVA proxy probe]', JSON.stringify(novaProbe));
+    // Browsers open media with an open-ended range. On Cloud Run a response over
+    // 32 MiB fails with an empty 500, so the proxy must answer a bounded 206 slice.
+    const openRange = await page.evaluate(async () => {
+      const c = new AbortController();
+      const r = await fetch('/api/archive/proxy?path=' + encodeURIComponent('/download/nova-wonders/NOVA Wonders 2 Living in You.mp4'), { headers: { Range: 'bytes=0-' }, signal: c.signal });
+      const out = { status: r.status, length: Number(r.headers.get('content-length')), contentRange: r.headers.get('content-range') };
+      c.abort();
+      return out;
+    });
+    console.log('[NOVA open-range probe]', JSON.stringify(openRange));
+    if (openRange.status !== 206 || !(openRange.length > 0 && openRange.length <= 8 * 1024 * 1024) || !openRange.contentRange) {
+      throw new Error('Open-ended Range must be answered with a bounded 206 slice (<= 8 MiB)');
+    }
     if (novaProbe.status !== 206 || novaProbe.bytes !== 1024 || !novaProbe.contentRange || !novaProbe.acceptRanges) {
       throw new Error('NOVA Archive proxy did not return a valid 206 byte range');
     }

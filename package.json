@@ -38,6 +38,7 @@
     "test:science-guide": "tsx test-science-guide.ts",
     "test:daily-highlights": "tsx test-daily-highlights.ts",
     "test:live-tv": "tsx test-live-tv.ts",
+    "test:proxy-range": "tsx test-proxy-range.ts",
     "test:source-ajn-audio": "tsx test-source-ajn-audio.ts",
     "test:source-ajn-media": "tsx test-source-ajn-media.ts"
   },
