@@ -13,7 +13,9 @@ const calls: string[] = [];
 const impl = (async (input: any) => {
   const url = String(input); calls.push(url);
   if (url.endsWith('/metadata/daily-highlights')) return new Response(JSON.stringify({ files: [
-    { name: 'm3u_split_shows_2026-08-05 (1)/split_shows/Gunsmoke.m3u', format: 'M3U' },
+    { name: 'daily-highlights-organized/m3u_files/Gunsmoke.m3u', format: 'M3U' },
+    { name: 'daily-highlights-organized/m3u_files/Honey mooners.m3u', format: 'M3U' },
+    { name: 'm3u_split_shows_2026-08-05 (1)/split_shows/Old.m3u', format: 'M3U' },
     { name: 'Andy Griffith/Andy Griffith S01E01.mp4', source: 'original', length: '1510.2' },
     { name: 'Hidden/secret.mp4', private: 'true' },
     { name: 'root.mp4' },
@@ -23,15 +25,14 @@ const impl = (async (input: any) => {
 }) as typeof fetch;
 
 const r = await dailyHighlightsContract.hook({ guideId: 'classic-tv', fetchImpl: impl }, ctx);
-assert.equal(r.status, 'ok');
-assert.equal(r.programs.length, 3);
+assert.equal(r.status, 'partial', 'honeymooners playlist is listed as excluded');
+assert.equal(r.programs.length, 2, 'only playlists from daily-highlights-organized/m3u_files');
+assert.ok(r.rejected.some((x) => x.reason === 'excluded playlist' && /Honey mooners/.test(x.id)));
+assert.ok(!calls.some((u) => u.includes('Honey%20mooners') || u.includes('split_shows')), 'excluded and other folders not fetched');
 const gs = r.programs.filter((p) => p.channelId === 'classic-gunsmoke');
 assert.equal(gs.length, 2);
 assert.equal(gs[0].archivePath, '/download/gunsmoke-s1/Gunsmoke%20S01E01%20(1955).mp4', 'M3U link used exactly');
-const andy = r.programs.find((p) => p.channelId === 'classic-andy-griffith')!;
-assert.equal(andy.archivePath, '/download/daily-highlights/Andy%20Griffith/Andy%20Griffith%20S01E01.mp4');
-assert.equal((andy.metadata as any).durationSeconds, 1510.2);
-assert.ok(calls.some((u) => u.includes('m3u_split_shows_2026-08-05%20(1)/split_shows/Gunsmoke.m3u')), 'playlist fetched by its listed name');
+assert.ok(calls.some((u) => u.includes('daily-highlights-organized/m3u_files/Gunsmoke.m3u')), 'playlist fetched by its listed name');
 assert.ok(calls.every((u) => !u.includes('/details/')), 'JSON metadata API only');
 
 const down = await dailyHighlightsContract.hook({ guideId: 'classic-tv', fetchImpl: (async () => new Response('', { status: 503 })) as typeof fetch }, ctx);

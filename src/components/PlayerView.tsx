@@ -37,6 +37,20 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
       (nowPlaying?.archivePath && p.archivePath === nowPlaying.archivePath) ||
       p.mediaUrl === nowPlaying?.src,
     );
+    // Clip-segmented show (TV News): play the next clip of the same show first.
+    const cur = currentIndex >= 0 ? programs[currentIndex] : null;
+    const segs: any[] = Array.isArray(cur?.metadata?.segments) ? cur.metadata.segments : [];
+    if (segs.length > 1) {
+      const si = segs.findIndex((s) => (nowPlaying?.archivePath && s.archivePath === nowPlaying.archivePath) || s.mediaUrl === nowPlaying?.src || s.archivePath === nowPlaying?.src);
+      const seg = si >= 0 ? segs[si + 1] : null;
+      if (seg) {
+        reportTelemetry({ event: reason === "error" ? "playback.skip_failed" : "playback.segment", guideId: cur.guideId ?? null, channelId: cur.channelId ?? null,
+          programId: cur.id ?? null, titleId: titleIdOf(cur.channelId, cur.title), sourceId: cur.sourceId ?? null, assetId: cur.assetId ?? null, mediaPath: seg.archivePath ?? seg.mediaUrl ?? null });
+        onSelectProgram(seg.archivePath || seg.mediaUrl, cur.title, cur.description, cur.mediaType,
+          cur.channelId, cur.guideId, cur.id, cur.sourceId ?? cur.metadata?.sourceId, cur.assetId ?? cur.metadata?.assetId);
+        return;
+      }
+    }
     const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % programs.length;
     const next = programs[nextIndex];
     if (!next) return;

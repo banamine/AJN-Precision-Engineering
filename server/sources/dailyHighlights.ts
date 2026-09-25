@@ -12,7 +12,11 @@ import { playableUrl, slug } from './archiveLinks';
 import type { RejectedItem, SourceContract, SourceResult } from './contract';
 
 export const DAILY_HIGHLIGHTS_ITEM = 'daily-highlights';
-const MAX_PLAYLISTS = 40;
+const MAX_PLAYLISTS = 60;
+/** The curated show playlists: one .m3u per Classic TV channel. */
+export const HIGHLIGHTS_M3U_DIR = 'daily-highlights-organized/m3u_files/';
+/** Playlists known not to work (The Honeymooners has its own verified channel). */
+const EXCLUDED_PLAYLISTS = [/^honey\s*mooners?\.m3u8?$/i];
 const CONCURRENCY = 2; // stay under Archive's rate limit
 
 interface ArchiveFile { name: string; source?: string; format?: string; length?: string; private?: string | boolean }
@@ -74,7 +78,15 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
     const add = (p: Program) => { if (!seen.has(p.id)) { seen.add(p.id); programs.push(p); } };
 
     // 1. Playlists.
-    const playlists = files.filter((f) => /\.m3u8?$/i.test(f.name) && !isPrivate(f)).slice(0, MAX_PLAYLISTS);
+    const playlists = files
+      .filter((f) => f.name.startsWith(HIGHLIGHTS_M3U_DIR) && /\.m3u8?$/i.test(f.name) && !isPrivate(f))
+      .filter((f) => {
+        const base = f.name.slice(HIGHLIGHTS_M3U_DIR.length);
+        if (EXCLUDED_PLAYLISTS.some((re) => re.test(base))) { rejected.push({ id: f.name, reason: 'excluded playlist' }); return false; }
+        return true;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, MAX_PLAYLISTS);
     const texts = await pool(playlists, CONCURRENCY, async (f) => {
       try {
         const r = await fetchImpl(`https://archive.org/download/${item}/${encodePath(f.name)}`, { signal: ctx.signal, headers });
@@ -86,7 +98,8 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
       if (!('text' in t) || t.text === undefined) { rejected.push({ id: t.f.name, reason: `playlist ${t.error}` }); continue; }
       for (const entry of parseM3uEntries(t.text)) {
         const key = episodeKey(entry);
-        const show = key.show === 'Unsorted' ? t.f.name.split('/').pop()!.replace(/\.m3u8?$/i, '') : key.show;
+        // One channel per playlist file: the file name is the show/channel name.
+        const show = t.f.name.split('/').pop()!.replace(/\.m3u8?$/i, '').trim();
         const channelId = `classic-${slug(show)}`;
         const { mediaUrl, archivePath } = playableUrl(entry.url);
         if (!/^(https?:\/\/|\/api\/archive\/proxy)/i.test(mediaUrl)) { rejected.push({ id: entry.url, reason: 'unsupported URL' }); continue; }
@@ -101,26 +114,6 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
           metadata: { externalId, show, season: key.season, episode: key.episode, durationSeconds: entry.duration > 0 ? entry.duration : undefined, logo: entry.tvgLogo },
         } as Program);
       }
-    }
-
-    // 2. Loose MP4s inside folders (derivatives preferred when both exist).
-    const mp4 = files.filter((f) => /\.mp4$/i.test(f.name) && f.name.includes('/') && !isPrivate(f));
-    for (const f of mp4) {
-      const parts = f.name.split('/');
-      const show = parts[parts.length - 2];
-      const channelId = `classic-${slug(show)}`;
-      const archivePath = `/download/${item}/${encodePath(f.name)}`;
-      const title = parts[parts.length - 1].replace(/\.mp4$/i, '');
-      const externalId = `${item}/${f.name}`;
-      const programId = normalizeProgramIdentity({ externalId, channelId, title, startTime: 0 });
-      add({
-        id: programId, guideId: input.guideId, channelId, title, description: show,
-        startTime: 0, endTime: 0, mediaType: 'video', mediaUrl: buildArchiveProxyUrl(archivePath), archivePath,
-        assetId: normalizeAssetIdentity({ externalId, archiveIdentifier: item, programId, mediaUrl: archivePath }),
-        sourceId: normalizeSourceIdentity({ channelId, url: `archive:${item}/${show}`, protocol: 'direct_archive' }),
-        sourceClass: 'archive_org', isArchivedSource: true,
-        metadata: { externalId, show, durationSeconds: Number(f.length) > 0 ? Number(f.length) : undefined },
-      } as Program);
     }
 
     const status: SourceResult['status'] = programs.length > 0 ? (rejected.length ? 'partial' : 'ok') : rejected.length ? 'upstream_error' : 'ok';
