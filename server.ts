@@ -1,3 +1,4 @@
+import { unplayableReason } from './server/sources/archiveLinks';
 import { Readable } from 'node:stream';
 import crypto from 'node:crypto';
 import { patchServer } from './server-patch.js';
@@ -81,6 +82,9 @@ app.get('/api/archive/proxy', async (req,res)=>{
   res.setHeader('Access-Control-Expose-Headers','Content-Range, Content-Length, Accept-Ranges, X-Proxy-Request-Id, ETag, Last-Modified');
 
   const rawPath=String(req.query.path || '');
+  if(unplayableReason(rawPath)){
+    return res.status(422).json({error:'Not streamable: file inside a compressed archive',reason:'UNPLAYABLE_ARCHIVE_MEMBER',proxyRequestId});
+  }
   const v=validateArchivePath(rawPath);
   if(!v.valid || !v.cleanPath){
     stats.failedRequests++;

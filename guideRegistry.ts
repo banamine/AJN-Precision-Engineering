@@ -1,3 +1,4 @@
+import { unplayableReason } from './server/sources/archiveLinks';
 import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
 } from './src/types';
@@ -400,7 +401,17 @@ function toProxy(u?:string){return u&&u.startsWith('/download/')?`/api/archive/p
 /** Every program leaves the server with a playable URL: raw Archive paths go
  *  through the proxy (archivePath keeps the exact path for tracing). */
 function normalizeChannels(chs:ScheduleChannel[]):ScheduleChannel[]{
-  return chs.map(ch=>({...ch,programs:ch.programs.map(p=>p.mediaUrl?.startsWith('/download/')?{...p,archivePath:p.archivePath??p.mediaUrl,mediaUrl:toProxy(p.mediaUrl)!}:p)}));
+  return chs.map(ch=>{
+    const rejected=[...(ch.rejected??[])];
+    const programs:Program[]=[];
+    for(const p of ch.programs){
+      // Eligibility gate: never publish a source the browser cannot stream.
+      const bad=unplayableReason(p.archivePath??p.mediaUrl);
+      if(bad){rejected.push({id:p.archivePath??p.mediaUrl??p.id,reason:bad});continue;}
+      programs.push(p.mediaUrl?.startsWith('/download/')?{...p,archivePath:p.archivePath??p.mediaUrl,mediaUrl:toProxy(p.mediaUrl)!}:p);
+    }
+    return {...ch,programs,rejected:rejected.length?rejected.slice(0,100):ch.rejected};
+  });
 }
 export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleChannel[]>{
   return normalizeChannels(await getScheduleForGuideRaw(guideId));
