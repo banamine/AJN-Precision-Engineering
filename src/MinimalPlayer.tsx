@@ -218,7 +218,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           .then(async (r) => {
             if (r.ok) return;
             const body = await r.json().catch(() => ({} as any));
-            const why = body.upstreamStatus === 403 ? "restricted by Archive (403)"
+            const why = body.reason === "UNPLAYABLE_ARCHIVE_MEMBER" ? "file is inside a compressed archive (not streamable)"
+              : body.upstreamStatus === 429 ? "Archive is rate-limiting (429), try again shortly"
+              : body.upstreamStatus === 403 ? "restricted by Archive (403)"
               : body.upstreamStatus === 404 || body.upstreamStatus === 503 ? `not available on Archive (${body.upstreamStatus})`
               : body.error || `HTTP ${r.status}`;
             setStatusText(`Unavailable — ${why}. Skipping…`);

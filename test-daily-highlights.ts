@@ -45,3 +45,12 @@ console.log('daily highlights regression: all passed');
   assert.equal(displayTitle('Real Title', 'https://x/y.mp4', 'S'), 'Real Title');
   console.log('display titles: passed');
 }
+{
+  const { unplayableReason } = await import('./server/sources/archiveLinks.ts');
+  assert.equal(unplayableReason('/download/x/shows.zip/Ep1.mp4'), 'UNPLAYABLE_ARCHIVE_MEMBER');
+  assert.equal(unplayableReason('/download/x/pack.7z/a%20b.mp4'), 'UNPLAYABLE_ARCHIVE_MEMBER');
+  assert.equal(unplayableReason('/api/archive/proxy?path=' + encodeURIComponent('/download/x/y.tar.gz/z.mp4')), 'UNPLAYABLE_ARCHIVE_MEMBER');
+  assert.equal(unplayableReason('/download/x/Ep1.mp4'), null);
+  assert.equal(unplayableReason('/download/x/x.mp4?exact=1&start=0&end=282'), null, 'news clips stay playable');
+  console.log('archive-member gate: passed');
+}
