@@ -405,7 +405,7 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
     const c=newsState?.channels.get(channelId);
     return {
       id:channelId,guideId,name:channelName,mediaType:'video' as MediaType,group:'News',
-      logo:`https://archive.org/services/img/${network}`,
+      logo:`https://archive.org/services/img/${network.split('|').pop()}`,
       programs:layoutDailySchedule((c?.programs??[]).map(p=>upsertCanonicalProgram(p)),5,now,320),
       sourceStatus:c?.status??'loading',rejected:c?.rejected,sourceError:c?.error,
     };
