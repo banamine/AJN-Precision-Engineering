@@ -290,17 +290,38 @@ async function getLiveTvChannels(guideId:string):Promise<ScheduleChannel[]>{
 
 let highlightsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
 let highlightsFetch:typeof fetch|undefined;
-export function setHighlightsFetchForTests(impl?:typeof fetch){highlightsFetch=impl;highlightsCache=null;}
+export function setHighlightsFetchForTests(impl?:typeof fetch){highlightsFetch=impl;highlightsCache=null;highlightsLastGood=null;}
 
 /** Classic TV shows from archive.org/download/daily-highlights (folders + M3Us). */
+let highlightsLastGood:ScheduleChannel[]|null=null;
+let highlightsRefreshing:Promise<ScheduleChannel[]>|null=null;
+async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>{
+  // 40 playlists behind the shared Archive limiter can take over a minute on a
+  // cold start; 25s cut it off and Classic TV showed only The Honeymooners.
+  const [r]=await runSources([{contract:dailyHighlightsContract,input:{guideId,fetchImpl:highlightsFetch}}],{timeoutMs:150_000});
+  let data:ScheduleChannel[];
+  if(r.programs.length){
+    data=highlightChannels(r.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:r.status,rejected:r.rejected}));
+    highlightsLastGood=data;
+  }else if(highlightsLastGood){
+    data=highlightsLastGood.map(ch=>({...ch,sourceStatus:'stale',sourceError:`showing last known list; refresh: ${r.error??r.status}`}));
+  }else{
+    data=[{id:'classic-daily-highlights',guideId,name:'Daily Highlights',mediaType:'video' as MediaType,group:'Classic TV',programs:[],sourceStatus:r.status,rejected:r.rejected,sourceError:r.error}];
+  }
+  highlightsCache={data,expiresAt:Date.now()+(r.programs.length?60*60_000:2*60_000)};
+  return data;
+}
+
+/** Classic TV shows from archive.org/download/daily-highlights (folders + M3Us).
+ *  Stale-while-revalidate: never blocks on a refresh once a list exists. */
 async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChannel[]>{
   if(highlightsCache&&Date.now()<highlightsCache.expiresAt)return highlightsCache.data;
-  const [r]=await runSources([{contract:dailyHighlightsContract,input:{guideId,fetchImpl:highlightsFetch}}],{timeoutMs:25_000});
-  const data:ScheduleChannel[]=r.programs.length
-    ? highlightChannels(r.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:r.status,rejected:r.rejected}))
-    : [{id:'classic-daily-highlights',guideId,name:'Daily Highlights',mediaType:'video' as MediaType,group:'Classic TV',programs:[],sourceStatus:r.status,rejected:r.rejected,sourceError:r.error}];
-  highlightsCache={data,expiresAt:Date.now()+(r.programs.length?60*60_000:60_000)};
-  return data;
+  if(!highlightsRefreshing)highlightsRefreshing=refreshDailyHighlights(guideId).finally(()=>{highlightsRefreshing=null;});
+  if(highlightsCache)return highlightsCache.data;
+  // Cold start: wait briefly, then answer with a loading row instead of holding
+  // the whole Classic TV guide for a minute.
+  const loading:ScheduleChannel[]=[{id:'classic-daily-highlights',guideId,name:'Daily Highlights',mediaType:'video' as MediaType,group:'Classic TV',programs:[],sourceStatus:'loading',sourceError:'loading shows from Archive — refresh in a minute'}];
+  return Promise.race([highlightsRefreshing,new Promise<ScheduleChannel[]>(r=>setTimeout(()=>r(loading),8000))]);
 }
 
 let cableNewsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
