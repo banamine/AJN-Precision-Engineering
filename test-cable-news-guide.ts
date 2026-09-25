@@ -44,8 +44,15 @@ assert.equal(cnn.logo, 'https://archive.org/services/img/CNNW');
 // Restricted TV News item -> 282s exact clips of the item-level MP4 (reference M3U format).
 const fox = by['fox-news'];
 assert.equal(fox.sourceStatus, 'ok');
-assert.ok(fox.programs.length >= 13, 'clips fill the day');
-assert.equal(fox.programs[0].archivePath, `/download/${foxId}/${foxId}.mp4?exact=1&start=0&end=282`);
+// Clips are grouped into one full-length show block; clips ride in metadata.segments.
+const show = fox.programs[0];
+const segs = (show.metadata as any).segments;
+assert.ok(segs.length >= 13, 'one show block carries all its clips');
+assert.equal(show.archivePath, `/download/${foxId}/${foxId}.mp4?exact=1&start=0&end=282`);
+assert.equal(segs[1].archivePath, `/download/${foxId}/${foxId}.mp4?exact=1&start=282&end=564`);
+assert.ok(segs[0].mediaUrl.startsWith('/api/archive/proxy?path='), 'segments are proxied');
+assert.ok(Date.parse(show.endTimeUtc!) - Date.parse(show.startTimeUtc!) >= 55 * 60_000, 'show block is full length, not 4.7 min');
+assert.ok(!/\d{2}:\d{2}$/.test(show.title), 'title has no clip offset');
 assert.equal(by['msnbc'].sourceStatus, 'upstream_error');
 assert.equal(by['msnbc'].sourceError, 'advancedsearch HTTP 503');
 assert.equal(by['bbc'].programs.length, 0);

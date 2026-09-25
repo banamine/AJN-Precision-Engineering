@@ -352,7 +352,7 @@ async function refreshCableNews(guideId:string):Promise<ScheduleChannel[]>{
       sourceError=`showing last known clips; refresh: ${r.error ?? r.status}`;
     }
     // Oldest first so the day plays in broadcast order, then loops.
-    const ordered=[...programs].sort((a,b)=>String(a.startTimeUtc).localeCompare(String(b.startTimeUtc)));
+    const ordered=groupClipPrograms([...programs].sort((a,b)=>String(a.startTimeUtc).localeCompare(String(b.startTimeUtc))));
     return {
       id:channelId,guideId,name:channelName,mediaType:'video' as MediaType,group:'News',
       logo:`https://archive.org/services/img/${network}`,
@@ -373,6 +373,33 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
     return cableNewsCache.data;
   }
   return refreshCableNews(guideId);
+}
+
+/** TV News arrives as 282s clips (13 per hour). Merge the clips of one Archive
+ *  item into a single full-length show block; the clips ride along in
+ *  metadata.segments and the player walks them in order. */
+export function groupClipPrograms(programs:Program[]):Program[]{
+  const out:Program[]=[];const byItem=new Map<string,Program>();
+  for(const p of programs){
+    const m:any=p.metadata??{};
+    const clip=m.clip;const ext=String(m.externalId??'');
+    if(!clip||!/_c\d+$/.test(ext)){out.push(p);continue;}
+    const item=ext.replace(/_c\d+$/,'');
+    const seg={index:clip.index,start:clip.start,end:clip.end,archivePath:p.archivePath,mediaUrl:p.mediaUrl};
+    const g=byItem.get(item);
+    if(!g){
+      const show=String(m.show??p.title).trim();
+      const merged:Program={...p,id:`${p.id}:show`,title:String(p.title).replace(/\s+\d{2}:\d{2}$/,'')||show,
+        description:`${p.description??''}`.replace(/\s*\(clip \d+\)$/,''),
+        metadata:{...m,externalId:item,durationSource:'clips',durationSeconds:clip.end-clip.start,segments:[seg]}};
+      byItem.set(item,merged);out.push(merged);continue;
+    }
+    const gm:any=g.metadata;gm.segments.push(seg);gm.durationSeconds+=clip.end-clip.start;
+    if(p.endTimeUtc&&String(p.endTimeUtc)>String(g.endTimeUtc))Object.assign(g,{endTimeUtc:p.endTimeUtc,endTime:p.endTime,endHour:p.endHour});
+  }
+  for(const g of byItem.values()){const gm:any=g.metadata;gm.segments.sort((a:any,b:any)=>a.start-b.start);
+    g.archivePath=gm.segments[0].archivePath;g.mediaUrl=gm.segments[0].mediaUrl;}
+  return out;
 }
 
 /** Lay on-demand programs back-to-back across today's UTC day (repeating the
@@ -408,7 +435,9 @@ function normalizeChannels(chs:ScheduleChannel[]):ScheduleChannel[]{
       // Eligibility gate: never publish a source the browser cannot stream.
       const bad=unplayableReason(p.archivePath??p.mediaUrl);
       if(bad){rejected.push({id:p.archivePath??p.mediaUrl??p.id,reason:bad});continue;}
-      programs.push(p.mediaUrl?.startsWith('/download/')?{...p,archivePath:p.archivePath??p.mediaUrl,mediaUrl:toProxy(p.mediaUrl)!}:p);
+      const segs=(p.metadata as any)?.segments;
+      const q=Array.isArray(segs)?{...p,metadata:{...(p.metadata as any),segments:segs.map((sg:any)=>({...sg,archivePath:sg.archivePath??sg.mediaUrl,mediaUrl:toProxy(sg.mediaUrl)}))}}:p;
+      programs.push(q.mediaUrl?.startsWith('/download/')?{...q,archivePath:q.archivePath??q.mediaUrl,mediaUrl:toProxy(q.mediaUrl)!}:q);
     }
     return {...ch,programs,rejected:rejected.length?rejected.slice(0,100):ch.rejected};
   });
