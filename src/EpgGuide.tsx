@@ -67,6 +67,13 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
     return () => requestRef.current?.abort();
   }, [fetchSchedule]);
 
+  // Background news refresh promoted by the user: reload this guide in place.
+  useEffect(() => {
+    const onUpdate = (e: Event) => { if ((e as CustomEvent).detail?.guideId === guideId) void fetchSchedule(); };
+    window.addEventListener("ajn:schedule-updated", onUpdate);
+    return () => window.removeEventListener("ajn:schedule-updated", onUpdate);
+  }, [fetchSchedule, guideId]);
+
   // Live "now" line — updates every 30s, real time, not a static mockup.
   useEffect(() => {
     const interval = setInterval(() => setNowHour(currentHourFraction()), 30_000);
