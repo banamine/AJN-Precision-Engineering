@@ -1,3 +1,4 @@
+import { archiveApiFetch } from './server/archiveLimiter';
 import { MediaAsset, PlayoutChannel } from "./src/archive-types.js";
 import { setChannelSources, addChannel } from "./guideRegistry.js";
 import { ChannelSource } from "./src/types.js";
@@ -13,7 +14,7 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 async function fetchJson(url: string): Promise<any> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+      const res = await archiveApiFetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
       if (res.ok) return await res.json();
       if (!RETRYABLE.has(res.status) || attempt === MAX_ATTEMPTS) return null;
     } catch { if (attempt === MAX_ATTEMPTS) return null; }

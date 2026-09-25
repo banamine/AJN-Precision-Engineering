@@ -1,3 +1,4 @@
+import { archiveApiFetch } from '../archiveLimiter';
 // Classic TV from the Archive item "daily-highlights". JSON metadata API only:
 // every file is listed by /metadata/daily-highlights, folders included.
 //  - .m3u/.m3u8 files are fetched and parsed (layer 1 parser); one channel per show.
@@ -56,7 +57,7 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
   sourceClass: 'classic_m3u',
   priority: 1,
   async hook(input, ctx): Promise<SourceResult> {
-    const fetchImpl = input.fetchImpl ?? fetch;
+    const fetchImpl = input.fetchImpl ?? archiveApiFetch;
     const item = input.item ?? DAILY_HIGHLIGHTS_ITEM;
     const base = { sourceClass: 'classic_m3u' as const, fetchedAt: ctx.now.toISOString() };
     const programs: Program[] = [];
@@ -93,7 +94,7 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
         const programId = normalizeProgramIdentity({ externalId, channelId, title: entry.title, startTime: 0 });
         add({
           id: programId, guideId: input.guideId, channelId, title: displayTitle(entry.title, entry.url, show), description: show,
-          startTime: 0, endTime: 0, mediaType: 'video', mediaUrl, archivePath,
+          startTime: 0, endTime: 0, mediaType: /\.(mp3|m4a|aac|ogg|opus|flac|wav)(\?|$)/i.test(entry.url) ? 'audio' : 'video', mediaUrl, archivePath,
           assetId: normalizeAssetIdentity({ externalId, programId, mediaUrl: archivePath ?? entry.url }),
           sourceId: normalizeSourceIdentity({ channelId, url: `archive:${item}/${t.f.name}`, protocol: 'm3u' }),
           sourceClass: 'archive_org', isArchivedSource: true,

@@ -9,8 +9,10 @@ export function titleIdOf(channelId: string | undefined, title: string | undefin
   return `${channelId || "none"}/${slug || "untitled"}`;
 }
 
-const MAX_CONSECUTIVE_FAILURES = 5;
-const SKIP_AFTER_ERROR_MS = 3000;
+// Playlists often contain a few items Archive has restricted or removed; skip
+// past them quickly, but give up after a long run so a dead channel stops.
+const MAX_CONSECUTIVE_FAILURES = 20;
+const SKIP_AFTER_ERROR_MS = 1500;
 
 export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
   const failuresRef = useRef(0);

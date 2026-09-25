@@ -1,3 +1,4 @@
+import { archiveApiFetch } from './server/archiveLimiter';
 /**
  * channels.ts — real archive.org-backed channel schedule, config-driven.
  *
@@ -110,7 +111,7 @@ async function probeArchiveCollection(
   console.log(`[ARCHIVE COLLECTION TEST] url: ${url}`);
 
   try {
-    const response = await fetch(url, {
+    const response = await archiveApiFetch(url, {
       headers: {
         "User-Agent": "AJN-Precision-Engineering/1.0",
         Accept: "application/json",
@@ -193,7 +194,22 @@ async function probeArchiveCollection(
   }
 }
 
-export async function searchTVNews(opts: {
+// Results are cached for 5 minutes per (network, query, dates, rows): the Home
+// and Search views request the same five networks repeatedly, and each uncached
+// call costs 2 searches + up to 24 metadata requests against Archive.
+const searchCache = new Map<string, { expires: number; value: Promise<any> }>();
+export async function searchTVNews(opts: Parameters<typeof searchTVNewsUncached>[0]): ReturnType<typeof searchTVNewsUncached> {
+  const key = JSON.stringify(opts);
+  const hit = searchCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+  const value = searchTVNewsUncached(opts);
+  searchCache.set(key, { expires: Date.now() + 5 * 60_000, value });
+  value.catch(() => searchCache.delete(key));
+  if (searchCache.size > 200) searchCache.delete(searchCache.keys().next().value!);
+  return value;
+}
+
+async function searchTVNewsUncached(opts: {
   network: string;
   query?: string;
   startDate?: string;
@@ -456,7 +472,7 @@ async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadata
   const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const response = await fetch(metadataUrl, {
+    const response = await archiveApiFetch(metadataUrl, {
       signal: controller.signal,
       headers: {
         "User-Agent": "AJN-Precision-Engineering/1.0",
