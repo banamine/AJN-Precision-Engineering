@@ -6,7 +6,7 @@
  * Both resolve MP3 files just in time through the shared Archive limiter. */
 import type { Program } from '../src/types';
 import { archiveApiFetch } from './archiveLimiter';
-import { rushIndex, resolveRushItem as resolveAudioItem, type RushIndexEntry, type RushTrack } from './rush';
+import { getRushIndex, resolveRushItem as resolveAudioItem, type RushIndexEntry, type RushTrack } from './rush';
 
 const RUSH_EPISODES = 8;
 const OTR_ITEMS = 10;
@@ -49,7 +49,7 @@ export function pickRushEpisodes(index: RushIndexEntry[], now: Date, n = RUSH_EP
 }
 
 export async function buildRushChannel(guideId: string, now = new Date()): Promise<Program[]> {
-  const eps = pickRushEpisodes(rushIndex, now);
+  const eps = pickRushEpisodes(await getRushIndex(), now);
   const resolved = await pool(eps, CONCURRENCY, (e) => resolveAudioItem(e.id).then((r) => ({ e, r })).catch(() => null));
   const programs: Program[] = [];
   for (const x of resolved) {

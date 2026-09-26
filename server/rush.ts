@@ -7,15 +7,22 @@
 import * as fs from 'node:fs';
 import * as nodePath from 'node:path';
 import { archiveApiFetch } from './archiveLimiter';
-import rushIndexFile from '../src/data/rushIndex.json';
 
 export interface RushIndexEntry { id: string; date: string; year: number; }
 export interface RushTrack { file: string; durationSeconds: number; size?: number; format?: string; archivePath: string; mediaUrl: string; }
 interface CacheEntry { resolvedAt: string; files: Array<Omit<RushTrack, 'archivePath' | 'mediaUrl'>>; }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-export const rushIndex: RushIndexEntry[] = (rushIndexFile as RushIndexEntry[])
-  .filter((e) => e && typeof e.id === 'string' && DATE.test(e.date));
+// Loaded lazily (dynamic import): the frontend bundle pulls guideRegistry in,
+// and a static import would ship the whole index to every browser.
+let rushIndexCache: RushIndexEntry[] | null = null;
+export async function getRushIndex(): Promise<RushIndexEntry[]> {
+  if (!rushIndexCache) {
+    const mod: any = await import('../src/data/rushIndex.json');
+    rushIndexCache = ((mod.default ?? mod) as RushIndexEntry[]).filter((e) => e && typeof e.id === 'string' && DATE.test(e.date));
+  }
+  return rushIndexCache;
+}
 
 // Durable on a PC/dev box; on Cloud Run it lives only as long as the instance.
 const CACHE_FILE = process.env.RUSH_CACHE_FILE || nodePath.join(process.cwd(), '.cache', 'rush-durations.json');
@@ -67,6 +74,6 @@ export async function resolveRushItem(id: string): Promise<{ id: string; source:
   return { id, source: 'archive', resolvedAt: entry.resolvedAt, tracks: files.map((f: any) => track(id, f)) };
 }
 
-export function rushEpisodesOn(date: string): RushIndexEntry[] {
-  return DATE.test(date) ? rushIndex.filter((e) => e.date === date) : [];
+export async function rushEpisodesOn(date: string): Promise<RushIndexEntry[]> {
+  return DATE.test(date) ? (await getRushIndex()).filter((e) => e.date === date) : [];
 }

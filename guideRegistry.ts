@@ -7,8 +7,6 @@ import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './ser
 import { runSources } from './server/sources/runner';
 import { buildRushChannel, buildOtrChannel } from './server/audioChannels';
 import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
-import newsSnapshotFile from './src/data/newsSnapshot.json';
-import classicSnapshotFile from './src/data/classicSnapshot.json';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
 import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
@@ -301,7 +299,15 @@ let highlightsRaw:{fetchedAt:string;programs:Program[]}|null=null;
 /** Raw Classic TV programs for the snapshot generator. */
 export async function exportClassicSnapshot(){
   await refreshDailyHighlights('classic-tv');
-  return highlightsRaw?{schema:1,fetchedAt:highlightsRaw.fetchedAt,programs:highlightsRaw.programs}:null;
+  if(!highlightsRaw)return null;
+  // The guide lays out at most 60 slots per show, so keep 60 per show and only
+  // the fields the guide and player use (the raw list is ~50 MB).
+  const perShow=new Map<string,number>();
+  const programs=highlightsRaw.programs.filter(p=>{const n=perShow.get(p.channelId)??0;perShow.set(p.channelId,n+1);return n<60;})
+    .map(p=>({id:p.id,guideId:p.guideId,channelId:p.channelId,title:p.title,description:p.description,startTime:0,endTime:0,mediaType:p.mediaType,
+      mediaUrl:p.archivePath??p.mediaUrl,archivePath:p.archivePath,assetId:p.assetId,sourceId:p.sourceId,sourceClass:p.sourceClass,isArchivedSource:p.isArchivedSource,
+      metadata:(p.metadata as any)?.durationSeconds?{durationSeconds:(p.metadata as any).durationSeconds}:undefined}) as Program);
+  return {schema:1,fetchedAt:highlightsRaw.fetchedAt,programs};
 }
 let highlightsRefreshing:Promise<ScheduleChannel[]>|null=null;
 async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>{
@@ -327,7 +333,8 @@ async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>
 async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChannel[]>{
   // Cold start: open from the packaged snapshot instantly; refresh behind it.
   if(!highlightsCache&&!highlightsFetch){
-    const snap=classicSnapshotFile as {schema?:number;fetchedAt?:string;programs?:Program[]};
+    const mod:any=await import('./src/data/classicSnapshot.json');
+    const snap=(mod.default??mod) as {schema?:number;fetchedAt?:string;programs?:Program[]};
     if(snap?.schema===1&&Array.isArray(snap.programs)&&snap.programs.length){
       const data=highlightChannels(snap.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:'snapshot',sourceError:`packaged list from ${snap.fetchedAt}; refreshing`}));
       highlightsLastGood=data;
@@ -385,9 +392,11 @@ let cableNewsRefreshing:Promise<void>|null=null;
 let newsTimer:ReturnType<typeof setInterval>|null=null;
 export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;newsState=null;}
 
-function seedFromSnapshot(){
+async function seedFromSnapshot(){
   if(newsState)return;
-  const snap=validateNewsSnapshot(newsSnapshotFile);
+  const mod:any=await import('./src/data/newsSnapshot.json');
+  if(newsState)return;
+  const snap=validateNewsSnapshot(mod.default??mod);
   if(!snap||cableNewsFetch)return;
   newsState={version:snap.version,fetchedAt:snap.fetchedAt,fingerprint:newsFingerprint(snap.channels),newShows:[],
     channels:new Map(snap.channels.map(c=>[c.id,{programs:c.programs,status:'snapshot',error:`packaged news from ${snap.fetchedAt}`}]))};
@@ -427,8 +436,8 @@ function startNewsTimer(guideId:string){
   if(newsState&&Date.now()-Date.parse(newsState.fetchedAt)>NEWS_REFRESH_MS)setTimeout(()=>void kickNewsRefresh(guideId),30_000).unref?.();
 }
 
-export function getNewsVersion(){
-  seedFromSnapshot();
+export async function getNewsVersion(){
+  await seedFromSnapshot();
   return newsState?{version:newsState.version,fetchedAt:newsState.fetchedAt,refreshing:!!cableNewsRefreshing,newShows:newsState.newShows}
     :{version:0,fetchedAt:null,refreshing:!!cableNewsRefreshing,newShows:[]};
 }
@@ -441,7 +450,7 @@ export function exportNewsSnapshot():NewsSnapshot|null{
 }
 
 async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
-  seedFromSnapshot();
+  await seedFromSnapshot();
   startNewsTimer(guideId);
   if(!newsState)await kickNewsRefresh(guideId); // no snapshot at all: first fetch must wait
   const now=new Date();
