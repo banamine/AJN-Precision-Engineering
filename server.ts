@@ -3,6 +3,7 @@ import { unplayableReason } from './server/sources/archiveLinks';
 import { Readable } from 'node:stream';
 import crypto from 'node:crypto';
 import { patchServer } from './server-patch.js';
+import { rushIndex, rushEpisodesOn, resolveRushItem, rushStats } from './server/rush';
 import express,{Request,Response} from 'express';
 import path from 'path';
 import {createServer as createViteServer} from 'vite';
@@ -31,6 +32,8 @@ app.get('/api/channels/:channelId',(req,res)=>{const c=getChannelById(req.params
 app.get('/api/channels/:channelId/sources',(req,res)=>res.json({channelId:req.params.channelId,total:getChannelSources(req.params.channelId).length,sources:getChannelSources(req.params.channelId)}));
 app.post('/api/channels/:channelId/sources',(req,res)=>{const {url,protocol,priority,enabled,metadata}=req.body;if(!url||typeof url!=='string')return res.status(400).json({error:'Source URL is required'});res.status(201).json({message:'Channel source added successfully',source:addChannelSource(req.params.channelId,{url,protocol,priority,enabled,metadata})});});
 app.get('/api/schedule',async(req,res)=>{const guideId=(req.query.guide as string)||'cable-tv';try{res.json({guideId,channels:await getScheduleForGuide(guideId),generatedAt:new Date().toISOString(),source:'archive.org-live'});}catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}});
+app.get('/api/rush/index',(req,res)=>{const y=Number(req.query.year);const items=y?rushIndex.filter(e=>e.year===y):rushIndex;res.set('Cache-Control','public, max-age=3600');res.json({total:items.length,items});});
+app.get('/api/rush/episode/:date',async(req,res)=>{const eps=rushEpisodesOn(req.params.date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${req.params.date}`});try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({date:req.params.date,episodes,stats:rushStats});}catch(e:any){res.status(e.status??502).json({error:e.message,stats:rushStats});}});
 app.get('/api/news/version',(_req,res)=>{res.set('Cache-Control','no-store');res.json(getNewsVersion());});
 app.get('/api/playlists',(_req,res)=>{const playlists=getAllPlaylists();res.json({playlists,total:playlists.length});});
 app.get('/api/playlists/:playlistId',(req,res)=>{const p=getPlaylistById(req.params.playlistId);if(!p)return res.status(404).json({error:`Playlist not found: ${req.params.playlistId}`});res.json(p);});
