@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Play, Pause, Maximize2, X, Tv, Radio } from 'lucide-react';
 import { NowPlayingMedia, Destination } from '../types';
 
@@ -12,6 +13,26 @@ export function MiniPlayerDock({
   onOpenFullPlayer,
   onDismiss,
 }: MiniPlayerDockProps) {
+  // The real player stays mounted (hidden) in #persistent-player; the dock drives it.
+  const [paused, setPaused] = useState(true);
+  const getMedia = () => document.querySelector<HTMLMediaElement>('#persistent-player video, #persistent-player audio');
+  useEffect(() => {
+    let media: HTMLMediaElement | null = null;
+    const sync = () => setPaused(!media || media.paused);
+    const attach = () => {
+      const next = getMedia();
+      if (next === media) return;
+      media?.removeEventListener('play', sync); media?.removeEventListener('pause', sync);
+      media = next;
+      media?.addEventListener('play', sync); media?.addEventListener('pause', sync);
+      sync();
+    };
+    attach();
+    const t = window.setInterval(attach, 1000); // element is replaced when the source changes
+    return () => { window.clearInterval(t); media?.removeEventListener('play', sync); media?.removeEventListener('pause', sync); };
+  }, [nowPlaying.src]);
+  const togglePlay = () => { const m = getMedia(); if (!m) return; if (m.paused) void m.play().catch(() => {}); else m.pause(); };
+  const isAudio = nowPlaying.mediaType === 'audio';
   return (
     <aside
       id="persistent-mini-player"
@@ -25,7 +46,7 @@ export function MiniPlayerDock({
         className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/30 transition hover:scale-105 cursor-pointer"
         title="Click to open full player"
       >
-        <Tv className="h-5 w-5" />
+        {isAudio ? <Radio className="h-5 w-5" /> : <Tv className="h-5 w-5" />}
         <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
@@ -48,6 +69,15 @@ export function MiniPlayerDock({
 
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0 pl-1">
+        <button
+          type="button"
+          id="mini-player-toggle-btn"
+          onClick={togglePlay}
+          aria-label={paused ? `Play ${nowPlaying.title}` : `Pause ${nowPlaying.title}`}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800 text-neutral-100 transition hover:bg-neutral-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 cursor-pointer"
+        >
+          {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+        </button>
         <button
           type="button"
           id="mini-player-expand-btn"

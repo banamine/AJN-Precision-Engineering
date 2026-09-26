@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { NewsReadyNotice } from './components/NewsReadyNotice';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
@@ -115,6 +115,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  const stayOnPageRef = useRef(false);
   const handlePlayProgram = useCallback<PlayProgramCallback>((
     archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId
   ) => {
@@ -156,9 +157,16 @@ export default function App() {
     setRecentlyPlayed((items) => [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
 
     setNowPlaying({ ...nextRecentlyPlayed });
+    // Auto-advance (next clip/program) keeps the viewer where they are.
+    if (stayOnPageRef.current) { stayOnPageRef.current = false; return; }
     setDestination('player');
     if (typeof window !== 'undefined') window.location.hash = '#player';
   }, [recentlyPlayed]);
+
+  const handleAdvanceProgram = useCallback<PlayProgramCallback>((...args) => {
+    stayOnPageRef.current = true;
+    handlePlayProgram(...args);
+  }, [handlePlayProgram]);
 
   const handleEpgSelect: PlayProgramCallback = useCallback((
     archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId
@@ -195,7 +203,15 @@ export default function App() {
           </>
         )}
         {destination === 'tv-guide' && <TvGuideView onSelectProgram={handleEpgSelect} />}
-        {destination === 'player' && <PlayerView nowPlaying={nowPlaying} onSelectProgram={handlePlayProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />}
+        {/* The player stays mounted while you browse other pages, so audio keeps
+            playing in the background; the mini dock is its on-page control. */}
+        {nowPlaying ? (
+          <div id="persistent-player" hidden={destination !== 'player'}>
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />
+          </div>
+        ) : destination === 'player' && (
+          <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />
+        )}
         {destination === 'library' && <LibraryView onPlayProgram={handlePlayProgram} />}
         {destination === 'search' && <SearchView onPlayProgram={handlePlayProgram} />}
         {destination === 'dev' && <DevModeView onNavigate={navigateTo} />}
