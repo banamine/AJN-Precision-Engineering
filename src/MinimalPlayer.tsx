@@ -266,6 +266,14 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       media.removeEventListener("error", onError);
       window.removeEventListener("pagehide", saveOnExit);
       fx().saveResumePosition(media);
+      // Element unmounted or swapped (video <-> audio): release its network/decoder
+      // so exactly one playback pipeline remains. Not on a plain src change —
+      // React has already set the new src on this same element.
+      if (mediaRef.current !== media) {
+        media.pause();
+        media.removeAttribute("src");
+        media.load();
+      }
     };
   // Deliberately keyed on the source only: re-running calls load(), which
   // aborts any play() in flight ("interrupted by a new load request").
@@ -306,6 +314,26 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       hlsRef.current = null;
     };
   }, [activeSrc, isHls]);
+
+  // OS integration: lock screen, headset/Bluetooth buttons, keyboard media keys.
+  useEffect(() => {
+    const ms = typeof navigator !== "undefined" ? navigator.mediaSession : undefined;
+    if (!ms || !activeSrc) return;
+    try {
+      ms.metadata = new MediaMetadata({ title: title || "AJN", artist: nowPlaying?.channelId ?? "", album: "AJN Precision Engineering" });
+    } catch { /* MediaMetadata unsupported */ }
+    const seek = (delta: number) => { const m = mediaRef.current; if (m && Number.isFinite(m.duration)) m.currentTime = Math.max(0, Math.min(m.duration, m.currentTime + delta)); };
+    const handlers: Array<[MediaSessionAction, MediaSessionActionHandler]> = [
+      ["play", () => void mediaRef.current?.play().catch(() => {})],
+      ["pause", () => mediaRef.current?.pause()],
+      ["stop", () => mediaRef.current?.pause()],
+      ["seekbackward", (d) => seek(-(d.seekOffset ?? 10))],
+      ["seekforward", (d) => seek(d.seekOffset ?? 10)],
+      ["nexttrack", () => fnRef.current.onProgramEnded?.()],
+    ];
+    for (const [action, fn] of handlers) { try { ms.setActionHandler(action, fn); } catch { /* action unsupported */ } }
+    return () => { for (const [action] of handlers) { try { ms.setActionHandler(action, null); } catch { /* ignore */ } } };
+  }, [activeSrc, title, nowPlaying?.channelId]);
 
   const play = async () => {
     const media = mediaRef.current;
