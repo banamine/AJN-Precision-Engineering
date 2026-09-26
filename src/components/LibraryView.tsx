@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   FolderArchive,
   Search,
@@ -12,6 +12,7 @@ import {
   Tag,
   Clock,
   Layers,
+  Star,
 } from 'lucide-react';
 import { LibraryItem, PlayProgramCallback } from '../types';
 import { getCuratedLibraryProjection } from '../services/libraryService';
@@ -31,13 +32,36 @@ const CATEGORIES = [
   { id: 'documentary', label: 'Documentaries' },
 ];
 
+const FAVORITES_STORAGE_KEY = 'ajn.library.favorites';
+
+function loadFavorites(): Set<string> {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(FAVORITES_STORAGE_KEY) ?? '[]');
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const curatedLibraryItems = useMemo(() => getCuratedLibraryProjection(), []);
+  // Favorites are stored as LibraryItem ids (=== Program.id); the library stays the source of truth.
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(loadFavorites);
+  const [showFavorites, setShowFavorites] = useState(false);
+  useEffect(() => {
+    try { window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favoriteIds])); } catch { /* session-only if storage is blocked */ }
+  }, [favoriteIds]);
+  const toggleFavorite = (id: string) => setFavoriteIds((cur) => {
+    const next = new Set(cur);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   const filteredItems = useMemo(() => {
     return curatedLibraryItems.filter((item) => {
+      const matchesFavorites = !showFavorites || favoriteIds.has(item.id);
       const matchesCat = selectedCategory === 'all' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
@@ -46,9 +70,9 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
         item.description.toLowerCase().includes(q) ||
         item.tags.some((t) => t.toLowerCase().includes(q)) ||
         item.source.toLowerCase().includes(q);
-      return matchesCat && matchesQuery;
+      return matchesFavorites && matchesCat && matchesQuery;
     });
-  }, [curatedLibraryItems, selectedCategory, searchQuery]);
+  }, [curatedLibraryItems, favoriteIds, selectedCategory, searchQuery, showFavorites]);
 
   return (
     <div className="space-y-8 pb-16">
@@ -74,6 +98,10 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
             {cat.label}
           </button>
         ))}
+        <button type="button" id="lib-favorites-btn" aria-pressed={showFavorites} onClick={() => setShowFavorites((v) => !v)} className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition cursor-pointer ${showFavorites ? 'bg-amber-400 text-neutral-950 font-semibold shadow-sm' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'}`}>
+          <Star className={`h-3.5 w-3.5 ${showFavorites ? 'fill-current' : ''}`} aria-hidden="true" />
+          Favorites ({favoriteIds.size})
+        </button>
         <span className="ml-auto text-[11px] text-neutral-500">Showing {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'}</span>
       </div>
 
@@ -86,7 +114,12 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{item.format}</span>
-                    <span className="rounded bg-neutral-800 px-2 py-0.5 font-mono text-[10px] text-neutral-300">{item.year || 'Archive'}</span>
+                    <span className="flex items-center gap-1">
+                      <span className="rounded bg-neutral-800 px-2 py-0.5 font-mono text-[10px] text-neutral-300">{item.year || 'Archive'}</span>
+                      <button type="button" id={`favorite-lib-item-${item.id}`} aria-pressed={favoriteIds.has(item.id)} aria-label={favoriteIds.has(item.id) ? `Remove ${item.title} from favorites` : `Add ${item.title} to favorites`} onClick={() => toggleFavorite(item.id)} className="rounded-md p-1 text-neutral-500 transition hover:bg-neutral-800 hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
+                        <Star className={`h-4 w-4 ${favoriteIds.has(item.id) ? 'fill-current text-amber-400' : ''}`} aria-hidden="true" />
+                      </button>
+                    </span>
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-neutral-100 group-hover:text-emerald-300 transition line-clamp-1">{item.title}</h2>
@@ -107,7 +140,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
           <FolderArchive className="mx-auto h-8 w-8 text-neutral-600" />
           <h3 className="text-sm font-medium text-neutral-300">No items match your filter</h3>
           <p className="text-xs text-neutral-500">Try adjusting your search keywords or select a different category pill.</p>
-          <button type="button" onClick={() => { setSelectedCategory('all'); setSearchQuery(''); }} className="mt-3 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700">Clear Filters</button>
+          <button type="button" onClick={() => { setSelectedCategory('all'); setSearchQuery(''); setShowFavorites(false); }} className="mt-3 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700">Clear Filters</button>
         </div>
       )}
     </div>
