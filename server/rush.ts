@@ -25,10 +25,22 @@ export async function getRushIndex(): Promise<RushIndexEntry[]> {
 }
 
 // Durable on a PC/dev box; on Cloud Run it lives only as long as the instance.
-const CACHE_FILE = process.env.RUSH_CACHE_FILE || nodePath.join(process.cwd(), '.cache', 'rush-durations.json');
-let cache: Record<string, CacheEntry> = {};
-try { cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch { cache = {}; }
+// Nothing here may run at import time: the browser bundle also evaluates this
+// module (via guideRegistry), where `process` and `fs` do not exist — a top-level
+// process.cwd() crashed the whole page on "Initializing AJN System".
+let CACHE_FILE = '';
+let cache: Record<string, CacheEntry> | null = null;
+function loadCache(): Record<string, CacheEntry> {
+  if (cache) return cache;
+  cache = {};
+  try {
+    CACHE_FILE = process.env.RUSH_CACHE_FILE || nodePath.join(process.cwd(), '.cache', 'rush-durations.json');
+    cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
+  } catch { /* first run, or not on a server */ }
+  return cache!;
+}
 function saveCache() {
+  if (!CACHE_FILE) return;
   try {
     fs.mkdirSync(nodePath.join(CACHE_FILE, '..'), { recursive: true });
     fs.writeFileSync(`${CACHE_FILE}.tmp`, JSON.stringify(cache));
@@ -53,7 +65,7 @@ const track = (id: string, f: CacheEntry['files'][number]): RushTrack => {
 
 /** Files + durations for one Archive item: cache first, Archive metadata on a miss. */
 export async function resolveRushItem(id: string): Promise<{ id: string; source: 'cache' | 'archive'; resolvedAt: string; tracks: RushTrack[] }> {
-  const hit = cache[id];
+  const hit = loadCache()[id];
   if (hit) { rushStats.cacheHits++; return { id, source: 'cache', resolvedAt: hit.resolvedAt, tracks: hit.files.map((f) => track(id, f)) }; }
   rushStats.archiveCalls++;
   const r = await fetchImpl(`https://archive.org/metadata/${encodeURIComponent(id)}`);
@@ -69,7 +81,7 @@ export async function resolveRushItem(id: string): Promise<{ id: string; source:
     .sort((a: any, b: any) => a.file.localeCompare(b.file, undefined, { numeric: true }));
   if (!files.length) throw Object.assign(new Error('no MP3 with a known duration'), { status: 422 });
   const entry = { resolvedAt: new Date().toISOString(), files };
-  cache[id] = entry;
+  loadCache()[id] = entry;
   saveCache();
   return { id, source: 'archive', resolvedAt: entry.resolvedAt, tracks: files.map((f: any) => track(id, f)) };
 }
