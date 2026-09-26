@@ -3,6 +3,7 @@ import { Tv, Clock, Calendar, Radio, Headphones } from 'lucide-react';
 import EpgGuide from '../EpgGuide';
 import { Guide, PlayProgramCallback } from '../types';
 import { AjnResourcePanel } from './AjnResourcePanel';
+import { RushEpisodePicker } from './RushEpisodePicker';
 
 interface TvGuideViewProps {
   onSelectProgram: PlayProgramCallback;
@@ -106,8 +107,11 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
           <AjnResourcePanel onPlayProgram={onSelectProgram} />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl shadow-2xl border border-neutral-800">
-          <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} />
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-xl shadow-2xl border border-neutral-800">
+            <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} />
+          </div>
+          {selectedGuideId === 'audio-podcasts' && <RushEpisodePicker onPlay={onSelectProgram} />}
         </div>
       )}
 
