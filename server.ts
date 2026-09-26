@@ -10,7 +10,7 @@ import {searchTVNews} from './channels.js';
 import {buildChannelFromSearch} from './archive-discovery';
 import {
  getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,refreshMoviesClassicsFromArchive,
- addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide
+ addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide,getNewsVersion
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
@@ -31,6 +31,7 @@ app.get('/api/channels/:channelId',(req,res)=>{const c=getChannelById(req.params
 app.get('/api/channels/:channelId/sources',(req,res)=>res.json({channelId:req.params.channelId,total:getChannelSources(req.params.channelId).length,sources:getChannelSources(req.params.channelId)}));
 app.post('/api/channels/:channelId/sources',(req,res)=>{const {url,protocol,priority,enabled,metadata}=req.body;if(!url||typeof url!=='string')return res.status(400).json({error:'Source URL is required'});res.status(201).json({message:'Channel source added successfully',source:addChannelSource(req.params.channelId,{url,protocol,priority,enabled,metadata})});});
 app.get('/api/schedule',async(req,res)=>{const guideId=(req.query.guide as string)||'cable-tv';try{res.json({guideId,channels:await getScheduleForGuide(guideId),generatedAt:new Date().toISOString(),source:'archive.org-live'});}catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}});
+app.get('/api/news/version',(_req,res)=>{res.set('Cache-Control','no-store');res.json(getNewsVersion());});
 app.get('/api/playlists',(_req,res)=>{const playlists=getAllPlaylists();res.json({playlists,total:playlists.length});});
 app.get('/api/playlists/:playlistId',(req,res)=>{const p=getPlaylistById(req.params.playlistId);if(!p)return res.status(404).json({error:`Playlist not found: ${req.params.playlistId}`});res.json(p);});
 app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.params.playlistId,req.body?.customM3u);if(!r.success)return res.status(400).json({error:`Failed to sync playlist ${req.params.playlistId}`,playlist:r.playlist});res.json({message:`Playlist ${req.params.playlistId} synchronized successfully`,playlist:r.playlist,ingestedCount:r.count});});

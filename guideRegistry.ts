@@ -5,6 +5,8 @@ import {
 import { tryResolveArchiveMediaCandidates } from './channels';
 import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './server/sources/archiveNews';
 import { runSources } from './server/sources/runner';
+import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
+import newsSnapshotFile from './src/data/newsSnapshot.json';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
 import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
@@ -325,54 +327,89 @@ async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChanne
   return Promise.race([highlightsRefreshing,new Promise<ScheduleChannel[]>(r=>setTimeout(()=>r(loading),8000))]);
 }
 
-let cableNewsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
+/* ---------------- Cable TV news: snapshot first, quiet refresh ----------------
+ * The guide opens from the packaged snapshot (src/data/newsSnapshot.json) with
+ * no Archive search. A background refresh runs every 6h, one network at a time
+ * behind the Archive limiter; when it produces different shows the version
+ * bumps and the UI offers "Latest news ready". Layout is computed per request
+ * from real air times so the grid is always today's. */
+const NEWS_REFRESH_MS=6*3600_000;
+type NewsChannelState={programs:Program[];status:string;error?:string;rejected?:any[]};
+let newsState:{version:number;fetchedAt:string;fingerprint:string;channels:Map<string,NewsChannelState>;newShows:Array<{channelId:string;channelName:string;title:string;programId:string}>}|null=null;
 let cableNewsFetch:typeof fetch|undefined;
-export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;cableNewsCache=null;cableNewsLastGood=new Map();}
-
-let cableNewsLastGood=new Map<string,Program[]>();
 let cableNewsRefreshing:Promise<void>|null=null;
+let newsTimer:ReturnType<typeof setInterval>|null=null;
+export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;newsState=null;}
 
-/** Cable TV news: last 48h of Archive TV News, laid back-to-back across today so
- *  every network row is always filled and plays 24/7. A network whose refresh
- *  fails or comes back empty keeps its last good clips (marked stale). */
-async function refreshCableNews(guideId:string):Promise<ScheduleChannel[]>{
-  const jobs=NEWS_NETWORKS.map(([network,channelId,channelName])=>({
-    contract:archiveNewsContract,
-    input:{network,channelId,channelName,guideId,rows:12,windowDays:2,fetchImpl:cableNewsFetch} as ArchiveNewsInput,
-  }));
-  const results=await runSources(jobs,{timeoutMs:90_000,parallel:true});
-  const data:ScheduleChannel[]=results.map((r,i)=>{
-    const [network,channelId,channelName]=NEWS_NETWORKS[i];
-    let programs=r.programs.map(p=>upsertCanonicalProgram(p));
-    let sourceStatus:string=r.status, sourceError=r.error;
-    if(programs.length){cableNewsLastGood.set(channelId,programs);}
-    else if(cableNewsLastGood.get(channelId)?.length){
-      programs=cableNewsLastGood.get(channelId)!;
-      sourceStatus='stale';
-      sourceError=`showing last known clips; refresh: ${r.error ?? r.status}`;
-    }
-    // Oldest first so the day plays in broadcast order, then loops.
-    const ordered=groupClipPrograms([...programs].sort((a,b)=>String(a.startTimeUtc).localeCompare(String(b.startTimeUtc))));
-    return {
-      id:channelId,guideId,name:channelName,mediaType:'video' as MediaType,group:'News',
-      logo:`https://archive.org/services/img/${network}`,
-      programs:layoutDailySchedule(ordered,5,new Date(),320),
-      sourceStatus,rejected:r.rejected,sourceError,
-    };
-  });
-  const complete=data.every(ch=>ch.programs.length>0&&ch.sourceStatus!=='stale');
-  cableNewsCache={data,expiresAt:Date.now()+(complete?15*60_000:60_000)};
-  return data;
+function seedFromSnapshot(){
+  if(newsState)return;
+  const snap=validateNewsSnapshot(newsSnapshotFile);
+  if(!snap||cableNewsFetch)return;
+  newsState={version:snap.version,fetchedAt:snap.fetchedAt,fingerprint:newsFingerprint(snap.channels),newShows:[],
+    channels:new Map(snap.channels.map(c=>[c.id,{programs:c.programs,status:'snapshot',error:`packaged news from ${snap.fetchedAt}`}]))};
+}
+
+/** Fetch every network (sequentially, quietly) and swap the result in atomically. */
+export async function refreshCableNews(guideId='cable-tv'):Promise<void>{
+  const next=new Map<string,NewsChannelState>();
+  for(const [network,channelId,channelName] of NEWS_NETWORKS){
+    const [r]=await runSources([{contract:archiveNewsContract,input:{network,channelId,channelName,guideId,rows:12,windowDays:2,fetchImpl:cableNewsFetch} as ArchiveNewsInput}],{timeoutMs:90_000});
+    const grouped=groupClipPrograms([...r.programs].sort((x,y)=>String(x.startTimeUtc).localeCompare(String(y.startTimeUtc)))).map(toSnapshotProgram);
+    const prev=newsState?.channels.get(channelId);
+    if(grouped.length)next.set(channelId,{programs:grouped,status:r.status,rejected:r.rejected});
+    else if(prev?.programs.length)next.set(channelId,{...prev,status:'stale',error:`showing last known shows; refresh: ${r.error??r.status}`});
+    else next.set(channelId,{programs:[],status:r.status,error:r.error,rejected:r.rejected});
+  }
+  const list=[...next.values()];
+  const fingerprint=newsFingerprint(list);
+  const prevState=newsState;
+  if(prevState&&prevState.fingerprint===fingerprint){prevState.channels=next;return;}
+  const old=new Set(prevState?[...prevState.channels.values()].flatMap(c=>c.programs.map(p=>p.archivePath)):[]);
+  const newShows=NEWS_NETWORKS.flatMap(([,channelId,channelName])=>(next.get(channelId)?.programs??[])
+    .filter(p=>!old.has(p.archivePath)).map(p=>({channelId,channelName,title:p.title,programId:p.id})));
+  newsState={version:(prevState?.version??0)+1,fetchedAt:new Date().toISOString(),fingerprint,channels:next,newShows:prevState?newShows.slice(0,50):[]};
+}
+
+function kickNewsRefresh(guideId:string){
+  if(!cableNewsRefreshing)cableNewsRefreshing=refreshCableNews(guideId).catch(e=>console.error('[News refresh]',e)).finally(()=>{cableNewsRefreshing=null;});
+  return cableNewsRefreshing;
+}
+
+function startNewsTimer(guideId:string){
+  if(newsTimer||cableNewsFetch)return;
+  newsTimer=setInterval(()=>void kickNewsRefresh(guideId),NEWS_REFRESH_MS);
+  (newsTimer as any).unref?.();
+  // A packaged snapshot older than one refresh period: refresh soon, off the startup path.
+  if(newsState&&Date.now()-Date.parse(newsState.fetchedAt)>NEWS_REFRESH_MS)setTimeout(()=>void kickNewsRefresh(guideId),30_000).unref?.();
+}
+
+export function getNewsVersion(){
+  seedFromSnapshot();
+  return newsState?{version:newsState.version,fetchedAt:newsState.fetchedAt,refreshing:!!cableNewsRefreshing,newShows:newsState.newShows}
+    :{version:0,fetchedAt:null,refreshing:!!cableNewsRefreshing,newShows:[]};
+}
+
+/** Grouped shows for the snapshot generator. */
+export function exportNewsSnapshot():NewsSnapshot|null{
+  if(!newsState)return null;
+  return {schema:1,version:newsState.version,fetchedAt:newsState.fetchedAt,
+    channels:NEWS_NETWORKS.map(([network,id,name])=>({id,network,name,programs:newsState!.channels.get(id)?.programs??[]}))};
 }
 
 async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
-  if(cableNewsCache&&Date.now()<cableNewsCache.expiresAt)return cableNewsCache.data;
-  // Serve the previous grid immediately while a refresh runs in the background.
-  if(cableNewsCache){
-    if(!cableNewsRefreshing)cableNewsRefreshing=refreshCableNews(guideId).then(()=>{}).catch(()=>{}).finally(()=>{cableNewsRefreshing=null;});
-    return cableNewsCache.data;
-  }
-  return refreshCableNews(guideId);
+  seedFromSnapshot();
+  startNewsTimer(guideId);
+  if(!newsState)await kickNewsRefresh(guideId); // no snapshot at all: first fetch must wait
+  const now=new Date();
+  return NEWS_NETWORKS.map(([network,channelId,channelName])=>{
+    const c=newsState?.channels.get(channelId);
+    return {
+      id:channelId,guideId,name:channelName,mediaType:'video' as MediaType,group:'News',
+      logo:`https://archive.org/services/img/${network.split('|').pop()}`,
+      programs:layoutDailySchedule((c?.programs??[]).map(p=>upsertCanonicalProgram(p)),5,now,320),
+      sourceStatus:c?.status??'loading',rejected:c?.rejected,sourceError:c?.error,
+    };
+  });
 }
 
 /** TV News arrives as 282s clips (13 per hour). Merge the clips of one Archive
@@ -436,7 +473,7 @@ function normalizeChannels(chs:ScheduleChannel[]):ScheduleChannel[]{
       const bad=unplayableReason(p.archivePath??p.mediaUrl);
       if(bad){rejected.push({id:p.archivePath??p.mediaUrl??p.id,reason:bad});continue;}
       const segs=(p.metadata as any)?.segments;
-      const q=Array.isArray(segs)?{...p,metadata:{...(p.metadata as any),segments:segs.map((sg:any)=>({...sg,archivePath:sg.archivePath??sg.mediaUrl,mediaUrl:toProxy(sg.mediaUrl)}))}}:p;
+      const q=Array.isArray(segs)?{...p,metadata:{...(p.metadata as any),segments:segs.map((sg:any)=>({...sg,archivePath:sg.archivePath??sg.mediaUrl,mediaUrl:toProxy(sg.mediaUrl??sg.archivePath)}))}}:p;
       programs.push(q.mediaUrl?.startsWith('/download/')?{...q,archivePath:q.archivePath??q.mediaUrl,mediaUrl:toProxy(q.mediaUrl)!}:q);
     }
     return {...ch,programs,rejected:rejected.length?rejected.slice(0,100):ch.rejected};

@@ -27,7 +27,6 @@ export const NETWORK_CHANNELS: NetworkChannelConfig[] = [
   { id: "cnn", displayName: "CNN", network: "CNNW" },
   { id: "msnbc", displayName: "MSNBC", network: "MSNBCW" },
   { id: "bbc", displayName: "BBC News", network: "BBCNEWS" },
-  { id: "ntd", displayName: "NTD News", network: "NTD" },
 ];
 
 export interface TVNewsItem {

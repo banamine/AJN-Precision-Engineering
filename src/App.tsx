@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { NewsReadyNotice } from './components/NewsReadyNotice';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
@@ -199,6 +200,7 @@ export default function App() {
         {destination === 'search' && <SearchView onPlayProgram={handlePlayProgram} />}
         {destination === 'dev' && <DevModeView onNavigate={navigateTo} />}
       </main>
+      <NewsReadyNotice onPlay={handlePlayProgram} />
       {nowPlaying && destination !== 'player' && (
         <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} />
       )}

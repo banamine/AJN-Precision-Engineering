@@ -97,7 +97,7 @@ const input = (fetchImpl: typeof fetch) => ({ network: 'CNNW', channelId: 'cnn',
   const { impl } = mockFetch({ 'advancedsearch': { status: 503 } });
   const r = await archiveNewsContract.hook(input(impl), ctx);
   assert.equal(r.status, 'upstream_error');
-  assert.equal(r.error, 'advancedsearch HTTP 503, 503');
+  assert.equal(r.error, 'advancedsearch HTTP 503');
   console.log('PASS search outage -> upstream_error');
 }
 

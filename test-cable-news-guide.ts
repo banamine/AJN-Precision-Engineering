@@ -27,7 +27,7 @@ setCableNewsFetchForTests((async (input: any) => {
 
 const channels = await getScheduleForGuide('cable-tv');
 const by = Object.fromEntries(channels.map((c) => [c.id, c]));
-assert.deepEqual(channels.map((c) => c.id), ['fox-news', 'cnn', 'msnbc', 'bbc', 'ntd', 'rt', 'kpix']);
+assert.deepEqual(channels.map((c) => c.id), ['fox-news', 'cnn', 'msnbc', 'bbc', 'rt', 'kpix']);
 
 const cnn = by['cnn'];
 assert.equal(cnn.sourceStatus, 'ok');

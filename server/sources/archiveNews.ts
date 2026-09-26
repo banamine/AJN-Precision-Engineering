@@ -1,5 +1,5 @@
 import { archiveApiFetch } from '../archiveLimiter';
-// Layer 3 — Archive News (TV News collections: CNN, Fox, MSNBC, BBC, NTD).
+// Layer 3 — Archive News (TV News collections: CNN, Fox, MS NOW, BBC, RT, KPIX).
 // Structured JSON only: advancedsearch.php?output=json and /metadata/{id}. No HTML.
 // Restricted recordings are the normal case for TV News and are reported as
 // 'restricted', never as errors. Air time comes from Archive's own identifier
@@ -10,7 +10,7 @@ import { buildArchiveProxyUrl } from '../../src/utils/archivePlayback';
 import type { RejectedItem, SourceContract, SourceResult } from './contract';
 
 export interface ArchiveNewsInput {
-  /** Archive network code, e.g. CNNW, FOXNEWSW, MSNBCW, BBCNEWS, NTD. */
+  /** Archive network code, e.g. CNNW, FOXNEWSW, MSNBCW, BBCNEWS; "A|B" tries A then B. */
   network: string;
   channelId: string;
   channelName: string;
@@ -127,12 +127,16 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
     const base = { sourceClass: 'archive_news' as const, fetchedAt: ctx.now.toISOString() };
 
     // 1. Find items. Archive stores TV News under both NETWORK and TV-NETWORK.
-    const network = input.network.trim().replace(/^TV-/i, '');
+    // A channel may list several codes ("MSNOW|MSNBCW") when a network is renamed;
+    // the first one with items in the window wins.
+    const codes = input.network.split('|').map((c) => c.trim().replace(/^TV-/i, '')).filter(Boolean);
+    const network = codes[0];
     const day = (d: Date) => d.toISOString().slice(0, 10);
     let docs: Array<{ identifier: string; title?: string }> = [];
     const searchErrors: number[] = [];
-    for (const collection of [network, `TV-${network}`]) {
-      const q = `collection:${collection} AND mediatype:movies AND date:[${day(windowStart)} TO ${day(ctx.now)}]`;
+    const queries = codes.flatMap((c) => [`collection:${c}`, `collection:TV-${c}`, `identifier:${c}_*`]);
+    for (const where of queries) {
+      const q = `${where} AND mediatype:movies AND date:[${day(windowStart)} TO ${day(ctx.now)}]`;
       const url = 'https://archive.org/advancedsearch.php'
         + `?q=${encodeURIComponent(q)}&fl[]=identifier&fl[]=title`
         + `&rows=${Math.min(Math.max(input.rows ?? 25, 1), 100)}&sort[]=date+desc&output=json`;
@@ -143,7 +147,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
     }
     // One collection failing and the other returning nothing is not "no news": report it.
     if (docs.length === 0 && searchErrors.length > 0) {
-      return { ...base, status: 'upstream_error', programs, rejected, error: `advancedsearch HTTP ${searchErrors.join(', ')}` };
+      return { ...base, status: 'upstream_error', programs, rejected, error: `advancedsearch HTTP ${[...new Set(searchErrors)].join(', ')}` };
     }
 
     // 2. Window check first (no network), then metadata for the rest in parallel
@@ -258,9 +262,9 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
 export const NEWS_NETWORKS: Array<[string, string, string]> = [
   ['FOXNEWSW', 'fox-news', 'Fox News'],
   ['CNNW', 'cnn', 'CNN'],
-  ['MSNBCW', 'msnbc', 'MSNBC'],
+  // MSNBC was renamed MS NOW in late 2025; try the new codes, then the old one.
+  ['MSNOW|MSNOWW|MSNBCW', 'msnbc', 'MS NOW'],
   ['BBCNEWS', 'bbc', 'BBC News'],
-  ['NTD', 'ntd', 'NTD News'],
   ['RT', 'rt', 'RT'],
   ['KPIX', 'kpix', 'KPIX CBS'],
 ];
