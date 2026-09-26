@@ -14,6 +14,7 @@ import type { RejectedItem, SourceContract, SourceResult } from './contract';
 export const DAILY_HIGHLIGHTS_ITEM = 'daily-highlights';
 const MAX_PLAYLISTS = 60;
 /** The curated show playlists: one .m3u per Classic TV channel. */
+const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|oga|opus|flac|wav|wma|aiff?|mka)(\?|#|$)/i;
 export const HIGHLIGHTS_M3U_DIR = 'daily-highlights-organized/m3u_files/';
 /** Playlists known not to work (The Honeymooners has its own verified channel). */
 const EXCLUDED_PLAYLISTS = [/^honey\s*mooners?\.m3u8?$/i];
@@ -103,11 +104,13 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
         const channelId = `classic-${slug(show)}`;
         const { mediaUrl, archivePath } = playableUrl(entry.url);
         if (!/^(https?:\/\/|\/api\/archive\/proxy)/i.test(mediaUrl)) { rejected.push({ id: entry.url, reason: 'unsupported URL' }); continue; }
+        // Classic TV is a video contract; audio belongs to the future audio/podcast contract.
+        if (AUDIO_EXT.test(entry.url)) { rejected.push({ id: entry.url, reason: 'audio-only: not part of Classic TV video' }); continue; }
         const externalId = key.season !== undefined ? `${show}|S${key.season}E${key.episode}` : `${show}|${entry.url}`;
         const programId = normalizeProgramIdentity({ externalId, channelId, title: entry.title, startTime: 0 });
         add({
           id: programId, guideId: input.guideId, channelId, title: displayTitle(entry.title, entry.url, show), description: show,
-          startTime: 0, endTime: 0, mediaType: /\.(mp3|m4a|aac|ogg|opus|flac|wav)(\?|$)/i.test(entry.url) ? 'audio' : 'video', mediaUrl, archivePath,
+          startTime: 0, endTime: 0, mediaType: 'video', mediaUrl, archivePath,
           assetId: normalizeAssetIdentity({ externalId, programId, mediaUrl: archivePath ?? entry.url }),
           sourceId: normalizeSourceIdentity({ channelId, url: `archive:${item}/${t.f.name}`, protocol: 'm3u' }),
           sourceClass: 'archive_org', isArchivedSource: true,
