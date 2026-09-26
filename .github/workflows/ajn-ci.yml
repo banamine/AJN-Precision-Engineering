@@ -99,6 +99,8 @@ jobs:
         run: npm run test:live-tv
       - name: Rush resolver regression
         run: npm run test:rush
+      - name: Audio channels regression
+        run: npm run test:audio-channels
       - name: Proxy range slicing regression
         run: npm run test:proxy-range
       - name: AJN Audio contract regression (mocked)

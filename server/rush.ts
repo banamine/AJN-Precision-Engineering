@@ -2,8 +2,10 @@
  * ("what files, how long"). The index is a bundled file built offline by
  * scripts/build-rush-index.ts; nothing here searches Archive at runtime.
  * Durations are resolved only for an episode someone asks for, then cached. */
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+// Namespace imports: the frontend bundle pulls guideRegistry in, and Vite stubs
+// node builtins with an empty module that has no named exports.
+import * as fs from 'node:fs';
+import * as nodePath from 'node:path';
 import { archiveApiFetch } from './archiveLimiter';
 import rushIndexFile from '../src/data/rushIndex.json';
 
@@ -16,14 +18,14 @@ export const rushIndex: RushIndexEntry[] = (rushIndexFile as RushIndexEntry[])
   .filter((e) => e && typeof e.id === 'string' && DATE.test(e.date));
 
 // Durable on a PC/dev box; on Cloud Run it lives only as long as the instance.
-const CACHE_FILE = process.env.RUSH_CACHE_FILE || join(process.cwd(), '.cache', 'rush-durations.json');
+const CACHE_FILE = process.env.RUSH_CACHE_FILE || nodePath.join(process.cwd(), '.cache', 'rush-durations.json');
 let cache: Record<string, CacheEntry> = {};
-try { cache = JSON.parse(readFileSync(CACHE_FILE, 'utf8')); } catch { cache = {}; }
+try { cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch { cache = {}; }
 function saveCache() {
   try {
-    mkdirSync(join(CACHE_FILE, '..'), { recursive: true });
-    writeFileSync(`${CACHE_FILE}.tmp`, JSON.stringify(cache));
-    renameSync(`${CACHE_FILE}.tmp`, CACHE_FILE);
+    fs.mkdirSync(nodePath.join(CACHE_FILE, '..'), { recursive: true });
+    fs.writeFileSync(`${CACHE_FILE}.tmp`, JSON.stringify(cache));
+    fs.renameSync(`${CACHE_FILE}.tmp`, CACHE_FILE);
   } catch (e) { console.warn('[Rush] duration cache not saved:', (e as Error).message); }
 }
 
