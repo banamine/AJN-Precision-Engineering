@@ -320,7 +320,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     const ms = typeof navigator !== "undefined" ? navigator.mediaSession : undefined;
     if (!ms || !activeSrc) return;
     try {
-      ms.metadata = new MediaMetadata({ title: title || "AJN", artist: nowPlaying?.channelId ?? "", album: "AJN Precision Engineering" });
+      ms.metadata = new MediaMetadata({ title: title || "AJN", artist: nowPlaying?.subtitle || nowPlaying?.channelId || "", album: "AJN Precision Engineering" });
     } catch { /* MediaMetadata unsupported */ }
     const seek = (delta: number) => { const m = mediaRef.current; if (m && Number.isFinite(m.duration)) m.currentTime = Math.max(0, Math.min(m.duration, m.currentTime + delta)); };
     const handlers: Array<[MediaSessionAction, MediaSessionActionHandler]> = [
@@ -333,7 +333,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     ];
     for (const [action, fn] of handlers) { try { ms.setActionHandler(action, fn); } catch { /* action unsupported */ } }
     return () => { for (const [action] of handlers) { try { ms.setActionHandler(action, null); } catch { /* ignore */ } } };
-  }, [activeSrc, title, nowPlaying?.channelId]);
+  }, [activeSrc, title, nowPlaying?.channelId, nowPlaying?.subtitle]);
 
   const play = async () => {
     const media = mediaRef.current;

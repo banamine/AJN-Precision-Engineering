@@ -99,6 +99,9 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
  * with exponential backoff (400ms, 800ms by default). Range headers are sent on every
  * attempt, so a successful retry still yields 206. Never retries after abort.
  */
+const REDIRECT_TTL_MS = 10 * 60_000;
+const redirectCache = new Map<string, { url: string; expires: number }>();
+
 export async function fetchArchiveMediaWithRetry(
   upstreamUrl: string,
   opts: ArchiveFetchOptions,
@@ -114,7 +117,17 @@ export async function fetchArchiveMediaWithRetry(
   for (let attempt = 1; attempt <= attempts; attempt++) {
     if (opts.signal?.aborted) break;
 
-    const resolved = await resolveArchiveMediaRedirect(upstreamUrl, { fetchImpl, signal: opts.signal });
+    // Every audio/video slice used to re-resolve Archive's redirect first (an extra
+    // full round trip per 8 MiB slice, ~1 s). Reuse the resolved node URL for a
+    // while; on any failure it is dropped and resolved fresh on the retry.
+    const cached = opts.fetchImpl ? undefined : redirectCache.get(upstreamUrl);
+    const resolved = cached && cached.expires > Date.now() && attempt === 1
+      ? { url: cached.url, status: 200 }
+      : await resolveArchiveMediaRedirect(upstreamUrl, { fetchImpl, signal: opts.signal });
+    if (!opts.fetchImpl && resolved.url && !(cached && cached.expires > Date.now())) {
+      if (redirectCache.size > 500) redirectCache.clear();
+      redirectCache.set(upstreamUrl, { url: resolved.url, expires: Date.now() + REDIRECT_TTL_MS });
+    }
     let response: Response | null = null;
     let status = resolved.status;
     let failure: ArchiveFetchResult['failure'];
@@ -134,6 +147,7 @@ export async function fetchArchiveMediaWithRetry(
 
     last = { response, status, attempts: attempt, failure };
     if (!failure) return last;
+    redirectCache.delete(upstreamUrl);
 
     const retryable = RETRYABLE_UPSTREAM_STATUSES.has(status);
     if (!retryable || attempt === attempts || opts.signal?.aborted) return last;

@@ -43,7 +43,9 @@
     "test:source-ajn-media": "tsx test-source-ajn-media.ts",
     "news:snapshot": "tsx scripts/news-snapshot.ts",
     "rush:index": "tsx scripts/build-rush-index.ts",
-    "test:rush": "tsx test-rush.ts"
+    "test:rush": "tsx test-rush.ts",
+    "classic:snapshot": "tsx scripts/classic-snapshot.ts",
+    "test:audio-channels": "tsx test-audio-channels.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
