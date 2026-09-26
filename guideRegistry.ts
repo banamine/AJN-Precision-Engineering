@@ -7,6 +7,7 @@ import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './ser
 import { runSources } from './server/sources/runner';
 import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
 import newsSnapshotFile from './src/data/newsSnapshot.json';
+import classicSnapshotFile from './src/data/classicSnapshot.json';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
 import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
@@ -297,6 +298,12 @@ export function setHighlightsFetchForTests(impl?:typeof fetch){highlightsFetch=i
 
 /** Classic TV shows from archive.org/download/daily-highlights (folders + M3Us). */
 let highlightsLastGood:ScheduleChannel[]|null=null;
+let highlightsRaw:{fetchedAt:string;programs:Program[]}|null=null;
+/** Raw Classic TV programs for the snapshot generator. */
+export async function exportClassicSnapshot(){
+  await refreshDailyHighlights('classic-tv');
+  return highlightsRaw?{schema:1,fetchedAt:highlightsRaw.fetchedAt,programs:highlightsRaw.programs}:null;
+}
 let highlightsRefreshing:Promise<ScheduleChannel[]>|null=null;
 async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>{
   // 40 playlists behind the shared Archive limiter can take over a minute on a
@@ -304,6 +311,7 @@ async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>
   const [r]=await runSources([{contract:dailyHighlightsContract,input:{guideId,fetchImpl:highlightsFetch}}],{timeoutMs:150_000});
   let data:ScheduleChannel[];
   if(r.programs.length){
+    highlightsRaw={fetchedAt:new Date().toISOString(),programs:r.programs};
     data=highlightChannels(r.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:r.status,rejected:r.rejected}));
     highlightsLastGood=data;
   }else if(highlightsLastGood){
@@ -318,6 +326,15 @@ async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>
 /** Classic TV shows from archive.org/download/daily-highlights (folders + M3Us).
  *  Stale-while-revalidate: never blocks on a refresh once a list exists. */
 async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChannel[]>{
+  // Cold start: open from the packaged snapshot instantly; refresh behind it.
+  if(!highlightsCache&&!highlightsFetch){
+    const snap=classicSnapshotFile as {schema?:number;fetchedAt?:string;programs?:Program[]};
+    if(snap?.schema===1&&Array.isArray(snap.programs)&&snap.programs.length){
+      const data=highlightChannels(snap.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:'snapshot',sourceError:`packaged list from ${snap.fetchedAt}; refreshing`}));
+      highlightsLastGood=data;
+      highlightsCache={data,expiresAt:0};
+    }
+  }
   if(highlightsCache&&Date.now()<highlightsCache.expiresAt)return highlightsCache.data;
   if(!highlightsRefreshing)highlightsRefreshing=refreshDailyHighlights(guideId).finally(()=>{highlightsRefreshing=null;});
   if(highlightsCache)return highlightsCache.data;
