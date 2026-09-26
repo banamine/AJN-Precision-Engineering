@@ -41,7 +41,9 @@
     "test:proxy-range": "tsx test-proxy-range.ts",
     "test:source-ajn-audio": "tsx test-source-ajn-audio.ts",
     "test:source-ajn-media": "tsx test-source-ajn-media.ts",
-    "news:snapshot": "tsx scripts/news-snapshot.ts"
+    "news:snapshot": "tsx scripts/news-snapshot.ts",
+    "rush:index": "tsx scripts/build-rush-index.ts",
+    "test:rush": "tsx test-rush.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
