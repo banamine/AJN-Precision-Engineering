@@ -266,6 +266,10 @@ export function queryLibrary(qy: ItemsQuery) {
     items: grouped.slice((page - 1) * limit, page * limit).map((r) => r.type === 'series' ? r : { ...r, availability: availability(r), playbackMode: 'vod' as const }) };
 }
 
+export function getLibrarySeries(groupKey: string): LibrarySeries | null {
+  return findLibrarySeries(allRecords().filter(visible), groupKey);
+}
+
 export function libraryHeatmap() {
   const rows = allRecords().filter(visible);
   return {
