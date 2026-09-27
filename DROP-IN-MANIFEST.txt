@@ -1,0 +1,28 @@
+AJN Precision Engineering — Audio Context Teardown Drop-In
+===============================================================
+
+Branch: fix/audio-context-teardown
+Commit: 2ac0246221443fd54aef8b3bfc533b0b5c653539
+Changed file: src/use-audio-normalization.ts
+
+Purpose:
+Surgical Web Audio lifecycle teardown. No HLS.js changes. No changes to the
+legacy ajn-final-dropin or AJN-Precision-Engineering-DROPIN-FIXED directories.
+
+Changes:
+1. Retain the AudioContext statechange handler so it can be removed.
+2. Disconnect all owned Web Audio graph nodes on unmount.
+3. Null node/media/context refs.
+4. Remove the retained statechange listener.
+5. Close the AudioContext.
+
+Verification already completed:
+- npm install: successful; 0 vulnerabilities.
+- npm run build: successful.
+- Vite: 1,691 modules transformed.
+- esbuild: dist/server.cjs generated successfully.
+
+Important:
+This is a SURGICAL PATCH ZIP, not a full repository archive. Apply the patch
+to the matching checkout/Builder project at commit 2ac0246, or replace the
+target file from that exact branch. Do not apply it to an unrelated baseline.

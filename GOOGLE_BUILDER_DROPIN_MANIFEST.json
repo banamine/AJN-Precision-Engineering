@@ -1,0 +1,13 @@
+{
+  "name": "AJN Google Builder Drop-in PR7",
+  "commit": "e8a53e026e8b71c2b6de6703db800c230e1f6ff3",
+  "pr": 7,
+  "files": [
+    "src/MinimalPlayer.tsx",
+    "scripts/test-archive-cors-regression.js",
+    "package.json",
+    ".github/workflows/ajn-ci.yml"
+  ],
+  "scope": "Remove forced media-element crossOrigin mode and add CI regression guard.",
+  "note": "Drop-in contains only the surgical PR #7 files. No node_modules, dist, secrets, or runtime data."
+}
