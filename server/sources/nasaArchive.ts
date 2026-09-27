@@ -13,23 +13,12 @@ export const DEFAULT_DURATION_SECONDS = 1800;
 const META_TTL_MS = 7 * 24 * 3600_000;
 export const NASA_REFRESH_MS = 24 * 3600_000;
 
-/** Archive `format` values browsers play (H.264/AAC MP4), best first.
- *  Masters and non-web formats (MPEG2, QuickTime, Ogg, DV, AVI…) are never picked. */
-export const WEB_VIDEO_FORMATS = ['h.264', 'h.264 IA', 'MPEG4', '512Kb MPEG4'];
+import { parseDuration, selectPlayableFile, VIDEO_FORMATS } from '../archive/mediaSelector';
+export { parseDuration };
+export const WEB_VIDEO_FORMATS = VIDEO_FORMATS;
 
 export interface ResolvedDuration { seconds: number; source: 'file' | 'runtime' | 'default'; isEstimated: boolean }
 export interface SelectedMedia { fileName: string; format: string; archivePath: string; canonicalUrl: string; selectionReason: string }
-
-/** "1823.4", "30:23", "00:30:23", "28 minutes", "1 hr 5 min" -> seconds (0 if unusable). */
-export function parseDuration(v: unknown): number {
-  const s = String(v ?? '').trim().toLowerCase();
-  if (!s) return 0;
-  if (/^\d+(\.\d+)?$/.test(s)) return Math.round(Number(s));
-  if (/^\d+(:\d{1,2}){1,2}(\.\d+)?$/.test(s)) return Math.round(s.split(':').reduce((t, p) => t * 60 + Number(p), 0));
-  const h = /(\d+(?:\.\d+)?)\s*h/.exec(s), m = /(\d+(?:\.\d+)?)\s*m/.exec(s), sec = /(\d+)\s*s/.exec(s);
-  const total = (h ? Number(h[1]) * 3600 : 0) + (m ? Number(m[1]) * 60 : 0) + (sec ? Number(sec[1]) : 0);
-  return Number.isFinite(total) ? Math.round(total) : 0;
-}
 
 export function resolveDuration(file: any, meta: any, fallback = DEFAULT_DURATION_SECONDS): ResolvedDuration {
   const f = parseDuration(file?.length);
@@ -39,14 +28,11 @@ export function resolveDuration(file: any, meta: any, fallback = DEFAULT_DURATIO
   return { seconds: fallback, source: 'default', isEstimated: true };
 }
 
+/** Shared selector (server/archive/mediaSelector), NASA-shaped result. */
 export function selectVideoFile(identifier: string, meta: any): SelectedMedia | null {
-  const files: any[] = Array.isArray(meta?.files) ? meta.files : [];
-  const ok = files.filter((f) => typeof f?.name === 'string' && /\.mp4$/i.test(f.name) && String(f.private) !== 'true' && WEB_VIDEO_FORMATS.includes(String(f.format)));
-  if (!ok.length) return null;
-  ok.sort((a, b) => WEB_VIDEO_FORMATS.indexOf(String(a.format)) - WEB_VIDEO_FORMATS.indexOf(String(b.format)) || String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
-  const f = ok[0];
-  const archivePath = `/download/${encodeURIComponent(identifier)}/${String(f.name).split('/').map(encodeURIComponent).join('/')}`;
-  return { fileName: f.name, format: String(f.format), archivePath, canonicalUrl: `https://archive.org${archivePath}`, selectionReason: `format ${f.format} (rank ${WEB_VIDEO_FORMATS.indexOf(String(f.format)) + 1} of ${WEB_VIDEO_FORMATS.length})` };
+  const m = selectPlayableFile(identifier, meta?.files, meta?.metadata?.runtime, 'video');
+  if (m.availability === 'unsupported') return null;
+  return { fileName: m.filename, format: m.format, archivePath: m.canonicalPath, canonicalUrl: `https://archive.org${m.canonicalPath}`, selectionReason: m.selectedBecause };
 }
 
 const metaCache = new Map<string, { at: number; meta: any }>();

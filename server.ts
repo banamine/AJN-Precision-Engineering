@@ -1,3 +1,4 @@
+import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { liveTvHealthSummary } from './guideRegistry';
@@ -52,6 +53,20 @@ async function guideSnapshot(guideId:string):Promise<ExportSnapshot>{
 const EXPORT_GUIDES=['cable-tv','classic-tv','live-tv','audio-podcasts','movies-classics-vault','science-documentaries'];
 const originOf=(req:any)=>`${(req.headers['x-forwarded-proto']||req.protocol||'https').toString().split(',')[0]}://${req.get('host')}`;
 let libraryCache:{at:number;items:any[];generatedAt:string}|null=null;
+// Library index: packaged snapshot (search categories) + guide categories, paged.
+async function refreshLibraryGuideCategories(){
+  for(const c of LIBRARY_CATEGORIES.filter(c=>c.guide)){
+    try{setGuideRecords(c.id,recordsFromGuide(c,(await guideSnapshot(c.guide!.guideId)).channels));}catch(e:any){console.warn('[Library index]',c.id,e?.message);}
+  }
+}
+let libraryGuideAt=0;
+async function libraryReady(){await loadLibrarySnapshot();if(Date.now()-libraryGuideAt>EXPORT_TTL_MS){libraryGuideAt=Date.now();await refreshLibraryGuideCategories();}}
+app.get('/api/library/items',async(req,res)=>{
+  try{await libraryReady();const d=req.query.decade;
+    res.set('Cache-Control','no-store').json(queryLibrary({ids:req.query.ids?String(req.query.ids).split(',').filter(Boolean).slice(0,500):undefined,category:(req.query.category as string)||undefined,decade:d===undefined||d===''?null:Number(d),q:req.query.q as string,mediaType:req.query.mediaType as string,page:Number(req.query.page)||1,limit:Number(req.query.limit)||24}));
+  }catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,items:[]});}
+});
+app.get('/api/library/heatmap',async(_req,res)=>{try{await libraryReady();res.set('Cache-Control','no-store').json({...libraryHeatmap(),stats:libraryIndexStats});}catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,categories:[]});}});
 app.get('/api/library',async(_req,res)=>{
   try{
     if(!libraryCache||Date.now()-libraryCache.at>EXPORT_TTL_MS){
@@ -282,6 +297,7 @@ async function startServer(){
  app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));
   // Warm the guides one at a time (Archive rate-limits bursts) so the first
   // viewer gets a filled grid instead of waiting on every source.
+  if(process.env.NODE_ENV!=='test'&&process.env.LIBRARY_BACKGROUND!=='off'){void loadLibrarySnapshot().then(()=>startLibraryBackground());}
   if(process.env.NODE_ENV!=='test'){void (async()=>{for(const g of ['cable-tv','classic-tv','live-tv','science-documentaries','movies-classics-vault']){try{const t=Date.now();const ch=await getScheduleForGuide(g);console.log(`[AJN] warmed ${g}: ${ch.length} channels in ${Date.now()-t}ms`);}catch(e:any){console.error(`[AJN] warm ${g} failed:`,e?.message);}await new Promise(r=>setTimeout(r,2000));}})();}
  });
 }
