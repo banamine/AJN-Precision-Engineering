@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FolderArchive, Search, Play, FileVideo, FileAudio, Clock, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FolderArchive, Search, Play, FileVideo, FileAudio, Clock, Star, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import type { PlayProgramCallback } from '../types';
 import { loadFavorites, saveFavorites } from '../utils/favoritesStore';
 
 interface LibraryViewProps { onPlayProgram: PlayProgramCallback }
 
 type Item = {
-  id: string; identifier: string; title: string; description?: string; categoryIds: string[]; mediaType: 'video' | 'audio';
+  type: 'item'; id: string; identifier: string; title: string; description?: string; categoryIds: string[]; mediaType: 'video' | 'audio';
   year?: number; decade?: number; path: string; format: string; dur: number; durSrc: string; durEst: boolean;
   availability: string; channelId?: string; guideId?: string; programId?: string;
 };
+type Series = {
+  type: 'series'; id: string; groupKey: string; title: string; categoryIds: string[]; mediaType: 'video' | 'audio';
+  episodeCount: number; episodes: Array<Item & { episodeTitle: string; season?: number; episode?: number }>;
+};
+type LibraryResult = Item | Series;
 type HeatCat = { categoryId: string; label: string; mediaType: string; total: number; decades: Array<{ decade: number; count: number }> };
-type Page = { page: number; totalPages: number; totalItems: number; items: Item[] };
+type Page = { page: number; totalPages: number; totalItems: number; rawCount?: number; uniqueCount?: number; groupCount?: number; items: LibraryResult[] };
 
 const PAGE_SIZE = 24;
 const fmtDur = (s: number, est: boolean) => !(s > 0) ? '' : `${est ? '~' : ''}${s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : `${Math.max(1, Math.round(s / 60))} min`}`;
@@ -30,6 +35,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [loading, setLoading] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => loadFavorites());
   const [showFavorites, setShowFavorites] = useState(false);
+  const [openSeries, setOpenSeries] = useState<Set<string>>(() => new Set());
 
   useEffect(() => { saveFavorites(favoriteIds); }, [favoriteIds]);
   useEffect(() => { const t = setTimeout(() => setDebounced(query.trim()), 300); return () => clearTimeout(t); }, [query]);
@@ -69,6 +75,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
 
   const toggleFavorite = (id: string) => setFavoriteIds((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const play = (it: Item) => onPlayProgram(it.path, it.title, it.description ?? it.identifier, it.mediaType, it.channelId ?? `library-${it.categoryIds[0]}`, it.guideId ?? 'library', it.programId ?? it.id);
+  const toggleSeries = (id: string) => setOpenSeries((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   return (
     <div className="space-y-6 pb-16">
@@ -132,6 +139,35 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
       {data && data.items.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.items.map((item) => {
+            if (item.type === 'series') {
+              const open = openSeries.has(item.id);
+              const isAudio = item.mediaType === 'audio';
+              return (
+                <div key={item.id} className="group flex flex-col rounded-xl border border-neutral-800 bg-neutral-900/50 p-4 transition hover:border-neutral-700 hover:bg-neutral-900">
+                  <button type="button" onClick={() => toggleSeries(item.id)} aria-expanded={open} className="w-full text-left">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{isAudio ? 'Audio' : 'Series'}</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+                    </div>
+                    <h2 className="mt-2 text-sm font-semibold text-neutral-100 line-clamp-2">{item.title}</h2>
+                    <p className="mt-1 text-xs text-emerald-400">Episodes: {item.episodeCount}</p>
+                  </button>
+                  {open && <div className="mt-3 space-y-2 border-t border-neutral-800 pt-3">
+                    {item.episodes.map((ep) => (
+                      <div key={ep.identifier} className="flex items-center justify-between gap-3 rounded-lg bg-neutral-950/60 p-2.5">
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-medium text-neutral-200">{ep.episodeTitle}</div>
+                          <div className="text-[10px] text-neutral-500">{ep.year ?? 'Archive'}{ep.availability === 'verified' ? ' · checked' : ''}</div>
+                        </div>
+                        <button type="button" id={`play-lib-episode-${ep.id}`} onClick={() => play(ep)} className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-500">
+                          <Play className="mr-1 inline h-3 w-3 fill-current" />{isAudio ? 'Listen' : 'Watch'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>}
+                </div>
+              );
+            }
             const isAudio = item.mediaType === 'audio';
             const fav = favoriteIds.has(item.id);
             return (
@@ -141,8 +177,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{isAudio ? 'Audio' : 'Video'}{item.format && item.format !== 'none' ? ` · ${item.format}` : ''}</span>
                     <span className="flex items-center gap-1">
                       <span className="rounded bg-neutral-800 px-2 py-0.5 font-mono text-[10px] text-neutral-300">{item.year ?? 'Archive'}</span>
-                      <button type="button" id={`favorite-lib-item-${item.id}`} aria-pressed={fav} aria-label={fav ? `Remove ${item.title} from favorites` : `Add ${item.title} to favorites`} onClick={() => toggleFavorite(item.id)}
-                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
+                      <button type="button" id={`favorite-lib-item-${item.id}`} aria-pressed={fav} aria-label={fav ? `Remove ${item.title} from favorites` : `Add ${item.title} to favorites`} onClick={() => toggleFavorite(item.id)} className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-amber-400">
                         <Star className={`h-4 w-4 ${fav ? 'fill-current text-amber-400' : ''}`} aria-hidden="true" />
                       </button>
                     </span>
@@ -152,8 +187,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                 </div>
                 <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-xs text-neutral-500" title={item.durEst ? 'Estimated length' : undefined}><Clock className="h-3.5 w-3.5" aria-hidden="true" />{fmtDur(item.dur, item.durEst) || '—'}{item.availability === 'verified' ? ' · checked' : ''}</span>
-                  <button type="button" id={`play-lib-item-${item.id}`} onClick={() => play(item)}
-                    className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+                  <button type="button" id={`play-lib-item-${item.id}`} onClick={() => play(item)} className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
                     <Play className="h-3 w-3 fill-current" aria-hidden="true" />{isAudio ? 'Listen' : 'Watch'}
                   </button>
                 </div>
