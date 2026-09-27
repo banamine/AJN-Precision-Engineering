@@ -35,6 +35,29 @@ const merged = L.mergeRecords([r1, r1b]);
 assert.equal(merged.length, 1); assert.deepEqual(merged[0].categoryIds, ['cartoons', 'classic-cinema']);
 
 // Index queries
+// Deterministic series grouping: strict separators, category scope, and false-positive guards.
+const makeSeriesRecord = (id: string, title: string, category = 'cartoons') =>
+  L.recordFromMetadata(L.LIBRARY_CATEGORIES.find((c) => c.id === category)!, { identifier: id, title, year: '1935' }, meta('1935'));
+
+const seriesRows = [
+  makeSeriesRecord('bb1', 'Betty Boop - Snow White'),
+  makeSeriesRecord('bb2', 'Betty Boop - Minnie the Moocher'),
+  makeSeriesRecord('bb3', 'Betty Boop - Poor Cinderella'),
+  makeSeriesRecord('bad1', "Betty Boop's Ker-Choo"),
+  makeSeriesRecord('clock', 'ABC Sept. 11, 2001 9:12 am - 9:54 am'),
+  makeSeriesRecord('china', 'China: The Roots of Madness'),
+  makeSeriesRecord('pack', 'The Whistler - 508 Episodes', 'old-time-radio'),
+];
+const grouped = L.groupLibraryResults(seriesRows);
+const bettyGroup = grouped.find((x: any) => x.type === 'series' && x.title === 'Betty Boop') as any;
+assert.ok(bettyGroup, 'Betty Boop becomes a series group');
+assert.equal(bettyGroup.episodeCount, 3);
+assert.deepEqual(bettyGroup.episodes.map((e: any) => e.episodeTitle), ['Minnie the Moocher', 'Poor Cinderella', 'Snow White']);
+assert.ok(grouped.some((x: any) => x.type === 'item' && x.title === "Betty Boop's Ker-Choo"), 'hyphen inside word is not parsed');
+assert.ok(grouped.some((x: any) => x.type === 'item' && x.title.startsWith('ABC Sept. 11')), 'clock-time title is not grouped');
+assert.ok(grouped.some((x: any) => x.type === 'item' && x.title === 'China: The Roots of Madness'), 'documentary title is not grouped outside category');
+assert.ok(grouped.some((x: any) => x.type === 'item' && x.title === 'The Whistler - 508 Episodes'), 'compilation item is not treated as an episode');
+assert.equal(grouped.filter((x: any) => x.type === 'series').length, 1);
 const recs = [r1, r1b,
   L.recordFromMetadata(cartoons, { identifier: 'betty', title: 'Betty Boop', date: '1932-05-01' }, meta('1932')),
   L.recordFromMetadata(cartoons, { identifier: 'undated', title: 'Mystery Reel' }, { files: [{ name: 'm.mp4', format: 'h.264' }] }),
