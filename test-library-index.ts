@@ -66,7 +66,7 @@ const recs = [r1, r1b,
 L.setLibraryIndexForTests(L.mergeRecords(recs));
 let q = L.queryLibrary({ category: 'cartoons', page: 1, limit: 24 });
 assert.deepEqual(q.items.map((i) => i.title), ['Betty Boop', 'Popeye', 'Mystery Reel'], 'oldest first, undated last');
-assert.ok(q.items.every((i) => i.playbackMode === 'vod'));
+assert.ok(q.items.every((i: any) => i.type === 'series' || i.playbackMode === 'vod'));
 q = L.queryLibrary({ category: 'classic-cinema', limit: 24, page: 2 });
 assert.equal(q.totalItems, 31); assert.equal(q.totalPages, 2); assert.equal(q.items.length, 7);
 assert.equal(L.queryLibrary({ limit: 500 }).limit, 48, 'page size capped');
@@ -96,7 +96,7 @@ L.setLibraryProbeFetchForTests((async (u: URL) => {
   if (status === 0) throw new TypeError('fetch failed');
   return new Response('ab', { status, headers: { 'content-type': 'video/mp4' } });
 }) as any);
-const target = L.queryLibrary({ ids: ['ia-betty'] }).items[0];
+const target = L.queryLibrary({ ids: ['ia-betty'] }).items[0] as any;
 assert.equal(await L.probeRecord(target), 'verified');
 status = 404; assert.equal(await L.probeRecord(target), 'verified', 'one failure is not enough');
 status = 0; await L.probeRecord(target);
@@ -114,5 +114,20 @@ const scifi = L.LIBRARY_CATEGORIES.find((c) => c.id === 'scifi-horror')!;
 assert.equal(await L.topUpCategory(scifi, 5), 1);
 assert.ok(L.queryLibrary({ ids: ['ia-popeye1'] }).items[0].categoryIds.includes('scifi-horror'));
 assert.equal(L.queryLibrary({ category: 'scifi-horror' }).totalItems, 2);
+
+// Real-index regressions: compilation records never become episodes.
+{
+  const { groupLibraryResults } = await import('./server/library/series.ts');
+  const mk = (id: string, title: string, cat = 'old-time-radio') => ({ id, identifier: id, title, categoryIds: [cat], mediaType: 'audio' as const, path: `/download/${id}/a.mp3`, format: 'VBR MP3', dur: 1, durEst: false, availability: 'unverified' });
+  const out = groupLibraryResults([
+    mk('w1', 'The Whistler - Single Episodes'), mk('w2', 'The Whistler - 508 Episodes'),
+    mk('j1', 'Yours Truly, Johnny Dollar - Single Episodes'), mk('j2', 'Yours Truly, Johnny Dollar - Single Episodes - Bob Bailey 15 Minute Episodes'),
+    mk('f1', 'Fibber McGee and Molly - 1254 Episodes of the Exceptional Old Time Radio Comedy'), mk('f2', 'Fibber McGee and Molly - 1941'),
+    mk('o1', 'Orson Welles - Mercury Theater - 1938 recordings'), mk('o2', 'Orson Welles: On The Air 2'),
+    mk('b1', 'The Beverly Hillbillies : Trick Or Treat', 'classic-tv'), mk('b2', 'The Beverly Hillbillies : The Servants', 'classic-tv'),
+  ] as any);
+  const series = out.filter((x: any) => x.type === 'series');
+  assert.deepEqual(series.map((x: any) => [x.title, x.episodeCount]), [['The Beverly Hillbillies', 2]], 'only the real show groups; display title keeps its case');
+}
 console.log('library index regression: all passed');
 process.exit(0);

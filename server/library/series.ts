@@ -56,7 +56,9 @@ function separatorPrefix(title: string): { prefix: string; suffix: string } | nu
   if (words.length < 1 || words.length > 5 || suffix.length < 2) return null;
   if (/^(?:\d{4}|\d{1,4}\s+episodes?)$/i.test(suffix)) return null;
   if (/\b\d{1,2}:\d{2}(?::\d{2})?\b/.test(suffix)) return null;
-  if (/\b\d{3,4}\s+episodes?\b/i.test(suffix)) return null;
+  if (/\b\d{2,5}\s+episodes?\b/i.test(suffix)) return null;           // "508 Episodes", "1254 Episodes of…" = whole-show compilations
+  if (/^(single|complete|all|selected)\s+episodes?\b/i.test(suffix)) return null; // "Single Episodes…" compilations
+  if (/\brecordings?\b/i.test(suffix)) return null;                        // "Mercury Theater - 1938 recordings" = a set, not an episode
   return { prefix, suffix };
 }
 
@@ -86,7 +88,7 @@ export function groupLibraryResults(rows: SeriesSource[]): LibraryResult[] {
     if (list) list.push(episode); else groups.set(key, [episode]);
   }
 
-  const grouped: LibraryResult[] = [...groups.entries()].flatMap(([groupKey, episodes]) => {
+  const grouped: LibraryResult[] = [...groups.entries()].flatMap(([groupKey, episodes]): LibraryResult[] => {
     if (episodes.length < 2) return episodes.map(({ episodeTitle: _episodeTitle, ...item }) => ({ ...item, type: 'item' as const }));
     episodes.sort(episodeOrder);
     const first = episodes[0];
@@ -95,7 +97,8 @@ export function groupLibraryResults(rows: SeriesSource[]): LibraryResult[] {
       type: 'series' as const,
       id: 'series-' + groupKey.replace(/[^a-z0-9:_-]+/gi, '-'),
       groupKey,
-      title: clean(groupKey.slice(groupKey.indexOf(':') + 1)).replace(/\b\w/g, (m) => m.toUpperCase()),
+      // Display title as written in the first episode's title (keeps case and punctuation).
+      title: separatorPrefix(first.title)?.prefix ?? clean(groupKey.slice(groupKey.indexOf(':') + 1)),
       categoryIds,
       mediaType: first.mediaType,
       episodeCount: episodes.length,
