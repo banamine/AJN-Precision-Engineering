@@ -103,6 +103,8 @@ jobs:
         run: npm run test:audio-channels
       - name: HLS playlist proxy regression
         run: npm run test:hls-proxy
+      - name: Favorites store regression
+        run: npm run test:favorites
       - name: Proxy range slicing regression
         run: npm run test:proxy-range
       - name: AJN Audio contract regression (mocked)

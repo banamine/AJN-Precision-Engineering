@@ -46,7 +46,8 @@
     "test:rush": "tsx test-rush.ts",
     "classic:snapshot": "tsx scripts/classic-snapshot.ts",
     "test:audio-channels": "tsx test-audio-channels.ts",
-    "test:hls-proxy": "tsx test-hls-playlist-proxy.ts"
+    "test:hls-proxy": "tsx test-hls-playlist-proxy.ts",
+    "test:favorites": "tsx test-favorites-store.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

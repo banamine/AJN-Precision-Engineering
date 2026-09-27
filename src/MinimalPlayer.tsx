@@ -3,7 +3,7 @@ import { bridgeSrc, corsModeFor } from "./utils/mediaRoute";
 import Hls from "hls.js";
 import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
-import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
 import { useAudioNormalization } from "./use-audio-normalization";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 
@@ -395,6 +395,61 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     setIsMuted(nextMuted);
   };
 
+  // Fullscreen: the player container where the Fullscreen API exists (desktop,
+  // Android); the video element's own fullscreen on iOS Safari; otherwise nothing.
+  const toggleFullscreen = () => {
+    const el = containerRef.current;
+    const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+    if (doc.fullscreenElement || doc.webkitFullscreenElement) {
+      (doc.exitFullscreen ?? doc.webkitExitFullscreen)?.call(doc);
+      return;
+    }
+    const anyEl = el as (HTMLElement & { webkitRequestFullscreen?: () => void }) | null;
+    if (anyEl?.requestFullscreen) { anyEl.requestFullscreen().catch(() => {}); return; }
+    if (anyEl?.webkitRequestFullscreen) { anyEl.webkitRequestFullscreen(); return; }
+    const v = mediaRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
+    v?.webkitEnterFullscreen?.();
+  };
+  const fsRef = useRef(toggleFullscreen);
+  fsRef.current = toggleFullscreen;
+  useEffect(() => {
+    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement && containerRef.current && document.fullscreenElement === containerRef.current));
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
+  // Desktop keyboard shortcuts. Never with Ctrl/Alt/Meta/Shift (browser and OS
+  // shortcuts win), never while typing or on a focused control, and only while
+  // the player is actually on screen (it stays mounted, hidden, on other pages).
+  const keyRef = useRef({ play, pause, toggleMute, isPlaying });
+  keyRef.current = { play, pause, toggleMute, isPlaying };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(t.tagName))) return;
+      const box = containerRef.current;
+      const media = mediaRef.current;
+      if (!box || !media || box.offsetParent === null && !document.fullscreenElement) return;
+      const k = keyRef.current;
+      const seekable = Number.isFinite(media.duration) && media.duration > 0;
+      switch (e.key) {
+        case " ": case "k": case "K":
+          k.isPlaying ? k.pause() : void k.play(); break;
+        case "m": case "M": k.toggleMute(); break;
+        case "f": case "F": if (isVideo) fsRef.current(); else return; break;
+        case "ArrowLeft": if (!seekable) return; media.currentTime = Math.max(0, media.currentTime - 10); break;
+        case "ArrowRight": if (!seekable) return; media.currentTime = Math.min(media.duration - 0.5, media.currentTime + 10); break;
+        case "ArrowUp": media.volume = Math.min(1, Math.round((media.volume + 0.1) * 10) / 10); setVolume(media.volume); break;
+        case "ArrowDown": media.volume = Math.max(0, Math.round((media.volume - 0.1) * 10) / 10); setVolume(media.volume); break;
+        default: return;
+      }
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isVideo]);
+
   return (
     <div ref={containerRef} className={`relative ${isVideo ? "aspect-video w-full bg-black" : "w-full rounded-xl bg-neutral-950 p-4"}`}>
       {isVideo ? (
@@ -439,6 +494,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       <div className="mt-2 flex items-center gap-2 bg-black/60 p-3">
         <button onClick={isPlaying ? pause : play} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause /> : <Play />}</button>
         <button onClick={toggleMute} aria-label={isMuted ? "Unmute" : "Mute"}>{isMuted ? <VolumeX /> : <Volume2 />}</button>
+        {isVideo && <button onClick={toggleFullscreen} aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"} title="Fullscreen (F)">{isFullscreen ? <Minimize /> : <Maximize />}</button>}
         <span className="text-xs text-white">{title ? `${title} — ` : ""}{statusText}</span>
       </div>
       <div className="mt-3">
