@@ -179,6 +179,35 @@ app.get('/api/archive/proxy', async (req,res)=>{
     });
   }
 });
+// AJN recorded files (archive.alexjoneslive.com) send no CORS headers, so the
+// audio bridge/visualizer can't read them directly. Same-origin proxy, fixed
+// host allowlist (no open proxy), bounded 8 MiB slices like the Archive proxy.
+const AJN_PROXY_HOSTS=new Set(['archive.alexjoneslive.com','www.alexjoneslive.com']);
+app.get('/api/ajn/proxy',async(req,res)=>{
+  let target:URL;
+  try{target=new URL(String(req.query.url||''));}catch{return res.status(400).json({error:'invalid url'});}
+  if(target.protocol!=='https:'||target.port||!AJN_PROXY_HOSTS.has(target.hostname))return res.status(403).json({error:'host not allowed'});
+  const slice=proxySliceRange(req.headers.range);
+  const abort=new AbortController();
+  res.on('close',()=>{if(!res.writableFinished)abort.abort();});
+  try{
+    const up=await fetch(target,{headers:{'User-Agent':'AJN-Media-Console/AjnProxy',Range:`bytes=${slice.start}-${slice.end}`},signal:abort.signal,redirect:'follow'});
+    if(new URL(up.url).hostname!==target.hostname&&!AJN_PROXY_HOSTS.has(new URL(up.url).hostname)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:'redirected off allowlist'});}
+    if(!up.ok){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:`AJN media HTTP ${up.status}`,upstreamStatus:up.status});}
+    const ct=up.headers.get('content-type')||'';
+    if(/text\/html/i.test(ct)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:'AJN host returned a web page, not media'});}
+    res.setHeader('Access-Control-Allow-Origin','*');
+    res.setHeader('Access-Control-Expose-Headers','Content-Range, Content-Length, Accept-Ranges');
+    for(const h of ['content-type','content-length','content-range','etag','last-modified']){const v=up.headers.get(h);if(v)res.setHeader(h,v);}
+    res.setHeader('Accept-Ranges','bytes');res.setHeader('Cache-Control','no-store');
+    res.status(up.status);
+    if(!up.body)return res.end();
+    const body=Readable.fromWeb(up.body as any);
+    body.once('error',()=>res.destroy());
+    res.once('close',()=>{if(!body.destroyed)body.destroy();});
+    return body.pipe(res);
+  }catch(e:any){if(e?.name==='AbortError'||res.headersSent)return;return res.status(502).json({error:'AJN proxy failure',detail:e?.message});}
+});
 app.get('/api/archive/metadata',async(req,res)=>{ const v=validateArchivePath((req.query.path as string)||''); if(!v.valid||!v.cleanPath)return res.status(400).json({error:v.error}); try{const r=await fetch(`${ARCHIVE_BASE}${v.cleanPath}`,{method:'HEAD',headers:{'User-Agent':'AJN-Precision-Engineering-Proxy/1.0'}});res.json({status:r.status,ok:r.ok,contentType:r.headers.get('content-type'),contentLength:r.headers.get('content-length'),acceptRanges:r.headers.get('accept-ranges'),proxyUrl:`/api/archive/proxy?path=${encodeURIComponent(v.cleanPath)}`});}catch(e:any){res.status(502).json({error:e.message});} });
 
 app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.originalUrl}));

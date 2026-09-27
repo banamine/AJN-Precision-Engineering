@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { bridgeSrc, corsModeFor } from "./utils/mediaRoute";
 import Hls from "hls.js";
 import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
@@ -41,7 +42,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
-  const [activeSrc, setActiveSrc] = useState(src);
+  const [activeSrc, setActiveSrc] = useState(() => bridgeSrc(src));
   const [resumePosition, setResumePosition] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
 
@@ -52,7 +53,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // archive.alexjoneslive.com send no CORS headers, so crossOrigin={corsMode}
   // makes the browser refuse the file outright. Without it the file plays and
   // the audio bridge falls back to native output.
-  const corsMode = (activeSrc ?? "").startsWith("/") ? "anonymous" : undefined;
+  const corsMode = corsModeFor(activeSrc, isHls);
   // Read in effects without re-running them: toggling mute must not reload media.
   const isMutedRef = useRef(isMuted);
   isMutedRef.current = isMuted;
@@ -118,7 +119,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent };
 
   useEffect(() => {
-    setActiveSrc(src);
+    setActiveSrc(bridgeSrc(src));
     setStatusText("Loading…");
     setIsPlaying(false);
     setResumePosition(null);
