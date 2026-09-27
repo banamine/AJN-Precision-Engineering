@@ -12,6 +12,8 @@ export interface AjnTelemetryEvent {
   mediaPath: string | null;
   proxyRequestId: string | null;
   httpStatus?: number | null;
+  failureReason?: string | null;
+  lookupDurationMs?: number | null;
   contentType?: string | null;
   mediaErrorCode?: number | null;
   mediaErrorMessage?: string | null;

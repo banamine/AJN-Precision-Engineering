@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RUSH_PROGRAM, resolveRushNext, upNextLabel, type RushNext } from "../utils/rushNext";
+import { loadRushSettings, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
 import MinimalPlayer from "../MinimalPlayer";
 import { reportTelemetry } from "../telemetry";
 
@@ -28,39 +30,56 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
   latestRef.current = nowPlaying;
   const advancingForRef = useRef<unknown>(null);
 
+  // Rush: work out what plays next once per play (and again if the preference
+  // changes). The auto-advance and the Up Next line both read this one result.
+  const [continueAcross, setContinueAcross] = useState(() => loadRushSettings().continueAcrossDates);
+  useEffect(() => {
+    const on = (e: Event) => setContinueAcross(Boolean((e as CustomEvent).detail?.continueAcrossDates));
+    window.addEventListener(RUSH_SETTINGS_EVENT, on);
+    return () => window.removeEventListener(RUSH_SETTINGS_EVENT, on);
+  }, []);
+  const rushPlanRef = useRef<{ instance: unknown; continueAcross: boolean; promise: Promise<RushNext>; ms?: number } | null>(null);
+  const [upNext, setUpNext] = useState<RushNext | null>(null);
+  const rushPlanFor = useCallback((instance: any): Promise<RushNext> => {
+    const cur = rushPlanRef.current;
+    if (cur && cur.instance === instance && cur.continueAcross === continueAcross) return cur.promise;
+    const t0 = performance.now();
+    const entry: { instance: unknown; continueAcross: boolean; promise: Promise<RushNext>; ms?: number } = { instance, continueAcross, promise: null as any };
+    entry.promise = resolveRushNext(String(instance.programId), continueAcross, fetch, () => latestRef.current !== instance)
+      .then((n) => { entry.ms = Math.round(performance.now() - t0); return n; });
+    rushPlanRef.current = entry;
+    return entry.promise;
+  }, [continueAcross]);
+  useEffect(() => {
+    setUpNext(null);
+    if (!nowPlaying || nowPlaying.channelId !== "rush-vod" || !RUSH_PROGRAM.test(String(nowPlaying.programId ?? ""))) return;
+    let live = true;
+    void rushPlanFor(nowPlaying).then((n) => { if (live) setUpNext(n); });
+    return () => { live = false; };
+  }, [nowPlaying, rushPlanFor]);
+
   const advance = useCallback(async (reason: "ended" | "error") => {
     const instance = nowPlaying;
     if (!instance || advancingForRef.current === instance) return; // one transition per instance
     advancingForRef.current = instance;
     const stale = () => latestRef.current !== instance;
 
-    // Rush picked from the calendar: play the next hour of the same day, then stop.
-    const rush = /^rush-vod-(\d{4}-\d{2}-\d{2})-h(\d+)$/.exec(String(instance.programId ?? ""));
-    if (instance.channelId === "rush-vod" && rush) {
-      const [, date, hStr] = rush;
-      const hour = Number(hStr);
-      let episodes: any[] | null = null;
-      for (let attempt = 1; attempt <= 2 && !episodes; attempt++) {
-        try {
-          const r = await fetch(`/api/rush/episode/${date}`);
-          if (r.ok) episodes = (await r.json()).episodes;
-          else if (r.status < 500 && r.status !== 429) break; // permanent: don't retry
-        } catch { /* network: retry once */ }
-        if (!episodes && attempt === 1) await new Promise((ok) => setTimeout(ok, 2000));
-        if (stale()) return;
-      }
+    // Rush picked from the calendar: the next hour, then (if the preference is on)
+    // the next available date. Same computation as the Up Next line.
+    if (instance.channelId === "rush-vod" && RUSH_PROGRAM.test(String(instance.programId ?? ""))) {
+      const n = await rushPlanFor(instance);
       if (stale()) return;
-      const tracks: any[] = episodes?.[0]?.tracks ?? [];
-      const next = tracks[hour]; // tracks are 0-based; hour N is tracks[N-1]
-      reportTelemetry({
-        event: next ? "rush.auto_advance" : episodes ? "rush.auto_advance_end_of_day" : "rush.auto_advance_failed",
-        guideId: instance.guideId ?? null, channelId: "rush-vod", programId: instance.programId ?? null,
-        titleId: titleIdOf("rush-vod", instance.title), sourceId: null, assetId: null,
-        mediaPath: next?.archivePath ?? null,
-      });
-      if (!next) return;
-      onSelectProgram(next.archivePath, `Rush Limbaugh — ${date} (Hour ${hour + 1})`, "The Rush Limbaugh Show", "audio",
-        "rush-vod", "audio-podcasts", `rush-vod-${date}-h${hour + 1}`);
+      const base = { guideId: instance.guideId ?? null, channelId: "rush-vod", programId: instance.programId ?? null,
+        titleId: titleIdOf("rush-vod", instance.title), sourceId: null, assetId: null };
+      if (n.kind === "failed") {
+        reportTelemetry({ ...base, event: "rush.auto_advance_failed", mediaPath: null, httpStatus: n.httpStatus ?? null,
+          failureReason: n.failureReason, lookupDurationMs: n.lookupDurationMs });
+        return;
+      }
+      if (n.kind !== "next") { reportTelemetry({ ...base, event: `rush.auto_advance_${n.kind}`, mediaPath: null }); return; }
+      reportTelemetry({ ...base, event: n.item.date === RUSH_PROGRAM.exec(instance.programId)![1] ? "rush.auto_advance" : "rush.auto_advance_next_date",
+        mediaPath: n.item.archivePath, lookupDurationMs: rushPlanRef.current?.ms ?? null });
+      onSelectProgram(n.item.archivePath, n.item.title, n.item.subtitle, "audio", "rush-vod", "audio-podcasts", n.item.programId);
       return;
     }
 
@@ -113,7 +132,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
 
     onSelectProgram(next.archivePath || next.mediaUrl, next.title, next.description, next.mediaType,
       next.channelId, next.guideId, next.id, sourceId, assetId);
-  }, [nowPlaying, onSelectProgram]);
+  }, [nowPlaying, onSelectProgram, rushPlanFor]);
 
   useEffect(() => () => { if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current); }, [nowPlaying?.src]);
 
@@ -149,11 +168,17 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
         onPlayEvent={() => { failuresRef.current = 0; console.log("[AJN PLAYBACK] play", meta); }}
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={onError}
+        autoplayBlockedLabel={nowPlaying.channelId === "rush-vod" ? "Next hour ready — tap Play" : undefined}
         onProgressEvent={(positionSeconds: number) => {
           const itemId = nowPlaying.assetId || nowPlaying.programId || nowPlaying.sourceId || nowPlaying.archivePath || nowPlaying.src;
           onProgress?.(itemId, positionSeconds);
         }}
       />
+      {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (
+        <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">
+          {upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1])}
+        </p>
+      )}
       {(import.meta as any).env?.DEV && (
         <details aria-label="Developer playback diagnostics" className="rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-xs font-mono">
           <summary className="cursor-pointer text-neutral-400">Developer playback identity</summary>

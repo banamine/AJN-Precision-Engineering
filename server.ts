@@ -1,9 +1,10 @@
+import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES } from './server/safeFetch';
 import { proxySliceRange } from './server/proxyRange';
 import { unplayableReason } from './server/sources/archiveLinks';
 import { Readable } from 'node:stream';
 import crypto from 'node:crypto';
 import { patchServer } from './server-patch.js';
-import { getRushIndex, rushEpisodesOn, resolveRushItem, rushStats } from './server/rush';
+import { getRushIndex, rushEpisodesOn, resolveRushItem, rushStats, nextRushDate } from './server/rush';
 import { hlsProxyAllowed, rewritePlaylist } from './server/hlsPlaylistProxy';
 import express,{Request,Response} from 'express';
 import path from 'path';
@@ -34,6 +35,7 @@ app.get('/api/channels/:channelId/sources',(req,res)=>res.json({channelId:req.pa
 app.post('/api/channels/:channelId/sources',(req,res)=>{const {url,protocol,priority,enabled,metadata}=req.body;if(!url||typeof url!=='string')return res.status(400).json({error:'Source URL is required'});res.status(201).json({message:'Channel source added successfully',source:addChannelSource(req.params.channelId,{url,protocol,priority,enabled,metadata})});});
 app.get('/api/schedule',async(req,res)=>{const guideId=(req.query.guide as string)||'cable-tv';try{res.json({guideId,channels:await getScheduleForGuide(guideId),generatedAt:new Date().toISOString(),source:'archive.org-live'});}catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}});
 app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const y=Number(req.query.year);const items=y?all.filter(e=>e.year===y):all;res.set('Cache-Control','public, max-age=3600');res.json({total:items.length,items});});
+app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});
 app.get('/api/rush/episode/:date',async(req,res)=>{const eps=await rushEpisodesOn(req.params.date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${req.params.date}`});try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({date:req.params.date,episodes,stats:rushStats});}catch(e:any){res.status(e.status??502).json({error:e.message,stats:rushStats});}});
 app.get('/api/news/version',async(_req,res)=>{res.set('Cache-Control','no-store');res.json(await getNewsVersion());});
 app.get('/api/playlists',(_req,res)=>{const playlists=getAllPlaylists();res.json({playlists,total:playlists.length});});
@@ -192,8 +194,8 @@ app.get('/api/ajn/proxy',async(req,res)=>{
   const abort=new AbortController();
   res.on('close',()=>{if(!res.writableFinished)abort.abort();});
   try{
-    const up=await fetch(target,{headers:{'User-Agent':'AJN-Media-Console/AjnProxy',Range:`bytes=${slice.start}-${slice.end}`},signal:abort.signal,redirect:'follow'});
-    if(new URL(up.url).hostname!==target.hostname&&!AJN_PROXY_HOSTS.has(new URL(up.url).hostname)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:'redirected off allowlist'});}
+    // Every redirect hop is checked against the allowlist; 60 s bounds one 8 MiB slice.
+    const {res:up}=await safeFetch(target,{allow:(h)=>AJN_PROXY_HOSTS.has(h),timeoutMs:60_000,signal:abort.signal,headers:{'User-Agent':'AJN-Media-Console/AjnProxy',Range:`bytes=${slice.start}-${slice.end}`}});
     if(!up.ok){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:`AJN media HTTP ${up.status}`,upstreamStatus:up.status});}
     const ct=up.headers.get('content-type')||'';
     if(/text\/html/i.test(ct)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:'AJN host returned a web page, not media'});}
@@ -207,7 +209,7 @@ app.get('/api/ajn/proxy',async(req,res)=>{
     body.once('error',()=>res.destroy());
     res.once('close',()=>{if(!body.destroyed)body.destroy();});
     return body.pipe(res);
-  }catch(e:any){if(e?.name==='AbortError'||res.headersSent)return;return res.status(502).json({error:'AJN proxy failure',detail:e?.message});}
+  }catch(e:any){if(e?.name==='AbortError'||res.headersSent)return;if(e instanceof SafeFetchError&&e.reason==='redirect_blocked')return res.status(502).json({error:'redirected off allowlist',detail:e.message});return res.status(e instanceof SafeFetchError&&e.reason==='timeout'?504:502).json({error:'AJN proxy failure',reason:e?.reason,detail:e?.message});}
 });
 // Pluto (jmp2.uk → stitcher.pluto.tv) playlists: fetched and rewritten here
 // because the stitcher only allows http://pluto.tv to read them. Text only.
@@ -216,17 +218,16 @@ app.get('/api/hls/playlist',async(req,res)=>{
   try{target=new URL(String(req.query.url||''));}catch{return res.status(400).json({error:'invalid url'});}
   if(target.protocol!=='https:'||!hlsProxyAllowed(target.hostname))return res.status(403).json({error:'host not allowed'});
   try{
-    const up=await fetch(target,{headers:{'User-Agent':'Mozilla/5.0 AJN-Precision-Engineering'},redirect:'follow',signal:AbortSignal.timeout(15000)});
-    const finalUrl=new URL(up.url);
-    if(!hlsProxyAllowed(finalUrl.hostname)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:'redirected off allowlist'});}
+    // Each redirect hop re-checked; 10 s and 1 MiB bound the whole exchange.
+    const {res:up,finalUrl}=await safeFetch(target,{allow:hlsProxyAllowed,timeoutMs:10_000,headers:{'User-Agent':'Mozilla/5.0 AJN-Precision-Engineering'}});
     if(!up.ok){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:`playlist HTTP ${up.status}`,upstreamStatus:up.status});}
-    const text=await up.text();
+    const text=await readTextCapped(up,PLAYLIST_MAX_BYTES);
     if(!text.startsWith('#EXTM3U'))return res.status(502).json({error:'not an HLS playlist'});
     res.setHeader('Content-Type','application/vnd.apple.mpegurl');
     res.setHeader('Cache-Control','no-store');
     res.setHeader('Access-Control-Allow-Origin','*');
     return res.send(rewritePlaylist(text,finalUrl.toString()));
-  }catch(e:any){return res.status(502).json({error:'playlist proxy failure',detail:e?.message});}
+  }catch(e:any){if(e instanceof SafeFetchError&&e.reason==='redirect_blocked')return res.status(502).json({error:'redirected off allowlist',detail:e.message});return res.status(e instanceof SafeFetchError&&e.reason==='timeout'?504:502).json({error:'playlist proxy failure',reason:e?.reason,detail:e?.message});}
 });
 app.get('/api/archive/metadata',async(req,res)=>{ const v=validateArchivePath((req.query.path as string)||''); if(!v.valid||!v.cleanPath)return res.status(400).json({error:v.error}); try{const r=await fetch(`${ARCHIVE_BASE}${v.cleanPath}`,{method:'HEAD',headers:{'User-Agent':'AJN-Precision-Engineering-Proxy/1.0'}});res.json({status:r.status,ok:r.ok,contentType:r.headers.get('content-type'),contentLength:r.headers.get('content-length'),acceptRanges:r.headers.get('accept-ranges'),proxyUrl:`/api/archive/proxy?path=${encodeURIComponent(v.cleanPath)}`});}catch(e:any){res.status(502).json({error:e.message});} });
 

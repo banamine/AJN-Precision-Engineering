@@ -89,3 +89,11 @@ export async function resolveRushItem(id: string): Promise<{ id: string; source:
 export async function rushEpisodesOn(date: string): Promise<RushIndexEntry[]> {
   return DATE.test(date) ? (await getRushIndex()).filter((e) => e.date === date) : [];
 }
+
+/** The first indexed date after `date` (not "tomorrow": gaps are normal), or null at the end of the archive. */
+export async function nextRushDate(date: string): Promise<string | null> {
+  if (!DATE.test(date)) return null;
+  let best: string | null = null;
+  for (const e of await getRushIndex()) if (e.date > date && (!best || e.date < best)) best = e.date;
+  return best;
+}

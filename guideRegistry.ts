@@ -257,13 +257,13 @@ export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.g
 import { dailyHighlightsContract, toChannels as highlightChannels } from './server/sources/dailyHighlights';
 import { getDocumentaryChannels } from './src/services/producers/documentariesProducer';
 
-import { liveTvContract, LIVE_REFRESH_MS } from './server/sources/liveTv';
+import { liveTvContract, LIVE_REFRESH_MS, resetLiveTvLastGoodForTests } from './server/sources/liveTv';
 
 // Live TV: stale-while-revalidate. The last good list is served while a refresh
 // runs in the background; a failed refresh keeps the last good list (marked).
 let liveCache:{data:ScheduleChannel[];fetchedAt:number;refreshing?:Promise<void>}|null=null;
 let liveFetch:typeof fetch|undefined;
-export function setLiveTvFetchForTests(impl?:typeof fetch){liveFetch=impl;liveCache=null;}
+export function setLiveTvFetchForTests(impl?:typeof fetch){liveFetch=impl;liveCache=null;resetLiveTvLastGoodForTests();}
 
 async function refreshLiveTv(guideId:string):Promise<void>{
   const [r]=await runSources([{contract:liveTvContract,input:{guideId,fetchImpl:liveFetch}}],{timeoutMs:30_000});

@@ -46,4 +46,25 @@ assert.equal(empty[0].id, 'live-tv-status');
 assert.equal(empty[0].sourceStatus, 'upstream_error');
 assert.match(empty[0].sourceError!, /HTTP 503/);
 setLiveTvFetchForTests(undefined);
+
+// One of two lists fails on refresh: its channels stay (last good copy), marked partial.
+const other = `#EXTM3U
+#EXTINF:-1 group-title="Movies",Rakuten Movie
+https://rakuten.example/m.m3u8
+`;
+let bDown = false;
+const two = (async (u: any) => String(u).includes('b.m3u') ? (bDown ? new Response('', { status: 503 }) : new Response(other)) : new Response(m3u)) as typeof fetch;
+const srcs = ['https://up/a.m3u', 'https://up/b.m3u'];
+const r1 = await liveTvContract.hook({ guideId: 'live-tv', sources: srcs, fetchImpl: two }, ctx);
+assert.equal(r1.programs.length, 3);
+bDown = true;
+const r2 = await liveTvContract.hook({ guideId: 'live-tv', sources: srcs, fetchImpl: two }, ctx);
+assert.equal(r2.programs.length, 3, 'failed list served from last good copy');
+assert.match(r2.error!, /b\.m3u HTTP 503 \(showing last good list\)/);
+
+// A list that is not M3U (e.g. an HTML error page with 200) is an error, not an empty list.
+const html = (async () => new Response('<html>rate limited</html>')) as typeof fetch;
+const r3 = await liveTvContract.hook({ guideId: 'live-tv', sources: ['https://up/c.m3u'], fetchImpl: html }, ctx);
+assert.equal(r3.status, 'upstream_error');
+assert.match(r3.error!, /not an M3U list/);
 console.log('live tv regression: all passed');
