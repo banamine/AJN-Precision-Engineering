@@ -12,6 +12,9 @@ import type { Program, ScheduleChannel } from '../src/types';
 import { selectPlayableFile, type LibraryAvailability, type DurationSource } from './archive/mediaSelector';
 import { archiveApiFetch } from './archiveLimiter';
 import { safeFetch } from './safeFetch';
+import { groupLibraryResults, findLibrarySeries, type LibrarySeries } from './library/series';
+export { groupLibraryResults, findLibrarySeries };
+export type { LibrarySeries };
 
 export interface LibraryCategory { id: string; label: string; mediaType: 'video' | 'audio'; query?: string; guide?: { guideId: string; channels: (ch: ScheduleChannel) => boolean } }
 export const LIBRARY_CATEGORIES: LibraryCategory[] = [
@@ -140,10 +143,17 @@ export function queryLibrary(qy: ItemsQuery) {
   if (qy.decade !== undefined && qy.decade !== null) rows = rows.filter((r) => (qy.decade === 0 ? r.decade === undefined : r.decade === qy.decade));
   if (qy.mediaType === 'video' || qy.mediaType === 'audio') rows = rows.filter((r) => r.mediaType === qy.mediaType);
   if (q) rows = rows.filter((r) => r.title.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q) || r.identifier.toLowerCase().includes(q));
-  rows.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.title.localeCompare(b.title) || a.id.localeCompare(b.id)); // stable
-  const totalItems = rows.length;
+  const grouped = groupLibraryResults(rows);
+  const totalItems = grouped.length;
   return { snapshotAt, page, limit, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / limit)),
-    items: rows.slice((page - 1) * limit, page * limit).map((r) => ({ ...r, availability: availability(r), playbackMode: 'vod' as const })) };
+    rawCount: rows.length, uniqueCount: rows.length, groupCount: grouped.filter((r) => r.type === 'series').length,
+    items: grouped.slice((page - 1) * limit, page * limit).map((r) => r.type === 'series'
+      ? { ...r, episodes: r.episodes.map((e) => ({ ...e, availability: availability(e as unknown as IndexRecord), playbackMode: 'vod' as const })) }
+      : { ...r, availability: availability(r as unknown as IndexRecord), playbackMode: 'vod' as const }) };
+}
+
+export function getLibrarySeries(groupKey: string): LibrarySeries | null {
+  return findLibrarySeries(allRecords().filter(visible), groupKey);
 }
 
 export function libraryHeatmap() {

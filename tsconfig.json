@@ -26,6 +26,13 @@
   "exclude": [
     "ajn-final-dropin",
     "AJN-Precision-Engineering-DROPIN-FIXED",
-    "src/PlayerView.tsx"
+    "src/PlayerView.tsx",
+    "node_modules",
+    "dist",
+    "AJN-Precision-Engineering",
+    "app",
+    "App_identity_traced_replacement.tsx",
+    "NewsTicker.tsx",
+    "NewsEmptyState.tsx"
   ]
 }

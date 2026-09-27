@@ -35,6 +35,29 @@ const merged = L.mergeRecords([r1, r1b]);
 assert.equal(merged.length, 1); assert.deepEqual(merged[0].categoryIds, ['cartoons', 'classic-cinema']);
 
 // Index queries
+// Deterministic series grouping: strict separators, category scope, and false-positive guards.
+const makeSeriesRecord = (id: string, title: string, category = 'cartoons') =>
+  L.recordFromMetadata(L.LIBRARY_CATEGORIES.find((c) => c.id === category)!, { identifier: id, title, year: '1935' }, meta('1935'));
+
+const seriesRows = [
+  makeSeriesRecord('bb1', 'Betty Boop - Snow White'),
+  makeSeriesRecord('bb2', 'Betty Boop - Minnie the Moocher'),
+  makeSeriesRecord('bb3', 'Betty Boop - Poor Cinderella'),
+  makeSeriesRecord('bad1', "Betty Boop's Ker-Choo"),
+  makeSeriesRecord('clock', 'ABC Sept. 11, 2001 9:12 am - 9:54 am'),
+  makeSeriesRecord('china', 'China: The Roots of Madness'),
+  makeSeriesRecord('pack', 'The Whistler - 508 Episodes', 'old-time-radio'),
+];
+const grouped = L.groupLibraryResults(seriesRows);
+const bettyGroup = grouped.find((x: any) => x.type === 'series' && x.title === 'Betty Boop') as any;
+assert.ok(bettyGroup, 'Betty Boop becomes a series group');
+assert.equal(bettyGroup.episodeCount, 3);
+assert.deepEqual(bettyGroup.episodes.map((e: any) => e.episodeTitle), ['Minnie the Moocher', 'Poor Cinderella', 'Snow White']);
+assert.ok(grouped.some((x: any) => x.type === 'item' && x.title === "Betty Boop's Ker-Choo"), 'hyphen inside word is not parsed');
+assert.ok(grouped.some((x: any) => x.type === 'item' && x.title.startsWith('ABC Sept. 11')), 'clock-time title is not grouped');
+assert.ok(grouped.some((x: any) => x.type === 'item' && x.title === 'China: The Roots of Madness'), 'documentary title is not grouped outside category');
+assert.ok(grouped.some((x: any) => x.type === 'item' && x.title === 'The Whistler - 508 Episodes'), 'compilation item is not treated as an episode');
+assert.equal(grouped.filter((x: any) => x.type === 'series').length, 1);
 const recs = [r1, r1b,
   L.recordFromMetadata(cartoons, { identifier: 'betty', title: 'Betty Boop', date: '1932-05-01' }, meta('1932')),
   L.recordFromMetadata(cartoons, { identifier: 'undated', title: 'Mystery Reel' }, { files: [{ name: 'm.mp4', format: 'h.264' }] }),
@@ -43,7 +66,7 @@ const recs = [r1, r1b,
 L.setLibraryIndexForTests(L.mergeRecords(recs));
 let q = L.queryLibrary({ category: 'cartoons', page: 1, limit: 24 });
 assert.deepEqual(q.items.map((i) => i.title), ['Betty Boop', 'Popeye', 'Mystery Reel'], 'oldest first, undated last');
-assert.ok(q.items.every((i) => i.playbackMode === 'vod'));
+assert.ok(q.items.every((i: any) => i.type === 'series' || i.playbackMode === 'vod'));
 q = L.queryLibrary({ category: 'classic-cinema', limit: 24, page: 2 });
 assert.equal(q.totalItems, 31); assert.equal(q.totalPages, 2); assert.equal(q.items.length, 7);
 assert.equal(L.queryLibrary({ limit: 500 }).limit, 48, 'page size capped');
@@ -73,7 +96,7 @@ L.setLibraryProbeFetchForTests((async (u: URL) => {
   if (status === 0) throw new TypeError('fetch failed');
   return new Response('ab', { status, headers: { 'content-type': 'video/mp4' } });
 }) as any);
-const target = L.queryLibrary({ ids: ['ia-betty'] }).items[0];
+const target = L.queryLibrary({ ids: ['ia-betty'] }).items[0] as any;
 assert.equal(await L.probeRecord(target), 'verified');
 status = 404; assert.equal(await L.probeRecord(target), 'verified', 'one failure is not enough');
 status = 0; await L.probeRecord(target);
@@ -91,5 +114,20 @@ const scifi = L.LIBRARY_CATEGORIES.find((c) => c.id === 'scifi-horror')!;
 assert.equal(await L.topUpCategory(scifi, 5), 1);
 assert.ok(L.queryLibrary({ ids: ['ia-popeye1'] }).items[0].categoryIds.includes('scifi-horror'));
 assert.equal(L.queryLibrary({ category: 'scifi-horror' }).totalItems, 2);
+
+// Real-index regressions: compilation records never become episodes.
+{
+  const { groupLibraryResults } = await import('./server/library/series.ts');
+  const mk = (id: string, title: string, cat = 'old-time-radio') => ({ id, identifier: id, title, categoryIds: [cat], mediaType: 'audio' as const, path: `/download/${id}/a.mp3`, format: 'VBR MP3', dur: 1, durEst: false, availability: 'unverified' });
+  const out = groupLibraryResults([
+    mk('w1', 'The Whistler - Single Episodes'), mk('w2', 'The Whistler - 508 Episodes'),
+    mk('j1', 'Yours Truly, Johnny Dollar - Single Episodes'), mk('j2', 'Yours Truly, Johnny Dollar - Single Episodes - Bob Bailey 15 Minute Episodes'),
+    mk('f1', 'Fibber McGee and Molly - 1254 Episodes of the Exceptional Old Time Radio Comedy'), mk('f2', 'Fibber McGee and Molly - 1941'),
+    mk('o1', 'Orson Welles - Mercury Theater - 1938 recordings'), mk('o2', 'Orson Welles: On The Air 2'),
+    mk('b1', 'The Beverly Hillbillies : Trick Or Treat', 'classic-tv'), mk('b2', 'The Beverly Hillbillies : The Servants', 'classic-tv'),
+  ] as any);
+  const series = out.filter((x: any) => x.type === 'series');
+  assert.deepEqual(series.map((x: any) => [x.title, x.episodeCount]), [['The Beverly Hillbillies', 2]], 'only the real show groups; display title keeps its case');
+}
 console.log('library index regression: all passed');
 process.exit(0);

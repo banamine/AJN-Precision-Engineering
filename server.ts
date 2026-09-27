@@ -1,4 +1,4 @@
-import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
+import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, getLibrarySeries, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { liveTvHealthSummary } from './guideRegistry';
@@ -65,6 +65,15 @@ app.get('/api/library/items',async(req,res)=>{
   try{await libraryReady();const d=req.query.decade;
     res.set('Cache-Control','no-store').json(queryLibrary({ids:req.query.ids?String(req.query.ids).split(',').filter(Boolean).slice(0,500):undefined,category:(req.query.category as string)||undefined,decade:d===undefined||d===''?null:Number(d),q:req.query.q as string,mediaType:req.query.mediaType as string,page:Number(req.query.page)||1,limit:Number(req.query.limit)||24}));
   }catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,items:[]});}
+});
+app.get('/api/library/series/:key',async(req,res)=>{
+  try{
+    await libraryReady();
+    const key=decodeURIComponent(req.params.key);
+    const series=getLibrarySeries(key);
+    if(!series)return res.status(404).json({error:'series not found'});
+    res.set('Cache-Control','no-store').json(series);
+  }catch(e:any){res.status(500).json({error:'series unavailable',detail:e?.message});}
 });
 app.get('/api/library/heatmap',async(_req,res)=>{try{await libraryReady();res.set('Cache-Control','no-store').json({...libraryHeatmap(),stats:libraryIndexStats});}catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,categories:[]});}});
 app.get('/api/library',async(_req,res)=>{
