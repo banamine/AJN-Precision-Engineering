@@ -10,6 +10,11 @@ import { normalizeAssetIdentity, normalizeProgramIdentity, normalizeSourceIdenti
 import { parseM3uEntries } from './classicM3u';
 import { slug } from './archiveLinks';
 import type { RejectedItem, SourceContract, SourceResult } from './contract';
+import { safeFetch, readTextCapped, anyPublicHost, SOURCE_LIST_MAX_BYTES } from '../safeFetch';
+
+/** Last list that downloaded and parsed, per source URL (process lifetime). */
+const lastGoodList = new Map<string, string>();
+export function resetLiveTvLastGoodForTests() { lastGoodList.clear(); }
 
 export const DEFAULT_LIVE_SOURCES = [
   'https://iptv-org.github.io/iptv/countries/us.m3u',
@@ -53,10 +58,19 @@ export const liveTvContract: SourceContract<LiveTvInput> = {
     for (const source of sources) {
       let text: string;
       try {
-        const r = await fetchImpl(source, { signal: ctx.signal, headers: { 'User-Agent': 'AJN-Precision-Engineering/LiveTV' } });
-        if (!r.ok) { await r.body?.cancel().catch(() => {}); errors.push(`${source} HTTP ${r.status}`); continue; }
-        text = await r.text();
-      } catch (err: any) { errors.push(`${source} ${String(err?.message ?? err)}`); continue; }
+        // Redirect hops re-checked (https, public host); 10 s and 5 MiB per list.
+        const { res: r } = await safeFetch(source, { allow: anyPublicHost, timeoutMs: 10_000, signal: ctx.signal, fetchImpl, headers: { 'User-Agent': 'AJN-Precision-Engineering/LiveTV' } });
+        if (!r.ok) { await r.body?.cancel().catch(() => {}); throw new Error(`HTTP ${r.status}`); }
+        text = await readTextCapped(r, SOURCE_LIST_MAX_BYTES);
+        if (!text.trimStart().startsWith('#EXTM3U')) throw new Error('not an M3U list');
+        lastGoodList.set(source, text);
+      } catch (err: any) {
+        // One list failing must not drop its channels: reuse its last good copy.
+        const kept = lastGoodList.get(source);
+        errors.push(`${source} ${String(err?.message ?? err)}${kept ? ' (showing last good list)' : ''}`);
+        if (!kept) continue;
+        text = kept;
+      }
 
       for (const entry of parseM3uEntries(text)) {
         const name = entry.title.trim();

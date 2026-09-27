@@ -103,6 +103,10 @@ jobs:
         run: npm run test:audio-channels
       - name: HLS playlist proxy regression
         run: npm run test:hls-proxy
+      - name: Bounded fetch (redirect hops, timeouts, size caps)
+        run: npm run test:safe-fetch
+      - name: Rush next hour / next date
+        run: npm run test:rush-next
       - name: Favorites store regression
         run: npm run test:favorites
       - name: Proxy range slicing regression

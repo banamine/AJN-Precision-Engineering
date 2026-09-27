@@ -14,6 +14,8 @@ interface MinimalPlayerProps {
   onProgramEnded?: () => void;
   nowPlaying?: NowPlayingMedia;
   onPlayEvent?: () => void;
+  /** Text for the button shown when the browser refuses to start playback on its own. */
+  autoplayBlockedLabel?: string;
   onPauseEvent?: () => void;
   onErrorEvent?: (err: MediaError | null) => void;
   onProgressEvent?: (positionSeconds: number) => void;
@@ -30,7 +32,7 @@ const RESUME_PREFIX = "ajn-playback-position:";
 // until the app is closed or reloaded.
 let sessionUnmuted = false;
 
-export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent }: MinimalPlayerProps) {
+export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSavedPositionRef = useRef(0);
@@ -105,7 +107,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     setShowResumePrompt(false);
   }, [resumeKey]);
 
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const reportPlaying = useCallback(() => {
+    setAutoplayBlocked(false);
     setIsPlaying(true);
     setStatusText("Playing");
     if (!playingReportedRef.current) {
@@ -124,6 +128,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     setIsPlaying(false);
     setResumePosition(null);
     setShowResumePrompt(false);
+    setAutoplayBlocked(false);
     playingReportedRef.current = false;
     lastSavedPositionRef.current = 0;
   }, [src, mediaType]);
@@ -165,7 +170,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           readyState: media.readyState,
           networkState: media.networkState,
         });
-        if (media.paused) setStatusText("Ready to play");
+        if (media.paused) {
+          setStatusText("Ready to play");
+          // Not a lookup failure: the item is loaded, only the browser's permission is missing.
+          setAutoplayBlocked(true);
+          reportTelemetry({ event: "playback.autoplay_blocked", ...fx().eventMeta() });
+        }
       }
     };
 
@@ -481,6 +491,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           preload="metadata"
           className="w-full"
         />
+      )}
+      {autoplayBlocked && (
+        <button type="button" onClick={() => void play()} data-testid="autoplay-blocked"
+          className="absolute inset-x-3 top-3 z-20 rounded-lg bg-amber-400 px-4 py-3 text-sm font-semibold text-black shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+          ▶ {autoplayBlockedLabel ?? "Ready — tap Play"}
+        </button>
       )}
       {showResumePrompt && resumePosition !== null && (
         <div className="absolute left-3 right-3 top-3 z-10 flex items-center justify-between gap-3 rounded-lg bg-black/85 p-3 text-white shadow-lg">

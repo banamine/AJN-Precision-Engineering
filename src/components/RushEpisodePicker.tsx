@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Loader2 } from "lucide-react";
 import type { PlayProgramCallback } from "../types";
+import { loadRushSettings, saveRushSettings } from "../utils/rushSettings";
 
 type IndexEntry = { id: string; date: string; year: number };
 type Track = { file: string; durationSeconds: number; archivePath: string; mediaUrl: string };
@@ -19,6 +20,7 @@ export function RushEpisodePicker({ onPlay }: { onPlay: PlayProgramCallback }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [episodes, setEpisodes] = useState<Episode[] | null>(null);
   const [loadingEp, setLoadingEp] = useState(false);
+  const [continueAcross, setContinueAcross] = useState(() => loadRushSettings().continueAcrossDates);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -52,6 +54,12 @@ export function RushEpisodePicker({ onPlay }: { onPlay: PlayProgramCallback }) {
         <h2 id="rush-picker-title" className="flex items-center gap-2 text-sm font-semibold text-neutral-100">
           <CalendarDays className="h-4 w-4 text-amber-400" aria-hidden="true" /> Rush Limbaugh Show — pick a date
         </h2>
+        <label className="flex items-center gap-2 text-xs text-neutral-400" title="After a day's last hour, keep playing the next available date">
+          <input type="checkbox" checked={continueAcross} data-testid="rush-continue-toggle"
+            onChange={(e) => { setContinueAcross(e.target.checked); saveRushSettings({ continueAcrossDates: e.target.checked }); }}
+            className="accent-amber-400" />
+          Continue to next date
+        </label>
         <label className="flex items-center gap-2 text-xs text-neutral-400">
           Year
           <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-neutral-100">
