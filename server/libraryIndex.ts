@@ -167,7 +167,7 @@ export function groupLibraryResults(rows: SeriesSource[]): LibraryResult[] {
       type: 'series' as const,
       id: 'series-' + groupKey.replace(/[^a-z0-9:_-]+/gi, '-'),
       groupKey,
-      title: clean(groupKey.slice(groupKey.indexOf(':') + 1)).replace(/\b\w/g, (m) => m.toUpperCase()),
+      title: separatorPrefix(episodes[0].title)?.prefix ?? clean(groupKey.slice(groupKey.indexOf(':') + 1)),
       categoryIds,
       mediaType: first.mediaType,
       episodeCount: episodes.length,
