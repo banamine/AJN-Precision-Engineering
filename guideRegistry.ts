@@ -6,6 +6,7 @@ import { tryResolveArchiveMediaCandidates } from './channels';
 import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './server/sources/archiveNews';
 import { runSources } from './server/sources/runner';
 import { buildRushChannel, buildOtrChannel } from './server/audioChannels';
+import { getNasaPrograms, NASA_CHANNEL_ID } from './server/sources/nasaArchive';
 import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
@@ -258,12 +259,16 @@ import { dailyHighlightsContract, toChannels as highlightChannels } from './serv
 import { getDocumentaryChannels } from './src/services/producers/documentariesProducer';
 
 import { liveTvContract, LIVE_REFRESH_MS, resetLiveTvLastGoodForTests } from './server/sources/liveTv';
+import { healthOf, runHealthCheck, pendingRechecks, liveHealthStats } from './server/liveHealth';
+import { getPlutoEpg, plutoIdOf, setPlutoEpgFetchForTests, type EpgSlot } from './server/sources/plutoEpg';
 
 // Live TV: stale-while-revalidate. The last good list is served while a refresh
 // runs in the background; a failed refresh keeps the last good list (marked).
 let liveCache:{data:ScheduleChannel[];fetchedAt:number;refreshing?:Promise<void>}|null=null;
 let liveFetch:typeof fetch|undefined;
-export function setLiveTvFetchForTests(impl?:typeof fetch){liveFetch=impl;liveCache=null;resetLiveTvLastGoodForTests();}
+export function setLiveTvFetchForTests(impl?:typeof fetch,plutoEpgFetch?:typeof fetch){liveFetch=impl;liveCache=null;resetLiveTvLastGoodForTests();
+  // Tests never reach the real Pluto API: no listings unless a test supplies them.
+  setPlutoEpgFetchForTests(plutoEpgFetch??(impl?((async()=>new Response('[]'))as typeof fetch):undefined));}
 
 async function refreshLiveTv(guideId:string):Promise<void>{
   const [r]=await runSources([{contract:liveTvContract,input:{guideId,fetchImpl:liveFetch}}],{timeoutMs:30_000});
@@ -277,16 +282,67 @@ async function refreshLiveTv(guideId:string):Promise<void>{
   }).sort((a,b)=>String(a.group).localeCompare(String(b.group))||a.name.localeCompare(b.name));
   if(data.length===0)data.push({id:'live-tv-status',guideId,name:'Live TV',mediaType:'video',group:'Live',programs:[],sourceStatus:r.status,sourceError:r.error,rejected:r.rejected.slice(0,50)});
   liveCache={data,fetchedAt:Date.now()};
+  scheduleLiveHealth(data);
 }
 
+// Health runs in the background after each list refresh (never in tests with a
+// mocked list): a full pass, then a confirming recheck of fresh failures 10 min later.
+let healthTimer:ReturnType<typeof setTimeout>|undefined;
+export let liveHealthAuto=typeof process!=='undefined'&&process.env?.NODE_ENV!=='test'&&process.env?.LIVE_HEALTH!=='off';
+export function setLiveHealthAutoForTests(on:boolean){liveHealthAuto=on;}
+function scheduleLiveHealth(data:ScheduleChannel[]){
+  if(!liveHealthAuto||liveFetch)return;
+  const urls=data.map(ch=>ch.programs[0]?.mediaUrl).filter((u):u is string=>!!u);
+  if(!urls.length)return;
+  clearTimeout(healthTimer);
+  healthTimer=setTimeout(async()=>{
+    try{
+      const r=await runHealthCheck(urls);
+      console.log(`[AJN] live health: ${r.ok}/${r.checked} answered${r.applied?'':' (skipped: most failed, likely our network)'}`);
+      const again=pendingRechecks();
+      if(again.length)healthTimer=setTimeout(()=>{void runHealthCheck(again,8,false).then(x=>console.log(`[AJN] live health recheck: ${x.failed}/${x.checked} still failing -> offline`));},10*60_000);
+    }catch(e:any){console.warn('[AJN] live health failed:',e?.message);}
+  },30_000);
+  (healthTimer as any)?.unref?.();
+}
+
+/** Pluto channels get real program blocks; times are UTC, placed by the browser in local time. */
+function plutoPrograms(ch:ScheduleChannel,slots:EpgSlot[]):Program[]{
+  const base=ch.programs[0];
+  return slots.map(s=>({
+    ...base,
+    id:`${ch.id}|${s.start}`,
+    title:s.title,
+    description:s.description??base.description,
+    startTimeUtc:s.start,endTimeUtc:s.stop,
+    metadata:{...(base.metadata??{}),epg:'utc',epgSource:'pluto',channelName:ch.name},
+  } as Program));
+}
+
+/** Read-time view of the live list: offline channels hidden, Pluto listings attached. */
+async function decorateLive(data:ScheduleChannel[]):Promise<ScheduleChannel[]>{
+  let epg=new Map<string,EpgSlot[]>();
+  try{epg=await Promise.race([getPlutoEpg(),new Promise<Map<string,EpgSlot[]>>(ok=>{const t=setTimeout(()=>ok(new Map()),8000);(t as any)?.unref?.();})]);}catch{/* listings are optional */}
+  const out:ScheduleChannel[]=[];
+  for(const ch of data){
+    const url=ch.programs[0]?.mediaUrl;
+    if(url&&healthOf(url)==='offline')continue;
+    const id=url?plutoIdOf(url):null;
+    const slots=id?epg.get(id):undefined;
+    out.push(slots?.length?{...ch,programs:plutoPrograms(ch,slots)}:ch);
+  }
+  return out;
+}
+export function liveTvHealthSummary(){return {...liveHealthStats,hidden:liveHealthStats.offline};}
+
 async function getLiveTvChannels(guideId:string):Promise<ScheduleChannel[]>{
-  if(!liveCache){await refreshLiveTv(guideId);return liveCache!.data;}
+  if(!liveCache){await refreshLiveTv(guideId);return decorateLive(liveCache!.data);}
   const stale=Date.now()-liveCache.fetchedAt>LIVE_REFRESH_MS||liveCache.data[0]?.id==='live-tv-status';
   if(stale&&!liveCache.refreshing){
     const cache=liveCache;
     cache.refreshing=refreshLiveTv(guideId).catch(()=>{}).finally(()=>{cache.refreshing=undefined;});
   }
-  return liveCache.data;
+  return decorateLive(liveCache.data);
 }
 
 let highlightsCache:{data:ScheduleChannel[];expiresAt:number}|null=null;
@@ -560,7 +616,10 @@ async function getScheduleForGuideRaw(guideId='cable-tv'):Promise<ScheduleChanne
   }
   if(guideId==='science-documentaries'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='nova-wonders');
-    return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)},
+    const nasa=await getNasaPrograms(guideId);
+    const nasaChannel:ScheduleChannel={id:NASA_CHANNEL_ID,guideId,name:'NASA Mission Archive',mediaType:'video',group:'Aerospace & Science',programs:layoutDailySchedule(nasa.programs,30),
+      ...(nasa.programs.length?{}:{sourceStatus:nasa.loading?'loading':'upstream_error',sourceError:nasa.loading?'loading NASA films from Archive — refresh in a minute':`NASA search failed: ${nasa.error}`})};
+    return [nasaChannel,{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)},
       ...getDocumentaryChannels().map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Documentaries',logo:ch.logo,programs:layoutDailySchedule(ch.programs,50)}))];
   }
   return genericChannels(guideId);

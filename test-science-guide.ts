@@ -1,14 +1,19 @@
 // Regression: Science Documentaries exposes the NOVA canonical programs.
 import assert from 'node:assert/strict';
 import { getScheduleForGuide } from './guideRegistry.ts';
+import { setNasaFetchForTests } from './server/sources/nasaArchive.ts';
+// The NASA row searches Archive; keep this test offline: a failed search is shown, not hidden.
+setNasaFetchForTests((async () => new Response('', { status: 503 })) as typeof fetch);
 const channels = await getScheduleForGuide('science-documentaries');
-assert.ok(channels.length > 10, 'NOVA + documentary library channels');
-assert.equal(channels[0].id, 'nova-wonders');
-assert.equal(new Set(channels[0].programs.map((p) => p.assetId)).size, 6);
-assert.ok(channels[0].programs.every((p) => p.mediaUrl?.startsWith('/api/archive/proxy?path=')));
+assert.ok(channels.length > 10, 'NASA + NOVA + documentary library channels');
+assert.equal(channels[0].id, 'nasa-missions', 'NASA row first');
+assert.equal(channels[0].sourceStatus, 'upstream_error');
+const nova = channels.find((c) => c.id === 'nova-wonders')!;
+assert.equal(new Set(nova.programs.map((p) => p.assetId)).size, 6);
+assert.ok(nova.programs.every((p) => p.mediaUrl?.startsWith('/api/archive/proxy?path=')));
 console.log('science documentaries guide regression: all passed');
 {
-  const p = channels[0].programs;
+  const p = nova.programs;
   assert.ok(p.length >= 24, 'NOVA repeats to fill the day');
   assert.equal(p[0].startTimeUtc!.slice(11), '00:00:00.000Z');
   assert.equal(Date.parse(p[0].endTimeUtc!) - Date.parse(p[0].startTimeUtc!), 55 * 60_000);

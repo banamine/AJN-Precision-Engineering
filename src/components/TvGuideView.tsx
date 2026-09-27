@@ -4,6 +4,7 @@ import EpgGuide from '../EpgGuide';
 import { Guide, PlayProgramCallback } from '../types';
 import { AjnResourcePanel } from './AjnResourcePanel';
 import { RushEpisodePicker } from './RushEpisodePicker';
+import { LiveHealthNote } from './LiveHealthNote';
 
 interface TvGuideViewProps {
   onSelectProgram: PlayProgramCallback;
@@ -112,6 +113,7 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
             <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} />
           </div>
           {selectedGuideId === 'audio-podcasts' && <RushEpisodePicker onPlay={onSelectProgram} />}
+          {selectedGuideId === 'live-tv' && <LiveHealthNote />}
         </div>
       )}
 

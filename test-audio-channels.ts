@@ -32,5 +32,16 @@ const progs = await buildOtrChannel('audio-podcasts', today, search, () => 0.5);
 assert.ok(progs.some((p) => p.description === 'OTR_Near'), 'nearest-dated show included');
 assert.ok(progs.every((p) => p.mediaType === 'audio' && p.archivePath!.startsWith('/download/')));
 assert.ok(progs.every((p) => p.channelId === 'old-time-radio'));
+
+// Seeded per UTC day: same day -> same lineup (any hour), next day -> a different mix.
+{
+  const { seededRandom, utcDaySeed } = await import('./server/audioChannels.ts');
+  assert.equal(utcDaySeed(new Date('2026-09-27T00:00:01Z')), utcDaySeed(new Date('2026-09-27T23:59:59Z')));
+  assert.notEqual(utcDaySeed(new Date('2026-09-27T23:59:59Z')), utcDaySeed(new Date('2026-09-28T00:00:00Z')));
+  const a = seededRandom('otr:2026-09-27'), b = seededRandom('otr:2026-09-27'), c = seededRandom('otr:2026-09-28');
+  const sa = [a(), a(), a()], sb = [b(), b(), b()], sc = [c(), c(), c()];
+  assert.deepEqual(sa, sb); assert.notDeepEqual(sa, sc);
+  assert.ok(sa.every((v) => v >= 0 && v < 1));
+}
 console.log('audio channels regression: all passed');
 process.exit(0);

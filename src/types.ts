@@ -140,6 +140,7 @@ export interface LibraryItem {
   programId: string;
   assetId: string;
   sourceClass: 'archive_org' | 'ajn_archive' | 'ajn_rss';
+  mediaType?: MediaType;
 }
 
 export interface ProxyStats {
