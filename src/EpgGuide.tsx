@@ -14,6 +14,17 @@ function hourLabel(hour: number): string {
   return `${display}${period}`;
 }
 
+/** Grid hours for a program. Listings timed in UTC (Live TV from Pluto) are
+ *  placed in the viewer's local day and clipped to it; others use their hours. */
+function withLocalHours(program: Program): { program: Program; sHour: number; eHour: number } {
+  if ((program.metadata as any)?.epg === 'utc' && program.startTimeUtc && program.endTimeUtc) {
+    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+    const h = (iso: string) => (Date.parse(iso) - midnight.getTime()) / 3_600_000;
+    return { program, sHour: Math.max(0, h(program.startTimeUtc)), eHour: Math.min(24, h(program.endTimeUtc)) };
+  }
+  return { program, sHour: program.startHour ?? program.startTime ?? 0, eHour: program.endHour ?? program.endTime ?? 24 };
+}
+
 function currentHourFraction(): number {
   const now = new Date();
   return now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
@@ -210,9 +221,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram }: EpgG
                 ) : (
                   // Only today's 24h window is drawn; later slots stay in the data
                   // (auto-advance still reaches them) but add no DOM.
-                  channel.programs.filter((p) => (p.startHour ?? p.startTime ?? 0) < 24).map((program, idx) => {
-                    const sHour = program.startHour ?? program.startTime ?? 0;
-                    const eHour = program.endHour ?? program.endTime ?? 24;
+                  channel.programs.map((p) => withLocalHours(p)).filter((p) => p.sHour < 24 && p.eHour > 0).map(({ program, sHour, eHour }, idx) => {
                   const isLive = nowHour >= sHour && nowHour < eHour;
                   const left = (sHour / 24) * TIMELINE_WIDTH_PX;
                   const width = ((eHour - sHour) / 24) * TIMELINE_WIDTH_PX;

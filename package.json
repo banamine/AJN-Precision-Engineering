@@ -50,7 +50,8 @@
     "test:favorites": "tsx test-favorites-store.ts",
     "test:safe-fetch": "tsx test-safe-fetch.ts",
     "test:rush-next": "tsx test-rush-next.ts && tsx test-rush-next-client.ts",
-    "live:probe": "tsx scripts/live-tv-probe.ts"
+    "live:probe": "tsx scripts/live-tv-probe.ts",
+    "test:live-health": "tsx test-live-health.ts && tsx test-pluto-epg.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -107,6 +107,8 @@ jobs:
         run: npm run test:safe-fetch
       - name: Rush next hour / next date
         run: npm run test:rush-next
+      - name: Live TV health + Pluto listings
+        run: npm run test:live-health
       - name: Favorites store regression
         run: npm run test:favorites
       - name: Proxy range slicing regression

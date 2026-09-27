@@ -1,3 +1,5 @@
+import { liveTvHealthSummary } from './guideRegistry';
+import { plutoEpgStats } from './server/sources/plutoEpg';
 import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES } from './server/safeFetch';
 import { proxySliceRange } from './server/proxyRange';
 import { unplayableReason } from './server/sources/archiveLinks';
@@ -33,6 +35,7 @@ app.get('/api/channels',(req,res)=>{const guideId=req.query.guide as string|unde
 app.get('/api/channels/:channelId',(req,res)=>{const c=getChannelById(req.params.channelId);if(!c)return res.status(404).json({error:`Channel not found: ${req.params.channelId}`});res.json(c);});
 app.get('/api/channels/:channelId/sources',(req,res)=>res.json({channelId:req.params.channelId,total:getChannelSources(req.params.channelId).length,sources:getChannelSources(req.params.channelId)}));
 app.post('/api/channels/:channelId/sources',(req,res)=>{const {url,protocol,priority,enabled,metadata}=req.body;if(!url||typeof url!=='string')return res.status(400).json({error:'Source URL is required'});res.status(201).json({message:'Channel source added successfully',source:addChannelSource(req.params.channelId,{url,protocol,priority,enabled,metadata})});});
+app.get('/api/live/health',(_req,res)=>{res.set('Cache-Control','no-store');res.json({...liveTvHealthSummary(),plutoEpg:plutoEpgStats});});
 app.get('/api/schedule',async(req,res)=>{const guideId=(req.query.guide as string)||'cable-tv';try{res.json({guideId,channels:await getScheduleForGuide(guideId),generatedAt:new Date().toISOString(),source:'archive.org-live'});}catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}});
 app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const y=Number(req.query.year);const items=y?all.filter(e=>e.year===y):all;res.set('Cache-Control','public, max-age=3600');res.json({total:items.length,items});});
 app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});
