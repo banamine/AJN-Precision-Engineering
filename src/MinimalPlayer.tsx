@@ -47,7 +47,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const isVideo = mediaType === "video";
-  const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "");
+  const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "") || (activeSrc ?? "").startsWith("/api/hls/");
   const hlsRef = useRef<Hls | null>(null);
   // Only request CORS for our own origin (the Archive proxy). Hosts such as
   // archive.alexjoneslive.com send no CORS headers, so crossOrigin={corsMode}
@@ -290,7 +290,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   useEffect(() => {
     const media = mediaRef.current;
     if (!media || !isHls) return;
-    if (media.canPlayType("application/vnd.apple.mpegurl")) {
+    // Prefer hls.js wherever it works. Recent desktop Chrome also claims native
+    // HLS, but its demuxer fails on ad-stitched, AES-128 streams (Pluto:
+    // PipelineStatus::DEMUXER_ERROR_COULD_NOT_PARSE). Native only as fallback (iOS).
+    if (!Hls.isSupported() && media.canPlayType("application/vnd.apple.mpegurl")) {
       media.src = activeSrc;
       return;
     }

@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import crypto from 'node:crypto';
 import { patchServer } from './server-patch.js';
 import { getRushIndex, rushEpisodesOn, resolveRushItem, rushStats } from './server/rush';
+import { hlsProxyAllowed, rewritePlaylist } from './server/hlsPlaylistProxy';
 import express,{Request,Response} from 'express';
 import path from 'path';
 import {createServer as createViteServer} from 'vite';
@@ -207,6 +208,25 @@ app.get('/api/ajn/proxy',async(req,res)=>{
     res.once('close',()=>{if(!body.destroyed)body.destroy();});
     return body.pipe(res);
   }catch(e:any){if(e?.name==='AbortError'||res.headersSent)return;return res.status(502).json({error:'AJN proxy failure',detail:e?.message});}
+});
+// Pluto (jmp2.uk → stitcher.pluto.tv) playlists: fetched and rewritten here
+// because the stitcher only allows http://pluto.tv to read them. Text only.
+app.get('/api/hls/playlist',async(req,res)=>{
+  let target:URL;
+  try{target=new URL(String(req.query.url||''));}catch{return res.status(400).json({error:'invalid url'});}
+  if(target.protocol!=='https:'||!hlsProxyAllowed(target.hostname))return res.status(403).json({error:'host not allowed'});
+  try{
+    const up=await fetch(target,{headers:{'User-Agent':'Mozilla/5.0 AJN-Precision-Engineering'},redirect:'follow',signal:AbortSignal.timeout(15000)});
+    const finalUrl=new URL(up.url);
+    if(!hlsProxyAllowed(finalUrl.hostname)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:'redirected off allowlist'});}
+    if(!up.ok){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:`playlist HTTP ${up.status}`,upstreamStatus:up.status});}
+    const text=await up.text();
+    if(!text.startsWith('#EXTM3U'))return res.status(502).json({error:'not an HLS playlist'});
+    res.setHeader('Content-Type','application/vnd.apple.mpegurl');
+    res.setHeader('Cache-Control','no-store');
+    res.setHeader('Access-Control-Allow-Origin','*');
+    return res.send(rewritePlaylist(text,finalUrl.toString()));
+  }catch(e:any){return res.status(502).json({error:'playlist proxy failure',detail:e?.message});}
 });
 app.get('/api/archive/metadata',async(req,res)=>{ const v=validateArchivePath((req.query.path as string)||''); if(!v.valid||!v.cleanPath)return res.status(400).json({error:v.error}); try{const r=await fetch(`${ARCHIVE_BASE}${v.cleanPath}`,{method:'HEAD',headers:{'User-Agent':'AJN-Precision-Engineering-Proxy/1.0'}});res.json({status:r.status,ok:r.ok,contentType:r.headers.get('content-type'),contentLength:r.headers.get('content-length'),acceptRanges:r.headers.get('accept-ranges'),proxyUrl:`/api/archive/proxy?path=${encodeURIComponent(v.cleanPath)}`});}catch(e:any){res.status(502).json({error:e.message});} });
 

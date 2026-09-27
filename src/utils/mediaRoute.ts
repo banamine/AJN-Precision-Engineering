@@ -17,6 +17,10 @@ export function bridgeSrc(src: string | undefined): string | undefined {
   if (!src) return src;
   try {
     const u = new URL(src);
+    // Pluto playlists refuse other sites; segments/keys don't. Playlists only.
+    if (u.protocol === "https:" && (u.hostname === "jmp2.uk" || u.hostname === "pluto.tv" || u.hostname.endsWith(".pluto.tv"))) {
+      return `/api/hls/playlist?url=${encodeURIComponent(src)}`;
+    }
     if (u.protocol === "https:" && !u.port && AJN_PROXY_HOSTS.includes(u.hostname)) {
       return `/api/ajn/proxy?url=${encodeURIComponent(src)}`;
     }
