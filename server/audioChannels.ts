@@ -62,13 +62,25 @@ export async function buildRushChannel(guideId: string, now = new Date()): Promi
   return programs;
 }
 
-/** Old-Time Radio: dated items nearest today first, shuffled, random files per item. */
-export async function buildOtrChannel(guideId: string, now = new Date(), fetchImpl: typeof fetch = archiveApiFetch, rand = Math.random): Promise<Program[]> {
+/** Repeatable pseudo-random numbers from a string seed (mulberry32 over an FNV-1a hash). */
+export function seededRandom(seed: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let a = h >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+/** The seed changes once a day at 00:00 UTC — the same moment for every viewer. */
+export const utcDaySeed = (now: Date) => `otr:${now.toISOString().slice(0, 10)}`;
+
+/** Old-Time Radio: dated items nearest today first; the mix is shuffled with a
+ *  per-UTC-day seed, so a day's lineup is the same on every server restart. */
+export async function buildOtrChannel(guideId: string, now = new Date(), fetchImpl: typeof fetch = archiveApiFetch, rand: () => number = seededRandom(utcDaySeed(now))): Promise<Program[]> {
   const q = 'collection:oldtimeradio AND mediatype:audio';
   const url = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(q)}&fl[]=identifier&fl[]=title&fl[]=date&rows=300&sort[]=downloads+desc&output=json`;
   const r = await fetchImpl(url);
   if (!r.ok) throw new Error(`OTR search HTTP ${r.status}`);
   const docs: Array<{ identifier: string; title?: string; date?: string }> = (await r.json())?.response?.docs ?? [];
+  docs.sort((a, b) => a.identifier.localeCompare(b.identifier)); // independent of Archive's result order
   const shuffled = docs.map((d) => ({ d, k: rand() })).sort((a, b) => a.k - b.k).map((x) => x.d);
   const dated = shuffled.filter((d) => Number.isFinite(dayDistance(String(d.date ?? ''), now)))
     .sort((a, b) => dayDistance(String(a.date), now) - dayDistance(String(b.date), now));

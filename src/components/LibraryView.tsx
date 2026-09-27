@@ -36,10 +36,24 @@ const CATEGORIES = [
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const curatedLibraryItems = useMemo(() => getCuratedLibraryProjection(), []);
+  // Server-built library (all guides); the in-browser projection is only a fallback.
+  const fallbackItems = useMemo(() => getCuratedLibraryProjection(), []);
+  const [serverItems, setServerItems] = useState<LibraryItem[] | null>(null);
+  const [libraryState, setLibraryState] = useState<'loading' | 'ok' | 'fallback'>('loading');
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch('/api/library', { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d) => { if (Array.isArray(d.items) && d.items.length) { setServerItems(d.items); setLibraryState('ok'); } else setLibraryState('fallback'); })
+      .catch((e) => { if (e?.name !== 'AbortError') setLibraryState('fallback'); });
+    return () => ctrl.abort();
+  }, []);
+  const curatedLibraryItems = serverItems ?? fallbackItems;
+  const [shown, setShown] = useState(60);
   // Favorites are stored as LibraryItem ids (=== Program.id); the library stays the source of truth.
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => loadFavorites());
   const [showFavorites, setShowFavorites] = useState(false);
+  useEffect(() => setShown(60), [selectedCategory, searchQuery, showFavorites]);
   useEffect(() => {
     saveFavorites(favoriteIds); // false = storage blocked/full: favorites last this session only
   }, [favoriteIds]);
@@ -97,7 +111,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
 
       {filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredItems.map((item) => {
+          {filteredItems.slice(0, shown).map((item) => {
             const isAudio = item.category === 'audio' || item.format.toLowerCase().includes('mp3');
             return (
               <div key={item.id} className="group relative flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5 transition hover:border-neutral-700 hover:bg-neutral-900">
@@ -119,12 +133,19 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                 </div>
                 <div className="mt-5 pt-3.5 border-t border-neutral-800 flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500"><Clock className="h-3.5 w-3.5" /><span>{item.duration}</span></div>
-                  <button type="button" id={`play-lib-item-${item.id}`} onClick={() => onPlayProgram(item.archivePath, item.title, item.source)} className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 cursor-pointer"><Play className="h-3 w-3 fill-current" />Watch / Listen</button>
+                  <button type="button" id={`play-lib-item-${item.id}`} onClick={() => onPlayProgram(item.archivePath, item.title, item.source, item.mediaType ?? (isAudio ? 'audio' : 'video'), item.channelId, item.guideId, item.programId, item.sourceId || undefined, item.assetId || undefined)} className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 cursor-pointer"><Play className="h-3 w-3 fill-current" />Watch / Listen</button>
                 </div>
               </div>
             );
           })}
+          {filteredItems.length > shown && (
+            <button type="button" onClick={() => setShown((n) => n + 60)} className="col-span-full rounded-lg border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-xs text-neutral-300 hover:border-neutral-700">
+              Show more ({filteredItems.length - shown} more)
+            </button>
+          )}
         </div>
+      ) : libraryState === 'loading' && !showFavorites ? (
+        <p className="text-xs text-neutral-500" aria-live="polite">Loading the library…</p>
       ) : (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-12 text-center space-y-2">
           <FolderArchive className="mx-auto h-8 w-8 text-neutral-600" />

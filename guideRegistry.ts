@@ -6,6 +6,7 @@ import { tryResolveArchiveMediaCandidates } from './channels';
 import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './server/sources/archiveNews';
 import { runSources } from './server/sources/runner';
 import { buildRushChannel, buildOtrChannel } from './server/audioChannels';
+import { getNasaPrograms, NASA_CHANNEL_ID } from './server/sources/nasaArchive';
 import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
@@ -615,7 +616,10 @@ async function getScheduleForGuideRaw(guideId='cable-tv'):Promise<ScheduleChanne
   }
   if(guideId==='science-documentaries'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='nova-wonders');
-    return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)},
+    const nasa=await getNasaPrograms(guideId);
+    const nasaChannel:ScheduleChannel={id:NASA_CHANNEL_ID,guideId,name:'NASA Mission Archive',mediaType:'video',group:'Aerospace & Science',programs:layoutDailySchedule(nasa.programs,30),
+      ...(nasa.programs.length?{}:{sourceStatus:nasa.loading?'loading':'upstream_error',sourceError:nasa.loading?'loading NASA films from Archive — refresh in a minute':`NASA search failed: ${nasa.error}`})};
+    return [nasaChannel,{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)},
       ...getDocumentaryChannels().map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Documentaries',logo:ch.logo,programs:layoutDailySchedule(ch.programs,50)}))];
   }
   return genericChannels(guideId);

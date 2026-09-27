@@ -1,3 +1,5 @@
+import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
+import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { liveTvHealthSummary } from './guideRegistry';
 import { plutoEpgStats } from './server/sources/plutoEpg';
 import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES } from './server/safeFetch';
@@ -36,6 +38,45 @@ app.get('/api/channels/:channelId',(req,res)=>{const c=getChannelById(req.params
 app.get('/api/channels/:channelId/sources',(req,res)=>res.json({channelId:req.params.channelId,total:getChannelSources(req.params.channelId).length,sources:getChannelSources(req.params.channelId)}));
 app.post('/api/channels/:channelId/sources',(req,res)=>{const {url,protocol,priority,enabled,metadata}=req.body;if(!url||typeof url!=='string')return res.status(400).json({error:'Source URL is required'});res.status(201).json({message:'Channel source added successfully',source:addChannelSource(req.params.channelId,{url,protocol,priority,enabled,metadata})});});
 app.get('/api/live/health',(_req,res)=>{res.set('Cache-Control','no-store');res.json({...liveTvHealthSummary(),plutoEpg:plutoEpgStats});});
+// One cached snapshot per guide (10 min) feeds the Library and the M3U/XMLTV
+// exports, so both files of a channel describe the same lineup.
+const EXPORT_TTL_MS=10*60_000;
+const exportSnaps=new Map<string,{at:number;snap:ExportSnapshot}>();
+async function guideSnapshot(guideId:string):Promise<ExportSnapshot>{
+  const hit=exportSnaps.get(guideId);
+  if(hit&&Date.now()-hit.at<EXPORT_TTL_MS)return hit.snap;
+  const snap={guideId,generatedAt:new Date().toISOString(),channels:await getScheduleForGuide(guideId)};
+  exportSnaps.set(guideId,{at:Date.now(),snap});
+  return snap;
+}
+const EXPORT_GUIDES=['cable-tv','classic-tv','live-tv','audio-podcasts','movies-classics-vault','science-documentaries'];
+const originOf=(req:any)=>`${(req.headers['x-forwarded-proto']||req.protocol||'https').toString().split(',')[0]}://${req.get('host')}`;
+let libraryCache:{at:number;items:any[];generatedAt:string}|null=null;
+app.get('/api/library',async(_req,res)=>{
+  try{
+    if(!libraryCache||Date.now()-libraryCache.at>EXPORT_TTL_MS){
+      const groups=[];
+      for(const s of LIBRARY_SOURCES){try{groups.push({...s,channels:(await guideSnapshot(s.guideId)).channels});}catch(e:any){console.warn('[Library]',s.guideId,e?.message);}}
+      libraryCache={at:Date.now(),items:libraryFromChannels(groups),generatedAt:new Date().toISOString()};
+    }
+    res.set('Cache-Control','no-store');
+    res.json({generatedAt:libraryCache.generatedAt,count:libraryCache.items.length,items:libraryCache.items});
+  }catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,items:[]});}
+});
+app.get('/api/exports',async(req,res)=>{
+  const origin=originOf(req);const out:any[]=[];
+  for(const g of EXPORT_GUIDES){if(g==='live-tv'){out.push({guideId:g,channel:'(all live channels)',playlist:`${origin}/api/guides/${g}/playlist.m3u`,epg:`${origin}/api/guides/${g}/epg.xml`});continue;}
+    try{for(const c of (await guideSnapshot(g)).channels)out.push({guideId:g,id:c.id,name:c.name,playlist:`${origin}/api/channels/${encodeURIComponent(c.id)}/playlist.m3u?guide=${g}`,epg:`${origin}/api/channels/${encodeURIComponent(c.id)}/epg.xml?guide=${g}`});}catch{}}
+  res.json({channels:out});
+});
+async function findChannelGuide(id:string,guide?:string):Promise<ExportSnapshot|null>{
+  for(const g of guide?[guide]:EXPORT_GUIDES.filter(x=>x!=='live-tv')){if(!EXPORT_GUIDES.includes(g))continue;const s=await guideSnapshot(g);if(s.channels.some(c=>c.id===id))return s;}
+  return null;
+}
+app.get('/api/channels/:id/playlist.m3u',async(req,res)=>{const s=await findChannelGuide(req.params.id,req.query.guide as string|undefined);if(!s)return res.status(404).json({error:'unknown channel'});res.type('audio/x-mpegurl').set('X-AJN-Generated-At',s.generatedAt).send(toM3u(s,[req.params.id],originOf(req)));});
+app.get('/api/channels/:id/epg.xml',async(req,res)=>{const s=await findChannelGuide(req.params.id,req.query.guide as string|undefined);if(!s)return res.status(404).json({error:'unknown channel'});res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,[req.params.id]));});
+app.get('/api/guides/:guide/playlist.m3u',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('audio/x-mpegurl').set('X-AJN-Generated-At',s.generatedAt).send(toM3u(s,null,originOf(req)));});
+app.get('/api/guides/:guide/epg.xml',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,null));});
 app.get('/api/schedule',async(req,res)=>{const guideId=(req.query.guide as string)||'cable-tv';try{res.json({guideId,channels:await getScheduleForGuide(guideId),generatedAt:new Date().toISOString(),source:'archive.org-live'});}catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}});
 app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const y=Number(req.query.year);const items=y?all.filter(e=>e.year===y):all;res.set('Cache-Control','public, max-age=3600');res.json({total:items.length,items});});
 app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});

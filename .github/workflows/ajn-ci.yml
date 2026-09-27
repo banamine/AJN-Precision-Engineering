@@ -109,6 +109,8 @@ jobs:
         run: npm run test:rush-next
       - name: Live TV health + Pluto listings
         run: npm run test:live-health
+      - name: Library + NASA channel + M3U/XMLTV export
+        run: npm run test:library
       - name: Favorites store regression
         run: npm run test:favorites
       - name: Proxy range slicing regression
