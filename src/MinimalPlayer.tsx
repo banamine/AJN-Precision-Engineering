@@ -60,7 +60,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // it (a re-run calls load(), which aborts the play() in flight).
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
-  const { diagnosticsAnalyserRef } = useAudioNormalization(
+  const { diagnosticsAnalyserRef, resumeAudioContext } = useAudioNormalization(
     mediaRef,
     isVideo ? "video" : "audio",
     activeSrc,
@@ -135,10 +135,14 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     // Set the property before attempting autoplay. This is required by
     // browser autoplay policy and avoids relying on JSX timing alone.
     media.muted = isMutedRef.current;
+    if (!isHls && activeSrc && !media.getAttribute("src")) {
+      media.src = activeSrc;
+    }
     media.load();
 
     const attemptAutoplay = async () => {
-      if (!isVideo || !media.paused) return;
+      if (!media.paused) return;
+      resumeAudioContext();
       try {
         await media.play();
         if (!media.paused) fx().reportPlaying();
@@ -269,7 +273,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       // Element unmounted or swapped (video <-> audio): release its network/decoder
       // so exactly one playback pipeline remains. Not on a plain src change —
       // React has already set the new src on this same element.
-      if (mediaRef.current !== media) {
+      if (mediaRef.current !== media && !media.isConnected) {
         media.pause();
         media.removeAttribute("src");
         media.load();
@@ -338,6 +342,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const play = async () => {
     const media = mediaRef.current;
     if (!media) return;
+    resumeAudioContext();
     setStatusText("Starting playback…");
     try {
       await media.play();
@@ -411,6 +416,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             if (node) node.muted = isMuted;
           }}
           src={activeSrc}
+          autoPlay
           muted={isMuted}
           crossOrigin={corsMode}
           preload="metadata"

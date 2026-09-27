@@ -50,14 +50,29 @@ function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | n
     runtime.connectedElement = null; runtime.bridgeReady = false; runtime.diagnosticsReady = false;
   }
 
-  const crossoriginAttr = media.getAttribute("crossorigin"); const hasCORSAttr = crossoriginAttr === "anonymous" || crossoriginAttr === "use-credentials"; runtime.lastCrossOrigin = crossoriginAttr;
+  // Remember the connected element so statechange to "running" can connect it
+  runtime.connectedElement = media;
+  if (runtime.ctx.state !== "running") {
+    return runtime;
+  }
+
+  const crossoriginAttr = media.getAttribute("crossorigin");
+  const hasCORSAttr = media.crossOrigin === "anonymous" || media.crossOrigin === "use-credentials" || crossoriginAttr === "anonymous" || crossoriginAttr === "use-credentials";
+  runtime.lastCrossOrigin = crossoriginAttr || media.crossOrigin || null;
   if (!hasCORSAttr) {
     runtime.connectedElement = media; runtime.bridgeReady = false; runtime.diagnosticsReady = false;
     if (media instanceof HTMLAudioElement) fetch("/api/watchdog/heartbeat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "AUDIO_NATIVE_FALLBACK", ctxState: runtime.ctx.state, crossOrigin: crossoriginAttr ?? "none", src: media.src?.slice(0, 120), ts: Date.now() }) }).catch(() => {});
     return runtime;
   }
   try {
-    const source = runtime.ctx.createMediaElementSource(media); source.connect(runtime.preAnalyser); runtime.sourceNode = source; runtime.connectedElement = media; runtime.bridgeReady = true; runtime.diagnosticsReady = true;
+    const source = runtime.ctx.createMediaElementSource(media);
+    try {
+      source.connect(runtime.preAnalyser);
+    } catch {
+      // (c) if Web Audio connection fails, element still plays directly to destination
+      try { source.connect(runtime.ctx.destination); } catch {}
+    }
+    runtime.sourceNode = source; runtime.connectedElement = media; runtime.bridgeReady = true; runtime.diagnosticsReady = true;
     fetch("/api/watchdog/heartbeat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "AUDIO_BRIDGE_OK", ctxState: runtime.ctx.state, crossOrigin: media.crossOrigin, src: media.src?.slice(0, 120), ts: Date.now() }) }).catch(() => {});
   } catch (e) {
     const msg = (e as Error)?.message ?? String(e); console.warn("[audio-norm] createMediaElementSource failed:", msg); runtime.connectedElement = media; runtime.bridgeReady = false; runtime.diagnosticsReady = false;
@@ -76,7 +91,35 @@ export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | nul
   const syncRuntimeRefs = useCallback((runtime: AudioRuntime | null) => { audioCtxRef.current = runtime?.ctx ?? null; gainNodeRef.current = runtime?.gainNode ?? null; masterVolumeNodeRef.current = runtime?.masterVolumeNode ?? null; compressorNodeRef.current = runtime?.compressorNode ?? null; preAnalyserRef.current = runtime?.preAnalyser ?? null; diagnosticsAnalyserRef.current = runtime?.diagnosticsAnalyser ?? null; setAudioContextSuspended(Boolean(runtime && runtime.ctx.state !== "running")); setBridgeReady(Boolean(runtime?.bridgeReady)); setDiagnosticsReady(Boolean(runtime?.diagnosticsReady)); }, []);
   const getOrCreateContext = useCallback((): AudioContext | null => { const runtime = createAudioRuntime(); syncRuntimeRefs(runtime); return runtime?.ctx ?? null; }, [syncRuntimeRefs]);
   const connectMediaElement = useCallback((media: HTMLMediaElement) => { const runtime = connectMediaElementToRuntime(media); syncRuntimeRefs(runtime); if (runtime && runtime.ctx.state === "running") forceRuntimeRefresh((value) => value + 1); }, [syncRuntimeRefs]);
-  const resumeAudioContext = useCallback(() => { const runtime = audioRuntime; const ctx = runtime?.ctx; if (!ctx || ctx.state === "closed" || ctx.state === "running") return; resumeRetryCountRef.current = 0; const attemptResume = () => { const active = audioRuntime; const current = active?.ctx; if (!current || current.state === "closed" || current.state === "running") { if (active) syncRuntimeRefs(active); return; } if (resumeRetryCountRef.current >= 6) return; resumeRetryCountRef.current += 1; current.resume().then(() => { syncRuntimeRefs(active ?? null); if (current.state !== "running") setTimeout(attemptResume, 400); }).catch(() => setTimeout(attemptResume, 400)); }; attemptResume(); }, [syncRuntimeRefs]);
+  const resumeAudioContext = useCallback(() => {
+    const runtime = audioRuntime;
+    const ctx = runtime?.ctx;
+    if (!ctx || ctx.state === "closed" || ctx.state === "running") return;
+    resumeRetryCountRef.current = 0;
+    const attemptResume = () => {
+      const active = audioRuntime;
+      const current = active?.ctx;
+      if (!current || current.state === "closed" || current.state === "running") {
+        if (active) {
+          syncRuntimeRefs(active);
+          if (active.connectedElement && !active.sourceNode) {
+            connectMediaElementToRuntime(active.connectedElement);
+          }
+        }
+        return;
+      }
+      if (resumeRetryCountRef.current >= 6) return;
+      resumeRetryCountRef.current += 1;
+      current.resume().then(() => {
+        syncRuntimeRefs(active ?? null);
+        if (current.state === "running" && active?.connectedElement && !active.sourceNode) {
+          connectMediaElementToRuntime(active.connectedElement);
+        }
+        if (current.state !== "running") setTimeout(attemptResume, 400);
+      }).catch(() => setTimeout(attemptResume, 400));
+    };
+    attemptResume();
+  }, [syncRuntimeRefs]);
   const primeAudioContext = useCallback(() => { getOrCreateContext(); resumeAudioContext(); }, [getOrCreateContext, resumeAudioContext]);
   const applyGain = useCallback((db: number, ramp = false) => { const gainNode = audioRuntime?.gainNode; const ctx = audioRuntime?.ctx; if (!gainNode || !ctx || ctx.state === "closed") return; const linearVal = dbToLinear(db); if (ramp) gainNode.gain.linearRampToValueAtTime(linearVal, ctx.currentTime + RAMP_DURATION_S); else gainNode.gain.setValueAtTime(linearVal, ctx.currentTime); }, []);
   const MASTER_FADE_S = 0.5;
@@ -84,7 +127,40 @@ export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | nul
   const startNormalizationSampling = useCallback(() => { const analyser = audioRuntime?.preAnalyser ?? null; const ctx = audioRuntime?.ctx ?? null; const gainNode = audioRuntime?.gainNode ?? null; if (!analyser || !ctx || !gainNode || ctx.state !== "running" || samplingActiveRef.current) return; samplingActiveRef.current = true; clearTimeout(sampleTimerRef.current); clearInterval(sampleIntervalRef.current); const bufferLength = analyser.frequencyBinCount; const dataArray = new Float32Array(bufferLength); let sumSquares = 0; let sampleCount = 0; sampleIntervalRef.current = setInterval(() => { if (ctx.state !== "running") return; analyser.getFloatTimeDomainData(dataArray); let ss = 0; for (let i = 0; i < bufferLength; i += 1) ss += dataArray[i] * dataArray[i]; sumSquares += ss / bufferLength; sampleCount += 1; }, 100); sampleTimerRef.current = setTimeout(() => { samplingActiveRef.current = false; clearInterval(sampleIntervalRef.current); if (!autoNormalizeRef.current || sampleCount === 0) return; const rms = Math.sqrt(sumSquares / sampleCount); if (rms < 1e-6) return; const rawDb = linearToDb(rms); const compensationDb = TARGET_DBFS - rawDb; const totalDb = Math.max(DB_MIN, Math.min(DB_MAX, gainDbRef.current + compensationDb)); gainNode.gain.linearRampToValueAtTime(dbToLinear(totalDb), ctx.currentTime + RAMP_DURATION_S); }, SAMPLE_DURATION_S * 1000); }, []);
   const setGainDb = useCallback((db: number) => { const clamped = Math.max(DB_MIN, Math.min(DB_MAX, db)); localStorage.setItem(LS_GAIN_KEY, String(clamped)); setGainDbState(clamped); applyGain(clamped, true); }, [applyGain]);
   const setAutoNormalize = useCallback((on: boolean) => { localStorage.setItem(LS_AUTONORM_KEY, on ? "on" : "off"); setAutoNormalizeState(on); if (on) startNormalizationSampling(); }, [startNormalizationSampling]);
-  useEffect(() => { if (playerType === "iframe" || playerType === "skip") return; const media = mediaRef.current; if (!media) return; const runtime = createAudioRuntime(); if (!runtime) return; syncRuntimeRefs(runtime); const attach = () => { const activeRuntime = createAudioRuntime(); if (!activeRuntime) return; syncRuntimeRefs(activeRuntime); if (activeRuntime.ctx.state === "running") connectMediaElement(media); }; if (runtime.ctx.state === "running") { attach(); return; } const onStateChange = () => { if (runtime.ctx.state === "running") attach(); else syncRuntimeRefs(runtime); }; runtime.ctx.addEventListener("statechange", onStateChange); resumeAudioContext(); return () => { runtime.ctx.removeEventListener("statechange", onStateChange); }; }, [mediaRef, playerType, clipKey, connectMediaElement, resumeAudioContext, syncRuntimeRefs]);
+  useEffect(() => {
+    if (playerType === "iframe" || playerType === "skip") return;
+    const media = mediaRef.current;
+    if (!media) return;
+    const runtime = createAudioRuntime();
+    if (!runtime) return;
+    syncRuntimeRefs(runtime);
+    const attach = () => {
+      const activeRuntime = createAudioRuntime();
+      if (!activeRuntime) return;
+      syncRuntimeRefs(activeRuntime);
+      if (activeRuntime.ctx.state === "running") connectMediaElement(media);
+    };
+    if (runtime.ctx.state === "running") {
+      attach();
+    }
+    const onStateChange = () => {
+      if (runtime.ctx.state === "running") attach();
+      else syncRuntimeRefs(runtime);
+    };
+    runtime.ctx.addEventListener("statechange", onStateChange);
+
+    const onPlay = () => {
+      resumeAudioContext();
+      if (runtime.ctx.state === "running") attach();
+    };
+    media.addEventListener("play", onPlay);
+
+    resumeAudioContext();
+    return () => {
+      runtime.ctx.removeEventListener("statechange", onStateChange);
+      media.removeEventListener("play", onPlay);
+    };
+  }, [mediaRef, playerType, clipKey, connectMediaElement, resumeAudioContext, syncRuntimeRefs]);
   useEffect(() => { if (!autoNormalize || (playerType !== "video" && playerType !== "hls" && playerType !== "audio")) return; const media = mediaRef.current; if (!media) return; connectMediaElement(media); const onPlaying = () => startNormalizationSampling(); media.addEventListener("playing", onPlaying); return () => media.removeEventListener("playing", onPlaying); }, [autoNormalize, playerType, clipKey, mediaRef, connectMediaElement, startNormalizationSampling]);
   useEffect(() => { const handleGesture = () => { const ctx = audioRuntime?.ctx; if (ctx && ctx.state !== "running") resumeAudioContext(); }; window.addEventListener("pointerdown", handleGesture, { passive: true }); window.addEventListener("keydown", handleGesture); return () => { window.removeEventListener("pointerdown", handleGesture); window.removeEventListener("keydown", handleGesture); }; }, [resumeAudioContext]);
   useEffect(() => { if (!audioRuntime) return; applyGain(gainDbRef.current); }, [gainDb]);

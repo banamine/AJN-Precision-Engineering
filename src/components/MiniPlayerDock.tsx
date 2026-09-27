@@ -15,7 +15,14 @@ export function MiniPlayerDock({
 }: MiniPlayerDockProps) {
   // The real player stays mounted (hidden) in #persistent-player; the dock drives it.
   const [paused, setPaused] = useState(true);
-  const getMedia = () => document.querySelector<HTMLMediaElement>('#persistent-player video, #persistent-player audio');
+  const getMedia = () => {
+    if (nowPlaying.mediaType === 'audio') {
+      return document.querySelector<HTMLMediaElement>('#persistent-player audio')
+        ?? document.querySelector<HTMLMediaElement>('#persistent-player video');
+    }
+    return document.querySelector<HTMLMediaElement>('#persistent-player video')
+      ?? document.querySelector<HTMLMediaElement>('#persistent-player audio');
+  };
   useEffect(() => {
     let media: HTMLMediaElement | null = null;
     const sync = () => setPaused(!media || media.paused);
@@ -28,9 +35,9 @@ export function MiniPlayerDock({
       sync();
     };
     attach();
-    const t = window.setInterval(attach, 1000); // element is replaced when the source changes
+    const t = window.setInterval(attach, 250); // element is replaced when the source changes
     return () => { window.clearInterval(t); media?.removeEventListener('play', sync); media?.removeEventListener('pause', sync); };
-  }, [nowPlaying.src]);
+  }, [nowPlaying.src, nowPlaying.mediaType]);
   const togglePlay = () => { const m = getMedia(); if (!m) return; if (m.paused) void m.play().catch(() => {}); else m.pause(); };
   const isAudio = nowPlaying.mediaType === 'audio';
   return (
