@@ -21,11 +21,54 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
   // 24/7 continuity: when a program ends (or fails), play the next program on the
   // same channel, wrapping to the first one. If the current program can't be
   // found in the refreshed schedule, start the channel from its first program.
+  // Each play is a new nowPlaying object: that object is the playback instance.
+  // Async advance work checks it is still current before acting, so Stop, a
+  // manual pick, or a replay made meanwhile always wins over a late result.
+  const latestRef = useRef(nowPlaying);
+  latestRef.current = nowPlaying;
+  const advancingForRef = useRef<unknown>(null);
+
   const advance = useCallback(async (reason: "ended" | "error") => {
-    const guideId = nowPlaying?.guideId || "cable-tv";
+    const instance = nowPlaying;
+    if (!instance || advancingForRef.current === instance) return; // one transition per instance
+    advancingForRef.current = instance;
+    const stale = () => latestRef.current !== instance;
+
+    // Rush picked from the calendar: play the next hour of the same day, then stop.
+    const rush = /^rush-vod-(\d{4}-\d{2}-\d{2})-h(\d+)$/.exec(String(instance.programId ?? ""));
+    if (instance.channelId === "rush-vod" && rush) {
+      const [, date, hStr] = rush;
+      const hour = Number(hStr);
+      let episodes: any[] | null = null;
+      for (let attempt = 1; attempt <= 2 && !episodes; attempt++) {
+        try {
+          const r = await fetch(`/api/rush/episode/${date}`);
+          if (r.ok) episodes = (await r.json()).episodes;
+          else if (r.status < 500 && r.status !== 429) break; // permanent: don't retry
+        } catch { /* network: retry once */ }
+        if (!episodes && attempt === 1) await new Promise((ok) => setTimeout(ok, 2000));
+        if (stale()) return;
+      }
+      if (stale()) return;
+      const tracks: any[] = episodes?.[0]?.tracks ?? [];
+      const next = tracks[hour]; // tracks are 0-based; hour N is tracks[N-1]
+      reportTelemetry({
+        event: next ? "rush.auto_advance" : episodes ? "rush.auto_advance_end_of_day" : "rush.auto_advance_failed",
+        guideId: instance.guideId ?? null, channelId: "rush-vod", programId: instance.programId ?? null,
+        titleId: titleIdOf("rush-vod", instance.title), sourceId: null, assetId: null,
+        mediaPath: next?.archivePath ?? null,
+      });
+      if (!next) return;
+      onSelectProgram(next.archivePath, `Rush Limbaugh — ${date} (Hour ${hour + 1})`, "The Rush Limbaugh Show", "audio",
+        "rush-vod", "audio-podcasts", `rush-vod-${date}-h${hour + 1}`);
+      return;
+    }
+
+    const guideId = instance.guideId || "cable-tv";
     const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`);
-    if (!res.ok) return;
+    if (!res.ok || stale()) return;
     const data = await res.json();
+    if (stale()) return;
     const channels = Array.isArray(data.channels) ? data.channels : [];
     const channel = channels.find((c: any) => c.id === nowPlaying?.channelId);
     const programs = Array.isArray(channel?.programs) ? channel.programs : [];
