@@ -11,7 +11,12 @@ import { parseM3uEntries } from './classicM3u';
 import { slug } from './archiveLinks';
 import type { RejectedItem, SourceContract, SourceResult } from './contract';
 
-export const DEFAULT_LIVE_SOURCES = ['https://iptv-org.github.io/iptv/countries/us.m3u'];
+export const DEFAULT_LIVE_SOURCES = [
+  'https://iptv-org.github.io/iptv/countries/us.m3u',
+  // Rakuten TV free (FAST) channels, regenerated upstream; stream URLs carry
+  // short-lived ad parameters, so the 6-hour refresh keeps them current.
+  'https://raw.githubusercontent.com/BuddyChewChew/RakutenTV/main/playlist.m3u',
+];
 export const LIVE_REFRESH_MS = 6 * 3600_000;
 
 export interface LiveTvInput { guideId: string; sources?: string[]; fetchImpl?: typeof fetch }
@@ -42,6 +47,7 @@ export const liveTvContract: SourceContract<LiveTvInput> = {
     const rejected: RejectedItem[] = [];
     const errors: string[] = [];
     const seenUrl = new Set<string>();
+    const seenId = new Set<string>();
     const day = Date.UTC(ctx.now.getUTCFullYear(), ctx.now.getUTCMonth(), ctx.now.getUTCDate());
 
     for (const source of sources) {
@@ -62,7 +68,10 @@ export const liveTvContract: SourceContract<LiveTvInput> = {
         if (seenUrl.has(entry.url)) continue;
         seenUrl.add(entry.url);
 
-        const channelId = `live-${slug(entry.tvgId || name)}`;
+        // Two lists can use the same tvg-id/name; keep each row's id unique.
+        let channelId = `live-${slug(entry.tvgId || name)}`;
+        for (let n = 2; seenId.has(channelId); n++) channelId = `live-${slug(entry.tvgId || name)}-${n}`;
+        seenId.add(channelId);
         const programId = normalizeProgramIdentity({ externalId: `${channelId}|live`, channelId, title: name, startTime: new Date(day).toISOString() });
         programs.push({
           id: programId,

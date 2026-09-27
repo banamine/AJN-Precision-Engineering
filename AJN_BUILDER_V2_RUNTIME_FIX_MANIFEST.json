@@ -1,0 +1,17 @@
+{
+  "artifact": "AJN-BUILDER-V2-RUNTIME-FIXED-DROP-IN.zip",
+  "purpose": "Google Builder drop-in for AJN V2 runtime-loop verification",
+  "source_package": "AJN-FULL-REBUILD-FIXED-DROP-IN-V2 (1).zip",
+  "source_sha256": "dce90b0c7eb197a418569bea40f5673eb4ae098cf36b63fdca73f541769c7203",
+  "runtime_fix_files": [
+    "src/App.tsx",
+    "src/MinimalPlayer.tsx",
+    "src/components/PlayerView.tsx",
+    "src/components/AudioBridgeStatus.tsx"
+  ],
+  "github_verification_commit": "80d2aa82e2b05bfb71c10ab4867e640a9ca51898",
+  "ci_run": 122,
+  "ci_conclusion": "success",
+  "builder_runtime_verified": false,
+  "note": "Upload this ZIP to Google Builder before Phase 3 runtime testing."
+}

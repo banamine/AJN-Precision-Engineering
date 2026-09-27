@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { LibraryItem, PlayProgramCallback } from '../types';
 import { getCuratedLibraryProjection } from '../services/libraryService';
+import { loadFavorites, saveFavorites } from '../utils/favoritesStore';
 
 interface LibraryViewProps {
   onPlayProgram: PlayProgramCallback;
@@ -32,26 +33,15 @@ const CATEGORIES = [
   { id: 'documentary', label: 'Documentaries' },
 ];
 
-const FAVORITES_STORAGE_KEY = 'ajn.library.favorites';
-
-function loadFavorites(): Set<string> {
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(FAVORITES_STORAGE_KEY) ?? '[]');
-    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []);
-  } catch {
-    return new Set<string>();
-  }
-}
-
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const curatedLibraryItems = useMemo(() => getCuratedLibraryProjection(), []);
   // Favorites are stored as LibraryItem ids (=== Program.id); the library stays the source of truth.
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(loadFavorites);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => loadFavorites());
   const [showFavorites, setShowFavorites] = useState(false);
   useEffect(() => {
-    try { window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favoriteIds])); } catch { /* session-only if storage is blocked */ }
+    saveFavorites(favoriteIds); // false = storage blocked/full: favorites last this session only
   }, [favoriteIds]);
   const toggleFavorite = (id: string) => setFavoriteIds((cur) => {
     const next = new Set(cur);

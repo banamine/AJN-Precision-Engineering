@@ -1,0 +1,51 @@
+diff --git a/src/use-audio-normalization.ts b/src/use-audio-normalization.ts
+--- a/src/use-audio-normalization.ts
++++ b/src/use-audio-normalization.ts
+@@
+-      ctx.addEventListener("statechange", () => {
++      const handleContextStateChange = () => {
+         const suspended = ctx.state !== "running";
+         setAudioContextSuspended(suspended);
+@@
+-      });
++      };
++      ctx.addEventListener("statechange", handleContextStateChange);
++      (ctx as AudioContext & { __ajnStateChangeHandler?: () => void }).__ajnStateChangeHandler = handleContextStateChange;
+@@
+   useEffect(() => {
+     return () => {
+       samplingActiveRef.current = false;
+       clearTimeout(sampleTimerRef.current);
+       clearInterval(sampleIntervalRef.current);
+
+       const ctx = audioCtxRef.current;
+       if (!ctx) return;
+
++      const stateHandler = (ctx as AudioContext & { __ajnStateChangeHandler?: () => void }).__ajnStateChangeHandler;
++      if (stateHandler) {
++        ctx.removeEventListener("statechange", stateHandler);
++        delete (ctx as AudioContext & { __ajnStateChangeHandler?: () => void }).__ajnStateChangeHandler;
++      }
++
++      try { sourceNodeRef.current?.disconnect(); } catch {}
++      try { preAnalyserRef.current?.disconnect(); } catch {}
++      try { diagnosticsAnalyserRef.current?.disconnect(); } catch {}
++      try { gainNodeRef.current?.disconnect(); } catch {}
++      try { masterVolumeNodeRef.current?.disconnect(); } catch {}
++      try { compressorNodeRef.current?.disconnect(); } catch {}
++
++      sourceNodeRef.current = null;
++      connectedElementRef.current = null;
++      preAnalyserRef.current = null;
++      diagnosticsAnalyserRef.current = null;
++      gainNodeRef.current = null;
++      masterVolumeNodeRef.current = null;
++      compressorNodeRef.current = null;
++      bridgeReadyRef.current = false;
++      setBridgeReady(false);
++      setDiagnosticsReady(false);
++
++      audioCtxRef.current = null;
++      void ctx.close().catch(() => {});
+     };
+   }, []);

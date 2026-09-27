@@ -1,0 +1,24 @@
+{
+  "type": "AJN surgical Builder drop-in",
+  "purpose": "Regex search-and-replace for legacy AJN video filenames",
+  "branch": "feat/ajn-legacy-filename-rename",
+  "commit": "da080304f205954a33b4f50664745f605d8878a9",
+  "ci_run": 123,
+  "ci_conclusion": "success",
+  "files": [
+    "src/utils/ajnTitleNormalizer.ts",
+    "src/utils/ajnTitleNormalizer.test.ts",
+    "ajnResourceService.ts"
+  ],
+  "examples": [
+    {
+      "input": "VIDEO - 20260729_Wed_WarRoom-Hr3.mp4",
+      "output": "WAR-ROOM 2026-07-29_Wed_WarRoom-Hr3.mp4"
+    },
+    {
+      "input": "VIDEO - 20260624_Wed_AlexJones-Hr1.mp4",
+      "output": "ALEX-JONES 2026-06-24_Wed_AlexJones-Hr1.mp4"
+    }
+  ],
+  "runtime_verified": false
+}

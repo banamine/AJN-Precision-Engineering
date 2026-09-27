@@ -1,0 +1,37 @@
+{
+  "type": "AJN Builder functional surgical drop-in",
+  "source_commit": "f5a7a0969e08a11de42a4ab08bc23366f46bd328",
+  "branch": "fix/ajn-resource-identity-rename-v2",
+  "pull_request": 36,
+  "ci_run": 124,
+  "ci_conclusion": "success",
+  "runtime_verified": false,
+  "purpose": "Fix the actual AJNHourlyVideo path shown in Builder screenshots: legacy filename rename, deterministic playback IDs, and cache bypass.",
+  "files": [
+    {
+      "path": "ajnResourceService.ts",
+      "bytes": 11868,
+      "sha256": "0826f4b8c39dd4807916295c00da7d1f6eb175a0ec42db647466c9729d13b5fa"
+    },
+    {
+      "path": "server-patch.ts",
+      "bytes": 4896,
+      "sha256": "40c32567748850aba2016ac6f797f7e1fd3adc20b50d60de1bed02615b87fab3"
+    },
+    {
+      "path": "src/components/AjnResourcePanel.tsx",
+      "bytes": 8297,
+      "sha256": "eecc071acd8ef6d020d985834166d34efbdc810c88a018d676465e3194bc3dbf"
+    },
+    {
+      "path": "src/utils/ajnTitleNormalizer.test.ts",
+      "bytes": 2232,
+      "sha256": "a9743a1898c1126392a7028d0ee9b62131185ae3eda812686bf6094c11c7ab50"
+    },
+    {
+      "path": "src/utils/ajnTitleNormalizer.ts",
+      "bytes": 2147,
+      "sha256": "59cb0a67bf5cdb7b2a40e9986c38de708c8721ec94d55aebcaaf0bc34d4228ce"
+    }
+  ]
+}

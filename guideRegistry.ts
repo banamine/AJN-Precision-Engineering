@@ -5,8 +5,8 @@ import {
 import { tryResolveArchiveMediaCandidates } from './channels';
 import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './server/sources/archiveNews';
 import { runSources } from './server/sources/runner';
+import { buildRushChannel, buildOtrChannel } from './server/audioChannels';
 import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
-import newsSnapshotFile from './src/data/newsSnapshot.json';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
 import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
@@ -123,9 +123,7 @@ const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
       enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:3 },
     m3uContent:`#EXTM3U
 #EXTINF:-1 tvg-id="nasa-audio-vault" tvg-name="NASA Spaceflight Audio" group-title="Aerospace & Science",NASA Spaceflight Audio
-/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3
-#EXTINF:-1 tvg-id="radio-drama-theatre" tvg-name="Old Time Radio Theatre" group-title="Audio Drama",Old Time Radio Theatre
-/download/OTRR_Mercury_Theater_on_the_Air_Singles/Mercury_381030_WarOfTheWorlds.mp3`,
+/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3`,
   },
 ];
 
@@ -297,6 +295,20 @@ export function setHighlightsFetchForTests(impl?:typeof fetch){highlightsFetch=i
 
 /** Classic TV shows from archive.org/download/daily-highlights (folders + M3Us). */
 let highlightsLastGood:ScheduleChannel[]|null=null;
+let highlightsRaw:{fetchedAt:string;programs:Program[]}|null=null;
+/** Raw Classic TV programs for the snapshot generator. */
+export async function exportClassicSnapshot(){
+  await refreshDailyHighlights('classic-tv');
+  if(!highlightsRaw)return null;
+  // The guide lays out at most 60 slots per show, so keep 60 per show and only
+  // the fields the guide and player use (the raw list is ~50 MB).
+  const perShow=new Map<string,number>();
+  const programs=highlightsRaw.programs.filter(p=>{const n=perShow.get(p.channelId)??0;perShow.set(p.channelId,n+1);return n<60;})
+    .map(p=>({id:p.id,guideId:p.guideId,channelId:p.channelId,title:p.title,description:p.description,startTime:0,endTime:0,mediaType:p.mediaType,
+      mediaUrl:p.archivePath??p.mediaUrl,archivePath:p.archivePath,assetId:p.assetId,sourceId:p.sourceId,sourceClass:p.sourceClass,isArchivedSource:p.isArchivedSource,
+      metadata:(p.metadata as any)?.durationSeconds?{durationSeconds:(p.metadata as any).durationSeconds}:undefined}) as Program);
+  return {schema:1,fetchedAt:highlightsRaw.fetchedAt,programs};
+}
 let highlightsRefreshing:Promise<ScheduleChannel[]>|null=null;
 async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>{
   // 40 playlists behind the shared Archive limiter can take over a minute on a
@@ -304,6 +316,7 @@ async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>
   const [r]=await runSources([{contract:dailyHighlightsContract,input:{guideId,fetchImpl:highlightsFetch}}],{timeoutMs:150_000});
   let data:ScheduleChannel[];
   if(r.programs.length){
+    highlightsRaw={fetchedAt:new Date().toISOString(),programs:r.programs};
     data=highlightChannels(r.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:r.status,rejected:r.rejected}));
     highlightsLastGood=data;
   }else if(highlightsLastGood){
@@ -318,6 +331,16 @@ async function refreshDailyHighlights(guideId:string):Promise<ScheduleChannel[]>
 /** Classic TV shows from archive.org/download/daily-highlights (folders + M3Us).
  *  Stale-while-revalidate: never blocks on a refresh once a list exists. */
 async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChannel[]>{
+  // Cold start: open from the packaged snapshot instantly; refresh behind it.
+  if(!highlightsCache&&!highlightsFetch){
+    const mod:any=await import('./src/data/classicSnapshot.json');
+    const snap=(mod.default??mod) as {schema?:number;fetchedAt?:string;programs?:Program[]};
+    if(snap?.schema===1&&Array.isArray(snap.programs)&&snap.programs.length){
+      const data=highlightChannels(snap.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:'snapshot',sourceError:`packaged list from ${snap.fetchedAt}; refreshing`}));
+      highlightsLastGood=data;
+      highlightsCache={data,expiresAt:0};
+    }
+  }
   if(highlightsCache&&Date.now()<highlightsCache.expiresAt)return highlightsCache.data;
   if(!highlightsRefreshing)highlightsRefreshing=refreshDailyHighlights(guideId).finally(()=>{highlightsRefreshing=null;});
   if(highlightsCache)return highlightsCache.data;
@@ -325,6 +348,34 @@ async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChanne
   // the whole Classic TV guide for a minute.
   const loading:ScheduleChannel[]=[{id:'classic-daily-highlights',guideId,name:'Daily Highlights',mediaType:'video' as MediaType,group:'Classic TV',programs:[],sourceStatus:'loading',sourceError:'loading shows from Archive — refresh in a minute'}];
   return Promise.race([highlightsRefreshing,new Promise<ScheduleChannel[]>(r=>setTimeout(()=>r(loading),8000))]);
+}
+
+/* ---------------- Audio & Podcasts: Rush (On This Day) + Old-Time Radio ----------------
+ * Separate collections, separate rules (server/audioChannels.ts). Rebuilt once a
+ * UTC day; stale-while-revalidate so the guide never waits on Archive after the first build. */
+let audioCache:{day:string;data:ScheduleChannel[]}|null=null;
+let audioRefreshing:Promise<ScheduleChannel[]>|null=null;
+async function refreshAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
+  const now=new Date();
+  const [rush,otr]=await Promise.all([
+    buildRushChannel(guideId,now).catch(e=>{console.error('[Audio] Rush',e?.message);return [] as Program[];}),
+    buildOtrChannel(guideId,now).catch(e=>{console.error('[Audio] OTR',e?.message);return [] as Program[];}),
+  ]);
+  const prev=audioCache?.data;
+  const ch=(id:string,name:string,group:string,programs:Program[],mins:number):ScheduleChannel=>programs.length
+    ?{id,guideId,name,mediaType:'audio',group,programs:layoutDailySchedule(programs,mins,now,120),sourceStatus:'ok'}
+    :(prev?.find(c=>c.id===id)??{id,guideId,name,mediaType:'audio',group,programs:[],sourceStatus:'upstream_error',sourceError:'no playable audio resolved from Archive'});
+  const data=[ch('rush-on-this-day','Rush Limbaugh — On This Day','Talk Radio',rush,36),ch('old-time-radio','Old-Time Radio','Old-Time Radio',otr,30)];
+  audioCache={day:now.toISOString().slice(0,10),data};
+  return data;
+}
+async function getAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
+  const today=new Date().toISOString().slice(0,10);
+  if(audioCache?.day===today)return audioCache.data;
+  if(!audioRefreshing)audioRefreshing=refreshAudioChannels(guideId).finally(()=>{audioRefreshing=null;});
+  if(audioCache)return audioCache.data;
+  const loading=(id:string,name:string,group:string):ScheduleChannel=>({id,guideId,name,mediaType:'audio',group,programs:[],sourceStatus:'loading',sourceError:'loading shows from Archive — refresh in a minute'});
+  return Promise.race([audioRefreshing,new Promise<ScheduleChannel[]>(r=>setTimeout(()=>r([loading('rush-on-this-day','Rush Limbaugh — On This Day','Talk Radio'),loading('old-time-radio','Old-Time Radio','Old-Time Radio')]),8000))]);
 }
 
 /* ---------------- Cable TV news: snapshot first, quiet refresh ----------------
@@ -341,9 +392,11 @@ let cableNewsRefreshing:Promise<void>|null=null;
 let newsTimer:ReturnType<typeof setInterval>|null=null;
 export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;newsState=null;}
 
-function seedFromSnapshot(){
+async function seedFromSnapshot(){
   if(newsState)return;
-  const snap=validateNewsSnapshot(newsSnapshotFile);
+  const mod:any=await import('./src/data/newsSnapshot.json');
+  if(newsState)return;
+  const snap=validateNewsSnapshot(mod.default??mod);
   if(!snap||cableNewsFetch)return;
   newsState={version:snap.version,fetchedAt:snap.fetchedAt,fingerprint:newsFingerprint(snap.channels),newShows:[],
     channels:new Map(snap.channels.map(c=>[c.id,{programs:c.programs,status:'snapshot',error:`packaged news from ${snap.fetchedAt}`}]))};
@@ -383,8 +436,8 @@ function startNewsTimer(guideId:string){
   if(newsState&&Date.now()-Date.parse(newsState.fetchedAt)>NEWS_REFRESH_MS)setTimeout(()=>void kickNewsRefresh(guideId),30_000).unref?.();
 }
 
-export function getNewsVersion(){
-  seedFromSnapshot();
+export async function getNewsVersion(){
+  await seedFromSnapshot();
   return newsState?{version:newsState.version,fetchedAt:newsState.fetchedAt,refreshing:!!cableNewsRefreshing,newShows:newsState.newShows}
     :{version:0,fetchedAt:null,refreshing:!!cableNewsRefreshing,newShows:[]};
 }
@@ -397,7 +450,7 @@ export function exportNewsSnapshot():NewsSnapshot|null{
 }
 
 async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
-  seedFromSnapshot();
+  await seedFromSnapshot();
   startNewsTimer(guideId);
   if(!newsState)await kickNewsRefresh(guideId); // no snapshot at all: first fetch must wait
   const now=new Date();
@@ -491,6 +544,9 @@ async function getScheduleForGuideRaw(guideId='cable-tv'):Promise<ScheduleChanne
     const highlights=await getDailyHighlightsChannels(guideId);
     return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))},...highlights];
   }
+  if(guideId==='audio-podcasts'){
+    return [...(await getAudioChannels(guideId)),...genericChannels(guideId)];
+  }
   if(guideId==='movies-classics-vault'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');
     return [{
@@ -507,6 +563,9 @@ async function getScheduleForGuideRaw(guideId='cable-tv'):Promise<ScheduleChanne
     return [{id:'nova-wonders',guideId,name:'NOVA Science',mediaType:'video',group:'Documentaries',programs:layoutDailySchedule(programs,55)},
       ...getDocumentaryChannels().map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Documentaries',logo:ch.logo,programs:layoutDailySchedule(ch.programs,50)}))];
   }
+  return genericChannels(guideId);
+}
+function genericChannels(guideId:string):ScheduleChannel[]{
   // Whole-day block anchored to 00:00 UTC. Using "now" here gave each request a new
   // program identity, so the program store grew on every /api/schedule call.
   const now=new Date();

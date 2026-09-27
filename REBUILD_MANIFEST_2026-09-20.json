@@ -1,0 +1,15 @@
+{
+  "release_date": "2026-09-20",
+  "source_archive": "ajn-precision-engineering.zip",
+  "source_sha256": "4acccae6233c42a72dc364b0c16576d87c23c4f1975b02d698653e8929464f7a",
+  "source_entries": 1189,
+  "rebuild_type": "full-archive-rebuild-with-canonical-genre-overlay",
+  "canonical_root_overlay": [
+    "package.json",
+    ".github/workflows/ajn-ci.yml",
+    "docs/GENRE_EXPANSION_SKILL.md",
+    "src/services/genreExpansion.ts",
+    "test-genre-expansion.js"
+  ],
+  "note": "Complete supplied archive preserved; finalized genre-expansion files overlaid at canonical root paths. Historical/drop-in directories retained."
+}

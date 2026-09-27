@@ -2,28 +2,49 @@
  * ("what files, how long"). The index is a bundled file built offline by
  * scripts/build-rush-index.ts; nothing here searches Archive at runtime.
  * Durations are resolved only for an episode someone asks for, then cached. */
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+// Namespace imports: the frontend bundle pulls guideRegistry in, and Vite stubs
+// node builtins with an empty module that has no named exports.
+import * as fs from 'node:fs';
+import * as nodePath from 'node:path';
 import { archiveApiFetch } from './archiveLimiter';
-import rushIndexFile from '../src/data/rushIndex.json';
 
 export interface RushIndexEntry { id: string; date: string; year: number; }
 export interface RushTrack { file: string; durationSeconds: number; size?: number; format?: string; archivePath: string; mediaUrl: string; }
 interface CacheEntry { resolvedAt: string; files: Array<Omit<RushTrack, 'archivePath' | 'mediaUrl'>>; }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-export const rushIndex: RushIndexEntry[] = (rushIndexFile as RushIndexEntry[])
-  .filter((e) => e && typeof e.id === 'string' && DATE.test(e.date));
+// Loaded lazily (dynamic import): the frontend bundle pulls guideRegistry in,
+// and a static import would ship the whole index to every browser.
+let rushIndexCache: RushIndexEntry[] | null = null;
+export async function getRushIndex(): Promise<RushIndexEntry[]> {
+  if (!rushIndexCache) {
+    const mod: any = await import('../src/data/rushIndex.json');
+    rushIndexCache = ((mod.default ?? mod) as RushIndexEntry[]).filter((e) => e && typeof e.id === 'string' && DATE.test(e.date));
+  }
+  return rushIndexCache;
+}
 
 // Durable on a PC/dev box; on Cloud Run it lives only as long as the instance.
-const CACHE_FILE = process.env.RUSH_CACHE_FILE || join(process.cwd(), '.cache', 'rush-durations.json');
-let cache: Record<string, CacheEntry> = {};
-try { cache = JSON.parse(readFileSync(CACHE_FILE, 'utf8')); } catch { cache = {}; }
-function saveCache() {
+// Nothing here may run at import time: the browser bundle also evaluates this
+// module (via guideRegistry), where `process` and `fs` do not exist — a top-level
+// process.cwd() crashed the whole page on "Initializing AJN System".
+let CACHE_FILE = '';
+let cache: Record<string, CacheEntry> | null = null;
+function loadCache(): Record<string, CacheEntry> {
+  if (cache) return cache;
+  cache = {};
   try {
-    mkdirSync(join(CACHE_FILE, '..'), { recursive: true });
-    writeFileSync(`${CACHE_FILE}.tmp`, JSON.stringify(cache));
-    renameSync(`${CACHE_FILE}.tmp`, CACHE_FILE);
+    CACHE_FILE = process.env.RUSH_CACHE_FILE || nodePath.join(process.cwd(), '.cache', 'rush-durations.json');
+    cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
+  } catch { /* first run, or not on a server */ }
+  return cache!;
+}
+function saveCache() {
+  if (!CACHE_FILE) return;
+  try {
+    fs.mkdirSync(nodePath.join(CACHE_FILE, '..'), { recursive: true });
+    fs.writeFileSync(`${CACHE_FILE}.tmp`, JSON.stringify(cache));
+    fs.renameSync(`${CACHE_FILE}.tmp`, CACHE_FILE);
   } catch (e) { console.warn('[Rush] duration cache not saved:', (e as Error).message); }
 }
 
@@ -44,7 +65,7 @@ const track = (id: string, f: CacheEntry['files'][number]): RushTrack => {
 
 /** Files + durations for one Archive item: cache first, Archive metadata on a miss. */
 export async function resolveRushItem(id: string): Promise<{ id: string; source: 'cache' | 'archive'; resolvedAt: string; tracks: RushTrack[] }> {
-  const hit = cache[id];
+  const hit = loadCache()[id];
   if (hit) { rushStats.cacheHits++; return { id, source: 'cache', resolvedAt: hit.resolvedAt, tracks: hit.files.map((f) => track(id, f)) }; }
   rushStats.archiveCalls++;
   const r = await fetchImpl(`https://archive.org/metadata/${encodeURIComponent(id)}`);
@@ -60,11 +81,11 @@ export async function resolveRushItem(id: string): Promise<{ id: string; source:
     .sort((a: any, b: any) => a.file.localeCompare(b.file, undefined, { numeric: true }));
   if (!files.length) throw Object.assign(new Error('no MP3 with a known duration'), { status: 422 });
   const entry = { resolvedAt: new Date().toISOString(), files };
-  cache[id] = entry;
+  loadCache()[id] = entry;
   saveCache();
   return { id, source: 'archive', resolvedAt: entry.resolvedAt, tracks: files.map((f: any) => track(id, f)) };
 }
 
-export function rushEpisodesOn(date: string): RushIndexEntry[] {
-  return DATE.test(date) ? rushIndex.filter((e) => e.date === date) : [];
+export async function rushEpisodesOn(date: string): Promise<RushIndexEntry[]> {
+  return DATE.test(date) ? (await getRushIndex()).filter((e) => e.date === date) : [];
 }

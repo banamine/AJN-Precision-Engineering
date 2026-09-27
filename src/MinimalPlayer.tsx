@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { bridgeSrc, corsModeFor } from "./utils/mediaRoute";
 import Hls from "hls.js";
 import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
-import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
 import { useAudioNormalization } from "./use-audio-normalization";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 
@@ -41,18 +42,18 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
-  const [activeSrc, setActiveSrc] = useState(src);
+  const [activeSrc, setActiveSrc] = useState(() => bridgeSrc(src));
   const [resumePosition, setResumePosition] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const isVideo = mediaType === "video";
-  const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "");
+  const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "") || (activeSrc ?? "").startsWith("/api/hls/");
   const hlsRef = useRef<Hls | null>(null);
   // Only request CORS for our own origin (the Archive proxy). Hosts such as
   // archive.alexjoneslive.com send no CORS headers, so crossOrigin={corsMode}
   // makes the browser refuse the file outright. Without it the file plays and
   // the audio bridge falls back to native output.
-  const corsMode = (activeSrc ?? "").startsWith("/") ? "anonymous" : undefined;
+  const corsMode = corsModeFor(activeSrc, isHls);
   // Read in effects without re-running them: toggling mute must not reload media.
   const isMutedRef = useRef(isMuted);
   isMutedRef.current = isMuted;
@@ -60,7 +61,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // it (a re-run calls load(), which aborts the play() in flight).
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
-  const { diagnosticsAnalyserRef } = useAudioNormalization(
+  const { diagnosticsAnalyserRef, resumeAudioContext } = useAudioNormalization(
     mediaRef,
     isVideo ? "video" : "audio",
     activeSrc,
@@ -118,7 +119,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent };
 
   useEffect(() => {
-    setActiveSrc(src);
+    setActiveSrc(bridgeSrc(src));
     setStatusText("Loading…");
     setIsPlaying(false);
     setResumePosition(null);
@@ -135,10 +136,14 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     // Set the property before attempting autoplay. This is required by
     // browser autoplay policy and avoids relying on JSX timing alone.
     media.muted = isMutedRef.current;
+    if (!isHls && activeSrc && !media.getAttribute("src")) {
+      media.src = activeSrc;
+    }
     media.load();
 
     const attemptAutoplay = async () => {
-      if (!isVideo || !media.paused) return;
+      if (!media.paused) return;
+      resumeAudioContext();
       try {
         await media.play();
         if (!media.paused) fx().reportPlaying();
@@ -269,7 +274,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       // Element unmounted or swapped (video <-> audio): release its network/decoder
       // so exactly one playback pipeline remains. Not on a plain src change —
       // React has already set the new src on this same element.
-      if (mediaRef.current !== media) {
+      if (mediaRef.current !== media && !media.isConnected) {
         media.pause();
         media.removeAttribute("src");
         media.load();
@@ -285,7 +290,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   useEffect(() => {
     const media = mediaRef.current;
     if (!media || !isHls) return;
-    if (media.canPlayType("application/vnd.apple.mpegurl")) {
+    // Prefer hls.js wherever it works. Recent desktop Chrome also claims native
+    // HLS, but its demuxer fails on ad-stitched, AES-128 streams (Pluto:
+    // PipelineStatus::DEMUXER_ERROR_COULD_NOT_PARSE). Native only as fallback (iOS).
+    if (!Hls.isSupported() && media.canPlayType("application/vnd.apple.mpegurl")) {
       media.src = activeSrc;
       return;
     }
@@ -320,7 +328,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     const ms = typeof navigator !== "undefined" ? navigator.mediaSession : undefined;
     if (!ms || !activeSrc) return;
     try {
-      ms.metadata = new MediaMetadata({ title: title || "AJN", artist: nowPlaying?.channelId ?? "", album: "AJN Precision Engineering" });
+      ms.metadata = new MediaMetadata({ title: title || "AJN", artist: nowPlaying?.subtitle || nowPlaying?.channelId || "", album: "AJN Precision Engineering" });
     } catch { /* MediaMetadata unsupported */ }
     const seek = (delta: number) => { const m = mediaRef.current; if (m && Number.isFinite(m.duration)) m.currentTime = Math.max(0, Math.min(m.duration, m.currentTime + delta)); };
     const handlers: Array<[MediaSessionAction, MediaSessionActionHandler]> = [
@@ -333,11 +341,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     ];
     for (const [action, fn] of handlers) { try { ms.setActionHandler(action, fn); } catch { /* action unsupported */ } }
     return () => { for (const [action] of handlers) { try { ms.setActionHandler(action, null); } catch { /* ignore */ } } };
-  }, [activeSrc, title, nowPlaying?.channelId]);
+  }, [activeSrc, title, nowPlaying?.channelId, nowPlaying?.subtitle]);
 
   const play = async () => {
     const media = mediaRef.current;
     if (!media) return;
+    resumeAudioContext();
     setStatusText("Starting playback…");
     try {
       await media.play();
@@ -386,6 +395,61 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     setIsMuted(nextMuted);
   };
 
+  // Fullscreen: the player container where the Fullscreen API exists (desktop,
+  // Android); the video element's own fullscreen on iOS Safari; otherwise nothing.
+  const toggleFullscreen = () => {
+    const el = containerRef.current;
+    const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+    if (doc.fullscreenElement || doc.webkitFullscreenElement) {
+      (doc.exitFullscreen ?? doc.webkitExitFullscreen)?.call(doc);
+      return;
+    }
+    const anyEl = el as (HTMLElement & { webkitRequestFullscreen?: () => void }) | null;
+    if (anyEl?.requestFullscreen) { anyEl.requestFullscreen().catch(() => {}); return; }
+    if (anyEl?.webkitRequestFullscreen) { anyEl.webkitRequestFullscreen(); return; }
+    const v = mediaRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
+    v?.webkitEnterFullscreen?.();
+  };
+  const fsRef = useRef(toggleFullscreen);
+  fsRef.current = toggleFullscreen;
+  useEffect(() => {
+    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement && containerRef.current && document.fullscreenElement === containerRef.current));
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
+  // Desktop keyboard shortcuts. Never with Ctrl/Alt/Meta/Shift (browser and OS
+  // shortcuts win), never while typing or on a focused control, and only while
+  // the player is actually on screen (it stays mounted, hidden, on other pages).
+  const keyRef = useRef({ play, pause, toggleMute, isPlaying });
+  keyRef.current = { play, pause, toggleMute, isPlaying };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(t.tagName))) return;
+      const box = containerRef.current;
+      const media = mediaRef.current;
+      if (!box || !media || box.offsetParent === null && !document.fullscreenElement) return;
+      const k = keyRef.current;
+      const seekable = Number.isFinite(media.duration) && media.duration > 0;
+      switch (e.key) {
+        case " ": case "k": case "K":
+          k.isPlaying ? k.pause() : void k.play(); break;
+        case "m": case "M": k.toggleMute(); break;
+        case "f": case "F": if (isVideo) fsRef.current(); else return; break;
+        case "ArrowLeft": if (!seekable) return; media.currentTime = Math.max(0, media.currentTime - 10); break;
+        case "ArrowRight": if (!seekable) return; media.currentTime = Math.min(media.duration - 0.5, media.currentTime + 10); break;
+        case "ArrowUp": media.volume = Math.min(1, Math.round((media.volume + 0.1) * 10) / 10); setVolume(media.volume); break;
+        case "ArrowDown": media.volume = Math.max(0, Math.round((media.volume - 0.1) * 10) / 10); setVolume(media.volume); break;
+        default: return;
+      }
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isVideo]);
+
   return (
     <div ref={containerRef} className={`relative ${isVideo ? "aspect-video w-full bg-black" : "w-full rounded-xl bg-neutral-950 p-4"}`}>
       {isVideo ? (
@@ -411,6 +475,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             if (node) node.muted = isMuted;
           }}
           src={activeSrc}
+          autoPlay
           muted={isMuted}
           crossOrigin={corsMode}
           preload="metadata"
@@ -429,6 +494,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       <div className="mt-2 flex items-center gap-2 bg-black/60 p-3">
         <button onClick={isPlaying ? pause : play} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause /> : <Play />}</button>
         <button onClick={toggleMute} aria-label={isMuted ? "Unmute" : "Mute"}>{isMuted ? <VolumeX /> : <Volume2 />}</button>
+        {isVideo && <button onClick={toggleFullscreen} aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"} title="Fullscreen (F)">{isFullscreen ? <Minimize /> : <Maximize />}</button>}
         <span className="text-xs text-white">{title ? `${title} — ` : ""}{statusText}</span>
       </div>
       <div className="mt-3">
