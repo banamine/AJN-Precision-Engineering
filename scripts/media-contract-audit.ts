@@ -123,21 +123,55 @@ async function auditLibrary(report: Report): Promise<void> {
 }
 
 function auditHardcodedArchiveLinks(report: Report): void {
-  const archiveScript = path.join(process.cwd(), "scripts", "check-archive-links.ts");
-  if (!fs.existsSync(archiveScript)) return;
+  const archiveOut = path.join(out, "hardcoded-links");
+  fs.mkdirSync(archiveOut, { recursive: true });
 
-  const links = fs.readFileSync(archiveScript, "utf8")
-    .match(/\/download\/[^'"\`\s)]+/g) ?? [];
+  const command = process.platform === "win32" ? "npx.cmd" : "npx";
+  const result = spawnSync(
+    command,
+    ["tsx", "scripts/check-archive-links.ts"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 5 * 60 * 1000,
+      env: { ...process.env },
+    },
+  );
 
-  for (const link of [...new Set(links)]) {
+  const stdout = result.stdout ?? "";
+  const lines = stdout.split(/\r?\n/).filter(Boolean);
+
+  for (const line of lines) {
+    const match = /^(OK |BAD )(.+?)(?:\s+<- .*)?$/.exec(line);
+    if (!match) continue;
+
+    const pass = match[1].trim() === "OK";
+    const link = match[2].trim();
+    if (!pass) report.status = "WARN";
+
     report.items.push({
       scope: "archive-hardcoded",
       id: link,
-      status: "PASS",
-      reason: "covered_by_existing_check_archive_links",
+      url: archiveUrl(link) ?? undefined,
+      status: pass ? "PASS" : "WARN",
+      reason: pass ? undefined : "hardcoded_link_broken",
     });
   }
+
+  if (result.status !== 0 && !report.items.some((item) => item.scope === "archive-hardcoded")) {
+    report.status = "WARN";
+    report.items.push({
+      scope: "archive-hardcoded",
+      id: "check-archive-links",
+      status: "WARN",
+      reason: result.error ? \`check_process_error: \${result.error.message}\` : "check_archive_links_failed",
+    });
+  }
+
+  if (result.stderr) console.error(result.stderr.trim());
 }
+
 
 function auditLiveTv(report: Report): void {
   const liveOut = path.join(out, "live-tv");
