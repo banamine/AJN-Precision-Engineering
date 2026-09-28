@@ -26,7 +26,8 @@ const decadeLabel = (d: number) => (d === 0 ? 'Undated' : `${d}s`);
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [heat, setHeat] = useState<HeatCat[] | null>(null);
   const [heatError, setHeatError] = useState<string | null>(null);
-  const [category, setCategory] = useState<string>('');
+  // Opened from a shortcut (e.g. Home's "Apollo Mission Archive"): start on that category once.
+  const [category, setCategory] = useState<string>(() => { try { const c = sessionStorage.getItem('ajn.library.open') ?? ''; sessionStorage.removeItem('ajn.library.open'); return c; } catch { return ''; } });
   const [decade, setDecade] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');

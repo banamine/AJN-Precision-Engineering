@@ -16,8 +16,11 @@ import { groupLibraryResults, findLibrarySeries, type LibrarySeries } from './li
 export { groupLibraryResults, findLibrarySeries };
 export type { LibrarySeries };
 
-export interface LibraryCategory { id: string; label: string; mediaType: 'video' | 'audio'; query?: string; guide?: { guideId: string; channels: (ch: ScheduleChannel) => boolean } }
+export interface LibraryCategory { id: string; label: string; mediaType: 'video' | 'audio' | 'mixed'; query?: string; rows?: number; guide?: { guideId: string; channels: (ch: ScheduleChannel) => boolean } }
 export const LIBRARY_CATEGORIES: LibraryCategory[] = [
+  // Apollo: the "Apollo N Highlights" set plus Apollo items in NASA collections, video AND audio.
+  // A plain full-text search ("Apollo 9 Highlights") returns ~250 hits, most not Apollo at all.
+  { id: 'apollo', label: 'Apollo Missions', mediaType: 'mixed', rows: 350, query: 'mediatype:(movies OR audio) AND ((title:(apollo) AND title:(highlights)) OR (collection:(nasa OR nasaaudiocollection OR spaceflight) AND title:(apollo)))' },
   { id: 'newsroom', label: 'Newsroom Feeds', mediaType: 'video', guide: { guideId: 'cable-tv', channels: () => true } },
   { id: 'aerospace', label: 'Aerospace & Science', mediaType: 'video', guide: { guideId: 'science-documentaries', channels: (c) => c.id === 'nasa-missions' || c.id === 'nova-wonders' } },
   { id: 'classic-cinema', label: 'Classic Cinema', mediaType: 'video', query: 'collection:feature_films AND mediatype:movies' },
@@ -51,12 +54,13 @@ const clean = (s: unknown, n = 240) => String(Array.isArray(s) ? s[0] : s ?? '')
 
 /** Search result + item metadata -> index record (or an unsupported marker). */
 export function recordFromMetadata(cat: LibraryCategory, doc: any, meta: any, now = new Date()): IndexRecord {
-  const m = selectPlayableFile(doc.identifier, meta?.files, meta?.metadata?.runtime, cat.mediaType);
+  const mediaType: 'video' | 'audio' = cat.mediaType === 'mixed' ? (String(doc.mediatype ?? meta?.metadata?.mediatype) === 'audio' ? 'audio' : 'video') : cat.mediaType;
+  const m = selectPlayableFile(doc.identifier, meta?.files, meta?.metadata?.runtime, mediaType);
   const year = yearOf(doc.year) ?? yearOf(doc.date) ?? yearOf(meta?.metadata?.date) ?? yearOf(meta?.metadata?.year);
   return {
     id: `ia-${doc.identifier}`, identifier: doc.identifier,
     title: clean(doc.title ?? meta?.metadata?.title, 160) ?? doc.identifier, description: clean(meta?.metadata?.description ?? doc.description),
-    categoryIds: [cat.id], mediaType: cat.mediaType, year, decade: year ? Math.floor(year / 10) * 10 : undefined,
+    categoryIds: [cat.id], mediaType, year, decade: year ? Math.floor(year / 10) * 10 : undefined,
     path: m.canonicalPath, file: m.filename, format: m.format, dur: m.durationSeconds, durSrc: m.durationSource, durEst: m.durationEstimated,
     availability: m.availability, foundBy: `${cat.id}: ${cat.query}`, why: m.selectedBecause, indexedAt: now.toISOString(),
   };
@@ -195,8 +199,8 @@ export async function probeRecord(r: IndexRecord): Promise<LibraryAvailability> 
 
 let metaFetch: typeof fetch = archiveApiFetch;
 export function setLibraryMetaFetchForTests(f?: typeof fetch) { metaFetch = f ?? archiveApiFetch; }
-export const searchUrl = (c: LibraryCategory, rows = ITEMS_PER_SEARCH) =>
-  `https://archive.org/advancedsearch.php?q=${encodeURIComponent(c.query!)}&fl[]=identifier&fl[]=title&fl[]=date&fl[]=year&fl[]=description&rows=${rows}&page=1&sort[]=downloads+desc&output=json`;
+export const searchUrl = (c: LibraryCategory, rows = c.rows ?? ITEMS_PER_SEARCH) =>
+  `https://archive.org/advancedsearch.php?q=${encodeURIComponent(c.query!)}&fl[]=identifier&fl[]=title&fl[]=date&fl[]=year&fl[]=description&fl[]=mediatype&rows=${rows}&page=1&sort[]=downloads+desc&output=json`;
 
 /** Re-run one category's search; inspect up to `maxNew` identifiers not yet indexed. */
 export async function topUpCategory(c: LibraryCategory, maxNew = 15): Promise<number> {

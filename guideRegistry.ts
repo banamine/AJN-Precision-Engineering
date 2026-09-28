@@ -94,9 +94,9 @@ const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
 #EXTINF:-1 tvg-id="fox-news" tvg-name="Fox News" tvg-logo="https://archive.org/services/img/FOXNEWSW" group-title="News",Fox News
 /download/FOXNEWSW_20260903_060000_Hannity/FOXNEWSW_20260903_060000_Hannity.mp4?start=0&end=300
 #EXTINF:-1 tvg-id="cnn" tvg-name="CNN" tvg-logo="https://archive.org/services/img/CNNW" group-title="News",CNN
-/download/CNNW_20240901_180000_The_Situation_Room/CNNW_20240901_180000_The_Situation_Room.mp4?start=0&end=300
+/download/CNNW_20260925_000000_Anderson_Cooper_360/CNNW_20260925_000000_Anderson_Cooper_360.mp4?exact=1&start=0&end=282
 #EXTINF:-1 tvg-id="msnbc" tvg-name="MSNBC" tvg-logo="https://archive.org/services/img/MSNBCW" group-title="News",MSNBC
-/download/MSNBCW_20240901_180000_The_Beat_With_Ari_Melber/MSNBCW_20240901_180000_The_Beat_With_Ari_Melber.mp4?start=0&end=300`,
+/download/MSNOW_20260925_000000_All_in_With_Chris_Hayes/MSNOW_20260925_000000_All_in_With_Chris_Hayes.mp4?exact=1&start=0&end=282`,
   },
   {
     playlist: { id:'playlist-tvshows', name:'Classic TV Series & Serials',
@@ -104,9 +104,9 @@ const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
       enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:2 },
     m3uContent:`#EXTM3U
 #EXTINF:-1 tvg-id="classic-tv-serials" tvg-name="Classic TV Serials" group-title="TV Shows",Classic TV Serials
-/download/FlashGordonConquersTheUniverse1940_Chapter1/FlashGordonConquersTheUniverse1940_Chapter1_512kb.mp4
+/download/flash_gordon_ep1/flash_gordon_chapter_01_512kb.mp4
 #EXTINF:-1 tvg-id="vintage-broadcasts" tvg-name="Vintage Broadcast Network" group-title="TV Shows",Vintage Broadcast Network
-/download/SherlockHolmesTheSecretWeapon1942/Sherlock_Holmes_Secret_Weapon_512kb.mp4`,
+/download/SherlockHolmesAndTheSecretWeapon1943/SherlockHolmesAndTheSecretWeapon1943_512kb.mp4`,
   },
   {
     playlist: { id:'playlist-movies', name:'Public Domain Cinema Classics',
@@ -114,9 +114,9 @@ const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
       enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:2 },
     m3uContent:`#EXTM3U
 #EXTINF:-1 tvg-id="cinema-vault" tvg-name="Cinema Classics Vault" group-title="Movies",Cinema Classics Vault
-/download/NightOfTheLivingDead/Night_of_the_Living_Dead_512kb.mp4
+/download/night_of_the_living_dead_dvd/Night.mp4
 #EXTINF:-1 tvg-id="prelinger-reels" tvg-name="Prelinger Archive Cinema" group-title="Movies",Prelinger Archive Cinema
-/download/HisGirlFriday1940/His_Girl_Friday_512kb.mp4`,
+/download/HisGirlFriday1940/seqhisgirlfridayfull1d_512kb.mp4`,
   },
   {
     playlist: { id:'playlist-audio-radio', name:'Radio & Audio Vaults',
@@ -124,7 +124,7 @@ const INITIAL_PLAYLISTS: { playlist: Playlist; m3uContent: string }[] = [
       enabled:true, lastSyncedAt:new Date().toISOString(), syncStatus:'synced', itemCount:3 },
     m3uContent:`#EXTM3U
 #EXTINF:-1 tvg-id="nasa-audio-vault" tvg-name="NASA Spaceflight Audio" group-title="Aerospace & Science",NASA Spaceflight Audio
-/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3`,
+/download/Apollo11AudioHighlights/Apollo11Highlights.mp3`,
   },
 ];
 
