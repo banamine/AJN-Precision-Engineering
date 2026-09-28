@@ -3,7 +3,7 @@ import { Play, Search, AlertCircle, ShieldCheck, Video, RefreshCw, FileText } fr
 import { ProbeResult } from '../types';
 
 const SAMPLE_PATHS = [
-  { label: 'NASA Apollo 11 Clip', path: '/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3' },
+  { label: 'NASA Apollo 11 Clip', path: '/download/Apollo11AudioHighlights/Apollo11Highlights.mp3' },
   { label: 'Big Buck Bunny (Trailer MP4)', path: '/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4' },
   { label: 'Archive Details Metadata', path: '/metadata/BigBuckBunny_328' },
   { label: 'Traversal Test (Should Reject 400)', path: '/../../etc/passwd' },

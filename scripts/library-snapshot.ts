@@ -43,7 +43,7 @@ async function main() {
   const stats: Record<string, { found: number; kept: number; unsupported: number; noMeta: number; estimated: number }> = {};
   for (const c of LIBRARY_CATEGORIES.filter((c) => c.query && (!only || only.has(c.id)))) {
     const s = (stats[c.id] = { found: 0, kept: 0, unsupported: 0, noMeta: 0, estimated: 0 });
-    const res = await json(searchUrl(c, ITEMS_PER_SEARCH));
+    const res = await json(searchUrl(c));
     const docs: any[] = res?.response?.docs ?? [];
     s.found = docs.length;
     process.stdout.write(`${c.label.padEnd(26)} ${String(docs.length).padStart(3)} found `);

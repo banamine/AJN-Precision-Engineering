@@ -129,5 +129,16 @@ assert.equal(L.queryLibrary({ category: 'scifi-horror' }).totalItems, 2);
   const series = out.filter((x: any) => x.type === 'series');
   assert.deepEqual(series.map((x: any) => [x.title, x.episodeCount]), [['The Beverly Hillbillies', 2]], 'only the real show groups; display title keeps its case');
 }
+
+// Mixed video+audio category (Apollo): each item's own mediatype picks the file type.
+{
+  const apollo = L.LIBRARY_CATEGORIES.find((c) => c.id === 'apollo')!;
+  assert.equal(apollo.mediaType, 'mixed');
+  assert.ok(L.searchUrl(apollo).includes('rows=350') && L.searchUrl(apollo).includes('fl[]=mediatype'));
+  const aud = L.recordFromMetadata(apollo, { identifier: 'Apollo8Highlights', title: 'Apollo 8 Highlights', mediatype: 'audio' }, { files: [{ name: 'a8.mp3', format: 'VBR MP3', length: '600' }, { name: 'a8.mp4', format: 'h.264' }] });
+  assert.equal(aud.mediaType, 'audio'); assert.equal(aud.file, 'a8.mp3');
+  const vid = L.recordFromMetadata(apollo, { identifier: 'Apollo9Highlights', title: 'Apollo 9 Highlights', mediatype: 'movies' }, { files: [{ name: 'a9.mp3', format: 'VBR MP3' }, { name: 'a9.mp4', format: 'h.264', length: '900' }] });
+  assert.equal(vid.mediaType, 'video'); assert.equal(vid.file, 'a9.mp4');
+}
 console.log('library index regression: all passed');
 process.exit(0);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Play, Tv, Radio, Sparkles, Clock, ArrowRight, Archive, Headphones } from 'lucide-react';
+import { Play, Tv, Radio, Sparkles, Clock, ArrowRight, Archive, Headphones, Rocket } from 'lucide-react';
 import { Destination, NowPlayingMedia, MediaType, PlayProgramCallback, RecentlyPlayedItem } from '../types';
 
 interface HomeViewProps {
@@ -25,8 +25,8 @@ const FEATURED_BROADCAST = {
   title: 'NASA Apollo 11 Spaceflight Audio Highlights',
   category: 'Historic Aerospace Vault',
   description: 'Original transmission feeds from the Apollo 11 lunar landing mission, processed through the AJN precision audio bridge.',
-  archivePath: '/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3',
-  duration: '45 mins',
+  archivePath: '/download/Apollo11AudioHighlights/Apollo11Highlights.mp3',
+  duration: '61 mins',
   tag: 'Curated Feature',
   mediaType: 'audio' as MediaType,
   image: '/Classic%20Archive.png',
@@ -60,9 +60,9 @@ const PROGRAM_COLLECTIONS = [
 ];
 
 const ARCHIVE_HIGHLIGHTS = [
-  { id: 'highlight-1', title: 'Night of the Living Dead (1968 Master)', category: 'Public Domain Cinema', duration: '96 mins', archivePath: '/download/NightOfTheLivingDead/Night_of_the_Living_Dead_512kb.mp4', badge: 'VIDEO MP4', mediaType: 'video' as MediaType, description: 'Classic cinema restored master streamed through the existing Archive playback path.' },
-  { id: 'highlight-2', title: 'Apollo 11 Flight Journal Audio Vault', category: 'NASA Spaceflight', duration: '45 mins', archivePath: '/download/Apollo11AudioHighlights/apollo_11_audio_highlights_64kb.mp3', badge: 'RADIO AUDIO', mediaType: 'audio' as MediaType, description: 'Mission control communication recordings and flight director audio loops.' },
-  { id: 'highlight-3', title: 'War of the Worlds — Orson Welles 1938', category: 'Historical Radio Drama', duration: '58 mins', archivePath: '/download/OTRR_Mercury_Theater_on_the_Air_Singles/Mercury_381030_WarOfTheWorlds.mp3', badge: 'RADIO DRAMA', mediaType: 'audio' as MediaType, description: 'The historic CBS broadcast with live sound design and voice acting.' },
+  { id: 'highlight-1', title: 'Night of the Living Dead (1968 Master)', category: 'Public Domain Cinema', duration: '96 mins', archivePath: '/download/night_of_the_living_dead_dvd/Night.mp4', badge: 'VIDEO MP4', mediaType: 'video' as MediaType, description: 'Classic cinema restored master streamed through the existing Archive playback path.' },
+  { id: 'highlight-2', title: 'Apollo 11 Flight Journal Audio Vault', category: 'NASA Spaceflight', duration: '61 mins', archivePath: '/download/Apollo11AudioHighlights/Apollo11Highlights.mp3', badge: 'RADIO AUDIO', mediaType: 'audio' as MediaType, description: 'Mission control communication recordings and flight director audio loops.' },
+  { id: 'highlight-3', title: 'War of the Worlds — Orson Welles 1938', category: 'Historical Radio Drama', duration: '58 mins', archivePath: '/download/WarOfTheWorlds1938RadioBroadcast256kbps/War-of-the-Worlds-1938-Radio-Broadcast-136kbps-cleaned.mp3', badge: 'RADIO DRAMA', mediaType: 'audio' as MediaType, description: 'The historic CBS broadcast with live sound design and voice acting.' },
 ];
 
 export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed, onResumeRecentlyPlayed }: HomeViewProps) {
@@ -106,7 +106,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 {nowPlaying?.isLive ? 'LIVE NOW' : nowPlaying ? 'NOW PLAYING' : FEATURED_BROADCAST.tag}
               </span>
-              <span className="text-xs text-neutral-400">{nowPlaying?.mediaType === 'audio' ? 'Audio' : 'Video'} • AJN Cloud TV</span>
+              <span className="text-xs text-neutral-400">{(nowPlaying?.mediaType ?? (nowPlaying ? 'video' : FEATURED_BROADCAST.mediaType)) === 'audio' ? 'Audio' : 'Video'} • AJN Cloud TV</span>
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-neutral-50 leading-tight">
               {nowPlaying?.title || FEATURED_BROADCAST.title}
@@ -126,6 +126,10 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               )}
               <button type="button" onClick={() => onNavigate('tv-guide')} className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/80 px-4 py-2.5 text-sm font-medium text-neutral-200 hover:bg-neutral-800">
                 <Tv className="h-4 w-4 text-sky-400" /> Open Guide
+              </button>
+              <button type="button" onClick={() => { try { sessionStorage.setItem('ajn.library.open', 'apollo'); } catch { /* storage blocked: opens on All */ } onNavigate('library'); }}
+                className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/80 px-4 py-2.5 text-sm font-medium text-neutral-200 hover:bg-neutral-800">
+                <Rocket className="h-4 w-4 text-amber-400" aria-hidden="true" /> Apollo Mission Archive
               </button>
             </div>
           </div>
