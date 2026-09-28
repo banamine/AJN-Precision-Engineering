@@ -18,88 +18,73 @@ type ReportItem = {
 
 async function probe(url: string): Promise<{ ok: boolean; status: number | null }> {
   try {
-    const res = await fetch(url, {
-      redirect: "follow",
-      headers: { Range: "bytes=0-1", "User-Agent": "AJN-Precision-Engineering/MediaContractAudit" },
-      signal: AbortSignal.timeout(15_000),
-    });
-    await res.body?.cancel().catch(() => {});
-    return { ok: res.ok, status: res.status };
-  } catch {
-    return { ok: false, status: null };
-  }
-}
+    const items: Entry[] = [];
+  const seen = new Set<string>();
+  let page = 1;
 
-function archiveUrl(raw: string): string | null {
-  if (/^https?:\/\//i.test(raw)) return raw;
-  if (raw.startsWith("/download/")) return \`https://archive.org\${raw}\`;
-  return null;
-}
+  while (items.length < librarySample) {
+    const res = await fetch(`${baseUrl}/api/library/items?page=${page}&limit=48`, {
+      signal: AbortSignal.timeout(30_000),
+    }).catch(() => null);
 
-async function main() {
-  fs.mkdirSync(out, { recursive: true });
-
-  const report = {
-    generatedAt: new Date().toISOString(),
-    baseUrl,
-    librarySample,
-    status: "PASS" as "PASS" | "WARN",
-    items: [] as ReportItem[],
-  };
-
-  const res = await fetch(\`\${baseUrl}/api/library/items?page=1&limit=48\`, {
-    signal: AbortSignal.timeout(30_000),
-  }).catch(() => null);
-
-  if (!res || !res.ok) {
-    report.status = "WARN";
-    report.items.push({
-      scope: "library",
-      id: "library-api",
-      status: "WARN",
-      reason: "library_api_unavailable",
-      httpStatus: res?.status ?? null,
-    });
-  } else {
-    const body: any = await res.json().catch(() => null);
-    const items: Entry[] = Array.isArray(body?.items) ? body.items : [];
-    const unique = new Map<string, Entry>();
-
-    for (const item of items) {
-      const id = String(item.id ?? item.identifier ?? item.title ?? unique.size);
-      if (!unique.has(id)) unique.set(id, item);
+    if (!res || !res.ok) {
+      report.status = "WARN";
+      report.items.push({
+        scope: "library",
+        id: `library-api-page-${page}`,
+        status: "WARN",
+        reason: "library_api_unavailable",
+        httpStatus: res?.status ?? null,
+      });
+      break;
     }
 
-    for (const item of [...unique.values()].slice(0, librarySample)) {
-      const id = String(item.id ?? item.identifier ?? item.title ?? "unknown");
-      const url = item.path ? archiveUrl(item.path) : null;
+    const body: any = await res.json().catch(() => null);
+    const pageItems: Entry[] = Array.isArray(body?.items) ? body.items : [];
+    if (!pageItems.length) break;
 
-      if (!url) {
-        report.status = "WARN";
-        report.items.push({
-          scope: "library",
-          id,
-          title: item.title,
-          status: "WARN",
-          reason: "missing_playback_path",
-        });
-        continue;
+    for (const item of pageItems) {
+      const id = String(item.id ?? item.identifier ?? item.title ?? items.length);
+      if (!seen.has(id)) {
+        seen.add(id);
+        items.push(item);
+        if (items.length >= librarySample) break;
       }
+    }
 
-      const checked = await probe(url);
-      const pass = checked.ok || checked.status === 206;
-      if (!pass) report.status = "WARN";
+    if (page >= Number(body?.totalPages || page) || pageItems.length < 48) break;
+    page += 1;
+  }
 
+  for (const item of items.slice(0, librarySample)) {
+    const id = String(item.id ?? item.identifier ?? item.title ?? "unknown");
+    const url = item.path ? archiveUrl(item.path) : null;
+
+    if (!url) {
+      report.status = "WARN";
       report.items.push({
         scope: "library",
         id,
         title: item.title,
-        url,
-        status: pass ? "PASS" : "WARN",
-        reason: pass ? undefined : "upstream_unavailable",
-        httpStatus: checked.status,
+        status: "WARN",
+        reason: "missing_playback_path",
       });
+      continue;
     }
+
+    const checked = await probe(url);
+    const pass = checked.ok || checked.status === 206;
+    if (!pass) report.status = "WARN";
+
+    report.items.push({
+      scope: "library",
+      id,
+      title: item.title,
+      url,
+      status: pass ? "PASS" : "WARN",
+      reason: pass ? undefined : "upstream_unavailable",
+      httpStatus: checked.status,
+    });
   }
 
   const archiveScript = path.join(process.cwd(), "scripts", "check-archive-links.ts");
