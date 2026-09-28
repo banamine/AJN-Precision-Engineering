@@ -111,6 +111,8 @@ jobs:
         run: npm run test:live-health
       - name: Library + NASA channel + M3U/XMLTV export
         run: npm run test:library
+      - name: Search -> 24/7 channel (TV News clips)
+        run: npm run test:discovery
       - name: Favorites store regression
         run: npm run test:favorites
       - name: Proxy range slicing regression

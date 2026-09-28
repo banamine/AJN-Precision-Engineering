@@ -258,6 +258,7 @@ export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.g
 import { dailyHighlightsContract, toChannels as highlightChannels } from './server/sources/dailyHighlights';
 import { getDocumentaryChannels } from './src/services/producers/documentariesProducer';
 
+import { getDiscoveryChannels, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
 import { liveTvContract, LIVE_REFRESH_MS, resetLiveTvLastGoodForTests } from './server/sources/liveTv';
 import { healthOf, runHealthCheck, pendingRechecks, liveHealthStats } from './server/liveHealth';
 import { getPlutoEpg, plutoIdOf, setPlutoEpgFetchForTests, type EpgSlot } from './server/sources/plutoEpg';
@@ -592,6 +593,8 @@ export async function getScheduleForGuide(guideId='cable-tv'):Promise<ScheduleCh
   return normalizeChannels(await getScheduleForGuideRaw(guideId));
 }
 async function getScheduleForGuideRaw(guideId='cable-tv'):Promise<ScheduleChannel[]>{
+  // Channels built from Search ("Create 24/7 Channel"): not a listed guide, but the player's auto-advance reads them here.
+  if(guideId===DISCOVERY_GUIDE_ID)return getDiscoveryChannels().map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Discovery',programs:layoutDailySchedule(ch.programs,5,new Date(),600)}));
   const guide=getGuideById(guideId);if(!guide)return[];
   if(guideId==='cable-tv') return getCableNewsChannels(guideId);
   if(guideId==='live-tv') return getLiveTvChannels(guideId);
