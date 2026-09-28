@@ -32,6 +32,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: TypeScript check
         run: npm run lint
+      - name: Audio ownership invariant
+        run: npm run test:audio-ownership
 
   pure-regressions:
     needs: lint

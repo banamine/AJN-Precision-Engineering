@@ -54,7 +54,9 @@
     "test:live-health": "tsx test-live-health.ts && tsx test-pluto-epg.ts",
     "test:library": "tsx test-nasa-archive.ts && tsx test-library-export.ts && tsx test-library-index.ts",
     "library:snapshot": "tsx scripts/library-snapshot.ts",
-    "test:discovery": "tsx test-discovery-channel.ts"
+    "test:discovery": "tsx test-discovery-channel.ts",
+    "test:audio-ownership": "tsx scripts/test-audio-ownership.ts",
+    "test:media-contract": "tsx scripts/media-contract-audit.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

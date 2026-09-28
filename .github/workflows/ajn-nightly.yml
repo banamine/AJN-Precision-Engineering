@@ -53,6 +53,26 @@ jobs:
           npm run test:browser-journeys
           npm run test:accessibility
 
+      - name: Sampled media contract audit (warning only)
+        run: |
+          set +e
+          npm run test:media-contract
+          rc=$?
+          echo "media contract audit exit code: $rc (report is warning-only for upstream failures)"
+          exit 0
+        env:
+          AJN_TEST_URL: http://localhost:3000
+          LIBRARY_SAMPLE_COUNT: 100
+          MEDIA_CONTRACT_OUT: media-contract-report
+
+      - name: Upload media contract report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ajn-media-contract-report
+          path: media-contract-report/
+          if-no-files-found: warn
+
       - name: Upload nightly server log
         if: always()
         uses: actions/upload-artifact@v4
