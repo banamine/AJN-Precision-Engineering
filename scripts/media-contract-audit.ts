@@ -7,7 +7,7 @@ const out = process.env.MEDIA_CONTRACT_OUT || path.join("media-contract-report")
 const librarySample = Math.max(1, Number(process.env.LIBRARY_SAMPLE_COUNT || 100));
 const liveTvSample = Math.max(1, Number(process.env.LIVE_TV_SAMPLE_COUNT || 40));
 
-type Entry = { id?: string; title?: string; identifier?: string; path?: string };
+type Entry = { id?: string; title?: string; identifier?: string; path?: string; type?: string; episodes?: Entry[] };
 type ReportItem = {
   scope: "library" | "live-tv" | "archive-hardcoded";
   id: string;
@@ -46,7 +46,7 @@ async function probe(url: string): Promise<{ ok: boolean; status: number | null 
 
 function archiveUrl(raw: string): string | null {
   if (/^https?:\/\//i.test(raw)) return raw;
-  if (raw.startsWith("/download/")) return \`https://archive.org\${raw}\`;
+  if (raw.startsWith("/download/")) return `https://archive.org${raw}`;
   return null;
 }
 
@@ -56,7 +56,7 @@ async function auditLibrary(report: Report): Promise<void> {
   let page = 1;
 
   while (items.length < librarySample) {
-    const res = await fetch(\`\${baseUrl}/api/library/items?page=\${page}&limit=48\`, {
+    const res = await fetch(`${baseUrl}/api/library/items?page=${page}&limit=48`, {
       signal: AbortSignal.timeout(30_000),
     }).catch(() => null);
 
@@ -64,7 +64,7 @@ async function auditLibrary(report: Report): Promise<void> {
       report.status = "WARN";
       report.items.push({
         scope: "library",
-        id: \`library-api-page-\${page}\`,
+        id: `library-api-page-${page}`,
         status: "WARN",
         reason: "library_api_unavailable",
         httpStatus: res?.status ?? null,
@@ -76,7 +76,9 @@ async function auditLibrary(report: Report): Promise<void> {
     const pageItems: Entry[] = Array.isArray(body?.items) ? body.items : [];
     if (!pageItems.length) break;
 
-    for (const item of pageItems) {
+    for (const card of pageItems) {
+      // Series cards have no file of their own: check their first episode.
+      const item = card.type === "series" && Array.isArray(card.episodes) && card.episodes.length ? { ...card.episodes[0], title: `${card.title} — ${card.episodes[0].title ?? ""}` } : card;
       const id = String(item.id ?? item.identifier ?? item.title ?? items.length);
       if (!seen.has(id)) {
         seen.add(id);
@@ -165,7 +167,7 @@ function auditHardcodedArchiveLinks(report: Report): void {
       scope: "archive-hardcoded",
       id: "check-archive-links",
       status: "WARN",
-      reason: result.error ? \`check_process_error: \${result.error.message}\` : "check_archive_links_failed",
+      reason: result.error ? `check_process_error: ${result.error.message}` : "check_archive_links_failed",
     });
   }
 
@@ -197,7 +199,7 @@ function auditLiveTv(report: Report): void {
       scope: "live-tv",
       id: "live-tv-probe",
       status: "WARN",
-      reason: result.error ? \`probe_process_error: \${result.error.message}\` : "probe_report_missing",
+      reason: result.error ? `probe_process_error: ${result.error.message}` : "probe_report_missing",
     });
     if (result.stderr) console.error(result.stderr.trim());
     return;
