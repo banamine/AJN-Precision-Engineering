@@ -191,7 +191,7 @@ export default function App() {
       <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} />
       <main id="canonical-main-viewport" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
         {destination === 'home' && (
-          <>
+          <div key="view-home" className="view-fade-in w-full">
             <HomeView
               onNavigate={navigateTo}
               onPlayProgram={handlePlayProgram}
@@ -200,21 +200,43 @@ export default function App() {
               onResumeRecentlyPlayed={resumeRecentlyPlayed}
             />
             <AjnResourcePanel onPlayProgram={handlePlayProgram} />
-          </>
+          </div>
         )}
-        {destination === 'tv-guide' && <TvGuideView onSelectProgram={handleEpgSelect} />}
+        {destination === 'tv-guide' && (
+          <div key="view-tv-guide" className="view-fade-in w-full">
+            <TvGuideView onSelectProgram={handleEpgSelect} />
+          </div>
+        )}
         {/* The player stays mounted while you browse other pages, so audio keeps
             playing in the background; the mini dock is its on-page control. */}
         {nowPlaying ? (
-          <div id="persistent-player" hidden={destination !== 'player'}>
+          <div
+            id="persistent-player"
+            hidden={destination !== 'player'}
+            className={`w-full ${destination === 'player' ? 'view-fade-in' : ''}`}
+          >
             <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />
           </div>
         ) : destination === 'player' && (
-          <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />
+          <div key="view-player" className="view-fade-in w-full">
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />
+          </div>
         )}
-        {destination === 'library' && <LibraryView onPlayProgram={handlePlayProgram} />}
-        {destination === 'search' && <SearchView onPlayProgram={handlePlayProgram} />}
-        {destination === 'dev' && <DevModeView onNavigate={navigateTo} />}
+        {destination === 'library' && (
+          <div key="view-library" className="view-fade-in w-full">
+            <LibraryView onPlayProgram={handlePlayProgram} />
+          </div>
+        )}
+        {destination === 'search' && (
+          <div key="view-search" className="view-fade-in w-full">
+            <SearchView onPlayProgram={handlePlayProgram} />
+          </div>
+        )}
+        {destination === 'dev' && (
+          <div key="view-dev" className="view-fade-in w-full">
+            <DevModeView onNavigate={navigateTo} />
+          </div>
+        )}
       </main>
       <NewsReadyNotice onPlay={handlePlayProgram} />
       {nowPlaying && destination !== 'player' && (

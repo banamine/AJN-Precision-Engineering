@@ -16,7 +16,7 @@ export function MiniPlayerDock({
     <aside
       id="persistent-mini-player"
       aria-label="Active Broadcast Mini Player"
-      className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-3.5 rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-3.5 shadow-2xl backdrop-blur-md max-w-sm sm:max-w-md w-auto animate-in slide-in-from-bottom-4 duration-200"
+      className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-3.5 rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-3.5 shadow-2xl backdrop-blur-md max-w-sm sm:max-w-md w-auto mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200"
     >
       {/* Icon / Thumbnail */}
       <button
