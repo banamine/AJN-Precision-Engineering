@@ -1,3 +1,4 @@
+import { buildDiscoveryChannel, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
 import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, getLibrarySeries, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
@@ -113,6 +114,16 @@ app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.
 patchServer(app);
 registerSourceRoutes(app);
 
+// Search -> "Create 24/7 Channel": built from the identifiers the viewer is looking at.
+app.post('/api/channels/build-news',async(req,res)=>{
+  try{
+    const {identifiers,name,network,titles}=req.body??{};
+    if(!Array.isArray(identifiers))return res.status(400).json({error:'identifiers[] required'});
+    const ch=await buildDiscoveryChannel(identifiers,String(name||network||'Archive Discovery').slice(0,80),network?String(network):undefined,titles&&typeof titles==='object'?titles:{});
+    const laid=(await getScheduleForGuide(DISCOVERY_GUIDE_ID)).find(c=>c.id===ch.id);
+    res.json({channelId:ch.id,guideId:DISCOVERY_GUIDE_ID,name:ch.name,items:identifiers.length,clips:ch.programs.length,skipped:ch.skipped,programs:(laid?.programs??[]).slice(0,ch.programs.length)});
+  }catch(e:any){res.status(e?.status??500).json({error:e?.message??'build failed'});}
+});
 app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});res.json({query,network,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({error:'Search failed',items:[],total:0});}});
 
 function validateArchivePath(raw:string){

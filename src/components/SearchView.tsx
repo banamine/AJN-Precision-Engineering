@@ -39,18 +39,32 @@ export function SearchView({ onPlayProgram }: SearchViewProps) {
     const [buildStatus, setBuildStatus] = useState<string>('');
   const [builtAssets, setBuiltAssets] = useState<any[]>([]);
 
+  const [built, setBuilt] = useState<{ channelId: string; guideId: string; name: string; clips: number; items: number; skipped: Array<{ identifier: string; reason: string }> } | null>(null);
+  const [buildError, setBuildError] = useState<string | null>(null);
+  // Build from the recordings on screen (not a new free-text search), as clips the
+  // news guide already plays; the server keeps it as a real channel so playback
+  // continues item after item.
   const handleBuildChannel = async () => {
-    setBuildStatus('building');
+    setBuildStatus('building'); setBuildError(null);
     try {
-      const res = await fetch('/api/channels/build', {
+      const network = NETWORKS.find((n) => n.id === selectedNetwork)?.name ?? selectedNetwork;
+      const res = await fetch('/api/channels/build-news', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query || selectedNetwork, channelId: 'cinema-vault', channelName: query || 'Archive Discovery' })
+        body: JSON.stringify({
+          identifiers: items.map((i) => i.identifier),
+          titles: Object.fromEntries(items.map((i) => [i.identifier, i.title])),
+          network: selectedNetwork,
+          name: query ? `${network}: ${query}` : `${network} 24/7`,
+        }),
       });
       const data = await res.json();
-      setBuiltAssets(data.playlist || []);
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setBuiltAssets(data.programs || []);
+      setBuilt({ channelId: data.channelId, guideId: data.guideId, name: data.name, clips: data.clips, items: data.items, skipped: data.skipped || [] });
       setBuildStatus('done');
     } catch (e) {
+      setBuildError(e instanceof Error ? e.message : String(e));
       setBuildStatus('error');
     }
   };
@@ -225,7 +239,7 @@ const [query, setQuery] = useState<string>('');
             <button
               type="button"
               onClick={handleBuildChannel}
-              disabled={buildStatus === 'building'}
+              disabled={buildStatus === 'building' || items.length === 0}
               className="flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-purple-600/20 transition hover:bg-purple-500 active:scale-95 disabled:opacity-50"
             >
               {buildStatus === 'building' ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
@@ -233,26 +247,24 @@ const [query, setQuery] = useState<string>('');
             </button>
           </div>
           
+          {buildStatus === 'error' && buildError && <p role="alert" className="text-[11px] text-red-400">Channel not built: {buildError}</p>}
           {buildStatus === 'done' && (
             <div className="rounded border border-neutral-800 bg-neutral-900/50 p-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-xs font-medium text-neutral-300">Channel Built Successfully</h4>
                 <button
-                  onClick={() => onPlayProgram(builtAssets[0]?.mediaUrl, builtAssets[0]?.title, "Cinema Vault", "video", "cinema-vault", "cable-tv")}
+                  onClick={() => built && builtAssets[0] && onPlayProgram(builtAssets[0].archivePath || builtAssets[0].mediaUrl, builtAssets[0].title, built.name, "video", built.channelId, built.guideId, builtAssets[0].id)}
                   className="rounded bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-500 transition"
                 >
                   Tune In Now
                 </button>
               </div>
-              <p className="text-[11px] text-neutral-500 mb-3">Extracted {builtAssets.length} playable media assets.</p>
+              <p className="text-[11px] text-neutral-500 mb-3">{built?.name}: {built?.items} recordings → {built?.clips} clips, played in order and looped.{built && built.skipped.length ? ` ${built.skipped.length} skipped (${built.skipped[0].reason}).` : ''}</p>
               <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-2">
                 {builtAssets.map((asset, i) => (
                   <div key={i} className="flex items-center justify-between text-[11px] border-b border-neutral-800/50 pb-1">
                     <span className="text-neutral-300 truncate pr-2">{asset.title}</span>
-                    <div className="flex gap-2 shrink-0">
-                      <span className="text-purple-400 font-mono">[{asset.quality?.label}]</span>
-                      <span className="text-neutral-500">{asset.category}</span>
-                    </div>
+                    <span className="shrink-0 text-neutral-500 font-mono">{Math.round((Number(asset.metadata?.durationSeconds) || 0) / 60)} min</span>
                   </div>
                 ))}
               </div>
