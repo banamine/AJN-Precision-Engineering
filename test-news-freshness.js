@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { getArchiveNews } from '../src/channels.js'; // Adjust function name if different
+import { searchTVNews } from './channels.ts';
 
 test('News API structural invariants', async () => {
-    // 1. Fetch from live archive.org via the exported function
-    const result = await getArchiveNews('CNNW', 24);
+    // 1. Fetch from live Archive.org via the exported function
+    const result = await searchTVNews({ network: 'CNNW', rows: 12 });
 
     // 2. Assert ALWAYS invariants
     assert(Array.isArray(result.items), 'items must always be an array');
