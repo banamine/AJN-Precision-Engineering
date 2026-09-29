@@ -59,6 +59,17 @@ interface ArchiveCollectionProbe {
   ok: boolean;
   total: number;
   docs: any[];
+  error?: string;
+}
+
+export type SearchTVNewsStatus = "ok" | "empty" | "upstream_error";
+
+export interface SearchTVNewsResult {
+  status: SearchTVNewsStatus;
+  items: TVNewsItem[];
+  total: number;
+  safeEndDate: string;
+  error?: string;
 }
 
 async function probeArchiveCollection(
@@ -132,6 +143,7 @@ async function probeArchiveCollection(
         ok: false,
         total: 0,
         docs: [],
+        error: `Archive HTTP ${response.status}`,
       };
     }
 
@@ -189,6 +201,7 @@ async function probeArchiveCollection(
       ok: false,
       total: 0,
       docs: [],
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -196,7 +209,7 @@ async function probeArchiveCollection(
 // Results are cached for 5 minutes per (network, query, dates, rows): the Home
 // and Search views request the same five networks repeatedly, and each uncached
 // call costs 2 searches + up to 24 metadata requests against Archive.
-const searchCache = new Map<string, { expires: number; value: Promise<any> }>();
+const searchCache = new Map<string, { expires: number; value: Promise<SearchTVNewsResult> }>();
 export async function searchTVNews(opts: Parameters<typeof searchTVNewsUncached>[0]): ReturnType<typeof searchTVNewsUncached> {
   const key = JSON.stringify(opts);
   const hit = searchCache.get(key);
@@ -215,16 +228,15 @@ async function searchTVNewsUncached(opts: {
   endDate?: string;
   rows?: number;
   start?: number;
-}): Promise<{
-  items: TVNewsItem[];
-  total: number;
-  safeEndDate: string;
-}> {
+}): Promise<SearchTVNewsResult> {
   const candidates = getCollectionCandidates(opts.network);
 
   console.log("");
   console.log(`[channels] Testing Archive.org collections for "${opts.network}"`);
   console.log(`[channels] Candidates: ${candidates.map((value) => `collection:${value}`).join(" | ")}`);
+
+  let sawValidEmpty = false;
+  const upstreamErrors: string[] = [];
 
   for (const collection of candidates) {
     const result = await probeArchiveCollection(collection, {
@@ -271,10 +283,17 @@ async function searchTVNewsUncached(opts: {
       });
 
       return {
+        status: "ok",
         items,
         total: result.total,
         safeEndDate: today,
       };
+    }
+
+    if (result.ok) {
+      sawValidEmpty = true;
+    } else if (result.error) {
+      upstreamErrors.push(`${collection}: ${result.error}`);
     }
 
     console.warn(`[channels] collection:${collection} did not produce usable results; trying next candidate`);
@@ -285,10 +304,21 @@ async function searchTVNewsUncached(opts: {
   console.error(`[channels] Tested: ${candidates.map((value) => `collection:${value}`).join(", ")}`);
   console.error("");
 
+  if (sawValidEmpty) {
+    return {
+      status: "empty",
+      items: [],
+      total: 0,
+      safeEndDate: new Date().toISOString().slice(0, 10),
+    };
+  }
+
   return {
+    status: "upstream_error",
     items: [],
     total: 0,
     safeEndDate: new Date().toISOString().slice(0, 10),
+    error: upstreamErrors.join("; ") || "Archive search failed",
   };
 }
 
