@@ -56,7 +56,8 @@
     "library:snapshot": "tsx scripts/library-snapshot.ts",
     "test:discovery": "tsx test-discovery-channel.ts",
     "test:audio-ownership": "tsx scripts/test-audio-ownership.ts",
-    "test:media-contract": "tsx scripts/media-contract-audit.ts"
+    "test:media-contract": "tsx scripts/media-contract-audit.ts",
+    "test:news-freshness": "tsx test-news-freshness.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
