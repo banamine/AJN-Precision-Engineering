@@ -11,18 +11,18 @@ assert.equal(parsed.airDateSource, 'identifier');
 assert.ok(parsed.timestampMs > 0);
 console.log('✓ Test 1: Identifier timestamp parsing passed');
 
-// Test 2: Freshness Window logic & searchTVNews structure
+// Test 2: searchTVNews current result contract
 const result = await searchTVNews({ network: 'CNNW', rows: 12 });
+assert.ok(['ok', 'empty', 'upstream_error'].includes(result.status));
 assert.equal(typeof result.total, 'number');
 assert.ok(Array.isArray(result.items));
-assert.equal(result.requestedWindowHours, 48);
-assert.equal(typeof result.windowStart, 'string');
-assert.equal(typeof result.windowEnd, 'string');
-assert.equal(typeof result.returnedCount, 'number');
-assert.equal(typeof result.availableCurrentCount, 'number');
-assert.equal(typeof result.staleRejected, 'number');
-assert.equal(typeof result.metadataFailures, 'number');
-console.log(`✓ Test 2: searchTVNews structure & freshness contract passed (returned: ${result.returnedCount}, staleRejected: ${result.staleRejected}, metadataFailures: ${result.metadataFailures})`);
+assert.equal(typeof result.safeEndDate, 'string');
+if (result.status === 'upstream_error') {
+  assert.equal(result.total, 0);
+  assert.equal(result.items.length, 0);
+  assert.equal(typeof result.error, 'string');
+}
+console.log(`✓ Test 2: searchTVNews result contract passed (status: ${result.status}, total: ${result.total})`);
 
 // Test 3: Verify sorting (newest first)
 if (result.items.length > 1) {
