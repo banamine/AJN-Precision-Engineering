@@ -29,30 +29,30 @@ for (const required of [
   "if(/^https?:\\/\\//i.test(raw)||raw.includes('://'))",
   "else if (!raw.startsWith('/download/'))",
 ]) {
-  assert.ok(serverSource.includes(required), `Archive proxy SSRF/path guard missing: ${required}`);
+  assert.ok(serverSource.includes(required), `Archive proxy SSRF/path guard source text missing: ${required}`);
 }
 
 for (const header of ['Content-Range', 'Content-Length', 'Accept-Ranges', 'ETag']) {
   assert.ok(
     serverSource.includes(header),
-    `Archive proxy must preserve/advertise ${header}`,
+    `Archive proxy header source text missing: ${header}`,
   );
 }
 assert.ok(
   serverSource.includes("res.setHeader('Accept-Ranges',acceptRanges || 'bytes')"),
-  'Archive proxy must forward Accept-Ranges',
+  'Archive proxy Accept-Ranges forwarding source text missing',
 );
 assert.ok(
   serverSource.includes("res.setHeader('ETag',etag)"),
-  'Archive proxy must forward ETag',
+  'Archive proxy ETag forwarding source text missing',
 );
 assert.ok(
   serverSource.includes("res.on('close',()=>{ if(!res.writableFinished) upstreamAbort.abort(); })"),
-  'Archive proxy must abort upstream fetch on client disconnect',
+  'Archive proxy client-disconnect abort source text missing',
 );
 assert.ok(
   serverSource.includes("upstreamHeaders.Range=`bytes=${slice.start}-${slice.end}`"),
-  'Archive proxy must send the bounded slice upstream',
+  'Archive proxy bounded upstream Range source text missing',
 );
 
-console.log('proxy hardening contract: all passed');
+console.log('proxy hardening contract source guards: structural source checks passed; not behavior tests');
