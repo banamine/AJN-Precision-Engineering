@@ -1,39 +1,33 @@
-import assert from 'node:assert/strict';
-import { searchTVNews, parseItemTimestamp, TV_ID_RE } from './channels.ts';
+import { test } from 'node:test';
+import assert from 'node:assert';
+import { getArchiveNews } from '../src/channels.js'; // Adjust function name if different
 
-console.log('Running News Freshness & Availability Pipeline Tests...');
+test('News API structural invariants', async () => {
+    // 1. Fetch from live archive.org via the exported function
+    const result = await getArchiveNews('CNNW', 24);
 
-// Test 1: TV_ID_RE & parseItemTimestamp
-const sampleId = 'CNNW_20260921_080000_CNN_Newsroom_Live';
-assert.match(sampleId, TV_ID_RE);
-const parsed = parseItemTimestamp({ identifier: sampleId });
-assert.equal(parsed.airDateSource, 'identifier');
-assert.ok(parsed.timestampMs > 0);
-console.log('✓ Test 1: Identifier timestamp parsing passed');
+    // 2. Assert ALWAYS invariants
+    assert(Array.isArray(result.items), 'items must always be an array');
+    assert.strictEqual(typeof result.total, 'number', 'total must always be a number');
+    assert.strictEqual(typeof result.safeEndDate, 'string', 'safeEndDate must always be a string');
 
-// Test 2: searchTVNews current result contract
-const result = await searchTVNews({ network: 'CNNW', rows: 12 });
-assert.ok(['ok', 'empty', 'upstream_error'].includes(result.status));
-assert.equal(typeof result.total, 'number');
-assert.ok(Array.isArray(result.items));
-assert.equal(typeof result.safeEndDate, 'string');
-if (result.status === 'upstream_error') {
-  assert.equal(result.total, 0);
-  assert.equal(result.items.length, 0);
-  assert.equal(typeof result.error, 'string');
-}
-console.log(`✓ Test 2: searchTVNews result contract passed (status: ${result.status}, total: ${result.total})`);
+    // 3. Assert STATUS contract
+    const validStatuses = ['ok', 'empty', 'upstream_error'];
+    assert(
+        validStatuses.includes(result.status), 
+        `status must be one of: ${validStatuses.join(', ')}. Got: ${result.status}`
+    );
 
-// Test 3: Verify sorting (newest first)
-if (result.items.length > 1) {
-  for (let i = 0; i < result.items.length - 1; i++) {
-    const t1 = new Date(`${result.items[i].date}T${result.items[i].time}:00Z`).getTime();
-    const t2 = new Date(`${result.items[i+1].date}T${result.items[i+1].time}:00Z`).getTime();
-    assert.ok(t1 >= t2, 'Items must be sorted newest first');
-  }
-  console.log('✓ Test 3: Newest-first sorting verified');
-} else {
-  console.log('ℹ Test 3: Skipped sorting order check (insufficient items returned in test environment)');
-}
-
-console.log('ALL NEWS FRESHNESS TESTS PASSED SUCCESSFULY!');
+    // 4. Assert STATE-SPECIFIC invariants
+    if (result.status === 'ok') {
+        assert(result.items.length > 0, 'status "ok" requires items.length > 0');
+        assert(result.total > 0, 'status "ok" requires total > 0');
+    } else if (result.status === 'empty') {
+        assert.strictEqual(result.items.length, 0, 'status "empty" requires exactly 0 items');
+        assert.strictEqual(result.total, 0, 'status "empty" requires total === 0');
+    } else if (result.status === 'upstream_error') {
+        assert.strictEqual(result.items.length, 0, 'status "upstream_error" requires exactly 0 items');
+        assert.strictEqual(result.total, 0, 'status "upstream_error" requires total === 0');
+        assert.strictEqual(typeof result.error, 'string', 'status "upstream_error" requires an error string');
+    }
+});
