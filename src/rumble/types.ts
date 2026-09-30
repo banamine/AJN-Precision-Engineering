@@ -22,6 +22,7 @@ export interface RumbleItem {
   kind: RumbleItemKind;
   liveStreamId?: string;
   state: RumbleItemState;
+  viewers?: number | null;
 }
 
 export interface RumbleBaseline {
