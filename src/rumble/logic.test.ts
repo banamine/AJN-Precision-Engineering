@@ -262,7 +262,7 @@ const ravBannonBody = ravBannonItems?.body as { items: RumbleItem[] };
 assert.equal(ravBannonBody.items.length, 1);
 assert.equal(ravBannonBody.items[0]?.videoId, "v7g70xi");
 
-const baselineResponse = invoke("/api/rumble/baseline");
+const baselineResponse = invoke("/api/rumble/baseline", {}, undefined, RUMBLE_BASELINE);
 assert.equal(baselineResponse?.statusCode, 200);
 assert.equal((baselineResponse?.body as { ok: boolean }).ok, true);
 assert.equal((baselineResponse?.body as { items: RumbleItem[] }).items.length, 16);
