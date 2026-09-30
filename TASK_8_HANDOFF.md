@@ -54,7 +54,7 @@
 
 ## Known Gaps
 
-[read from code: b4d50af] M3U ingestion yields `Channel` + `ChannelSource` but no `Program`/`MediaAsset`.
+[read from code: b4d50af] M3U ingestion yields `Channel` + `ChannelSource` + canonical `Program` (registered by the M3U Program ingestion repair); it still yields no `MediaAsset`.
 [read from code: b4d50af] `classicM3uContract` is used only by `test-source-contracts.ts`, not production.
 [read from code: b4d50af] No `PlaybackPlan` exists.
 [read from code: b4d50af] The two M3U parsers (`guideRegistry.parseM3u` and `classicM3uContract`) quote differently.
@@ -97,6 +97,6 @@
 [not verified: merge decision] No merge is authorized by this document.  
 [not verified: deployment] No deployment is authorized by this document.  
 [read from code: b4d50af] The open Archive availability, CI coverage, validator-history, stale-path, and Known Gaps items remain open.
-[read from code: b4d50af] Known Gaps remain open: M3U ingestion yields Channel + ChannelSource but no Program/MediaAsset; classicM3uContract is test-only; no PlaybackPlan exists; the two M3U parsers quote differently.
+[read from code: b4d50af] Known Gaps remain open: M3U ingestion now registers a canonical Program but still no MediaAsset; classicM3uContract is test-only; no PlaybackPlan exists; the two M3U parsers quote differently.
 [CORRECTED] Archive whole-file MP4 is not usable for TV News, but Archive clip windows are, and the app already uses them. No replacement news source is needed for playback. Remaining: the CI gate must probe a clip (see the test-real-archive-playback.js change) so CI proves news playback.
 

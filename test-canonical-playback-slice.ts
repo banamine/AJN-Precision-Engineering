@@ -6,7 +6,7 @@
 //      proxied direct-MP4 mediaUrl that decodes back to the canonical /download/ path.
 //   B. That mediaUrl is same-origin, so the audio bridge admits it (corsModeFor).
 //   C. The production M3U path (guideRegistry.ingestM3uPlaylist) yields Channel +
-//      ChannelSource records and NO Program/MediaAsset -- pinned as a KNOWN GAP.
+//      ChannelSource records and one canonical Program per entry.
 // Proxy range slicing stays in test-proxy-range.ts; classicM3uContract stays in
 // test-source-contracts.ts.
 import assert from 'node:assert/strict';
@@ -43,7 +43,7 @@ const sample = archivePrograms[0];
 assert.equal(bridgeSrc(sample.mediaUrl), sample.mediaUrl, 'proxy URL must not be rewritten by bridgeSrc');
 assert.equal(corsModeFor(sample.mediaUrl, false), 'anonymous', 'same-origin proxy URL must be CORS-anonymous so the bridge can read it');
 
-// ── C. Production M3U path: Channel + ChannelSource, no Program (KNOWN GAP) ──
+// ── C. Production M3U path: Channel + ChannelSource + canonical Program ──
 const before = getCanonicalPrograms().length;
 const fixture = `#EXTM3U
 #EXTINF:1500 tvg-id="slice-test" group-title="Slice Test",Slice Test Show
@@ -73,8 +73,18 @@ assert.equal(sources[0].url, 'https://archive.org/download/slice-test/episode-01
 assert.equal(sources[0].protocol, 'https');
 assert.ok(result.channels.some((c) => getChannelSources(c.id).some((s) => s.protocol === 'hls')), '.m3u8 entry must be classified hls');
 
-// KNOWN GAP: M3U ingestion does not produce Program or MediaAsset records.
-// If this changes, update AJN_CANONICAL_PLAYBACK_SLICE.md in the same commit.
-assert.equal(getCanonicalPrograms().length, before, 'M3U ingestion currently adds no canonical Program (known gap)');
+// M3U ingestion registers one canonical Program per ingested entry, tied to its ChannelSource.
+// (Formerly a pinned KNOWN GAP; closed by the M3U Program ingestion repair.)
+const added = getCanonicalPrograms().slice(before);
+assert.equal(added.length, 2, 'each ingested M3U entry must register exactly one canonical Program');
+for (const program of added) {
+  assert.ok(program.id && program.assetId && program.sourceId, `M3U Program ${program.title} must carry id, assetId and sourceId`);
+  assert.equal(program.guideId, 'cable-tv');
+  const channelSources = getChannelSources(program.channelId);
+  assert.ok(channelSources.some((s) => s.id === program.sourceId), 'Program.sourceId must match its ChannelSource id');
+  assert.ok(channelSources.some((s) => s.url === program.mediaUrl), 'Program.mediaUrl must be the entry URL');
+}
+ingestM3uPlaylist(playlist, fixture, 'cable-tv');
+assert.equal(getCanonicalPrograms().length, before + 2, 're-ingesting the same playlist must not duplicate Programs');
 
 console.log('canonical playback slice contract: all passed');

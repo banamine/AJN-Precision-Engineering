@@ -1,4 +1,4 @@
-import { unplayableReason } from './server/sources/archiveLinks';
+import { notWebPlayableVideo, unplayableReason } from './server/sources/archiveLinks';
 import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
 } from './src/types';
@@ -179,6 +179,33 @@ export function ingestM3uPlaylist(playlist:Playlist,text:string,targetGuideId?:s
       sources.push({id:canonicalSourceId,channelId:id,protocol,url:entry.url,priority:sources.length+1,enabled:true,metadata:{playlistId:playlist.id,playlistName:playlist.name,category:playlist.category,durationSeconds:entry.duration&&entry.duration>0?entry.duration:undefined}});
     }
     channelSourcesMap.set(id,sources);
+
+    const externalId = `${playlist.id}|${id}|${sanitizedUrl}`;
+    const programId = normalizeProgramIdentity({externalId,channelId:id,title:entry.title,startTime:0});
+    upsertCanonicalProgram({
+      id:programId,
+      guideId,
+      channelId:id,
+      title:entry.title,
+      startTime:0,
+      endTime:0,
+      mediaType,
+      mediaUrl:entry.url,
+      assetId:normalizeAssetIdentity({externalId,programId,mediaUrl:sanitizedUrl}),
+      sourceId:canonicalSourceId,
+      isArchivedSource:/^(?:\/download\/|https?:\/\/archive\.org\/download\/)/i.test(entry.url),
+      metadata:{
+        externalId,
+        playlistId:playlist.id,
+        playlistName:playlist.name,
+        category:playlist.category,
+        tvgId:entry.tvgId,
+        tvgName:entry.tvgName,
+        tvgLogo:entry.tvgLogo,
+        groupTitle:entry.groupTitle,
+        durationSeconds:entry.duration && entry.duration>0 ? entry.duration : undefined,
+      },
+    });
   }
 
   for(const [channelId,sources] of channelSourcesMap){
@@ -392,8 +419,10 @@ async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChanne
   if(!highlightsCache&&!highlightsFetch){
     const mod:any=await import('./src/data/classicSnapshot.json');
     const snap=(mod.default??mod) as {schema?:number;fetchedAt?:string;programs?:Program[]};
-    if(snap?.schema===1&&Array.isArray(snap.programs)&&snap.programs.length){
-      const data=highlightChannels(snap.programs).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:'snapshot',sourceError:`packaged list from ${snap.fetchedAt}; refreshing`}));
+    // A packaged list must pass the same admission as a live fetch: no .avi/.mkv/.mpg/.m3u/folder links.
+    const playable=(Array.isArray(snap?.programs)?snap.programs:[]).filter(p=>!notWebPlayableVideo(p.archivePath??p.mediaUrl));
+    if(snap?.schema===1&&playable.length){
+      const data=highlightChannels(playable).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:'snapshot',sourceError:`packaged list from ${snap.fetchedAt}; refreshing`}));
       highlightsLastGood=data;
       highlightsCache={data,expiresAt:0};
     }
