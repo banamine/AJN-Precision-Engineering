@@ -145,6 +145,16 @@ assert.deepEqual(
   realSeedEmbedIds,
 );
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const spikeHtml = readFileSync(resolve(process.cwd(), "public/rumble-spike.html"), "utf8");
+assert.equal(spikeHtml.includes("/src/"), false);
+const targetMatch = spikeHtml.match(/const TARGETS=(\[[\s\S]*?\]);/);
+assert(targetMatch, "spike TARGETS must be present");
+const spikeTargets = Function("return " + targetMatch[1])() as Array<{ videoId: string; embedId: string; thumbnailUrl: string }>;
+assert.deepEqual(spikeTargets.map((item) => [item.videoId, item.embedId, item.thumbnailUrl]), [["v7eh2s2","v7capuk","https://hugh.cdn.rumble.cloud/video/fww1/da/s8/1/0/N/g/A/0NgAA.OvCc-small-Alex-Jones-Live..jpg"],["v7g6mii","v7e09l0","https://hugh.cdn.rumble.cloud/video/fwe2/bd/s8/1/6/n/u/2/6nu2A.OvCc-small-HOME-OF-REAL-NEWS-and-HONES..jpg"],["v60552h","v5xwnen","https://hugh.cdn.rumble.cloud/video/s8/1/P/d/4/O/Pd4Ov.OvCc.i-small-NEWSMAX2-LIVE-Real-News-for..jpg"],["v35waq4","v33aw1a","https://hugh.cdn.rumble.cloud/video/cwg9/s8/1/m/9/W/z/m9Wzl.OvCc-small-RT-News-Livestream-247.jpg"]]);
+
 const seedValidation = validateBaseline(RUMBLE_BASELINE);
 assert.equal(seedValidation.valid, true);
 assert.deepEqual(
@@ -334,4 +344,6 @@ const timeoutFetch = async (_url: string, init?: RequestInit) =>
 const timeoutClient = await fetchRumbleBaseline(1, timeoutFetch as typeof fetch);
 assert.equal(timeoutClient.baseline, null);
 
-console.log("[rumble-engine] PASS: fixture classification, ordering, reconciliation, validation, seed, news-wall ranking, injected routes, disabled/invalid route behavior, and baseline client.");
+console.log("[rumble-engine] PASS: fixture classification, ordering, reconciliation, validation, seed, news-wall ranking, injected routes, disabled/invalid route behavior, baseline client, and embed spike contract.");
+
+await import("./embedAdapter.test");
