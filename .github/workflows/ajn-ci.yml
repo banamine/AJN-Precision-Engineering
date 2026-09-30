@@ -61,6 +61,8 @@ jobs:
           name: ajn-production-dist
           path: dist/
           if-no-files-found: error
+      - name: Rumble engine regression
+        run: npm run test:rumble
       - name: EPG identity regression
         run: npm run test:epg-identity
       - name: EPG producer identity regression
