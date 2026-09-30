@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rumble Embed Spike</title>
+<style>
+body{margin:0;padding:20px;background:#0b0b0b;color:#eee;font:14px system-ui,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px}
+.panel{border:1px solid #333;padding:12px;background:#111}.thumb{width:100%;aspect-ratio:16/9;object-fit:cover;background:#000}
+.player{min-height:220px;margin-top:8px;background:#000}.panel-controls,.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+button{padding:8px 12px}.status{min-height:18px;color:#aaa}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #333;padding:7px;text-align:left}textarea{width:100%;min-height:240px;margin-top:12px;box-sizing:border-box}
+</style></head>
+<body>
+<h1>Rumble Embed Spike</h1>
+<p>Standalone browser probe. Nothing creates an embed until a Play button is clicked.</p>
+<div class="controls"><button id="destroy-all">Destroy all</button><button id="copy-report">Copy report</button></div>
+<div id="status" class="status" aria-live="polite"></div><div id="panels" class="grid"></div>
+<textarea id="report-fallback" readonly hidden aria-label="Rumble spike report fallback"></textarea>
+<table><thead><tr><th>Panel / mode</th><th>created</th><th>load</th><th>error</th><th>timeout</th><th>image load</th></tr></thead><tbody id="log-body"></tbody></table>
+<script>
+const TARGETS=[
+{videoId:"v7eh2s2",embedId:"v7capuk",label:"Alex Jones Live",kind:"continuous live",thumbnailUrl:"https://hugh.cdn.rumble.cloud/video/fww1/da/s8/1/0/N/g/A/0NgAA.OvCc-small-Alex-Jones-Live..jpg"},
+{videoId:"v7g6mii",embedId:"v7e09l0",label:"Real America's Voice",kind:"live",thumbnailUrl:"https://hugh.cdn.rumble.cloud/video/fwe2/bd/s8/1/6/n/u/2/6nu2A.OvCc-small-HOME-OF-REAL-NEWS-and-HONES..jpg"},
+{videoId:"v60552h",embedId:"v5xwnen",label:"Newsmax2",kind:"always-on",thumbnailUrl:"https://hugh.cdn.rumble.cloud/video/s8/1/P/d/4/O/Pd4Ov.OvCc.i-small-NEWSMAX2-LIVE-Real-News-for..jpg"},
+{videoId:"v35waq4",embedId:"v33aw1a",label:"RT News 24/7",kind:"always-on",thumbnailUrl:"https://hugh.cdn.rumble.cloud/video/cwg9/s8/1/m/9/W/z/m9Wzl.OvCc-small-RT-News-Livestream-247.jpg"}];
+const LOADER_STUB='!function(r,u,m,b,l,e){r._Rumble=b,r[b]||(r[b]=function(){(r[b]._=r[b]._||[]).push(arguments);if(r[b]._.length==1){l=u.createElement(m),e=u.getElementsByTagName(m)[0],l.async=1,l.src="https://rumble.com/embedJS/u4"+(arguments[1].video?\'.\'+arguments[1].video:"")+"/?url="+encodeURIComponent(location.href)+"&args="+encodeURIComponent(JSON.stringify([].slice.apply(arguments))),e.parentNode.insertBefore(l,e)}})}(window, document, "script", "Rumble");';
+const states=new Map(),cleanups=new Map(),logBody=document.querySelector("#log-body"),status=document.querySelector("#status");
+const now=()=>new Date().toISOString(),key=(t,m)=>t.embedId+":"+m;
+function record(t,m,k,v=now()){const s=states.get(key(t,m))||{videoId:t.videoId,embedId:t.embedId,label:t.label,mode:m};s[k]=v;states.set(key(t,m),s);render()}
+function render(){logBody.innerHTML=TARGETS.flatMap(t=>["script","iframe"].map(m=>{const s=states.get(key(t,m));return "<tr><td>"+t.label+" / "+m+"<br><code>"+t.videoId+" → "+t.embedId+"</code></td><td>"+(s?.created||"—")+"</td><td>"+(s?.load||"—")+"</td><td>"+(s?.error||"—")+"</td><td>"+(s?.timeout||"—")+"</td><td>"+(s?.imageLoaded||"—")+"</td></tr>"})).join("")}
+function installLoader(){if(typeof window.Rumble==="function")return;const s=document.createElement("script");s.textContent=LOADER_STUB;document.head.appendChild(s)}
+function playScript(t,host){const m="script",k=key(t,m);if(cleanups.has(k))return;try{host.replaceChildren();const div=document.createElement("div");div.id="rumble_"+t.embedId;host.appendChild(div);let timer;const o=new MutationObserver(()=>{const f=div.querySelector("iframe");if(!f||f.dataset.spikeObserved==="true")return;f.dataset.spikeObserved="true";f.addEventListener("load",()=>{clearTimeout(timer);record(t,m,"load")},{once:true});f.addEventListener("error",e=>{clearTimeout(timer);record(t,m,"error",String(e))},{once:true})});o.observe(div,{childList:true,subtree:true});installLoader();record(t,m,"created");window.Rumble("play",{video:t.embedId,div:div.id});timer=setTimeout(()=>record(t,m,"timeout"),10000);cleanups.set(k,()=>{clearTimeout(timer);o.disconnect();host.replaceChildren();cleanups.delete(k)})}catch(e){record(t,m,"error",String(e))}}
+function playIframe(t,host){const m="iframe",k=key(t,m);if(cleanups.has(k))return;try{host.replaceChildren();const f=document.createElement("iframe");f.src="https://rumble.com/embed/"+t.embedId+"/?pub=4";f.allowFullscreen=true;f.title=t.label;f.style.width="100%";f.style.minHeight="220px";let timer;f.addEventListener("load",()=>{clearTimeout(timer);record(t,m,"load")},{once:true});f.addEventListener("error",e=>{clearTimeout(timer);record(t,m,"error",String(e))},{once:true});record(t,m,"created");host.appendChild(f);timer=setTimeout(()=>record(t,m,"timeout"),10000);cleanups.set(k,()=>{clearTimeout(timer);host.replaceChildren();cleanups.delete(k)})}catch(e){record(t,m,"error",String(e))}}
+function panel(t){const p=document.createElement("section");p.className="panel";p.innerHTML="<h2>"+t.label+" — "+t.kind+"</h2><img class='thumb' alt='"+t.label+" thumbnail'><div class='player' data-player='script'></div><div class='panel-controls'><button data-play='script'>Play (script)</button><button data-play='iframe'>Play (iframe)</button></div><div class='player' data-player='iframe'></div>";document.querySelector("#panels").appendChild(p);const img=p.querySelector(".thumb");img.src=t.thumbnailUrl;img.addEventListener("load",()=>{record(t,"script","imageLoaded");record(t,"iframe","imageLoaded")},{once:true});img.addEventListener("error",()=>{record(t,"script","imageLoaded","ERROR");record(t,"iframe","imageLoaded","ERROR")},{once:true});p.querySelector("button[data-play='script']").addEventListener("click",()=>playScript(t,p.querySelector("[data-player='script']")));p.querySelector("button[data-play='iframe']").addEventListener("click",()=>playIframe(t,p.querySelector("[data-player='iframe']")))}
+TARGETS.forEach(panel);render();
+document.querySelector("#destroy-all").addEventListener("click",()=>{[...cleanups.values()].forEach(f=>f());status.textContent="All spike embeds removed."});
+document.querySelector("#copy-report").addEventListener("click",async()=>{const report={generatedAt:now(),userAgent:navigator.userAgent,panels:TARGETS.map(t=>({videoId:t.videoId,embedId:t.embedId,label:t.label,kind:t.kind,thumbnailUrl:t.thumbnailUrl,modes:["script","iframe"].map(m=>states.get(key(t,m))||null)}))};const json=JSON.stringify(report,null,2);try{await navigator.clipboard.writeText(json);status.textContent="Rumble spike report copied to clipboard."}catch{const box=document.querySelector("#report-fallback");box.value=json;box.hidden=false;box.focus();box.select();status.textContent="Clipboard unavailable. Report shown below; use Select All to copy it."}});
+</script></body></html>
