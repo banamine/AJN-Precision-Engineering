@@ -14,3 +14,8 @@ One Cloud Run service: Express API + built SPA in one process.
 - Media proxy: `/api/archive/proxy` must never return one response larger than 32 MiB
   (Cloud Run HTTP/1 limit). It serves bounded 206 slices of at most 8 MiB.
 - CI gates (ajn-ci.yml: lint, pure-regressions, integration) must pass on main before deploy.
+
+**Open handoff items**
+- manifest entries that fail real playback; candidate count varies by run.
+- `V1_FILE_SHA256.txt` still lists the old `test-429.ts` path.
+- `AJN_FULL_REBUILD_MANIFEST.json` still lists the old `test-429.ts` path.
