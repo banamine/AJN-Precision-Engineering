@@ -6,6 +6,7 @@ import path from 'node:path';
 import { classicM3uContract, parseM3uEntries, episodeKey } from './server/sources/classicM3u.ts';
 import { localFilesContract } from './server/sources/localFiles.ts';
 import { runSources } from './server/sources/runner.ts';
+import { getCanonicalProgram, ingestM3uPlaylist } from './guideRegistry.ts';
 import type { SourceContract } from './server/sources/contract.ts';
 
 const now = new Date('2026-09-23T12:00:00Z');
@@ -86,3 +87,35 @@ assert.equal(results[1].error, 'Archive down');
 assert.match(results[2].error ?? '', /timed out/);
 console.log('PASS runner isolation');
 console.log('source contracts regression: all passed');
+
+
+// ── Legacy playlist ingestion → canonical Program ─────────────────────────
+const registryPlaylist = {
+  id: 'test-m3u-program-ingestion',
+  name: 'Test M3U Program Ingestion',
+  sourceUrl: 'https://example.org/test.m3u',
+  category: 'TV Shows' as const,
+  enabled: true,
+  lastSyncedAt: new Date(0).toISOString(),
+  syncStatus: 'pending' as const,
+};
+const registryM3u = `#EXTM3U
+#EXTINF:120 tvg-id="registry-show" tvg-name="Registry Show" group-title="Test",Registry Show Episode
+/download/registry-show/episode.mp4?exact=1&start=0&end=120`;
+const registryFirst = ingestM3uPlaylist(registryPlaylist, registryM3u, 'classic-tv');
+assert.equal(registryFirst.ingestedCount, 1);
+const registryProgram = getCanonicalProgram('program-2b6b5b0c3f8d6e39');
+assert.ok(registryProgram, 'M3U ingestion registers a canonical Program');
+assert.equal(registryProgram?.guideId, 'classic-tv');
+assert.equal(registryProgram?.channelId, registryFirst.channels[0]?.id);
+assert.equal(registryProgram?.mediaType, 'video');
+assert.equal(registryProgram?.mediaUrl, '/download/registry-show/episode.mp4?exact=1&start=0&end=120');
+assert.ok(registryProgram?.assetId);
+assert.ok(registryProgram?.sourceId);
+const registrySecond = ingestM3uPlaylist(registryPlaylist, registryM3u, 'classic-tv');
+const registryProgramAgain = getCanonicalProgram(registryProgram!.id);
+assert.equal(registrySecond.ingestedCount, 1);
+assert.equal(registryProgramAgain?.id, registryProgram?.id);
+assert.equal(registryProgramAgain?.assetId, registryProgram?.assetId);
+assert.equal(registryProgramAgain?.sourceId, registryProgram?.sourceId);
+console.log('PASS M3U registry Program ingestion');
