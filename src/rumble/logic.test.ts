@@ -56,6 +56,10 @@ const invalid = baseline([
   }),
   baseItem({
     videoId: "duplicate",
+    thumbnailUrl: "https://example.com/thumb.jpg",
+  }),
+  baseItem({
+    videoId: "unknown-channel",
     channelId: "missing",
     thumbnailUrl: "https://example.com/thumb.jpg",
   }),
