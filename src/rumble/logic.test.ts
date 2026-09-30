@@ -123,6 +123,28 @@ const tooManyItems = baseline(
 );
 assert(validateBaseline(tooManyItems).errors.some((error) => error.includes("2000 items")));
 
+const realSeedEmbedIds = new Map([
+  ["v7eh2s2", "v7capuk"],
+  ["v7fnvu2", "v7dhiwk"],
+  ["v7fbep2", "v7d51rk"],
+  ["v7g3puq", "v7dxcx8"],
+  ["v7g6mii", "v7e09l0"],
+  ["v7g7f18", "v7e123q"],
+  ["v60552h", "v5xwnen"],
+  ["v35waq4", "v33aw1a"],
+  ["v7g7f4w", "v7e127e"],
+  ["v7g6732", "v7dzu5k"],
+  ["v7g7cya", "v7e100s"],
+  ["v7g7dps", "v7e10sa"],
+]);
+assert.equal(RUMBLE_BASELINE.version, 3);
+assert.equal(RUMBLE_BASELINE.items.length, 12);
+assert(RUMBLE_BASELINE.items.every((item) => item.embedId !== item.videoId));
+assert.deepEqual(
+  new Map(RUMBLE_BASELINE.items.map((item) => [item.videoId, item.embedId])),
+  realSeedEmbedIds,
+);
+
 const seedValidation = validateBaseline(RUMBLE_BASELINE);
 assert.equal(seedValidation.valid, true);
 assert.deepEqual(
@@ -254,18 +276,17 @@ const baselineSeedResponse = invoke("/api/rumble/baseline", {}, undefined, RUMBL
 assert.equal(baselineSeedResponse?.statusCode, 200);
 const baselineSeedBody = baselineSeedResponse?.body as { ok: boolean; items: RumbleItem[] };
 assert.equal(baselineSeedBody.ok, true);
-assert.equal(baselineSeedBody.items.length, 16);
+assert.equal(baselineSeedBody.items.length, 12);
 
 const ravBannonItems = invoke("/api/rumble/items", { channelId: "rav-bannons-war-room" }, undefined, RUMBLE_BASELINE);
 assert.equal(ravBannonItems?.statusCode, 200);
 const ravBannonBody = ravBannonItems?.body as { items: RumbleItem[] };
-assert.equal(ravBannonBody.items.length, 1);
-assert.equal(ravBannonBody.items[0]?.videoId, "v7g70xi");
+assert.equal(ravBannonBody.items.length, 0);
 
 const baselineResponse = invoke("/api/rumble/baseline", {}, undefined, RUMBLE_BASELINE);
 assert.equal(baselineResponse?.statusCode, 200);
 assert.equal((baselineResponse?.body as { ok: boolean }).ok, true);
-assert.equal((baselineResponse?.body as { items: RumbleItem[] }).items.length, 16);
+assert.equal((baselineResponse?.body as { items: RumbleItem[] }).items.length, 12);
 
 for (const path of ["/api/rumble", "/api/rumble/baseline", "/api/rumble/channels", "/api/rumble/items"]) {
   const disabled = invoke(path, {}, "false");

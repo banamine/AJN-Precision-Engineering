@@ -1,7 +1,7 @@
 import type { RumbleBaseline } from "./types";
 
 export const RUMBLE_BASELINE: RumbleBaseline = {
-  version: 2,
+  version: 3,
   generatedAt: "2026-09-30T20:47:09.621Z",
   channels: [
     {
@@ -105,7 +105,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "ajn-alex-jones-show",
       videoId: "v7eh2s2",
-      embedId: "v7eh2s2",
+      embedId: "v7capuk",
       title: "Alex Jones Live",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/da/s8/1/0/N/g/A/0NgAA.OvCc-small-Alex-Jones-Live..jpg",
       publishedAt: null,
@@ -118,7 +118,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "ajn-alex-jones-network-live",
       videoId: "v7fnvu2",
-      embedId: "v7fnvu2",
+      embedId: "v7dhiwk",
       title: "ALEX JONES NETWORK LIVE - THERE'S A WAR ON FOR YOUR MIND!",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/72/s8/1/g/m/w/n/gmwnA.OvCc-small-ALEX-JONES-NETWORK-LIVE-THE..jpg",
       publishedAt: null,
@@ -131,7 +131,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "ajn-network-feed",
       videoId: "v7fbep2",
-      embedId: "v7fbep2",
+      embedId: "v7d51rk",
       title: "War Room Live: Russia Tells NATO To Back Off Kaliningrad Or There Will Be Hell To Pay, Terrorist Co-Pilot Stabs Captain On Jet Bound For Israel, Iran/US Peace Talks Move Forward & Much More!",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/c6/s8/1/M/O/W/W/MOWWA.OvCc.1-small-LIVE-Emergency-Broadcast-Ir..jpg",
       publishedAt: null,
@@ -144,7 +144,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "ajn-alex-jones-show-rumble",
       videoId: "v7g3puq",
-      embedId: "v7g3puq",
+      embedId: "v7dxcx8",
       title: "The Alex Jones Show WEDNESDAY LIVE SHOW STREAM 9/30/26",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fwe2/b3/s8/6/I/g/Z/1/IgZ1A.OvCc.16r.jpg",
       publishedAt: null,
@@ -157,7 +157,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "rav-real-americas-voice",
       videoId: "v7g6mii",
-      embedId: "v7g6mii",
+      embedId: "v7e09l0",
       title: "HOME OF REAL NEWS & HONEST VIEWS",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fwe2/bd/s8/1/6/n/u/2/6nu2A.OvCc-small-HOME-OF-REAL-NEWS-and-HONES..jpg",
       publishedAt: null,
@@ -168,35 +168,9 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
       viewers: 2410,
     },
     {
-      channelId: "rav-real-americas-voice",
-      videoId: "v7g6mce",
-      embedId: "v7g6mce",
-      title: "STAGED JACKSON HANGING UNRAVELS, JOHNSON EXPOSES COVID PROTOCOLS | BOLLING! SHOW",
-      thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/b5/s8/1/E/k/u/2/Eku2A.OvCc.1-small-STAGED-JACKSON-HANGING-UNRA..jpg",
-      publishedAt: null,
-      startedAt: "2026-09-30T20:00:05.000Z",
-      durationSec: null,
-      kind: "live",
-      state: "live",
-      viewers: 237,
-    },
-    {
-      channelId: "rav-bannons-war-room",
-      videoId: "v7g70xi",
-      embedId: "v7g70xi",
-      title: "Wed, Sep 2 LIVE: Precinct Project USA @1PM & Election Integrity @2PM EST - Hosted by Steve Stern",
-      thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fwe2/99/s8/1/2/X/y/2/2Xy2A.OvCc-small-Wed-Sep-2-LIVE-Precinct-Pro..jpg",
-      publishedAt: null,
-      startedAt: "2026-09-30T18:13:26.000Z",
-      durationSec: null,
-      kind: "live",
-      state: "live",
-      viewers: 465,
-    },
-    {
       channelId: "news-redacted",
       videoId: "v7g7f18",
-      embedId: "v7g7f18",
+      embedId: "v7e123q",
       title: "Hijacking False Flag!? Right As Netanyahu Predicts New Attacks On Israelis, America Leaves Iraq",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/99/s8/1/C/p/D/2/CpD2A.OvCc.1-small-Hijacking-False-Flag-Right-..jpg",
       publishedAt: null,
@@ -209,7 +183,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "news-newsmax",
       videoId: "v60552h",
-      embedId: "v60552h",
+      embedId: "v5xwnen",
       title: "NEWSMAX2 LIVE | Real News for Real People",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/s8/1/P/d/4/O/Pd4Ov.OvCc.i-small-NEWSMAX2-LIVE-Real-News-for..jpg",
       publishedAt: null,
@@ -222,7 +196,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "news-rt",
       videoId: "v35waq4",
-      embedId: "v35waq4",
+      embedId: "v33aw1a",
       title: "RT News | Livestream 24/7",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/cwg9/s8/1/m/9/W/z/m9Wzl.OvCc-small-RT-News-Livestream-247.jpg",
       publishedAt: null,
@@ -235,7 +209,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "news-owen-shroyer",
       videoId: "v7g7f4w",
-      embedId: "v7g7f4w",
+      embedId: "v7e127e",
       title: "Senate Votes To Cover Up Deaths of US Citizens In West Bank",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/3d/s8/1/8/r/2/Z/8r2ZA.OvCc-small-Trump-Approval-Rating-Hits-..jpg",
       publishedAt: null,
@@ -248,7 +222,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "news-lfa-tv",
       videoId: "v7g6732",
-      embedId: "v7g6732",
+      embedId: "v7dzu5k",
       title: "LIVE & BREAKING NEWS! | WEDNESDAY 9/30/26",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fwe2/08/s8/1/E/v/p/2/Evp2A.OvCc.6-small-LIVE-and-BREAKING-NEWS-WEDN..jpg",
       publishedAt: null,
@@ -261,7 +235,7 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     {
       channelId: "news-vivafrei",
       videoId: "v7g7cya",
-      embedId: "v7g7cya",
+      embedId: "v7e100s",
       title: "Brian Cole Jr. \"Confession\" Released - It is PURE ABUSE; Candace Ownes Sued for Defamation AND MORE!",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/81/s8/6/s/L/C/2/sLC2A.OvCc.r.jpg",
       publishedAt: null,
@@ -272,22 +246,9 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
       viewers: 759,
     },
     {
-      channelId: "news-rsbn",
-      videoId: "v7g6tne",
-      embedId: "v7g6tne",
-      title: "LIVE: President Trump Hosts Hispanic Heritage Celebration; Announcement with Sec. Commerce - 9/30/26",
-      thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/7d/s8/1/A/E/w/2/AEw2A.OvCc-small-LIVE-President-Trump-Hosts-..jpg",
-      publishedAt: null,
-      startedAt: "2026-09-30T16:30:17.000Z",
-      durationSec: null,
-      kind: "live",
-      state: "live",
-      viewers: 959,
-    },
-    {
       channelId: "news-white-house",
       videoId: "v7g7dps",
-      embedId: "v7g7dps",
+      embedId: "v7e10sa",
       title: "President Trump Makes an Announcement with the Secretary of Commerce",
       thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/59/s8/6/W/0/C/2/W0C2A.OvCc.4.jpg",
       publishedAt: null,
@@ -296,19 +257,6 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
       kind: "live",
       state: "live",
       viewers: 714,
-    },
-    {
-      channelId: "news-badlands",
-      videoId: "v7g69r6",
-      embedId: "v7g69r6",
-      title: "Badlands Media Special Coverage: President Trump Makes Announcement",
-      thumbnailUrl: "https://hugh.cdn.rumble.cloud/video/fww1/9c/s8/1/I/l/q/2/Ilq2A.OvCc-small-Badlands-Media-Special-Cove..jpg",
-      publishedAt: null,
-      startedAt: "2026-09-30T19:45:28.000Z",
-      durationSec: null,
-      kind: "live",
-      state: "live",
-      viewers: 545,
     },
   ],
 };
