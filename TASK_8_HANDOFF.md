@@ -43,6 +43,14 @@
 [CI-verified: prior CI evidence reviewed by user] Earlier runs produced 12/12 and 12/14 results.  
 [CI-verified: prior CI evidence reviewed by user] The 12/14 run's two failures were `BorderPatrol1937` and `HolidayInn1942Colorized`.  
 [read from code: b4d50af] Those identifiers remain in `src/data/moviesClassicsManifest.json`; this handoff does not edit that manifest.
+[read from code: b4d50af] 12/14 and 12/12 are different validator populations: before the current 12-candidate probe, the resolver dropped `BorderPatrol1937` and `HolidayInn1942Colorized`.
+
+## Known Gaps
+
+[read from code: b4d50af] M3U ingestion yields `Channel` + `ChannelSource` but no `Program`/`MediaAsset`.
+[read from code: b4d50af] `classicM3uContract` is used only by `test-source-contracts.ts`, not production.
+[read from code: b4d50af] No `PlaybackPlan` exists.
+[read from code: b4d50af] The two M3U parsers (`guideRegistry.parseM3u` and `classicM3uContract`) quote differently.
 
 ## Known Stale Manifest Paths
 
@@ -67,8 +75,8 @@
 3. [not verified] Search error state: confirm upstream/search failure is surfaced explicitly.
 4. [not verified] Cable guide: confirm the guide loads, displays current/upcoming entries, and selection reaches the expected playback path.
 5. [not verified] Audible playback: confirm a selected video produces audible media through the intended audio route.
-6. [not verified] Range probe: send a `Range: bytes=0-` request to `/api/archive/proxy` and confirm HTTP `206` with a response slice no larger than 8 MiB.
-7. [not verified] `/api/health`: confirm the deployed service returns its expected health response.
+6. [not verified] Range probe: send a `Range: bytes=0-` request to `/api/archive/proxy` and confirm HTTP `206` with a response slice no larger than 8 MiB. Nothing from `fix/p1` is deployed; run this against a local build of the branch. Merging PR #68 auto-deploys.
+7. [not verified] `/api/health`: confirm the deployed service returns its expected health response. Nothing from `fix/p1` is deployed; run this against a local build of the branch. Merging PR #68 auto-deploys.
 8. [not verified] FOX playback: test a real current FOX news item.
 9. [not verified] MSNBC playback: test a real current MSNBC news item.
 10. [not verified] BBC playback: test a real current BBC news item.
@@ -81,5 +89,6 @@
 [not verified: user live testing] The live-test checklist remains outstanding.  
 [not verified: merge decision] No merge is authorized by this document.  
 [not verified: deployment] No deployment is authorized by this document.  
-[read from code: b4d50af] The open Archive availability, CI coverage, validator-history, and stale-path items remain open.
+[read from code: b4d50af] The open Archive availability, CI coverage, validator-history, stale-path, and Known Gaps items remain open.
+[read from code: b4d50af] Known Gaps remain open: M3U ingestion yields Channel + ChannelSource but no Program/MediaAsset; classicM3uContract is test-only; no PlaybackPlan exists; the two M3U parsers quote differently.
 
