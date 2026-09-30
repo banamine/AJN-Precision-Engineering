@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { classifyKind, reconcile, sortItems, validateBaseline } from "./logic";
 import type { RumbleBaseline, RumbleItem } from "./types";
+import { registerRumbleRoutes } from "../../server/rumble/routes";
 
 const baseItem = (overrides: Partial<RumbleItem> = {}): RumbleItem => ({
   channelId: "c1",
@@ -69,4 +70,42 @@ assert(validateBaseline(invalid).errors.some((error) => error.includes("duplicat
 assert(validateBaseline(invalid).errors.some((error) => error.includes("unknown channel")));
 assert(validateBaseline(invalid).errors.some((error) => error.includes("thumbnailUrl")));
 
-console.log("[rumble-engine] PASS: classification, ordering, live-to-ended reconciliation, and baseline validation.");
+const handlers = new Map<string, Function>();
+registerRumbleRoutes({
+  get(path: string, handler: Function) {
+    handlers.set(path, handler);
+  },
+} as never);
+
+assert.deepEqual([...handlers.keys()], ["/api/rumble", "/api/rumble/channels", "/api/rumble/items"]);
+
+const responses: Array<{ statusCode: number; body: unknown }> = [];
+const makeResponse = () => {
+  const response = {
+    statusCode: 200,
+    status(code: number) {
+      response.statusCode = code;
+      return response;
+    },
+    json(body: unknown) {
+      responses.push({ statusCode: response.statusCode, body });
+      return response;
+    },
+  };
+  return response;
+};
+
+const rootResponse = makeResponse();
+handlers.get("/api/rumble")({}, rootResponse);
+const rootBody = responses.at(-1)?.body as { channels: Array<{ network: string }>; items: RumbleItem[] };
+assert.equal(rootBody.channels.length, 3);
+assert(rootBody.channels.some((channel) => channel.network === "ajn"));
+assert(rootBody.channels.some((channel) => channel.network === "rav"));
+
+const ajnItemsResponse = makeResponse();
+handlers.get("/api/rumble/items")({ query: { channelId: "ajn-war-room" } }, ajnItemsResponse);
+const ajnItemsBody = responses.at(-1)?.body as { items: RumbleItem[] };
+assert(ajnItemsBody.items.every((item) => item.channelId === "ajn-war-room"));
+assert(!ajnItemsBody.items.some((item) => item.title.includes("Steve Bannon")));
+
+console.log("[rumble-engine] PASS: classification, ordering, live-to-ended reconciliation, baseline validation, and read-only API.");
