@@ -8,7 +8,7 @@ const baseItem = (overrides: Partial<RumbleItem> = {}): RumbleItem => ({
   embedId: "v1",
   title: "Live Show",
   thumbnailUrl: null,
-  publishedAt: "2026-09-29T00:00:00.000Z",
+  publishedAt: "2026-09-29T12:00:00.000Z",
   durationSec: null,
   kind: "live",
   state: "live",
