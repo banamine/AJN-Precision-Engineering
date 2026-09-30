@@ -191,38 +191,35 @@ jobs:
             fi
           done
           [ "$FAILED" -eq 0 ]
-      - name: Existing playback regression
-        run: npm test
+      - name: Integration regressions
         env:
           AJN_TEST_URL: http://localhost:3000
-      - name: API contract regression
-        run: npm run test:api-contract
-        env:
-          AJN_TEST_URL: http://localhost:3000
-      - name: Accessibility regression
-        run: npm run test:accessibility
-        env:
-          AJN_TEST_URL: http://localhost:3000
-      - name: Audio/video switch regression
-        run: npm run test:audio-video-switch
-        env:
-          AJN_TEST_URL: http://localhost:3000
-      - name: Audio bridge browser regression
-        run: npm run test:audio
-        env:
-          AJN_TEST_URL: http://localhost:3000
-      - name: AudioContext singleton regression
-        run: npm run test:audio-singleton
-        env:
-          AJN_TEST_URL: http://localhost:3000
-      - name: Browser journey regression
-        run: npm run test:browser-journeys
-        env:
-          AJN_TEST_URL: http://localhost:3000
-      - name: Real Archive playback gates
-        run: npm run test:real-archive-playback
-        env:
-          AJN_TEST_URL: http://localhost:3000
+        run: |
+          set -Eeuo pipefail
+
+          trap '
+            status=$?
+            echo "::error::Integration command failed with exit code ${status}"
+            echo "Last server output:"
+            tail -n 200 /tmp/ajn-server.log || true
+            exit "${status}"
+          ' ERR
+
+          run_test() {
+            echo "::group::Running $1"
+            shift
+            "$@"
+            echo "::endgroup::"
+          }
+
+          run_test "existing playback" npm test
+          run_test "API contract" npm run test:api-contract
+          run_test "accessibility" npm run test:accessibility
+          run_test "audio/video switch" npm run test:audio-video-switch
+          run_test "audio bridge" npm run test:audio
+          run_test "AudioContext singleton" npm run test:audio-singleton
+          run_test "browser journeys" npm run test:browser-journeys
+          run_test "real Archive playback" npm run test:real-archive-playback
       - name: Visual regression screenshots
         if: always()
         run: |
