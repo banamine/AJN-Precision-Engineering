@@ -57,7 +57,8 @@
     "test:discovery": "tsx test-discovery-channel.ts",
     "test:audio-ownership": "tsx scripts/test-audio-ownership.ts",
     "test:media-contract": "tsx scripts/media-contract-audit.ts",
-    "test:news-freshness": "tsx test-news-freshness.js"
+    "test:news-freshness": "tsx test-news-freshness.js",
+    "test:canonical-slice": "tsx test-canonical-playback-slice.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
