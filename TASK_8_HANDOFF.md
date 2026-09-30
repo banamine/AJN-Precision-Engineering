@@ -31,6 +31,13 @@
 [not verified: user-reported repeated CI log review] Seven CNNW clips were unavailable at Archive storage with HTTP 403 in 4 of 4 runs reviewed by the user; the test records this as an external availability condition, not a playback pass.  
 [not verified: user-reported repeated CI log review] The CNN 403 condition remains an open item and is not treated as an application playback failure or as evidence of successful playback.
 
+## Other observations
+
+[CI-verified: run 36690773110] `test.js` prints `Fox News Source URL: undefined` without asserting it.
+[CI-verified: run 36690773110] The web manifest request is served as HTML (`Manifest: Line: 1, column: 1, Syntax error`) and `/favicon.ico` returns HTTP 404.
+[CI-verified: run 36690773110] The server warm-up resolver and the test resolver report different kept/dropped sets in the same run, so validator population is not stable.
+[CI-verified: run 36690773110] Live health was 1263/1515.
+
 ## CI Playback Coverage
 
 [CI-verified: run #478 / Real Archive playback logs] The CI playback gate probes CNN content.  
@@ -91,4 +98,5 @@
 [not verified: deployment] No deployment is authorized by this document.  
 [read from code: b4d50af] The open Archive availability, CI coverage, validator-history, stale-path, and Known Gaps items remain open.
 [read from code: b4d50af] Known Gaps remain open: M3U ingestion yields Channel + ChannelSource but no Program/MediaAsset; classicM3uContract is test-only; no PlaybackPlan exists; the two M3U parsers quote differently.
+[read from code: b4d50af] Product-level Known Gap: Archive direct-MP4 is not a viable news playback source; a different source is needed (see the queued Free-TV/iptv-org review).
 
