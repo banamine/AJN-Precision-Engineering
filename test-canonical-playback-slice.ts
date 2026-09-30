@@ -1,48 +1,80 @@
+// Contract test for the canonical playback slice as it exists in the repo.
+// See AJN_CANONICAL_PLAYBACK_SLICE.md. Offline: no network, no server, no source-text checks.
+//
+// Boundaries covered here that no other test composes:
+//   A. Programs held by the registry (Nova + Movies & Classics producers) carry a
+//      proxied direct-MP4 mediaUrl that decodes back to the canonical /download/ path.
+//   B. That mediaUrl is same-origin, so the audio bridge admits it (corsModeFor).
+//   C. The production M3U path (guideRegistry.ingestM3uPlaylist) yields Channel +
+//      ChannelSource records and NO Program/MediaAsset -- pinned as a KNOWN GAP.
+// Proxy range slicing stays in test-proxy-range.ts; classicM3uContract stays in
+// test-source-contracts.ts.
 import assert from 'node:assert/strict';
-import { parseM3u } from './guideRegistry.ts';
+import {
+  getCanonicalPrograms,
+  parseM3u,
+  ingestM3uPlaylist,
+  getChannelById,
+  getChannelSources,
+} from './guideRegistry.ts';
 import { buildArchiveProxyUrl } from './src/utils/archivePlayback.ts';
+import { bridgeSrc, corsModeFor } from './src/utils/mediaRoute.ts';
+import type { Playlist } from './src/types.ts';
 
-const directMp4M3u = `#EXTM3U
-#EXTINF:120 tvg-id="demo-mp4" tvg-name="Demo MP4" group-title="TV",Demo MP4
-https://media.example.test/demo.mp4
+const PROXY_PREFIX = '/api/archive/proxy?path=';
+
+// ── A. Registry programs: direct MP4 through the proxy contract ─────────────
+const archivePrograms = getCanonicalPrograms().filter((p) => p.sourceClass === 'archive_org');
+assert.ok(archivePrograms.length > 0, 'registry must hold at least one archive_org program');
+
+for (const p of archivePrograms) {
+  assert.ok(p.id && p.assetId && p.sourceId, `program ${p.title} must carry id, assetId and sourceId`);
+  assert.ok(p.mediaUrl.startsWith(PROXY_PREFIX), `mediaUrl must go through the proxy: ${p.mediaUrl}`);
+  const decoded = decodeURIComponent(p.mediaUrl.slice(PROXY_PREFIX.length));
+  assert.ok(decoded.startsWith('/download/'), `proxy path must be a canonical /download/ path: ${decoded}`);
+  assert.ok(!/^https?:/i.test(decoded), 'proxy path must not be an absolute URL (no SSRF surface)');
+  assert.equal(p.mediaUrl, buildArchiveProxyUrl(decoded), `mediaUrl must round-trip through buildArchiveProxyUrl: ${p.title}`);
+  if (p.archivePath) assert.equal(decoded, p.archivePath, `archivePath and mediaUrl must agree: ${p.title}`);
+}
+assert.ok(archivePrograms.some((p) => /\.mp4(\?|$)/i.test(decodeURIComponent(p.mediaUrl))), 'at least one program must be a direct MP4');
+
+// ── B. Same-origin proxy URL is admitted by the audio bridge ────────────────
+const sample = archivePrograms[0];
+assert.equal(bridgeSrc(sample.mediaUrl), sample.mediaUrl, 'proxy URL must not be rewritten by bridgeSrc');
+assert.equal(corsModeFor(sample.mediaUrl, false), 'anonymous', 'same-origin proxy URL must be CORS-anonymous so the bridge can read it');
+
+// ── C. Production M3U path: Channel + ChannelSource, no Program (KNOWN GAP) ──
+const before = getCanonicalPrograms().length;
+const fixture = `#EXTM3U
+#EXTINF:1500 tvg-id="slice-test" group-title="Slice Test",Slice Test Show
+https://archive.org/download/slice-test/episode-01.mp4
+#EXTINF:60,No URL follows this line
+#EXTINF:60,Second entry
+https://example.org/live/stream.m3u8
+#EXTINF:60,
+https://example.org/untitled.mp4
 `;
+const entries = parseM3u(fixture);
+assert.deepEqual(entries.map((e) => e.title), ['Slice Test Show', 'Second entry'], 'entries without a title or without a URL are dropped');
 
-const directEntries = parseM3u(directMp4M3u);
-assert.equal(directEntries.length, 1);
-assert.deepEqual(directEntries[0], {
-  title: 'Demo MP4',
-  url: 'https://media.example.test/demo.mp4',
-  tvgId: 'demo-mp4',
-  tvgName: 'Demo MP4',
-  groupTitle: 'TV',
-  duration: 120,
-});
+const playlist: Playlist = {
+  id: 'slice-test-playlist', name: 'Slice Test', sourceUrl: 'test://fixture', category: 'TV Shows',
+  enabled: true, lastSyncedAt: '', syncStatus: 'pending',
+};
+const result = ingestM3uPlaylist(playlist, fixture, 'cable-tv');
+assert.equal(result.ingestedCount, 2);
 
-const archivePath = '/download/demo_identifier/demo-file.mp4?start=0&end=120';
-assert.equal(
-  buildArchiveProxyUrl(archivePath),
-  `/api/archive/proxy?path=${encodeURIComponent(archivePath)}`,
-);
+const channel = getChannelById('channel-slice-test');
+assert.ok(channel, 'tvg-id must become the channel identity');
+assert.equal(channel!.guideId, 'cable-tv');
+const sources = getChannelSources('channel-slice-test');
+assert.equal(sources.length, 1);
+assert.equal(sources[0].url, 'https://archive.org/download/slice-test/episode-01.mp4');
+assert.equal(sources[0].protocol, 'https');
+assert.ok(result.channels.some((c) => getChannelSources(c.id).some((s) => s.protocol === 'hls')), '.m3u8 entry must be classified hls');
 
-// Negative boundary: the real parser drops an EXTINF entry when no URL line follows it.
-const noUrlEntries = parseM3u(`#EXTM3U
-#EXTINF:60 tvg-id="missing",Missing URL
-`);
-assert.equal(noUrlEntries.length, 0);
-
-// Negative boundary: the real parser does not enforce an MP4-only URL policy.
-// Non-MP4 URLs remain parser output and require a later admission/validation stage.
-const nonMp4Entries = parseM3u(`#EXTM3U
-#EXTINF:60 tvg-id="hls",HLS Example
-https://media.example.test/live.m3u8
-`);
-assert.equal(nonMp4Entries.length, 1);
-assert.equal(nonMp4Entries[0].url, 'https://media.example.test/live.m3u8');
-
-// Production ingestM3uPlaylist was inspected before this test was written.
-// It mutates module-level channel/source maps and updates playlist timestamps,
-// so it is intentionally not called here. The canonical production boundary
-// is documented as parseM3u -> ingestM3uPlaylist -> Channel + ChannelSource.
-// This test stays pure and does not share registry state across cases.
+// KNOWN GAP: M3U ingestion does not produce Program or MediaAsset records.
+// If this changes, update AJN_CANONICAL_PLAYBACK_SLICE.md in the same commit.
+assert.equal(getCanonicalPrograms().length, before, 'M3U ingestion currently adds no canonical Program (known gap)');
 
 console.log('canonical playback slice contract: all passed');

@@ -20,16 +20,16 @@
 
 The contract test in `test-canonical-playback-slice.ts` calls real repository functions against in-memory fixtures:
 
-1. `parseM3u` parses a direct MP4 M3U entry and preserves its title, URL, TVG identity, group, and duration.
-2. `buildArchiveProxyUrl` converts a canonical Archive `/download/` path into the existing proxy URL contract.
-3. The negative no-URL fixture records the parser's actual behavior: an EXTINF entry without a following URL is not emitted.
-4. The negative non-MP4 fixture records the parser's actual behavior: the parser preserves the URL rather than enforcing an MP4-only policy.
+1. Registry programs held by `getCanonicalPrograms()` carry proxied direct-MP4 `mediaUrl` values that decode back to canonical Archive `/download/` paths, with required program/source identity.
+2. Those same-origin proxy URLs pass the existing audio bridge contract: `bridgeSrc` leaves the URL unchanged and `corsModeFor` admits it as `anonymous`.
+3. `buildArchiveProxyUrl` converts a canonical Archive `/download/` path into the existing proxy URL contract.
+4. The production `ingestM3uPlaylist` path is exercised in the test's own process. It produces `Channel` + `ChannelSource` records, classifies the HLS entry, and currently adds no canonical `Program` / `MediaAsset`.
+5. The negative no-URL fixture records the parser's actual behavior: an EXTINF entry without a following URL is not emitted.
+6. The negative non-MP4 fixture is represented by the production M3U fixture: the parser/ingestion path classifies the `.m3u8` source as HLS rather than enforcing an MP4-only parser policy.
 
 ## Ingestion boundary
 
-`ingestM3uPlaylist` was reviewed before this test was selected. It owns module-level `channelsMap`, `channelSourcesMap`, and `playlistsMap`, and updates playlist timestamps during ingestion. It is therefore not treated as a pure, shared-state-free test function in Task 5.
-
-Task 5 deliberately does **not** call `ingestM3uPlaylist`. No network or timer behavior is introduced by the test, and no singleton registry state is shared between test cases.
+`ingestM3uPlaylist` was reviewed before this test was selected. It owns module-level `channelsMap`, `channelSourcesMap`, and `playlistsMap`, and updates playlist timestamps during ingestion. The new contract test deliberately calls it **once inside its own test process** so the production boundary is exercised without sharing its mutated registry state with other test processes. No network or timer behavior is introduced by the test.
 
 ## Known gap, not fixed by Task 5
 
@@ -37,7 +37,9 @@ Task 5 deliberately does **not** call `ingestM3uPlaylist`. No network or timer b
 
 `parseM3u` → `ingestM3uPlaylist` → `Channel + ChannelSource`
 
-There is also no `PlaybackPlan` type/function in the current codebase. Task 5 documents these boundaries; it does not add or retrofit either abstraction.
+There is also no `PlaybackPlan` type/function in the current codebase. `classicM3uContract` is not used in production; it is exercised by `test-source-contracts.ts`. Task 5 documents these boundaries; it does not add or retrofit either abstraction.
+
+**Test result:** [not run by ChatGPT; tested by Claude locally, offline, with two deliberate breaks failing]
 
 ## Scope lock
 
