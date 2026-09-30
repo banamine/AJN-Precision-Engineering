@@ -194,11 +194,9 @@ node test-library-integrity.js
 
 ### Step 5: Build & Deploy
 
-```bash
-npm run build
-npm run test:epg-identity
-npm run deploy
-```
+Deployment is handled by `.github/workflows/ajn-deploy.yml`, not by an `npm run deploy` package script. The automatic route runs after a successful **AJN Application CI** run on `main`; the other route is manual `workflow_dispatch` from GitHub Actions.
+
+For local validation, use the build/test commands above. Do not treat those local commands as a deployment path.
 
 ## Expanding to All 150 Items
 
@@ -294,7 +292,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: 22
       
       - name: Run harvester
         run: npm run harvest:movies-classics

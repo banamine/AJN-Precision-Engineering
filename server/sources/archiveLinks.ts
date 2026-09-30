@@ -31,3 +31,23 @@ export function unplayableReason(pathOrUrl: string | undefined): Unplayable | nu
   try { if (s.startsWith('/api/archive/proxy')) path = decodeURIComponent(new URL(s, 'http://x').searchParams.get('path') ?? ''); } catch { /* keep */ }
   return ARCHIVE_MEMBER.test(path) ? 'UNPLAYABLE_ARCHIVE_MEMBER' : null;
 }
+
+/** Video containers Chrome/Safari/Firefox can demux. Everything else (.avi, .mkv, .mpg, .mov, .m3u, .nfo,
+ *  bare folder links) fails with MEDIA_ERR_SRC_NOT_SUPPORTED (code 4), so it must never be admitted to a
+ *  guide. Only `.mov` is arguable (H.264 .mov sometimes plays), but it is not verified, so it is rejected. */
+const WEB_VIDEO = /\.(mp4|m4v|webm|ogv|m3u8)$/i;
+/** Extension of a media path or URL, ignoring query/hash and unwrapping /api/archive/proxy?path=. */
+export function mediaExtension(pathOrUrl: string | undefined): string {
+  let s = String(pathOrUrl ?? '');
+  try { if (s.startsWith('/api/archive/proxy')) s = decodeURIComponent(new URL(s, 'http://x').searchParams.get('path') ?? ''); } catch { /* keep */ }
+  s = s.split(/[?#]/)[0];
+  try { s = decodeURIComponent(s); } catch { /* keep */ }
+  const m = /\.([a-z0-9]{1,5})$/i.exec(s);
+  return m ? m[1].toLowerCase() : '';
+}
+/** null when the path is a browser-playable video file, otherwise the reason it must be rejected. */
+export function notWebPlayableVideo(pathOrUrl: string | undefined): string | null {
+  const ext = mediaExtension(pathOrUrl);
+  if (!ext) return 'no media file (folder or page link)';
+  return WEB_VIDEO.test(`.${ext}`) ? null : `.${ext} is not browser-playable`;
+}

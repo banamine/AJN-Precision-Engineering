@@ -8,7 +8,7 @@ import type { Program } from '../../src/types';
 import { normalizeAssetIdentity, normalizeProgramIdentity, normalizeSourceIdentity } from '../../src/utils/epgIdentity';
 import { buildArchiveProxyUrl } from '../../src/utils/archivePlayback';
 import { episodeKey, parseM3uEntries } from './classicM3u';
-import { playableUrl, slug } from './archiveLinks';
+import { notWebPlayableVideo, playableUrl, slug } from './archiveLinks';
 import type { RejectedItem, SourceContract, SourceResult } from './contract';
 
 export const DAILY_HIGHLIGHTS_ITEM = 'daily-highlights';
@@ -106,6 +106,10 @@ export const dailyHighlightsContract: SourceContract<HighlightsInput> = {
         if (!/^(https?:\/\/|\/api\/archive\/proxy)/i.test(mediaUrl)) { rejected.push({ id: entry.url, reason: 'unsupported URL' }); continue; }
         // Classic TV is a video contract; audio belongs to the future audio/podcast contract.
         if (AUDIO_EXT.test(entry.url)) { rejected.push({ id: entry.url, reason: 'audio-only: not part of Classic TV video' }); continue; }
+        // Admission: only files a browser can demux. Others (.avi/.mkv/.mpg/.m3u/.nfo, folder links) fail
+        // with MEDIA_ERR_SRC_NOT_SUPPORTED at playback, so they are rejected here with a reason instead.
+        const notPlayable = notWebPlayableVideo(entry.url);
+        if (notPlayable) { rejected.push({ id: entry.url, reason: notPlayable }); continue; }
         const externalId = key.season !== undefined ? `${show}|S${key.season}E${key.episode}` : `${show}|${entry.url}`;
         const programId = normalizeProgramIdentity({ externalId, channelId, title: entry.title, startTime: 0 });
         add({

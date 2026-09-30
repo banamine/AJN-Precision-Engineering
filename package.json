@@ -1,7 +1,7 @@
 {
-  "name": "react-example",
+  "name": "ajn-precision-engineering",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -56,7 +56,11 @@
     "library:snapshot": "tsx scripts/library-snapshot.ts",
     "test:discovery": "tsx test-discovery-channel.ts",
     "test:audio-ownership": "tsx scripts/test-audio-ownership.ts",
-    "test:media-contract": "tsx scripts/media-contract-audit.ts"
+    "test:media-contract": "tsx scripts/media-contract-audit.ts",
+    "test:news-freshness": "tsx test-news-freshness.js",
+    "test:canonical-slice": "tsx test-canonical-playback-slice.ts",
+    "test:search-cache": "tsx test-search-cache.ts",
+    "test:playable-admission": "tsx test-playable-admission.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

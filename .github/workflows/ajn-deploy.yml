@@ -89,6 +89,12 @@ jobs:
           gcloud config set project "${GCP_PROJECT_ID}"
           gcloud projects describe "${GCP_PROJECT_ID}" --format='value(projectId)'
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
       - name: Install dependencies
         # Scripts must run: Puppeteer downloads Chrome for the production browser playback gate.
         run: npm ci --no-audit --no-fund

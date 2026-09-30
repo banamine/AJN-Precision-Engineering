@@ -93,6 +93,14 @@ jobs:
         run: npm run test:source-archive-news
       - name: Cable TV guide from Archive News contract (mocked)
         run: npm run test:cable-news-guide
+      - name: News freshness/search result contract
+        run: npm run test:news-freshness
+      - name: Canonical playback slice contract
+        run: npm run test:canonical-slice
+      - name: Search result cache contract
+        run: npm run test:search-cache
+      - name: Playable media admission contract
+        run: npm run test:playable-admission
       - name: Science Documentaries guide regression
         run: npm run test:science-guide
       - name: Classic TV daily-highlights source (mocked)

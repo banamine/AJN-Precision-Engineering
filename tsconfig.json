@@ -26,6 +26,7 @@
   "exclude": [
     "ajn-final-dropin",
     "AJN-Precision-Engineering-DROPIN-FIXED",
+    "_archive",
     "src/PlayerView.tsx",
     "node_modules",
     "dist",

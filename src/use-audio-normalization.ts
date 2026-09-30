@@ -9,6 +9,8 @@ const LS_GAIN_KEY = "tvnews-gain-db";
 const LS_AUTONORM_KEY = "tvnews-autonorm";
 
 declare global { interface Window { webkitAudioContext?: typeof AudioContext; } }
+const lsGet = (k: string): string | null => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k: string, v: string): void => { try { localStorage.setItem(k, v); } catch { /* blocked storage */ } };
 function dbToLinear(db: number): number { return Math.pow(10, db / 20); }
 function linearToDb(linear: number): number { if (linear <= 0) return -Infinity; return 20 * Math.log10(linear); }
 
@@ -82,8 +84,8 @@ function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | n
 }
 
 export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | null>, playerType: "video" | "hls" | "iframe" | "audio" | "skip", clipKey: string): AudioNormalizationReturn {
-  const [gainDb, setGainDbState] = useState<number>(() => { const saved = parseFloat(localStorage.getItem(LS_GAIN_KEY) ?? "0"); return isNaN(saved) ? 0 : Math.max(DB_MIN, Math.min(DB_MAX, saved)); });
-  const [autoNormalize, setAutoNormalizeState] = useState<boolean>(() => localStorage.getItem(LS_AUTONORM_KEY) === "on");
+  const [gainDb, setGainDbState] = useState<number>(() => { const saved = parseFloat(lsGet(LS_GAIN_KEY) ?? "0"); return isNaN(saved) ? 0 : Math.max(DB_MIN, Math.min(DB_MAX, saved)); });
+  const [autoNormalize, setAutoNormalizeState] = useState<boolean>(() => lsGet(LS_AUTONORM_KEY) === "on");
   const [audioContextSuspended, setAudioContextSuspended] = useState(false); const [bridgeReady, setBridgeReady] = useState(false); const [diagnosticsReady, setDiagnosticsReady] = useState(false);
   const gainDbRef = useRef(gainDb); gainDbRef.current = gainDb; const autoNormalizeRef = useRef(autoNormalize); autoNormalizeRef.current = autoNormalize;
   const sampleTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); const sampleIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined); const samplingActiveRef = useRef(false); const resumeRetryCountRef = useRef(0); const [, forceRuntimeRefresh] = useState(0);
@@ -125,8 +127,8 @@ export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | nul
   const MASTER_FADE_S = 0.5;
   const setMasterVolume = useCallback((vol: number) => { const node = audioRuntime?.masterVolumeNode; const ctx = audioRuntime?.ctx; if (!node || !ctx || ctx.state === "closed") return; const clamped = Math.max(0, Math.min(1, vol)); masterVolTargetRef.current = clamped; node.gain.cancelScheduledValues(ctx.currentTime); node.gain.setValueAtTime(node.gain.value, ctx.currentTime); node.gain.linearRampToValueAtTime(clamped, ctx.currentTime + MASTER_FADE_S); }, []);
   const startNormalizationSampling = useCallback(() => { const analyser = audioRuntime?.preAnalyser ?? null; const ctx = audioRuntime?.ctx ?? null; const gainNode = audioRuntime?.gainNode ?? null; if (!analyser || !ctx || !gainNode || ctx.state !== "running" || samplingActiveRef.current) return; samplingActiveRef.current = true; clearTimeout(sampleTimerRef.current); clearInterval(sampleIntervalRef.current); const bufferLength = analyser.frequencyBinCount; const dataArray = new Float32Array(bufferLength); let sumSquares = 0; let sampleCount = 0; sampleIntervalRef.current = setInterval(() => { if (ctx.state !== "running") return; analyser.getFloatTimeDomainData(dataArray); let ss = 0; for (let i = 0; i < bufferLength; i += 1) ss += dataArray[i] * dataArray[i]; sumSquares += ss / bufferLength; sampleCount += 1; }, 100); sampleTimerRef.current = setTimeout(() => { samplingActiveRef.current = false; clearInterval(sampleIntervalRef.current); if (!autoNormalizeRef.current || sampleCount === 0) return; const rms = Math.sqrt(sumSquares / sampleCount); if (rms < 1e-6) return; const rawDb = linearToDb(rms); const compensationDb = TARGET_DBFS - rawDb; const totalDb = Math.max(DB_MIN, Math.min(DB_MAX, gainDbRef.current + compensationDb)); gainNode.gain.linearRampToValueAtTime(dbToLinear(totalDb), ctx.currentTime + RAMP_DURATION_S); }, SAMPLE_DURATION_S * 1000); }, []);
-  const setGainDb = useCallback((db: number) => { const clamped = Math.max(DB_MIN, Math.min(DB_MAX, db)); localStorage.setItem(LS_GAIN_KEY, String(clamped)); setGainDbState(clamped); applyGain(clamped, true); }, [applyGain]);
-  const setAutoNormalize = useCallback((on: boolean) => { localStorage.setItem(LS_AUTONORM_KEY, on ? "on" : "off"); setAutoNormalizeState(on); if (on) startNormalizationSampling(); }, [startNormalizationSampling]);
+  const setGainDb = useCallback((db: number) => { const clamped = Math.max(DB_MIN, Math.min(DB_MAX, db)); lsSet(LS_GAIN_KEY, String(clamped)); setGainDbState(clamped); applyGain(clamped, true); }, [applyGain]);
+  const setAutoNormalize = useCallback((on: boolean) => { lsSet(LS_AUTONORM_KEY, on ? "on" : "off"); setAutoNormalizeState(on); if (on) startNormalizationSampling(); }, [startNormalizationSampling]);
   useEffect(() => {
     if (playerType === "iframe" || playerType === "skip") return;
     const media = mediaRef.current;
