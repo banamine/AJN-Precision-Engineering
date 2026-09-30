@@ -215,8 +215,13 @@ export async function searchTVNews(opts: Parameters<typeof searchTVNewsUncached>
   const hit = searchCache.get(key);
   if (hit && hit.expires > Date.now()) return hit.value;
   const value = searchTVNewsUncached(opts);
-  searchCache.set(key, { expires: Date.now() + 5 * 60_000, value });
-  value.catch(() => searchCache.delete(key));
+  const entry = { expires: Date.now() + 5 * 60_000, value };
+  searchCache.set(key, entry);
+  // Keep the entry while the search is in flight (concurrent callers share it), but
+  // evict failures so the next request retries Archive. An upstream_error resolves
+  // rather than rejects, so it must be checked explicitly; ok and empty stay cached.
+  const evict = () => { if (searchCache.get(key) === entry) searchCache.delete(key); };
+  value.then((result) => { if (result.status === 'upstream_error') evict(); }, evict);
   if (searchCache.size > 200) searchCache.delete(searchCache.keys().next().value!);
   return value;
 }
