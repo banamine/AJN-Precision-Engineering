@@ -24,11 +24,11 @@ const baseline = (items: RumbleItem[]): RumbleBaseline => ({
 });
 
 assert.equal(
-  classifyKind(baseItem(), Date.parse("2026-09-30T01:00:00.000Z")),
+  classifyKind(baseItem(), "2026-09-29T12:00:00.000Z", Date.parse("2026-09-30T01:00:00.000Z")),
   "live",
 );
 assert.equal(
-  classifyKind(baseItem(), Date.parse("2026-09-30T13:00:01.000Z")),
+  classifyKind(baseItem(), "2026-09-29T12:00:00.000Z", Date.parse("2026-09-30T13:00:01.000Z")),
   "continuous_live",
 );
 
