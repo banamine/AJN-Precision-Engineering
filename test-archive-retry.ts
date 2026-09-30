@@ -104,4 +104,76 @@ const headers = { 'User-Agent': 'test', Accept: '*/*', Range: 'bytes=0-10' };
   console.log('PASS aborted client → no further attempts');
 }
 
+// 6. A node that drops the connection → served from another replica listed in Archive metadata.
+{
+  const calls: string[] = [];
+  const impl = (async (input: any, init?: any) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.startsWith('https://archive.org/download/')) return new Response(null, { status: 302, headers: { location: NODE } });
+    if (url.startsWith('https://dn721905.ca.archive.org/')) throw new TypeError('fetch failed');
+    if (url === 'https://archive.org/metadata/nova-wonders') {
+      return Response.json({ dir: '/0/items/nova-wonders', server: 'dn721905.ca.archive.org', d1: 'dn600306.us.archive.org', workable_servers: ['dn600306.us.archive.org', 'evil.example.com'] });
+    }
+    if (url === 'https://dn600306.us.archive.org/0/items/nova-wonders/file.mp4') {
+      assert.equal(new Headers(init?.headers).get('range'), 'bytes=0-10', 'Range kept on the alternate node');
+      return new Response('media-bytes', { status: 206, headers: { 'content-range': 'bytes 0-10/422000000', 'content-type': 'video/mp4' } });
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  }) as FetchImpl;
+  logs.length = 0;
+  const result = await fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, sleep: noSleep, log, requestId: 'req-6' });
+  assert.equal(result.status, 206);
+  assert.equal(result.failure, undefined);
+  assert.ok(calls.includes('https://dn600306.us.archive.org/0/items/nova-wonders/file.mp4'));
+  assert.ok(!calls.some((url) => url.includes('evil.example.com')), 'hosts outside archive.org are never contacted');
+  assert.equal(logs.length, 1);
+  console.log('PASS unreachable node → alternate replica');
+}
+
+// 7. No replica reachable → clean failure (no exception), so the proxy can answer 502 quickly.
+{
+  const impl = (async (input: any) => {
+    const url = String(input);
+    if (url.startsWith('https://archive.org/download/')) return new Response(null, { status: 302, headers: { location: NODE } });
+    if (url.startsWith('https://archive.org/metadata/')) return new Response('{}', { status: 500 });
+    throw new TypeError('fetch failed');
+  }) as FetchImpl;
+  const result = await fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, sleep: noSleep, log });
+  assert.equal(result.response, null);
+  assert.equal(result.status, 0);
+  assert.equal(result.failure, 'resolve');
+  console.log('PASS nothing reachable → structured failure');
+}
+
+// 8. A node that never answers is cut off after the header timeout, then the alternate is used.
+{
+  const impl = (async (input: any, init?: any) => {
+    const url = String(input);
+    if (url.startsWith('https://archive.org/download/')) return new Response(null, { status: 302, headers: { location: NODE } });
+    if (url.startsWith('https://dn721905.ca.archive.org/')) {
+      return new Promise<Response>((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true }));
+    }
+    if (url.startsWith('https://archive.org/metadata/')) return Response.json({ dir: '/0/items/nova-wonders', server: 'dn600306.us.archive.org' });
+    return new Response('media-bytes', { status: 206, headers: { 'content-type': 'video/mp4' } });
+  }) as FetchImpl;
+  const started = Date.now();
+  const result = await fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, sleep: noSleep, log, headerTimeoutMs: 60 });
+  assert.equal(result.status, 206);
+  assert.ok(Date.now() - started < 2000, 'hung node does not stall the request');
+  console.log('PASS hung node → timed out, alternate used');
+}
+
+// 9. Client disconnect during a hung node is surfaced as an abort, not turned into a fallback.
+{
+  const controller = new AbortController();
+  const impl = (async (input: any, init?: any) => {
+    const url = String(input);
+    if (url.startsWith('https://archive.org/download/')) { queueMicrotask(() => controller.abort()); return new Promise<Response>((_r, reject) => init.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })); }
+    throw new Error(`unexpected fetch ${url}`);
+  }) as FetchImpl;
+  await assert.rejects(fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, sleep: noSleep, log, signal: controller.signal }));
+  console.log('PASS client abort → not retried on alternates');
+}
+
 console.log('archive retry regression: all passed');

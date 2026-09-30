@@ -254,26 +254,66 @@ export function parseAjnFeedXml(xml: string, resource: AjnResourceLink): AjnFeed
 
 }
 
-export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise<{ resource: AjnResourceLink; fetchedAt: string; items: AjnFeedItem[]; rawBytes: number }> {
+type AjnFeedResult = { resource: AjnResourceLink; fetchedAt: string; items: AjnFeedItem[]; rawBytes: number };
+
+// Upstream RSS hosts occasionally drop a connection or answer slowly. A feed that failed
+// twice used to leave the Home page with "feeds unavailable"; bound each attempt, retry once,
+// and fall back to the last good copy so a short outage never empties the panel.
+const FEED_ATTEMPT_TIMEOUT_MS = 8_000;
+const FEED_ATTEMPTS = 2;
+const FEED_STALE_MAX_AGE_MS = 6 * 60 * 60_000;
+const lastGoodFeeds = new Map<AjnFeedId, AjnFeedResult>();
+
+async function fetchAjnFeedOnce(id: AjnFeedId, resource: AjnResourceLink, signal?: AbortSignal): Promise<AjnFeedResult> {
+  const feedUrl = new URL(resource.rssUrl);
+  feedUrl.searchParams.set('_ajn_ts', String(Date.now()));
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener('abort', onAbort, { once: true });
+  const timer = setTimeout(() => controller.abort(), FEED_ATTEMPT_TIMEOUT_MS);
+  try {
+    const response = await fetch(feedUrl.toString(), {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'AJN-Precision-Engineering/1.0',
+        'Accept': 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1',
+        'Cache-Control': 'no-cache',
+      },
+    });
+    if (!response.ok) throw new Error(`AJN feed ${id} returned HTTP ${response.status}`);
+    const xml = await response.text();
+    if (!/<(?:rss|feed)\b/i.test(xml)) throw new Error(`AJN feed ${id} did not return RSS/XML`);
+    const items = parseAjnFeedXml(xml, resource);
+    return { resource, fetchedAt: new Date().toISOString(), items, rawBytes: Buffer.byteLength(xml, 'utf8') };
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
+  }
+}
+
+export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise<AjnFeedResult> {
   const resource = byId.get(id);
   if (!resource) throw new Error(`Unknown AJN feed: ${id}`);
 
-  const feedUrl = new URL(resource.rssUrl);
-  feedUrl.searchParams.set('_ajn_ts', String(Date.now()));
-  const response = await fetch(feedUrl.toString(), {
-    signal,
-    headers: {
-      'User-Agent': 'AJN-Precision-Engineering/1.0',
-      'Accept': 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1',
-      'Cache-Control': 'no-cache',
-    },
-  });
-  if (!response.ok) throw new Error(`AJN feed ${id} returned HTTP ${response.status}`);
-  const xml = await response.text();
-  if (!/<(?:rss|feed)\b/i.test(xml)) throw new Error(`AJN feed ${id} did not return RSS/XML`);
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= FEED_ATTEMPTS; attempt++) {
+    if (signal?.aborted) break;
+    try {
+      const result = await fetchAjnFeedOnce(id, resource, signal);
+      lastGoodFeeds.set(id, result);
+      return result;
+    } catch (error) {
+      lastError = error;
+    }
+  }
 
-  const items = parseAjnFeedXml(xml, resource);
-  return { resource, fetchedAt: new Date().toISOString(), items, rawBytes: Buffer.byteLength(xml, 'utf8') };
+  const stale = lastGoodFeeds.get(id);
+  if (!signal?.aborted && stale && Date.now() - Date.parse(stale.fetchedAt) < FEED_STALE_MAX_AGE_MS) {
+    console.warn(`[ajn-feed] ${id} unreachable, serving last good copy from ${stale.fetchedAt}`);
+    return stale;
+  }
+  throw lastError instanceof Error ? lastError : new Error(`AJN feed ${id} unavailable`);
 }
 
 

@@ -25,6 +25,78 @@ export function validateArchiveRedirect(target: URL): void {
   }
 }
 
+// A storage node that silently drops connections used to hang a request for 10-15 s and
+// then fail with "fetch failed". Bound the wait for response headers (the body is never
+// cut off once headers arrive) and fall back to Archive's other replicas.
+export const NODE_HEADER_TIMEOUT_MS = 6_000;
+export const METADATA_TIMEOUT_MS = 5_000;
+const MAX_ALTERNATE_NODES = 2;
+
+function timedFetch(
+  fetchImpl: FetchImpl,
+  url: string | URL,
+  init: RequestInit,
+  parent: AbortSignal | undefined,
+  ms: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  if (parent?.aborted) controller.abort();
+  else parent?.addEventListener('abort', () => controller.abort(), { once: true });
+  const timer = setTimeout(() => controller.abort(new Error(`no response within ${ms} ms`)), ms);
+  return fetchImpl(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+export function archiveIdentifierAndRest(upstreamUrl: string): { id: string; rest: string } | null {
+  try {
+    const url = new URL(upstreamUrl);
+    const match = url.pathname.match(/^\/download\/([^/]+)\/(.+)$/);
+    return match ? { id: match[1], rest: match[2] } : null;
+  } catch {
+    return null;
+  }
+}
+
+const metadataCache = new Map<string, { dir: string; hosts: string[]; expires: number }>();
+
+/** Other storage nodes that hold the item, from Archive's metadata (never includes `skipHost`). */
+export async function lookupAlternateNodes(
+  id: string,
+  skipHost: string | null,
+  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; timeoutMs?: number } = {},
+): Promise<{ dir: string; hosts: string[] } | null> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  const cached = opts.fetchImpl ? undefined : metadataCache.get(id);
+  let entry = cached && cached.expires > Date.now() ? cached : null;
+  if (!entry) {
+    try {
+      const response = await timedFetch(
+        fetchImpl,
+        `https://archive.org/metadata/${encodeURIComponent(id)}`,
+        { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } },
+        opts.signal,
+        opts.timeoutMs ?? METADATA_TIMEOUT_MS,
+      );
+      if (!response.ok) return null;
+      const meta = await response.json() as { dir?: unknown; server?: unknown; d1?: unknown; d2?: unknown; workable_servers?: unknown };
+      const dir = typeof meta.dir === 'string' ? meta.dir : '';
+      if (!dir.startsWith('/') || dir.includes('..')) return null;
+      const hosts = [...new Set([
+        meta.server, meta.d1, meta.d2,
+        ...(Array.isArray(meta.workable_servers) ? meta.workable_servers : []),
+      ].filter((host): host is string => typeof host === 'string' && isAllowedArchiveHost(host)))];
+      entry = { dir, hosts, expires: Date.now() + REDIRECT_TTL_MS };
+      if (!opts.fetchImpl) {
+        if (metadataCache.size > 500) metadataCache.clear();
+        metadataCache.set(id, entry);
+      }
+    } catch {
+      return null;
+    }
+  }
+  const hosts = entry.hosts.filter((host) => host.toLowerCase() !== (skipHost ?? '').toLowerCase());
+  return hosts.length ? { dir: entry.dir, hosts } : null;
+}
+
 export interface ResolveResult {
   /** Final storage URL, or null when Archive did not return a usable response. */
   url: string | null;
@@ -38,7 +110,7 @@ export interface ResolveResult {
  */
 export async function resolveArchiveMediaRedirect(
   initialUrl: string,
-  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; maxRedirects?: number } = {},
+  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; maxRedirects?: number; timeoutMs?: number } = {},
 ): Promise<ResolveResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const maxRedirects = opts.maxRedirects ?? 5;
@@ -46,12 +118,19 @@ export async function resolveArchiveMediaRedirect(
   validateArchiveRedirect(currentUrl);
 
   for (let redirectCount = 0; redirectCount < maxRedirects; redirectCount++) {
-    const response = await fetchImpl(currentUrl, {
-      method: 'GET',
-      redirect: 'manual',
-      headers: { 'User-Agent': USER_AGENT, Accept: '*/*' },
-      signal: opts.signal,
-    });
+    let response: Response;
+    try {
+      response = await timedFetch(
+        fetchImpl,
+        currentUrl,
+        { method: 'GET', redirect: 'manual', headers: { 'User-Agent': USER_AGENT, Accept: '*/*' } },
+        opts.signal,
+        opts.timeoutMs ?? NODE_HEADER_TIMEOUT_MS,
+      );
+    } catch (error) {
+      (error as { archiveHost?: string }).archiveHost = currentUrl.hostname;
+      throw error;
+    }
     await response.body?.cancel().catch(() => {});
 
     if (response.status >= 200 && response.status < 300) {
@@ -88,11 +167,54 @@ export interface ArchiveFetchOptions {
   attempts?: number;
   baseDelayMs?: number;
   requestId?: string;
+  /** Max wait for response headers per upstream request (default 6 s). */
+  headerTimeoutMs?: number;
   log?: (message: string, detail: Record<string, unknown>) => void;
   sleep?: (ms: number) => Promise<void>;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function fetchFromAlternateNode(
+  upstreamUrl: string,
+  failedHost: string | null,
+  opts: ArchiveFetchOptions,
+  fetchImpl: FetchImpl,
+  log: (message: string, detail: Record<string, unknown>) => void,
+): Promise<{ response: Response; url: string } | null> {
+  const parts = archiveIdentifierAndRest(upstreamUrl);
+  if (!parts) return null;
+  const nodes = await lookupAlternateNodes(parts.id, failedHost, { fetchImpl: opts.fetchImpl, signal: opts.signal, timeoutMs: opts.headerTimeoutMs });
+  if (!nodes) return null;
+
+  for (const host of nodes.hosts.slice(0, MAX_ALTERNATE_NODES)) {
+    if (opts.signal?.aborted) return null;
+    const url = `https://${host}${nodes.dir}/${parts.rest}`;
+    try {
+      validateArchiveRedirect(new URL(url));
+      const response = await timedFetch(
+        fetchImpl,
+        url,
+        { method: 'GET', redirect: 'manual', headers: opts.headers },
+        opts.signal,
+        opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
+      );
+      if (response.status >= 200 && response.status < 300) {
+        log('[archive-proxy] primary node unreachable, served from alternate node', {
+          requestId: opts.requestId ?? null,
+          failedHost,
+          alternateHost: host,
+          url: upstreamUrl,
+        });
+        return { response, url };
+      }
+      await response.body?.cancel().catch(() => {});
+    } catch {
+      // Try the next replica.
+    }
+  }
+  return null;
+}
 
 /**
  * Resolve and fetch Archive media, retrying transient 5xx/429 up to `attempts` times
@@ -121,28 +243,54 @@ export async function fetchArchiveMediaWithRetry(
     // full round trip per 8 MiB slice, ~1 s). Reuse the resolved node URL for a
     // while; on any failure it is dropped and resolved fresh on the retry.
     const cached = opts.fetchImpl ? undefined : redirectCache.get(upstreamUrl);
-    const resolved = cached && cached.expires > Date.now() && attempt === 1
-      ? { url: cached.url, status: 200 }
-      : await resolveArchiveMediaRedirect(upstreamUrl, { fetchImpl, signal: opts.signal });
-    if (!opts.fetchImpl && resolved.url && !(cached && cached.expires > Date.now())) {
-      if (redirectCache.size > 500) redirectCache.clear();
-      redirectCache.set(upstreamUrl, { url: resolved.url, expires: Date.now() + REDIRECT_TTL_MS });
-    }
     let response: Response | null = null;
-    let status = resolved.status;
+    let status = 0;
     let failure: ArchiveFetchResult['failure'];
+    let failedHost: string | null = null;
+    let networkError: unknown = null;
 
-    if (resolved.url) {
-      response = await fetchImpl(resolved.url, {
-        method: 'GET',
-        redirect: 'manual',
-        headers: opts.headers,
-        signal: opts.signal,
-      });
-      status = response.status;
-      if (status < 200 || status >= 300) failure = 'media';
-    } else {
+    try {
+      const resolved = cached && cached.expires > Date.now() && attempt === 1
+        ? { url: cached.url, status: 200 }
+        : await resolveArchiveMediaRedirect(upstreamUrl, { fetchImpl, signal: opts.signal, timeoutMs: opts.headerTimeoutMs });
+      if (!opts.fetchImpl && resolved.url && !(cached && cached.expires > Date.now())) {
+        if (redirectCache.size > 500) redirectCache.clear();
+        redirectCache.set(upstreamUrl, { url: resolved.url, expires: Date.now() + REDIRECT_TTL_MS });
+      }
+      status = resolved.status;
+
+      if (resolved.url) {
+        failedHost = new URL(resolved.url).hostname;
+        response = await timedFetch(
+          fetchImpl,
+          resolved.url,
+          { method: 'GET', redirect: 'manual', headers: opts.headers },
+          opts.signal,
+          opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
+        );
+        status = response.status;
+        if (status < 200 || status >= 300) failure = 'media';
+      } else {
+        failure = 'resolve';
+      }
+    } catch (error) {
+      // Client disconnect: let the caller handle the abort as before.
+      if (opts.signal?.aborted) throw error;
+      networkError = error;
+      failedHost = (error as { archiveHost?: string }).archiveHost ?? failedHost;
       failure = 'resolve';
+      status = 0;
+    }
+
+    if (networkError) {
+      redirectCache.delete(upstreamUrl);
+      const alternate = await fetchFromAlternateNode(upstreamUrl, failedHost, opts, fetchImpl, log);
+      if (alternate) {
+        if (!opts.fetchImpl) redirectCache.set(upstreamUrl, { url: alternate.url, expires: Date.now() + REDIRECT_TTL_MS });
+        return { response: alternate.response, status: alternate.response.status, attempts: attempt };
+      }
+      last = { response: null, status: 0, attempts: attempt, failure: 'resolve' };
+      return last;
     }
 
     last = { response, status, attempts: attempt, failure };
