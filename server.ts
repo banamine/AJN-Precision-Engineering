@@ -124,7 +124,7 @@ app.post('/api/channels/build-news',async(req,res)=>{
     res.json({channelId:ch.id,guideId:DISCOVERY_GUIDE_ID,name:ch.name,items:identifiers.length,clips:ch.programs.length,skipped:ch.skipped,programs:(laid?.programs??[]).slice(0,ch.programs.length)});
   }catch(e:any){res.status(e?.status??500).json({error:e?.message??'build failed'});}
 });
-app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});res.json({query,network,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({error:'Search failed',items:[],total:0});}});
+app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});if(r.status==='upstream_error'){return res.status(502).json({query,network,status:r.status,total:0,items:[],safeEndDate:r.safeEndDate,error:r.error||'Archive search upstream unavailable'});}res.json({query,network,status:r.status,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({query,network,status:'upstream_error',error:'Search failed',items:[],total:0});}});
 
 function validateArchivePath(raw:string){
   if(!raw||typeof raw!=='string')return{valid:false,error:'Path is required'};

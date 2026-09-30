@@ -84,10 +84,13 @@ const [query, setQuery] = useState<string>('');
       try {
         const url = `/api/search?network=${encodeURIComponent(network)}&q=${encodeURIComponent(searchTerm)}&rows=24`;
         const res = await fetch(url);
-        if (!res.ok) {
-          throw new Error(`Search failed: HTTP ${res.status}`);
-        }
         const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 502 && data?.status === 'upstream_error') {
+            throw new Error(data.error || 'Archive search is temporarily unavailable. Please retry.');
+          }
+          throw new Error(data?.error || `Search failed: HTTP ${res.status}`);
+        }
         setItems(Array.isArray(data.items) ? data.items : []);
         setTotal(data.total || 0);
       } catch (err: any) {
@@ -336,8 +339,8 @@ const [query, setQuery] = useState<string>('');
             );
           })}
         </div>
-      ) : (
-        hasSearched && (
+) : (
+        hasSearched && !error && (
           <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-12 text-center space-y-2">
             <Search className="mx-auto h-8 w-8 text-neutral-600" />
             <h3 className="text-sm font-medium text-neutral-300">No broadcasts found</h3>

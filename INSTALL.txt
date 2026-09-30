@@ -1,0 +1,11 @@
+AJN drop: fix/p1 + M3U Program ingestion (base 2ea2bfc, head da74eec)
+
+Files: channels.ts, guideRegistry.ts, server.ts, src/components/SearchView.tsx
+Patch: AJN_FIX_P1_M3U_RUNTIME.patch (same changes as the four files)
+
+1. Back up your current copies of the four files and package.json.
+2. Either apply the patch (git apply --check, then git apply) or copy the four files over yours.
+3. npm run build (keep your own package.json).
+4. Test in the live preview: /api/health, Search (results / empty / error / retry), cable guide
+   (Fox, CNN, MS NOW, BBC, RT, KPIX play), audible playback, Classic TV, Library.
+See AJN_FIX_P1_M3U_DROP_MANIFEST.json for SHA-256 of every file.
