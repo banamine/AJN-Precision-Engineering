@@ -17,12 +17,12 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Cache npm downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
@@ -40,12 +40,12 @@ jobs:
     name: Build and pure regression suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Cache npm downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
@@ -56,7 +56,7 @@ jobs:
       - name: Production build
         run: npm run build
       - name: Upload production build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ajn-production-dist
           path: dist/
@@ -138,12 +138,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Cache npm downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
@@ -152,7 +152,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: Download production build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ajn-production-dist
           path: dist/
@@ -249,7 +249,7 @@ jobs:
           NODE
       - name: Upload visual regression screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ajn-visual-regression-recently-played
           path: /tmp/ajn-visual/
