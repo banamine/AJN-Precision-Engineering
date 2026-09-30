@@ -72,7 +72,6 @@ export function reconcile(
   next: RumbleBaseline,
 ): RumbleBaseline {
   const nextChannels = channelMap(next.channels);
-  const previousItems = new Map(previous.items.map((item) => [itemKey(item), item]));
   const nextItems = [...next.items];
 
   for (const oldItem of previous.items) {
@@ -94,7 +93,7 @@ export function reconcile(
         state: "ended",
         kind: oldItem.kind,
       };
-      if (!previousItems.has(itemKey(ended))) nextItems.push(ended);
+      nextItems.push(ended);
     }
   }
 
