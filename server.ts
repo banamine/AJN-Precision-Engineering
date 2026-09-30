@@ -24,6 +24,7 @@ import {
 import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
 import { registerSourceRoutes } from './server/sources/routes.js';
+import { registerRumbleRoutes } from './server/rumble/routes.js';
 
 const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(express.json());
 app.use(watchdogRouter);
@@ -113,6 +114,7 @@ app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.
 
 patchServer(app);
 registerSourceRoutes(app);
+registerRumbleRoutes(app);
 
 // Search -> "Create 24/7 Channel": built from the identifiers the viewer is looking at.
 app.post('/api/channels/build-news',async(req,res)=>{
