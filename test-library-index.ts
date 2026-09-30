@@ -85,6 +85,12 @@ const guide: any[] = [{ id: 'nasa-missions', name: 'NASA', programs: [
 ] }, { id: 'doc-x', name: 'Docs', programs: [{ id: 'd', title: 'Doc', archivePath: '/download/d/d.mp4', metadata: {} }] }];
 const g = L.recordsFromGuide(aero, guide);
 assert.equal(g.length, 1); assert.equal(g[0].id, 'nasa-a'); assert.equal(g[0].decade, 1960); assert.equal(g[0].channelId, 'nasa-missions');
+// Guide identity must survive the Library index path.
+const identityGuide: any[] = [{ id: 'cable-news', name: 'MS NOW', programs: [{ id: 'program-09bf6b3041711cae:d0', title: 'MS NOW', mediaType: 'video', archivePath: '/download/msnow/msnow.mp4', sourceId: 'source-msnow', assetId: 'asset-msnow', metadata: {} }] }];
+const identityCat = L.LIBRARY_CATEGORIES.find((c) => c.id === 'newsroom')!;
+const identityRecords = L.recordsFromGuide(identityCat, identityGuide);
+assert.equal(identityRecords[0].sourceId, 'source-msnow');
+assert.equal(identityRecords[0].assetId, 'asset-msnow');
 L.setGuideRecords('aerospace', g);
 L.setGuideRecords('aerospace', []);
 assert.equal(L.queryLibrary({ category: 'aerospace' }).totalItems, 1, 'empty guide refresh keeps last good');
