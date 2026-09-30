@@ -172,6 +172,10 @@ export function validateBaseline(baseline: RumbleBaseline): { valid: boolean; er
     validateOptionalDate(item.publishedAt, `item ${item.videoId} publishedAt`, errors);
     validateOptionalDate(item.startedAt, `item ${item.videoId} startedAt`, errors);
 
+    if (item.viewers !== null && item.viewers !== undefined && (!Number.isInteger(item.viewers) || item.viewers < 0)) {
+      errors.push(`item ${item.videoId} viewers must be a non-negative integer`);
+    }
+
     if (item.durationSec !== null && item.durationSec < 0) {
       errors.push(`item ${item.videoId} durationSec must not be negative`);
     }
