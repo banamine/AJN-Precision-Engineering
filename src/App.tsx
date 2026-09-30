@@ -8,6 +8,7 @@ import { TvGuideView } from './components/TvGuideView';
 import { PlayerView } from './components/PlayerView';
 import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
+import { RumbleNewsWall } from './components/RumbleNewsWall';
 import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
 
@@ -53,6 +54,7 @@ function getDestinationFromHash(): Destination {
     case 'library':
     case 'archive': return 'library';
     case 'search': return 'search';
+    case 'news': return 'news';
     case 'dev':
     case 'developer':
     case 'diagnostics': return 'dev';
@@ -230,6 +232,11 @@ export default function App() {
         {destination === 'search' && (
           <div key="view-search" className="view-fade-in w-full">
             <SearchView onPlayProgram={handlePlayProgram} />
+          </div>
+        )}
+        {destination === 'news' && (
+          <div key="view-news" className="view-fade-in w-full">
+            <RumbleNewsWall />
           </div>
         )}
         {destination === 'dev' && (

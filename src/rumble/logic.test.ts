@@ -6,6 +6,7 @@ import { registerRumbleRoutes } from "../../server/rumble/routes";
 import { fetchRumbleBaseline } from "./baselineClient";
 import { RUMBLE_BASELINE } from "./baseline";
 import { rankNewsWall } from "./rank";
+import { BACKUP_STREAMS, buildNewsWall, embedUrl, listPickerSources, parseEmbedId } from "./wall";
 
 const baseItem = (overrides: Partial<RumbleItem> = {}): RumbleItem => ({
   channelId: "c1",
@@ -144,6 +145,33 @@ assert.deepEqual(
   new Map(RUMBLE_BASELINE.items.map((item) => [item.videoId, item.embedId])),
   realSeedEmbedIds,
 );
+
+// News wall: RT pinned first, then the highest-viewer live streams, one per channel.
+const wall = buildNewsWall(RUMBLE_BASELINE);
+assert.deepEqual(wall.map((item) => item.embedId), ["v33aw1a", "v7e123q", "v7capuk", "v7e09l0"]);
+assert.equal(wall[0]?.channelId, "news-rt");
+assert.equal(new Set(wall.map((item) => item.channelId)).size, wall.length);
+assert.equal(buildNewsWall(RUMBLE_BASELINE, 0).length, 0);
+const noRt = { ...RUMBLE_BASELINE, items: RUMBLE_BASELINE.items.filter((item) => item.channelId !== "news-rt") };
+assert.equal(buildNewsWall(noRt).length, 4);
+assert(buildNewsWall(noRt).every((item) => item.channelId !== "news-rt"));
+
+// Picker: live items first by viewers, then backups; no duplicate embed ids; every embed id looks real.
+const pickerSources = listPickerSources(RUMBLE_BASELINE);
+assert.equal(new Set(pickerSources.map((source) => source.embedId)).size, pickerSources.length);
+assert.equal(pickerSources[0]?.embedId, "v7e123q");
+assert(pickerSources.some((source) => source.embedId === "v33aw1a"));
+assert(BACKUP_STREAMS.every((source) => /^v[a-z0-9]{3,12}$/.test(source.embedId) && source.backup === true));
+assert.equal(new Set(BACKUP_STREAMS.map((source) => source.embedId)).size, BACKUP_STREAMS.length);
+
+// Embed URL and custom-ID parsing only ever yield an https://rumble.com/embed/<id>/ URL.
+assert.equal(embedUrl("v33aw1a"), "https://rumble.com/embed/v33aw1a/?pub=4");
+assert.equal(parseEmbedId(" v33aw1a "), "v33aw1a");
+assert.equal(parseEmbedId("https://rumble.com/embed/v7capuk/?pub=4"), "v7capuk");
+assert.equal(parseEmbedId("https://rumble.com/embed/v7capuk/"), "v7capuk");
+for (const bad of ["", "javascript:alert(1)", "https://evil.example/embed/v7capuk/", "https://rumble.com.evil.example/embed/v7capuk/", "v7capuk/../x", "<script>", "abc"]) {
+  assert.equal(parseEmbedId(bad), null, bad);
+}
 
 const seedValidation = validateBaseline(RUMBLE_BASELINE);
 assert.equal(seedValidation.valid, true);
@@ -334,4 +362,4 @@ const timeoutFetch = async (_url: string, init?: RequestInit) =>
 const timeoutClient = await fetchRumbleBaseline(1, timeoutFetch as typeof fetch);
 assert.equal(timeoutClient.baseline, null);
 
-console.log("[rumble-engine] PASS: fixture classification, ordering, reconciliation, validation, seed, news-wall ranking, injected routes, disabled/invalid route behavior, and baseline client.");
+console.log("[rumble-engine] PASS: fixture classification, ordering, reconciliation, validation, seed, news-wall ranking, injected routes, disabled/invalid route behavior, and baseline client, and news wall.");
