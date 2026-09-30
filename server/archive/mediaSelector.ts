@@ -16,8 +16,10 @@ export interface SelectedMedia {
   selectedBecause: string;
 }
 
-/** Browser-playable Archive formats, best first. */
-export const VIDEO_FORMATS = ['h.264', 'h.264 IA', 'MPEG4', '512Kb MPEG4', 'WebM'];
+/** Browser-playable Archive formats, best first. Derivatives ('h.264', 'h.264 IA', '512Kb MPEG4') are always
+ *  H.264, so they rank above the uploader's original 'MPEG4', whose codec is unknown (e.g. The_Haunted_Castle_1896.mp4
+ *  is an original Chrome cannot decode: DEMUXER_ERROR_NO_SUPPORTED_STREAMS). The original is only a last resort. */
+export const VIDEO_FORMATS = ['h.264', 'h.264 IA', '512Kb MPEG4', 'WebM', 'MPEG4'];
 export const AUDIO_FORMATS = ['VBR MP3', '128Kbps MP3', '64Kbps MP3', 'MP3', 'Ogg Vorbis'];
 const EXT: Record<'video' | 'audio', RegExp> = { video: /\.(mp4|m4v|webm)$/i, audio: /\.(mp3|ogg)$/i };
 export const DEFAULT_DURATION_SECONDS = 1800;
