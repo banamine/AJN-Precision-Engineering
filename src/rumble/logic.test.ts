@@ -27,7 +27,7 @@ assert.equal(
   "live",
 );
 assert.equal(
-  classifyKind(baseItem(), Date.parse("2026-09-30T02:00:01.000Z")),
+  classifyKind(baseItem(), Date.parse("2026-09-30T13:00:01.000Z")),
   "continuous_live",
 );
 
