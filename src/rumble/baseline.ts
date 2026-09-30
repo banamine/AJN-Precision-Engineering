@@ -64,7 +64,6 @@ export const RUMBLE_BASELINE: RumbleBaseline = {
     },
     {
       channelId: "ajn-war-room",
-      network: undefined as never,
       videoId: "ajn-war-room-live-2026-09-29",
       embedId: "ajn-war-room-live-2026-09-29",
       title: "WAR ROOM LIVE TUESDAY FULL SHOW 9/29/26",
