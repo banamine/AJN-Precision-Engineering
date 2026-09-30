@@ -104,7 +104,7 @@ const registryM3u = `#EXTM3U
 /download/registry-show/episode.mp4?exact=1&start=0&end=120`;
 const registryFirst = ingestM3uPlaylist(registryPlaylist, registryM3u, 'classic-tv');
 assert.equal(registryFirst.ingestedCount, 1);
-const registryProgram = getCanonicalProgram('program-2b6b5b0c3f8d6e39');
+const registryProgram = getCanonicalProgram('program-76a56b1c4c687de7');
 assert.ok(registryProgram, 'M3U ingestion registers a canonical Program');
 assert.equal(registryProgram?.guideId, 'classic-tv');
 assert.equal(registryProgram?.channelId, registryFirst.channels[0]?.id);
