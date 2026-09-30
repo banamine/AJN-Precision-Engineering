@@ -8,7 +8,7 @@ interface LibraryViewProps { onPlayProgram: PlayProgramCallback }
 type Item = {
   type: 'item'; id: string; identifier: string; title: string; description?: string; categoryIds: string[]; mediaType: 'video' | 'audio';
   year?: number; decade?: number; path: string; format: string; dur: number; durSrc: string; durEst: boolean;
-  availability: string; channelId?: string; guideId?: string; programId?: string;
+  availability: string; channelId?: string; guideId?: string; programId?: string; sourceId?: string; assetId?: string;
 };
 type Series = {
   type: 'series'; id: string; groupKey: string; title: string; categoryIds: string[]; mediaType: 'video' | 'audio';
@@ -75,7 +75,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const maxDecade = Math.max(1, ...(cat?.decades.map((d) => d.count) ?? [1]));
 
   const toggleFavorite = (id: string) => setFavoriteIds((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const play = (it: Item) => onPlayProgram(it.path, it.title, it.description ?? it.identifier, it.mediaType, it.channelId ?? `library-${it.categoryIds[0]}`, it.guideId ?? 'library', it.programId ?? it.id);
+  const play = (it: Item) => onPlayProgram(it.path, it.title, it.description ?? it.identifier, it.mediaType, it.channelId ?? `library-${it.categoryIds[0]}`, it.guideId ?? 'library', it.programId ?? it.id, it.sourceId, it.assetId);
   const toggleSeries = (id: string) => setOpenSeries((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   return (

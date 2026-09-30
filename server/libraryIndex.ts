@@ -45,7 +45,7 @@ export interface IndexRecord {
   dur: number; durSrc: DurationSource | 'clip' | 'metadata'; durEst: boolean;
   availability: LibraryAvailability; foundBy: string; why: string; indexedAt: string;
   // guide items only: how to play them through the guide's own ids
-  channelId?: string; guideId?: string; programId?: string;
+  channelId?: string; guideId?: string; programId?: string; sourceId?: string; assetId?: string;
 }
 export interface LibrarySnapshot { schemaVersion: 1; generatedAt: string; items: IndexRecord[] }
 
@@ -98,7 +98,7 @@ export function recordsFromGuide(cat: LibraryCategory, channels: ScheduleChannel
         path, file: String(mt.file ?? ''), format: String(mt.format ?? ''), dur: Math.round(secs) || 0,
         durSrc: mt.durationSource === 'default' ? 'default' : 'metadata', durEst: !!mt.durationEstimated,
         availability: 'unverified', foundBy: `${cat.id}: guide ${cat.guide!.guideId}/${ch.id}`, why: 'playing in the guide', indexedAt: now.toISOString(),
-        channelId: ch.id, guideId: cat.guide!.guideId, programId: id,
+        channelId: ch.id, guideId: cat.guide!.guideId, programId: id, sourceId: p.sourceId, assetId: p.assetId,
       });
     }
   }
