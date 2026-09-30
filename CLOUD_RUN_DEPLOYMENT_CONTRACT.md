@@ -5,6 +5,10 @@ One Cloud Run service: Express API + built SPA in one process.
 - Start: `node dist/server.cjs` (NODE_ENV=production, PORT from Cloud Run, default 8080, bound to 0.0.0.0)
 - Image: see Dockerfile (multi-stage, node:22-bookworm-slim). Deploy: ajn-deploy.yml
   runs `gcloud run deploy --source .` (Cloud Run builds the Dockerfile from source).
+- CI artifact: `ajn-production-dist` is produced by ajn-ci.yml for the integration job's
+  playback/API/visual checks. ajn-deploy.yml does not download or deploy that artifact;
+  it checks out the exact CI commit and performs its own `npm ci` + `npm run build` before
+  deploying source to Cloud Run.
 - State is in-memory only. No database. No secrets are stored in the repo or image.
 - Routes: `/api/*` JSON (unknown /api paths return JSON 404); everything else serves dist/index.html.
 - Media proxy: `/api/archive/proxy` must never return one response larger than 32 MiB
