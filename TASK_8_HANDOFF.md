@@ -28,8 +28,8 @@
 [CI-verified: run #478 / Real Archive playback logs] The CI validator reported: `Probing 12 manifest candidates... 12/12 passed`.  
 [CI-verified: run #478 / Real Archive playback logs] Earlier CI runs recorded 12/12 and 12/14 candidate results; the 12/14 run identified `BorderPatrol1937` and `HolidayInn1942Colorized` as real-playback failures.  
 [read from code: b4d50af, CLOUD_RUN_DEPLOYMENT_CONTRACT.md] Manifest entries that fail real playback remain an open handoff item; candidate count varies by run.  
-[not verified: user-reported repeated CI log review] Seven CNNW clips were unavailable at Archive storage with HTTP 403 in 4 of 4 runs reviewed by the user; the test records this as an external availability condition, not a playback pass.  
-[not verified: user-reported repeated CI log review] The CNN 403 condition remains an open item and is not treated as an application playback failure or as evidence of successful playback.
+[CORRECTED] The earlier CI CNN probe requested the WHOLE recording (`/download/<id>/<id>.mp4`), which Archive answers with HTTP 403 for TV News items (`access-restricted-item: true`). That was the wrong URL to probe: the app plays exact clip windows (`?exact=1&start=&end=`, `CLIP_SECONDS = 282`, `server/sources/archiveNews.ts`), which Archive serves. The 403 was a test artifact, not a product failure.  
+[Claude local run, server started from `fix/p1` a069d3a] All six cable-tv news channels (Fox News, CNN, MS NOW, BBC News, RT, KPIX) served their first program through `/api/archive/proxy` as HTTP 206, 8,388,608 bytes; a proxied CNN clip slice decoded as H.264 1280x720 + AAC (ffprobe/ffmpeg). [not run in a browser; the sandbox Chromium lacks H.264]
 
 ## Other observations
 
@@ -41,7 +41,7 @@
 ## CI Playback Coverage
 
 [CI-verified: run #478 / Real Archive playback logs] The CI playback gate probes CNN content.  
-[not verified] FOX, MSNBC, BBC, and NTD do not have equivalent CI playback coverage in the current gate.  
+[not verified] FOX, MSNBC, BBC, and NTD do not have equivalent CI playback coverage in the current gate (locally, cable-tv Fox/CNN/MS NOW/BBC/RT/KPIX clips all returned 206). NTD is not in the cable-tv guide.  
 [not verified] Absence of CI coverage is not evidence that those sources fail or pass real playback; they require live testing.
 
 ## Movie Validator
@@ -98,5 +98,5 @@
 [not verified: deployment] No deployment is authorized by this document.  
 [read from code: b4d50af] The open Archive availability, CI coverage, validator-history, stale-path, and Known Gaps items remain open.
 [read from code: b4d50af] Known Gaps remain open: M3U ingestion yields Channel + ChannelSource but no Program/MediaAsset; classicM3uContract is test-only; no PlaybackPlan exists; the two M3U parsers quote differently.
-[read from code: b4d50af] Product-level Known Gap: Archive direct-MP4 is not a viable news playback source; a different source is needed (see the queued Free-TV/iptv-org review).
+[CORRECTED] Archive whole-file MP4 is not usable for TV News, but Archive clip windows are, and the app already uses them. No replacement news source is needed for playback. Remaining: the CI gate must probe a clip (see the test-real-archive-playback.js change) so CI proves news playback.
 

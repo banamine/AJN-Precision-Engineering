@@ -9,6 +9,7 @@ import {
   validateMoviesClassicsPrograms,
 } from './src/services/producers/moviesClassicsProducer.ts';
 import { buildArchiveProxyUrl } from './src/utils/archivePlayback.ts';
+import { CLIP_SECONDS } from './server/sources/archiveNews.ts';
 
 const BASE_URL = process.env.AJN_TEST_URL || 'http://localhost:3000';
 
@@ -113,52 +114,29 @@ try {
   }
   assert.ok(cnnCandidates.length > 0, `CNN Newsroom Live gate found no CNN Newsroom Live item aired in the last ${CNN_WINDOW_DAYS} days`);
 
+  // TV News recordings are access-restricted as whole files (HTTP 403), but Archive serves
+  // exact clip windows of them. That is what the news guide and discovery channels play
+  // (server/sources/archiveNews.ts), so this gate plays the same clip through the proxy.
+  // A failure here is a real news-playback failure, not an external availability condition.
   let cnnPlaybackPassed = false;
-  let cnnUpstreamUnavailable = 0;
   for (const candidate of cnnCandidates) {
-    const mediaCandidates = await resolveArchiveMediaCandidates(candidate.identifier);
-    console.log(`[CNN Resolver] ${candidate.identifier}: ${mediaCandidates.length} browser-playable media candidates`);
-    for (const resolved of mediaCandidates) {
-      const archivePath = proxyPathFromArchiveUrl(resolved.url);
-      const result = await waitForMedia(
-        page,
-        buildArchiveProxyUrl(archivePath),
-        `CNN Newsroom Live — ${candidate.identifier} — ${resolved.filename}`,
-        15_000,
-        false,
-      );
-      if (result.event === 'loadedmetadata') {
-        cnnPlaybackPassed = true;
-        break;
-      }
-      try {
-        const metadataUrl = `/api/archive/metadata?path=${encodeURIComponent(archivePath)}`;
-        const metadataResponse = await fetch(new URL(metadataUrl, BASE_URL), { signal: AbortSignal.timeout(10_000) });
-        const metadata = await metadataResponse.json();
-        if (metadataResponse.ok && Number(metadata.status) === 403) {
-          cnnUpstreamUnavailable += 1;
-          console.log(`[CNN upstream] ${candidate.identifier} media is unavailable at Archive storage (HTTP 403)`);
-        } else if (!metadataResponse.ok || Number(metadata.status) >= 400) {
-          throw new Error(`CNN archive metadata returned HTTP ${metadata.status ?? metadataResponse.status}`);
-        }
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'TimeoutError') {
-          cnnUpstreamUnavailable += 1;
-          console.warn(`[CNN upstream] ${candidate.identifier} metadata probe timed out; recorded as external Archive availability condition.`);
-        } else {
-          throw error;
-        }
-      }
-    }
-    if (cnnPlaybackPassed) break;
-  }
-  if (!cnnPlaybackPassed) {
-    assert.ok(
-      cnnUpstreamUnavailable > 0 && cnnUpstreamUnavailable === cnnCandidates.length,
-      'No current-window CNN Newsroom Live candidate reached loadedmetadata and the failures were not all attributable to Archive upstream HTTP 403',
+    const id = candidate.identifier;
+    const clipPath = `/download/${encodeURIComponent(id)}/${encodeURIComponent(`${id}.mp4`)}?exact=1&start=0&end=${CLIP_SECONDS}`;
+    const result = await waitForMedia(
+      page,
+      buildArchiveProxyUrl(clipPath),
+      `CNN Newsroom Live clip — ${id} — 0-${CLIP_SECONDS}s`,
+      20_000,
+      false,
     );
-    console.warn('[CNN upstream] Current-window CNN Newsroom Live media is currently unavailable upstream; this is recorded as an external availability condition, not a playback pass.');
+    if (result.event === 'loadedmetadata') {
+      console.log(`[CNN clip] ${id} played through the proxy (clip 0-${CLIP_SECONDS}s)`);
+      cnnPlaybackPassed = true;
+      break;
+    }
+    console.warn(`[CNN clip] ${id} clip did not load: ${result.message ?? result.event}`);
   }
+  assert.ok(cnnPlaybackPassed, `No current-window CNN Newsroom Live clip (0-${CLIP_SECONDS}s) reached loadedmetadata through the proxy (${cnnCandidates.length} candidates tried)`);
   const classic = await buildHoneymoonersEpg();
   assert.ok(classic.programs.length > 0, 'Classic TV gate produced no programs');
   await waitForMedia(page, buildArchiveProxyUrl(classic.programs[0].archivePath), 'Classic TV first full-list show');
