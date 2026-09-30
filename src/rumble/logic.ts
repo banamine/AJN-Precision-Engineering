@@ -25,13 +25,14 @@ function kindRank(kind: RumbleItemKind): number {
 }
 
 export function classifyKind(
-  item: Pick<RumbleItem, "state" | "publishedAt" | "kind">,
+  item: Pick<RumbleItem, "state" | "kind">,
+  startedAt: string | null,
   nowMs = Date.now(),
 ): RumbleItemKind {
   if (item.state !== "live") return item.kind === "short" ? "short" : "vod";
 
-  const startedAt = timeValue(item.publishedAt);
-  if (Number.isFinite(startedAt) && nowMs - startedAt > CONTINUOUS_LIVE_MS) {
+  const startMs = timeValue(startedAt);
+  if (Number.isFinite(startMs) && nowMs - startMs > CONTINUOUS_LIVE_MS) {
     return "continuous_live";
   }
   return "live";
