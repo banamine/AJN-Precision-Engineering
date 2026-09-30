@@ -8,8 +8,9 @@ import type {
 
 export const RUMBLE_THUMBNAIL_HOST = "hugh.cdn.rumble.cloud";
 const CONTINUOUS_LIVE_MS = 24 * 60 * 60 * 1000;
+const ALLOWED_NETWORKS = new Set(["ajn", "rav", "other"]);
 
-const timeValue = (value: string | null): number =>
+const timeValue = (value: string | null | undefined): number =>
   value ? Date.parse(value) : Number.NEGATIVE_INFINITY;
 
 function stateRank(state: RumbleItemState): number {
@@ -25,8 +26,8 @@ function kindRank(kind: RumbleItemKind): number {
 }
 
 export function classifyKind(
-  item: Pick<RumbleItem, "state" | "kind">,
-  startedAt: string | null,
+  item: Pick<RumbleItem, "state" | "kind" | "startedAt">,
+  startedAt = item.startedAt ?? null,
   nowMs = Date.now(),
 ): RumbleItemKind {
   if (item.state !== "live") return item.kind === "short" ? "short" : "vod";
@@ -68,10 +69,7 @@ function sameTitle(a: RumbleItem, b: RumbleItem): boolean {
   return a.channelId === b.channelId && a.title === b.title;
 }
 
-export function reconcile(
-  previous: RumbleBaseline,
-  next: RumbleBaseline,
-): RumbleBaseline {
+export function reconcile(previous: RumbleBaseline, next: RumbleBaseline): RumbleBaseline {
   const nextChannels = channelMap(next.channels);
   const nextItems = [...next.items];
 
@@ -79,7 +77,10 @@ export function reconcile(
     if (!isLive(oldItem)) continue;
 
     const stillLive = next.items.some(
-      (candidate) => candidate.channelId === oldItem.channelId && itemKey(candidate) === itemKey(oldItem) && isLive(candidate),
+      (candidate) =>
+        candidate.channelId === oldItem.channelId &&
+        itemKey(candidate) === itemKey(oldItem) &&
+        isLive(candidate),
     );
     const titleReturnedAsVod = next.items.some(
       (candidate) =>
@@ -88,13 +89,11 @@ export function reconcile(
         candidate.videoId !== oldItem.videoId,
     );
 
-    if (!stillLive || titleReturnedAsVod) {
-      const ended: RumbleItem = {
+    if (!stillLive && !titleReturnedAsVod) {
+      nextItems.push({
         ...oldItem,
         state: "ended",
-        kind: oldItem.kind,
-      };
-      nextItems.push(ended);
+      });
     }
   }
 
@@ -127,24 +126,34 @@ function validateUrl(value: string, field: string, errors: string[]): void {
   }
 }
 
-export function validateBaseline(baseline: RumbleBaseline): {
-  valid: boolean;
-  errors: string[];
-} {
+function validateOptionalDate(value: string | null | undefined, field: string, errors: string[]): void {
+  if (value === null || value === undefined) return;
+  if (!Number.isFinite(Date.parse(value))) errors.push(`${field} must be an ISO date`);
+}
+
+export function validateBaseline(baseline: RumbleBaseline): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   const channels = channelMap(baseline.channels);
+  const seenChannelIds = new Set<string>();
   const seenVideoIds = new Set<string>();
 
   if (!Number.isInteger(baseline.version) || baseline.version < 1) {
     errors.push("version must be a positive integer");
   }
-  try {
-    if (!Number.isFinite(Date.parse(baseline.generatedAt))) errors.push("generatedAt must be an ISO date");
-  } catch {
+  if (!Number.isFinite(Date.parse(baseline.generatedAt))) {
     errors.push("generatedAt must be an ISO date");
   }
+  if (baseline.channels.length > 50) errors.push("baseline may contain at most 50 channels");
+  if (baseline.items.length > 2000) errors.push("baseline may contain at most 2000 items");
 
   for (const channel of baseline.channels) {
+    if (!ALLOWED_NETWORKS.has(channel.network)) {
+      errors.push(`channel ${channel.id} network is invalid`);
+    }
+    if (seenChannelIds.has(channel.id)) {
+      errors.push(`duplicate channel id: ${channel.id}`);
+    }
+    seenChannelIds.add(channel.id);
     validateUrl(channel.url, `channel ${channel.id} url`, errors);
   }
 
@@ -160,6 +169,13 @@ export function validateBaseline(baseline: RumbleBaseline): {
     }
     seenVideoIds.add(scopedVideoId);
 
+    validateOptionalDate(item.publishedAt, `item ${item.videoId} publishedAt`, errors);
+    validateOptionalDate(item.startedAt, `item ${item.videoId} startedAt`, errors);
+
+    if (item.durationSec !== null && item.durationSec < 0) {
+      errors.push(`item ${item.videoId} durationSec must not be negative`);
+    }
+
     if (item.thumbnailUrl !== null) {
       try {
         const thumbnail = new URL(item.thumbnailUrl);
@@ -173,8 +189,14 @@ export function validateBaseline(baseline: RumbleBaseline): {
 
     if (item.embedId === "") errors.push(`item ${item.videoId} embedId is required`);
     if (item.videoId === "") errors.push("videoId is required");
-    if (item.state === "live" && !["live", "continuous_live"].includes(item.kind)) {
-      errors.push(`live item ${item.videoId} must have live/continuous_live kind`);
+
+    const expectedKinds: Record<RumbleItemState, RumbleItemKind[]> = {
+      live: ["live", "continuous_live"],
+      ended: ["live", "continuous_live"],
+      vod: ["vod", "short"],
+    };
+    if (!expectedKinds[item.state].includes(item.kind)) {
+      errors.push(`item ${item.videoId} kind/state mismatch`);
     }
   }
 

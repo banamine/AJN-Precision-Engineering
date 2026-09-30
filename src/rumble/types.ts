@@ -17,6 +17,7 @@ export interface RumbleItem {
   title: string;
   thumbnailUrl: string | null;
   publishedAt: string | null;
+  startedAt?: string | null;
   durationSec: number | null;
   kind: RumbleItemKind;
   liveStreamId?: string;
