@@ -60,7 +60,8 @@
     "test:news-freshness": "tsx test-news-freshness.js",
     "test:canonical-slice": "tsx test-canonical-playback-slice.ts",
     "test:search-cache": "tsx test-search-cache.ts",
-    "test:playable-admission": "tsx test-playable-admission.ts"
+    "test:playable-admission": "tsx test-playable-admission.ts",
+    "test:rumble": "tsx src/rumble/logic.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
