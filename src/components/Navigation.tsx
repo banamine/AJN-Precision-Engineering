@@ -44,23 +44,24 @@ export function Navigation({
         id="canonical-app-header"
         className="sticky top-0 z-40 w-full border-b border-neutral-800/80 bg-neutral-950/90 backdrop-blur-md"
       >
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 sm:h-16 w-full max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           {/* Brand & Badge */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               id="brand-logo-btn"
               onClick={() => onNavigate('home')}
-              className="flex items-center gap-2.5 rounded-lg text-left transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+              title="AJN Precision Broadcast Engine - Return to Home"
+              className="flex items-center gap-2 sm:gap-2.5 rounded-lg text-left transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 min-h-[44px] min-w-[44px] py-1 px-1 -ml-1 cursor-pointer touch-manipulation"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25">
-                <Radio className="h-5 w-5 animate-pulse" />
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25">
+                <Radio className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold tracking-tight text-neutral-100">
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-100 truncate">
                   AJN Precision
                 </span>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">
+                <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider sm:tracking-widest text-neutral-400 truncate">
                   Broadcast Engine
                 </span>
               </div>
@@ -140,7 +141,7 @@ export function Navigation({
         role="navigation"
         aria-label="Mobile Navigation"
         id="mobile-bottom-nav"
-        className="fixed bottom-0 inset-x-0 z-40 flex h-16 w-full items-center justify-around border-t border-neutral-800/90 bg-neutral-950/95 backdrop-blur-lg md:hidden px-2 pb-safe"
+        className="fixed bottom-0 inset-x-0 z-40 flex h-14 sm:h-16 w-full items-stretch justify-around border-t border-neutral-800/90 bg-neutral-950/95 backdrop-blur-lg md:hidden px-1 sm:px-2 pb-safe select-none"
       >
         {PRIMARY_DESTINATIONS.map((item) => {
           const Icon = item.icon;
@@ -154,12 +155,13 @@ export function Navigation({
               type="button"
               onClick={() => onNavigate(item.id)}
               aria-current={isActive ? 'page' : undefined}
-              className={`relative flex min-h-[44px] min-w-[56px] flex-col items-center justify-center gap-1 py-1 text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+              aria-label={`${item.label} (${item.description})`}
+              className={`relative flex-1 min-w-0 min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-0.5 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer touch-manipulation ${
                 isActive ? 'text-sky-400 font-semibold' : 'text-neutral-400 hover:text-neutral-200'
               }`}
             >
-              <div className="relative">
-                <Icon className={`h-5 w-5 ${isActive ? 'text-sky-400' : 'text-neutral-400'}`} />
+              <div className="relative flex items-center justify-center">
+                <Icon className={`h-[18px] w-[18px] sm:h-5 sm:w-5 transition-transform ${isActive ? 'text-sky-400 scale-105' : 'text-neutral-400'}`} />
                 {hasBadge && (
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -167,9 +169,11 @@ export function Navigation({
                   </span>
                 )}
               </div>
-              <span className="leading-none">{item.label}</span>
+              <span className="text-[10px] sm:text-[11px] leading-tight tracking-tight truncate max-w-full px-0.5 font-medium">
+                {item.label}
+              </span>
               {isActive && (
-                <span className="absolute top-0 h-0.5 w-8 rounded-full bg-sky-400" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 sm:w-8 rounded-full bg-sky-400" />
               )}
             </button>
           );

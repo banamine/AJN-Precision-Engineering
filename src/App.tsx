@@ -191,7 +191,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} />
-      <main id="canonical-main-viewport" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+      <main id="canonical-main-viewport" className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-20 md:pb-8">
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full">
             <HomeView
