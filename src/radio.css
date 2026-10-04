@@ -164,3 +164,10 @@
 @media(max-width:900px){.ajr-hero{grid-template-columns:1fr;min-height:auto;padding:36px 0 18px}.ajr-hero-art{display:none}.ajr-now{grid-template-columns:57px 1fr;gap:14px}.ajr-now-art{width:57px;height:57px}.ajr-controls{grid-column:1/-1}}
 @media(max-width:760px){.ajr-grid,.ajr-briefing,.ajr-news-grid{grid-template-columns:1fr}.ajr-card-open{gap:12px;padding:10px 10px 16px}.ajr-cover{width:76px;min-width:76px;height:76px}.ajr-heading h2{font-size:28px}.ajr-section{padding:40px 0 44px}}
 @media(prefers-reduced-motion:reduce){.ajr-ticker-track{animation:none}.ajr-ticker-window{overflow-x:auto;mask-image:none}.ajr-ticker-copy{display:none}.ajr-eq.on i{animation:none}.ajr-card,.ajr-news-card{transition:none}}
+
+/* Parallel Audio/Video Sync buttons (Now Playing panel) */
+.ajr .ajr-sync { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.ajr .ajr-sync-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 999px; border: 1px solid #aee9d5; background: transparent; color: #aee9d5; font: 600 11px/1 'DM Mono', ui-monospace, monospace; letter-spacing: .08em; cursor: pointer; }
+.ajr .ajr-sync-btn:hover { background: #aee9d5; color: #09100f; }
+.ajr .ajr-sync-btn[aria-pressed="true"] { background: #aee9d5; color: #09100f; }
+.ajr .ajr-sync-btn:focus-visible { outline: 2px solid #edf1e9; outline-offset: 2px; }

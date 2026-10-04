@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowDownRight, AudioLines, Headphones, Pause, Play, RefreshCw, Search, SkipBack, SkipForward, Tv, X } from 'lucide-react';
 import type { Destination, NowPlayingMedia, PlayProgramCallback, RecentlyPlayedItem } from '../types';
+import { AvSyncControls } from './AvSyncControls';
 import { loadAjnFeeds } from '../services/ajnFeeds';
 import { buildRadioCatalog, type RadioEntry, type RadioFeedItem } from '../utils/ajnRadioCatalog';
 import { AJN_CHANNEL_LABELS, formatAirDate, type AjnChannel } from '../utils/ajnClassify';
@@ -24,8 +25,8 @@ interface Props {
 
 const NO_FILTER: RadioFilter = { show: null, type: null, query: '', sort: 'newest' };
 
-function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onNavigate }: {
-  nowPlaying: NowPlayingMedia | null; playingEntry: RadioEntry | null; list: readonly RadioEntry[]; onPlayEntry: (entry: RadioEntry) => void; onNavigate?: (destination: Destination) => void;
+function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onPlayProgram, onNavigate }: {
+  nowPlaying: NowPlayingMedia | null; playingEntry: RadioEntry | null; list: readonly RadioEntry[]; onPlayEntry: (entry: RadioEntry) => void; onPlayProgram: PlayProgramCallback; onNavigate?: (destination: Destination) => void;
 }) {
   const media = usePersistentMedia(nowPlaying?.mediaType, nowPlaying ? `${nowPlaying.src}|${nowPlaying.mediaType}` : undefined, Boolean(nowPlaying));
   const programId = nowPlaying?.programId;
@@ -58,6 +59,7 @@ function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onNaviga
       </div>
       <div className="ajr-now-side">
         <span className={`ajr-pill ${pill.cls}`}><i />{pill.text}</span>
+        <AvSyncControls nowPlaying={nowPlaying} onPlay={onPlayProgram} onNavigate={onNavigate} variant="panel" />
         {nowPlaying && onNavigate && <button type="button" className="ajr-link" onClick={() => onNavigate('player')}>OPEN FULL PLAYER</button>}
       </div>
     </section>
@@ -156,7 +158,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
         <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
       </section>
 
-      <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onNavigate={onNavigate} />
+      <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
 
       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>
