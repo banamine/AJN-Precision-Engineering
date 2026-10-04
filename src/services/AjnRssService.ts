@@ -84,15 +84,3 @@ export function normalizeAjnNewsSnapshot(raw: unknown): AjnNewsSnapshot {
     errors,
   };
 }
-
-export async function fetchAjnNews(options: { fresh?: boolean; limit?: number; signal?: AbortSignal } = {}): Promise<AjnNewsSnapshot> {
-  const params = new URLSearchParams();
-  params.set("limit", String(Math.max(1, Math.min(15, Math.floor(options.limit ?? 15)))));
-  if (options.fresh) params.set("fresh", "true");
-  const response = await fetch(`/api/news/rss?${params.toString()}`, {
-    headers: { Accept: "application/json" },
-    signal: options.signal,
-  });
-  if (!response.ok) throw new Error(`AJN News HTTP ${response.status}`);
-  return normalizeAjnNewsSnapshot(await response.json());
-}

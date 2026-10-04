@@ -31,9 +31,6 @@
     "node_modules",
     "dist",
     "AJN-Precision-Engineering",
-    "app",
-    "App_identity_traced_replacement.tsx",
-    "NewsTicker.tsx",
-    "NewsEmptyState.tsx"
+    "app"
   ]
 }

@@ -40,6 +40,7 @@
     "test:live-tv": "tsx test-live-tv.ts",
     "test:proxy-range": "tsx test-proxy-range.ts",
     "test:source-ajn-audio": "tsx test-source-ajn-audio.ts",
+    "test:ajn-classify-pairing": "tsx test-ajn-classify-pairing.ts",
     "test:source-ajn-media": "tsx test-source-ajn-media.ts",
     "news:snapshot": "tsx scripts/news-snapshot.ts",
     "rush:index": "tsx scripts/build-rush-index.ts",

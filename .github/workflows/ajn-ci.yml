@@ -131,6 +131,8 @@ jobs:
         run: npm run test:proxy-range
       - name: AJN Audio contract regression (mocked)
         run: npm run test:source-ajn-audio
+      - name: AJN classify and pairing regression
+        run: npm run test:ajn-classify-pairing
       - name: AJN Media RSS contract regression (mocked)
         run: npm run test:source-ajn-media
 
