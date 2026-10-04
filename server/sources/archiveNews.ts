@@ -1,4 +1,5 @@
 import { archiveApiFetch } from '../archiveLimiter';
+import { getArchiveJson, isTimeoutError, ARCHIVE_REQUEST_TIMEOUT_MS } from '../archiveJson';
 // Layer 3 — Archive News (TV News collections: CNN, Fox, MS NOW, BBC, RT, KPIX).
 // Structured JSON only: advancedsearch.php?output=json and /metadata/{id}. No HTML.
 // Restricted recordings are the normal case for TV News and are reported as
@@ -20,6 +21,9 @@ export interface ArchiveNewsInput {
   rows?: number;
   /** Injected for tests; defaults to global fetch. */
   fetchImpl?: typeof fetch;
+  /** Test overrides; defaults are ARCHIVE_REQUEST_TIMEOUT_MS (15s) and METADATA_BUDGET_MS (45s). */
+  requestTimeoutMs?: number;
+  metadataBudgetMs?: number;
 }
 
 interface ArchiveFile {
@@ -37,6 +41,7 @@ interface ArchiveMetadata {
 }
 
 const USER_AGENT = 'AJN-Precision-Engineering/ArchiveNews';
+export const METADATA_BUDGET_MS = 45_000;
 const METADATA_CONCURRENCY = 2; // Archive answers 429 when 7 networks x 6 hit it at once
 /** Clip length for restricted TV News items. Matches the known-good reference M3U
  *  (…/<ID>/<ID>.mp4?exact=1&start=0&end=282). Archive serves these windows even
@@ -99,20 +104,8 @@ export function pickPlayableFile(files: ArchiveFile[]): { file: ArchiveFile | nu
   return { file: derivative ?? publicMp4[0] ?? null, allPrivate: mp4.length > 0 && publicMp4.length === 0 };
 }
 
-async function getJson<T>(fetchImpl: typeof fetch, url: string, signal: AbortSignal): Promise<{ status: number; body: T | null }> {
-  let res = await fetchImpl(url, { signal, headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } });
-  if (res.status === 429 && !signal.aborted) {
-    // Rate limited: one polite retry, honoring Retry-After up to 5s.
-    await res.body?.cancel().catch(() => {});
-    const wait = Math.min(Number(res.headers.get('retry-after')) * 1000 || 1500, 5000);
-    await new Promise((r) => setTimeout(r, wait));
-    res = await fetchImpl(url, { signal, headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } });
-  }
-  if (!res.ok) {
-    await res.body?.cancel().catch(() => {});
-    return { status: res.status, body: null };
-  }
-  return { status: res.status, body: (await res.json()) as T };
+function getJson<T>(fetchImpl: typeof fetch, url: string, signal: AbortSignal, kind: string, timeoutMs?: number): Promise<{ status: number; body: T | null }> {
+  return getArchiveJson<T>(fetchImpl, url, signal, { kind, userAgent: USER_AGENT, timeoutMs });
 }
 
 export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
@@ -134,20 +127,31 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
     const day = (d: Date) => d.toISOString().slice(0, 10);
     let docs: Array<{ identifier: string; title?: string }> = [];
     const searchErrors: number[] = [];
+    const searchFailures: string[] = [];
     const queries = codes.flatMap((c) => [`collection:${c}`, `collection:TV-${c}`, `identifier:${c}_*`]);
     for (const where of queries) {
       const q = `${where} AND mediatype:movies AND date:[${day(windowStart)} TO ${day(ctx.now)}]`;
       const url = 'https://archive.org/advancedsearch.php'
         + `?q=${encodeURIComponent(q)}&fl[]=identifier&fl[]=title`
         + `&rows=${Math.min(Math.max(input.rows ?? 25, 1), 100)}&sort[]=date+desc&output=json`;
-      const { status, body } = await getJson<{ response?: { docs?: typeof docs } }>(fetchImpl, url, ctx.signal);
-      if (status >= 400) searchErrors.push(status);
-      docs = body?.response?.docs ?? [];
+      try {
+        const { status, body } = await getJson<{ response?: { docs?: typeof docs } }>(fetchImpl, url, ctx.signal, 'search', input.requestTimeoutMs);
+        if (status >= 400) searchErrors.push(status);
+        docs = body?.response?.docs ?? [];
+      } catch (err) {
+        // A timed-out or failed search is reported, never thrown away as a silent empty list.
+        searchFailures.push(isTimeoutError(err) ? `timed out after ${input.requestTimeoutMs ?? ARCHIVE_REQUEST_TIMEOUT_MS}ms` : String((err as Error)?.message ?? err));
+        docs = [];
+      }
       if (docs.length > 0) break;
     }
     // One collection failing and the other returning nothing is not "no news": report it.
-    if (docs.length === 0 && searchErrors.length > 0) {
-      return { ...base, status: 'upstream_error', programs, rejected, error: `advancedsearch HTTP ${[...new Set(searchErrors)].join(', ')}` };
+    if (docs.length === 0 && (searchErrors.length > 0 || searchFailures.length > 0)) {
+      const parts = [
+        ...(searchErrors.length ? [`HTTP ${[...new Set(searchErrors)].join(', ')}`] : []),
+        ...[...new Set(searchFailures)],
+      ];
+      return { ...base, status: 'upstream_error', programs, rejected, error: `advancedsearch ${parts.join('; ')}` };
     }
 
     // 2. Window check first (no network), then metadata for the rest in parallel
@@ -164,19 +168,30 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
       }
       candidates.push({ id, doc, aired });
     }
-    // Deadline: stop starting metadata requests after 45s and keep what we have,
-    // so one slow network can't turn the whole row into a timeout.
-    const deadline = Date.now() + 45_000;
-    const metas = await mapWithConcurrency(candidates, METADATA_CONCURRENCY, (c) =>
-      Date.now() > deadline ? Promise.resolve({ status: 0, body: null as ArchiveMetadata | null }) : getJson<ArchiveMetadata>(fetchImpl, `https://archive.org/metadata/${encodeURIComponent(c.id)}`, ctx.signal)
-        .catch((err) => ({ status: 0, body: null as ArchiveMetadata | null, err: String(err?.message ?? err) })),
-    );
+    // Deadline: after METADATA_BUDGET_MS, in-flight metadata requests are cancelled too
+    // (not just new ones), and what we have is returned as 'partial'. Each request
+    // also has its own 15s timeout (getArchiveJson) so one hung request cannot stall a worker.
+    const deadline = Date.now() + (input.metadataBudgetMs ?? METADATA_BUDGET_MS);
+    type MetaResult = { status: number; body: ArchiveMetadata | null; reason?: string };
+    const metas = await mapWithConcurrency<Candidate, MetaResult>(candidates, METADATA_CONCURRENCY, async (c) => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0 || ctx.signal.aborted) return { status: 0, body: null, reason: 'skipped: metadata time budget used' };
+      const budget = AbortSignal.any([ctx.signal, AbortSignal.timeout(remaining)]);
+      try {
+        return await getJson<ArchiveMetadata>(fetchImpl, `https://archive.org/metadata/${encodeURIComponent(c.id)}`, budget, 'metadata', input.requestTimeoutMs);
+      } catch (err) {
+        if (isTimeoutError(err)) {
+          return { status: 0, body: null, reason: Date.now() >= deadline || ctx.signal.aborted ? 'skipped: metadata time budget used' : 'metadata timeout' };
+        }
+        return { status: 0, body: null, reason: `metadata request failed: ${String((err as Error)?.message ?? err)}` };
+      }
+    });
 
     let restricted = 0;
     for (let i = 0; i < candidates.length; i++) {
       const { id, doc, aired } = candidates[i];
-      const { status, body: meta } = metas[i];
-      if (!meta) { rejected.push({ id, reason: status === 0 ? "skipped: metadata time budget used" : `metadata HTTP ${status}` }); continue; }
+      const { status, body: meta, reason } = metas[i];
+      if (!meta) { rejected.push({ id, reason: reason ?? (status === 0 ? 'metadata request failed' : `metadata HTTP ${status}`) }); continue; }
       if (meta.is_dark) { restricted++; rejected.push({ id, reason: 'restricted: dark item' }); continue; }
 
       const { file, allPrivate } = pickPlayableFile(meta.files ?? []);
