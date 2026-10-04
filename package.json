@@ -58,7 +58,7 @@
     "test:rush-next": "tsx test-rush-next.ts && tsx test-rush-next-client.ts",
     "live:probe": "tsx scripts/live-tv-probe.ts",
     "test:live-health": "tsx test-live-health.ts && tsx test-pluto-epg.ts",
-    "test:library": "tsx test-nasa-archive.ts && tsx test-library-export.ts && tsx test-library-index.ts",
+    "test:library": "tsx test-nasa-archive.ts && tsx test-library-export.ts && tsx test-library-index.ts && tsx test-library-counts.ts",
     "library:snapshot": "tsx scripts/library-snapshot.ts",
     "test:discovery": "tsx test-discovery-channel.ts",
     "test:audio-ownership": "tsx scripts/test-audio-ownership.ts",
