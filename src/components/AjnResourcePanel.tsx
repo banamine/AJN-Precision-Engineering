@@ -2,43 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Headphones, Play, RefreshCw, Tv } from 'lucide-react';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-import type { MediaType, PlayProgramCallback } from '../types';
-
-type AjnFeedId = 'Alex' | 'WarRoom' | 'SundayLive' | 'AJNHourlyVideo' | 'AJNHourlyAudio';
-
-interface AjnResource {
-  id: AjnFeedId;
-  name: string;
-  htmlUrl: string;
-  rssUrl: string;
-  mediaType: MediaType;
-}
-
-interface AjnResourceCatalog {
-  source: string;
-  resources: AjnResource[];
-}
-
-interface AjnFeedItem {
-  id: string;
-  title: string;
-  description?: string;
-  publishedAt?: string;
-  url?: string;
-  thumbnailUrl?: string;
-  mediaType: MediaType;
-  feedId: AjnFeedId;
-}
+import type { PlayProgramCallback } from '../types';
+import { loadAjnFeeds, type AjnFeedItem, type AjnResourceCatalog } from '../services/ajnFeeds';
 
 interface Props {
   onPlayProgram: PlayProgramCallback;
-}
-
-function mediaTypeFromUrl(url: string, fallback: MediaType): MediaType {
-  const normalized = url.split('?')[0].split('#')[0].toLowerCase();
-  if (/\.(mp4|m4v|webm|mov|mkv|m3u8)$/.test(normalized)) return 'video';
-  if (/\.(mp3|aac|m4a|ogg|oga|opus|wav|flac)$/.test(normalized)) return 'audio';
-  return fallback;
 }
 
 export function AjnResourcePanel({ onPlayProgram }: Props) {
@@ -58,28 +26,9 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const catalogResponse = await fetch('/api/ajn/resources', { signal });
-      if (!catalogResponse.ok) throw new Error(`Resource catalog HTTP ${catalogResponse.status}`);
-      const nextCatalog = (await catalogResponse.json()) as AjnResourceCatalog;
+      const { catalog: nextCatalog, items: feeds, failures: failureCount } = await loadAjnFeeds(signal);
       setCatalog(nextCatalog);
-
-      const results = await Promise.allSettled(
-        nextCatalog.resources.map(async (resource) => {
-          const response = await fetch(`/api/ajn/resources/${resource.id}`, { signal });
-          if (!response.ok) throw new Error(`${resource.id} HTTP ${response.status}`);
-          const feed = await response.json();
-          return (feed.items || []) as AjnFeedItem[];
-        })
-      );
-
       if (signal.aborted) return;
-
-      const feeds = results
-        .filter((result): result is PromiseFulfilledResult<AjnFeedItem[]> => result.status === 'fulfilled')
-        .flatMap((result) => result.value)
-        .filter((item) => item.url)
-        .map((item) => ({ ...item, mediaType: mediaTypeFromUrl(item.url!, item.mediaType) }));
-      const failures = results.filter((result) => result.status === 'rejected');
 
       const videoItems = feeds
         .filter((item) => item.mediaType === 'video')
@@ -97,10 +46,10 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
       setItems([...videoItems, ...audioItems]);
       setLastCheckedAt(new Date().toISOString());
 
-      if (feeds.length === 0 && failures.length > 0) {
+      if (feeds.length === 0 && failureCount > 0) {
         setError('AJN resource feeds are currently unavailable.');
-      } else if (failures.length > 0) {
-        setError(`${failures.length} AJN resource feed${failures.length === 1 ? '' : 's'} unavailable; showing available items.`);
+      } else if (failureCount > 0) {
+        setError(`${failureCount} AJN resource feed${failureCount === 1 ? '' : 's'} unavailable; showing available items.`);
       }
     } catch (err) {
       if (signal.aborted) return;

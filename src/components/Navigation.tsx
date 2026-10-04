@@ -28,6 +28,7 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
   { id: 'tv-guide', label: 'TV Guide', icon: Tv, description: '24-hour program schedule grid' },
   { id: 'player', label: 'Player', icon: PlayCircle, description: 'Active broadcast monitor' },
   { id: 'news', label: 'News', icon: Newspaper, description: 'Live Rumble news wall' },
+  { id: 'radio', label: 'AJN Radio', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
   { id: 'library', label: 'Library', icon: FolderArchive, description: 'Curated archives & vaults' },
   { id: 'search', label: 'Search', icon: Search, description: 'Archive.org TV News search' },
 ];
