@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
 import { Play, Pause, Maximize2, X, Tv, Radio } from 'lucide-react';
 import { NowPlayingMedia, Destination } from '../types';
+import { usePersistentMedia } from '../hooks/usePersistentMedia';
 
 interface MiniPlayerDockProps {
   nowPlaying: NowPlayingMedia;
@@ -13,32 +13,8 @@ export function MiniPlayerDock({
   onOpenFullPlayer,
   onDismiss,
 }: MiniPlayerDockProps) {
-  // The real player stays mounted (hidden) in #persistent-player; the dock drives it.
-  const [paused, setPaused] = useState(true);
-  const getMedia = () => {
-    if (nowPlaying.mediaType === 'audio') {
-      return document.querySelector<HTMLMediaElement>('#persistent-player audio')
-        ?? document.querySelector<HTMLMediaElement>('#persistent-player video');
-    }
-    return document.querySelector<HTMLMediaElement>('#persistent-player video')
-      ?? document.querySelector<HTMLMediaElement>('#persistent-player audio');
-  };
-  useEffect(() => {
-    let media: HTMLMediaElement | null = null;
-    const sync = () => setPaused(!media || media.paused);
-    const attach = () => {
-      const next = getMedia();
-      if (next === media) return;
-      media?.removeEventListener('play', sync); media?.removeEventListener('pause', sync);
-      media = next;
-      media?.addEventListener('play', sync); media?.addEventListener('pause', sync);
-      sync();
-    };
-    attach();
-    const t = window.setInterval(attach, 250); // element is replaced when the source changes
-    return () => { window.clearInterval(t); media?.removeEventListener('play', sync); media?.removeEventListener('pause', sync); };
-  }, [nowPlaying.src, nowPlaying.mediaType]);
-  const togglePlay = () => { const m = getMedia(); if (!m) return; if (m.paused) void m.play().catch(() => {}); else m.pause(); };
+  // The real player stays mounted (hidden) in #persistent-player; the dock drives it through the shared hook.
+  const { paused, toggle: togglePlay } = usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
   const isAudio = nowPlaying.mediaType === 'audio';
   return (
     <aside

@@ -135,6 +135,8 @@ jobs:
         run: npm run test:ajn-classify-pairing
       - name: AJN Radio catalog regression
         run: npm run test:ajn-radio-catalog
+      - name: Daily News Digest regression (parse, freshness, in-memory store)
+        run: npm run test:news-digest
       - name: AJN Media RSS contract regression (mocked)
         run: npm run test:source-ajn-media
 
@@ -230,6 +232,10 @@ jobs:
           AJN_TEST_URL: http://localhost:8080
       - name: Browser journey regression
         run: npm run test:browser-journeys
+        env:
+          AJN_TEST_URL: http://localhost:8080
+      - name: Radio view regression (Listen, Now Playing, filters, briefing)
+        run: npm run test:radio-view
         env:
           AJN_TEST_URL: http://localhost:8080
       - name: Real Archive playback gates

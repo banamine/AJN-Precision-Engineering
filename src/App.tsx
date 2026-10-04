@@ -244,7 +244,7 @@ export default function App() {
         )}
         {destination === 'radio' && (
           <div key="view-radio" className="view-fade-in w-full">
-            <RadioView onPlayProgram={handlePlayProgram} />
+            <RadioView onPlayProgram={handleAdvanceProgram} nowPlaying={nowPlaying} recentlyPlayed={recentlyPlayed} onNavigate={navigateTo} />
           </div>
         )}
         {destination === 'dev' && (
