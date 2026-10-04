@@ -46,6 +46,8 @@ jobs:
           exit 1
 
       - name: Core regression suite
+        env:
+          AJN_TEST_URL: http://localhost:8080
         run: |
           npm test
           npm run test:epg-identity

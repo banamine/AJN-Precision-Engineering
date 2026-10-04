@@ -1,5 +1,7 @@
 import puppeteer from 'puppeteer';
 
+const baseUrl = process.env.AJN_TEST_URL || 'http://localhost:3000';
+
 (async () => {
   console.log('Starting puppeteer test...');
   const browser = await puppeteer.launch({
@@ -26,7 +28,7 @@ import puppeteer from 'puppeteer';
   });
 
   try {
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30000 });
     console.log('Page loaded');
     
     console.log('\\n--- TEST 6: NOVA Archive MP4 Proxy Decode ---');
