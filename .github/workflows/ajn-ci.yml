@@ -161,11 +161,14 @@ jobs:
       - name: Verify downloaded production build
         run: test -f dist/server.cjs && test -f dist/index.html
       - name: Start application server
+        env:
+          NODE_ENV: production
+          PORT: 8080
         run: |
           node dist/server.cjs > /tmp/ajn-server.log 2>&1 &
           echo $! > /tmp/ajn-server.pid
           for i in {1..30}; do
-            if curl --fail --silent --show-error http://localhost:3000/api/health > /tmp/ajn-health.json; then
+            if curl --fail --silent --show-error http://localhost:8080/api/health > /tmp/ajn-health.json; then
               echo "AJN server is healthy"
               cat /tmp/ajn-health.json
               exit 0
@@ -182,7 +185,7 @@ jobs:
           for endpoint in resources audio/hourly audio/segment; do
             safe_name="$(echo "$endpoint" | tr / -)"
             echo "=== /api/ajn/$endpoint ==="
-            code="$(curl --silent --show-error --max-time 15               --dump-header "/tmp/ajn-${safe_name}.headers"               --output "/tmp/ajn-${safe_name}.json"               --write-out '%{http_code}'               "http://localhost:3000/api/ajn/$endpoint")"
+            code="$(curl --silent --show-error --max-time 15               --dump-header "/tmp/ajn-${safe_name}.headers"               --output "/tmp/ajn-${safe_name}.json"               --write-out '%{http_code}'               "http://localhost:8080/api/ajn/$endpoint")"
             echo "HTTP $code"
             if [ "$code" = "200" ]; then
               echo "PASS: /api/ajn/$endpoint returned HTTP 200"
@@ -200,35 +203,35 @@ jobs:
       - name: Existing playback regression
         run: npm test
         env:
-          AJN_TEST_URL: http://localhost:3000
+          AJN_TEST_URL: http://localhost:8080
       - name: API contract regression
         run: npm run test:api-contract
         env:
-          AJN_TEST_URL: http://localhost:3000
+          AJN_TEST_URL: http://localhost:8080
       - name: Accessibility regression
         run: npm run test:accessibility
         env:
-          AJN_TEST_URL: http://localhost:3000
+          AJN_TEST_URL: http://localhost:8080
       - name: Audio/video switch regression
         run: npm run test:audio-video-switch
         env:
-          AJN_TEST_URL: http://localhost:3000
+          AJN_TEST_URL: http://localhost:8080
       - name: Audio bridge browser regression
         run: npm run test:audio
         env:
-          AJN_TEST_URL: http://localhost:3000
+          AJN_TEST_URL: http://localhost:8080
       - name: AudioContext singleton regression
         run: npm run test:audio-singleton
         env:
-          AJN_TEST_URL: http://localhost:3000
+          AJN_TEST_URL: http://localhost:8080
       - name: Browser journey regression
         run: npm run test:browser-journeys
         env:
-          AJN_TEST_URL: http://localhost:3000
+          AJN_TEST_URL: http://localhost:8080
       - name: Real Archive playback gates
         run: npm run test:real-archive-playback
         env:
-          AJN_TEST_URL: http://localhost:3000
+          AJN_TEST_URL: http://localhost:8080
       - name: Visual regression screenshots
         if: always()
         run: |
@@ -242,7 +245,7 @@ jobs:
               await page.setViewport({ width: 1360, height: 768 });
               for (const [name, hash] of [['home',''],['library','#library'],['guide','#tv-guide'],['search','#search'],['player','#player']]) {
                 // The app streams media and polls, so the network never goes fully idle.
-                await page.goto(`http://localhost:3000/${hash}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+                await page.goto(`http://localhost:8080/${hash}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
                 await page.waitForNetworkIdle({ idleTime: 1000, timeout: 15000, concurrency: 2 }).catch(() => {});
                 await page.screenshot({ path: `/tmp/ajn-visual/${name}.png`, fullPage: true });
               }
