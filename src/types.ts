@@ -1,4 +1,4 @@
-export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'dev';
+export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'radio' | 'dev';
 
 export type MediaType = 'video' | 'audio';
 

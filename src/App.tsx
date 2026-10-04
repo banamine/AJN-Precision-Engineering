@@ -9,6 +9,7 @@ import { PlayerView } from './components/PlayerView';
 import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
 import { RumbleNewsWall } from './components/RumbleNewsWall';
+import { RadioView } from './components/RadioView';
 import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
 
@@ -55,6 +56,8 @@ function getDestinationFromHash(): Destination {
     case 'archive': return 'library';
     case 'search': return 'search';
     case 'news': return 'news';
+    case 'radio':
+    case 'ajn-radio': return 'radio';
     case 'dev':
     case 'developer':
     case 'diagnostics': return 'dev';
@@ -237,6 +240,11 @@ export default function App() {
         {destination === 'news' && (
           <div key="view-news" className="view-fade-in w-full">
             <RumbleNewsWall />
+          </div>
+        )}
+        {destination === 'radio' && (
+          <div key="view-radio" className="view-fade-in w-full">
+            <RadioView onPlayProgram={handlePlayProgram} />
           </div>
         )}
         {destination === 'dev' && (
