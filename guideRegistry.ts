@@ -9,6 +9,7 @@ import { buildRushChannel, buildOtrChannel } from './server/audioChannels';
 import { getNasaPrograms, NASA_CHANNEL_ID } from './server/sources/nasaArchive';
 import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
 import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
+import { DEATH_VALLEY_CHANNEL_ID, DEATH_VALLEY_CHANNEL_NAME, WESTERN_GROUP, deathValleyBaseProgram } from './collections/western-death-valley';
 import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
 import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
@@ -257,11 +258,15 @@ export function getChannelsByGuide(id?:string){
   if(id==='classic-tv' && !channels.some(c=>c.id==='honeymooners')){
     channels.push({id:'honeymooners',guideId:'classic-tv',name:'The Honeymooners',mediaType:'video',group:'Classic TV',enabled:true,sources:[]});
   }
+  if(id==='classic-tv' && !channels.some(c=>c.id===DEATH_VALLEY_CHANNEL_ID)){
+    channels.push({id:DEATH_VALLEY_CHANNEL_ID,guideId:'classic-tv',name:DEATH_VALLEY_CHANNEL_NAME,mediaType:'video',group:WESTERN_GROUP,enabled:true,sources:[]});
+  }
   return channels;
 }
 export function getChannelById(id:string){
   const c=channelsMap.get(id); if(c)return {...c,sources:channelSourcesMap.get(id)||[]};
   if(id==='honeymooners')return {id:'honeymooners',guideId:'classic-tv',name:'The Honeymooners',mediaType:'video' as const,group:'Classic TV',enabled:true,sources:[]};
+  if(id===DEATH_VALLEY_CHANNEL_ID)return {id:DEATH_VALLEY_CHANNEL_ID,guideId:'classic-tv',name:DEATH_VALLEY_CHANNEL_NAME,mediaType:'video' as const,group:WESTERN_GROUP,enabled:true,sources:[]};
   return undefined;
 }
 export function getChannelSources(id:string){return channelSourcesMap.get(id)||[];}
@@ -630,7 +635,9 @@ async function getScheduleForGuideRaw(guideId='cable-tv'):Promise<ScheduleChanne
   if(guideId==='classic-tv'){
     const honeymooners=await buildHoneymoonersEpg();
     const highlights=await getDailyHighlightsChannels(guideId);
-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))},...highlights];
+    // Western: one curated episode repeated to fill the 24-hour day (slots up to 100 cover a ~26-minute episode).
+    const deathValley:ScheduleChannel={id:DEATH_VALLEY_CHANNEL_ID,guideId,name:DEATH_VALLEY_CHANNEL_NAME,mediaType:'video',group:WESTERN_GROUP,programs:layoutDailySchedule([deathValleyBaseProgram()],26,new Date(),100).map((program)=>upsertCanonicalProgram(program))};
+    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))},deathValley,...highlights];
   }
   if(guideId==='audio-podcasts'){
     return [...(await getAudioChannels(guideId)),...genericChannels(guideId)];
