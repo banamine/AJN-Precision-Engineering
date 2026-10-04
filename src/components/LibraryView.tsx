@@ -34,6 +34,8 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Page | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => loadFavorites());
   const [showFavorites, setShowFavorites] = useState(false);
   const [openSeries, setOpenSeries] = useState<Set<string>>(() => new Set());
@@ -61,14 +63,14 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
       if (debounced) p.set('q', debounced);
     }
     if (showFavorites && favoriteIds.size === 0) { setData({ page: 1, totalPages: 1, totalItems: 0, items: [] }); return; }
-    setLoading(true);
+    setLoading(true); setLoadError(null);
     fetch(`/api/library/items?${p}`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d) => { setData(d); setLoading(false); })
-      .catch((e) => { if (e.name !== 'AbortError') { setData({ page: 1, totalPages: 1, totalItems: 0, items: [] }); setLoading(false); } });
+      .catch((e) => { if (e.name !== 'AbortError') { setData(null); setLoadError(e?.message || 'request failed'); setLoading(false); } });
     return () => ctrl.abort();
     // favorites only matter for the Favorites view
-  }, [page, category, decade, debounced, showFavorites, showFavorites ? favoriteIds : null]);
+  }, [page, category, decade, debounced, showFavorites, showFavorites ? favoriteIds : null, retryTick]);
 
   const cat = useMemo(() => heat?.find((c) => c.categoryId === category) ?? null, [heat, category]);
   const allTotal = useMemo(() => heat ? heat.reduce((n, c) => n + c.total, 0) : 0, [heat]);
@@ -136,6 +138,14 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
         <span aria-live="polite">{loading ? 'Loading…' : data ? `${data.totalItems} ${data.totalItems === 1 ? 'item' : 'items'}` : ''}</span>
         {data && data.totalPages > 1 && <Pager page={data.page} total={data.totalPages} onPage={setPage} />}
       </div>
+
+      {loadError && !loading && (
+        <div role="alert" data-testid="library-load-error" className="rounded-xl border border-red-900/60 bg-red-950/30 p-6 text-center space-y-2">
+          <h3 className="text-sm font-medium text-red-300">The library could not be loaded ({loadError}).</h3>
+          <p className="text-xs text-neutral-400">This is a connection or server problem, not an empty result.</p>
+          <button type="button" id="library-retry-btn" onClick={() => setRetryTick((n) => n + 1)} className="mt-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700">Try again</button>
+        </div>
+      )}
 
       {data && data.items.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
