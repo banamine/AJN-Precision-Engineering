@@ -6,6 +6,7 @@ import { liveTvHealthSummary } from './guideRegistry';
 import { plutoEpgStats } from './server/sources/plutoEpg';
 import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES } from './server/safeFetch';
 import { proxySliceRange } from './server/proxyRange';
+import { getDigestState } from './server/newsDigest';
 import { unplayableReason } from './server/sources/archiveLinks';
 import { Readable } from 'node:stream';
 import crypto from 'node:crypto';
@@ -108,6 +109,8 @@ app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const 
 app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});
 app.get('/api/rush/episode/:date',async(req,res)=>{const eps=await rushEpisodesOn(req.params.date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${req.params.date}`});try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({date:req.params.date,episodes,stats:rushStats});}catch(e:any){res.status(e.status??502).json({error:e.message,stats:rushStats});}});
 app.get('/api/news/version',async(_req,res)=>{res.set('Cache-Control','no-store');res.json(await getNewsVersion());});
+// Daily News Digest (GitHub Pages JSON, in memory). Headlines and links only; never media. 503 only when no digest was ever loaded.
+app.get('/api/digest',async(_req,res)=>{const st=await getDigestState();res.set('Cache-Control','no-store');if(!st.digest)return res.status(503).json({status:st.status,error:st.error??'digest not loaded yet'});return res.json(st);});
 app.get('/api/playlists',(_req,res)=>{const playlists=getAllPlaylists();res.json({playlists,total:playlists.length});});
 app.get('/api/playlists/:playlistId',(req,res)=>{const p=getPlaylistById(req.params.playlistId);if(!p)return res.status(404).json({error:`Playlist not found: ${req.params.playlistId}`});res.json(p);});
 app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.params.playlistId,req.body?.customM3u);if(!r.success)return res.status(400).json({error:`Failed to sync playlist ${req.params.playlistId}`,playlist:r.playlist});res.json({message:`Playlist ${req.params.playlistId} synchronized successfully`,playlist:r.playlist,ingestedCount:r.count});});
