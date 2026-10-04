@@ -112,6 +112,8 @@ export interface NowPlayingMedia {
   thumbnailUrl?: string;
   duration?: string;
   isLive?: boolean;
+  /** One-shot start offset (seconds) applied when this item loads: used by the audio/video switch. Never persisted. */
+  startAtSeconds?: number;
 }
 
 export interface RecentlyPlayedItem extends NowPlayingMedia {
@@ -182,5 +184,6 @@ export type PlayProgramCallback = (
   guideId?: string,
   programId?: string,
   sourceId?: string,
-  assetId?: string
+  assetId?: string,
+  startAtSeconds?: number
 ) => void;

@@ -3,6 +3,7 @@ import { RUSH_PROGRAM, resolveRushNext, upNextLabel, type RushNext } from "../ut
 import { loadRushSettings, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
 import MinimalPlayer from "../MinimalPlayer";
 import { reportTelemetry } from "../telemetry";
+import { AvSyncControls } from "./AvSyncControls";
 
 /** Readable, stable id for a show title: "<channelId>/<title-slug>". Used in logs
  *  and telemetry so a failing playback can be found by name. */
@@ -16,7 +17,7 @@ export function titleIdOf(channelId: string | undefined, title: string | undefin
 const MAX_CONSECUTIVE_FAILURES = 20;
 const SKIP_AFTER_ERROR_MS = 1500;
 
-export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
+export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate }: any) {
   const failuresRef = useRef(0);
   const skipTimerRef = useRef<number | null>(null);
 
@@ -174,6 +175,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
           onProgress?.(itemId, positionSeconds);
         }}
       />
+      <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />
       {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (
         <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">
           {upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1])}

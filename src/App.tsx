@@ -12,6 +12,8 @@ import { RumbleNewsWall } from './components/RumbleNewsWall';
 import { RadioView } from './components/RadioView';
 import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
+import { SyncedVideoPip } from './components/SyncedVideoPip';
+import { useAvSyncRecorder } from './hooks/useAvSync';
 
 const ARCHIVE_PROXY_BASE = '/api/archive/proxy?path=';
 const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
@@ -122,7 +124,7 @@ export default function App() {
 
   const stayOnPageRef = useRef(false);
   const handlePlayProgram = useCallback<PlayProgramCallback>((
-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId
+    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds
   ) => {
     const rawReference = String(archivePath ?? '').trim();
     if (!rawReference) {
@@ -161,7 +163,8 @@ export default function App() {
 
     setRecentlyPlayed((items) => [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
 
-    setNowPlaying({ ...nextRecentlyPlayed });
+    // startAtSeconds is a one-shot instruction for this play only: it is not stored in recently played.
+    setNowPlaying({ ...nextRecentlyPlayed, ...(typeof startAtSeconds === 'number' && Number.isFinite(startAtSeconds) && startAtSeconds > 0 ? { startAtSeconds } : {}) });
     // Auto-advance (next clip/program) keeps the viewer where they are.
     if (stayOnPageRef.current) { stayOnPageRef.current = false; return; }
     setDestination('player');
@@ -190,6 +193,8 @@ export default function App() {
     setDestination('player');
     if (typeof window !== 'undefined') window.location.hash = '#player';
   }, []);
+
+  useAvSyncRecorder(nowPlaying);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
@@ -254,8 +259,9 @@ export default function App() {
         )}
       </main>
       <NewsReadyNotice onPlay={handlePlayProgram} />
+      <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
       {nowPlaying && destination !== 'player' && (
-        <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} />
+        <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />
       )}
     </div>
   );

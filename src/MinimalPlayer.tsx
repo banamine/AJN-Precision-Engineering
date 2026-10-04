@@ -1,3 +1,4 @@
+import { clampStart } from "./utils/avSync";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bridgeSrc, corsModeFor } from "./utils/mediaRoute";
 import Hls from "hls.js";
@@ -119,6 +120,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     }
   }, [eventMeta, onPlayEvent]);
 
+  // One-shot start offset from the audio/video switch: applied once per play, on loadedmetadata.
+  const nowPlayingRef = useRef(nowPlaying);
+  nowPlayingRef.current = nowPlaying;
+  const startAtConsumedRef = useRef<unknown>(null);
+
   const fnRef = useRef({ eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent });
   fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent };
 
@@ -181,7 +187,16 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
 
     const onLoadedMetadata = () => {
       // Live streams have no fixed duration: never offer a resume position.
-      const saved = Number.isFinite(media.duration) ? fx().readResumePosition() : null;
+      const instance = nowPlayingRef.current;
+      let switched = false;
+      if (instance && startAtConsumedRef.current !== instance) {
+        startAtConsumedRef.current = instance;
+        const startAt = clampStart(instance.startAtSeconds, media.duration);
+        if (startAt !== null) {
+          try { media.currentTime = startAt; switched = true; } catch { /* element not seekable yet: fall through to normal start */ }
+        }
+      }
+      const saved = !switched && Number.isFinite(media.duration) ? fx().readResumePosition() : null;
       setStatusText("Ready");
       if (saved !== null && (!Number.isFinite(media.duration) || saved < media.duration - 5)) {
         setResumePosition(saved);

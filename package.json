@@ -44,6 +44,8 @@
     "test:ajn-classify-pairing": "tsx test-ajn-classify-pairing.ts",
     "test:ajn-radio-catalog": "tsx test-ajn-radio-catalog.ts",
     "test:news-digest": "tsx test-news-digest.ts",
+    "test:av-sync": "tsx test-av-sync.ts",
+    "test:av-sync-browser": "node test-av-sync-browser.js",
     "test:source-ajn-media": "tsx test-source-ajn-media.ts",
     "news:snapshot": "tsx scripts/news-snapshot.ts",
     "rush:index": "tsx scripts/build-rush-index.ts",

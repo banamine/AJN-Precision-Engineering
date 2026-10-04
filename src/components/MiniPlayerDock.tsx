@@ -1,17 +1,23 @@
 import { Play, Pause, Maximize2, X, Tv, Radio } from 'lucide-react';
-import { NowPlayingMedia, Destination } from '../types';
+import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
+import { AvSyncControls } from './AvSyncControls';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
 
 interface MiniPlayerDockProps {
   nowPlaying: NowPlayingMedia;
   onOpenFullPlayer: () => void;
   onDismiss: () => void;
+  /** Optional: enables Watch / Mini video / Listen for AJN episodes that have a paired version. */
+  onPlayProgram?: PlayProgramCallback;
+  onNavigate?: (destination: Destination) => void;
 }
 
 export function MiniPlayerDock({
   nowPlaying,
   onOpenFullPlayer,
   onDismiss,
+  onPlayProgram,
+  onNavigate,
 }: MiniPlayerDockProps) {
   // The real player stays mounted (hidden) in #persistent-player; the dock drives it through the shared hook.
   const { paused, toggle: togglePlay } = usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
@@ -20,7 +26,7 @@ export function MiniPlayerDock({
     <aside
       id="persistent-mini-player"
       aria-label="Active Broadcast Mini Player"
-      className="fixed bottom-[4.25rem] sm:bottom-20 md:bottom-6 left-2 right-2 sm:left-auto sm:right-6 sm:w-96 max-w-md z-50 flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-2 sm:p-3 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200"
+      className="fixed flex-wrap bottom-[4.25rem] sm:bottom-20 md:bottom-6 left-2 right-2 sm:left-auto sm:right-6 sm:w-96 max-w-md z-50 flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-2 sm:p-3 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200"
     >
       {/* Icon / Thumbnail */}
       <button
@@ -86,6 +92,9 @@ export function MiniPlayerDock({
         >
           <X className="h-4 w-4" />
         </button>
+      </div>
+      <div className="w-full basis-full px-1 empty:hidden">
+        <AvSyncControls nowPlaying={nowPlaying} onPlay={onPlayProgram} onNavigate={onNavigate} variant="compact" />
       </div>
     </aside>
   );

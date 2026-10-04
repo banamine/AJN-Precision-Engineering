@@ -137,6 +137,8 @@ jobs:
         run: npm run test:ajn-radio-catalog
       - name: Daily News Digest regression (parse, freshness, in-memory store)
         run: npm run test:news-digest
+      - name: Audio/Video sync rules (twin lookup, start offset, shared position, drift)
+        run: npm run test:av-sync
       - name: AJN Media RSS contract regression (mocked)
         run: npm run test:source-ajn-media
 
@@ -236,6 +238,12 @@ jobs:
           AJN_TEST_URL: http://localhost:8080
       - name: Radio view regression (Listen, Now Playing, filters, briefing)
         run: npm run test:radio-view
+        env:
+          AJN_TEST_URL: http://localhost:8080
+      - name: Parallel Audio/Video Sync browser regression (Watch at the same second, mini video, shared position)
+        run: |
+          command -v ffmpeg >/dev/null || sudo apt-get install -y --no-install-recommends ffmpeg
+          npm run test:av-sync-browser
         env:
           AJN_TEST_URL: http://localhost:8080
       - name: Real Archive playback gates
