@@ -19,7 +19,7 @@ on:
       service:
         description: Cloud Run service name
         required: false
-        default: ajn-precision-engineering
+        default: ajn-precision-engineering-v2
         type: string
 
 permissions:
@@ -32,7 +32,7 @@ concurrency:
 
 env:
   GCP_REGION: ${{ inputs.region || vars.GCP_REGION || 'us-west2' }}
-  GCP_SERVICE: ${{ inputs.service || vars.GCP_CLOUD_RUN_SERVICE || 'ajn-precision-engineering' }}
+  GCP_SERVICE: ${{ inputs.service || vars.GCP_CLOUD_RUN_SERVICE || 'ajn-precision-engineering-v2' }}
 
 jobs:
   deploy:
@@ -110,7 +110,7 @@ jobs:
           GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
         run: |
           set -euo pipefail
-          gcloud run deploy "${GCP_SERVICE}" --project "${GCP_PROJECT_ID}" --region "${GCP_REGION}" --platform managed --allow-unauthenticated --timeout 3600 --quiet --container app-container --source .
+          gcloud run deploy "${GCP_SERVICE}" --project "${GCP_PROJECT_ID}" --region "${GCP_REGION}" --platform managed --allow-unauthenticated --timeout 3600 --quiet --container app-container --memory 3Gi --source .
 
       - name: Verify deployed revision
         env:
