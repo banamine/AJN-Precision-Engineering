@@ -110,7 +110,7 @@ jobs:
           GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
         run: |
           set -euo pipefail
-          gcloud run deploy "${GCP_SERVICE}"             --source .             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --platform managed             --allow-unauthenticated             --timeout 3600             --quiet
+          gcloud run deploy "${GCP_SERVICE}"             --source . --container app-container             --project "${GCP_PROJECT_ID}"             --region "${GCP_REGION}"             --platform managed             --allow-unauthenticated             --timeout 3600             --quiet
 
       - name: Verify deployed revision
         env:
