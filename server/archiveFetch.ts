@@ -28,7 +28,7 @@ export function validateArchiveRedirect(target: URL): void {
 // A storage node that silently drops connections used to hang a request for 10-15 s and
 // then fail with "fetch failed". Bound the wait for response headers (the body is never
 // cut off once headers arrive) and fall back to Archive's other replicas.
-export const NODE_HEADER_TIMEOUT_MS = 6_000;
+export const NODE_HEADER_TIMEOUT_MS = 15_000;
 export const METADATA_TIMEOUT_MS = 5_000;
 const MAX_ALTERNATE_NODES = 2;
 
@@ -123,7 +123,10 @@ export async function resolveArchiveMediaRedirect(
       response = await timedFetch(
         fetchImpl,
         currentUrl,
-        { method: 'GET', redirect: 'manual', headers: { 'User-Agent': USER_AGENT, Accept: '*/*' } },
+        // Probe with a 1-byte range: a bare GET made Archive start sending (or, for TV
+        // clips, cut) the whole file just to read the redirect headers, which stalled
+        // past the header timeout under load and surfaced as 502s.
+        { method: 'GET', redirect: 'manual', headers: { 'User-Agent': USER_AGENT, Accept: '*/*', Range: 'bytes=0-0' } },
         opts.signal,
         opts.timeoutMs ?? NODE_HEADER_TIMEOUT_MS,
       );
@@ -277,6 +280,14 @@ export async function fetchArchiveMediaWithRetry(
       // Client disconnect: let the caller handle the abort as before.
       if (opts.signal?.aborted) throw error;
       networkError = error;
+      const cause = (error as { cause?: { code?: string; message?: string } }).cause;
+      console.warn('[archive-proxy] upstream network error', JSON.stringify({
+        requestId: opts.requestId ?? null,
+        url: upstreamUrl,
+        host: (error as { archiveHost?: string }).archiveHost ?? failedHost,
+        error: error instanceof Error ? error.message : String(error),
+        cause: cause?.code ?? cause?.message ?? null,
+      }));
       failedHost = (error as { archiveHost?: string }).archiveHost ?? failedHost;
       failure = 'resolve';
       status = 0;
