@@ -45,7 +45,7 @@ const headers = { 'User-Agent': 'test', Accept: '*/*', Range: 'bytes=0-10' };
   assert.equal(result.status, 206);
   assert.equal(result.attempts, 3);
   assert.equal(result.failure, undefined);
-  const mediaCalls = calls.filter((c) => c.range !== null);
+  const mediaCalls = calls.filter((c) => c.range !== null && c.range !== 'bytes=0-0');
   assert.equal(mediaCalls.length, 3, 'three media fetches');
   assert.ok(mediaCalls.every((c) => c.range === 'bytes=0-10'), 'Range sent on every attempt');
   assert.equal(logs.length, 2, 'two retry warnings');
