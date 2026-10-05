@@ -6,7 +6,7 @@ import { HomeView } from './components/HomeView';
 import { AjnResourcePanel } from './components/AjnResourcePanel';
 import { TvGuideView } from './components/TvGuideView';
 import { PlayerView } from './components/PlayerView';
-import { LibraryView } from './components/LibraryView';
+import { LibraryTabs } from './components/LibraryTabs';
 import { SearchView } from './components/SearchView';
 import { RumbleNewsWall } from './components/RumbleNewsWall';
 import { RadioView } from './components/RadioView';
@@ -234,7 +234,7 @@ export default function App() {
         )}
         {destination === 'library' && (
           <div key="view-library" className="view-fade-in w-full">
-            <LibraryView onPlayProgram={handlePlayProgram} />
+            <LibraryTabs onPlayProgram={handlePlayProgram} />
           </div>
         )}
         {destination === 'search' && (
