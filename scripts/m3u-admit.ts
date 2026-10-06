@@ -196,11 +196,12 @@ await mkdir(path.dirname(reportPath), { recursive:true });
 const summaryFields = ['folder','file','total','admitted','dropped-dead','dropped-dup','dropped-nonmedia','needsProxy','statusBasis'];
 const summaryRows = summaries.map(summary => [
   summary.folder, summary.file, summary.total, summary.admitted, summary.droppedDead,
-  summary.droppedDup, summary.droppedNonmedia, summary.needsProxy
+  summary.droppedDup, summary.droppedNonmedia, summary.needsProxy, 'probe=original; admission=canonical'
 ]);
 const grandTotal = [
   'TOTAL', '', summaryRows.reduce((n,row) => n + Number(row[2]), 0),
-  totals.admitted, totals.droppedDead, totals.droppedDup, totals.droppedNonmedia, totals.needsProxy
+  totals.admitted, totals.droppedDead, totals.droppedDup, totals.droppedNonmedia, totals.needsProxy,
+  'probe=original; admission=canonical'
 ];
 
 await writeFile(
