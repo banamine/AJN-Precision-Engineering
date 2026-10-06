@@ -471,12 +471,29 @@ async function getAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
  * bumps and the UI offers "Latest news ready". Layout is computed per request
  * from real air times so the grid is always today's. */
 const NEWS_REFRESH_MS=6*3600_000;
+/** Per-network budget for one refresh (runSources aborts the hook; it then returns what it gathered). */
+const NEWS_NETWORK_TIMEOUT_MS=90_000;
+/** A network that ended stale/offline is retried after this long, at most NEWS_MAX_RETRIES times, before the next 6h tick. */
+const NEWS_RETRY_MS_DEFAULT=10*60_000;
+const NEWS_MAX_RETRIES=5;
+/** News older than this (by real air time) is never shown as current. */
+export const NEWS_MAX_AGE_MS=48*3600_000;
+let newsRetryMs=NEWS_RETRY_MS_DEFAULT;
+let newsRetries=0;
+let newsRetryTimer:ReturnType<typeof setTimeout>|null=null;
+let newsNetworkTimeoutMs=NEWS_NETWORK_TIMEOUT_MS;
+let cableNewsRequestTimeoutMs:number|undefined;
 type NewsChannelState={programs:Program[];status:string;error?:string;rejected?:any[]};
 let newsState:{version:number;fetchedAt:string;fingerprint:string;channels:Map<string,NewsChannelState>;newShows:Array<{channelId:string;channelName:string;title:string;programId:string}>}|null=null;
 let cableNewsFetch:typeof fetch|undefined;
 let cableNewsRefreshing:Promise<void>|null=null;
 let newsTimer:ReturnType<typeof setInterval>|null=null;
-export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;newsState=null;}
+export function setCableNewsFetchForTests(impl?:typeof fetch,opts:{retryMs?:number;networkTimeoutMs?:number;requestTimeoutMs?:number}={}){
+  newsNetworkTimeoutMs=opts.networkTimeoutMs??NEWS_NETWORK_TIMEOUT_MS;cableNewsRequestTimeoutMs=opts.requestTimeoutMs;
+  cableNewsFetch=impl;newsState=null;newsRetries=0;newsRetryMs=opts.retryMs??NEWS_RETRY_MS_DEFAULT;
+  if(newsRetryTimer){clearTimeout(newsRetryTimer);newsRetryTimer=null;}
+}
+export function newsRetryStateForTests(){return{retries:newsRetries,scheduled:!!newsRetryTimer};}
 
 async function seedFromSnapshot(){
   if(newsState)return;
@@ -489,13 +506,16 @@ async function seedFromSnapshot(){
 }
 
 /** Fetch every network (sequentially, quietly) and swap the result in atomically. */
-export async function refreshCableNews(guideId='cable-tv'):Promise<void>{
-  const next=new Map<string,NewsChannelState>();
+export async function refreshCableNews(guideId='cable-tv',only?:string[]):Promise<void>{
+  // `only` = retry just these channels and carry the others over unchanged.
+  const next=new Map<string,NewsChannelState>(only?(newsState?.channels??new Map()):[]);
   for(const [network,channelId,channelName] of NEWS_NETWORKS){
-    const [r]=await runSources([{contract:archiveNewsContract,input:{network,channelId,channelName,guideId,rows:12,windowDays:2,fetchImpl:cableNewsFetch} as ArchiveNewsInput}],{timeoutMs:90_000});
+    if(only&&!only.includes(channelId))continue;
+    const [r]=await runSources([{contract:archiveNewsContract,input:{network,channelId,channelName,guideId,rows:12,windowDays:2,fetchImpl:cableNewsFetch,...(cableNewsRequestTimeoutMs?{requestTimeoutMs:cableNewsRequestTimeoutMs}:{})} as ArchiveNewsInput}],{timeoutMs:newsNetworkTimeoutMs});
+    console.info(`[News refresh] ${channelId} ${r.durationMs??0}ms ${r.status} programs=${r.programs.length} rejected=${r.rejected.length}${r.error?` error="${r.error}"`:''}`);
     const grouped=groupClipPrograms([...r.programs].sort((x,y)=>String(x.startTimeUtc).localeCompare(String(y.startTimeUtc)))).map(toSnapshotProgram);
     const prev=newsState?.channels.get(channelId);
-    if(grouped.length)next.set(channelId,{programs:grouped,status:r.status,rejected:r.rejected});
+    if(grouped.length)next.set(channelId,{programs:grouped,status:r.status,rejected:r.rejected,...(r.error?{error:r.error}:{})});
     else if(prev?.programs.length)next.set(channelId,{...prev,status:'stale',error:`showing last known shows; refresh: ${r.error??r.status}`});
     else next.set(channelId,{programs:[],status:r.status,error:r.error,rejected:r.rejected});
   }
@@ -509,17 +529,39 @@ export async function refreshCableNews(guideId='cable-tv'):Promise<void>{
   newsState={version:(prevState?.version??0)+1,fetchedAt:new Date().toISOString(),fingerprint,channels:next,newShows:prevState?newShows.slice(0,50):[]};
 }
 
-function kickNewsRefresh(guideId:string){
-  if(!cableNewsRefreshing)cableNewsRefreshing=refreshCableNews(guideId).catch(e=>console.error('[News refresh]',e)).finally(()=>{cableNewsRefreshing=null;});
+function failedNewsChannels():string[]{
+  if(!newsState)return[];
+  return NEWS_NETWORKS.map(([,id])=>id).filter(id=>{const c=newsState!.channels.get(id);return !!c&&['stale','offline','upstream_error'].includes(c.status);});
+}
+
+/** A network that ended stale/offline is retried on its own after 10 min (max 5), not 6h later. */
+function scheduleNewsRetry(guideId:string){
+  if(newsRetryTimer)return;
+  const failed=failedNewsChannels();
+  if(!failed.length){newsRetries=0;return;}
+  if(newsRetries>=NEWS_MAX_RETRIES){console.warn(`[News refresh] retries exhausted for ${failed.join(',')}; waiting for the next 6h refresh`);return;}
+  newsRetries++;
+  console.warn(`[News refresh] retry ${newsRetries}/${NEWS_MAX_RETRIES} for ${failed.join(',')} in ${Math.round(newsRetryMs/1000)}s`);
+  newsRetryTimer=setTimeout(()=>{newsRetryTimer=null;void kickNewsRefresh(guideId,failedNewsChannels());},newsRetryMs);
+  (newsRetryTimer as any).unref?.();
+}
+
+function kickNewsRefresh(guideId:string,only?:string[]){
+  if(!cableNewsRefreshing)cableNewsRefreshing=refreshCableNews(guideId,only).catch(e=>console.error('[News refresh]',e)).finally(()=>{cableNewsRefreshing=null;scheduleNewsRetry(guideId);});
   return cableNewsRefreshing;
 }
 
 function startNewsTimer(guideId:string){
   if(newsTimer||cableNewsFetch)return;
-  newsTimer=setInterval(()=>void kickNewsRefresh(guideId),NEWS_REFRESH_MS);
+  newsTimer=setInterval(()=>{newsRetries=0;void kickNewsRefresh(guideId);},NEWS_REFRESH_MS);
   (newsTimer as any).unref?.();
   // A packaged snapshot older than one refresh period: refresh soon, off the startup path.
-  if(newsState&&Date.now()-Date.parse(newsState.fetchedAt)>NEWS_REFRESH_MS)setTimeout(()=>void kickNewsRefresh(guideId),30_000).unref?.();
+  // If nothing in the packaged snapshot is within 48h, fetch fresh news almost at once (the old shows stay playable meanwhile).
+  if(newsState&&Date.now()-Date.parse(newsState.fetchedAt)>NEWS_REFRESH_MS){
+    const cutoff=Date.now()-NEWS_MAX_AGE_MS;
+    const snapshotUsable=[...newsState.channels.values()].some(c=>c.programs.some(p=>Date.parse(String((p.metadata as any)?.airedUtc??p.startTimeUtc))>=cutoff));
+    setTimeout(()=>void kickNewsRefresh(guideId),snapshotUsable?30_000:2_000).unref?.();
+  }
 }
 
 export async function getNewsVersion(){
@@ -540,13 +582,28 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
   startNewsTimer(guideId);
   if(!newsState)await kickNewsRefresh(guideId); // no snapshot at all: first fetch must wait
   const now=new Date();
+  const cutoff=now.getTime()-NEWS_MAX_AGE_MS;
+  const airedMs=(p:Program)=>Date.parse(String((p.metadata as any)?.airedUtc??p.startTimeUtc));
   return NEWS_NETWORKS.map(([network,channelId,channelName])=>{
     const c=newsState?.channels.get(channelId);
+    // 48h bound by REAL air time. Newer shows win: once a channel has anything inside 48h, older ones are
+    // dropped. If NOTHING is inside 48h (cold start on an old packaged snapshot, or a failed refresh) the older
+    // shows stay visible and playable, clearly marked stale, until the refresh finishes and the "Latest news
+    // ready" notice lets the viewer switch (NewsReadyNotice). They are never labelled as current.
+    const all=c?.programs??[];
+    const fresh=all.filter(p=>airedMs(p)>=cutoff);
+    const showingOlder=all.length>0&&fresh.length===0;
+    let sourceStatus=c?.status??'loading';let sourceError=c?.error;
+    if(showingOlder){
+      const newest=Math.max(...all.map(airedMs).filter(Number.isFinite));
+      if(sourceStatus!=='snapshot')sourceStatus='stale';
+      sourceError=`Showing older recordings (latest aired ${Number.isFinite(newest)?new Date(newest).toISOString():'unknown'}, more than 48 h ago); newer news will be announced when ready${c?.error?` (${c.error})`:''}`;
+    }
     return {
       id:channelId,guideId,name:channelName,mediaType:'video' as MediaType,group:'News',
       logo:`https://archive.org/services/img/${network.split('|').pop()}`,
-      programs:layoutDailySchedule((c?.programs??[]).map(p=>upsertCanonicalProgram(p)),5,now,320),
-      sourceStatus:c?.status??'loading',rejected:c?.rejected,sourceError:c?.error,
+      programs:layoutDailySchedule((showingOlder?all:fresh).map(p=>upsertCanonicalProgram(p)),5,now,320),
+      sourceStatus,rejected:c?.rejected,sourceError,
     };
   });
 }

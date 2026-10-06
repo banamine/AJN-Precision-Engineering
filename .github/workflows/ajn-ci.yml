@@ -95,6 +95,8 @@ jobs:
         run: npm run test:source-archive-news
       - name: Cable TV guide from Archive News contract (mocked)
         run: npm run test:cable-news-guide
+      - name: News refresh recovery (timeouts, partial results, retry, 48 h bound)
+        run: npm run test:news-refresh-recovery
       - name: News freshness/search result contract
         run: npm run test:news-freshness
       - name: Canonical playback slice contract
