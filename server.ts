@@ -1,6 +1,7 @@
 import { buildDiscoveryChannel, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
 import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, getLibrarySeries, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
+import { queryCatalog, catalogStats } from './server/catalogIndex';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { liveTvHealthSummary } from './guideRegistry';
 import { plutoEpgStats } from './server/sources/plutoEpg';
@@ -78,6 +79,11 @@ app.get('/api/library/series/:key',async(req,res)=>{
     res.set('Cache-Control','no-store').json(series);
   }catch(e:any){res.status(500).json({error:'series unavailable',detail:e?.message});}
 });
+app.get('/api/catalog/items',async(req,res)=>{
+  try{const q=req.query;res.set('Cache-Control','no-store').json(await queryCatalog({q:q.q as string,genre:q.genre as string,kind:q.kind as string,status:q.status as string,page:Number(q.page)||1,limit:Number(q.limit)||24}));}
+  catch(e:any){res.status(500).json({error:'catalog unavailable',detail:e?.message,items:[]});}
+});
+app.get('/api/catalog/stats',async(_req,res)=>{try{res.set('Cache-Control','no-store').json(await catalogStats());}catch(e:any){res.status(500).json({error:'catalog unavailable',detail:e?.message});}});
 app.get('/api/library/heatmap',async(_req,res)=>{try{await libraryReady();res.set('Cache-Control','no-store').json({...libraryHeatmap(),stats:libraryIndexStats});}catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,categories:[]});}});
 app.get('/api/library',async(_req,res)=>{
   try{
