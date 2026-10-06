@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   audit-playlists:
-    name: Check every archived M3U URL
+    name: Check Organizer Output M3U URLs
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -25,22 +25,86 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
+
+      - name: Download Organizer Output playlists
+        env:
+          ORGANIZER_EXPECTED_MIN: ${{ vars.ORGANIZER_EXPECTED_MIN || '271' }}
+          ORGANIZER_BASE: https://archive.org/download/daily-highlights/M3U%20Organizer%20Output
+        run: |
+          set -euo pipefail
+          rm -rf organizer-m3u
+          mkdir -p organizer-m3u
+          for folder in "Classic TV" "Movies" "TV" "Mixed" "Music"; do
+            encoded_folder="${folder// /%20}"
+            mkdir -p "organizer-m3u/${folder}"
+            wget \
+              --recursive \
+              --no-parent \
+              --no-host-directories \
+              --cut-dirs=3 \
+              --accept='*.m3u,*.m3u8' \
+              --timeout=30 \
+              --tries=3 \
+              --waitretry=2 \
+              --directory-prefix=organizer-m3u \
+              "${ORGANIZER_BASE}/${encoded_folder}/"
+          done
+          count="$(find organizer-m3u -type f \( -iname '*.m3u' -o -iname '*.m3u8' \) | wc -l)"
+          expected_total="${ORGANIZER_EXPECTED_MIN:-271}"
+          declare -A expected_counts=(
+            ["Classic TV"]=100
+            ["Mixed"]=100
+            ["TV"]=56
+            ["Music"]=9
+            ["Movies"]=6
+          )
+          total=0
+          for folder in "Classic TV" "Mixed" "TV" "Music" "Movies"; do
+            actual="$(find "organizer-m3u/${folder}" -type f \( -iname '*.m3u' -o -iname '*.m3u8' \) | wc -l)"
+            expected="${expected_counts[$folder]}"
+            echo "${folder}: ${actual} (expected ${expected})"
+            if [ "${actual}" -ne "${expected}" ]; then
+              echo "::error::Organizer Output count mismatch for ${folder}: expected ${expected}, got ${actual}"
+              exit 1
+            fi
+            total=$((total + actual))
+          done
+          echo "Total Organizer Output playlists: ${total} (expected minimum ${expected_total})"
+          if [ "${total}" -lt "${expected_total}" ]; then
+            echo "::error::Downloaded playlist total ${total} is below ORGANIZER_EXPECTED_MIN=${expected_total}"
+            exit 1
+          fi
 
       - name: Probe all playlist URLs
         env:
-          M3U_ROOT: m3u_files
+          M3U_ROOT: organizer-m3u
           M3U_REPORT_DIR: m3u-status-report
           M3U_TIMEOUT_MS: '30000'
           M3U_RETRIES: '2'
           M3U_CONCURRENCY: '8'
         run: node scripts/check-m3u-status.mjs
 
-      - name: Upload status report
+      - name: Run admission fixture regression
+        run: node --experimental-strip-types test-m3u-admit.ts
+
+      - name: Run M3U admission
+        run: |
+          node --experimental-strip-types scripts/m3u-admit.ts \
+            --root organizer-m3u \
+            --status m3u-status-report/m3u-status.csv \
+            --out-dir m3u-admitted \
+            --report reports/m3u-admit-report.csv
+
+      - name: Upload status and admission reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: m3u-status-${{ github.run_number }}
-          path: m3u-status-report/
+          path: |
+            m3u-status-report/
+            reports/m3u-admit-report.csv
+            reports/m3u-admit-report-details.csv
+            m3u-admitted/
           if-no-files-found: warn
           retention-days: 90
