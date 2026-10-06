@@ -55,3 +55,75 @@ console.log('daily highlights regression: all passed');
   assert.equal(unplayableReason('/download/x/x.mp4?exact=1&start=0&end=282'), null, 'news clips stay playable');
   console.log('archive-member gate: passed');
 }
+
+{
+  const { toChannels, dailyHighlightsContract } = await import('./server/sources/dailyHighlights.ts');
+  const snapshotPrograms = [
+    {
+      id: 'odd-couple-1',
+      guideId: 'classic-tv',
+      channelId: 'classic-70-odd-couple',
+      title: 'The Odd Couple S01E01',
+      description: '70 Odd Couple',
+      startTime: 0,
+      endTime: 0,
+      mediaType: 'video',
+      mediaUrl: '/download/x/odd.mp4',
+      metadata: { durationSeconds: 1500 },
+    },
+  ] as any[];
+  const channels = toChannels(snapshotPrograms as any);
+  assert.equal(channels.length, 1);
+  assert.equal(channels[0].name, '70 Odd Couple');
+  assert.notEqual(channels[0].name, 'Unsorted');
+  console.log('snapshot show fallback: passed');
+
+  const files = [
+    'American Experience.m3u',
+    'The Man From U.N.C.L.E..m3u',
+    '1000 Classic Music.m3u',
+    'Good Times.m3u',
+  ];
+  const playlistBodies = new Map<string,string>(files.map((name) => [
+    name,
+    '#EXTM3U\n#EXTINF:60 group-title="Show",Show S01E01\nhttps://archive.org/download/x/episode.mp4\n',
+  ]));
+  const calls: string[] = [];
+  const impl = (async (input: any) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.endsWith('/metadata/daily-highlights')) {
+      return new Response(JSON.stringify({
+        files: files.map((name) => ({ name: `daily-highlights-organized/m3u_files/${name}`, format: 'M3U' })),
+      }), { status: 200 });
+    }
+    const name = decodeURIComponent(url.split('/').pop() ?? '');
+    const body = playlistBodies.get(name);
+    return body ? new Response(body, { status: 200 }) : new Response('', { status: 404 });
+  }) as typeof fetch;
+  const r = await dailyHighlightsContract.hook({ guideId: 'classic-tv', fetchImpl: impl }, ctx);
+  assert.ok(r.rejected.filter((x) => x.reason === 'excluded playlist').some((x) => /American Experience/.test(x.id)));
+  assert.ok(r.rejected.filter((x) => x.reason === 'excluded playlist').some((x) => /The Man From U\.N\.C\.L\.E\./.test(x.id)));
+  assert.ok(r.rejected.filter((x) => x.reason === 'excluded playlist').some((x) => /1000 Classic Music/.test(x.id)));
+  assert.ok(!r.rejected.some((x) => /Good Times/.test(x.id) && x.reason === 'excluded playlist'));
+  console.log('dark playlist admission: passed');
+}
+
+{
+  const { isExcludedPlaylistChannel, toChannels } = await import('./server/sources/dailyHighlights.ts');
+  const mod = await import('./src/data/classicSnapshot.json');
+  const snapshot = (mod.default ?? mod) as { programs?: Array<{ channelId: string; description?: string; metadata?: Record<string, unknown> }> };
+  const programs = Array.isArray(snapshot.programs) ? snapshot.programs : [];
+  const filtered = programs.filter((p) => !isExcludedPlaylistChannel(p.channelId));
+  const channels = toChannels(filtered as Parameters<typeof toChannels>[0]);
+  const names = channels.map((channel) => channel.name);
+  assert.equal(names.includes('Unsorted'), false);
+  assert.equal(filtered.some((p) => p.channelId === 'classic-american-experience'), false);
+  assert.equal(filtered.some((p) => p.channelId === 'classic-the-man-from-u-n-c-l-e'), false);
+  assert.equal(filtered.some((p) => p.channelId === 'classic-1000-classic-music'), false);
+  assert.equal(channels.some((channel) => channel.id === 'classic-american-experience'), false);
+  assert.equal(channels.some((channel) => channel.id === 'classic-the-man-from-u-n-c-l-e'), false);
+  assert.equal(channels.some((channel) => channel.id === 'classic-1000-classic-music'), false);
+  console.log(`current snapshot channels: ${channels.map((channel) => channel.name).join(', ')}`);
+  console.log('current snapshot dark-channel filter: passed');
+}

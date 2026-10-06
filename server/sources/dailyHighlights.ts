@@ -17,7 +17,23 @@ const MAX_PLAYLISTS = 60;
 const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|oga|opus|flac|wav|wma|aiff?|mka)(\?|#|$)/i;
 export const HIGHLIGHTS_M3U_DIR = 'daily-highlights-organized/m3u_files/';
 /** Playlists known not to work (The Honeymooners has its own verified channel). */
-const EXCLUDED_PLAYLISTS = [/^honey\s*mooners?\.m3u8?$/i];
+const EXCLUDED_PLAYLISTS = [
+  /^honey\s*mooners?\.m3u8?$/i,
+  /^american\s+experience\.m3u8?$/i,
+  /^the\s+man\s+from\s+u\.n\.c\.l\.e\.{1,2}m3u8?$/i,
+  /^1000\s+classic\s+music\.m3u8?$/i,
+];
+const EXCLUDED_CHANNEL_IDS = new Set([
+  'classic-honey-mooners',
+  'classic-honeymooners',
+  'classic-american-experience',
+  'classic-the-man-from-u-n-c-l-e',
+  'classic-1000-classic-music',
+]);
+export function isExcludedPlaylistChannel(channelId: string): boolean {
+  return EXCLUDED_CHANNEL_IDS.has(channelId);
+}
+
 const CONCURRENCY = 2; // stay under Archive's rate limit
 
 interface ArchiveFile { name: string; source?: string; format?: string; length?: string; private?: string | boolean }
@@ -50,7 +66,7 @@ export function displayTitle(title: string, url: string, show: string): string {
 export function toChannels(programs: Program[]): HighlightChannel[] {
   const map = new Map<string, HighlightChannel>();
   for (const p of programs) {
-    const show = String((p.metadata as any)?.show ?? 'Unsorted');
+    const show = String((p.metadata as { show?: unknown } | undefined)?.show ?? p.description ?? 'Unsorted').trim();
     const id = p.channelId;
     if (!map.has(id)) map.set(id, { id, name: show, programs: [] });
     map.get(id)!.programs.push(p);

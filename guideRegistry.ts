@@ -282,7 +282,7 @@ export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.g
 // Cable TV news comes from the Archive News source contract (layer 3): real air
 // times, restricted items reported per channel. Complete results are cached for
 // 15 minutes; if any network came back empty or failed, only for 60 seconds.
-import { dailyHighlightsContract, toChannels as highlightChannels } from './server/sources/dailyHighlights';
+import { dailyHighlightsContract, isExcludedPlaylistChannel, toChannels as highlightChannels } from './server/sources/dailyHighlights';
 import { getDocumentaryChannels } from './src/services/producers/documentariesProducer';
 
 import { getDiscoveryChannels, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
@@ -390,7 +390,7 @@ export async function exportClassicSnapshot(){
   const programs=highlightsRaw.programs.filter(p=>{const n=perShow.get(p.channelId)??0;perShow.set(p.channelId,n+1);return n<60;})
     .map(p=>({id:p.id,guideId:p.guideId,channelId:p.channelId,title:p.title,description:p.description,startTime:0,endTime:0,mediaType:p.mediaType,
       mediaUrl:p.archivePath??p.mediaUrl,archivePath:p.archivePath,assetId:p.assetId,sourceId:p.sourceId,sourceClass:p.sourceClass,isArchivedSource:p.isArchivedSource,
-      metadata:(p.metadata as any)?.durationSeconds?{durationSeconds:(p.metadata as any).durationSeconds}:undefined}) as Program);
+      metadata:{...(p.metadata as Program['metadata']),show:(p.metadata as Program['metadata'] & {show?: unknown})?.show ?? p.description,season:(p.metadata as Program['metadata'] & {season?: unknown})?.season,episode:(p.metadata as Program['metadata'] & {episode?: unknown})?.episode,...((p.metadata as Program['metadata'] & {durationSeconds?: unknown})?.durationSeconds ? {durationSeconds:(p.metadata as Program['metadata'] & {durationSeconds?: unknown}).durationSeconds}: {})}}) as Program);
   return {schema:1,fetchedAt:highlightsRaw.fetchedAt,programs};
 }
 let highlightsRefreshing:Promise<ScheduleChannel[]>|null=null;
@@ -420,7 +420,7 @@ async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChanne
     const mod:any=await import('./src/data/classicSnapshot.json');
     const snap=(mod.default??mod) as {schema?:number;fetchedAt?:string;programs?:Program[]};
     // A packaged list must pass the same admission as a live fetch: no .avi/.mkv/.mpg/.m3u/folder links.
-    const playable=(Array.isArray(snap?.programs)?snap.programs:[]).filter(p=>!notWebPlayableVideo(p.archivePath??p.mediaUrl));
+    const playable=(Array.isArray(snap?.programs)?snap.programs:[]).filter(p=>!notWebPlayableVideo(p.archivePath??p.mediaUrl)&&!isExcludedPlaylistChannel(p.channelId));
     if(snap?.schema===1&&playable.length){
       const data=highlightChannels(playable).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:'snapshot',sourceError:`packaged list from ${snap.fetchedAt}; refreshing`}));
       highlightsLastGood=data;
