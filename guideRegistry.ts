@@ -420,7 +420,7 @@ async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChanne
     const mod:any=await import('./src/data/classicSnapshot.json');
     const snap=(mod.default??mod) as {schema?:number;fetchedAt?:string;programs?:Program[]};
     // A packaged list must pass the same admission as a live fetch: no .avi/.mkv/.mpg/.m3u/folder links.
-    const playable=(Array.isArray(snap?.programs)?snap.programs:[]).filter(p=>!notWebPlayableVideo(p.archivePath??p.mediaUrl));
+    const playable=(Array.isArray(snap?.programs)?snap.programs:[]).filter(p=>!notWebPlayableVideo(p.archivePath??p.mediaUrl)&&!isExcludedPlaylistChannel(p.channelId));
     if(snap?.schema===1&&playable.length){
       const data=highlightChannels(playable).map(ch=>({id:ch.id,guideId,name:ch.name,mediaType:'video' as MediaType,group:'Classic TV',programs:layoutDailySchedule(ch.programs,30),sourceStatus:'snapshot',sourceError:`packaged list from ${snap.fetchedAt}; refreshing`}));
       highlightsLastGood=data;
