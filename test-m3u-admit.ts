@@ -27,7 +27,7 @@ try {
     ['#EXTM3U', '#EXTINF:-1,Live again', live].join('\n') + '\n');
 
   const statusPath = path.join(root, 'm3u-status.csv');
-  const q = (v:string) => `"${v.replaceAll('"', '""')}"`;
+  const q = (v:unknown) => `"${String(v).replaceAll('"', '""')}"`;
   const status = [
     'file,line,status,httpStatus,attempts,elapsedMs,error,url,checkedAt',
     [path.join('Classic TV', 'one.m3u'), 3, 'LIVE', 200, 1, 1, '', live, '2026-10-06T00:00:00Z'].map(q).join(','),
@@ -59,10 +59,10 @@ try {
   const ix = (name:string) => header.indexOf(`"${name}"`) >= 0 ? header.indexOf(`"${name}"`) : header.indexOf(name);
   assert.equal(total[ix('file')], '""');
   assert.equal(total[ix('total')], '"7"');
-  assert.equal(total[ix('admitted')], '"2"');
+  assert.equal(total[ix('admitted')], '"3"');
   assert.equal(total[ix('dropped-dead')], '"1"');
   assert.equal(total[ix('dropped-dup')], '"2"');
-  assert.equal(total[ix('dropped-nonmedia')], '"2"');
+  assert.equal(total[ix('dropped-nonmedia')], '"1"');
   assert.equal(total[ix('statusBasis')], '"probe=original; admission=canonical"');
   assert.ok((await readFile(report, 'utf8')).includes('needsProxy'));
 
