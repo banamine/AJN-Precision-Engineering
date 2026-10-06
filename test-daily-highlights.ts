@@ -57,7 +57,7 @@ console.log('daily highlights regression: all passed');
 }
 
 {
-  const { toChannels } = await import('./server/sources/dailyHighlights.ts');
+  const { toChannels, dailyHighlightsContract } = await import('./server/sources/dailyHighlights.ts');
   const snapshotPrograms = [
     {
       id: 'odd-couple-1',
@@ -78,16 +78,33 @@ console.log('daily highlights regression: all passed');
   assert.notEqual(channels[0].name, 'Unsorted');
   console.log('snapshot show fallback: passed');
 
-  const dark = [
-    { name: 'daily-highlights-organized/m3u_files/American Experience.m3u', format: 'M3U' },
-    { name: 'daily-highlights-organized/m3u_files/The Man From U.N.C.L.E..m3u', format: 'M3U' },
-    { name: 'daily-highlights-organized/m3u_files/1000 Classic Music.m3u', format: 'M3U' },
-    { name: 'daily-highlights-organized/m3u_files/Good Times.m3u', format: 'M3U' },
+  const files = [
+    'American Experience.m3u',
+    'The Man From U.N.C.L.E..m3u',
+    '1000 Classic Music.m3u',
+    'Good Times.m3u',
   ];
-  const darkRe = (name: string) => /^(?:american\s+experience|the\s+man\s+from\s+u\.n\.c\.l\.e\.|1000\s+classic\s+music)\.m3u8?$/i;
-  for (const file of dark) {
-    const base = file.name.slice('daily-highlights-organized/m3u_files/'.length);
-    assert.ok(!['American Experience.m3u','The Man From U.N.C.L.E..m3u','1000 Classic Music.m3u'].includes('Good Times.m3u') || true);
-    if (darkRe(base)) console.log(`dark playlist rejected: ${base}`);
-  }
+  const playlistBodies = new Map<string,string>(files.map((name) => [
+    name,
+    '#EXTM3U\n#EXTINF:60 group-title="Show",Show S01E01\nhttps://archive.org/download/x/episode.mp4\n',
+  ]));
+  const calls: string[] = [];
+  const impl = (async (input: any) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.endsWith('/metadata/daily-highlights')) {
+      return new Response(JSON.stringify({
+        files: files.map((name) => ({ name: `daily-highlights-organized/m3u_files/${name}`, format: 'M3U' })),
+      }), { status: 200 });
+    }
+    const name = decodeURIComponent(url.split('/').pop() ?? '');
+    const body = playlistBodies.get(name);
+    return body ? new Response(body, { status: 200 }) : new Response('', { status: 404 });
+  }) as typeof fetch;
+  const r = await dailyHighlightsContract.hook({ guideId: 'classic-tv', fetchImpl: impl }, ctx);
+  assert.ok(r.rejected.filter((x) => x.reason === 'excluded playlist').some((x) => /American Experience/.test(x.id)));
+  assert.ok(r.rejected.filter((x) => x.reason === 'excluded playlist').some((x) => /The Man From U\.N\.C\.L\.E\./.test(x.id)));
+  assert.ok(r.rejected.filter((x) => x.reason === 'excluded playlist').some((x) => /1000 Classic Music/.test(x.id)));
+  assert.ok(!r.rejected.some((x) => /Good Times/.test(x.id) && x.reason === 'excluded playlist'));
+  console.log('dark playlist admission: passed');
 }
