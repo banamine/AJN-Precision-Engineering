@@ -282,7 +282,7 @@ export function syncPlaylist(id:string,customM3u?:string){const p=playlistsMap.g
 // Cable TV news comes from the Archive News source contract (layer 3): real air
 // times, restricted items reported per channel. Complete results are cached for
 // 15 minutes; if any network came back empty or failed, only for 60 seconds.
-import { dailyHighlightsContract, toChannels as highlightChannels } from './server/sources/dailyHighlights';
+import { dailyHighlightsContract, isExcludedPlaylistChannel, toChannels as highlightChannels } from './server/sources/dailyHighlights';
 import { getDocumentaryChannels } from './src/services/producers/documentariesProducer';
 
 import { getDiscoveryChannels, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
