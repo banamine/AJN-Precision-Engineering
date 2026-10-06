@@ -11,6 +11,13 @@ const PRIORITY = ['Classic TV', 'Movies', 'TV', 'Mixed', 'Music'];
 const DIRECT_MEDIA = /\.(mp4|m4v|webm|m3u8)(?:[?#].*)?$/i;
 const PROXY_MEDIA = /\.(mkv|avi)(?:[?#].*)?$/i;
 const NON_MEDIA = /\.(jpg|jpeg|png|gif|webp|srt|vtt|gz|xml|m3u|txt)(?:[?#].*)?$/i;
+const KNOWN_DARK_PLAYLISTS = [
+  /honey\s*mooners?/i,
+  /the\s+man\s+from\s+u\.?n\.?c\.?l\.?e/i,
+  /american\s+experience/i,
+  /1000\s+classic\s+music/i,
+  /01-tv-fighting-crime-part-(2|5)/i
+];
 
 function arg(name:string, fallback?:string) {
   const i = process.argv.indexOf(name);
