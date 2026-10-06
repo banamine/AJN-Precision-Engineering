@@ -108,3 +108,22 @@ console.log('daily highlights regression: all passed');
   assert.ok(!r.rejected.some((x) => /Good Times/.test(x.id) && x.reason === 'excluded playlist'));
   console.log('dark playlist admission: passed');
 }
+
+{
+  const { isExcludedPlaylistChannel, toChannels } = await import('./server/sources/dailyHighlights.ts');
+  const mod = await import('./src/data/classicSnapshot.json');
+  const snapshot = (mod.default ?? mod) as { programs?: Array<{ channelId: string; description?: string; metadata?: Record<string, unknown> }> };
+  const programs = Array.isArray(snapshot.programs) ? snapshot.programs : [];
+  const filtered = programs.filter((p) => !isExcludedPlaylistChannel(p.channelId));
+  const channels = toChannels(filtered as Parameters<typeof toChannels>[0]);
+  const names = channels.map((channel) => channel.name);
+  assert.equal(names.includes('Unsorted'), false);
+  assert.equal(filtered.some((p) => p.channelId === 'classic-american-experience'), false);
+  assert.equal(filtered.some((p) => p.channelId === 'classic-the-man-from-u-n-c-l-e'), false);
+  assert.equal(filtered.some((p) => p.channelId === 'classic-1000-classic-music'), false);
+  assert.equal(channels.some((channel) => channel.id === 'classic-american-experience'), false);
+  assert.equal(channels.some((channel) => channel.id === 'classic-the-man-from-u-n-c-l-e'), false);
+  assert.equal(channels.some((channel) => channel.id === 'classic-1000-classic-music'), false);
+  console.log(`current snapshot channels: ${channels.map((channel) => channel.name).join(', ')}`);
+  console.log('current snapshot dark-channel filter: passed');
+}
