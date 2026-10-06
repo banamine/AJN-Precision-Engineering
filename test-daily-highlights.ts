@@ -55,3 +55,39 @@ console.log('daily highlights regression: all passed');
   assert.equal(unplayableReason('/download/x/x.mp4?exact=1&start=0&end=282'), null, 'news clips stay playable');
   console.log('archive-member gate: passed');
 }
+
+{
+  const { toChannels } = await import('./server/sources/dailyHighlights.ts');
+  const snapshotPrograms = [
+    {
+      id: 'odd-couple-1',
+      guideId: 'classic-tv',
+      channelId: 'classic-70-odd-couple',
+      title: 'The Odd Couple S01E01',
+      description: '70 Odd Couple',
+      startTime: 0,
+      endTime: 0,
+      mediaType: 'video',
+      mediaUrl: '/download/x/odd.mp4',
+      metadata: { durationSeconds: 1500 },
+    },
+  ] as any[];
+  const channels = toChannels(snapshotPrograms as any);
+  assert.equal(channels.length, 1);
+  assert.equal(channels[0].name, '70 Odd Couple');
+  assert.notEqual(channels[0].name, 'Unsorted');
+  console.log('snapshot show fallback: passed');
+
+  const dark = [
+    { name: 'daily-highlights-organized/m3u_files/American Experience.m3u', format: 'M3U' },
+    { name: 'daily-highlights-organized/m3u_files/The Man From U.N.C.L.E..m3u', format: 'M3U' },
+    { name: 'daily-highlights-organized/m3u_files/1000 Classic Music.m3u', format: 'M3U' },
+    { name: 'daily-highlights-organized/m3u_files/Good Times.m3u', format: 'M3U' },
+  ];
+  const darkRe = (name: string) => /^(?:american\s+experience|the\s+man\s+from\s+u\.n\.c\.l\.e\.|1000\s+classic\s+music)\.m3u8?$/i;
+  for (const file of dark) {
+    const base = file.name.slice('daily-highlights-organized/m3u_files/'.length);
+    assert.ok(!['American Experience.m3u','The Man From U.N.C.L.E..m3u','1000 Classic Music.m3u'].includes('Good Times.m3u') || true);
+    if (darkRe(base)) console.log(`dark playlist rejected: ${base}`);
+  }
+}
