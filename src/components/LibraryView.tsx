@@ -25,6 +25,7 @@ const decadeLabel = (d: number) => (d === 0 ? 'Undated' : `${d}s`);
 /** Library: categories and decade counts come from the server index; items arrive one page at a time. */
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [heat, setHeat] = useState<HeatCat[] | null>(null);
+  const [heatAll, setHeatAll] = useState<number | null>(null);
   const [heatError, setHeatError] = useState<string | null>(null);
   // Opened from a shortcut (e.g. Home's "Apollo Mission Archive"): start on that category once.
   const [category, setCategory] = useState<string>(() => { try { const c = sessionStorage.getItem('ajn.library.open') ?? ''; sessionStorage.removeItem('ajn.library.open'); return c; } catch { return ''; } });
@@ -48,7 +49,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
     const ctrl = new AbortController();
     fetch('/api/library/heatmap', { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d) => setHeat(d.categories))
+      .then((d) => { setHeat(d.categories); setHeatAll(typeof d.allTotal === 'number' ? d.allTotal : null); })
       .catch((e) => { if (e.name !== 'AbortError') setHeatError(e.message); });
     return () => ctrl.abort();
   }, []);
@@ -73,7 +74,8 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   }, [page, category, decade, debounced, showFavorites, showFavorites ? favoriteIds : null, retryTick]);
 
   const cat = useMemo(() => heat?.find((c) => c.categoryId === category) ?? null, [heat, category]);
-  const allTotal = useMemo(() => heat ? heat.reduce((n, c) => n + c.total, 0) : 0, [heat]);
+  // Unique grouped count from the server; summing the category buttons would count two-category items twice.
+  const allTotal = heatAll ?? 0;
   const maxDecade = Math.max(1, ...(cat?.decades.map((d) => d.count) ?? [1]));
 
   const toggleFavorite = (id: string) => setFavoriteIds((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -102,7 +104,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" id="lib-cat-btn-all" onClick={() => { setCategory(''); setDecade(null); setShowFavorites(false); }}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium ${!category && !showFavorites ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
-          All {heat ? `(${allTotal})` : ''}
+          All {heat && heatAll !== null ? `(${allTotal})` : ''}
         </button>
         {heat?.map((c) => (
           <button key={c.categoryId} type="button" id={`lib-cat-btn-${c.categoryId}`} disabled={c.total === 0}

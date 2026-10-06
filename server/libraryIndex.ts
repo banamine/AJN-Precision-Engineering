@@ -160,16 +160,21 @@ export function getLibrarySeries(groupKey: string): LibrarySeries | null {
   return findLibrarySeries(allRecords().filter(visible), groupKey);
 }
 
+/** Counts shown on the Library buttons. They are GROUPED counts (a series is one card), the same unit
+ *  queryLibrary() returns as totalItems, so a button never promises more than the list shows.
+ *  rawTotal keeps the record count; allTotal counts each record once even if it sits in two categories. */
 export function libraryHeatmap() {
   const rows = allRecords().filter(visible);
   return {
     snapshotAt,
+    allTotal: groupLibraryResults(rows).length,
+    allRawTotal: rows.length,
     categories: LIBRARY_CATEGORIES.map((c) => {
       const inCat = rows.filter((r) => r.categoryIds.includes(c.id));
-      const byDecade = new Map<number, number>();
-      for (const r of inCat) byDecade.set(r.decade ?? 0, (byDecade.get(r.decade ?? 0) ?? 0) + 1);
-      return { categoryId: c.id, label: c.label, mediaType: c.mediaType, total: inCat.length,
-        decades: [...byDecade].map(([decade, count]) => ({ decade, count })).sort((a, b) => (a.decade || 99999) - (b.decade || 99999)) };
+      const byDecade = new Map<number, IndexRecord[]>();
+      for (const r of inCat) { const k = r.decade ?? 0; byDecade.set(k, [...(byDecade.get(k) ?? []), r]); }
+      return { categoryId: c.id, label: c.label, mediaType: c.mediaType, total: groupLibraryResults(inCat).length, rawTotal: inCat.length,
+        decades: [...byDecade].map(([decade, recs]) => ({ decade, count: groupLibraryResults(recs).length })).sort((a, b) => (a.decade || 99999) - (b.decade || 99999)) };
     }),
   };
 }
