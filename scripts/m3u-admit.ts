@@ -89,7 +89,7 @@ function needsProxy(url:string) {
 }
 
 function folderFor(file:string) {
-  const relative = path.relative(root, file).replaceAll('\\\\', '/');
+  const relative = path.relative(root, file).replaceAll('\\', '/');
   return relative.split('/')[0] || 'Unknown';
 }
 
@@ -124,11 +124,12 @@ const totals:Counters = { admitted:0, droppedDead:0, droppedDup:0, droppedNonmed
 await mkdir(outDir, { recursive: true });
 
 for (const file of files) {
-  const relative = path.relative(root, file).replaceAll('\\\\', '/');
+  const relative = path.relative(root, file).replaceAll('\\', '/');
   const folder = folderFor(file);
   const lines = (await readFile(file, 'utf8')).split(/\r?\n/);
   const output:string[] = [];
   const playlistHeader = lines.find(line => /^#PLAYLIST:/i.test(line));
+  const darkPlaylist = KNOWN_DARK_PLAYLISTS.some(pattern => pattern.test(path.basename(file)));
   output.push(playlistHeader?.trim() || `#PLAYLIST: ${path.basename(file).replace(/\.m3u8?$/i, '')}`);
   let extinf = '';
 
@@ -149,7 +150,11 @@ for (const file of files) {
     let disposition:string;
     let reason:string;
 
-    if (isNonMedia(canonicalUrl) || !isMedia(canonicalUrl)) {
+    if (darkPlaylist) {
+      disposition = 'dropped-dead';
+      reason = 'known dark Archive playlist; admission blocked';
+      summary.droppedDead++;
+    } else if (isNonMedia(canonicalUrl) || !isMedia(canonicalUrl)) {
       disposition = 'dropped-nonmedia';
       reason = 'non-media or unsupported extension';
       summary.droppedNonmedia++;
