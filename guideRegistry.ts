@@ -390,7 +390,7 @@ export async function exportClassicSnapshot(){
   const programs=highlightsRaw.programs.filter(p=>{const n=perShow.get(p.channelId)??0;perShow.set(p.channelId,n+1);return n<60;})
     .map(p=>({id:p.id,guideId:p.guideId,channelId:p.channelId,title:p.title,description:p.description,startTime:0,endTime:0,mediaType:p.mediaType,
       mediaUrl:p.archivePath??p.mediaUrl,archivePath:p.archivePath,assetId:p.assetId,sourceId:p.sourceId,sourceClass:p.sourceClass,isArchivedSource:p.isArchivedSource,
-      metadata:(p.metadata as any)?.durationSeconds?{durationSeconds:(p.metadata as any).durationSeconds}:undefined}) as Program);
+      metadata:{...(p.metadata as Program['metadata']),show:(p.metadata as Program['metadata'] & {show?: unknown})?.show ?? p.description,season:(p.metadata as Program['metadata'] & {season?: unknown})?.season,episode:(p.metadata as Program['metadata'] & {episode?: unknown})?.episode,...((p.metadata as Program['metadata'] & {durationSeconds?: unknown})?.durationSeconds ? {durationSeconds:(p.metadata as Program['metadata'] & {durationSeconds?: unknown}).durationSeconds}: {})}}) as Program);
   return {schema:1,fetchedAt:highlightsRaw.fetchedAt,programs};
 }
 let highlightsRefreshing:Promise<ScheduleChannel[]>|null=null;
