@@ -29,6 +29,7 @@ jobs:
 
       - name: Download Organizer Output playlists
         env:
+          ORGANIZER_EXPECTED_MIN: ${{ vars.ORGANIZER_EXPECTED_MIN || '271' }}
           ORGANIZER_BASE: https://archive.org/download/daily-highlights/M3U%20Organizer%20Output
         run: |
           set -euo pipefail
@@ -50,8 +51,30 @@ jobs:
               "${ORGANIZER_BASE}/${encoded_folder}/"
           done
           count="$(find organizer-m3u -type f \( -iname '*.m3u' -o -iname '*.m3u8' \) | wc -l)"
-          test "${count}" -gt 0
-          echo "Downloaded ${count} Organizer Output playlists."
+          expected_total="${ORGANIZER_EXPECTED_MIN:-271}"
+          declare -A expected_counts=(
+            ["Classic TV"]=100
+            ["Mixed"]=100
+            ["TV"]=56
+            ["Music"]=9
+            ["Movies"]=6
+          )
+          total=0
+          for folder in "Classic TV" "Mixed" "TV" "Music" "Movies"; do
+            actual="$(find "organizer-m3u/${folder}" -type f \( -iname '*.m3u' -o -iname '*.m3u8' \) | wc -l)"
+            expected="${expected_counts[$folder]}"
+            echo "${folder}: ${actual} (expected ${expected})"
+            if [ "${actual}" -ne "${expected}" ]; then
+              echo "::error::Organizer Output count mismatch for ${folder}: expected ${expected}, got ${actual}"
+              exit 1
+            fi
+            total=$((total + actual))
+          done
+          echo "Total Organizer Output playlists: ${total} (expected minimum ${expected_total})"
+          if [ "${total}" -lt "${expected_total}" ]; then
+            echo "::error::Downloaded playlist total ${total} is below ORGANIZER_EXPECTED_MIN=${expected_total}"
+            exit 1
+          fi
 
       - name: Probe all playlist URLs
         env:
@@ -79,5 +102,6 @@ jobs:
             m3u-status-report/
             reports/m3u-admit-report.csv
             reports/m3u-admit-report-details.csv
+            m3u-admitted/
           if-no-files-found: warn
           retention-days: 90
