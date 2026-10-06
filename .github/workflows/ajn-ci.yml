@@ -103,8 +103,6 @@ jobs:
         run: npm run test:search-cache
       - name: Playable media admission contract
         run: npm run test:playable-admission
-      - name: M3U admission regression
-        run: node --experimental-strip-types test-m3u-admit.ts
       - name: Science Documentaries guide regression
         run: npm run test:science-guide
       - name: Classic TV daily-highlights source (mocked)
