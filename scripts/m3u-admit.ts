@@ -11,14 +11,6 @@ const PRIORITY = ['Classic TV', 'Movies', 'TV', 'Mixed', 'Music'];
 const DIRECT_MEDIA = /\.(mp4|m4v|webm|m3u8)(?:[?#].*)?$/i;
 const PROXY_MEDIA = /\.(mkv|avi)(?:[?#].*)?$/i;
 const NON_MEDIA = /\.(jpg|jpeg|png|gif|webp|srt|vtt|gz|xml|m3u|txt)(?:[?#].*)?$/i;
-const KNOWN_DARK_PLAYLISTS = [
-  /honey\s*mooners?/i,
-  /the\s+man\s+from\s+u\.?n\.?c\.?l\.?e/i,
-  /american\s+experience/i,
-  /1000\s+classic\s+music/i,
-  /01-tv-fighting-crime-part-(2|5)/i
-];
-
 function arg(name:string, fallback?:string) {
   const i = process.argv.indexOf(name);
   return i >= 0 ? process.argv[i + 1] ?? fallback : fallback;
@@ -136,7 +128,6 @@ for (const file of files) {
   const lines = (await readFile(file, 'utf8')).split(/\r?\n/);
   const output:string[] = [];
   const playlistHeader = lines.find(line => /^#PLAYLIST:/i.test(line));
-  const darkPlaylist = KNOWN_DARK_PLAYLISTS.some(pattern => pattern.test(path.basename(file)));
   output.push(playlistHeader?.trim() || `#PLAYLIST: ${path.basename(file).replace(/\.m3u8?$/i, '')}`);
   let extinf = '';
 
@@ -157,11 +148,7 @@ for (const file of files) {
     let disposition:string;
     let reason:string;
 
-    if (darkPlaylist) {
-      disposition = 'dropped-dead';
-      reason = 'known dark Archive playlist; admission blocked';
-      summary.droppedDead++;
-    } else if (isNonMedia(canonicalUrl) || !isMedia(canonicalUrl)) {
+    if (isNonMedia(canonicalUrl) || !isMedia(canonicalUrl)) {
       disposition = 'dropped-nonmedia';
       reason = 'non-media or unsupported extension';
       summary.droppedNonmedia++;
@@ -206,7 +193,7 @@ for (const file of files) {
 
 await mkdir(path.dirname(reportPath), { recursive:true });
 
-const summaryFields = ['folder','file','total','admitted','dropped-dead','dropped-dup','dropped-nonmedia','needsProxy'];
+const summaryFields = ['folder','file','total','admitted','dropped-dead','dropped-dup','dropped-nonmedia','needsProxy','statusBasis'];
 const summaryRows = summaries.map(summary => [
   summary.folder, summary.file, summary.total, summary.admitted, summary.droppedDead,
   summary.droppedDup, summary.droppedNonmedia, summary.needsProxy
@@ -224,10 +211,10 @@ await writeFile(
 );
 
 const detailPath = reportPath.replace(/\.csv$/i, '-details.csv');
-const detailFields = ['folder','file','line','url','canonicalUrl','disposition','needsProxy','reason'];
+const detailFields = ['folder','file','line','url','canonicalUrl','disposition','needsProxy','reason','statusProbeUrl'];
 await writeFile(
   detailPath,
-  [detailFields.join(','), ...details.map(row => detailFields.map(field => csvCell((row as any)[field])).join(','))]
+  [detailFields.join(','), ...details.map(row => detailFields.map(field => csvCell(row[field as keyof Detail])).join(','))]
     .join('\n') + '\n'
 );
 
