@@ -1,0 +1,46 @@
+name: M3U live status audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly, Sunday at 04:17 UTC. GitHub may delay scheduled runs during busy periods.
+    - cron: '17 4 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m3u-live-status-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audit-playlists:
+    name: Check every archived M3U URL
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Probe all playlist URLs
+        env:
+          M3U_ROOT: m3u_files
+          M3U_REPORT_DIR: m3u-status-report
+          M3U_TIMEOUT_MS: '30000'
+          M3U_RETRIES: '2'
+          M3U_CONCURRENCY: '8'
+        run: node scripts/check-m3u-status.mjs
+
+      - name: Upload status report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m3u-status-${{ github.run_number }}
+          path: m3u-status-report/
+          if-no-files-found: warn
+          retention-days: 90
