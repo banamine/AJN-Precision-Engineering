@@ -85,6 +85,9 @@ jobs:
           M3U_CONCURRENCY: '8'
         run: node scripts/check-m3u-status.mjs
 
+      - name: Run admission fixture regression
+        run: node --experimental-strip-types test-m3u-admit.ts
+
       - name: Run M3U admission
         run: |
           node --experimental-strip-types scripts/m3u-admit.ts \
