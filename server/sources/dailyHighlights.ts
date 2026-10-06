@@ -20,9 +20,20 @@ export const HIGHLIGHTS_M3U_DIR = 'daily-highlights-organized/m3u_files/';
 const EXCLUDED_PLAYLISTS = [
   /^honey\s*mooners?\.m3u8?$/i,
   /^american\s+experience\.m3u8?$/i,
-  /^the\s+man\s+from\s+u\.n\.c\.l\.e\.m3u8?$/i,
+  /^the\s+man\s+from\s+u\.n\.c\.l\.e\.{1,2}m3u8?$/i,
   /^1000\s+classic\s+music\.m3u8?$/i,
 ];
+const EXCLUDED_CHANNEL_IDS = new Set([
+  'classic-honey-mooners',
+  'classic-honeymooners',
+  'classic-american-experience',
+  'classic-the-man-from-u-n-c-l-e',
+  'classic-1000-classic-music',
+]);
+export function isExcludedPlaylistChannel(channelId: string): boolean {
+  return EXCLUDED_CHANNEL_IDS.has(channelId);
+}
+
 const CONCURRENCY = 2; // stay under Archive's rate limit
 
 interface ArchiveFile { name: string; source?: string; format?: string; length?: string; private?: string | boolean }
