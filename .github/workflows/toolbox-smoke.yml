@@ -1,0 +1,37 @@
+name: AJN Toolbox Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact workflow SHA
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install toolbox dependencies
+        run: python -m pip install -r toolbox/requirements.txt
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: API probe
+        run: python -m toolbox.runners.api_probe --url https://ajn-precision-engineering.ai.studio
+
+      - name: Proxy rejection probe
+        run: python -m toolbox.runners.proxy_test --url https://ajn-precision-engineering.ai.studio
+
+      - name: DOM scan
+        run: python -m toolbox.runners.dom_scan --url https://ajn-precision-engineering.ai.studio
+
+      - name: AudioContext singleton diagnostic
+        run: python -m toolbox.runners.audio_ctx --url https://ajn-precision-engineering.ai.studio
