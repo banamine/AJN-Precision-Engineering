@@ -69,6 +69,8 @@ jobs:
         run: npm run test:epg-identity-producers
       - name: Classic TV canonical identity regression
         run: npm run test:classic-tv-canonical
+      - name: Western Death Valley loop
+        run: npm run test:western-death-valley
       - name: Library integrity regression
         run: npm run test:library-integrity
       - name: Nova canonical regression
