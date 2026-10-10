@@ -1,0 +1,1386 @@
+From 5e957be5a44b391ff933f3dbdbb488c57dc605b7 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 4 Oct 2026 07:04:36 -0700
+Subject: [PATCH] feat(radio): AJN Audio look and feel in the Radio view +
+ Daily Briefing
+
+Radio view only. Rebuilds the flat episode lists as the original AJN Audio
+layout (mint theme, hero, Now Playing panel, channel tabs, show/type chips,
+sort, search, jump to current, episode cards, news ticker) and adds the Daily
+News Digest as a Daily Briefing section.
+
+- Listen now stays on the Radio page (App passes handleAdvanceProgram) and
+  plays through the single persistent player; no new media element.
+- usePersistentMedia: one hook follows #persistent-player; the mini dock and
+  the Now Playing panel both use it.
+- GET /api/digest: GitHub Pages digest fetched via safeFetch (host-locked,
+  every redirect hop checked), parsed, kept in memory; failures keep the last
+  good digest and are reported, never cached as success.
+- Freshness is judged by the digest's own last_updated, not the fetch time.
+- Tests: test:news-digest, test:radio-view (browser), extended
+  test:ajn-radio-catalog; CI steps added.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018yCD8PQZ8hTbVJbiLvPrC4
+---
+ .github/workflows/ajn-ci.yml      |   6 +
+ package.json                      |   2 +
+ server.ts                         |   3 +
+ server/newsDigest.ts              |  66 +++++++++
+ src/App.tsx                       |   2 +-
+ src/components/DailyBriefing.tsx  |  73 ++++++++++
+ src/components/MiniPlayerDock.tsx |  30 +---
+ src/components/RadioView.tsx      | 225 ++++++++++++++++++++++--------
+ src/hooks/useDigest.ts            |  35 +++++
+ src/hooks/usePersistentMedia.ts   |  70 ++++++++++
+ src/radio.css                     | 166 ++++++++++++++++++++++
+ src/utils/ajnRadioBrowse.ts       |  52 +++++++
+ src/utils/newsDigest.ts           | 111 +++++++++++++++
+ test-ajn-radio-catalog.ts         |  19 +++
+ test-news-digest.ts               | 101 ++++++++++++++
+ test-radio-view.js                | 182 ++++++++++++++++++++++++
+ 16 files changed, 1058 insertions(+), 85 deletions(-)
+ create mode 100644 server/newsDigest.ts
+ create mode 100644 src/components/DailyBriefing.tsx
+ create mode 100644 src/hooks/useDigest.ts
+ create mode 100644 src/hooks/usePersistentMedia.ts
+ create mode 100644 src/radio.css
+ create mode 100644 src/utils/ajnRadioBrowse.ts
+ create mode 100644 src/utils/newsDigest.ts
+ create mode 100644 test-news-digest.ts
+ create mode 100644 test-radio-view.js
+
+diff --git a/.github/workflows/ajn-ci.yml b/.github/workflows/ajn-ci.yml
+index 1983163..76aa0cb 100644
+--- a/.github/workflows/ajn-ci.yml
++++ b/.github/workflows/ajn-ci.yml
+@@ -135,6 +135,8 @@ jobs:
+         run: npm run test:ajn-classify-pairing
+       - name: AJN Radio catalog regression
+         run: npm run test:ajn-radio-catalog
++      - name: Daily News Digest regression (parse, freshness, in-memory store)
++        run: npm run test:news-digest
+       - name: AJN Media RSS contract regression (mocked)
+         run: npm run test:source-ajn-media
+ 
+@@ -232,6 +234,10 @@ jobs:
+         run: npm run test:browser-journeys
+         env:
+           AJN_TEST_URL: http://localhost:8080
++      - name: Radio view regression (Listen, Now Playing, filters, briefing)
++        run: npm run test:radio-view
++        env:
++          AJN_TEST_URL: http://localhost:8080
+       - name: Real Archive playback gates
+         run: npm run test:real-archive-playback
+         env:
+diff --git a/package.json b/package.json
+index 91e9cc3..beb995a 100644
+--- a/package.json
++++ b/package.json
+@@ -19,6 +19,7 @@
+     "test:api-contract": "node test-api-contracts.js",
+     "test:accessibility": "node test-accessibility.js",
+     "test:browser-journeys": "node test-browser-journeys.js",
++    "test:radio-view": "node test-radio-view.js",
+     "test:epg-program-lifecycle": "tsx test-epg-program-lifecycle.js",
+     "test:ajn-rss-canonical": "tsx test-ajn-rss-canonical.js",
+     "test:ajn-audio-canonical": "tsx test-ajn-audio-canonical.js",
+@@ -42,6 +43,7 @@
+     "test:source-ajn-audio": "tsx test-source-ajn-audio.ts",
+     "test:ajn-classify-pairing": "tsx test-ajn-classify-pairing.ts",
+     "test:ajn-radio-catalog": "tsx test-ajn-radio-catalog.ts",
++    "test:news-digest": "tsx test-news-digest.ts",
+     "test:source-ajn-media": "tsx test-source-ajn-media.ts",
+     "news:snapshot": "tsx scripts/news-snapshot.ts",
+     "rush:index": "tsx scripts/build-rush-index.ts",
+diff --git a/server.ts b/server.ts
+index 9a54153..eadaf9b 100644
+--- a/server.ts
++++ b/server.ts
+@@ -6,6 +6,7 @@ import { liveTvHealthSummary } from './guideRegistry';
+ import { plutoEpgStats } from './server/sources/plutoEpg';
+ import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES } from './server/safeFetch';
+ import { proxySliceRange } from './server/proxyRange';
++import { getDigestState } from './server/newsDigest';
+ import { unplayableReason } from './server/sources/archiveLinks';
+ import { Readable } from 'node:stream';
+ import crypto from 'node:crypto';
+@@ -108,6 +109,8 @@ app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const
+ app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});
+ app.get('/api/rush/episode/:date',async(req,res)=>{const eps=await rushEpisodesOn(req.params.date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${req.params.date}`});try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({date:req.params.date,episodes,stats:rushStats});}catch(e:any){res.status(e.status??502).json({error:e.message,stats:rushStats});}});
+ app.get('/api/news/version',async(_req,res)=>{res.set('Cache-Control','no-store');res.json(await getNewsVersion());});
++// Daily News Digest (GitHub Pages JSON, in memory). Headlines and links only; never media. 503 only when no digest was ever loaded.
++app.get('/api/digest',async(_req,res)=>{const st=await getDigestState();res.set('Cache-Control','no-store');if(!st.digest)return res.status(503).json({status:st.status,error:st.error??'digest not loaded yet'});return res.json(st);});
+ app.get('/api/playlists',(_req,res)=>{const playlists=getAllPlaylists();res.json({playlists,total:playlists.length});});
+ app.get('/api/playlists/:playlistId',(req,res)=>{const p=getPlaylistById(req.params.playlistId);if(!p)return res.status(404).json({error:`Playlist not found: ${req.params.playlistId}`});res.json(p);});
+ app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.params.playlistId,req.body?.customM3u);if(!r.success)return res.status(400).json({error:`Failed to sync playlist ${req.params.playlistId}`,playlist:r.playlist});res.json({message:`Playlist ${req.params.playlistId} synchronized successfully`,playlist:r.playlist,ingestedCount:r.count});});
+diff --git a/server/newsDigest.ts b/server/newsDigest.ts
+new file mode 100644
+index 0000000..2a7c255
+--- /dev/null
++++ b/server/newsDigest.ts
+@@ -0,0 +1,66 @@
++// Daily News Digest source: fetched from GitHub Pages into memory (no database), last-good kept, failures never cached as success.
++// Only the digest URL's own host is ever contacted (every redirect hop is checked by safeFetch).
++import { safeFetch, readTextCapped, SafeFetchError } from './safeFetch';
++import { parseNewsDigest, type Digest } from '../src/utils/newsDigest';
++
++export const DIGEST_URL_DEFAULT = 'https://banamine.github.io/Daily-News-Digest-/data/current/data.json';
++export const DIGEST_TTL_MS = 15 * 60_000;
++export const DIGEST_FAILURE_RETRY_MS = 60_000;
++export const DIGEST_TIMEOUT_MS = 15_000;
++export const DIGEST_MAX_BYTES = 5 * 1024 * 1024;
++
++export interface DigestState {
++  digest: Digest | null;
++  /** When the digest was last fetched successfully. */
++  fetchedAt: string | null;
++  /** 'ok' = last attempt succeeded; 'error' = last attempt failed (a digest, if present, is the last good one); 'pending' = never attempted. */
++  status: 'ok' | 'error' | 'pending';
++  error: string | null;
++}
++
++export interface DigestStoreOptions { url?: string; fetchImpl?: typeof fetch; now?: () => number; ttlMs?: number; failureRetryMs?: number; timeoutMs?: number }
++
++const describe = (e: unknown): string => e instanceof SafeFetchError ? `${e.reason}: ${e.message}` : e instanceof Error ? e.message : String(e);
++
++export function createDigestStore(opts: DigestStoreOptions = {}) {
++  const now = opts.now ?? Date.now;
++  const ttl = opts.ttlMs ?? DIGEST_TTL_MS;
++  const failureRetry = opts.failureRetryMs ?? DIGEST_FAILURE_RETRY_MS;
++  let state: DigestState = { digest: null, fetchedAt: null, status: 'pending', error: null };
++  let lastAttempt = 0;
++  let inflight: Promise<DigestState> | null = null;
++
++  const resolveUrl = (): URL => {
++    const raw = opts.url ?? process.env.NEWS_DIGEST_URL ?? DIGEST_URL_DEFAULT;
++    let url: URL;
++    try { url = new URL(raw); } catch { throw new Error('NEWS_DIGEST_URL is not a valid URL'); }
++    if (url.protocol !== 'https:') throw new Error('NEWS_DIGEST_URL must be https');
++    return url;
++  };
++
++  async function refresh(): Promise<DigestState> {
++    lastAttempt = now();
++    try {
++      const url = resolveUrl();
++      const { res } = await safeFetch(url, { allow: host => host === url.hostname, timeoutMs: opts.timeoutMs ?? DIGEST_TIMEOUT_MS, fetchImpl: opts.fetchImpl, headers: { 'user-agent': 'ajn-precision-engineering/digest', accept: 'application/json' } });
++      if (!res.ok) { await res.body?.cancel().catch(() => {}); throw new Error(`HTTP ${res.status}`); }
++      const digest = parseNewsDigest(JSON.parse(await readTextCapped(res, DIGEST_MAX_BYTES))); // throws on an empty digest: that is a failure, not a success
++      state = { digest, fetchedAt: new Date(now()).toISOString(), status: 'ok', error: null };
++    } catch (e) {
++      state = { ...state, status: 'error', error: describe(e) }; // keep the last good digest, if any
++    }
++    return state;
++  }
++
++  async function get(force = false): Promise<DigestState> {
++    const age = now() - lastAttempt;
++    const fresh = state.status === 'ok' ? age < ttl : state.status === 'error' ? age < failureRetry : false;
++    if (!force && fresh) return state;
++    inflight ??= refresh().finally(() => { inflight = null; });
++    return inflight;
++  }
++  return { get };
++}
++
++const store = createDigestStore();
++export const getDigestState = (): Promise<DigestState> => store.get();
+diff --git a/src/App.tsx b/src/App.tsx
+index 7a4b504..baff990 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -244,7 +244,7 @@ export default function App() {
+         )}
+         {destination === 'radio' && (
+           <div key="view-radio" className="view-fade-in w-full">
+-            <RadioView onPlayProgram={handlePlayProgram} />
++            <RadioView onPlayProgram={handleAdvanceProgram} nowPlaying={nowPlaying} recentlyPlayed={recentlyPlayed} onNavigate={navigateTo} />
+           </div>
+         )}
+         {destination === 'dev' && (
+diff --git a/src/components/DailyBriefing.tsx b/src/components/DailyBriefing.tsx
+new file mode 100644
+index 0000000..6f422a5
+--- /dev/null
++++ b/src/components/DailyBriefing.tsx
+@@ -0,0 +1,73 @@
++// Daily News Digest in the Radio view: ticker + briefing. Headlines and links only; nothing here plays media.
++import { useMemo, useState } from 'react';
++import { ArrowUpRight } from 'lucide-react';
++import type { DigestView } from '../hooks/useDigest';
++import { digestNotice, type DigestItem } from '../utils/newsDigest';
++
++function timeLabel(iso: string | null): string {
++  if (!iso) return '';
++  const date = new Date(iso);
++  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
++}
++
++export function NewsTicker({ news }: { news: DigestView }) {
++  const items = news.data?.digest.top ?? [];
++  if (!items.length) return null;
++  const row = (suffix: string) => items.map(item => (
++    <a key={`${item.id}${suffix}`} className="ajr-ticker-item" tabIndex={suffix ? -1 : undefined} href={item.url} target="_blank" rel="noopener noreferrer"><b>{item.source}</b>{item.title}</a>
++  ));
++  return (
++    <div className="ajr-ticker" role="region" aria-label="News headlines">
++      <span className="ajr-ticker-label">NEWS</span>
++      <div className="ajr-ticker-window"><div className="ajr-ticker-track">{row('')}<span aria-hidden="true" className="ajr-ticker-copy">{row('-copy')}</span></div></div>
++    </div>
++  );
++}
++
++function renderStory(item: DigestItem) {
++  return (
++    <a key={item.id} className="ajr-news-card" href={item.url} target="_blank" rel="noopener noreferrer" data-testid="digest-story">
++      {item.imageUrl && <img className="ajr-news-thumb" src={item.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={event => { event.currentTarget.style.display = 'none'; }} />}
++      <span className="ajr-news-body">
++        <span className="ajr-news-meta">{item.source.toUpperCase()}{item.publishedAt ? ` · ${timeLabel(item.publishedAt)}` : ''}</span>
++        <span className="ajr-news-title">{item.title}<ArrowUpRight size={14} aria-hidden="true" /></span>
++        {item.excerpt && <span className="ajr-news-excerpt">{item.excerpt}</span>}
++      </span>
++    </a>
++  );
++}
++
++export function DailyBriefing({ news }: { news: DigestView }) {
++  const [source, setSource] = useState<string | null>(null);
++  const digest = news.data?.digest ?? null;
++  const items = useMemo(() => !digest ? [] : source ? digest.bySource.find(group => group.source === source)?.items ?? [] : digest.top, [digest, source]);
++  const notice = digest ? digestNotice(digest.updatedAt, Date.now(), news.data?.status === 'error' ? news.data.error : null) : null;
++  return (
++    <section className="ajr-section ajr-news" id="ajr-news" aria-label="Daily briefing">
++      <div className="ajr-heading"><div><div className="ajr-label">{digest?.date ? `THE DAILY BRIEFING · ${digest.date}` : 'THE DAILY BRIEFING'}</div><h2>Read the <em>news.</em></h2></div></div>
++      {news.phase === 'loading' && <p className="ajr-status" role="status">Loading news…</p>}
++      {news.phase === 'error' && <p className="ajr-status ajr-status-error" role="alert">The Daily Digest could not be loaded ({news.error}).</p>}
++      {notice && <p className={`ajr-status ajr-status-${notice.level}`} role="status" title={digest?.updatedAt ?? undefined}>{notice.text}</p>}
++      {digest && <>
++        {digest.briefing.length > 0 && (
++          <ol className="ajr-briefing" aria-label="Today's briefing">
++            {digest.briefing.map((block, index) => (
++              <li key={`${index}-${block.headline}`} className="ajr-briefing-item" data-testid="briefing-block">
++                <span className="ajr-label">{String(index + 1).padStart(2, '0')}{block.source ? ` · ${block.source.toUpperCase()}` : ''}{block.theme ? ` · ${block.theme.toUpperCase()}` : ''}</span>
++                <strong>{block.headline}</strong>
++                {block.summary && <p>{block.summary}</p>}
++              </li>
++            ))}
++          </ol>
++        )}
++        <div className="ajr-chips" role="group" aria-label="News sources">
++          <button type="button" aria-pressed={source === null} className={`ajr-chip ${source === null ? 'selected' : ''}`} onClick={() => setSource(null)}>TOP STORIES</button>
++          {digest.bySource.map(group => <button key={group.source} type="button" aria-pressed={source === group.source} className={`ajr-chip ${source === group.source ? 'selected' : ''}`} onClick={() => setSource(group.source)}>{group.source.toUpperCase()}</button>)}
++        </div>
++        {items.length === 0 && <p className="ajr-status" role="status">No stories from this source in the current digest.</p>}
++        <div className="ajr-news-grid">{items.map(renderStory)}</div>
++        <p className="ajr-fineprint">Headlines link to the original publishers. Briefing text is generated by the Daily News Digest.</p>
++      </>}
++    </section>
++  );
++}
+diff --git a/src/components/MiniPlayerDock.tsx b/src/components/MiniPlayerDock.tsx
+index 4c4965d..a7fbb33 100644
+--- a/src/components/MiniPlayerDock.tsx
++++ b/src/components/MiniPlayerDock.tsx
+@@ -1,6 +1,6 @@
+-import { useEffect, useState } from 'react';
+ import { Play, Pause, Maximize2, X, Tv, Radio } from 'lucide-react';
+ import { NowPlayingMedia, Destination } from '../types';
++import { usePersistentMedia } from '../hooks/usePersistentMedia';
+ 
+ interface MiniPlayerDockProps {
+   nowPlaying: NowPlayingMedia;
+@@ -13,32 +13,8 @@ export function MiniPlayerDock({
+   onOpenFullPlayer,
+   onDismiss,
+ }: MiniPlayerDockProps) {
+-  // The real player stays mounted (hidden) in #persistent-player; the dock drives it.
+-  const [paused, setPaused] = useState(true);
+-  const getMedia = () => {
+-    if (nowPlaying.mediaType === 'audio') {
+-      return document.querySelector<HTMLMediaElement>('#persistent-player audio')
+-        ?? document.querySelector<HTMLMediaElement>('#persistent-player video');
+-    }
+-    return document.querySelector<HTMLMediaElement>('#persistent-player video')
+-      ?? document.querySelector<HTMLMediaElement>('#persistent-player audio');
+-  };
+-  useEffect(() => {
+-    let media: HTMLMediaElement | null = null;
+-    const sync = () => setPaused(!media || media.paused);
+-    const attach = () => {
+-      const next = getMedia();
+-      if (next === media) return;
+-      media?.removeEventListener('play', sync); media?.removeEventListener('pause', sync);
+-      media = next;
+-      media?.addEventListener('play', sync); media?.addEventListener('pause', sync);
+-      sync();
+-    };
+-    attach();
+-    const t = window.setInterval(attach, 250); // element is replaced when the source changes
+-    return () => { window.clearInterval(t); media?.removeEventListener('play', sync); media?.removeEventListener('pause', sync); };
+-  }, [nowPlaying.src, nowPlaying.mediaType]);
+-  const togglePlay = () => { const m = getMedia(); if (!m) return; if (m.paused) void m.play().catch(() => {}); else m.pause(); };
++  // The real player stays mounted (hidden) in #persistent-player; the dock drives it through the shared hook.
++  const { paused, toggle: togglePlay } = usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
+   const isAudio = nowPlaying.mediaType === 'audio';
+   return (
+     <aside
+diff --git a/src/components/RadioView.tsx b/src/components/RadioView.tsx
+index f17513a..c76064d 100644
+--- a/src/components/RadioView.tsx
++++ b/src/components/RadioView.tsx
+@@ -1,60 +1,79 @@
+-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+-import { Headphones, Play, RefreshCw, Tv } from 'lucide-react';
+-import type { PlayProgramCallback } from '../types';
++import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
++import { ArrowDownRight, AudioLines, Headphones, Pause, Play, RefreshCw, Search, SkipBack, SkipForward, Tv, X } from 'lucide-react';
++import type { Destination, NowPlayingMedia, PlayProgramCallback, RecentlyPlayedItem } from '../types';
+ import { loadAjnFeeds } from '../services/ajnFeeds';
+ import { buildRadioCatalog, type RadioEntry, type RadioFeedItem } from '../utils/ajnRadioCatalog';
+-import { AJN_CHANNEL_LABELS } from '../utils/ajnClassify';
++import { AJN_CHANNEL_LABELS, formatAirDate, type AjnChannel } from '../utils/ajnClassify';
++import { filterEntries, formatClock, isPlayingEntry, neighbour, showChips, showInitials, showKey, showLabel, typeChips, typeKey, typeLabel, type RadioFilter, type RadioSort } from '../utils/ajnRadioBrowse';
++import { usePersistentMedia } from '../hooks/usePersistentMedia';
++import { useDigest } from '../hooks/useDigest';
++import { DailyBriefing, NewsTicker } from './DailyBriefing';
++import '../radio.css';
+ 
+ const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
++const PAGE_SIZE = 24;
++const CHANNELS: AjnChannel[] = ['ajn-radio', 'ajn-exclusive'];
+ 
+-interface Props { onPlayProgram: PlayProgramCallback }
++interface Props {
++  /** Plays through the one persistent player. The caller should keep the viewer on this page. */
++  onPlayProgram: PlayProgramCallback;
++  nowPlaying?: NowPlayingMedia | null;
++  recentlyPlayed?: readonly RecentlyPlayedItem[];
++  onNavigate?: (destination: Destination) => void;
++}
++
++const NO_FILTER: RadioFilter = { show: null, type: null, query: '', sort: 'newest' };
+ 
+-function renderEntry(entry: RadioEntry, onPlayProgram: PlayProgramCallback) {
+-  const label = AJN_CHANNEL_LABELS[entry.channel];
++function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onNavigate }: {
++  nowPlaying: NowPlayingMedia | null; playingEntry: RadioEntry | null; list: readonly RadioEntry[]; onPlayEntry: (entry: RadioEntry) => void; onNavigate?: (destination: Destination) => void;
++}) {
++  const media = usePersistentMedia(nowPlaying?.mediaType, nowPlaying ? `${nowPlaying.src}|${nowPlaying.mediaType}` : undefined, Boolean(nowPlaying));
++  const programId = nowPlaying?.programId;
++  const previous = neighbour(list, programId, 1); // list is newest first: the next row down is the previous broadcast
++  const next = neighbour(list, programId, -1);
++  const live = Boolean(nowPlaying?.isLive);
++  const percent = media.duration > 0 ? Math.min(100, (media.currentTime / media.duration) * 100) : 0;
++  const pill = !nowPlaying ? { cls: 'idle', text: 'NOTHING PLAYING' }
++    : live ? { cls: 'live', text: 'LIVE AUDIO' }
++    : nowPlaying.mediaType === 'video' ? { cls: 'rec', text: 'RECORDED · VIDEO' }
++    : { cls: 'rec', text: playingEntry ? `RECORDED · ${typeLabel(typeKey(playingEntry)).toUpperCase()}` : 'RECORDED' };
+   return (
+-    <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4" data-testid="radio-entry">
+-      <div className="min-w-0">
+-        <h3 className="text-sm font-semibold text-neutral-100 truncate">{entry.title}</h3>
+-        {entry.needsReview && <p className="mt-1 text-[11px] text-amber-400">Date not verified from filename</p>}
++    <section className="ajr-now" aria-label="Now playing" data-testid="radio-now-playing">
++      <div className="ajr-now-art" aria-hidden="true"><div className="ajr-art-sun" /><div className="ajr-art-horizon" /><span className="ajr-art-index">AJN{playingEntry ? ` — ${showInitials(playingEntry)}` : ''}</span></div>
++      <div>
++        <div className="ajr-label"><span className={`ajr-eq ${nowPlaying && !media.paused ? 'on' : ''}`} aria-hidden="true"><i /><i /><i /></span>NOW PLAYING</div>
++        <div className="ajr-track-title" data-testid="radio-now-title">{nowPlaying ? nowPlaying.title : 'Nothing playing'}</div>
++        <div className="ajr-track-sub">{nowPlaying ? (playingEntry ? `${showLabel(showKey(playingEntry))} · ${AJN_CHANNEL_LABELS[playingEntry.channel]}` : nowPlaying.subtitle ?? 'Active broadcast') : 'Press Listen on any episode below. Playback continues when you leave this page.'}</div>
++        <div className="ajr-progress">
++          <span data-testid="radio-elapsed">{nowPlaying ? formatClock(media.currentTime) : '0:00'}</span>
++          <input className="ajr-seek" type="range" aria-label="Seek" min={0} max={media.duration > 0 ? Math.floor(media.duration) : 1} value={media.duration > 0 ? Math.floor(media.currentTime) : 0}
++            disabled={!nowPlaying || live || media.duration <= 0} style={{ '--p': `${percent}%` } as CSSProperties} onChange={event => media.seek(Number(event.target.value))} />
++          <span>{!nowPlaying ? '—' : live ? 'LIVE' : media.duration > 0 ? formatClock(media.duration) : '—'}</span>
++        </div>
+       </div>
+-      <div className="flex items-center gap-2">
+-        <button
+-          type="button"
+-          onClick={() => onPlayProgram(entry.audioUrl, entry.title, label, 'audio', `ajn-radio`, `ajn-radio`, entry.id)}
+-          className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-sky-600 hover:text-white"
+-        >
+-          <Headphones className="h-3.5 w-3.5" /> Listen
+-        </button>
+-        {entry.videoUrl && (
+-          <button
+-            type="button"
+-            onClick={() => onPlayProgram(entry.videoUrl!, entry.title, label, 'video', `ajn-radio`, `ajn-radio`, `${entry.id}:video`)}
+-            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-neutral-800"
+-          >
+-            <Tv className="h-3.5 w-3.5" /> Watch Video
+-          </button>
+-        )}
++      <div className="ajr-controls">
++        <button type="button" className="ajr-skip" aria-label="Previous broadcast" disabled={!previous} onClick={() => previous && onPlayEntry(previous)}><SkipBack size={17} fill="currentColor" /></button>
++        <button type="button" className="ajr-play" aria-label={media.paused ? 'Play' : 'Pause'} data-testid="radio-play-toggle" disabled={!nowPlaying || !media.attached} onClick={media.toggle}>{media.paused ? <Play size={19} fill="currentColor" /> : <Pause size={19} fill="currentColor" />}</button>
++        <button type="button" className="ajr-skip" aria-label="Next broadcast" disabled={!next} onClick={() => next && onPlayEntry(next)}><SkipForward size={17} fill="currentColor" /></button>
++      </div>
++      <div className="ajr-now-side">
++        <span className={`ajr-pill ${pill.cls}`}><i />{pill.text}</span>
++        {nowPlaying && onNavigate && <button type="button" className="ajr-link" onClick={() => onNavigate('player')}>OPEN FULL PLAYER</button>}
+       </div>
+-    </li>
+-  );
+-}
+-
+-function Section({ title, entries, onPlayProgram }: { title: string; entries: RadioEntry[]; onPlayProgram: PlayProgramCallback }) {
+-  return (
+-    <section aria-label={title} className="space-y-3">
+-      <h2 className="text-lg font-semibold tracking-tight text-neutral-100">{title}</h2>
+-      {entries.length === 0
+-        ? <div className="rounded-xl border border-dashed border-neutral-800 p-5 text-xs text-neutral-500">No {title} episodes in the current feeds.</div>
+-        : <ul className="space-y-2">{entries.map(entry => renderEntry(entry, onPlayProgram))}</ul>}
+     </section>
+   );
+ }
+ 
+-export function RadioView({ onPlayProgram }: Props) {
++export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [], onNavigate }: Props) {
+   const [items, setItems] = useState<RadioFeedItem[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+   const controller = useRef<AbortController | null>(null);
++  const [channel, setChannel] = useState<AjnChannel>('ajn-radio');
++  const [filter, setFilter] = useState<RadioFilter>(NO_FILTER);
++  const [visible, setVisible] = useState(PAGE_SIZE);
++  const gridRef = useRef<HTMLUListElement>(null);
++  const news = useDigest();
+ 
+   const load = useCallback(async () => {
+     controller.current?.abort();
+@@ -82,27 +101,119 @@ export function RadioView({ onPlayProgram }: Props) {
+   }, [load]);
+ 
+   const catalog = useMemo(() => buildRadioCatalog(items), [items]);
++  const entries = channel === 'ajn-radio' ? catalog.radio : catalog.exclusive;
++  const shown = useMemo(() => filterEntries(entries, filter), [entries, filter]);
++  const everyEntry = useMemo(() => [...catalog.radio, ...catalog.exclusive], [catalog]);
++  const playingEntry = useMemo(() => everyEntry.find(entry => isPlayingEntry(entry, nowPlaying?.programId)) ?? null, [everyEntry, nowPlaying?.programId]);
++  const playingHere = playingEntry !== null && entries.includes(playingEntry);
++  const progressById = useMemo(() => new Map(recentlyPlayed.map(item => [item.programId ?? item.id, item.progressSeconds])), [recentlyPlayed]);
++  const liveMedia = usePersistentMedia(nowPlaying?.mediaType, nowPlaying ? `${nowPlaying.src}|${nowPlaying.mediaType}` : undefined, Boolean(nowPlaying));
++
++  const update = (patch: Partial<RadioFilter>) => { setFilter(current => ({ ...current, ...patch })); setVisible(PAGE_SIZE); };
++  const selectChannel = (next: AjnChannel) => { setChannel(next); setFilter(NO_FILTER); setVisible(PAGE_SIZE); };
++
++  const playEntry = useCallback((entry: RadioEntry) => {
++    onPlayProgram(entry.audioUrl, entry.title, AJN_CHANNEL_LABELS[entry.channel], 'audio', 'ajn-radio', 'ajn-radio', entry.id);
++  }, [onPlayProgram]);
++  const playVideo = (entry: RadioEntry) => {
++    onPlayProgram(entry.videoUrl!, entry.title, AJN_CHANNEL_LABELS[entry.channel], 'video', 'ajn-radio', 'ajn-radio', `${entry.id}:video`);
++  };
++
++  const jumpToCurrent = () => {
++    if (!playingEntry) return;
++    if (!playingHere) selectChannel(playingEntry.channel);
++    else setFilter(NO_FILTER);
++    const list = playingHere ? entries : playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive;
++    setVisible(Math.max(PAGE_SIZE, list.indexOf(playingEntry) + 1));
++    requestAnimationFrame(() => requestAnimationFrame(() => {
++      const card = gridRef.current?.querySelector<HTMLElement>('[aria-current="true"]');
++      if (!card) return;
++      card.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
++      card.focus({ preventScroll: true });
++    }));
++  };
++
++  const show = showChips(entries);
++  const type = typeChips(entries);
++  const label = AJN_CHANNEL_LABELS[channel];
++  const page = shown.slice(0, visible);
+ 
+   return (
+-    <div className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8" id="ajn-radio-view">
+-      <div className="flex items-center justify-between">
++    <div className="ajr" id="ajn-radio-view">
++      <header className="ajr-topbar">
++        <span className="ajr-brand"><span className="ajr-brand-icon"><AudioLines size={17} /></span><span>ajn<span className="ajr-brand-light">radio</span></span><span className="ajr-brand-dot">.</span></span>
++        <button type="button" className="ajr-refresh" onClick={() => void load()} disabled={loading}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> REFRESH</button>
++      </header>
++      <NewsTicker news={news} />
++
++      <section className="ajr-hero">
+         <div>
+-          <h1 className="text-2xl font-bold tracking-tight text-neutral-100">AJN Radio</h1>
+-          <p className="mt-1 text-xs text-neutral-500">Episodes from the AJN feeds. Watch Video appears only when the matching hourly video exists.</p>
++          <div className="ajr-eyebrow"><i />AJN AUDIO · DAILY NEWS</div>
++          <h1>A frequency<br />of <em>your own.</em></h1>
++          <p className="ajr-hero-desc">Listen to the latest AJN shows and hours, and read today&apos;s news, all in one place.</p>
++          <a href="#ajr-listen" className="ajr-explore" onClick={event => { event.preventDefault(); document.getElementById('ajr-listen')?.scrollIntoView({ behavior: 'smooth' }); }}>BROWSE EPISODES <ArrowDownRight size={15} /></a>
+         </div>
+-        <button type="button" onClick={() => void load()} disabled={loading}
+-          className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800">
+-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+-        </button>
+-      </div>
+-      {error && <div role="alert" className="rounded-xl border border-red-900/50 bg-red-950/20 p-4 text-xs text-red-300">{error}</div>}
+-      {loading && items.length === 0 && !error && <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-5 text-xs text-neutral-400">Loading AJN feeds…</div>}
+-      {(!loading || items.length > 0) && (
+-        <>
+-          <Section title={AJN_CHANNEL_LABELS['ajn-radio']} entries={catalog.radio} onPlayProgram={onPlayProgram} />
+-          <Section title={AJN_CHANNEL_LABELS['ajn-exclusive']} entries={catalog.exclusive} onPlayProgram={onPlayProgram} />
+-        </>
+-      )}
++        <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
++      </section>
++
++      <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onNavigate={onNavigate} />
++
++      <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
++        <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>
++        {error && <p className="ajr-status ajr-status-error" role="alert">{error}</p>}
++        {loading && items.length === 0 && !error && <p className="ajr-status" role="status">Loading AJN feeds…</p>}
++        <div className="ajr-tabs" role="tablist" aria-label="AJN channels">
++          {CHANNELS.map(id => <button key={id} type="button" role="tab" aria-selected={channel === id} className={`ajr-tab ${channel === id ? 'selected' : ''}`} onClick={() => selectChannel(id)}><Headphones size={14} /><span>{AJN_CHANNEL_LABELS[id]}</span><small>{(id === 'ajn-radio' ? catalog.radio : catalog.exclusive).length}</small></button>)}
++        </div>
++        {(show.length > 0 || type.length > 0) && (
++          <div className="ajr-chips" role="group" aria-label={`Filter ${label}`}>
++            <span className="ajr-label">{label.toUpperCase()}</span>
++            {show.length > 0 && <button type="button" aria-pressed={!filter.show} className={`ajr-chip ${!filter.show ? 'selected' : ''}`} onClick={() => update({ show: null })}>All shows</button>}
++            {show.map(chip => <button key={chip.key} type="button" aria-pressed={filter.show === chip.key} className={`ajr-chip ${filter.show === chip.key ? 'selected' : ''}`} onClick={() => update({ show: chip.key })}>{chip.label} · {chip.count}</button>)}
++            {show.length > 0 && type.length > 0 && <span className="ajr-gap" />}
++            {type.length > 0 && <button type="button" aria-pressed={!filter.type} className={`ajr-chip ${!filter.type ? 'selected' : ''}`} onClick={() => update({ type: null })}>All types</button>}
++            {type.map(chip => <button key={chip.key} type="button" aria-pressed={filter.type === chip.key} className={`ajr-chip ${filter.type === chip.key ? 'selected' : ''}`} onClick={() => update({ type: chip.key })}>{chip.label} · {chip.count}</button>)}
++          </div>
++        )}
++        <div className="ajr-tools">
++          <label className="ajr-select"><span className="ajr-label">SORT BY</span>
++            <select value={filter.sort} aria-label="Sort episodes" onChange={event => update({ sort: event.target.value as RadioSort })}>
++              <option value="newest">Date · newest first</option><option value="oldest">Date · oldest first</option>
++            </select>
++          </label>
++          {playingEntry && <button type="button" className="ajr-jump" onClick={jumpToCurrent}><Play size={11} fill="currentColor" /> JUMP TO CURRENT</button>}
++        </div>
++        <label className="ajr-search"><Search size={14} aria-hidden="true" /><input type="search" value={filter.query} onChange={event => update({ query: event.target.value })} placeholder="Search episodes by title" aria-label="Search episodes by title" />{filter.query && <button type="button" aria-label="Clear episode search" onClick={() => update({ query: '' })}><X size={14} /></button>}</label>
++        {entries.length === 0 && !loading && <div className="ajr-empty">No {label} episodes in the current feeds.</div>}
++        {entries.length > 0 && shown.length === 0 && <p className="ajr-status" role="status">No episodes match these filters.</p>}
++        <ul className="ajr-grid" ref={gridRef}>
++          {page.map(entry => {
++            const playing = isPlayingEntry(entry, nowPlaying?.programId);
++            const saved = progressById.get(entry.id) ?? progressById.get(`${entry.id}:video`) ?? 0;
++            const fraction = playing && liveMedia.duration > 0 ? Math.min(1, liveMedia.currentTime / liveMedia.duration) : 0;
++            return (
++              <li key={entry.id} className={`ajr-card ${playing ? 'playing' : ''}`} data-testid="radio-entry">
++                <button type="button" className="ajr-card-open" aria-current={playing ? 'true' : undefined} onClick={() => playEntry(entry)}>
++                  <span className="ajr-cover" data-show={showKey(entry)} aria-hidden="true"><span>AJN<br />{showInitials(entry) === 'AJN' ? 'AUDIO' : showInitials(entry)}</span><Headphones size={20} /></span>
++                  <span className="ajr-card-meta">
++                    <span className="ajr-label">{showLabel(showKey(entry)).toUpperCase()} · {typeLabel(typeKey(entry)).toUpperCase()}</span>
++                    <strong>{entry.title}</strong>
++                    {entry.airDate && !entry.needsReview ? <small>Aired {formatAirDate(entry.airDate)}</small> : <small className="warn">Date not verified from filename</small>}
++                    <span className="ajr-card-play"><Play size={12} fill="currentColor" /> {playing ? (liveMedia.paused ? 'PAUSED' : 'PLAYING') : 'LISTEN TO EPISODE'}{!playing && saved >= 5 && <span className="ajr-card-resume">RESUME {formatClock(saved)}</span>}</span>
++                  </span>
++                </button>
++                {entry.videoUrl && <button type="button" className="ajr-video" aria-label={`Watch video: ${entry.title}`} onClick={() => playVideo(entry)}><Tv size={12} /> VIDEO</button>}
++                {fraction > 0 && <span className="ajr-bar" role="progressbar" aria-label="Played so far" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)}><i style={{ width: `${Math.round(fraction * 100)}%` }} /></span>}
++              </li>
++            );
++          })}
++        </ul>
++        {shown.length > visible && <button type="button" className="ajr-more" onClick={() => setVisible(count => count + PAGE_SIZE)}>MORE FROM {label.toUpperCase()} <ArrowDownRight size={14} /></button>}
++      </section>
++
++      <DailyBriefing news={news} />
++
++      <footer className="ajr-footer"><span>AJN AUDIO · SHOWS FROM THE AJN FEEDS</span><span>NEWS FROM THE DAILY DIGEST</span></footer>
+     </div>
+   );
+ }
+diff --git a/src/hooks/useDigest.ts b/src/hooks/useDigest.ts
+new file mode 100644
+index 0000000..0deea74
+--- /dev/null
++++ b/src/hooks/useDigest.ts
+@@ -0,0 +1,35 @@
++// Loads /api/digest (Daily News Digest, headlines and links only) and refreshes it every 15 minutes.
++// A failed refresh keeps the last good digest and says so; it never hides the failure.
++import { useEffect, useState } from 'react';
++import type { Digest } from '../utils/newsDigest';
++
++export interface DigestResponse { digest: Digest; fetchedAt: string | null; status: 'ok' | 'error' | 'pending'; error: string | null }
++export interface DigestView { phase: 'loading' | 'ready' | 'error'; data: DigestResponse | null; error: string | null }
++
++export const DIGEST_POLL_MS = 15 * 60_000;
++
++export function useDigest(): DigestView {
++  const [view, setView] = useState<DigestView>({ phase: 'loading', data: null, error: null });
++  useEffect(() => {
++    const controller = new AbortController();
++    const load = async () => {
++      try {
++        const response = await fetch('/api/digest', { signal: controller.signal });
++        if (!response.ok) {
++          const body = await response.json().catch(() => null) as { error?: string } | null;
++          throw new Error(body?.error ?? `HTTP ${response.status}`);
++        }
++        const data = await response.json() as DigestResponse;
++        if (!controller.signal.aborted) setView({ phase: 'ready', data, error: null });
++      } catch (error) {
++        if (controller.signal.aborted) return;
++        const message = error instanceof Error ? error.message : String(error);
++        setView(current => ({ phase: current.data ? 'ready' : 'error', data: current.data, error: message }));
++      }
++    };
++    void load();
++    const timer = window.setInterval(() => void load(), DIGEST_POLL_MS);
++    return () => { window.clearInterval(timer); controller.abort(); };
++  }, []);
++  return view;
++}
+diff --git a/src/hooks/usePersistentMedia.ts b/src/hooks/usePersistentMedia.ts
+new file mode 100644
+index 0000000..c90a0eb
+--- /dev/null
++++ b/src/hooks/usePersistentMedia.ts
+@@ -0,0 +1,70 @@
++// One place that follows the media element inside #persistent-player (the single player that stays mounted across pages).
++// Used by the mini dock and the Radio "Now Playing" panel. It only READS and drives that element; it never creates one.
++import { useCallback, useEffect, useRef, useState } from 'react';
++import type { MediaType } from '../types';
++
++export interface PersistentMediaState {
++  /** True when there is no element yet or it is paused. */
++  paused: boolean;
++  currentTime: number;
++  /** 0 until the element reports a finite duration (live streams stay 0). */
++  duration: number;
++  /** An element exists in #persistent-player. */
++  attached: boolean;
++}
++
++export interface PersistentMedia extends PersistentMediaState {
++  toggle: () => void;
++  seek: (seconds: number) => void;
++}
++
++export function findPersistentMedia(mediaType?: MediaType): HTMLMediaElement | null {
++  const audio = () => document.querySelector<HTMLMediaElement>('#persistent-player audio');
++  const video = () => document.querySelector<HTMLMediaElement>('#persistent-player video');
++  return mediaType === 'audio' ? audio() ?? video() : video() ?? audio();
++}
++
++const EVENTS = ['play', 'pause', 'timeupdate', 'durationchange', 'loadedmetadata', 'ended', 'emptied'] as const;
++const IDLE: PersistentMediaState = { paused: true, currentTime: 0, duration: 0, attached: false };
++
++/** `sourceKey` should change whenever a different item is loaded (the element is replaced when the source changes). */
++export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: string | undefined, enabled = true): PersistentMedia {
++  const [state, setState] = useState<PersistentMediaState>(IDLE);
++  const mediaRef = useRef<HTMLMediaElement | null>(null);
++
++  useEffect(() => {
++    if (!enabled) { mediaRef.current = null; setState(IDLE); return; }
++    let media: HTMLMediaElement | null = null;
++    const read = () => {
++      const next: PersistentMediaState = media
++        ? { paused: media.paused, currentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0, duration: Number.isFinite(media.duration) ? media.duration : 0, attached: true }
++        : IDLE;
++      setState(prev => (prev.paused === next.paused && Math.floor(prev.currentTime) === Math.floor(next.currentTime) && prev.duration === next.duration && prev.attached === next.attached ? prev : next));
++    };
++    const detach = () => { if (media) for (const e of EVENTS) media.removeEventListener(e, read); };
++    const attach = () => {
++      const next = findPersistentMedia(mediaType);
++      if (next === media) return;
++      detach();
++      media = next; mediaRef.current = next;
++      if (media) for (const e of EVENTS) media.addEventListener(e, read);
++      read();
++    };
++    attach();
++    const timer = window.setInterval(attach, 250);
++    return () => { window.clearInterval(timer); detach(); mediaRef.current = null; };
++  }, [mediaType, sourceKey, enabled]);
++
++  const toggle = useCallback(() => {
++    const media = mediaRef.current ?? findPersistentMedia(mediaType);
++    if (!media) return;
++    if (media.paused) void media.play().catch(() => {}); else media.pause();
++  }, [mediaType]);
++  const seek = useCallback((seconds: number) => {
++    const media = mediaRef.current ?? findPersistentMedia(mediaType);
++    if (!media || !Number.isFinite(seconds)) return;
++    const max = Number.isFinite(media.duration) ? media.duration : seconds;
++    media.currentTime = Math.max(0, Math.min(seconds, max));
++  }, [mediaType]);
++  return { ...state, toggle, seek };
++}
+diff --git a/src/radio.css b/src/radio.css
+new file mode 100644
+index 0000000..41e5213
+--- /dev/null
++++ b/src/radio.css
+@@ -0,0 +1,166 @@
++/* AJN Radio view only. Every selector is under .ajr so nothing here can touch another page.
++   Look and feel ported from the original AJN Audio app (banamine/AJN-AUDIO-, radio-platform/src/styles.css). */
++@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;800&display=swap');
++
++.ajr{--station:#aee9d5;--station-glow:#aee9d540;--station-bright:#c0ffe8;--muted:#87928a;--line:rgba(229,239,228,.13);--mono:'DM Mono',ui-monospace,monospace;--rec:#43e08a;--live:#ff4d45;
++  font-family:'Manrope',system-ui,sans-serif;color:#edf1e9;background:radial-gradient(ellipse at 69% 18%,rgba(49,83,70,.18),transparent 38%),#09100f;
++  border:1px solid var(--line);padding:0 clamp(16px,4vw,56px);overflow:hidden;position:relative;-webkit-font-smoothing:antialiased}
++.ajr *{box-sizing:border-box}
++:where(.ajr) button{font:inherit;color:inherit;cursor:pointer}
++:where(.ajr) a{color:inherit;text-decoration:none}
++.ajr em{font-family:Georgia,serif;font-style:italic;font-weight:400;color:var(--station)}
++.ajr-label{font-family:var(--mono);font-size:9px;letter-spacing:1.4px;color:#89968c;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
++
++/* top bar */
++.ajr-topbar{height:72px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
++.ajr-brand{display:inline-flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.8px;font-size:19px}
++.ajr-brand-icon{display:grid;place-items:center;width:29px;height:29px;border:1px solid rgba(229,239,228,.23);border-radius:50%;color:var(--station)}
++.ajr-brand-light{font-weight:500;color:#b2bdb4}
++.ajr-brand-dot{color:var(--station);margin-left:-9px}
++.ajr-refresh{display:inline-flex;align-items:center;gap:8px;height:35px;padding:0 14px;background:rgba(230,239,228,.92);border:0;color:#15201a;font:500 9px var(--mono);letter-spacing:1.3px}
++.ajr-refresh:hover{background:var(--station-bright)}
++.ajr-refresh:disabled{opacity:.6;cursor:progress}
++
++/* news ticker */
++.ajr-ticker{display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);height:38px;overflow:hidden}
++.ajr-ticker-label{flex:none;font:9px var(--mono);letter-spacing:1.5px;color:var(--station);display:flex;align-items:center;gap:8px}
++.ajr-ticker-label::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--station);box-shadow:0 0 10px var(--station-glow)}
++.ajr-ticker-window{overflow:hidden;flex:1;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
++.ajr-ticker-track{display:inline-flex;white-space:nowrap;animation:ajr-ticker 110s linear infinite;will-change:transform}
++.ajr-ticker:hover .ajr-ticker-track,.ajr-ticker:focus-within .ajr-ticker-track{animation-play-state:paused}
++.ajr-ticker-copy{display:inline-flex}
++.ajr-ticker-item{color:#c8d5ca;font-size:13px;padding:0 28px 0 0;display:inline-flex;gap:10px;align-items:center}
++.ajr-ticker-item b{font:8px var(--mono);letter-spacing:1px;color:var(--muted);font-weight:400}
++.ajr-ticker-item:hover,.ajr-ticker-item:focus-visible{color:#fff;text-decoration:underline}
++@keyframes ajr-ticker{to{transform:translateX(-50%)}}
++
++/* hero */
++.ajr-hero{min-height:360px;display:grid;grid-template-columns:1fr 1fr;align-items:center;border-bottom:1px solid var(--line)}
++.ajr-eyebrow{font:9px var(--mono);letter-spacing:1.6px;color:#a8b3a9;display:flex;align-items:center;gap:12px;margin-bottom:24px}
++.ajr-eyebrow i{display:inline-block;width:25px;height:1px;background:var(--station)}
++.ajr-hero h1{font-size:clamp(46px,6vw,80px);line-height:.99;letter-spacing:-4px;font-weight:500;margin:0 0 22px;color:#eef1e7}
++.ajr-hero h1 em{letter-spacing:-3px}
++.ajr-hero-desc{font-size:13px;color:#94a097;max-width:360px;line-height:1.85;margin:0 0 22px}
++.ajr-explore{display:inline-flex;align-items:center;gap:12px;color:#dce4da;font:9px var(--mono);letter-spacing:1.25px;padding:0 0 8px;border-bottom:1px solid rgba(221,238,221,.34)}
++.ajr-explore:hover{color:var(--station);border-color:var(--station)}
++.ajr-hero-art{position:relative;height:300px;display:grid;place-items:center}
++.ajr-ring{position:absolute;border:1px solid rgba(228,241,229,.1);border-radius:50%}
++.ajr-ring.r1{width:300px;height:300px}.ajr-ring.r2{width:220px;height:220px;border-color:rgba(174,233,213,.25)}.ajr-ring.r3{width:140px;height:140px;border-style:dashed;border-color:rgba(228,241,229,.2)}
++.ajr-glow{position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,var(--station-glow),transparent 67%);filter:blur(18px)}
++.ajr-hero-mark{position:relative;font:9px var(--mono);letter-spacing:3px;color:var(--station);text-align:center;line-height:2}
++
++/* now playing */
++.ajr-now{min-height:151px;display:grid;grid-template-columns:72px minmax(220px,1fr) auto;gap:20px;align-items:center;border-bottom:1px solid var(--line);padding:25px 0}
++.ajr-now-art{height:72px;width:72px;position:relative;overflow:hidden;background:linear-gradient(145deg,var(--station-glow),#17201e 68%);border:1px solid rgba(236,245,232,.1)}
++.ajr-art-sun{position:absolute;width:35px;height:35px;border-radius:50%;background:var(--station);opacity:.76;left:20px;top:13px;box-shadow:0 0 28px var(--station)}
++.ajr-art-horizon{position:absolute;left:0;right:0;bottom:0;height:26px;background:linear-gradient(175deg,transparent 0 16%,rgba(8,15,13,.85) 17% 100%)}
++.ajr-art-index{position:absolute;top:6px;left:6px;color:#f4f1e5;font:6px var(--mono);letter-spacing:.7px}
++.ajr-eq{height:11px;display:inline-flex;align-items:center;gap:2px}
++.ajr-eq i{display:block;width:2px;height:5px;background:var(--station)}
++.ajr-eq.on i{animation:ajr-eq .7s ease-in-out infinite alternate}
++.ajr-eq i:nth-child(2){height:10px;animation-delay:.3s}.ajr-eq i:nth-child(3){height:7px;animation-delay:.5s}
++@keyframes ajr-eq{to{height:3px}}
++.ajr-track-title{font-size:16px;font-weight:600;margin:5px 0 2px;letter-spacing:-.25px;overflow-wrap:anywhere}
++.ajr-track-sub{font-size:11px;color:#9da89f}
++.ajr-progress{display:flex;align-items:center;gap:10px;max-width:420px;color:#78837a;font:9px var(--mono);margin-top:12px}
++.ajr-seek{flex:1;appearance:none;height:14px;background:transparent;cursor:pointer;margin:0}
++.ajr-seek::-webkit-slider-runnable-track{height:1px;background:linear-gradient(90deg,var(--station) var(--p,0%),rgba(232,243,230,.16) var(--p,0%))}
++.ajr-seek::-moz-range-track{height:1px;background:rgba(232,243,230,.16)}
++.ajr-seek::-moz-range-progress{height:1px;background:var(--station)}
++.ajr-seek::-webkit-slider-thumb{appearance:none;width:9px;height:9px;border-radius:50%;background:var(--station);margin-top:-4px;border:0}
++.ajr-seek::-moz-range-thumb{width:9px;height:9px;border-radius:50%;background:var(--station);border:0}
++.ajr-seek:disabled{cursor:default;opacity:.5}
++.ajr-seek:focus-visible{outline:2px solid var(--station);outline-offset:3px}
++.ajr-controls{display:flex;align-items:center;gap:12px}
++.ajr-skip{width:29px;height:32px;display:grid;place-items:center;border:0;background:none;color:#b7c0b8}
++.ajr-skip:hover:not(:disabled){color:var(--station)}
++.ajr-skip:disabled{opacity:.3;cursor:default}
++.ajr-play{width:42px;height:42px;border-radius:50%;background:var(--station);color:#102019;border:0;display:grid;place-items:center;transition:transform .2s,box-shadow .2s}
++.ajr-play:hover:not(:disabled){transform:scale(1.06);box-shadow:0 0 22px var(--station-glow)}
++.ajr-play:disabled{opacity:.4;cursor:default}
++.ajr-play svg{margin-left:2px}
++.ajr-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border:1px solid currentColor;border-radius:999px;font:500 10px/1 var(--mono);letter-spacing:.14em;white-space:nowrap}
++.ajr-pill i{width:7px;height:7px;border-radius:50%;background:currentColor}
++.ajr-pill.live{color:var(--live);background:rgba(255,77,69,.12)}
++.ajr-pill.rec{color:var(--rec);background:rgba(67,224,138,.1)}
++.ajr-pill.idle{color:#7c877f}
++.ajr-now-side{grid-column:1/-1;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
++.ajr-link{background:none;border:0;border-bottom:1px solid rgba(221,238,221,.3);padding:0 0 4px;color:#c4cec3;font:8px var(--mono);letter-spacing:1.2px}
++.ajr-link:hover{color:var(--station);border-color:var(--station)}
++
++/* sections */
++.ajr-section{padding:56px 0 64px}
++.ajr-heading{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px;gap:16px}
++.ajr-heading h2{font-size:34px;font-weight:500;letter-spacing:-1.8px;margin:11px 0 0}
++.ajr-heading h2 em{letter-spacing:-1.4px}
++.ajr-aside{font:8px var(--mono);letter-spacing:1.2px;color:#717d74}
++.ajr-tabs{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 18px}
++.ajr-tab{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid rgba(222,238,225,.16);background:rgba(212,230,218,.03);color:#e9f2e8;font:500 15px 'Manrope',system-ui,sans-serif}
++.ajr-tab small{font:400 10px var(--mono);letter-spacing:.12em;opacity:.6}
++.ajr-tab.selected{border-color:var(--station);background:rgba(174,233,213,.09)}
++.ajr-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
++.ajr-chip{border:1px solid rgba(222,238,225,.16);background:transparent;color:#c8d5ca;font:8px var(--mono);letter-spacing:.9px;padding:7px 11px}
++.ajr-chip:hover{border-color:rgba(213,243,224,.4)}
++.ajr-chip.selected{background:rgba(190,232,207,.14);border-color:var(--station);color:#eef6ee}
++.ajr-gap{width:10px}
++.ajr-tools{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 16px}
++.ajr-select{display:flex;align-items:center;gap:10px}
++.ajr-select select{appearance:none;background:rgba(212,230,218,.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%23c8d5ca' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 11px center;border:1px solid rgba(222,238,225,.16);color:#dbe6dc;font:9px var(--mono);letter-spacing:.8px;padding:9px 32px 9px 12px;min-height:34px}
++.ajr-select option{background:#0d1413;color:#dbe6dc}
++.ajr-jump{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;background:rgba(67,224,138,.1);border:1px solid var(--rec);color:var(--rec);font:500 10px var(--mono);letter-spacing:.14em}
++.ajr-jump:hover,.ajr-jump:focus-visible{background:rgba(67,224,138,.2)}
++.ajr-search{display:flex;align-items:center;gap:10px;max-width:420px;margin:0 0 16px;padding:0 12px;height:40px;border:1px solid rgba(222,238,225,.18);background:rgba(212,230,218,.03);color:rgba(233,242,232,.7)}
++.ajr-search:focus-within{border-color:var(--station)}
++.ajr-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#f1f6ee;font:400 12px var(--mono);letter-spacing:.04em}
++.ajr-search button{background:none;border:0;display:grid;place-items:center}
++.ajr-status{margin:12px 0;font-size:13px;color:#a9b4ab}
++.ajr-status-warn{color:#e9c77b}
++.ajr-status-stale{color:#ff9b94}
++.ajr-status-error{color:#ff9b94}
++.ajr-fineprint{margin:18px 0 0;font:8px var(--mono);letter-spacing:.7px;color:#6d796f}
++
++/* episode grid */
++.ajr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;list-style:none;margin:0;padding:0}
++.ajr-card{position:relative;display:flex;border:1px solid rgba(222,238,225,.1);background:rgba(212,230,218,.026);overflow:hidden;transition:border-color .2s,transform .2s}
++.ajr-card:hover{border-color:rgba(213,243,224,.4);transform:translateY(-2px)}
++.ajr-card.playing{border-color:var(--rec);background:rgba(67,224,138,.07);box-shadow:inset 3px 0 0 var(--rec)}
++.ajr-card-open{flex:1;min-width:0;display:flex;gap:17px;align-items:center;padding:14px 14px 18px;border:0;background:none;text-align:left}
++.ajr-card-open:focus-visible{outline:2px solid var(--rec);outline-offset:-3px}
++.ajr-cover{width:96px;min-width:96px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--cover,var(--station));background:radial-gradient(circle,color-mix(in srgb,var(--cover,var(--station)),transparent 70%),transparent 69%),#121a17;border:1px solid rgba(235,245,231,.1);font:8px var(--mono);letter-spacing:2px;text-align:center}
++.ajr-cover[data-show="war-room"]{--cover:#8fd3e8}.ajr-cover[data-show="sunday-night-live"]{--cover:#d9c9ff}.ajr-cover[data-show="unsorted"]{--cover:#a8b3a9}
++.ajr-card-meta{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
++.ajr-card-meta strong{font-size:13px;overflow-wrap:anywhere}
++.ajr-card-meta small{font-size:9px;color:#89958c;line-height:1.6}
++.ajr-card-meta small.warn{color:#e9c77b}
++.ajr-card-play{display:flex;align-items:center;gap:6px;margin-top:6px;font:8px var(--mono);letter-spacing:.7px;color:#c8d5ca}
++.ajr-card.playing .ajr-card-play{color:var(--rec)}
++.ajr-card-resume{margin-left:8px;color:#7e8b81}
++.ajr-video{position:absolute;top:9px;right:9px;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid rgba(222,238,225,.14);background:rgba(10,16,14,.55);color:#aebdb1;font:8px var(--mono);letter-spacing:.8px}
++.ajr-video:hover{color:#eef6ee;border-color:rgba(213,243,224,.45)}
++.ajr-video:focus-visible{outline:2px solid var(--station);outline-offset:2px}
++.ajr-bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(222,238,225,.1);pointer-events:none}
++.ajr-bar i{display:block;height:100%;background:var(--rec);box-shadow:0 0 8px rgba(67,224,138,.55)}
++.ajr-more{display:inline-flex;align-items:center;gap:10px;margin-top:20px;background:none;border:0;border-bottom:1px solid rgba(221,238,221,.3);padding:0 0 6px;color:#c4cec3;font:8px var(--mono);letter-spacing:1.2px}
++.ajr-more:hover{color:var(--station);border-color:var(--station)}
++.ajr-empty{border:1px dashed var(--line);padding:22px;font-size:12px;color:#7d897f}
++
++/* news */
++.ajr-briefing{list-style:none;margin:0 0 22px;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
++.ajr-briefing-item{border:1px solid rgba(222,238,225,.1);border-left:2px solid var(--station);background:rgba(212,230,218,.026);padding:16px;display:flex;flex-direction:column;gap:8px}
++.ajr-briefing-item strong{font-size:15px;font-weight:600;line-height:1.35}
++.ajr-briefing-item p{margin:0;font-size:13px;line-height:1.6;color:#aab7ac}
++.ajr-news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
++.ajr-news-card{display:flex;gap:14px;padding:14px;border:1px solid rgba(222,238,225,.1);background:rgba(212,230,218,.026);transition:border-color .2s,transform .2s}
++.ajr-news-card:hover,.ajr-news-card:focus-visible{border-color:rgba(213,243,224,.4);transform:translateY(-1px)}
++.ajr-news-thumb{width:84px;height:84px;object-fit:cover;flex:none;border:1px solid rgba(235,245,231,.1);background:#121a17}
++.ajr-news-body{display:flex;flex-direction:column;gap:8px;min-width:0}
++.ajr-news-meta{font:8px var(--mono);letter-spacing:1.2px;color:var(--muted)}
++.ajr-news-title{display:flex;gap:8px;justify-content:space-between;align-items:flex-start;font-size:15px;font-weight:500;letter-spacing:-.3px;line-height:1.35}
++.ajr-news-title svg{flex:none;margin-top:3px;opacity:.6}
++.ajr-news-excerpt{font-size:12px;line-height:1.55;color:#aab7ac;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
++
++.ajr-footer{height:64px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);font:8px var(--mono);letter-spacing:1px;color:#657168;gap:12px;flex-wrap:wrap}
++
++@media(max-width:900px){.ajr-hero{grid-template-columns:1fr;min-height:auto;padding:36px 0 18px}.ajr-hero-art{display:none}.ajr-now{grid-template-columns:57px 1fr;gap:14px}.ajr-now-art{width:57px;height:57px}.ajr-controls{grid-column:1/-1}}
++@media(max-width:760px){.ajr-grid,.ajr-briefing,.ajr-news-grid{grid-template-columns:1fr}.ajr-card-open{gap:12px;padding:10px 10px 16px}.ajr-cover{width:76px;min-width:76px;height:76px}.ajr-heading h2{font-size:28px}.ajr-section{padding:40px 0 44px}}
++@media(prefers-reduced-motion:reduce){.ajr-ticker-track{animation:none}.ajr-ticker-window{overflow-x:auto;mask-image:none}.ajr-ticker-copy{display:none}.ajr-eq.on i{animation:none}.ajr-card,.ajr-news-card{transition:none}}
+diff --git a/src/utils/ajnRadioBrowse.ts b/src/utils/ajnRadioBrowse.ts
+new file mode 100644
+index 0000000..9f446cf
+--- /dev/null
++++ b/src/utils/ajnRadioBrowse.ts
+@@ -0,0 +1,52 @@
++// Pure browsing helpers for the Radio view: show/type chips, sort, title search, neighbours. No I/O, no clock.
++import type { RadioEntry } from './ajnRadioCatalog.ts';
++import { AJN_SHOWS, type AjnShowType } from './ajnClassify.ts';
++
++export type RadioSort = 'newest' | 'oldest';
++export const UNSORTED = 'unsorted';
++export interface RadioFilter { show: string | null; type: string | null; query: string; sort: RadioSort }
++export interface Chip { key: string; label: string; count: number }
++
++const SHOW_NAME: Record<string, string> = Object.fromEntries(Object.values(AJN_SHOWS).map(show => [show.slug, show.name]));
++const TYPE_LABEL: Record<AjnShowType, string> = { full_show: 'Full shows', hour: 'Hours', special: 'Specials' };
++const SHOW_ORDER = ['alex-jones', 'war-room', 'sunday-night-live'];
++const TYPE_ORDER: string[] = ['full_show', 'hour', 'special'];
++
++export const showKey = (entry: RadioEntry): string => entry.classified.showSlug ?? UNSORTED;
++export const typeKey = (entry: RadioEntry): string => entry.classified.showType ?? UNSORTED;
++export const showLabel = (key: string): string => SHOW_NAME[key] ?? 'Unsorted';
++export const typeLabel = (key: string): string => TYPE_LABEL[key as AjnShowType] ?? 'Unsorted';
++export function showInitials(entry: RadioEntry): string {
++  switch (entry.classified.showSlug) { case 'alex-jones': return 'AJ'; case 'war-room': return 'WR'; case 'sunday-night-live': return 'SNL'; default: return 'AJN'; }
++}
++
++function chips(entries: readonly RadioEntry[], key: (e: RadioEntry) => string, label: (k: string) => string, order: string[]): Chip[] {
++  const counts = new Map<string, number>();
++  for (const entry of entries) counts.set(key(entry), (counts.get(key(entry)) ?? 0) + 1);
++  const rank = (k: string) => { const i = order.indexOf(k); return i < 0 ? order.length : i; };
++  return [...counts.entries()].sort((a, b) => rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0])).map(([k, count]) => ({ key: k, label: label(k), count }));
++}
++/** Chips are offered only when they would actually narrow the list (two or more values). */
++export const showChips = (entries: readonly RadioEntry[]): Chip[] => { const c = chips(entries, showKey, showLabel, SHOW_ORDER); return c.length >= 2 ? c : []; };
++export const typeChips = (entries: readonly RadioEntry[]): Chip[] => { const c = chips(entries, typeKey, typeLabel, TYPE_ORDER); return c.length >= 2 ? c : []; };
++
++/** `entries` arrive newest first (buildRadioCatalog). Oldest-first keeps undated entries last: they are never given a guessed date. */
++export function filterEntries(entries: readonly RadioEntry[], filter: RadioFilter): RadioEntry[] {
++  const needle = filter.query.trim().toLowerCase();
++  const kept = entries.filter(e => (!filter.show || showKey(e) === filter.show) && (!filter.type || typeKey(e) === filter.type) && (!needle || e.title.toLowerCase().includes(needle)));
++  if (filter.sort === 'newest') return kept;
++  const dated = kept.filter(e => e.airDate !== null).reverse();
++  return [...dated, ...kept.filter(e => e.airDate === null)];
++}
++
++export const isPlayingEntry = (entry: RadioEntry, programId: string | undefined): boolean => Boolean(programId) && (programId === entry.id || programId === `${entry.id}:video`);
++export function neighbour(list: readonly RadioEntry[], programId: string | undefined, direction: -1 | 1): RadioEntry | null {
++  const index = list.findIndex(e => isPlayingEntry(e, programId));
++  if (index < 0) return null;
++  return list[index + direction] ?? null;
++}
++export function formatClock(seconds: number): string {
++  if (!Number.isFinite(seconds) || seconds < 0) return '—';
++  const total = Math.floor(seconds); const h = Math.floor(total / 3600); const m = Math.floor((total % 3600) / 60); const s = total % 60;
++  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
++}
+diff --git a/src/utils/newsDigest.ts b/src/utils/newsDigest.ts
+new file mode 100644
+index 0000000..8b0a15a
+--- /dev/null
++++ b/src/utils/newsDigest.ts
+@@ -0,0 +1,111 @@
++// Daily News Digest (banamine/Daily-News-Digest-): pure parsing + freshness. No I/O, no clock unless passed in.
++// Shared by the server (server/newsDigest.ts) and the Radio view. The digest is HEADLINES AND LINKS, never playable media.
++
++export interface DigestItem { id: string; title: string; url: string; source: string; excerpt: string | null; publishedAt: string | null; imageUrl: string | null }
++export interface BriefingBlock { headline: string; source: string | null; summary: string | null; theme: string | null }
++export interface Digest {
++  date: string | null;
++  updatedAt: string | null;
++  top: DigestItem[];
++  bySource: Array<{ source: string; items: DigestItem[] }>;
++  /** The digest's own written briefing (`raw_summary`), one block per story. Empty when the text does not match the expected shape. */
++  briefing: BriefingBlock[];
++}
++export type DigestFreshness = 'fresh' | 'late' | 'stale' | 'unknown';
++
++/** The Action is scheduled 06:00 UTC but commits land ~10:00-13:00 UTC; 30 h covers one missed morning window. */
++export const DIGEST_FRESH_HOURS = 30;
++export const DIGEST_LATE_HOURS = 54;
++
++const NAMED: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', hellip: '…', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”' };
++export const decodeEntities = (value: string): string => value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, body: string) => {
++  if (body[0] === '#') { const code = body[1].toLowerCase() === 'x' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10); return Number.isFinite(code) && code > 0 && code < 0x110000 ? String.fromCodePoint(code) : match; }
++  return NAMED[body.toLowerCase()] ?? match;
++});
++const clean = (value: unknown, max: number): string | null => {
++  if (typeof value !== 'string') return null;
++  let text = value.replace(/<[^>]*>/g, ' ');
++  for (let pass = 0; pass < 4; pass++) { const next = decodeEntities(text); if (next === text) break; text = next; } // feeds are often double or triple encoded
++  text = text.replace(/\s+/g, ' ').trim();
++  return text ? text.slice(0, max) : null;
++};
++const httpsUrl = (value: unknown): string | null => {
++  try { const url = new URL(String(value)); return url.protocol === 'https:' ? url.toString() : null; } catch { return null; }
++};
++
++function toItem(raw: Record<string, unknown>): DigestItem | null {
++  const title = clean(raw.headline ?? raw.title, 300);
++  const url = httpsUrl(raw.url ?? raw.link);
++  if (!title || !url) return null; // a headline without a working https link is not shown
++  const published = typeof raw.published === 'string' ? new Date(raw.published) : null;
++  return {
++    id: String(raw.id ?? url), title, url, source: clean(raw.feedName ?? raw.feed ?? raw.author, 80) ?? 'News',
++    excerpt: clean(raw.excerpt ?? raw.summary, 400), publishedAt: published && !Number.isNaN(published.getTime()) ? published.toISOString() : null,
++    imageUrl: httpsUrl(raw.imageUrl),
++  };
++}
++
++/** `### headline` blocks with `**Source:**`, `**Summary:**`, `**Key Theme:**` lines. Anything that does not match yields no block, never invented text. */
++export function parseBriefing(raw: unknown): BriefingBlock[] {
++  if (typeof raw !== 'string') return [];
++  const blocks: BriefingBlock[] = [];
++  for (const part of raw.split(/^###\s+/m).slice(1)) {
++    const lines = part.split('\n');
++    const headline = clean(lines[0], 300);
++    if (!headline) continue;
++    const body = lines.slice(1).join('\n');
++    const field = (label: string) => clean(new RegExp(`\\*\\*${label}:\\*\\*\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\*[A-Za-z ]+:\\*\\*|$)`).exec(body)?.[1], 700);
++    blocks.push({ headline, source: field('Source'), summary: field('Summary'), theme: field('Key Theme') });
++  }
++  return blocks;
++}
++
++export function parseNewsDigest(json: unknown): Digest {
++  if (!json || typeof json !== 'object') throw new Error('news digest is not an object');
++  const data = json as Record<string, unknown>;
++  const list = (value: unknown) => (Array.isArray(value) ? value : []).map(entry => (entry && typeof entry === 'object' ? toItem(entry as Record<string, unknown>) : null)).filter((item): item is DigestItem => item !== null);
++  const top = list(data.stories);
++  const all = list(data.rss_feeds_articles);
++  if (!top.length && !all.length) throw new Error('news digest had no usable stories');
++  const groups = new Map<string, DigestItem[]>();
++  for (const item of all.length ? all : top) groups.set(item.source, [...(groups.get(item.source) ?? []), item]);
++  for (const items of groups.values()) items.sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
++  return {
++    date: typeof data.date === 'string' ? data.date : null,
++    updatedAt: typeof data.last_updated === 'string' ? data.last_updated : null,
++    top: top.length ? top : all.slice(0, 8),
++    bySource: [...groups.entries()].map(([source, items]) => ({ source, items })),
++    briefing: parseBriefing(data.raw_summary),
++  };
++}
++
++/** Age of the digest by ITS OWN `last_updated`, never by when we fetched it. */
++export function digestAgeHours(updatedAt: string | null, nowMs: number): number | null {
++  const stamp = Date.parse(updatedAt ?? '');
++  return Number.isNaN(stamp) ? null : Math.max(0, (nowMs - stamp) / 3_600_000);
++}
++export function digestFreshness(updatedAt: string | null, nowMs: number): DigestFreshness {
++  const age = digestAgeHours(updatedAt, nowMs);
++  if (age === null) return 'unknown';
++  return age < DIGEST_FRESH_HOURS ? 'fresh' : age < DIGEST_LATE_HOURS ? 'late' : 'stale';
++}
++
++export type DigestNoticeLevel = 'ok' | 'warn' | 'stale';
++export function digestAgeLabel(hours: number): string {
++  if (hours < 1) return 'under an hour ago';
++  if (hours < 48) return `${Math.round(hours)} h ago`;
++  return `${Math.round(hours / 24)} days ago`;
++}
++/** The honest one-line status for the digest. `refreshError` is set when the server's last refresh failed and an older digest is being served. */
++export function digestNotice(updatedAt: string | null, nowMs: number, refreshError: string | null = null): { level: DigestNoticeLevel; text: string } {
++  const age = digestAgeHours(updatedAt, nowMs);
++  const freshness = digestFreshness(updatedAt, nowMs);
++  const ago = age === null ? '' : digestAgeLabel(age);
++  let level: DigestNoticeLevel = 'ok';
++  let text = `Updated ${ago}.`;
++  if (freshness === 'late') { level = 'warn'; text = `Today's briefing has not been published yet. Showing the digest from ${ago}.`; }
++  else if (freshness === 'stale') { level = 'stale'; text = `The digest was last updated ${ago}. Showing the last published briefing.`; }
++  else if (freshness === 'unknown') { level = 'warn'; text = 'The digest has no update time.'; }
++  if (refreshError) { if (level === 'ok') level = 'warn'; text += ` The latest refresh failed (${refreshError}); showing the last digest we loaded.`; }
++  return { level, text };
++}
+diff --git a/test-ajn-radio-catalog.ts b/test-ajn-radio-catalog.ts
+index 5cffe92..7d64830 100644
+--- a/test-ajn-radio-catalog.ts
++++ b/test-ajn-radio-catalog.ts
+@@ -1,6 +1,7 @@
+ // Regression: Radio catalog split (AJN Radio vs AJN Exclusive), dedupe, ordering, and video pairing.
+ import assert from 'node:assert/strict';
+ import { buildRadioCatalog, type RadioFeedItem } from './src/utils/ajnRadioCatalog.ts';
++import { showChips, typeChips, filterEntries, neighbour, isPlayingEntry, formatClock, UNSORTED } from './src/utils/ajnRadioBrowse.ts';
+ 
+ const A = 'https://archive.alexjoneslive.com/hourly-mp3/';
+ const V = 'https://archive.alexjoneslive.com/hourly-m4v/';
+@@ -27,4 +28,22 @@ const mystery = cat.radio[3];
+ assert.deepEqual([mystery.needsReview, mystery.airDate, mystery.title], [true, null, 'Mystery upload']);
+ assert.equal(cat.radio[0].title, 'Alex Jones — Hour 2 — Fri Oct 2, 2026');
+ assert.deepEqual(buildRadioCatalog([]), { radio: [], exclusive: [] });
++// --- browsing: chips, sort, search, neighbours
++const none = { show: null, type: null, query: '', sort: 'newest' as const };
++assert.deepEqual(showChips(cat.radio).map(c => [c.key, c.count]), [['alex-jones', 2], ['war-room', 1], [UNSORTED, 1]], 'show chips in fixed order, unsorted last, with counts');
++assert.deepEqual(typeChips(cat.radio).map(c => c.key), ['hour', UNSORTED]);
++assert.deepEqual(showChips(cat.exclusive), [], 'a single value would not narrow anything: no chips');
++assert.deepEqual(filterEntries(cat.radio, none).map(e => e.id), ['2', '1', '3', '5']);
++assert.deepEqual(filterEntries(cat.radio, { ...none, sort: 'oldest' }).map(e => e.id), ['3', '1', '2', '5'], 'oldest first; undated stays last');
++assert.deepEqual(filterEntries(cat.radio, { ...none, show: 'war-room' }).map(e => e.id), ['3']);
++assert.deepEqual(filterEntries(cat.radio, { ...none, show: UNSORTED }).map(e => e.id), ['5']);
++assert.deepEqual(filterEntries(cat.radio, { ...none, query: ' HOUR 2 ' }).map(e => e.id), ['2'], 'title search is case-insensitive and trimmed');
++assert.deepEqual(filterEntries(cat.radio, { ...none, query: 'zzz' }), []);
++assert.deepEqual(filterEntries(cat.radio, { ...none, show: 'alex-jones', type: 'hour', query: 'hour 1' }).map(e => e.id), ['1']);
++assert.equal(neighbour(cat.radio, '2', 1)?.id, '1');
++assert.equal(neighbour(cat.radio, '2', -1), null, 'no previous before the first');
++assert.equal(neighbour(cat.radio, '1:video', 1)?.id, '3', 'a playing video counts as its audio entry');
++assert.equal(neighbour(cat.radio, 'not-in-list', 1), null);
++assert.ok(isPlayingEntry(cat.radio[1], '1:video') && !isPlayingEntry(cat.radio[1], undefined));
++assert.deepEqual([formatClock(0), formatClock(65), formatClock(3725), formatClock(NaN)], ['0:00', '1:05', '1:02:05', '—']);
+ console.log('ajn radio catalog regression: all passed');
+diff --git a/test-news-digest.ts b/test-news-digest.ts
+new file mode 100644
+index 0000000..36859c3
+--- /dev/null
++++ b/test-news-digest.ts
+@@ -0,0 +1,101 @@
++// Offline regression: Daily News Digest parsing, freshness and the in-memory store (mocked fetch, no network).
++import assert from 'node:assert/strict';
++import { parseNewsDigest, parseBriefing, digestFreshness, digestNotice, digestAgeLabel, DIGEST_FRESH_HOURS, DIGEST_LATE_HOURS } from './src/utils/newsDigest.ts';
++import { createDigestStore } from './server/newsDigest.ts';
++
++const story = (id: string, headline: string, extra: Record<string, unknown> = {}) => ({ id, headline, url: `https://news.example/${id}`, excerpt: 'An &amp;amp; excerpt <b>with</b> markup', published: 'Sun, 04 Oct 2026 11:25:35 GMT', feedName: 'BBC World News', imageUrl: 'https://img.example/a.jpg', ...extra });
++const RAW = `### Kyiv bridge hit\n**Source:** BBC World News\n**Summary:** A drone struck the bridge.\nSecond line.\n**Key Theme:** Conflict / Diplomacy\n\n### Second story\n**Source:** Reuters Top News\n**Summary:** Another summary.\n`;
++const doc = {
++  date: '2026-10-04', last_updated: '2026-10-04T11:46:10.466135+00:00', raw_summary: RAW,
++  stories: [story('a', 'Kyiv &amp;amp; bridge'), story('b', 'No link', { url: 'http://insecure.example/x' }), story('c', 'Bad image', { imageUrl: 'javascript:alert(1)' }), { id: 'd', headline: 'No url at all' }],
++  rss_feeds_articles: [story('e', 'Reuters one', { feedName: 'Reuters Top News', published: 'Sun, 04 Oct 2026 08:00:00 GMT' }), story('f', 'Reuters newer', { feedName: 'Reuters Top News' }), story('a', 'Kyiv bridge')],
++};
++
++// --- parsing
++const d = parseNewsDigest(doc);
++assert.equal(d.date, '2026-10-04');
++assert.equal(d.updatedAt, '2026-10-04T11:46:10.466135+00:00');
++assert.deepEqual(d.top.map(i => i.id), ['a', 'c'], 'http:// and url-less stories are dropped');
++assert.equal(d.top[0].title, 'Kyiv & bridge', 'double-encoded entities decoded');
++assert.equal(d.top[0].excerpt, 'An & excerpt with markup', 'markup stripped, entities decoded');
++assert.equal(d.top[1].imageUrl, null, 'non-https image is dropped, not rendered');
++assert.equal(d.top[0].imageUrl, 'https://img.example/a.jpg');
++assert.deepEqual(d.bySource.map(g => g.source).sort(), ['BBC World News', 'Reuters Top News']);
++assert.deepEqual(d.bySource.find(g => g.source === 'Reuters Top News')!.items.map(i => i.id), ['f', 'e'], 'newest first inside a source');
++assert.throws(() => parseNewsDigest({ stories: [], rss_feeds_articles: [] }), /no usable stories/);
++assert.throws(() => parseNewsDigest(null), /not an object/);
++
++// --- briefing: strict, never invented
++assert.deepEqual(d.briefing.map(b => b.headline), ['Kyiv bridge hit', 'Second story']);
++assert.equal(d.briefing[0].summary, 'A drone struck the bridge. Second line.');
++assert.equal(d.briefing[0].theme, 'Conflict / Diplomacy');
++assert.equal(d.briefing[1].theme, null);
++assert.deepEqual(parseBriefing('free text with no headings'), []);
++assert.deepEqual(parseBriefing(undefined), []);
++
++// --- freshness by the digest's own timestamp
++const t0 = Date.parse('2026-10-04T11:46:10Z');
++const at = (h: number) => t0 + h * 3_600_000;
++assert.equal(digestFreshness(d.updatedAt, at(1)), 'fresh');
++assert.equal(digestFreshness(d.updatedAt, at(DIGEST_FRESH_HOURS - 0.1)), 'fresh');
++assert.equal(digestFreshness(d.updatedAt, at(DIGEST_FRESH_HOURS + 0.1)), 'late');
++assert.equal(digestFreshness(d.updatedAt, at(DIGEST_LATE_HOURS + 0.1)), 'stale');
++assert.equal(digestFreshness(null, t0), 'unknown');
++assert.equal(digestFreshness('garbage', t0), 'unknown');
++
++// --- notices (what the viewer reads)
++assert.deepEqual(digestNotice(d.updatedAt, at(3)), { level: 'ok', text: 'Updated 3 h ago.' });
++assert.equal(digestNotice(d.updatedAt, at(40)).level, 'warn');
++assert.match(digestNotice(d.updatedAt, at(40)).text, /has not been published yet.*40 h ago/);
++assert.equal(digestNotice(d.updatedAt, at(24 * 4)).level, 'stale');
++assert.match(digestNotice(d.updatedAt, at(24 * 4)).text, /4 days ago/);
++assert.equal(digestNotice(d.updatedAt, at(1), 'HTTP 500').level, 'warn');
++assert.match(digestNotice(d.updatedAt, at(1), 'HTTP 500').text, /refresh failed \(HTTP 500\)/);
++assert.equal(digestNotice(null, t0).level, 'warn');
++assert.equal(digestAgeLabel(0.2), 'under an hour ago');
++
++// --- store
++const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
++let clock = 1_000_000; let calls = 0; let mode: 'ok' | '500' | 'empty' | 'html' | 'redirect' | 'hang' = 'ok';
++const keepAlive = setInterval(() => {}, 1000); // AbortSignal.timeout timers are unref'd
++const fetchImpl = (async (u: URL | string, init?: RequestInit) => {
++  calls++;
++  assert.equal(new URL(String(u)).hostname, 'pages.example', 'only the digest host is contacted until a redirect is followed');
++  if (mode === '500') return new Response('boom', { status: 500 });
++  if (mode === 'empty') return json({ stories: [], rss_feeds_articles: [] });
++  if (mode === 'html') return new Response('<html>not json</html>', { status: 200 });
++  if (mode === 'redirect') return new Response(null, { status: 302, headers: { location: 'https://evil.example/x' } });
++  if (mode === 'hang') return new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))));
++  return json(doc);
++}) as unknown as typeof fetch;
++const mk = () => createDigestStore({ url: 'https://pages.example/d/data.json', fetchImpl, now: () => clock, ttlMs: 900_000, failureRetryMs: 60_000, timeoutMs: 200 });
++
++let store = mk();
++let s = await store.get();
++assert.deepEqual([s.status, s.error, s.digest?.top.length, s.fetchedAt !== null], ['ok', null, 2, true]);
++await store.get(); assert.equal(calls, 1, 'within the TTL: served from memory');
++const parallel = mk(); calls = 0;
++await Promise.all([parallel.get(), parallel.get(), parallel.get()]); assert.equal(calls, 1, 'concurrent callers share one fetch');
++
++clock += 900_001; mode = '500'; calls = 0;
++s = await store.get();
++assert.equal(s.status, 'error'); assert.match(s.error!, /HTTP 500/);
++assert.equal(s.digest?.top.length, 2, 'a failed refresh keeps the last good digest');
++await store.get(); assert.equal(calls, 1, 'failure is retried after the short backoff, not on every request');
++clock += 60_001; mode = 'ok'; s = await store.get();
++assert.deepEqual([s.status, s.error], ['ok', null], 'recovers on the next attempt');
++
++for (const bad of ['empty', 'html', 'redirect', 'hang'] as const) {
++  mode = bad; const fresh = mk(); const r = await fresh.get();
++  assert.equal(r.status, 'error', `${bad}: never cached as success`);
++  assert.equal(r.digest, null, `${bad}: no digest invented`);
++  assert.ok(r.error, `${bad}: an explicit reason`);
++}
++mode = 'redirect'; assert.match((await mk().get()).error!, /blocked|not allowed/, 'a redirect off the digest host is refused');
++
++for (const url of ['http://pages.example/x.json', 'not a url']) {
++  const r = await createDigestStore({ url, fetchImpl, now: () => clock }).get();
++  assert.equal(r.status, 'error'); assert.match(r.error!, /https|valid URL/);
++}
++clearInterval(keepAlive);
++console.log('news digest regression: all passed');
+diff --git a/test-radio-view.js b/test-radio-view.js
+new file mode 100644
+index 0000000..e549917
+--- /dev/null
++++ b/test-radio-view.js
+@@ -0,0 +1,182 @@
++// Browser regression for the Radio view (deterministic: AJN feeds, the AJN media proxy and the digest are served by request interception).
++// Proves: Listen keeps you on Radio and plays through the ONE persistent player, the Now Playing panel follows it (title, time, pause, seek,
++// previous/next), playback survives leaving the page, filters/sort/search work, the Daily Briefing shows honest freshness, and Radio adds no <audio>.
++import puppeteer from 'puppeteer';
++
++const baseUrl = process.env.AJN_TEST_URL || 'http://localhost:3000';
++const A = 'https://archive.alexjoneslive.com/hourly-mp3/';
++const V = 'https://archive.alexjoneslive.com/hourly-m4v/';
++const item = (id, file, type, title) => ({ id, title, url: `${type === 'audio' ? A : V}${file}`, mediaType: type, feedId: type === 'audio' ? 'AJNHourlyAudio' : 'AJNHourlyVideo', publishedAt: '2026-10-02T12:00:00Z' });
++const audioItems = [
++  item('a2', '20261002_Fri_Alex-Hr2.mp3', 'audio', 'Alex Jones Hour 2'),
++  item('a1', '20261002_Fri_Alex-Hr1.mp3', 'audio', 'Alex Jones Hour 1'),
++  item('w1', '20261001_Thu_WarRoom-Hr1.mp3', 'audio', 'War Room Hour 1'),
++  item('s1', '20260927_Sun_SundayLive.mp3', 'audio', 'Sunday Night Live'),
++  item('x1', '20261003_Sat_Alex-Special.mp3', 'audio', 'Alex Special'),
++];
++const videoItems = [item('v1', '20261002_Fri_Alex-Hr1.m4v', 'video', 'Alex Jones Hour 1 video')];
++const catalog = { source: 'test', resources: [
++  { id: 'AJNHourlyAudio', name: 'AJN Hourly Audio', htmlUrl: 'https://x.test/a', rssUrl: 'https://x.test/a.xml', mediaType: 'audio' },
++  { id: 'AJNHourlyVideo', name: 'AJN Hourly Video', htmlUrl: 'https://x.test/v', rssUrl: 'https://x.test/v.xml', mediaType: 'video' },
++] };
++const story = (id, headline, source) => ({ id, title: headline, url: `https://news.example/${id}`, source, excerpt: `Excerpt for ${headline}`, publishedAt: '2026-10-04T11:00:00.000Z', imageUrl: null });
++const digestBody = () => ({
++  digest: {
++    date: '2026-10-04', updatedAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
++    top: [story('n1', 'First headline', 'BBC World News'), story('n2', 'Second headline', 'Reuters Top News')],
++    bySource: [{ source: 'BBC World News', items: [story('n1', 'First headline', 'BBC World News')] }, { source: 'Reuters Top News', items: [story('n2', 'Second headline', 'Reuters Top News')] }],
++    briefing: [{ headline: 'First headline', source: 'BBC World News', summary: 'A short summary.', theme: 'World' }, { headline: 'Second headline', source: 'Reuters Top News', summary: null, theme: null }],
++  }, fetchedAt: new Date().toISOString(), status: 'ok', error: null,
++});
++
++// 8 kHz mono 16-bit PCM WAV, 90 s of quiet tone: real audio the browser decodes, no network.
++function wav(seconds = 90, rate = 8000) {
++  const samples = seconds * rate; const data = Buffer.alloc(samples * 2);
++  for (let i = 0; i < samples; i++) data.writeInt16LE(Math.round(Math.sin(i / 8) * 3000), i * 2);
++  const head = Buffer.alloc(44);
++  head.write('RIFF', 0); head.writeUInt32LE(36 + data.length, 4); head.write('WAVEfmt ', 8); head.writeUInt32LE(16, 16); head.writeUInt16LE(1, 20); head.writeUInt16LE(1, 22);
++  head.writeUInt32LE(rate, 24); head.writeUInt32LE(rate * 2, 28); head.writeUInt16LE(2, 32); head.writeUInt16LE(16, 34); head.write('data', 36); head.writeUInt32LE(data.length, 40);
++  return Buffer.concat([head, data]);
++}
++const WAV = wav();
++
++const failures = [];
++const check = (condition, message) => { if (!condition) { failures.push(message); console.error(`[radio-view] FAIL: ${message}`); } else console.log(`[radio-view] ok: ${message}`); };
++const SHOTS = process.env.AJN_RADIO_SHOTS || ''; // set to a folder to also save PR screenshots
++const shot = async (name) => { if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true }); };
++const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
++
++const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--autoplay-policy=no-user-gesture-required'] });
++const page = await browser.newPage();
++await page.setViewport({ width: 1280, height: 900 });
++const errors = [];
++page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
++page.on('console', (msg) => {
++  if (msg.type() !== 'error') return;
++  const text = msg.text();
++  if (/Failed to load resource|Manifest: Line: 1|net::ERR_/.test(text)) return;
++  errors.push(`console: ${text}`);
++});
++await page.setRequestInterception(true);
++const json = (request, body, status = 200) => request.respond({ status, contentType: 'application/json', body: JSON.stringify(body) });
++page.on('request', (request) => {
++  const url = new URL(request.url());
++  if (url.origin !== new URL(baseUrl).origin) return void request.abort(); // fonts, thumbnails, the real internet: not part of this test
++  if (url.pathname === '/api/ajn/resources') return json(request, catalog);
++  if (url.pathname === '/api/ajn/resources/AJNHourlyAudio') return json(request, { items: audioItems });
++  if (url.pathname === '/api/ajn/resources/AJNHourlyVideo') return json(request, { items: videoItems });
++  if (url.pathname === '/api/digest') return json(request, digestBody());
++  if (url.pathname === '/api/ajn/proxy') {
++    const range = /bytes=(\d*)-(\d*)/.exec(request.headers().range || '');
++    const start = range && range[1] ? Number(range[1]) : 0; const end = Math.min(range && range[2] ? Number(range[2]) : WAV.length - 1, WAV.length - 1, start + 8 * 1024 * 1024 - 1);
++    const body = WAV.subarray(start, end + 1);
++    return request.respond({ status: range ? 206 : 200, headers: { 'content-type': 'audio/wav', 'accept-ranges': 'bytes', 'content-length': String(body.length), ...(range ? { 'content-range': `bytes ${start}-${end}/${WAV.length}` } : {}), 'access-control-allow-origin': '*' }, body });
++  }
++  return void request.continue();
++});
++
++const text = (selector) => page.$eval(selector, (el) => el.textContent?.trim() ?? '').catch(() => null);
++const media = () => page.evaluate(() => { const el = document.querySelector('#persistent-player audio, #persistent-player video'); return el ? { tag: el.tagName, paused: el.paused, t: el.currentTime, d: el.duration, src: el.currentSrc } : null; });
++const waitFor = async (fn, ms = 10000) => { const stop = Date.now() + ms; while (Date.now() < stop) { const v = await fn(); if (v) return v; await sleep(150); } return null; };
++const clickText = (selector, label) => page.evaluate((s, l) => { const el = [...document.querySelectorAll(s)].find((e) => e.textContent.trim().startsWith(l)); if (el) el.click(); return Boolean(el); }, selector, label);
++// DOM clicks: the fixed mini dock (bottom right) can sit on top of a control after scrolling, which is a test-geometry matter, not what is being proved here.
++const domClick = (selector) => page.$eval(selector, (el) => el.click());
++const titles = () => page.$$eval('[data-testid="radio-entry"] strong', (els) => els.map((e) => e.textContent.trim()));
++
++try {
++  await page.goto(`${baseUrl}/#radio`, { waitUntil: 'domcontentloaded' });
++  await page.waitForSelector('[data-testid="radio-entry"]', { timeout: 20000 });
++
++  await sleep(800);
++  await shot('radio-desktop-empty');
++  // --- layout, not a flat list
++  check((await text('.ajr-hero h1'))?.includes('frequency'), 'hero is shown');
++  check((await text('[data-testid="radio-now-title"]')) === 'Nothing playing', 'panel says "Nothing playing" before anything plays');
++  check(await page.$('.ajr-tabs') !== null && await page.$('.ajr-chips') !== null && await page.$('.ajr-search input') !== null && await page.$('.ajr-select select') !== null, 'tabs, chips, search and sort are present');
++  check(await page.$eval('#ajn-radio-view', (el) => el.querySelectorAll('audio, video').length) === 0, 'Radio view creates no <audio>/<video> element of its own');
++  const all = await titles();
++  check(all.length === 4, `AJN Radio tab lists 4 episodes (got ${all.length}); the Special is on the Exclusive tab`);
++  check(all[0].includes('Hour 2'), `newest first (first is "${all[0]}")`);
++
++  // --- filters / sort / search
++  check(await clickText('.ajr-chip', 'War Room'), 'War Room chip exists');
++  check((await titles()).length === 1, 'show chip narrows the list');
++  await clickText('.ajr-chip', 'All shows');
++  await page.select('.ajr-select select', 'oldest');
++  const oldest = await titles();
++  check(oldest[0].includes('Sunday Night Live') && oldest[oldest.length - 1].includes('Hour 2'), 'oldest first reverses the order');
++  await page.select('.ajr-select select', 'newest');
++  await page.type('.ajr-search input', 'hour 1');
++  check((await titles()).length === 2, 'title search narrows the list');
++  await domClick('.ajr-search button');
++  check((await titles()).length === 4, 'clearing the search restores the list');
++  await clickText('.ajr-tab', 'AJN Exclusive');
++  check((await titles()).length === 1, 'AJN Exclusive tab shows the Special');
++  await clickText('.ajr-tab', 'AJN Radio');
++
++  // --- Listen: stays on Radio, plays through the persistent player, panel follows
++  await domClick('[data-testid="radio-entry"] .ajr-card-open');
++  check(await waitFor(async () => (await text('[data-testid="radio-now-title"]'))?.includes('Hour 2')), 'panel shows the episode that was started');
++  check(await page.evaluate(() => location.hash) === '#radio', 'Listen keeps you on the Radio page');
++  const playing = await waitFor(async () => { const m = await media(); return m && !m.paused && m.t > 0.5 ? m : null; }, 15000);
++  check(Boolean(playing), 'the persistent player is actually playing (currentTime advancing)');
++  check(await page.$eval('#ajn-radio-view', (el) => el.querySelectorAll('audio, video').length) === 0, 'still no media element inside the Radio view');
++  check(await page.$$eval('audio, video', (els) => els.length) === 1, 'exactly one media element in the whole page');
++  check(await waitFor(async () => (await text('[data-testid="radio-elapsed"]')) !== '0:00', 8000), 'panel time moves');
++  check(await page.$eval('.ajr-card.playing', (el) => el.textContent.includes('PLAYING')).catch(() => false), 'playing card is highlighted');
++  check(await page.$('.ajr-pill.rec') !== null && (await text('.ajr-pill')).includes('HOUR'), 'status pill reads RECORDED · HOURS');
++
++  await shot('radio-desktop-playing');
++  await page.setViewport({ width: 390, height: 844 });
++  await sleep(400);
++  await shot('radio-phone-playing');
++  await page.setViewport({ width: 1280, height: 900 });
++  // --- pause / play / seek
++  await domClick('[data-testid="radio-play-toggle"]');
++  check(await waitFor(async () => (await media())?.paused === true), 'pause button pauses the persistent player');
++  await domClick('[data-testid="radio-play-toggle"]');
++  check(await waitFor(async () => (await media())?.paused === false), 'play button resumes it');
++  await page.$eval('.ajr-seek', (el) => { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, '40'); el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); });
++  check(await waitFor(async () => (await media())?.t >= 39), 'seek bar moves the playhead');
++
++  // --- previous / next broadcast
++  await domClick('[aria-label="Previous broadcast"]');
++  check(await waitFor(async () => (await text('[data-testid="radio-now-title"]'))?.includes('Hour 1') && !(await text('[data-testid="radio-now-title"]')).includes('Hour 2')), 'previous broadcast plays the earlier episode');
++  check(await page.evaluate(() => location.hash) === '#radio', 'still on Radio after skipping');
++
++  // --- survives leaving the page
++  await waitFor(async () => { const m = await media(); return m && !m.paused && m.t > 0.5; }, 15000);
++  const before = await media();
++  await page.evaluate(() => { location.hash = '#library'; });
++  await sleep(1800);
++  const away = await media();
++  check(away && !away.paused && away.t > before.t, 'audio keeps playing on another page');
++  await page.evaluate(() => { location.hash = '#radio'; });
++  await page.waitForSelector('[data-testid="radio-now-title"]');
++  check((await text('[data-testid="radio-now-title"]'))?.includes('Hour 1'), 'panel is correct again when you come back');
++  check(await page.$('.ajr-jump') !== null, 'Jump to current is offered while something plays');
++
++  // --- Daily Briefing
++  check((await page.$$('[data-testid="briefing-block"]')).length === 2, 'briefing blocks are shown');
++  check((await page.$$('[data-testid="digest-story"]')).length === 2, 'story cards are shown');
++  check((await text('.ajr-news .ajr-status-ok'))?.startsWith('Updated 3 h ago'), 'freshness line states the digest age, not the fetch time');
++  check(await page.$eval('[data-testid="digest-story"]', (el) => el.target === '_blank' && el.rel.includes('noopener')), 'headlines open the original publisher in a new tab');
++  await clickText('.ajr-news .ajr-chip', 'REUTERS');
++  check((await page.$$('[data-testid="digest-story"]')).length === 1, 'news source chip narrows the stories');
++
++  // --- reload: nothing stale
++  await page.goto(`${baseUrl}/#radio`, { waitUntil: 'domcontentloaded' });
++  await page.reload({ waitUntil: 'domcontentloaded' });
++  await page.waitForSelector('[data-testid="radio-now-title"]');
++  check((await text('[data-testid="radio-now-title"]')) === 'Nothing playing', 'after a hard reload the panel says "Nothing playing" (no stale state)');
++
++  check(errors.length === 0, `no page errors (${errors.slice(0, 3).join(' | ')})`);
++} catch (error) {
++  failures.push(`exception: ${error.stack || error}`);
++  console.error(error);
++} finally {
++  if (failures.length) { console.error('[radio-view] page errors:', errors.slice(0, 5)); await page.screenshot({ path: process.env.AJN_RADIO_FAIL_SHOT || '/tmp/radio-view-failure.png' }).catch(() => {}); console.error('[radio-view] url:', page.url(), 'body:', (await page.evaluate(() => document.body.innerText.slice(0, 300)).catch(() => ''))); }
++  await browser.close();
++}
++if (failures.length) { console.error(`[radio-view] ${failures.length} failure(s)`); process.exit(1); }
++console.log('RADIO VIEW REGRESSION PASSED');
+-- 
+2.43.0
+

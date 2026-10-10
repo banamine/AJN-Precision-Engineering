@@ -1,0 +1,223 @@
+{
+  "url": "https://ajn-precision-engineering.ai.studio",
+  "phone": false,
+  "channel": "chrome",
+  "at": "2026-10-09T09:11:41.246Z",
+  "results": [
+    {
+      "id": "S1 first video starts by itself (no Play press)",
+      "result": "PASS",
+      "evidence": {
+        "msClickToPlaying": 3857,
+        "state": {
+          "tag": "VIDEO",
+          "paused": false,
+          "muted": true,
+          "vol": 1,
+          "ct": 40.05,
+          "d": 282,
+          "rs": 4,
+          "err": null,
+          "src": "ntary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564"
+        },
+        "playButtonPromptShown": false
+      }
+    },
+    {
+      "id": "S1b starts muted (expected) / target <= 5000 ms",
+      "result": "PASS",
+      "evidence": {
+        "muted": true,
+        "ms": 3857
+      }
+    },
+    {
+      "id": "S2 exactly one Unmute click gives sound, playback continues",
+      "result": "PASS",
+      "evidence": {
+        "clicks": 1,
+        "after": {
+          "tag": "VIDEO",
+          "paused": false,
+          "muted": false,
+          "vol": 1,
+          "ct": 41.99,
+          "d": 282,
+          "rs": 4,
+          "err": null,
+          "src": "ntary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564"
+        }
+      }
+    },
+    {
+      "id": "S3 next item starts by itself, with sound, no click",
+      "result": "PASS",
+      "evidence": {
+        "before": "ntary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564",
+        "after": {
+          "tag": "VIDEO",
+          "paused": false,
+          "muted": false,
+          "vol": 1,
+          "ct": 0.79,
+          "d": 282,
+          "rs": 4,
+          "err": null,
+          "src": "ntary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D564%26end%3D846"
+        },
+        "playPromptShown": false
+      }
+    },
+    {
+      "id": "S5 buffering over 120s (<=3 waits/5min, none > 5 s)",
+      "result": "PASS",
+      "evidence": {
+        "waitingOrStalled": 0,
+        "longestMs": 0,
+        "errorEvents": 0,
+        "finalState": {
+          "tag": "VIDEO",
+          "paused": false,
+          "muted": false,
+          "vol": 1,
+          "ct": 120.8,
+          "d": 282,
+          "rs": 4,
+          "err": null,
+          "src": "ntary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D564%26end%3D846"
+        }
+      }
+    },
+    {
+      "id": "S6 three seeks each resume <= 5 s",
+      "result": "PASS",
+      "evidence": [
+        {
+          "to": 0.5,
+          "ms": 317,
+          "ok": true
+        },
+        {
+          "to": 0.2,
+          "ms": 1399,
+          "ok": true
+        },
+        {
+          "to": 0.7,
+          "ms": 1850,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "S10 reload (informational): a video is not restored (pick again); an AUDIO item is restored paused with 'tap Play'; anything that autoplays must start muted",
+      "result": "PASS",
+      "evidence": "nothing playing after reload (expected for video)"
+    },
+    {
+      "id": "S7 every proxied media response is 206 + Content-Range + <= 8 MiB",
+      "result": "PASS",
+      "evidence": {
+        "responses": 8,
+        "violations": [],
+        "sample": [
+          {
+            "status": 206,
+            "range": "bytes=0-",
+            "contentRange": "bytes 0-8388607/30998438",
+            "length": 8388608,
+            "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564"
+          },
+          {
+            "status": 206,
+            "range": "bytes=4325376-",
+            "contentRange": "bytes 4325376-12713983/30998438",
+            "length": 8388608,
+            "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564"
+          },
+          {
+            "status": 206,
+            "range": "bytes=30474240-",
+            "contentRange": "bytes 30474240-30998437/30998438",
+            "length": 524198,
+            "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564"
+          }
+        ]
+      }
+    },
+    {
+      "id": "S9 no uncaught page errors",
+      "result": "PASS",
+      "evidence": []
+    },
+    {
+      "id": "S9b non-2xx/206 requests (informational)",
+      "result": "PASS",
+      "evidence": []
+    },
+    {
+      "id": "S8 failure honesty / S4 audio channel",
+      "result": "NOT TESTED",
+      "evidence": "not automated (needs a known-bad item / audio channel selection): test by hand and note the UI message"
+    }
+  ],
+  "firstEvents": [],
+  "proxy": [
+    {
+      "status": 206,
+      "range": "bytes=0-",
+      "contentRange": "bytes 0-8388607/30998438",
+      "length": 8388608,
+      "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564"
+    },
+    {
+      "status": 206,
+      "range": "bytes=4325376-",
+      "contentRange": "bytes 4325376-12713983/30998438",
+      "length": 8388608,
+      "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564"
+    },
+    {
+      "status": 206,
+      "range": "bytes=30474240-",
+      "contentRange": "bytes 30474240-30998437/30998438",
+      "length": 524198,
+      "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D282%26end%3D564"
+    },
+    {
+      "status": 206,
+      "range": "bytes=0-",
+      "contentRange": "bytes 0-8388607/31840142",
+      "length": 8388608,
+      "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D564%26end%3D846"
+    },
+    {
+      "status": 206,
+      "range": "bytes=8388608-",
+      "contentRange": "bytes 8388608-16777215/31840142",
+      "length": 8388608,
+      "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D564%26end%3D846"
+    },
+    {
+      "status": 206,
+      "range": "bytes=16777216-",
+      "contentRange": "bytes 16777216-25165823/31840142",
+      "length": 8388608,
+      "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D564%26end%3D846"
+    },
+    {
+      "status": 206,
+      "range": "bytes=6389760-",
+      "contentRange": "bytes 6389760-14778367/31840142",
+      "length": 8388608,
+      "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D564%26end%3D846"
+    },
+    {
+      "status": 206,
+      "range": "bytes=22511616-",
+      "contentRange": "bytes 22511616-30900223/31840142",
+      "length": 8388608,
+      "url": "900_Documentary%2FRT_20131006_012900_Documentary.mp4%3Fexact%3D1%26start%3D564%26end%3D846"
+    }
+  ]
+}

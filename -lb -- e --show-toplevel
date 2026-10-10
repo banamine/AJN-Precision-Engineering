@@ -1,0 +1,32 @@
+  ajn-clean                                                 [m 5f81535 fix(archive): keep TV News item-level <ID>/<ID>.mp4 convention
+* [32mfix/p1                                                    [m 095203f [[34morigin/fix/p1[m] fix(playback): name the real cause of 'code 4', skip unavailable items faster, audio as audio
+  live1                                                     [m 3d96904 fix(live): guide freeze, news timeouts, dead movie items, raw /download URLs
+  live2                                                     [m 095203f fix(playback): name the real cause of 'code 4', skip unavailable items faster, audio as audio
+  main                                                      [m 4ec877b [[34morigin/main[m: behind 30] fix: preserve local port while honoring Cloud Run PORT
+  p1-586065f                                                [m 586065f fix(playback): AJN hosts without CORS, HTML-as-media from Archive, unpublished news
+  p1-fix2                                                   [m 3642150 fix(epg): daily layout lists every program at least once
+  p1-next                                                   [m c1abbe5 feat(sources): Archive News contract (layer 3)
+  p1-next2                                                  [m ebdc673 feat(epg): Cable TV guide reads news from the Archive News contract
+  p1-next3                                                  [m 53c3fcf feat(sources): AJN Audio contract (layer 4)
+  p1-next4                                                  [m 00e3630 feat(sources): AJN Media RSS contract (layer 5)
+  p1-next5                                                  [m 7685e63 perf(sources): run news networks and Archive metadata in parallel
+  [31mremotes/origin/HEAD                                       [m -> origin/main
+  [31mremotes/origin/archive/pre-clean-baseline-20260906        [m 25949be fix: remove npm cache dependency from build gate
+  [31mremotes/origin/baseline/google-sandbox-v2                 [m 80d2aa8 fix: guard audio visualizer signal state updates
+  [31mremotes/origin/ci/node22-standardization                  [m d7a3140 ci: standardize nightly runtime on Node 22
+  [31mremotes/origin/codex/classic-tv-canonical-identity        [m dccf541 test(epg): add classic TV canonical identity command
+  [31mremotes/origin/codex/epg-identity-phase-2-1               [m fad97d6 test: fail visual regression on navigation errors
+  [31mremotes/origin/codex/epg-identity-pr40                    [m 9f16576 fix: preserve tvg-id channel identity across M3U ingestion
+  [31mremotes/origin/codex/general-genre-expansion-skill        [m e9029e1 fix: bypass stale RSS intermediary cache
+  [31mremotes/origin/codex/library-curated-projection           [m e5f5021 test: cover Movies Classics guide schedule contract
+  [31mremotes/origin/codex/master-epg-program-lifecycle         [m b0c902b test: fix lifecycle timestamp fixture coercion
+  [31mremotes/origin/feat/add-archive-artwork-assets            [m 9ac5967 fix: route classic archive artwork locally
+  [31mremotes/origin/feat/ajn-canonical-contract-additive       [m 7f3489a test: add canonical AJN contract script
+  [31mremotes/origin/feat/ajn-dev-toolbox                       [m c0702fb test: isolate toolbox smoke workflow to manual dispatch
+  [31mremotes/origin/feat/ajn-home-integration-additive         [m 1d86817 test: add HomeView integration regression command
+  [31mremotes/origin/feat/ajn-home-visual-forward-progress      [m 6637609 fix: use supported home hero artwork field
+  [31mremotes/origin/feat/ajn-legacy-filename-rename            [m da08030 feat: apply legacy AJN filename renaming to resource titles
+  [31mremotes/origin/feat/ajn-program-cards-ux-contract         [m c897f43 test: guard visual asset key resolution
+  [31mremotes/origin/feat/ajn-program-presentation-additive     [m 8a65318 test: add AJN program catalog test script
+  [31mremotes/origin/feat/archive-epg-phase2                    [m d949cc8 test: validate Archive EPG identity mapping
+  [31mremotes/origin/feat/archive-epg-run

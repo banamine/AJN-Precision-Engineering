@@ -1,0 +1,181 @@
+From a52b84e1c4c474294e7cdc6bb29211d0220012e9 Mon Sep 17 00:00:00 2001
+From: claude <noreply@anthropic.com>
+Date: Sun, 4 Oct 2026 15:31:48 -0700
+Subject: [PATCH] feat(classic-tv): Western group with Death Valley Days 'The
+ Contract' (S18E24) as a 24-hour loop
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018yCD8PQZ8hTbVJbiLvPrC4
+---
+ .github/workflows/ajn-ci.yml        |  2 ++
+ collections/western-death-valley.ts | 53 +++++++++++++++++++++++++++++
+ guideRegistry.ts                    |  9 ++++-
+ package.json                        |  1 +
+ test-western-death-valley.ts        | 31 +++++++++++++++++
+ 5 files changed, 95 insertions(+), 1 deletion(-)
+ create mode 100644 collections/western-death-valley.ts
+ create mode 100644 test-western-death-valley.ts
+
+diff --git a/.github/workflows/ajn-ci.yml b/.github/workflows/ajn-ci.yml
+index 1867ff7..245e80e 100644
+--- a/.github/workflows/ajn-ci.yml
++++ b/.github/workflows/ajn-ci.yml
+@@ -69,6 +69,8 @@ jobs:
+         run: npm run test:epg-identity-producers
+       - name: Classic TV canonical identity regression
+         run: npm run test:classic-tv-canonical
++      - name: Western Death Valley loop
++        run: npm run test:western-death-valley
+       - name: Library integrity regression
+         run: npm run test:library-integrity
+       - name: Nova canonical regression
+diff --git a/collections/western-death-valley.ts b/collections/western-death-valley.ts
+new file mode 100644
+index 0000000..6ce3e3b
+--- /dev/null
++++ b/collections/western-death-valley.ts
+@@ -0,0 +1,53 @@
++/* Western → Classic TV → Death Valley Days → "The Contract" (S18E24).
++ * One curated episode from Archive item 0251114_1101 (a many-episode upload), run as a 24-hour loop:
++ * guideRegistry.layoutDailySchedule repeats the single program until the day is full.
++ * The file and length below come from https://archive.org/metadata/0251114_1101 (checked 2026-10-04):
++ * MPEG4, h.264 + AAC, 65,315,604 bytes, 1542.69 s, not private. No Archive call is made at runtime;
++ * the proxy checks the file when it is played, and a failure surfaces as a normal playback error. */
++import type { Program } from '../src/types';
++import { normalizeProgramIdentity, normalizeAssetIdentity, normalizeSourceIdentity } from '../src/utils/epgIdentity';
++
++export const WESTERN_GROUP = 'Western';
++export const DEATH_VALLEY_CHANNEL_ID = 'classic-western-death-valley-days';
++export const DEATH_VALLEY_CHANNEL_NAME = 'Death Valley Days — The Contract';
++export const DEATH_VALLEY_ITEM = {
++  archiveIdentifier: '0251114_1101',
++  fileName: 'Death Valley Days S18E24 The Contract.mp4',
++  series: 'Death Valley Days',
++  season: 18,
++  episode: 24,
++  episodeTitle: 'The Contract',
++  durationSeconds: 1543,
++} as const;
++
++/** Archive path with every segment URL-encoded exactly once, ready for the /api/archive/proxy path parameter. */
++export const DEATH_VALLEY_MEDIA_PATH =
++  `/download/${DEATH_VALLEY_ITEM.archiveIdentifier}/${encodeURIComponent(DEATH_VALLEY_ITEM.fileName)}`;
++
++/** The single base program (not yet laid out in time). */
++export function deathValleyBaseProgram(): Program {
++  const i = DEATH_VALLEY_ITEM;
++  const title = `${i.series} S${i.season}E${i.episode} ${i.episodeTitle}`;
++  const mediaUrl = DEATH_VALLEY_MEDIA_PATH;
++  return {
++    id: normalizeProgramIdentity({ externalId: `${i.archiveIdentifier}|S${i.season}E${i.episode}`, channelId: DEATH_VALLEY_CHANNEL_ID, title, startTime: 0 }),
++    guideId: 'classic-tv',
++    channelId: DEATH_VALLEY_CHANNEL_ID,
++    title,
++    description: `Western · Classic TV · ${i.series}. Archive.org item ${i.archiveIdentifier}.`,
++    startTime: 0, endTime: 0,
++    mediaType: 'video',
++    mediaUrl, archivePath: mediaUrl,
++    assetId: normalizeAssetIdentity({ externalId: i.archiveIdentifier, mediaUrl }),
++    sourceId: normalizeSourceIdentity({ channelId: DEATH_VALLEY_CHANNEL_ID, url: mediaUrl, protocol: 'direct_archive' }),
++    sourceClass: 'archive_org',
++    isArchivedSource: true,
++    metadata: {
++      externalId: `${i.archiveIdentifier}|S${i.season}E${i.episode}`,
++      archiveIdentifier: i.archiveIdentifier,
++      durationSeconds: i.durationSeconds,
++      genre: WESTERN_GROUP, series: i.series, season: i.season, episode: i.episode, episodeTitle: i.episodeTitle,
++      collectionId: 'western-death-valley-days',
++    },
++  };
++}
+diff --git a/guideRegistry.ts b/guideRegistry.ts
+index 7cb18c0..5c87fb9 100644
+--- a/guideRegistry.ts
++++ b/guideRegistry.ts
+@@ -9,6 +9,7 @@ import { buildRushChannel, buildOtrChannel } from './server/audioChannels';
+ import { getNasaPrograms, NASA_CHANNEL_ID } from './server/sources/nasaArchive';
+ import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
+ import { buildHoneymoonersEpg } from './collections/honeymooners-epg';
++import { DEATH_VALLEY_CHANNEL_ID, DEATH_VALLEY_CHANNEL_NAME, WESTERN_GROUP, deathValleyBaseProgram } from './collections/western-death-valley';
+ import { getNovaCanonicalPrograms } from './src/services/producers/novaProducer';
+ import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
+ import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
+@@ -257,11 +258,15 @@ export function getChannelsByGuide(id?:string){
+   if(id==='classic-tv' && !channels.some(c=>c.id==='honeymooners')){
+     channels.push({id:'honeymooners',guideId:'classic-tv',name:'The Honeymooners',mediaType:'video',group:'Classic TV',enabled:true,sources:[]});
+   }
++  if(id==='classic-tv' && !channels.some(c=>c.id===DEATH_VALLEY_CHANNEL_ID)){
++    channels.push({id:DEATH_VALLEY_CHANNEL_ID,guideId:'classic-tv',name:DEATH_VALLEY_CHANNEL_NAME,mediaType:'video',group:WESTERN_GROUP,enabled:true,sources:[]});
++  }
+   return channels;
+ }
+ export function getChannelById(id:string){
+   const c=channelsMap.get(id); if(c)return {...c,sources:channelSourcesMap.get(id)||[]};
+   if(id==='honeymooners')return {id:'honeymooners',guideId:'classic-tv',name:'The Honeymooners',mediaType:'video' as const,group:'Classic TV',enabled:true,sources:[]};
++  if(id===DEATH_VALLEY_CHANNEL_ID)return {id:DEATH_VALLEY_CHANNEL_ID,guideId:'classic-tv',name:DEATH_VALLEY_CHANNEL_NAME,mediaType:'video' as const,group:WESTERN_GROUP,enabled:true,sources:[]};
+   return undefined;
+ }
+ export function getChannelSources(id:string){return channelSourcesMap.get(id)||[];}
+@@ -630,7 +635,9 @@ async function getScheduleForGuideRaw(guideId='cable-tv'):Promise<ScheduleChanne
+   if(guideId==='classic-tv'){
+     const honeymooners=await buildHoneymoonersEpg();
+     const highlights=await getDailyHighlightsChannels(guideId);
+-    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))},...highlights];
++    // Western: one curated episode repeated to fill the 24-hour day (slots up to 100 cover a ~26-minute episode).
++    const deathValley:ScheduleChannel={id:DEATH_VALLEY_CHANNEL_ID,guideId,name:DEATH_VALLEY_CHANNEL_NAME,mediaType:'video',group:WESTERN_GROUP,programs:layoutDailySchedule([deathValleyBaseProgram()],26,new Date(),100).map((program)=>upsertCanonicalProgram(program))};
++    return [{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))},deathValley,...highlights];
+   }
+   if(guideId==='audio-podcasts'){
+     return [...(await getAudioChannels(guideId)),...genericChannels(guideId)];
+diff --git a/package.json b/package.json
+index 09cd422..1d46f62 100644
+--- a/package.json
++++ b/package.json
+@@ -28,6 +28,7 @@
+     "test:movies-classics-producer": "tsx test-movies-classics-producer.js",
+     "test:movies-classics": "tsx test-movies-classics.js",
+     "test:classic-tv-canonical": "tsx test-classic-tv-canonical.js",
++    "test:western-death-valley": "tsx test-western-death-valley.ts",
+     "test:real-archive-playback": "tsx test-real-archive-playback.js",
+     "test:archive-retry": "tsx test-archive-retry.ts",
+     "test:archive-url-exact": "tsx test-archive-url-exact.ts",
+diff --git a/test-western-death-valley.ts b/test-western-death-valley.ts
+new file mode 100644
+index 0000000..6a51837
+--- /dev/null
++++ b/test-western-death-valley.ts
+@@ -0,0 +1,31 @@
++// Regression: Western → Classic TV → Death Valley Days "The Contract" runs as a 24-hour loop of one Archive episode.
++import assert from 'node:assert/strict';
++process.env.NODE_ENV = 'test';
++const W = await import('./collections/western-death-valley.ts');
++const G = await import('./guideRegistry.ts');
++
++const base = W.deathValleyBaseProgram();
++assert.equal(base.mediaUrl, '/download/0251114_1101/Death%20Valley%20Days%20S18E24%20The%20Contract.mp4', 'path encoded exactly once');
++assert.ok(!/%25/.test(base.mediaUrl), 'no double encoding');
++assert.equal(base.metadata?.archiveIdentifier, '0251114_1101', 'existing Archive item id is reused');
++assert.equal(base.title, 'Death Valley Days S18E24 The Contract');
++assert.equal(base.sourceClass, 'archive_org'); assert.ok(base.assetId && base.sourceId);
++
++// 24-hour loop: one episode repeated start to finish, back to back, with no gap and no overrun.
++const day = G.layoutDailySchedule([base], 26, new Date('2026-10-04T12:00:00Z'), 100);
++assert.equal(day.length, Math.ceil(86400 / 1543), 'enough repeats to fill 24 h');
++assert.equal(day[0].startHour, 0); assert.equal(day[day.length - 1].endHour, 24, 'ends exactly at midnight');
++for (let i = 1; i < day.length; i++) assert.equal(day[i].startHour, day[i - 1].endHour, `no gap before slot ${i}`);
++assert.equal(new Set(day.map((p) => p.id)).size, day.length, 'each slot has its own id');
++assert.equal(new Set(day.map((p) => p.assetId)).size, 1, 'one asset: no duplicate item');
++assert.ok(day.every((p) => p.archivePath === base.archivePath));
++assert.ok(Math.abs((day[0].endHour! - day[0].startHour!) * 3600 - 1543) < 1, 'full episode length per slot');
++
++// Channel is in the Classic TV guide under the Western group, exactly once, however often the list is read.
++for (let n = 0; n < 2; n++) {
++  const ch = G.getChannelsByGuide('classic-tv').filter((c: any) => c.id === W.DEATH_VALLEY_CHANNEL_ID);
++  assert.equal(ch.length, 1, 'listed once'); assert.equal(ch[0].group, 'Western'); assert.equal(ch[0].guideId, 'classic-tv');
++}
++assert.equal(G.getChannelById(W.DEATH_VALLEY_CHANNEL_ID)?.group, 'Western');
++assert.equal(G.getChannelsByGuide('classic-tv').some((c: any) => c.id === 'honeymooners'), true, 'Honeymooners untouched');
++console.log('western death valley: ok');
+-- 
+2.43.0
+

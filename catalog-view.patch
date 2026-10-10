@@ -1,0 +1,353 @@
+From 83d2e9221f1d42439dcd263f64d3dfa017155f3f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 4 Oct 2026 17:21:00 -0700
+Subject: [PATCH] feat(catalog): read API (/api/catalog/items, /stats) + My
+ Archive catalog tab in Library
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018yCD8PQZ8hTbVJbiLvPrC4
+---
+ package.json                    |   2 +-
+ server.ts                       |   6 ++
+ server/catalogIndex.ts          |  66 ++++++++++++++++
+ src/App.tsx                     |   4 +-
+ src/components/CatalogPanel.tsx | 134 ++++++++++++++++++++++++++++++++
+ src/components/LibraryTabs.tsx  |  19 +++++
+ test-catalog-index.ts           |  26 +++++++
+ 7 files changed, 254 insertions(+), 3 deletions(-)
+ create mode 100644 server/catalogIndex.ts
+ create mode 100644 src/components/CatalogPanel.tsx
+ create mode 100644 src/components/LibraryTabs.tsx
+ create mode 100644 test-catalog-index.ts
+
+diff --git a/package.json b/package.json
+index 9aa1a3e..48a85b4 100644
+--- a/package.json
++++ b/package.json
+@@ -51,7 +51,7 @@
+     "rush:index": "tsx scripts/build-rush-index.ts",
+     "test:rush": "tsx test-rush.ts",
+     "catalog:build": "tsx scripts/archive-catalog.ts",
+-    "test:archive-catalog": "tsx test-archive-catalog.ts",
++    "test:archive-catalog": "tsx test-archive-catalog.ts && tsx test-catalog-index.ts",
+     "classic:snapshot": "tsx scripts/classic-snapshot.ts",
+     "test:audio-channels": "tsx test-audio-channels.ts",
+     "test:hls-proxy": "tsx test-hls-playlist-proxy.ts",
+diff --git a/server.ts b/server.ts
+index eadaf9b..863793a 100644
+--- a/server.ts
++++ b/server.ts
+@@ -1,6 +1,7 @@
+ import { buildDiscoveryChannel, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
+ import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, getLibrarySeries, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
+ import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
++import { queryCatalog, catalogStats } from './server/catalogIndex';
+ import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
+ import { liveTvHealthSummary } from './guideRegistry';
+ import { plutoEpgStats } from './server/sources/plutoEpg';
+@@ -78,6 +79,11 @@ app.get('/api/library/series/:key',async(req,res)=>{
+     res.set('Cache-Control','no-store').json(series);
+   }catch(e:any){res.status(500).json({error:'series unavailable',detail:e?.message});}
+ });
++app.get('/api/catalog/items',async(req,res)=>{
++  try{const q=req.query;res.set('Cache-Control','no-store').json(await queryCatalog({q:q.q as string,genre:q.genre as string,kind:q.kind as string,status:q.status as string,page:Number(q.page)||1,limit:Number(q.limit)||24}));}
++  catch(e:any){res.status(500).json({error:'catalog unavailable',detail:e?.message,items:[]});}
++});
++app.get('/api/catalog/stats',async(_req,res)=>{try{res.set('Cache-Control','no-store').json(await catalogStats());}catch(e:any){res.status(500).json({error:'catalog unavailable',detail:e?.message});}});
+ app.get('/api/library/heatmap',async(_req,res)=>{try{await libraryReady();res.set('Cache-Control','no-store').json({...libraryHeatmap(),stats:libraryIndexStats});}catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,categories:[]});}});
+ app.get('/api/library',async(_req,res)=>{
+   try{
+diff --git a/server/catalogIndex.ts b/server/catalogIndex.ts
+new file mode 100644
+index 0000000..aadfb8d
+--- /dev/null
++++ b/server/catalogIndex.ts
+@@ -0,0 +1,66 @@
++/**
++ * Read-only query layer over the offline Archive catalog snapshot (src/data/archiveCatalog.json,
++ * built by scripts/archive-catalog.ts). No network calls: the snapshot is the source of truth.
++ */
++export type CatalogEntry = {
++  id: string; sourceUrl: string; displayTitle: string; originalTitle: string; genres: string[];
++  mediaType: 'video' | 'audio' | 'collection' | 'other'; status: 'playable' | 'not-playable' | 'collection';
++  year?: number; creator?: string; thumbnailUrl?: string; reason?: string;
++  selected?: { path: string; name: string; format: string; sizeBytes?: number; durationSeconds?: number; durationEstimated?: boolean };
++  playableFileCount?: number; episodeCount?: number;
++};
++export type CatalogQuery = { q?: string; genre?: string; kind?: string; status?: string; page?: number; limit?: number };
++
++type Loaded = { items: CatalogEntry[]; search: string[]; generatedAt: string; collections: Map<string, { memberCount: number; expanded: boolean }> };
++let loaded: Promise<Loaded> | null = null;
++
++const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
++
++export function loadCatalog(): Promise<Loaded> {
++  if (!loaded) {
++    loaded = (async () => {
++      const mod: any = await import('../src/data/archiveCatalog.json');
++      const d = mod.default ?? mod;
++      const items: CatalogEntry[] = d.items ?? [];
++      const collections = new Map<string, { memberCount: number; expanded: boolean }>();
++      for (const c of d.collections ?? []) collections.set(c.id, { memberCount: c.memberCount, expanded: !!c.expanded });
++      return { items, collections, generatedAt: d.generatedAt, search: items.map((i) => norm(`${i.displayTitle} ${i.originalTitle} ${i.creator ?? ''} ${i.genres.join(' ')} ${i.id}`)) };
++    })();
++    loaded.catch(() => { loaded = null; }); // a failed load must surface and be retried, never cached as "empty"
++  }
++  return loaded;
++}
++
++/** status: 'playable' (default) | 'not-playable' | 'collection' | 'all'. kind: 'video' | 'audio' | ''. */
++export async function queryCatalog(p: CatalogQuery) {
++  const c = await loadCatalog();
++  const status = p.status || 'playable';
++  const tokens = norm(p.q ?? '').split(/\s+/).filter(Boolean);
++  const base: number[] = [];
++  for (let i = 0; i < c.items.length; i++) {
++    const it = c.items[i];
++    if (status !== 'all' && it.status !== status) continue;
++    if (p.kind && it.mediaType !== p.kind) continue;
++    if (tokens.length && !tokens.every((t) => c.search[i].includes(t))) continue;
++    base.push(i);
++  }
++  const facets = new Map<string, number>();
++  for (const i of base) for (const g of c.items[i].genres) facets.set(g, (facets.get(g) ?? 0) + 1);
++  const rows = p.genre ? base.filter((i) => c.items[i].genres.includes(p.genre!)) : base;
++  rows.sort((a, b) => c.items[a].displayTitle.localeCompare(c.items[b].displayTitle, 'en', { sensitivity: 'base', numeric: true }));
++  const limit = Math.min(100, Math.max(1, p.limit || 24));
++  const totalPages = Math.max(1, Math.ceil(rows.length / limit));
++  const page = Math.min(Math.max(1, p.page || 1), totalPages);
++  const items = rows.slice((page - 1) * limit, page * limit).map((i) => {
++    const it = c.items[i];
++    return it.status === 'collection' ? { ...it, ...(c.collections.get(it.id) ?? {}) } : it;
++  });
++  return { page, totalPages, totalItems: rows.length, generatedAt: c.generatedAt,
++    genres: [...facets].map(([genre, count]) => ({ genre, count })).sort((a, b) => b.count - a.count || a.genre.localeCompare(b.genre)), items };
++}
++
++export async function catalogStats() {
++  const c = await loadCatalog();
++  const by = (f: (i: CatalogEntry) => string) => c.items.reduce<Record<string, number>>((m, i) => { const k = f(i); m[k] = (m[k] ?? 0) + 1; return m; }, {});
++  return { generatedAt: c.generatedAt, total: c.items.length, byStatus: by((i) => i.status), byMediaType: by((i) => i.mediaType) };
++}
+diff --git a/src/App.tsx b/src/App.tsx
+index e2d1b77..2ce6f26 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -6,7 +6,7 @@ import { HomeView } from './components/HomeView';
+ import { AjnResourcePanel } from './components/AjnResourcePanel';
+ import { TvGuideView } from './components/TvGuideView';
+ import { PlayerView } from './components/PlayerView';
+-import { LibraryView } from './components/LibraryView';
++import { LibraryTabs } from './components/LibraryTabs';
+ import { SearchView } from './components/SearchView';
+ import { RumbleNewsWall } from './components/RumbleNewsWall';
+ import { RadioView } from './components/RadioView';
+@@ -234,7 +234,7 @@ export default function App() {
+         )}
+         {destination === 'library' && (
+           <div key="view-library" className="view-fade-in w-full">
+-            <LibraryView onPlayProgram={handlePlayProgram} />
++            <LibraryTabs onPlayProgram={handlePlayProgram} />
+           </div>
+         )}
+         {destination === 'search' && (
+diff --git a/src/components/CatalogPanel.tsx b/src/components/CatalogPanel.tsx
+new file mode 100644
+index 0000000..01cabb7
+--- /dev/null
++++ b/src/components/CatalogPanel.tsx
+@@ -0,0 +1,134 @@
++import { useEffect, useState } from 'react';
++import { Search, Play, FileVideo, FileAudio, ExternalLink, FolderArchive, ChevronLeft, ChevronRight } from 'lucide-react';
++import type { PlayProgramCallback } from '../types';
++
++type Entry = {
++  id: string; sourceUrl: string; displayTitle: string; originalTitle: string; genres: string[];
++  mediaType: 'video' | 'audio' | 'collection' | 'other'; status: 'playable' | 'not-playable' | 'collection';
++  year?: number; creator?: string; thumbnailUrl?: string; reason?: string; episodeCount?: number; playableFileCount?: number;
++  memberCount?: number; expanded?: boolean;
++  selected?: { path: string; name: string; format: string; durationSeconds?: number; durationEstimated?: boolean };
++};
++type Result = { page: number; totalPages: number; totalItems: number; generatedAt: string; genres: Array<{ genre: string; count: number }>; items: Entry[] };
++
++const STATUSES = [['playable', 'Playable'], ['not-playable', 'Not playable'], ['collection', 'Collections'], ['all', 'Everything']] as const;
++const fmtDur = (s?: number, est?: boolean) => !s || s <= 0 ? '' : `${est ? '~' : ''}${s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : `${Math.max(1, Math.round(s / 60))} min`}`;
++
++/** Searchable view of the offline @infobattalion catalog snapshot (/api/catalog/items). Read-only. */
++export function CatalogPanel({ onPlayProgram }: { onPlayProgram: PlayProgramCallback }) {
++  const [query, setQuery] = useState(''); const [debounced, setDebounced] = useState('');
++  const [status, setStatus] = useState<string>('playable'); const [kind, setKind] = useState(''); const [genre, setGenre] = useState('');
++  const [page, setPage] = useState(1);
++  const [data, setData] = useState<Result | null>(null); const [loading, setLoading] = useState(false);
++  const [error, setError] = useState<string | null>(null); const [retry, setRetry] = useState(0);
++
++  useEffect(() => { const t = setTimeout(() => setDebounced(query.trim()), 300); return () => clearTimeout(t); }, [query]);
++  useEffect(() => { setPage(1); }, [debounced, status, kind, genre]);
++  useEffect(() => { setGenre(''); }, [status, kind, debounced]); // genre chips are counted for the current filter, so a stale genre could hide everything
++
++  useEffect(() => {
++    const ctrl = new AbortController();
++    const p = new URLSearchParams({ page: String(page), limit: '24', status });
++    if (debounced) p.set('q', debounced); if (kind) p.set('kind', kind); if (genre) p.set('genre', genre);
++    setLoading(true); setError(null);
++    fetch(`/api/catalog/items?${p}`, { signal: ctrl.signal })
++      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
++      .then((d) => { setData(d); setLoading(false); })
++      .catch((e) => { if (e.name !== 'AbortError') { setData(null); setError(e?.message || 'request failed'); setLoading(false); } });
++    return () => ctrl.abort();
++  }, [page, debounced, status, kind, genre, retry]);
++
++  const play = (e: Entry) => e.selected && onPlayProgram(e.selected.path, e.displayTitle, e.creator ?? e.id, e.mediaType === 'audio' ? 'audio' : 'video', 'catalog', 'library', e.id);
++  const chip = (on: boolean) => `rounded-lg px-3 py-1.5 text-xs font-medium ${on ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`;
++
++  return (
++    <div className="space-y-5 pb-16" data-testid="catalog-panel">
++      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
++        <p className="text-xs text-neutral-400">Your Archive favorites and uploads (@infobattalion), checked offline. Items without a playable file are listed, never hidden.</p>
++        <div className="relative w-full sm:w-72">
++          <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-500" aria-hidden="true" />
++          <input type="search" id="catalog-filter-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search the catalog…" aria-label="Search the catalog"
++            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/90 pl-9 pr-3.5 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
++        </div>
++      </div>
++
++      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Catalog status">
++        {STATUSES.map(([v, label]) => <button key={v} type="button" id={`catalog-status-${v}`} aria-pressed={status === v} onClick={() => setStatus(v)} className={chip(status === v)}>{label}</button>)}
++        <span className="mx-1 h-5 w-px bg-neutral-800" aria-hidden="true" />
++        {[['', 'Any type'], ['video', 'Video'], ['audio', 'Audio']].map(([v, label]) => <button key={v} type="button" id={`catalog-kind-${v || 'any'}`} aria-pressed={kind === v} onClick={() => setKind(v)} className={chip(kind === v)}>{label}</button>)}
++      </div>
++
++      {data && data.genres.length > 0 && (
++        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Genres">
++          {data.genres.map((g) => (
++            <button key={g.genre} type="button" aria-pressed={genre === g.genre} onClick={() => setGenre(genre === g.genre ? '' : g.genre)}
++              className={`rounded-md border px-2.5 py-1 text-[11px] ${genre === g.genre ? 'border-emerald-400 text-emerald-200' : 'border-neutral-800 text-neutral-300 hover:border-neutral-600'}`}>{g.genre} · {g.count}</button>
++          ))}
++        </div>
++      )}
++
++      <div className="flex items-center justify-between text-[11px] text-neutral-500">
++        <span aria-live="polite">{loading ? 'Loading…' : data ? `${data.totalItems} ${data.totalItems === 1 ? 'item' : 'items'}` : ''}</span>
++        {data && data.totalPages > 1 && (
++          <nav aria-label="Catalog pages" className="flex items-center gap-2">
++            <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Previous page" className="rounded border border-neutral-800 p-1 disabled:opacity-30"><ChevronLeft className="h-3.5 w-3.5" /></button>
++            <span>Page {data.page} of {data.totalPages}</span>
++            <button type="button" disabled={page >= data.totalPages} onClick={() => setPage(page + 1)} aria-label="Next page" className="rounded border border-neutral-800 p-1 disabled:opacity-30"><ChevronRight className="h-3.5 w-3.5" /></button>
++          </nav>
++        )}
++      </div>
++
++      {error && !loading && (
++        <div role="alert" data-testid="catalog-load-error" className="rounded-xl border border-red-900/60 bg-red-950/30 p-6 text-center space-y-2">
++          <h3 className="text-sm font-medium text-red-300">The catalog could not be loaded ({error}).</h3>
++          <p className="text-xs text-neutral-400">This is a connection or server problem, not an empty result.</p>
++          <button type="button" id="catalog-retry-btn" onClick={() => setRetry((n) => n + 1)} className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700">Try again</button>
++        </div>
++      )}
++
++      {data && data.items.length > 0 && (
++        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
++          {data.items.map((e) => {
++            const isAudio = e.mediaType === 'audio';
++            return (
++              <div key={e.id} data-testid="catalog-card" className="flex gap-3 rounded-xl border border-neutral-800 bg-neutral-900/50 p-3 hover:border-neutral-700">
++                <Poster url={e.thumbnailUrl} />
++                <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
++                  <div className="min-w-0 space-y-1">
++                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
++                      {e.status === 'collection' ? <FolderArchive className="h-3.5 w-3.5" /> : isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}
++                      {e.status === 'collection' ? 'Collection' : isAudio ? 'Audio' : e.mediaType === 'video' ? 'Video' : 'Other'}{e.year ? ` · ${e.year}` : ''}
++                    </span>
++                    <h2 className="text-sm font-semibold text-neutral-100 line-clamp-2">{e.displayTitle}</h2>
++                    <p className="truncate text-[10px] text-neutral-500">{e.genres.join(' · ')}</p>
++                  </div>
++                  <div className="flex items-center justify-between gap-2">
++                    <span className="text-[11px] text-neutral-500">
++                      {e.status === 'playable' ? (fmtDur(e.selected?.durationSeconds, e.selected?.durationEstimated) || '—') + ((e.episodeCount ?? 0) > 1 ? ` · ${e.episodeCount} files` : '')
++                        : e.status === 'collection' ? (e.memberCount !== undefined ? `${e.memberCount} members${e.expanded ? ' · listed' : ' · not expanded'}` : 'Sub-collection')
++                        : e.reason ?? 'Not playable'}
++                    </span>
++                    {e.status === 'playable'
++                      ? <button type="button" id={`play-catalog-${e.id}`} onClick={() => play(e)} className="shrink-0 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"><Play className="h-3 w-3 fill-current" aria-hidden="true" />{isAudio ? 'Listen' : 'Watch'}</button>
++                      : <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 flex items-center gap-1 rounded-lg border border-neutral-700 px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800">Archive.org <ExternalLink className="h-3 w-3" aria-hidden="true" /></a>}
++                  </div>
++                </div>
++              </div>
++            );
++          })}
++        </div>
++      )}
++      {data && data.items.length === 0 && !loading && <p className="rounded-xl border border-neutral-800 p-8 text-center text-sm text-neutral-400">Nothing matches these filters.</p>}
++    </div>
++  );
++}
++
++function Poster({ url }: { url?: string }) {
++  const [bad, setBad] = useState(false);
++  return (
++    <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-800">
++      {url && !bad ? <img src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(true)} className="h-full w-full object-cover" />
++        : <div className="flex h-full w-full items-center justify-center text-neutral-600"><FolderArchive className="h-6 w-6" aria-hidden="true" /></div>}
++    </div>
++  );
++}
+diff --git a/src/components/LibraryTabs.tsx b/src/components/LibraryTabs.tsx
+new file mode 100644
+index 0000000..bdbc38e
+--- /dev/null
++++ b/src/components/LibraryTabs.tsx
+@@ -0,0 +1,19 @@
++import { useState } from 'react';
++import type { PlayProgramCallback } from '../types';
++import { LibraryView } from './LibraryView';
++import { CatalogPanel } from './CatalogPanel';
++
++/** Two tabs: the curated Library (default, unchanged) and the offline catalog of the account's own Archive favorites/uploads. */
++export function LibraryTabs({ onPlayProgram }: { onPlayProgram: PlayProgramCallback }) {
++  const [tab, setTab] = useState<'library' | 'catalog'>('library');
++  const t = (on: boolean) => `rounded-lg px-3 py-1.5 text-xs font-medium ${on ? 'bg-neutral-100 text-neutral-950 font-semibold' : 'border border-neutral-800 text-neutral-400 hover:text-neutral-200'}`;
++  return (
++    <div className="space-y-4">
++      <div role="tablist" aria-label="Library sections" className="flex gap-2">
++        <button type="button" role="tab" id="library-tab-library" aria-selected={tab === 'library'} onClick={() => setTab('library')} className={t(tab === 'library')}>Library</button>
++        <button type="button" role="tab" id="library-tab-catalog" aria-selected={tab === 'catalog'} onClick={() => setTab('catalog')} className={t(tab === 'catalog')}>My Archive catalog</button>
++      </div>
++      {tab === 'library' ? <LibraryView onPlayProgram={onPlayProgram} /> : <CatalogPanel onPlayProgram={onPlayProgram} />}
++    </div>
++  );
++}
+diff --git a/test-catalog-index.ts b/test-catalog-index.ts
+new file mode 100644
+index 0000000..7ea9b2a
+--- /dev/null
++++ b/test-catalog-index.ts
+@@ -0,0 +1,26 @@
++import assert from 'node:assert/strict';
++import { queryCatalog, catalogStats } from './server/catalogIndex';
++
++const st = await catalogStats();
++assert.ok(st.total > 4000 && st.byStatus.playable > 3000, 'snapshot loaded');
++const all = await queryCatalog({ status: 'all', limit: 100 });
++assert.equal(all.totalItems, st.total, 'status=all returns everything');
++const def = await queryCatalog({});
++assert.equal(def.totalItems, st.byStatus.playable, 'default is playable only');
++assert.ok(def.items.every((i) => i.status === 'playable' && i.selected?.path), 'playable rows carry a file path');
++// genre chip counts equal list counts
++for (const g of def.genres.slice(0, 5)) assert.equal((await queryCatalog({ genre: g.genre, limit: 1 })).totalItems, g.count, `chip ${g.genre} == list`);
++// search is AND over tokens and accent/case-insensitive
++const a = await queryCatalog({ q: 'chaplin' }); const b = await queryCatalog({ q: 'CHAPLIN' });
++assert.equal(a.totalItems, b.totalItems);
++const two = await queryCatalog({ q: 'chaplin zzzznotathing' }); assert.equal(two.totalItems, 0);
++// pagination reconciles
++const seen = new Set<string>(); let pg = 1, tp = 1;
++do { const r = await queryCatalog({ limit: 100, page: pg }); tp = r.totalPages; r.items.forEach((i) => seen.add(i.id)); pg++; } while (pg <= tp);
++assert.equal(seen.size, def.totalItems, 'pages cover every row once');
++// rules held in the snapshot
++assert.ok(all.items.every((i) => !/[Ѐ-ӿ]/.test(i.displayTitle)), 'no Cyrillic in labels');
++const col = { items: [...(await queryCatalog({ status: 'collection', limit: 100, page: 1 })).items, ...(await queryCatalog({ status: 'collection', limit: 100, page: 2 })).items] };
++const known = col.items.filter((i: any) => i.expanded !== undefined);
++assert.ok(known.length === 117 && known.every((i: any) => typeof i.expanded === 'boolean' && typeof i.memberCount === 'number'), 'favorited collections report expanded + member count');
++console.log('catalog index: ok');
+-- 
+2.43.0
+

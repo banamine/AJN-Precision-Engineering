@@ -1,0 +1,994 @@
+From 39820d88f151458e61ba8e1c5c51291524d1938f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 4 Oct 2026 07:37:12 -0700
+Subject: [PATCH] feat(ajn): parallel audio/video sync (Watch / Listen at the
+ same second, mini video overlay, shared position)
+
+Adds startAtSeconds (one-shot) to NowPlayingMedia and MinimalPlayer, a shared per-episode position store,
+twin lookup from the Radio catalog, Hard Switch buttons (Radio panel, mini dock, Player page), and a muted
+mini video overlay slaved to the persistent audio element. Unit + browser regression tests added to CI.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018yCD8PQZ8hTbVJbiLvPrC4
+---
+ .github/workflows/ajn-ci.yml      |   8 ++
+ package.json                      |   2 +
+ src/App.tsx                       |  12 +-
+ src/MinimalPlayer.tsx             |  17 ++-
+ src/components/AvSyncControls.tsx |  36 ++++++
+ src/components/MiniPlayerDock.tsx |  13 ++-
+ src/components/PlayerView.tsx     |   4 +-
+ src/components/RadioView.tsx      |   8 +-
+ src/components/SyncedVideoPip.tsx |  80 +++++++++++++
+ src/hooks/useAvSync.ts            | 128 +++++++++++++++++++++
+ src/radio.css                     |   7 ++
+ src/types.ts                      |   5 +-
+ src/utils/avSync.ts               | 104 +++++++++++++++++
+ src/utils/avSyncPip.ts            |  20 ++++
+ test-av-sync-browser.js           | 179 ++++++++++++++++++++++++++++++
+ test-av-sync.ts                   |  81 ++++++++++++++
+ 16 files changed, 693 insertions(+), 11 deletions(-)
+ create mode 100644 src/components/AvSyncControls.tsx
+ create mode 100644 src/components/SyncedVideoPip.tsx
+ create mode 100644 src/hooks/useAvSync.ts
+ create mode 100644 src/utils/avSync.ts
+ create mode 100644 src/utils/avSyncPip.ts
+ create mode 100644 test-av-sync-browser.js
+ create mode 100644 test-av-sync.ts
+
+diff --git a/.github/workflows/ajn-ci.yml b/.github/workflows/ajn-ci.yml
+index 76aa0cb..1867ff7 100644
+--- a/.github/workflows/ajn-ci.yml
++++ b/.github/workflows/ajn-ci.yml
+@@ -137,6 +137,8 @@ jobs:
+         run: npm run test:ajn-radio-catalog
+       - name: Daily News Digest regression (parse, freshness, in-memory store)
+         run: npm run test:news-digest
++      - name: Audio/Video sync rules (twin lookup, start offset, shared position, drift)
++        run: npm run test:av-sync
+       - name: AJN Media RSS contract regression (mocked)
+         run: npm run test:source-ajn-media
+ 
+@@ -238,6 +240,12 @@ jobs:
+         run: npm run test:radio-view
+         env:
+           AJN_TEST_URL: http://localhost:8080
++      - name: Parallel Audio/Video Sync browser regression (Watch at the same second, mini video, shared position)
++        run: |
++          command -v ffmpeg >/dev/null || sudo apt-get install -y --no-install-recommends ffmpeg
++          npm run test:av-sync-browser
++        env:
++          AJN_TEST_URL: http://localhost:8080
+       - name: Real Archive playback gates
+         run: npm run test:real-archive-playback
+         env:
+diff --git a/package.json b/package.json
+index beb995a..09cd422 100644
+--- a/package.json
++++ b/package.json
+@@ -44,6 +44,8 @@
+     "test:ajn-classify-pairing": "tsx test-ajn-classify-pairing.ts",
+     "test:ajn-radio-catalog": "tsx test-ajn-radio-catalog.ts",
+     "test:news-digest": "tsx test-news-digest.ts",
++    "test:av-sync": "tsx test-av-sync.ts",
++    "test:av-sync-browser": "node test-av-sync-browser.js",
+     "test:source-ajn-media": "tsx test-source-ajn-media.ts",
+     "news:snapshot": "tsx scripts/news-snapshot.ts",
+     "rush:index": "tsx scripts/build-rush-index.ts",
+diff --git a/src/App.tsx b/src/App.tsx
+index baff990..e2d1b77 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -12,6 +12,8 @@ import { RumbleNewsWall } from './components/RumbleNewsWall';
+ import { RadioView } from './components/RadioView';
+ import { DevModeView } from './components/DevModeView';
+ import { MiniPlayerDock } from './components/MiniPlayerDock';
++import { SyncedVideoPip } from './components/SyncedVideoPip';
++import { useAvSyncRecorder } from './hooks/useAvSync';
+ 
+ const ARCHIVE_PROXY_BASE = '/api/archive/proxy?path=';
+ const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
+@@ -122,7 +124,7 @@ export default function App() {
+ 
+   const stayOnPageRef = useRef(false);
+   const handlePlayProgram = useCallback<PlayProgramCallback>((
+-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId
++    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds
+   ) => {
+     const rawReference = String(archivePath ?? '').trim();
+     if (!rawReference) {
+@@ -161,7 +163,8 @@ export default function App() {
+ 
+     setRecentlyPlayed((items) => [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
+ 
+-    setNowPlaying({ ...nextRecentlyPlayed });
++    // startAtSeconds is a one-shot instruction for this play only: it is not stored in recently played.
++    setNowPlaying({ ...nextRecentlyPlayed, ...(typeof startAtSeconds === 'number' && Number.isFinite(startAtSeconds) && startAtSeconds > 0 ? { startAtSeconds } : {}) });
+     // Auto-advance (next clip/program) keeps the viewer where they are.
+     if (stayOnPageRef.current) { stayOnPageRef.current = false; return; }
+     setDestination('player');
+@@ -191,6 +194,8 @@ export default function App() {
+     if (typeof window !== 'undefined') window.location.hash = '#player';
+   }, []);
+ 
++  useAvSyncRecorder(nowPlaying);
++
+   return (
+     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
+       <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} />
+@@ -254,8 +259,9 @@ export default function App() {
+         )}
+       </main>
+       <NewsReadyNotice onPlay={handlePlayProgram} />
++      <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
+       {nowPlaying && destination !== 'player' && (
+-        <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} />
++        <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />
+       )}
+     </div>
+   );
+diff --git a/src/MinimalPlayer.tsx b/src/MinimalPlayer.tsx
+index b68eef0..3bb74d6 100644
+--- a/src/MinimalPlayer.tsx
++++ b/src/MinimalPlayer.tsx
+@@ -1,3 +1,4 @@
++import { clampStart } from "./utils/avSync";
+ import { useCallback, useEffect, useRef, useState } from "react";
+ import { bridgeSrc, corsModeFor } from "./utils/mediaRoute";
+ import Hls from "hls.js";
+@@ -119,6 +120,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
+     }
+   }, [eventMeta, onPlayEvent]);
+ 
++  // One-shot start offset from the audio/video switch: applied once per play, on loadedmetadata.
++  const nowPlayingRef = useRef(nowPlaying);
++  nowPlayingRef.current = nowPlaying;
++  const startAtConsumedRef = useRef<unknown>(null);
++
+   const fnRef = useRef({ eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent });
+   fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent };
+ 
+@@ -181,7 +187,16 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
+ 
+     const onLoadedMetadata = () => {
+       // Live streams have no fixed duration: never offer a resume position.
+-      const saved = Number.isFinite(media.duration) ? fx().readResumePosition() : null;
++      const instance = nowPlayingRef.current;
++      let switched = false;
++      if (instance && startAtConsumedRef.current !== instance) {
++        startAtConsumedRef.current = instance;
++        const startAt = clampStart(instance.startAtSeconds, media.duration);
++        if (startAt !== null) {
++          try { media.currentTime = startAt; switched = true; } catch { /* element not seekable yet: fall through to normal start */ }
++        }
++      }
++      const saved = !switched && Number.isFinite(media.duration) ? fx().readResumePosition() : null;
+       setStatusText("Ready");
+       if (saved !== null && (!Number.isFinite(media.duration) || saved < media.duration - 5)) {
+         setResumePosition(saved);
+diff --git a/src/components/AvSyncControls.tsx b/src/components/AvSyncControls.tsx
+new file mode 100644
+index 0000000..7bc565e
+--- /dev/null
++++ b/src/components/AvSyncControls.tsx
+@@ -0,0 +1,36 @@
++// "Watch" / "Mini video" / "Listen" buttons for AJN episodes that have a paired other-media version.
++// Renders nothing when there is no verified twin, so non-AJN playback is untouched.
++import { Headphones, PictureInPicture, Tv } from 'lucide-react';
++import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
++import { useAvSwitch } from '../hooks/useAvSync';
++
++interface Props {
++  nowPlaying: NowPlayingMedia | null | undefined;
++  onPlay: PlayProgramCallback | undefined;
++  onNavigate?: (destination: Destination) => void;
++  /** 'panel' uses the Radio page styles (.ajr-sync-btn); 'compact' is for the dock and Player page. */
++  variant: 'panel' | 'compact';
++}
++
++export function AvSyncControls({ nowPlaying, onPlay, onNavigate, variant }: Props) {
++  const { twin, miniOpen, canMini, hardSwitch, toggleMini } = useAvSwitch(nowPlaying, onPlay, onNavigate);
++  if (!twin) return null;
++  const cls = variant === 'panel'
++    ? 'ajr-sync-btn'
++    : 'inline-flex items-center gap-1 rounded-lg bg-neutral-800 px-2.5 py-1.5 text-[11px] font-semibold text-neutral-100 transition hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400';
++  const wrap = variant === 'panel' ? 'ajr-sync' : 'flex flex-wrap items-center gap-1.5';
++  return (
++    <div className={wrap} data-testid="av-sync-controls" role="group" aria-label="Switch between audio and video at the same position">
++      <button type="button" className={cls} data-testid={twin.target === 'video' ? 'av-watch' : 'av-listen'} onClick={hardSwitch}
++        aria-label={twin.target === 'video' ? 'Watch the video version from here' : 'Listen to the audio version from here'}>
++        {twin.target === 'video' ? <><Tv size={12} /> WATCH</> : <><Headphones size={12} /> LISTEN</>}
++      </button>
++      {canMini && (
++        <button type="button" className={cls} data-testid="av-mini" aria-pressed={miniOpen} onClick={toggleMini}
++          aria-label={miniOpen ? 'Close mini video' : 'Open the video in a mini player while the audio keeps playing'}>
++          <PictureInPicture size={12} /> {miniOpen ? 'CLOSE MINI VIDEO' : 'MINI VIDEO'}
++        </button>
++      )}
++    </div>
++  );
++}
+diff --git a/src/components/MiniPlayerDock.tsx b/src/components/MiniPlayerDock.tsx
+index a7fbb33..9e24edd 100644
+--- a/src/components/MiniPlayerDock.tsx
++++ b/src/components/MiniPlayerDock.tsx
+@@ -1,17 +1,23 @@
+ import { Play, Pause, Maximize2, X, Tv, Radio } from 'lucide-react';
+-import { NowPlayingMedia, Destination } from '../types';
++import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
++import { AvSyncControls } from './AvSyncControls';
+ import { usePersistentMedia } from '../hooks/usePersistentMedia';
+ 
+ interface MiniPlayerDockProps {
+   nowPlaying: NowPlayingMedia;
+   onOpenFullPlayer: () => void;
+   onDismiss: () => void;
++  /** Optional: enables Watch / Mini video / Listen for AJN episodes that have a paired version. */
++  onPlayProgram?: PlayProgramCallback;
++  onNavigate?: (destination: Destination) => void;
+ }
+ 
+ export function MiniPlayerDock({
+   nowPlaying,
+   onOpenFullPlayer,
+   onDismiss,
++  onPlayProgram,
++  onNavigate,
+ }: MiniPlayerDockProps) {
+   // The real player stays mounted (hidden) in #persistent-player; the dock drives it through the shared hook.
+   const { paused, toggle: togglePlay } = usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
+@@ -20,7 +26,7 @@ export function MiniPlayerDock({
+     <aside
+       id="persistent-mini-player"
+       aria-label="Active Broadcast Mini Player"
+-      className="fixed bottom-[4.25rem] sm:bottom-20 md:bottom-6 left-2 right-2 sm:left-auto sm:right-6 sm:w-96 max-w-md z-50 flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-2 sm:p-3 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200"
++      className="fixed flex-wrap bottom-[4.25rem] sm:bottom-20 md:bottom-6 left-2 right-2 sm:left-auto sm:right-6 sm:w-96 max-w-md z-50 flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-2 sm:p-3 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200"
+     >
+       {/* Icon / Thumbnail */}
+       <button
+@@ -87,6 +93,9 @@ export function MiniPlayerDock({
+           <X className="h-4 w-4" />
+         </button>
+       </div>
++      <div className="w-full basis-full px-1 empty:hidden">
++        <AvSyncControls nowPlaying={nowPlaying} onPlay={onPlayProgram} onNavigate={onNavigate} variant="compact" />
++      </div>
+     </aside>
+   );
+ }
+diff --git a/src/components/PlayerView.tsx b/src/components/PlayerView.tsx
+index 1b3f930..87c8769 100644
+--- a/src/components/PlayerView.tsx
++++ b/src/components/PlayerView.tsx
+@@ -3,6 +3,7 @@ import { RUSH_PROGRAM, resolveRushNext, upNextLabel, type RushNext } from "../ut
+ import { loadRushSettings, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
+ import MinimalPlayer from "../MinimalPlayer";
+ import { reportTelemetry } from "../telemetry";
++import { AvSyncControls } from "./AvSyncControls";
+ 
+ /** Readable, stable id for a show title: "<channelId>/<title-slug>". Used in logs
+  *  and telemetry so a failing playback can be found by name. */
+@@ -16,7 +17,7 @@ export function titleIdOf(channelId: string | undefined, title: string | undefin
+ const MAX_CONSECUTIVE_FAILURES = 20;
+ const SKIP_AFTER_ERROR_MS = 1500;
+ 
+-export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
++export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate }: any) {
+   const failuresRef = useRef(0);
+   const skipTimerRef = useRef<number | null>(null);
+ 
+@@ -174,6 +175,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress }: any) {
+           onProgress?.(itemId, positionSeconds);
+         }}
+       />
++      <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />
+       {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (
+         <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">
+           {upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1])}
+diff --git a/src/components/RadioView.tsx b/src/components/RadioView.tsx
+index c76064d..b62cf77 100644
+--- a/src/components/RadioView.tsx
++++ b/src/components/RadioView.tsx
+@@ -1,6 +1,7 @@
+ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+ import { ArrowDownRight, AudioLines, Headphones, Pause, Play, RefreshCw, Search, SkipBack, SkipForward, Tv, X } from 'lucide-react';
+ import type { Destination, NowPlayingMedia, PlayProgramCallback, RecentlyPlayedItem } from '../types';
++import { AvSyncControls } from './AvSyncControls';
+ import { loadAjnFeeds } from '../services/ajnFeeds';
+ import { buildRadioCatalog, type RadioEntry, type RadioFeedItem } from '../utils/ajnRadioCatalog';
+ import { AJN_CHANNEL_LABELS, formatAirDate, type AjnChannel } from '../utils/ajnClassify';
+@@ -24,8 +25,8 @@ interface Props {
+ 
+ const NO_FILTER: RadioFilter = { show: null, type: null, query: '', sort: 'newest' };
+ 
+-function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onNavigate }: {
+-  nowPlaying: NowPlayingMedia | null; playingEntry: RadioEntry | null; list: readonly RadioEntry[]; onPlayEntry: (entry: RadioEntry) => void; onNavigate?: (destination: Destination) => void;
++function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onPlayProgram, onNavigate }: {
++  nowPlaying: NowPlayingMedia | null; playingEntry: RadioEntry | null; list: readonly RadioEntry[]; onPlayEntry: (entry: RadioEntry) => void; onPlayProgram: PlayProgramCallback; onNavigate?: (destination: Destination) => void;
+ }) {
+   const media = usePersistentMedia(nowPlaying?.mediaType, nowPlaying ? `${nowPlaying.src}|${nowPlaying.mediaType}` : undefined, Boolean(nowPlaying));
+   const programId = nowPlaying?.programId;
+@@ -58,6 +59,7 @@ function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onNaviga
+       </div>
+       <div className="ajr-now-side">
+         <span className={`ajr-pill ${pill.cls}`}><i />{pill.text}</span>
++        <AvSyncControls nowPlaying={nowPlaying} onPlay={onPlayProgram} onNavigate={onNavigate} variant="panel" />
+         {nowPlaying && onNavigate && <button type="button" className="ajr-link" onClick={() => onNavigate('player')}>OPEN FULL PLAYER</button>}
+       </div>
+     </section>
+@@ -156,7 +158,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
+         <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
+       </section>
+ 
+-      <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onNavigate={onNavigate} />
++      <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
+ 
+       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
+         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>
+diff --git a/src/components/SyncedVideoPip.tsx b/src/components/SyncedVideoPip.tsx
+new file mode 100644
+index 0000000..c80eada
+--- /dev/null
++++ b/src/components/SyncedVideoPip.tsx
+@@ -0,0 +1,80 @@
++// Mini Video overlay for Parallel Audio/Video Sync. The audio element in #persistent-player stays the master:
++// this muted <video> follows its play/pause/seek and is nudged back whenever it drifts. It never makes sound,
++// never creates an AudioContext, and is removed when the episode changes.
++import { useEffect, useRef, useState } from 'react';
++import { Maximize2, PictureInPicture2, X } from 'lucide-react';
++import { usePip, pipStore } from '../utils/avSyncPip';
++import { findPersistentMedia } from '../hooks/usePersistentMedia';
++import { bridgeSrc } from '../utils/mediaRoute';
++import { needsDriftCorrection } from '../utils/avSync';
++import { useAvSwitch } from '../hooks/useAvSync';
++import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
++
++const DRIFT_CHECK_MS = 500;
++
++export function SyncedVideoPip({ nowPlaying, onPlay, onNavigate }: { nowPlaying: NowPlayingMedia | null; onPlay: PlayProgramCallback; onNavigate: (destination: Destination) => void }) {
++  const pip = usePip();
++  const { hardSwitch } = useAvSwitch(nowPlaying, onPlay, onNavigate);
++  const videoRef = useRef<HTMLVideoElement>(null);
++  const [error, setError] = useState<string | null>(null);
++  const active = Boolean(pip && nowPlaying?.mediaType === 'audio');
++  const src = pip ? bridgeSrc(pip.src) : undefined;
++
++  useEffect(() => {
++    setError(null);
++    const video = videoRef.current;
++    if (!active || !video) return;
++    let master: HTMLMediaElement | null = null;
++    let seekedToMaster = false;
++    const follow = () => {
++      if (!master || !Number.isFinite(master.currentTime)) return;
++      if (video.readyState >= 1 && needsDriftCorrection(video.currentTime, master.currentTime)) { try { video.currentTime = master.currentTime; } catch { /* not seekable yet */ } }
++    };
++    const syncPlayState = () => {
++      if (!master) return;
++      if (master.paused) { if (!video.paused) video.pause(); } else if (video.paused && video.readyState >= 2) void video.play().catch(() => {});
++    };
++    const onMasterPlay = () => { follow(); syncPlayState(); };
++    const onMasterPause = () => { syncPlayState(); follow(); };
++    const onMasterSeek = () => follow();
++    const onMetadata = () => {
++      if (!master) return;
++      try { video.currentTime = master.currentTime; seekedToMaster = true; } catch { /* retried by the drift check */ }
++      syncPlayState();
++    };
++    const onCanPlay = () => syncPlayState();
++    const onVideoError = () => setError('The video for this episode could not be loaded.');
++    const detach = () => { for (const e of ['play', 'playing'] as const) master?.removeEventListener(e, onMasterPlay); master?.removeEventListener('pause', onMasterPause); master?.removeEventListener('seeked', onMasterSeek); master?.removeEventListener('ratechange', onMasterSeek); };
++    const attach = () => {
++      const next = findPersistentMedia('audio');
++      const audio = next && next.tagName === 'AUDIO' ? next : null;
++      if (audio === master) return;
++      detach(); master = audio;
++      if (master) { for (const e of ['play', 'playing'] as const) master.addEventListener(e, onMasterPlay); master.addEventListener('pause', onMasterPause); master.addEventListener('seeked', onMasterSeek); master.addEventListener('ratechange', onMasterSeek); if (video.readyState >= 1) onMetadata(); }
++    };
++    video.addEventListener('loadedmetadata', onMetadata);
++    video.addEventListener('canplay', onCanPlay);
++    video.addEventListener('error', onVideoError);
++    attach();
++    const timer = window.setInterval(() => { attach(); follow(); syncPlayState(); if (master && video.readyState >= 1 && !seekedToMaster) onMetadata(); }, DRIFT_CHECK_MS);
++    return () => { window.clearInterval(timer); detach(); video.removeEventListener('loadedmetadata', onMetadata); video.removeEventListener('canplay', onCanPlay); video.removeEventListener('error', onVideoError); };
++  }, [active, src]);
++
++  if (!active || !pip || !src) return null;
++  const canNativePip = typeof document !== 'undefined' && document.pictureInPictureEnabled === true;
++  return (
++    <aside id="synced-video-pip" data-testid="synced-video-pip" aria-label={`Mini video: ${pip.title}`}
++      className="fixed z-50 right-2 sm:right-6 bottom-[13.5rem] sm:bottom-[14.5rem] md:bottom-[10rem] w-56 sm:w-72 overflow-hidden rounded-xl border border-neutral-700/80 bg-black shadow-2xl">
++      <video ref={videoRef} key={src} src={src} muted playsInline preload="auto" className="block aspect-video w-full bg-black" aria-label="Synced video (sound plays from the audio player)" />
++      {error && <p role="alert" className="absolute inset-x-0 top-0 bg-red-950/90 px-2 py-1 text-[11px] text-red-200">{error}</p>}
++      <div className="flex items-center justify-between gap-1 bg-neutral-900/95 px-2 py-1">
++        <span className="truncate text-[10px] font-mono uppercase tracking-wider text-neutral-400">Video · audio leads</span>
++        <span className="flex items-center gap-1">
++          {canNativePip && <button type="button" aria-label="Pop video out of the page" title="Pop out" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={() => { void videoRef.current?.requestPictureInPicture().catch(() => {}); }}><PictureInPicture2 className="h-3.5 w-3.5" /></button>}
++          <button type="button" aria-label="Switch main player to video" title="Make video the main player" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={hardSwitch}><Maximize2 className="h-3.5 w-3.5" /></button>
++          <button type="button" aria-label="Close mini video" title="Close" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={() => pipStore.close()}><X className="h-3.5 w-3.5" /></button>
++        </span>
++      </div>
++    </aside>
++  );
++}
+diff --git a/src/hooks/useAvSync.ts b/src/hooks/useAvSync.ts
+new file mode 100644
+index 0000000..603131f
+--- /dev/null
++++ b/src/hooks/useAvSync.ts
+@@ -0,0 +1,128 @@
++// Parallel Audio/Video Sync for AJN feed items (channel 'ajn-radio').
++//  - useAvSyncRecorder: saves the playhead (shared by the audio and video version of an episode) about once a second.
++//  - useAjnTwin:        finds the paired other-media version from the Radio catalog (never guessed).
++//  - useAvSwitch:       Hard Switch (swap the main player at the same second) and the Mini Video overlay.
++// It READS the one element in #persistent-player; it never creates a player or an AudioContext.
++import { useCallback, useEffect, useMemo, useState } from 'react';
++import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
++import { loadAjnFeeds } from '../services/ajnFeeds';
++import { buildRadioCatalog, type RadioEntry } from '../utils/ajnRadioCatalog';
++import { AJN_CHANNEL_LABELS } from '../utils/ajnClassify';
++import { baseIdOf, createPositionStore, pickSwitchStart, twinFor, type MediaTwin, AVSYNC_MIN_SECONDS } from '../utils/avSync';
++import { pipStore, usePip } from '../utils/avSyncPip';
++import { findPersistentMedia } from './usePersistentMedia';
++
++export const AJN_SYNC_CHANNEL = 'ajn-radio';
++const SAVE_INTERVAL_MS = 1000;
++const CATALOG_TTL_MS = 10 * 60 * 1000;
++
++function browserStorage(): Storage | null { try { return typeof localStorage === 'undefined' ? null : localStorage; } catch { return null; } }
++export const positionStore = createPositionStore(browserStorage());
++
++export const isSyncable = (nowPlaying: NowPlayingMedia | null | undefined): nowPlaying is NowPlayingMedia =>
++  Boolean(nowPlaying && nowPlaying.channelId === AJN_SYNC_CHANNEL && nowPlaying.programId && (nowPlaying.mediaType === 'audio' || nowPlaying.mediaType === 'video'));
++
++let catalogCache: { at: number; promise: Promise<RadioEntry[]> } | null = null;
++function loadEntries(): Promise<RadioEntry[]> {
++  if (catalogCache && Date.now() - catalogCache.at < CATALOG_TTL_MS) return catalogCache.promise;
++  const promise = loadAjnFeeds(new AbortController().signal)
++    .then(({ items }) => { const c = buildRadioCatalog(items.filter(i => i.url).map(i => ({ id: i.id, title: i.title, url: i.url!, mediaType: i.mediaType, publishedAt: i.publishedAt }))); return [...c.radio, ...c.exclusive]; })
++    .catch(error => { catalogCache = null; throw error; }); // a failed lookup is never cached as "no twin"
++  catalogCache = { at: Date.now(), promise };
++  return promise;
++}
++
++/** Records the shared position while an AJN item plays. Mount once (App). */
++export function useAvSyncRecorder(nowPlaying: NowPlayingMedia | null | undefined): void {
++  const programId = isSyncable(nowPlaying) ? nowPlaying.programId : undefined;
++  const mediaType = nowPlaying?.mediaType;
++  const src = nowPlaying?.src;
++  useEffect(() => {
++    if (!programId) return;
++    let media: HTMLMediaElement | null = null;
++    let lastSave = 0;
++    const save = (force: boolean) => {
++      if (!media || !Number.isFinite(media.currentTime) || media.readyState < 1) return;
++      const now = Date.now();
++      if (!force && now - lastSave < SAVE_INTERVAL_MS) return;
++      if (Number.isFinite(media.duration) && media.duration > 0 && media.currentTime >= media.duration - 2) { positionStore.clear(programId); return; }
++      if (media.currentTime < AVSYNC_MIN_SECONDS) return;
++      lastSave = now;
++      positionStore.save(programId, media.currentTime);
++    };
++    const onTime = () => { if (!media?.paused) save(false); };
++    const onPause = () => save(true);
++    const onEnded = () => positionStore.clear(programId);
++    const onHide = () => { if (document.visibilityState === 'hidden') save(true); };
++    const detach = () => { media?.removeEventListener('timeupdate', onTime); media?.removeEventListener('pause', onPause); media?.removeEventListener('ended', onEnded); };
++    const attach = () => {
++      const next = findPersistentMedia(mediaType);
++      if (next === media) return;
++      detach(); media = next;
++      media?.addEventListener('timeupdate', onTime); media?.addEventListener('pause', onPause); media?.addEventListener('ended', onEnded);
++    };
++    attach();
++    const timer = window.setInterval(attach, 250);
++    document.addEventListener('visibilitychange', onHide);
++    window.addEventListener('pagehide', onPause);
++    return () => { save(true); window.clearInterval(timer); detach(); document.removeEventListener('visibilitychange', onHide); window.removeEventListener('pagehide', onPause); };
++  }, [programId, mediaType, src]);
++}
++
++export function useAjnTwin(nowPlaying: NowPlayingMedia | null | undefined): MediaTwin | null {
++  const syncable = isSyncable(nowPlaying);
++  const programId = syncable ? nowPlaying.programId : undefined;
++  const mediaType = syncable ? nowPlaying.mediaType : undefined;
++  const [entries, setEntries] = useState<RadioEntry[] | null>(null);
++  useEffect(() => {
++    if (!syncable) { setEntries(null); return; }
++    let live = true;
++    loadEntries().then(list => { if (live) setEntries(list); }).catch(() => { if (live) setEntries(null); });
++    return () => { live = false; };
++  }, [syncable]);
++  return useMemo(() => (entries ? twinFor(entries, programId, mediaType as 'audio' | 'video' | undefined) : null), [entries, programId, mediaType]);
++}
++
++export interface AvSwitch {
++  twin: MediaTwin | null;
++  /** The mini video overlay is open for the current episode. */
++  miniOpen: boolean;
++  /** Mini overlay is only offered while audio is the main player. */
++  canMini: boolean;
++  hardSwitch: () => void;
++  toggleMini: () => void;
++}
++
++export function useAvSwitch(nowPlaying: NowPlayingMedia | null | undefined, onPlay: PlayProgramCallback | undefined, onNavigate?: (destination: Destination) => void): AvSwitch {
++  const twin = useAjnTwin(nowPlaying);
++  const pip = usePip();
++  const base = baseIdOf(nowPlaying?.programId);
++  const miniOpen = Boolean(pip && base && pip.programId === base);
++  const canMini = Boolean(twin && twin.target === 'video');
++
++  const hardSwitch = useCallback(() => {
++    if (!twin || !nowPlaying || !onPlay) return;
++    const media = findPersistentMedia(nowPlaying.mediaType);
++    const live = media && media.readyState >= 1 && Number.isFinite(media.currentTime) ? media.currentTime : null;
++    const duration = media && Number.isFinite(media.duration) ? media.duration : null;
++    if (live !== null && live >= AVSYNC_MIN_SECONDS) positionStore.save(nowPlaying.programId, live);
++    const start = pickSwitchStart(live, positionStore.read(nowPlaying.programId), duration);
++    pipStore.close();
++    onPlay(twin.url, twin.entry.title, AJN_CHANNEL_LABELS[twin.entry.channel], twin.target, AJN_SYNC_CHANNEL, AJN_SYNC_CHANNEL, twin.programId, undefined, undefined, start ?? undefined);
++    if (twin.target === 'video') onNavigate?.('player'); // Watch = the main view becomes the video player
++  }, [twin, nowPlaying, onPlay, onNavigate]);
++
++  const toggleMini = useCallback(() => {
++    if (!twin || twin.target !== 'video') return;
++    if (miniOpen) { pipStore.close(); return; }
++    pipStore.open({ programId: twin.entry.id, src: twin.url, title: twin.entry.title });
++  }, [twin, miniOpen]);
++
++  // The overlay belongs to one audio episode: closing/changing the episode (or switching the main player to video) removes it.
++  useEffect(() => {
++    if (!pip) return;
++    if (!nowPlaying || nowPlaying.mediaType !== 'audio' || baseIdOf(nowPlaying.programId) !== pip.programId) pipStore.close();
++  }, [pip, nowPlaying]);
++
++  return { twin, miniOpen, canMini, hardSwitch, toggleMini };
++}
+diff --git a/src/radio.css b/src/radio.css
+index 41e5213..be8e2ef 100644
+--- a/src/radio.css
++++ b/src/radio.css
+@@ -164,3 +164,10 @@
+ @media(max-width:900px){.ajr-hero{grid-template-columns:1fr;min-height:auto;padding:36px 0 18px}.ajr-hero-art{display:none}.ajr-now{grid-template-columns:57px 1fr;gap:14px}.ajr-now-art{width:57px;height:57px}.ajr-controls{grid-column:1/-1}}
+ @media(max-width:760px){.ajr-grid,.ajr-briefing,.ajr-news-grid{grid-template-columns:1fr}.ajr-card-open{gap:12px;padding:10px 10px 16px}.ajr-cover{width:76px;min-width:76px;height:76px}.ajr-heading h2{font-size:28px}.ajr-section{padding:40px 0 44px}}
+ @media(prefers-reduced-motion:reduce){.ajr-ticker-track{animation:none}.ajr-ticker-window{overflow-x:auto;mask-image:none}.ajr-ticker-copy{display:none}.ajr-eq.on i{animation:none}.ajr-card,.ajr-news-card{transition:none}}
++
++/* Parallel Audio/Video Sync buttons (Now Playing panel) */
++.ajr .ajr-sync { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
++.ajr .ajr-sync-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 999px; border: 1px solid #aee9d5; background: transparent; color: #aee9d5; font: 600 11px/1 'DM Mono', ui-monospace, monospace; letter-spacing: .08em; cursor: pointer; }
++.ajr .ajr-sync-btn:hover { background: #aee9d5; color: #09100f; }
++.ajr .ajr-sync-btn[aria-pressed="true"] { background: #aee9d5; color: #09100f; }
++.ajr .ajr-sync-btn:focus-visible { outline: 2px solid #edf1e9; outline-offset: 2px; }
+diff --git a/src/types.ts b/src/types.ts
+index f74daa0..0be20e0 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -112,6 +112,8 @@ export interface NowPlayingMedia {
+   thumbnailUrl?: string;
+   duration?: string;
+   isLive?: boolean;
++  /** One-shot start offset (seconds) applied when this item loads: used by the audio/video switch. Never persisted. */
++  startAtSeconds?: number;
+ }
+ 
+ export interface RecentlyPlayedItem extends NowPlayingMedia {
+@@ -182,5 +184,6 @@ export type PlayProgramCallback = (
+   guideId?: string,
+   programId?: string,
+   sourceId?: string,
+-  assetId?: string
++  assetId?: string,
++  startAtSeconds?: number
+ ) => void;
+diff --git a/src/utils/avSync.ts b/src/utils/avSync.ts
+new file mode 100644
+index 0000000..1b38e1a
+--- /dev/null
++++ b/src/utils/avSync.ts
+@@ -0,0 +1,104 @@
++// Pure rules for "Parallel Audio/Video Sync" (AJN feed items only).
++// One episode = one base id (the Radio catalog entry id). Its video twin is `${id}:video`.
++// No React, no DOM, no timers: everything here is unit-tested in test-av-sync.ts.
++import type { RadioEntry } from './ajnRadioCatalog.ts';
++
++export const VIDEO_SUFFIX = ':video';
++export const AVSYNC_STORAGE_KEY = 'ajn.avsync.v1';
++export const AVSYNC_MAX_ENTRIES = 200;
++/** Below this the position is treated as "start of the episode"; no seek is applied. */
++export const AVSYNC_MIN_SECONDS = 1;
++/** Within this many seconds of the end, a saved position is ignored (the episode is finished). */
++export const AVSYNC_END_GUARD_SECONDS = 2;
++/** Mini-player video is re-aligned to the audio when it drifts further than this. */
++export const AVSYNC_DRIFT_SECONDS = 0.6;
++
++export function baseIdOf(programId: string | undefined | null): string | null {
++  if (!programId) return null;
++  return programId.endsWith(VIDEO_SUFFIX) ? programId.slice(0, -VIDEO_SUFFIX.length) : programId;
++}
++export const videoIdOf = (baseId: string): string => `${baseId}${VIDEO_SUFFIX}`;
++
++export interface MediaTwin {
++  entry: RadioEntry;
++  /** What the twin is: switching from audio goes to 'video', and from video to 'audio'. */
++  target: 'audio' | 'video';
++  url: string;
++  programId: string;
++}
++
++/** The other version of what is playing now, or null when there is none (never guessed: needs a catalog pairing). */
++export function twinFor(entries: readonly RadioEntry[], programId: string | undefined | null, mediaType: 'audio' | 'video' | undefined): MediaTwin | null {
++  const base = baseIdOf(programId);
++  if (!base || !mediaType) return null;
++  const entry = entries.find(e => e.id === base);
++  if (!entry || !entry.videoUrl || !entry.audioUrl) return null;
++  // The id suffix and the media type must agree; otherwise this is not an item we paired.
++  const playingVideo = String(programId).endsWith(VIDEO_SUFFIX);
++  if (playingVideo !== (mediaType === 'video')) return null;
++  return mediaType === 'audio'
++    ? { entry, target: 'video', url: entry.videoUrl, programId: videoIdOf(entry.id) }
++    : { entry, target: 'audio', url: entry.audioUrl, programId: entry.id };
++}
++
++/** Seconds to start the twin at, or null to start from the beginning. */
++export function clampStart(seconds: number | null | undefined, duration?: number | null): number | null {
++  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < AVSYNC_MIN_SECONDS) return null;
++  if (typeof duration === 'number' && Number.isFinite(duration) && duration > 0 && seconds >= duration - AVSYNC_END_GUARD_SECONDS) return null;
++  return Math.round(seconds * 10) / 10;
++}
++
++/** The live playhead wins whenever there is one (even 0: the listener restarted). The saved shared position is only used when no live element exists for this item (e.g. after a reload). */
++export function pickSwitchStart(live: number | null | undefined, stored: number | null | undefined, duration?: number | null): number | null {
++  if (typeof live === 'number' && Number.isFinite(live)) return clampStart(live, duration);
++  return clampStart(stored, duration);
++}
++
++export function needsDriftCorrection(slaveSeconds: number, masterSeconds: number, tolerance = AVSYNC_DRIFT_SECONDS): boolean {
++  if (!Number.isFinite(slaveSeconds) || !Number.isFinite(masterSeconds)) return false;
++  return Math.abs(slaveSeconds - masterSeconds) > tolerance;
++}
++
++export interface StoredPosition { seconds: number; updatedAt: number }
++export type PositionMap = Record<string, StoredPosition>;
++type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
++
++function parseMap(raw: string | null): PositionMap {
++  try {
++    const data = JSON.parse(raw ?? '{}');
++    if (!data || typeof data !== 'object' || Array.isArray(data)) return {};
++    const out: PositionMap = {};
++    for (const [id, value] of Object.entries(data as Record<string, unknown>)) {
++      const v = value as Partial<StoredPosition> | null;
++      if (v && typeof v.seconds === 'number' && Number.isFinite(v.seconds) && v.seconds >= 0 && typeof v.updatedAt === 'number') out[id] = { seconds: v.seconds, updatedAt: v.updatedAt };
++    }
++    return out;
++  } catch { return {}; }
++}
++
++/** One shared position per episode (audio and video versions read and write the same record). Storage failures are silent: the live element is still the source of truth. */
++export function createPositionStore(storage: StorageLike | null | undefined, now: () => number = Date.now) {
++  const load = (): PositionMap => { try { return parseMap(storage?.getItem(AVSYNC_STORAGE_KEY) ?? null); } catch { return {}; } };
++  return {
++    read(programId: string | undefined | null): number | null {
++      const base = baseIdOf(programId);
++      return base ? load()[base]?.seconds ?? null : null;
++    },
++    save(programId: string | undefined | null, seconds: number): boolean {
++      const base = baseIdOf(programId);
++      if (!base || !Number.isFinite(seconds) || seconds < 0) return false;
++      const map = load();
++      map[base] = { seconds: Math.round(seconds * 10) / 10, updatedAt: now() };
++      const keep = Object.entries(map).sort((a, b) => b[1].updatedAt - a[1].updatedAt).slice(0, AVSYNC_MAX_ENTRIES);
++      try { storage?.setItem(AVSYNC_STORAGE_KEY, JSON.stringify(Object.fromEntries(keep))); return true; } catch { return false; }
++    },
++    clear(programId: string | undefined | null): void {
++      const base = baseIdOf(programId);
++      if (!base) return;
++      const map = load();
++      if (!(base in map)) return;
++      delete map[base];
++      try { storage?.setItem(AVSYNC_STORAGE_KEY, JSON.stringify(map)); } catch { /* ignore */ }
++    },
++  };
++}
+diff --git a/src/utils/avSyncPip.ts b/src/utils/avSyncPip.ts
+new file mode 100644
+index 0000000..ceb0d29
+--- /dev/null
++++ b/src/utils/avSyncPip.ts
+@@ -0,0 +1,20 @@
++// Tiny external store for the mini video overlay (Parallel Audio/Video Sync). One overlay at most.
++// Lives outside React so the Radio panel, the mini dock and the Player page can all open/close the same overlay without prop drilling.
++import { useSyncExternalStore } from 'react';
++
++export interface PipState { programId: string; src: string; title: string }
++
++let state: PipState | null = null;
++const listeners = new Set<() => void>();
++const emit = () => listeners.forEach(l => l());
++
++export const pipStore = {
++  get: (): PipState | null => state,
++  open(next: PipState) { state = next; emit(); },
++  close() { if (state === null) return; state = null; emit(); },
++  subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
++};
++
++export function usePip(): PipState | null {
++  return useSyncExternalStore(pipStore.subscribe, pipStore.get, pipStore.get);
++}
+diff --git a/test-av-sync-browser.js b/test-av-sync-browser.js
+new file mode 100644
+index 0000000..fca60cf
+--- /dev/null
++++ b/test-av-sync-browser.js
+@@ -0,0 +1,179 @@
++// Browser regression for Parallel Audio/Video Sync (AJN feed items). Deterministic: feeds and the AJN proxy are served by request interception.
++// Proves, with real media decoded by the browser: Watch at ~10:00 of the audio starts the video at ~10:00 (and Listen goes back at the same spot),
++// the Mini Video overlay follows the audio (play/pause/seek) without making sound, the shared position is saved continuously,
++// episodes without a paired video show no switch, and one AudioContext / one persistent player remain.
++import puppeteer from 'puppeteer';
++import { execFileSync } from 'node:child_process';
++import { mkdtempSync, readFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++
++const baseUrl = process.env.AJN_TEST_URL || 'http://localhost:3000';
++const A = 'https://archive.alexjoneslive.com/hourly-mp3/';
++const V = 'https://archive.alexjoneslive.com/hourly-m4v/';
++const SECONDS = 12 * 60;
++const item = (id, file, type, title) => ({ id, title, url: `${type === 'audio' ? A : V}${file}`, mediaType: type, feedId: type === 'audio' ? 'AJNHourlyAudio' : 'AJNHourlyVideo', publishedAt: '2026-10-02T12:00:00Z' });
++const audioItems = [item('a2', '20261002_Fri_Alex-Hr2.mp3', 'audio', 'Alex Jones Hour 2'), item('a1', '20261002_Fri_Alex-Hr1.mp3', 'audio', 'Alex Jones Hour 1')];
++const videoItems = [item('v1', '20261002_Fri_Alex-Hr1.m4v', 'video', 'Alex Jones Hour 1 video')];
++const catalog = { source: 'test', resources: [
++  { id: 'AJNHourlyAudio', name: 'AJN Hourly Audio', htmlUrl: 'https://x.test/a', rssUrl: 'https://x.test/a.xml', mediaType: 'audio' },
++  { id: 'AJNHourlyVideo', name: 'AJN Hourly Video', htmlUrl: 'https://x.test/v', rssUrl: 'https://x.test/v.xml', mediaType: 'video' },
++] };
++
++// Real media, generated here: a 12-minute 8 kHz mono WAV and a 12-minute 1 fps VP8/WebM (Chromium for Testing has no H.264).
++function wav(seconds, rate = 8000) {
++  const samples = seconds * rate; const data = Buffer.alloc(samples * 2);
++  for (let i = 0; i < samples; i++) data.writeInt16LE(Math.round(Math.sin(i / 8) * 3000), i * 2);
++  const head = Buffer.alloc(44);
++  head.write('RIFF', 0); head.writeUInt32LE(36 + data.length, 4); head.write('WAVEfmt ', 8); head.writeUInt32LE(16, 16); head.writeUInt16LE(1, 20); head.writeUInt16LE(1, 22);
++  head.writeUInt32LE(rate, 24); head.writeUInt32LE(rate * 2, 28); head.writeUInt16LE(2, 32); head.writeUInt16LE(16, 34); head.write('data', 36); head.writeUInt32LE(data.length, 40);
++  return Buffer.concat([head, data]);
++}
++const dir = mkdtempSync(join(tmpdir(), 'ajn-avsync-'));
++const videoPath = join(dir, 'video.webm');
++execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', `testsrc=size=160x90:rate=1:duration=${SECONDS}`, '-c:v', 'libvpx', '-b:v', '60k', '-g', '2', '-an', videoPath], { stdio: 'inherit' });
++const WAV = wav(SECONDS);
++const WEBM = readFileSync(videoPath);
++
++const failures = [];
++const check = (condition, message) => { if (!condition) { failures.push(message); console.error(`[av-sync] FAIL: ${message}`); } else console.log(`[av-sync] ok: ${message}`); };
++const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
++const SHOTS = process.env.AJN_AVSYNC_SHOTS || '';
++
++const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--autoplay-policy=no-user-gesture-required'] });
++const page = await browser.newPage();
++await page.setViewport({ width: 1280, height: 900 });
++const errors = [];
++page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
++page.on('console', (msg) => {
++  if (msg.type() !== 'error') return;
++  const text = msg.text();
++  if (/Failed to load resource|Manifest: Line: 1|net::ERR_/.test(text)) return;
++  errors.push(`console: ${text}`);
++});
++await page.evaluateOnNewDocument(() => {
++  const Original = window.AudioContext; let created = 0;
++  if (Original) window.AudioContext = class extends Original { constructor(...a) { super(...a); created += 1; window.__ajnAudioContextCreated = created; } };
++  window.__ajnAudioContextCreated = 0;
++});
++await page.setRequestInterception(true);
++const proxied = [];
++page.on('request', (request) => {
++  const url = new URL(request.url());
++  if (url.origin !== new URL(baseUrl).origin) return void request.abort();
++  const json = (body) => request.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
++  if (url.pathname === '/api/ajn/resources') return json(catalog);
++  if (url.pathname === '/api/ajn/resources/AJNHourlyAudio') return json({ items: audioItems });
++  if (url.pathname === '/api/ajn/resources/AJNHourlyVideo') return json({ items: videoItems });
++  if (url.pathname === '/api/digest') return request.respond({ status: 503, contentType: 'application/json', body: '{}' });
++  if (url.pathname === '/api/ajn/proxy') {
++    const target = url.searchParams.get('url') || '';
++    const isVideo = target.includes('hourly-m4v');
++    proxied.push(isVideo ? 'video' : 'audio');
++    const body0 = isVideo ? WEBM : WAV;
++    const range = /bytes=(\d*)-(\d*)/.exec(request.headers().range || '');
++    const start = range && range[1] ? Number(range[1]) : 0;
++    const end = Math.min(range && range[2] ? Number(range[2]) : body0.length - 1, body0.length - 1, start + 8 * 1024 * 1024 - 1);
++    const body = body0.subarray(start, end + 1);
++    return request.respond({ status: range ? 206 : 200, headers: { 'content-type': isVideo ? 'video/webm' : 'audio/wav', 'accept-ranges': 'bytes', 'content-length': String(body.length), ...(range ? { 'content-range': `bytes ${start}-${end}/${body0.length}` } : {}), 'access-control-allow-origin': '*' }, body });
++  }
++  return void request.continue();
++});
++
++const media = () => page.evaluate(() => { const el = document.querySelector('#persistent-player audio, #persistent-player video'); return el ? { tag: el.tagName, paused: el.paused, t: el.currentTime, d: el.duration, ready: el.readyState } : null; });
++const pipVideo = () => page.evaluate(() => { const el = document.querySelector('#synced-video-pip video'); return el ? { paused: el.paused, t: el.currentTime, muted: el.muted, ready: el.readyState } : null; });
++const stored = () => page.evaluate(() => { try { const m = JSON.parse(localStorage.getItem('ajn.avsync.v1') || '{}'); return m.a1 ?? null; } catch { return null; } });
++const waitFor = async (fn, ms = 15000) => { const stop = Date.now() + ms; while (Date.now() < stop) { const v = await fn(); if (v) return v; await sleep(150); } return null; };
++const domClick = (selector) => page.$eval(selector, (el) => el.click());
++const hash = () => page.evaluate(() => location.hash);
++const near = (value, expected, tol) => typeof value === 'number' && Math.abs(value - expected) <= tol;
++
++try {
++  await page.goto(`${baseUrl}/#radio`, { waitUntil: 'domcontentloaded' });
++  await page.waitForSelector('[data-testid="radio-entry"]', { timeout: 20000 });
++
++  // --- episode WITHOUT a paired video: no switch offered
++  await page.evaluate(() => { const card = [...document.querySelectorAll('[data-testid="radio-entry"]')].find((c) => c.textContent.includes('Hour 2')); card.querySelector('.ajr-card-open').click(); });
++  check(await waitFor(async () => { const m = await media(); return m && !m.paused && m.t > 0.3; }), 'Hour 2 (no video) plays');
++  await sleep(1200);
++  check(await page.$('[data-testid="av-sync-controls"]') === null, 'no Watch / Mini video for an episode with no paired video');
++
++  // --- episode WITH a paired video
++  await page.evaluate(() => { const card = [...document.querySelectorAll('[data-testid="radio-entry"]')].find((c) => c.textContent.includes('Hour 1')); card.querySelector('.ajr-card-open').click(); });
++  check(await waitFor(async () => { const m = await media(); return m && m.tag === 'AUDIO' && !m.paused && m.t > 0.3 && m.d > 600; }), 'Hour 1 audio plays');
++  check(await waitFor(() => page.$('[data-testid="av-watch"]')), 'Watch is offered because a paired video exists');
++  check(await page.$('[data-testid="av-mini"]') !== null, 'Mini video is offered too');
++
++  // listener is 10 minutes in
++  await page.evaluate(() => { document.querySelector('#persistent-player audio').currentTime = 600; });
++  check(await waitFor(async () => (await media())?.t >= 600), 'audio is at the 10 minute mark');
++  await sleep(1500); // let the real-time position save run
++  const saved = await stored();
++  check(saved && near(saved.seconds, 601.5, 3), `position was saved in real time (stored ${saved?.seconds}s)`);
++  if (SHOTS) await page.screenshot({ path: `${SHOTS}/avsync-1-audio-10min.png` });
++
++  // --- Mini video: audio keeps leading
++  await domClick('[data-testid="av-mini"]');
++  check(await waitFor(() => page.$('#synced-video-pip video')), 'mini video overlay opens');
++  const pip = await waitFor(async () => { const p = await pipVideo(); return p && p.ready >= 2 && near(p.t, (await media()).t, 1.2) && !p.paused ? p : null; }, 20000);
++  check(Boolean(pip), 'mini video starts at the audio position and plays');
++  check(pip?.muted === true, 'mini video is muted (sound comes only from the audio player)');
++  check((await media())?.tag === 'AUDIO' && !(await media()).paused, 'audio is still the main player and still playing');
++  check(await page.evaluate(() => location.hash) === '#radio', 'opening the mini video does not navigate away');
++  if (SHOTS) await page.screenshot({ path: `${SHOTS}/avsync-2-mini-video.png` });
++  await page.evaluate(() => { document.querySelector('#persistent-player audio').currentTime = 300; });
++  check(await waitFor(async () => { const p = await pipVideo(); return p && near(p.t, (await media()).t, 1.5); }), 'seeking the audio moves the mini video with it');
++  await page.evaluate(() => document.querySelector('#persistent-player audio').pause());
++  check(await waitFor(async () => (await pipVideo())?.paused === true), 'pausing the audio pauses the mini video');
++  await page.evaluate(() => document.querySelector('#persistent-player audio').play());
++  check(await waitFor(async () => (await pipVideo())?.paused === false), 'resuming the audio resumes the mini video');
++  await domClick('[data-testid="av-mini"]');
++  check(await waitFor(async () => (await page.$('#synced-video-pip')) === null), 'mini video closes');
++  check(await page.$$eval('audio, video', (els) => els.length) === 1, 'back to one media element in the page');
++
++  // --- Hard switch: Watch at 10:00 -> video starts at 10:00
++  await page.evaluate(() => { document.querySelector('#persistent-player audio').currentTime = 600; });
++  await waitFor(async () => (await media())?.t >= 600);
++  const beforeWatch = (await media()).t;
++  await domClick('[data-testid="av-watch"]');
++  const video = await waitFor(async () => { const m = await media(); return m && m.tag === 'VIDEO' && m.ready >= 2 && !m.paused ? m : null; }, 20000);
++  check(Boolean(video), 'Watch switches the main player to the video and it plays');
++  check(near(video?.t, beforeWatch, 4), `video starts at the audio position (audio was ${beforeWatch.toFixed(1)}s, video ${video?.t.toFixed(1)}s)`);
++  check(video && video.t > 590, 'video did not restart from 0:00');
++  check(await hash() === '#player', 'Watch shows the main view as the video player');
++  await sleep(2500);
++  const playingVideo = await media();
++  check(playingVideo.t > video.t + 1.5, 'video keeps playing from there');
++  check(await page.$('[data-testid="av-listen"]') !== null, 'Listen (switch back) is offered on the video player');
++  if (SHOTS) await page.screenshot({ path: `${SHOTS}/avsync-3-video-at-10min.png` });
++
++  // --- and back: Listen keeps the place
++  await page.evaluate(() => { document.querySelector('#persistent-player video').currentTime = 720 - 30; });
++  await waitFor(async () => (await media())?.t >= 689);
++  const beforeListen = (await media()).t;
++  await domClick('[data-testid="av-listen"]');
++  const audio = await waitFor(async () => { const m = await media(); return m && m.tag === 'AUDIO' && m.ready >= 2 && !m.paused ? m : null; }, 20000);
++  check(Boolean(audio), 'Listen switches back to the audio player and it plays');
++  check(near(audio?.t, beforeListen, 4), `audio resumes at the video position (video was ${beforeListen.toFixed(1)}s, audio ${audio?.t.toFixed(1)}s)`);
++
++  // --- state persistence: shared record, written by either version
++  await sleep(1500);
++  const after = await stored();
++  check(after && near(after.seconds, (await media()).t, 3), `shared position keeps tracking after the toggles (stored ${after?.seconds}s)`);
++  const keys = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('ajn.avsync.v1') || '{}')));
++  check(keys.includes('a1') && !keys.some((k) => k.endsWith(':video')), `audio and video versions share ONE record (keys: ${keys.join(',')})`);
++
++  // --- the single player / single AudioContext rules still hold
++  check(await page.$$eval('audio, video', (els) => els.length) === 1, 'exactly one media element after all the switching');
++  check((await page.evaluate(() => window.__ajnAudioContextCreated)) <= 1, `at most one AudioContext was created (${await page.evaluate(() => window.__ajnAudioContextCreated)})`);
++  check(proxied.includes('video') && proxied.includes('audio'), 'both versions were fetched through /api/ajn/proxy');
++  check(errors.length === 0, `no page errors (${errors.slice(0, 3).join(' | ')})`);
++} catch (error) {
++  failures.push(`exception: ${error.stack || error}`);
++  console.error(error);
++} finally {
++  if (failures.length) { console.error('[av-sync] page errors:', errors.slice(0, 5)); await page.screenshot({ path: process.env.AJN_AVSYNC_FAIL_SHOT || '/tmp/av-sync-failure.png' }).catch(() => {}); console.error('[av-sync] url:', page.url()); }
++  await browser.close();
++}
++if (failures.length) { console.error(`[av-sync] ${failures.length} failure(s)`); process.exit(1); }
++console.log('AV SYNC BROWSER REGRESSION PASSED');
+diff --git a/test-av-sync.ts b/test-av-sync.ts
+new file mode 100644
+index 0000000..ca9bbdf
+--- /dev/null
++++ b/test-av-sync.ts
+@@ -0,0 +1,81 @@
++// Regression: Parallel Audio/Video Sync rules (pure). Twin lookup, start offsets, shared position store, drift.
++import assert from 'node:assert/strict';
++import { buildRadioCatalog, type RadioFeedItem } from './src/utils/ajnRadioCatalog.ts';
++import { baseIdOf, videoIdOf, twinFor, clampStart, pickSwitchStart, needsDriftCorrection, createPositionStore, AVSYNC_STORAGE_KEY, AVSYNC_MAX_ENTRIES } from './src/utils/avSync.ts';
++
++const A = 'https://archive.alexjoneslive.com/hourly-mp3/';
++const V = 'https://archive.alexjoneslive.com/hourly-m4v/';
++const a = (id: string, file: string): RadioFeedItem => ({ id, title: id, url: `${A}${file}`, mediaType: 'audio' });
++const v = (id: string, file: string): RadioFeedItem => ({ id, title: id, url: `${V}${file}`, mediaType: 'video' });
++const cat = buildRadioCatalog([a('1', '20261002_Fri_Alex-Hr1.mp3'), a('2', '20261002_Fri_Alex-Hr2.mp3'), v('v1', '20261002_Fri_Alex-Hr1.m4v')]);
++const entries = [...cat.radio, ...cat.exclusive];
++
++// ids
++assert.equal(baseIdOf('1:video'), '1');
++assert.equal(baseIdOf('1'), '1');
++assert.equal(baseIdOf(undefined), null);
++assert.equal(videoIdOf('1'), '1:video');
++
++// twin lookup: both directions, never guessed
++const toVideo = twinFor(entries, '1', 'audio');
++assert.deepEqual([toVideo?.target, toVideo?.url, toVideo?.programId], ['video', `${V}20261002_Fri_Alex-Hr1.m4v`, '1:video']);
++const toAudio = twinFor(entries, '1:video', 'video');
++assert.deepEqual([toAudio?.target, toAudio?.url, toAudio?.programId], ['audio', `${A}20261002_Fri_Alex-Hr1.mp3`, '1']);
++assert.equal(twinFor(entries, '2', 'audio'), null, 'audio with no paired video has no twin');
++assert.equal(twinFor(entries, 'nope', 'audio'), null, 'not an AJN item');
++assert.equal(twinFor(entries, '1', 'video'), null, 'id and media type disagree -> not ours');
++assert.equal(twinFor(entries, undefined, 'audio'), null);
++
++// start offsets
++assert.equal(clampStart(600), 600);
++assert.equal(clampStart(600.04), 600);
++assert.equal(clampStart(0.4), null, 'under a second: start from the beginning');
++assert.equal(clampStart(NaN), null);
++assert.equal(clampStart(-5), null);
++assert.equal(clampStart(null), null);
++assert.equal(clampStart(3599, 3600), null, 'finished episode: no seek to the end');
++assert.equal(clampStart(1800, 3600), 1800);
++assert.equal(pickSwitchStart(600, 120, 3600), 600, 'live playhead beats the saved one');
++assert.equal(pickSwitchStart(null, 120, 3600), 120, 'saved position is the fallback');
++assert.equal(pickSwitchStart(0, 120), null, 'a live playhead at 0 means the listener restarted: do not jump to an old saved spot');
++assert.equal(pickSwitchStart(null, null), null);
++
++// drift
++assert.equal(needsDriftCorrection(600.2, 600), false);
++assert.equal(needsDriftCorrection(601, 600), true);
++assert.equal(needsDriftCorrection(NaN, 600), false);
++
++// position store: shared by audio and video ids
++const mem = new Map<string, string>();
++const storage = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, val: string) => { mem.set(k, val); } };
++let t = 1000;
++const store = createPositionStore(storage, () => t);
++assert.equal(store.read('1'), null);
++assert.equal(store.save('1', 600.04), true);
++assert.equal(store.read('1'), 600);
++assert.equal(store.read('1:video'), 600, 'video id reads the same record');
++t = 2000; store.save('1:video', 640);
++assert.equal(store.read('1'), 640, 'video id writes the same record');
++assert.equal(store.save('1', NaN), false);
++assert.equal(store.save(undefined, 5), false);
++store.clear('1:video');
++assert.equal(store.read('1'), null);
++mem.set(AVSYNC_STORAGE_KEY, '{not json');
++assert.equal(createPositionStore(storage).read('1'), null, 'corrupt storage is ignored');
++mem.set(AVSYNC_STORAGE_KEY, JSON.stringify({ x: { seconds: 'a', updatedAt: 1 }, y: { seconds: 5, updatedAt: 2 } }));
++assert.equal(createPositionStore(storage).read('x'), null);
++assert.equal(createPositionStore(storage).read('y'), 5);
++const throwing = createPositionStore({ getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); } });
++assert.equal(throwing.read('1'), null);
++assert.equal(throwing.save('1', 5), false);
++assert.equal(createPositionStore(null).read('1'), null);
++
++// cap: oldest records dropped
++mem.clear();
++const capped = createPositionStore(storage, () => ++t);
++for (let i = 0; i < AVSYNC_MAX_ENTRIES + 25; i++) capped.save(`ep${i}`, 10 + i);
++assert.equal(capped.read('ep0'), null, 'oldest dropped');
++assert.equal(capped.read(`ep${AVSYNC_MAX_ENTRIES + 24}`), 10 + AVSYNC_MAX_ENTRIES + 24, 'newest kept');
++assert.equal(Object.keys(JSON.parse(mem.get(AVSYNC_STORAGE_KEY)!)).length, AVSYNC_MAX_ENTRIES);
++
++console.log('test-av-sync: all checks passed');
+-- 
+2.43.0
+

@@ -1,0 +1,191 @@
+﻿{
+    "generatedAt":  "2026-09-25T17:44:20.2320234-07:00",
+    "repository":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo",
+    "branch":  "fix/p1",
+    "commit":  "cac6a38922c177cf12a34a8bc38e33c75b8b49e5",
+    "totalUrls":  18,
+    "working":  7,
+    "failed":  11,
+    "results":  [
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\guideRegistry.ts",
+                        "url":  "https://archive.org/services/img/${network.split(",
+                        "working":  true,
+                        "status":  200,
+                        "contentType":  "image/png",
+                        "contentLength":  "2212",
+                        "location":  "https://archive.org/images/notfound.png",
+                        "error":  null
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\guideRegistry.ts",
+                        "url":  "https://archive.org/services/img/CNNW",
+                        "working":  true,
+                        "status":  200,
+                        "contentType":  "image/png",
+                        "contentLength":  "2212",
+                        "location":  "https://archive.org/images/notfound.png",
+                        "error":  null
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\guideRegistry.ts",
+                        "url":  "https://archive.org/services/img/FOXNEWSW",
+                        "working":  true,
+                        "status":  200,
+                        "contentType":  "image/png",
+                        "contentLength":  "2212",
+                        "location":  "https://archive.org/images/notfound.png",
+                        "error":  null
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\guideRegistry.ts",
+                        "url":  "https://archive.org/services/img/MSNBCW",
+                        "working":  true,
+                        "status":  200,
+                        "contentType":  "image/png",
+                        "contentLength":  "2212",
+                        "location":  "https://archive.org/images/notfound.png",
+                        "error":  null
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\guideRegistry.ts",
+                        "url":  "https://archive.org/services/m3u/archive-movies.m3u",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote server returned an error: (404) Not Found. | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\guideRegistry.ts",
+                        "url":  "https://archive.org/services/m3u/audio-podcasts.m3u",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote server returned an error: (404) Not Found. | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\guideRegistry.ts",
+                        "url":  "https://archive.org/services/m3u/classic-tv.m3u",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote server returned an error: (404) Not Found. | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\guideRegistry.ts",
+                        "url":  "https://archive.org/services/m3u/tvnews-networks.m3u",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote server returned an error: (404) Not Found. | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\server.ts",
+                        "url":  "https://archive.org",
+                        "working":  true,
+                        "status":  200,
+                        "contentType":  "text/html; charset=utf-8",
+                        "contentLength":  null,
+                        "location":  "https://archive.org/",
+                        "error":  null
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\server\\sources\\liveTv.ts",
+                        "url":  "https://iptv-org.github.io/iptv/countries/us.m3u",
+                        "working":  true,
+                        "status":  200,
+                        "contentType":  "audio/x-mpegurl",
+                        "contentLength":  "320539",
+                        "location":  "https://iptv-org.github.io/iptv/countries/us.m3u",
+                        "error":  null
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\test-live-tv.ts",
+                        "url":  "http://example.com/a.m3u8",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote server returned an error: (404) Not Found. | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\test-live-tv.ts",
+                        "url":  "http://s.rocketdns.info:8080/monstercable/Dq6jjknxCr/3637",
+                        "working":  true,
+                        "status":  200,
+                        "contentType":  "application/octet-stream",
+                        "contentLength":  "0",
+                        "location":  "http://s.rocketdns.info:8080/monstercable/Dq6jjknxCr/3637",
+                        "error":  null
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\test-live-tv.ts",
+                        "url":  "https://adult.example/a.m3u8",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote name could not be resolved: \u0027adult.example\u0027 | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\test-live-tv.ts",
+                        "url":  "https://img/x.png",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote name could not be resolved: \u0027img\u0027 | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\test-live-tv.ts",
+                        "url":  "https://jmp2.uk/plu-62ba60f059624e000781c436.m3u8",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote server returned an error: (405) Method Not Allowed. | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\test-live-tv.ts",
+                        "url":  "https://news.example/live/index.m3u8",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote name could not be resolved: \u0027news.example\u0027 | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\test-live-tv.ts",
+                        "url":  "https://s.rocketdns.info:8080/monstercable/Dq6jjknxCr/3637",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The underlying connection was closed: An unexpected error occurred on a send. | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    },
+                    {
+                        "file":  "B:\\AJN Precision Engineering\\AJN-Precision-Engineering\\repo\\test-live-tv.ts",
+                        "url":  "https://up/us.m3u",
+                        "working":  false,
+                        "status":  null,
+                        "contentType":  null,
+                        "contentLength":  null,
+                        "location":  null,
+                        "error":  "The remote name could not be resolved: \u0027up\u0027 | GET: The \u0027Range\u0027 header must be modified using the appropriate property or method.\r\nParameter name: name"
+                    }
+                ]
+}

@@ -1,0 +1,384 @@
+{
+  "base": "https://ajn-precision-engineering.ai.studio",
+  "at": "2026-10-09T09:06:27.491Z",
+  "results": [
+    {
+      "id": "API health",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "ms": 371
+      }
+    },
+    {
+      "id": "guides listed",
+      "result": "PASS",
+      "evidence": [
+        "cable-tv",
+        "classic-tv",
+        "audio-podcasts",
+        "science-documentaries",
+        "live-tv",
+        "movies-classics-vault",
+        "old-british-tv"
+      ]
+    },
+    {
+      "id": "schedule cable-tv: loads (<10 s) with channels",
+      "result": "PASS",
+      "evidence": {
+        "ms": 174,
+        "channels": 9,
+        "programs": 316,
+        "rawMB": 1.1,
+        "wireKB": null,
+        "encoding": "gzip"
+      }
+    },
+    {
+      "id": "schedule cable-tv: integrity (no empty/duplicate channels, no media-less or reversed-time programs)",
+      "result": "PASS",
+      "evidence": {
+        "emptyChannels": [],
+        "duplicateChannelIds": [],
+        "programsWithoutMedia": 0,
+        "duplicateProgramIds": 0,
+        "reversedTimes": 0
+      }
+    },
+    {
+      "id": "schedule classic-tv: loads (<10 s) with channels",
+      "result": "PASS",
+      "evidence": {
+        "ms": 2405,
+        "channels": 135,
+        "programs": 24176,
+        "rawMB": 28.03,
+        "wireKB": null,
+        "encoding": "gzip"
+      }
+    },
+    {
+      "id": "schedule classic-tv: integrity (no empty/duplicate channels, no media-less or reversed-time programs)",
+      "result": "PASS",
+      "evidence": {
+        "emptyChannels": [],
+        "duplicateChannelIds": [],
+        "programsWithoutMedia": 0,
+        "duplicateProgramIds": 10,
+        "reversedTimes": 0
+      }
+    },
+    {
+      "id": "schedule audio-podcasts: loads (<10 s) with channels",
+      "result": "PASS",
+      "evidence": {
+        "ms": 762,
+        "channels": 28,
+        "programs": 9379,
+        "rawMB": 13.14,
+        "wireKB": null,
+        "encoding": "gzip"
+      }
+    },
+    {
+      "id": "schedule audio-podcasts: integrity (no empty/duplicate channels, no media-less or reversed-time programs)",
+      "result": "PASS",
+      "evidence": {
+        "emptyChannels": [],
+        "duplicateChannelIds": [],
+        "programsWithoutMedia": 0,
+        "duplicateProgramIds": 0,
+        "reversedTimes": 0
+      }
+    },
+    {
+      "id": "schedule science-documentaries: loads (<10 s) with channels",
+      "result": "PASS",
+      "evidence": {
+        "ms": 173,
+        "channels": 28,
+        "programs": 1159,
+        "rawMB": 1.18,
+        "wireKB": null,
+        "encoding": "gzip"
+      }
+    },
+    {
+      "id": "schedule science-documentaries: integrity (no empty/duplicate channels, no media-less or reversed-time programs)",
+      "result": "PASS",
+      "evidence": {
+        "emptyChannels": [],
+        "duplicateChannelIds": [],
+        "programsWithoutMedia": 0,
+        "duplicateProgramIds": 0,
+        "reversedTimes": 0
+      }
+    },
+    {
+      "id": "schedule live-tv: loads (<10 s) with channels",
+      "result": "PASS",
+      "evidence": {
+        "ms": 353,
+        "channels": 1495,
+        "programs": 6530,
+        "rawMB": 6.76,
+        "wireKB": null,
+        "encoding": "gzip"
+      }
+    },
+    {
+      "id": "schedule live-tv: integrity (no empty/duplicate channels, no media-less or reversed-time programs)",
+      "result": "PASS",
+      "evidence": {
+        "emptyChannels": [],
+        "duplicateChannelIds": [],
+        "programsWithoutMedia": 0,
+        "duplicateProgramIds": 0,
+        "reversedTimes": 0
+      }
+    },
+    {
+      "id": "schedule movies-classics-vault: loads (<10 s) with channels",
+      "result": "PASS",
+      "evidence": {
+        "ms": 136,
+        "channels": 6,
+        "programs": 137,
+        "rawMB": 0.16,
+        "wireKB": null,
+        "encoding": "gzip"
+      }
+    },
+    {
+      "id": "schedule movies-classics-vault: integrity (no empty/duplicate channels, no media-less or reversed-time programs)",
+      "result": "PASS",
+      "evidence": {
+        "emptyChannels": [],
+        "duplicateChannelIds": [],
+        "programsWithoutMedia": 0,
+        "duplicateProgramIds": 0,
+        "reversedTimes": 0
+      }
+    },
+    {
+      "id": "schedule old-british-tv: loads (<10 s) with channels",
+      "result": "PASS",
+      "evidence": {
+        "ms": 259,
+        "channels": 12,
+        "programs": 564,
+        "rawMB": 0.73,
+        "wireKB": null,
+        "encoding": "gzip"
+      }
+    },
+    {
+      "id": "schedule old-british-tv: integrity (no empty/duplicate channels, no media-less or reversed-time programs)",
+      "result": "PASS",
+      "evidence": {
+        "emptyChannels": [],
+        "duplicateChannelIds": [],
+        "programsWithoutMedia": 0,
+        "duplicateProgramIds": 0,
+        "reversedTimes": 0
+      }
+    },
+    {
+      "id": "media links cable-tv: 12/12 playable (1-byte range via proxy)",
+      "result": "PASS",
+      "evidence": {
+        "failures": [],
+        "slowOver8s": 0,
+        "medianMs": 703
+      }
+    },
+    {
+      "id": "media links classic-tv: 12/12 playable (1-byte range via proxy)",
+      "result": "PASS",
+      "evidence": {
+        "failures": [],
+        "slowOver8s": 0,
+        "medianMs": 1790
+      }
+    },
+    {
+      "id": "media links audio-podcasts: 12/12 playable (1-byte range via proxy)",
+      "result": "PASS",
+      "evidence": {
+        "failures": [],
+        "slowOver8s": 0,
+        "medianMs": 1161
+      }
+    },
+    {
+      "id": "media links science-documentaries: 12/12 playable (1-byte range via proxy)",
+      "result": "PASS",
+      "evidence": {
+        "failures": [],
+        "slowOver8s": 0,
+        "medianMs": 1257
+      }
+    },
+    {
+      "id": "media links live-tv",
+      "result": "INFO",
+      "evidence": "no proxied programs (live/HLS/embeds: 6530) — test by hand"
+    },
+    {
+      "id": "media links movies-classics-vault: 12/12 playable (1-byte range via proxy)",
+      "result": "PASS",
+      "evidence": {
+        "failures": [],
+        "slowOver8s": 0,
+        "medianMs": 1543
+      }
+    },
+    {
+      "id": "media links old-british-tv: 12/12 playable (1-byte range via proxy)",
+      "result": "PASS",
+      "evidence": {
+        "failures": [],
+        "slowOver8s": 2,
+        "medianMs": 4302
+      }
+    },
+    {
+      "id": "search \"news\"",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "ms": 407,
+        "total": 81591,
+        "returned": 24,
+        "first": "Gutfeld!"
+      }
+    },
+    {
+      "id": "search \"documentary\"",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "ms": 382,
+        "total": 98,
+        "returned": 24,
+        "first": "Tucker Carlson Original Season 3 Preview : FOXNEWSW : April 16, 2023 10:00pm-11:00pm PDT"
+      }
+    },
+    {
+      "id": "search \"tucker\"",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "ms": 374,
+        "total": 5559,
+        "returned": 24,
+        "first": "Fox News at Night : FOXNEWSW : September 4, 2026 1:00am-2:01am PDT"
+      }
+    },
+    {
+      "id": "news version",
+      "result": "PASS",
+      "evidence": {
+        "fetchedAt": "2026-10-09T08:26:15.846Z",
+        "ageHours": 0.7,
+        "newShows": 50
+      }
+    },
+    {
+      "id": "daily news digest (503 is an honest 'not loaded' state)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "state": "ok",
+        "error": null,
+        "keys": [
+          "digest",
+          "fetchedAt",
+          "status",
+          "error"
+        ]
+      }
+    },
+    {
+      "id": "rush index",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "size": [
+          "total",
+          "items"
+        ]
+      }
+    },
+    {
+      "id": "library items (news)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "count": 0
+      }
+    },
+    {
+      "id": "playlists",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "total": 4
+      }
+    },
+    {
+      "id": "audio cover art lookup (200 + images[] — empty is valid, 404 means the new route is not deployed)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "ms": 1329,
+        "images": 3,
+        "track": "Follow the Money"
+      }
+    },
+    {
+      "id": "unknown /api/* is a 404, not a 200 HTML page",
+      "result": "PASS",
+      "evidence": {
+        "status": 404,
+        "contentType": "application/json; charset=utf-8"
+      }
+    },
+    {
+      "id": "guard: proxy rejects file path",
+      "result": "PASS",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "id": "guard: proxy rejects embedded host",
+      "result": "PASS",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "id": "guard: proxy rejects traversal",
+      "result": "PASS",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "id": "guard: ajn proxy rejects non-allowlisted host",
+      "result": "PASS",
+      "evidence": {
+        "status": 403
+      }
+    },
+    {
+      "id": "guard: hls playlist proxy rejects non-allowlisted host",
+      "result": "PASS",
+      "evidence": {
+        "status": 403
+      }
+    }
+  ]
+}
