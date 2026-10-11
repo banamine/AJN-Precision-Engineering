@@ -1,6 +1,7 @@
 import { buildDiscoveryChannel, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
 import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, getLibrarySeries, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
+import { pickOnNow, type HomeNowItem } from './server/homeNow';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { liveTvHealthSummary } from './guideRegistry';
 import { isKnownEnclosure, resolveEnclosure } from './server/podcasts';
@@ -63,6 +64,24 @@ function guideSnapshot(guideId:string):Promise<ExportSnapshot>{
   return p;
 }
 const EXPORT_GUIDES=['cable-tv','classic-tv','live-tv','audio-podcasts','movies-classics-vault','science-documentaries','old-british-tv'];
+// Home carousel: ONE airing program per genre guide, read from the cached guide snapshots (no extra Archive traffic).
+// A guide whose snapshot is not ready within 3.5 s is reported in "pending" instead of blocking the page or being faked.
+const HOME_NOW_GUIDES=['cable-tv','classic-tv','movies-classics-vault','science-documentaries','audio-podcasts','old-british-tv'];
+app.get('/api/home/now',async(_req,res)=>{
+  const nowMs=Date.now();
+  const names=new Map(getAllGuides().map(g=>[g.id,g.name]));
+  const items:HomeNowItem[]=[];const pending:string[]=[];const failed:string[]=[];
+  await Promise.all(HOME_NOW_GUIDES.map(async id=>{
+    try{
+      const snap=await Promise.race([guideSnapshot(id),new Promise<null>(r=>setTimeout(()=>r(null),3500))]);
+      if(!snap){pending.push(id);return;}
+      const it=pickOnNow(id,names.get(id)||id,snap.channels,nowMs);if(it)items.push(it);
+    }catch(e:any){console.warn('[HomeNow]',id,e?.message);failed.push(id);}
+  }));
+  items.sort((a,b)=>HOME_NOW_GUIDES.indexOf(a.guideId)-HOME_NOW_GUIDES.indexOf(b.guideId));
+  const ends=items.map(i=>Date.parse(i.endTimeUtc)).filter(Number.isFinite);
+  res.set('Cache-Control','no-store').json({generatedAt:new Date(nowMs).toISOString(),items,pending,failed,nextChangeAt:ends.length?new Date(Math.min(...ends)).toISOString():null});
+});
 const originOf=(req:any)=>`${(req.headers['x-forwarded-proto']||req.protocol||'https').toString().split(',')[0]}://${req.get('host')}`;
 let libraryCache:{at:number;items:any[];generatedAt:string}|null=null;
 // Library index: packaged snapshot (search categories) + guide categories, paged.

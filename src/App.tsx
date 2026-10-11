@@ -280,7 +280,7 @@ export default function App() {
               favorites={favorites}
               onPlayFavorite={playSaved}
             />
-            <AjnResourcePanel onPlayProgram={handlePlayProgram} />
+            <AjnResourcePanel onPlayProgram={handlePlayProgram} className="mt-14" />
           </div>
         )}
         {hasVisitedTvGuide && (

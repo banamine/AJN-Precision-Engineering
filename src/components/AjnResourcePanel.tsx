@@ -1,12 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Headphones, Play, RefreshCw, Tv } from 'lucide-react';
 import type { PlayProgramCallback } from '../types';
 import type { AjnFeedItem } from '../services/ajnFeeds';
 import { useAjnFeeds } from '../hooks/useAjnFeeds';
+import { labelAjnItem } from '../utils/ajnLabels';
+import { ShowArt } from './ShowArt';
 
 interface Props {
   onPlayProgram: PlayProgramCallback;
+  className?: string;
 }
+
+const COLLAPSED = 6;
+const EXPANDED = 12;
 
 function byNewest(a: AjnFeedItem, b: AjnFeedItem): number {
   const aTime = Date.parse(a.publishedAt || '');
@@ -14,17 +20,61 @@ function byNewest(a: AjnFeedItem, b: AjnFeedItem): number {
   return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
 }
 
-export function AjnResourcePanel({ onPlayProgram }: Props) {
+function ResourceCard({ item, onPlayProgram }: { key?: string; item: AjnFeedItem; onPlayProgram: PlayProgramCallback }) {
+  const label = labelAjnItem(item);
+  const title = label ? label.show : item.title;
+  const detail = label ? [label.detail, label.dateLabel].join(' · ') : (Number.isFinite(Date.parse(item.publishedAt || '')) ? new Date(item.publishedAt!).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '');
+  const Icon = item.mediaType === 'audio' ? Headphones : Tv;
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onPlayProgram(item.url!, label ? `${label.show} · ${label.detail}` : item.title, item.feedId, item.mediaType, undefined, `ajn-${item.feedId}`, item.id)}
+        aria-label={`Play ${title}${detail ? `, ${detail}` : ''}`}
+        className="group flex w-full items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-2.5 text-left transition hover:border-sky-500/40 hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+      >
+        <ShowArt label={title} mediaType={item.mediaType} src={item.thumbnailUrl} className="h-14 w-14 shrink-0 rounded-lg" iconOnly />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-neutral-100">{title}</span>
+          <span className="block truncate text-xs text-neutral-400">{detail || ' '}</span>
+          <span className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-neutral-600"><Icon className="h-3 w-3" aria-hidden="true" />{item.feedId}</span>
+        </span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-neutral-300 transition group-hover:bg-sky-600 group-hover:text-white"><Play className="ml-0.5 h-3.5 w-3.5 fill-current" /></span>
+      </button>
+    </li>
+  );
+}
+
+function Group({ title, icon: Icon, items, total, onPlayProgram }: { title: string; icon: typeof Tv; items: AjnFeedItem[]; total: number; onPlayProgram: PlayProgramCallback }) {
+  const [more, setMore] = useState(false);
+  const shown = items.slice(0, more ? EXPANDED : COLLAPSED);
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-300"><Icon className="h-4 w-4 text-sky-400" aria-hidden="true" />{title}<span className="font-mono text-[11px] font-normal text-neutral-600">{total}</span></h3>
+        {items.length > COLLAPSED && <button type="button" onClick={() => setMore((m) => !m)} className="text-xs font-medium text-sky-400 hover:text-sky-300">{more ? 'Show fewer' : `Show more`}</button>}
+      </div>
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {shown.map((item) => <ResourceCard key={`${item.feedId}:${item.id}`} item={item} onPlayProgram={onPlayProgram} />)}
+      </ul>
+    </div>
+  );
+}
+
+export function AjnResourcePanel({ onPlayProgram, className = '' }: Props) {
   const feeds = useAjnFeeds();
   const catalog = feeds.data?.catalog ?? null;
   const lastCheckedAt = feeds.checkedAt;
   const loading = feeds.status === 'loading';
 
-  const items = useMemo(() => {
+  const { video, audio, count } = useMemo(() => {
     const all = feeds.data?.items ?? [];
-    const video = all.filter((i) => i.mediaType === 'video').sort(byNewest).slice(0, 6);
-    const audio = all.filter((i) => i.mediaType === 'audio').sort(byNewest).slice(0, 6);
-    return [...video, ...audio];
+    return {
+      video: all.filter((i) => i.mediaType === 'video').sort(byNewest),
+      audio: all.filter((i) => i.mediaType === 'audio').sort(byNewest),
+      count: all.length,
+    };
   }, [feeds.data]);
 
   let error: string | null = feeds.error;
@@ -35,25 +85,19 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
   }
 
   return (
-    <section aria-labelledby="ajn-resource-heading" className="space-y-4">
-      <div className="flex items-center justify-between">
+    <section aria-labelledby="ajn-resource-heading" className={`space-y-5 ${className}`}>
+      <div className="flex items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              <Tv className="h-4 w-4" />
-            </div>
-            <h2 id="ajn-resource-heading" className="text-lg font-semibold tracking-tight text-neutral-100">
-              AJN Audio / Video Resources
-            </h2>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-sky-500/20 bg-sky-500/10 text-sky-400"><Tv className="h-4 w-4" /></div>
+            <h2 id="ajn-resource-heading" className="text-lg font-semibold tracking-tight text-neutral-100">AJN Shows &amp; Feeds</h2>
           </div>
-          <p className="mt-1 text-xs text-neutral-500">
-            Live resource feeds from the AJN resource source; normalized by the server before playback.
-          </p>
+          <p className="mt-1 text-xs text-neutral-500">Newest shows from the AJN feeds. Titles and dates are read from each file name.</p>
         </div>
         <button
           type="button"
           onClick={() => void feeds.reload()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
           disabled={feeds.refreshing}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${feeds.refreshing ? 'animate-spin' : ''}`} />
@@ -63,41 +107,15 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
 
       {loading && <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-5 text-xs text-neutral-400">Loading AJN resource feeds…</div>}
       {error && <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-5 text-xs text-red-300">AJN resource feed unavailable: {error}</div>}
-
-      {!loading && !error && items.length === 0 && (
+      {!loading && !error && count === 0 && (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-5 text-xs text-neutral-400">AJN feeds are reachable, but no playable items were returned.</div>
       )}
 
-      {items.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {items.map((item) => (
-            <article key={`${item.feedId}:${item.id}`} className="group rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 hover:border-neutral-700">
-              <div className="flex items-center justify-between gap-2">
-                <span className="rounded px-2 py-0.5 font-mono text-[10px] font-semibold text-sky-300 bg-sky-950/70 border border-sky-800/40">
-                  {item.feedId}
-                </span>
-                <span className="inline-flex items-center gap-1 text-[10px] text-neutral-500">
-                  {item.mediaType === 'audio' ? <Headphones className="h-3 w-3" /> : <Tv className="h-3 w-3" />}
-                  {item.mediaType}
-                </span>
-              </div>
-              <h3 className="mt-3 text-sm font-semibold text-neutral-100 line-clamp-2">{item.title}</h3>
-              {item.description && <p className="mt-1.5 text-xs text-neutral-500 line-clamp-2">{item.description}</p>}
-              <button
-                type="button"
-                onClick={() => onPlayProgram(item.url!, item.title, item.feedId, item.mediaType, undefined, `ajn-${item.feedId}`, item.id)}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-sky-600 hover:text-white"
-              >
-                <Play className="h-3.5 w-3.5 fill-current" />
-                Play
-              </button>
-            </article>
-          ))}
-        </div>
-      )}
+      <Group title="Video" icon={Tv} items={video} total={video.length} onPlayProgram={onPlayProgram} />
+      <Group title="Audio" icon={Headphones} items={audio} total={audio.length} onPlayProgram={onPlayProgram} />
 
       {catalog && (
-        <div className="flex items-center justify-between gap-3 text-[10px] text-neutral-600 font-mono">
+        <div className="flex items-center justify-between gap-3 font-mono text-[10px] text-neutral-600">
           <span>Source: {catalog.source}</span>
           {lastCheckedAt && <span>Last checked: {new Date(lastCheckedAt).toLocaleTimeString()}</span>}
         </div>

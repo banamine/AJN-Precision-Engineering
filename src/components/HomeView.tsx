@@ -1,6 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Heart, Play, Tv, Radio, Sparkles, Clock, ArrowRight, Archive, Headphones, Rocket } from 'lucide-react';
 import { useLatestFullShows } from '../hooks/useLatestFullShows';
+import { useHomeNow } from '../hooks/useHomeNow';
+import { RecentCarousel } from './RecentCarousel';
+import { HERO_POOL, PROGRAM_POOL, type ProgramTile } from '../data/homeFeatures';
+import { localDateKey, msUntilLocalMidnight, pickForDay } from '../utils/dayRotation';
+import { saveLastView } from '../nav/lastView';
 import type { FavoriteMedia } from '../utils/mediaFavorites';
 import { Destination, NowPlayingMedia, MediaType, PlayProgramCallback, RecentlyPlayedItem } from '../types';
 
@@ -25,51 +30,6 @@ interface LiveChannelPreview {
   isLive: boolean;
   logo?: string;
 }
-
-const FEATURED_BROADCAST = {
-  title: 'NASA Apollo 11 Spaceflight Audio Highlights',
-  category: 'Historic Aerospace Vault',
-  description: 'Original transmission feeds from the Apollo 11 lunar landing mission, processed through the AJN precision audio bridge.',
-  archivePath: '/download/Apollo11AudioHighlights/Apollo11Highlights.mp3',
-  duration: '61 mins',
-  tag: 'Curated Feature',
-  mediaType: 'audio' as MediaType,
-  image: '/Classic%20Archive.png',
-};
-
-const PROGRAM_COLLECTIONS = [
-  {
-    title: 'Special Coverage',
-    description: 'Archive reports, breaking coverage and preserved broadcast material.',
-    image: '/Special%20Report.png',
-    accent: 'text-sky-300',
-    badge: 'SPECIAL REPORT',
-    action: 'library' as Destination,
-  },
-  {
-    title: 'Classic Archive',
-    description: 'Classic television, cinema and historical programs.',
-    image: '/Classic%20Archive.png',
-    accent: 'text-amber-300',
-    badge: 'CLASSIC TV',
-    action: 'library' as Destination,
-  },
-  {
-    title: 'Emergency Broadcast',
-    description: 'Continuous-access emergency and special broadcast presentation.',
-    image: '/Emergency%20Broadcast.png',
-    accent: 'text-rose-300',
-    badge: 'EMERGENCY',
-    action: 'tv-guide' as Destination,
-  },
-];
-
-const ARCHIVE_HIGHLIGHTS = [
-  { id: 'highlight-1', title: 'Night of the Living Dead (1968 Master)', category: 'Public Domain Cinema', duration: '96 mins', archivePath: '/download/night_of_the_living_dead_dvd/Night.mp4', badge: 'VIDEO MP4', mediaType: 'video' as MediaType, description: 'Classic cinema restored master streamed through the existing Archive playback path.' },
-  { id: 'highlight-2', title: 'Apollo 11 Flight Journal Audio Vault', category: 'NASA Spaceflight', duration: '61 mins', archivePath: '/download/Apollo11AudioHighlights/Apollo11Highlights.mp3', badge: 'RADIO AUDIO', mediaType: 'audio' as MediaType, description: 'Mission control communication recordings and flight director audio loops.' },
-  { id: 'highlight-3', title: 'War of the Worlds — Orson Welles 1938', category: 'Historical Radio Drama', duration: '58 mins', archivePath: '/download/WarOfTheWorlds1938RadioBroadcast256kbps/War-of-the-Worlds-1938-Radio-Broadcast-136kbps-cleaned.mp3', badge: 'RADIO DRAMA', mediaType: 'audio' as MediaType, description: 'The historic CBS broadcast with live sound design and voice acting.' },
-];
-
 
 /** Archive item cover through our own proxy (same path rule as every other Archive request). */
 function archiveThumb(archivePath: string): string | undefined {
@@ -140,6 +100,26 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
       .catch(() => { /* optional feature: stay hidden */ });
     return () => { alive = false; };
   }, []);
+  // Daily rotation: everything below flips at the viewer's local midnight (same date = same picks).
+  const [dateKey, setDateKey] = useState(() => localDateKey());
+  useEffect(() => {
+    const t = window.setTimeout(() => setDateKey(localDateKey()), msUntilLocalMidnight() + 500);
+    return () => window.clearTimeout(t);
+  }, [dateKey]);
+  const hero = useMemo(() => pickForDay(HERO_POOL, (f) => f.id, dateKey, 1, 'hero')[0], [dateKey]);
+  const [heroImage, setHeroImage] = useState(() => archiveThumb(hero.archivePath) ?? hero.image);
+  useEffect(() => { setHeroImage(archiveThumb(hero.archivePath) ?? hero.image); }, [hero]);
+  // One shared "airing now per genre" read for the program tiles and the carousel.
+  const now = useHomeNow();
+  const tiles = useMemo(() => pickForDay(PROGRAM_POOL, (t) => t.id, dateKey, 3, 'tiles'), [dateKey]);
+  const tileImage = (t: ProgramTile) => t.image ?? now.items.find((i) => i.guideId === t.guideId)?.thumb;
+  const openTile = (t: ProgramTile) => {
+    if (t.guideId && t.dest === 'tv-guide') {
+      saveLastView({ guideId: t.guideId });
+      window.dispatchEvent(new CustomEvent('ajn:select-guide', { detail: { guideId: t.guideId } }));
+    }
+    onNavigate(t.dest);
+  };
   const [liveChannels, setLiveChannels] = useState<LiveChannelPreview[]>([]);
 
   useEffect(() => {
@@ -170,9 +150,9 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
   }, []);
 
   return (
-    <div className="space-y-10 pb-16">
+    <div className="space-y-14 pb-16">
       <section className="relative isolate overflow-hidden rounded-2xl border border-sky-500/20 bg-neutral-950 shadow-2xl">
-        <img src={FEATURED_BROADCAST.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+        <img src={heroImage} alt="" aria-hidden="true" onError={() => setHeroImage('/Classic%20Archive.png')} className="absolute inset-0 h-full w-full object-cover opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/90 to-neutral-950/55" />
         
         {/* High-visibility Driver Mode / Full Show Floating Overlay Button */}
@@ -183,7 +163,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               if (nowPlaying) {
                 onNavigate('player');
               } else {
-                onPlayProgram(FEATURED_BROADCAST.archivePath, FEATURED_BROADCAST.title, FEATURED_BROADCAST.category, FEATURED_BROADCAST.mediaType);
+                onPlayProgram(hero.archivePath, hero.title, hero.category, hero.mediaType);
               }
             }}
             title="Play Full Show (High-Visibility Drive Mode)"
@@ -214,15 +194,15 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                {nowPlaying?.isLive ? 'LIVE NOW' : nowPlaying ? 'NOW PLAYING' : FEATURED_BROADCAST.tag}
+                {nowPlaying?.isLive ? 'LIVE NOW' : nowPlaying ? 'NOW PLAYING' : hero.tag}
               </span>
-              <span className="text-xs text-neutral-400">{(nowPlaying?.mediaType ?? (nowPlaying ? 'video' : FEATURED_BROADCAST.mediaType)) === 'audio' ? 'Audio' : 'Video'} • AJN Cloud TV</span>
+              <span className="text-xs text-neutral-400">{(nowPlaying?.mediaType ?? (nowPlaying ? 'video' : hero.mediaType)) === 'audio' ? 'Audio' : 'Video'} • AJN Cloud TV</span>
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-neutral-50 leading-tight">
-              {nowPlaying?.title || FEATURED_BROADCAST.title}
+              {nowPlaying?.title || hero.title}
             </h1>
             <p className="max-w-2xl text-sm sm:text-base text-neutral-300 leading-relaxed">
-              {nowPlaying?.subtitle || FEATURED_BROADCAST.description}
+              {nowPlaying?.subtitle || hero.description}
             </p>
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
@@ -231,7 +211,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
                   if (nowPlaying) {
                     onNavigate('player');
                   } else {
-                    onPlayProgram(FEATURED_BROADCAST.archivePath, FEATURED_BROADCAST.title, FEATURED_BROADCAST.category, FEATURED_BROADCAST.mediaType);
+                    onPlayProgram(hero.archivePath, hero.title, hero.category, hero.mediaType);
                   }
                 }}
                 className="inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 px-5 py-3 text-sm sm:text-base font-black text-emerald-300 shadow-xl shadow-orange-950/70 ring-2 ring-orange-400/80 hover:from-red-500 hover:to-orange-500 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
@@ -244,10 +224,16 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               <button type="button" onClick={() => onNavigate('tv-guide')} className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/80 px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-neutral-800">
                 <Tv className="h-4 w-4 text-sky-400" /> Open Guide
               </button>
+              {hero.apollo ? (
               <button type="button" onClick={() => { try { sessionStorage.setItem('ajn.library.open', 'apollo'); } catch { /* storage blocked: opens on All */ } onNavigate('library'); }}
                 className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/80 px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-neutral-800">
                 <Rocket className="h-4 w-4 text-amber-400" aria-hidden="true" /> Apollo Mission Archive
               </button>
+              ) : (
+                <button type="button" onClick={() => onNavigate('library')} className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/80 px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-neutral-800">
+                  <Archive className="h-4 w-4 text-amber-400" aria-hidden="true" /> Open Library
+                </button>
+              )}
             </div>
             <FullShowShortcuts onPlayProgram={onPlayProgram} className="sm:hidden" testId="full-show-shortcuts-inline" />
           </div>
@@ -261,24 +247,27 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
             <p className="mt-1 text-xs text-neutral-500">Visual entry points into the archive and broadcast catalog.</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {PROGRAM_COLLECTIONS.map((collection) => (
-            <button key={collection.title} type="button" onClick={() => onNavigate(collection.action)} className="group relative min-h-[190px] overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 text-left">
-              <img src={collection.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-55 transition duration-500 group-hover:scale-105 group-hover:opacity-70" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/65 to-transparent" />
-              <div className="relative flex h-full min-h-[190px] flex-col justify-end p-5">
-                <span className={`text-[10px] font-mono font-semibold tracking-[0.18em] ${collection.accent}`}>{collection.badge}</span>
-                <h3 className="mt-2 text-xl font-semibold text-white">{collection.title}</h3>
-                <p className="mt-1 max-w-sm text-xs leading-relaxed text-neutral-300">{collection.description}</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-sky-300">Explore <ArrowRight className="h-3.5 w-3.5" /></span>
-              </div>
-            </button>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="home-program-tiles">
+          {tiles.map((t) => {
+            const img = tileImage(t);
+            return (
+              <button key={t.id} type="button" onClick={() => openTile(t)} className="group relative min-h-[190px] overflow-hidden rounded-xl border border-neutral-800 bg-gradient-to-br from-neutral-900 to-neutral-950 text-left">
+                {img && <img src={img} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-55 transition duration-500 group-hover:scale-105 group-hover:opacity-70" loading="lazy" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/65 to-transparent" />
+                <div className="relative flex h-full min-h-[190px] flex-col justify-end p-5">
+                  <span className={`text-[10px] font-mono font-semibold tracking-[0.18em] ${t.accent}`}>{t.badge}</span>
+                  <h3 className="mt-2 text-xl font-semibold text-white">{t.title}</h3>
+                  <p className="mt-1 max-w-sm text-xs leading-relaxed text-neutral-300">{t.description}</p>
+                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-sky-300">Explore <ArrowRight className="h-3.5 w-3.5" /></span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="min-w-0 space-y-8">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-12">
           {daily && (
             <section aria-labelledby="today-ajn-heading" className="space-y-3" data-testid="home-today-ajn">
               <div><h2 id="today-ajn-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Today on AJN</h2><p className="text-xs text-neutral-500">Stills picked from {daily.date}'s broadcasts. Tap one to watch from that moment.</p></div>
@@ -314,23 +303,10 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
             </div>
           </section>
 
-          <section aria-labelledby="featured-highlights-heading" className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div><h2 id="featured-highlights-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Featured Highlights</h2><p className="text-xs text-neutral-500">Archive entries wired to the existing playback path.</p></div>
-              <button type="button" onClick={() => onNavigate('library')} className="text-xs font-medium text-sky-400 hover:text-sky-300">Open Library</button>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="home-highlights">
-              {ARCHIVE_HIGHLIGHTS.map((item) => (
-                <MediaCard key={item.id} image={archiveThumb(item.archivePath)} className="aspect-[4/3] sm:aspect-[3/4]" label={`Play ${item.title}`} onClick={() => onPlayProgram(item.archivePath, item.title, item.category, item.mediaType)}>
-                  <div className="flex items-center justify-between"><TypePill type={item.mediaType} /><span className="text-[10px] text-neutral-300">{item.duration}</span></div>
-                  <div><h3 className="line-clamp-2 text-sm font-semibold text-white">{item.title}</h3><p className="text-[11px] text-neutral-300">{item.category}</p></div>
-                </MediaCard>
-              ))}
-            </div>
-          </section>
+          <RecentCarousel now={now} onPlayProgram={onPlayProgram} onNavigate={onNavigate} playing={!!nowPlaying} />
         </div>
 
-        <aside className="min-w-0 space-y-8">
+        <aside className="min-w-0 space-y-10">
           <section aria-labelledby="recent-heading" className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 id="recent-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Recently Played</h2>
@@ -388,7 +364,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           </section>
 
           <section aria-labelledby="resources-heading" className="space-y-3">
-            <h2 id="resources-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Audio &amp; Video Resources</h2>
+            <h2 id="resources-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Jump to</h2>
             <ul className="space-y-2">
               {([
                 { label: 'TV & Audio Guide', hint: 'Every channel, 24 hours', icon: Tv, dest: 'tv-guide' },
