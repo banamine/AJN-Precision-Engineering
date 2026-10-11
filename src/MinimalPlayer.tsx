@@ -528,6 +528,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
 
     const saveOnExit = () => fx().saveResumePosition(media);
     window.addEventListener("pagehide", saveOnExit);
+    // Mobile browsers often kill a hidden tab without firing pagehide: flush the spot when the tab is hidden too.
+    const saveOnHidden = () => { if (document.visibilityState === "hidden") fx().saveResumePosition(media); };
+    document.addEventListener("visibilitychange", saveOnHidden);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     // Metadata of an adopted element arrived before these listeners existed: run the same start path now.
@@ -552,6 +555,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       media.removeEventListener("ended", onEnded);
       media.removeEventListener("error", onError);
       window.removeEventListener("pagehide", saveOnExit);
+      document.removeEventListener("visibilitychange", saveOnHidden);
       fx().saveResumePosition(media);
       // Element unmounted or swapped (video <-> audio): release its network/decoder
       // so exactly one playback pipeline remains. Not on a plain src change —

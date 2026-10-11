@@ -11,6 +11,7 @@ import {
   RefreshCw,
   CloudUpload,
   Settings,
+  Trash2,
 } from 'lucide-react';
 import { ProxyMonitor } from './ProxyMonitor';
 import { ProxyTester } from './ProxyTester';
@@ -23,6 +24,14 @@ function readStoredRecentlyPlayed(): RecentlyPlayedItem[] {
   try { const v = JSON.parse(window.localStorage.getItem(RECENTLY_PLAYED_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
 }
 
+/** Wipes every localStorage entry for this site (recently played, history, favorites, recent searches, resume positions, settings).
+ *  Returns how many entries were removed, or null if storage is unavailable. */
+export function clearAppData(storage: Pick<Storage, 'length' | 'clear'> | null = typeof window !== 'undefined' ? safeStorage() : null): number | null {
+  if (!storage) return null;
+  try { const n = storage.length; storage.clear(); return n; } catch { return null; }
+}
+function safeStorage(): Storage | null { try { return window.localStorage; } catch { return null; } }
+
 interface DevModeViewProps {
   onNavigate: (dest: Destination) => void;
   /** The live recently-played list from App. Falls back to the saved copy when omitted. */
@@ -32,6 +41,15 @@ interface DevModeViewProps {
 export function DevModeView({ onNavigate, recentlyPlayed }: DevModeViewProps) {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<(SyncResult & { at: string }) | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearMsg, setClearMsg] = useState<string | null>(null);
+  const doClear = () => {
+    const n = clearAppData();
+    if (n === null) { setClearMsg('Could not clear: browser storage is unavailable.'); setConfirmClear(false); return; }
+    setClearMsg(`Cleared ${n} saved entr${n === 1 ? 'y' : 'ies'}. Reloading…`);
+    setConfirmClear(false);
+    window.setTimeout(() => window.location.reload(), 600);
+  };
   const items = recentlyPlayed ?? readStoredRecentlyPlayed();
   const runSync = async () => {
     if (syncing) return;
@@ -126,6 +144,24 @@ export function DevModeView({ onNavigate, recentlyPlayed }: DevModeViewProps) {
           {!syncResult && <span className="text-neutral-500">Not synced in this session.</span>}
           {syncResult && syncResult.ok && <span className="text-emerald-300">{syncResult.at} · {syncResult.received} item{syncResult.received === 1 ? '' : 's'} received. {syncResult.stored ? 'Stored.' : 'Not stored (placeholder endpoint).'}</span>}
           {syncResult && !syncResult.ok && <span className="text-red-300">{syncResult.at} · Sync failed: {syncResult.reason}</span>}
+        </div>
+        <div className="mt-4 border-t border-neutral-800 pt-4" data-testid="clear-app-data">
+          {!confirmClear ? (
+            <button type="button" data-testid="clear-app-data-btn" onClick={() => { setClearMsg(null); setConfirmClear(true); }}
+              className="inline-flex items-center gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+              <Trash2 className="h-3.5 w-3.5" /> Clear App Data
+            </button>
+          ) : (
+            <div role="alertdialog" aria-label="Confirm clear app data" className="space-y-2 rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-200">
+              <p>This erases everything saved in this browser: recently played, history, favorites, recent searches, resume positions and settings. It cannot be undone.</p>
+              <p className="text-red-300/80">If you are signed in, cloud sync may bring favorites and history back afterwards. Your sign-in itself is not removed.</p>
+              <div className="flex gap-2">
+                <button type="button" data-testid="clear-app-data-confirm" onClick={doClear} className="rounded-md bg-red-600 px-3 py-1.5 font-medium text-white hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300">Yes, erase everything</button>
+                <button type="button" data-testid="clear-app-data-cancel" onClick={() => setConfirmClear(false)} className="rounded-md border border-neutral-600 px-3 py-1.5 text-neutral-200 hover:bg-neutral-800">Cancel</button>
+              </div>
+            </div>
+          )}
+          {clearMsg && <p role="status" className="mt-2 text-xs text-neutral-300">{clearMsg}</p>}
         </div>
         <details className="mt-3 text-xs text-neutral-400">
           <summary className="cursor-pointer text-neutral-300">How to use</summary>
