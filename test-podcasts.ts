@@ -79,7 +79,12 @@ const other = reg.find((s) => s.enabled && s.id !== 'quash')!; await P.refreshPo
 const rows = P.buildPodcastChannels('audio-podcasts', NOW, layoutDailySchedule as any);
 const q = rows.find((r) => r.id === 'pod-quash')!;
 assert.equal(q.highlight, 'must-listen'); assert.ok(q.programs.length > 0); assert.match(q.group!, /last episode Jun 28/, 'stale show says when its last episode was');
-assert.ok(q.programs.every((p) => p.sourceClass === 'podcast_rss' && !String(p.mediaUrl).includes('/api/')));
+assert.ok(q.programs.filter((p) => p.sourceClass === 'podcast_rss').every((p) => !String(p.mediaUrl).includes('/api/')), 'RSS episodes stay direct');
+const ia = q.programs.filter((p) => p.sourceClass === 'archive_org');
+assert.ok(ia.length > 0, 'Quash Archive back-catalog is on the channel');
+assert.ok(ia.every((p) => String(p.mediaUrl).startsWith('/download/2015-music.-7z/Podcasts/The%20Quash/') && (p as any).archivePath === p.mediaUrl && (p as any).metadata.podcast === true && (p as any).metadata.durationSource === 'archive_metadata' && !(p as any).metadata.airedUtc), 'Archive episodes: encoded Archive path, duration from Archive, no invented air date');
+const iaAll = P.archivePrograms(quash, 'audio-podcasts'); assert.equal(iaAll.length, 36); assert.equal(new Set(iaAll.map((p) => p.id)).size, 36, 'unique ids');
+assert.deepEqual(P.archivePrograms(reg.find((s) => !s.archiveFolder)!, 'audio-podcasts'), [], 'sources without archiveFolder add nothing');
 const e = rows.find((r) => r.id === `pod-${other.id}`)!; assert.equal(e.sourceStatus, 'upstream_error'); assert.match(e.sourceError!, /HTTP 500/); assert.equal(e.programs.length, 0);
 assert.ok(rows.find((r) => r.id !== 'pod-quash' && r.sourceStatus === 'loading'), 'sources not fetched yet show a loading row');
 assert.equal(rows[0].id, 'pod-quash', 'Quash is first');

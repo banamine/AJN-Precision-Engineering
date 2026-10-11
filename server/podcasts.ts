@@ -9,12 +9,15 @@
 import type { Program, ScheduleChannel } from '../src/types';
 import { safeFetch, anyPublicHost } from './safeFetch';
 import sourcesJson from '../src/data/podcastSources.json';
+import archiveEpisodesJson from '../src/data/podcastArchiveEpisodes.json';
 
 export interface PodcastSource {
   id: string; name: string; publisher?: string; feedUrl: string;
   expectTitle: string; enabled: boolean; highlight?: 'must-listen'; verifiedAt?: string;
   /** Enclosure chain verified to allow CORS-mode playback, so the signal meter can read it. Set only after a real-browser check. */
   corsVerified?: boolean;
+  /** Back-catalog hosted on Archive.org (built by tools/podcast_archive_episodes.py). Played through /api/archive/proxy, never direct. */
+  archiveFolder?: { item: string; folder: string };
 }
 export interface PodcastEpisode {
   guid: string; title: string; description: string; publishedAt: number; url: string;
@@ -144,6 +147,22 @@ export function toPrograms(state: PodcastState, guideId: string): Program[] {
   } as unknown as Program));
 }
 
+/** Archive-hosted back-catalog episodes for a source. Archive supplies no air date, so none is invented; durations are Archive's own metadata. */
+export function archivePrograms(source: PodcastSource, guideId: string): Program[] {
+  const af = source.archiveFolder; const set = (archiveEpisodesJson as any)[source.id];
+  if (!af || !set || set.item !== af.item) return [];
+  const channelId = `pod-${source.id}`;
+  return (set.episodes as { path: string; title: string; durationSeconds: number }[]).map((e) => {
+    const archivePath = `/download/${af.item}/${e.path.split('/').map(encodeURIComponent).join('/')}`;
+    return {
+      id: `${channelId}-ia-${fnv(e.path)}`, guideId, channelId, title: e.title, description: `${source.name} · Archive back-catalog`,
+      startTime: 0, endTime: 0, mediaType: 'audio', mediaUrl: archivePath, archivePath, sourceClass: 'archive_org', isArchivedSource: true,
+      metadata: { externalId: `${source.id}:ia:${e.path}`, feedId: source.id, archiveItem: af.item, durationSeconds: e.durationSeconds,
+        durationSource: 'archive_metadata', durationEstimated: false, podcast: true, backCatalog: true },
+    } as unknown as Program;
+  });
+}
+
 /* ---------- fetch + cache ---------- */
 let fetchImplForTests: typeof fetch | undefined;
 export function setPodcastFetchForTests(f: typeof fetch | undefined) { fetchImplForTests = f; cache.clear(); inflight = null; }
@@ -195,7 +214,7 @@ export function buildPodcastChannels(guideId: string, now: Date, layout: (p: Pro
     const newest = state.episodes[0].publishedAt;
     const old = now.getTime() - newest > STALE_DAYS * 86_400_000;
     out.push({ ...row, logo: smallArtwork(state.imageUrl), group: old ? `Podcast · last episode ${shortDate(newest)}` : 'Podcast',
-      programs: layout(toPrograms(state, guideId), 45, now, 120), sourceStatus: state.status === 'ok' ? 'ok' : 'partial', sourceError: state.error,
+      programs: layout([...toPrograms(state, guideId), ...archivePrograms(source, guideId)], 45, now, 160), sourceStatus: state.status === 'ok' ? 'ok' : 'partial', sourceError: state.error,
       rejected: state.rejected.length ? state.rejected : undefined });
   }
   return out;

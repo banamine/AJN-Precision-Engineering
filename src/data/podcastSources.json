@@ -3,7 +3,7 @@
   "note": "Curated podcast feeds. Feed URLs were fetched and checked on 2026-10-10 (title matched, HTTP 200, audio enclosures play with Range). Audio plays DIRECT from the host in the browser; it is never proxied. enabled=false entries are verified but not shown yet. expectTitle is checked on every refresh: a feed whose title does not contain it is rejected (wrong feed), never shown.",
   "episodesPerShow": 20,
   "sources": [
-    { "id": "quash", "name": "The Quash", "publisher": "The Quash Productions, LLC", "feedUrl": "https://feeds.captivate.fm/the-quash/", "expectTitle": "The Quash", "enabled": true, "highlight": "must-listen", "verifiedAt": "2026-10-10" },
+    { "id": "quash", "name": "The Quash", "publisher": "The Quash Productions, LLC", "feedUrl": "https://feeds.captivate.fm/the-quash/", "expectTitle": "The Quash", "enabled": true, "highlight": "must-listen", "verifiedAt": "2026-10-10", "archiveFolder": { "item": "2015-music.-7z", "folder": "Podcasts/The Quash/" } },
     { "id": "tucker-carlson", "name": "The Tucker Carlson Show", "publisher": "Tucker Carlson Network", "feedUrl": "https://feeds.megaphone.fm/RSV1597324942", "expectTitle": "Tucker Carlson", "enabled": true, "corsVerified": true, "verifiedAt": "2026-10-10" },
     { "id": "fox-news-rundown", "name": "The Fox News Rundown", "publisher": "Fox News Radio", "feedUrl": "https://feeds.megaphone.fm/FOXM1880458659", "expectTitle": "Fox News Rundown", "enabled": true, "corsVerified": true, "verifiedAt": "2026-10-10" },
     { "id": "bannon-war-room", "name": "Bannon's War Room (podcast)", "publisher": "War Room", "feedUrl": "https://listen.warroom.org/feed.xml", "expectTitle": "War Room", "enabled": true, "verifiedAt": "2026-10-10" },
