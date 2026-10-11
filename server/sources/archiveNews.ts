@@ -72,13 +72,14 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T)
   await Promise.all(workers);
   return out;
 }
-const TV_ID = /^([A-Z0-9]+)_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_(.+)$/;
+// The show part is optional: CTV_, ALJAZ_ and FRANCE24_ items are named NETWORK_YYYYMMDD_HHMMSS with no show suffix.
+const TV_ID = /^([A-Z0-9]+)_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})(?:_(.+))?$/;
 
 export function parseAirTime(identifier: string): { airedUtc: Date; show: string } | null {
   const m = identifier.match(TV_ID);
   if (!m) return null;
   const airedUtc = new Date(Date.UTC(+m[2], +m[3] - 1, +m[4], +m[5], +m[6], +m[7]));
-  return Number.isFinite(airedUtc.getTime()) ? { airedUtc, show: m[8].replace(/_/g, ' ') } : null;
+  return Number.isFinite(airedUtc.getTime()) ? { airedUtc, show: (m[8] ?? '').replace(/_/g, ' ') } : null;
 }
 
 function isPrivate(file: ArchiveFile): boolean {
@@ -162,6 +163,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
         rejected.push({ id, reason: `aired outside the ${windowDays}-day window` });
         continue;
       }
+      if (!aired.show) { aired.show = input.channelName; (doc as any).title = undefined; (doc as any).__noShow = true; } // suffix-less ids: label by channel
       candidates.push({ id, doc, aired });
     }
     // Deadline: stop starting metadata requests after 45s and keep what we have,
@@ -191,7 +193,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
           continue;
         }
         const duration = Number(mp4?.length) > 0 ? Number(mp4?.length) : parseRuntime(meta.metadata?.runtime) ?? 3600;
-        const title = String(meta.metadata?.title ?? doc.title ?? aired.show);
+        const title = ((doc as any).__noShow ? aired.show : String(meta.metadata?.title ?? doc.title ?? aired.show));
         clipWindows(duration).forEach(([start, end], n) => {
           const clipStart = new Date(aired.airedUtc.getTime() + start * 1000);
           const clipEnd = new Date(aired.airedUtc.getTime() + end * 1000);
@@ -230,7 +232,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
         id: programId,
         guideId: input.guideId,
         channelId: input.channelId,
-        title: String(meta.metadata?.title ?? doc.title ?? aired.show),
+        title: ((doc as any).__noShow ? aired.show : String(meta.metadata?.title ?? doc.title ?? aired.show)),
         description: `${input.channelName} broadcast: ${aired.show}`,
         startTime: aired.airedUtc.getUTCHours() + aired.airedUtc.getUTCMinutes() / 60,
         endTime: endUtc.getUTCHours() + endUtc.getUTCMinutes() / 60,
@@ -267,4 +269,11 @@ export const NEWS_NETWORKS: Array<[string, string, string]> = [
   ['BBCNEWS', 'bbc', 'BBC News'],
   ['RT', 'rt', 'RT'],
   ['KPIX', 'kpix', 'KPIX CBS'],
+  // 2026-10-09: international + Canadian news, verified fresh on Archive TV News (see claude/AJN_News_Expansion_Phase1_Report).
+  ['CBCNEWS', 'cbc', 'CBC News'],
+  ['CTV', 'ctv', 'CTV News'],
+  ['ALJAZ', 'aljazeera', 'Al Jazeera English'],
+  ['FRANCE24', 'france24', 'France 24'],
+  ['TRTWORLD', 'trt-world', 'TRT World'],
+  ['DW', 'dw', 'DW News'],
 ];

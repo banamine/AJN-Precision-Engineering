@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Terminal,
   ArrowLeft,
@@ -9,17 +9,37 @@ import {
   Radio,
   Cpu,
   RefreshCw,
+  CloudUpload,
+  Settings,
 } from 'lucide-react';
 import { ProxyMonitor } from './ProxyMonitor';
 import { ProxyTester } from './ProxyTester';
 import { AudioBridgeStatus } from './AudioBridgeStatus';
-import { Destination } from '../types';
+import { Destination, RecentlyPlayedItem } from '../types';
+import { syncRecentlyPlayed, SYNC_ENDPOINT, type SyncResult } from '../utils/cloudSync';
+
+const RECENTLY_PLAYED_KEY = 'ajn.recentlyPlayed.v1'; // same key App uses; read only as a fallback when no list is passed in
+function readStoredRecentlyPlayed(): RecentlyPlayedItem[] {
+  try { const v = JSON.parse(window.localStorage.getItem(RECENTLY_PLAYED_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+}
 
 interface DevModeViewProps {
   onNavigate: (dest: Destination) => void;
+  /** The live recently-played list from App. Falls back to the saved copy when omitted. */
+  recentlyPlayed?: RecentlyPlayedItem[];
 }
 
-export function DevModeView({ onNavigate }: DevModeViewProps) {
+export function DevModeView({ onNavigate, recentlyPlayed }: DevModeViewProps) {
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<(SyncResult & { at: string }) | null>(null);
+  const items = recentlyPlayed ?? readStoredRecentlyPlayed();
+  const runSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    const r = await syncRecentlyPlayed(items);
+    setSyncResult({ ...r, at: new Date().toLocaleTimeString() });
+    setSyncing(false);
+  };
   return (
     <div className="space-y-8 pb-16">
       {/* ── Developer Mode Header ────────────────────────────────────────── */}
@@ -87,6 +107,36 @@ export function DevModeView({ onNavigate }: DevModeViewProps) {
           </p>
         </div>
       </div>
+
+      {/* ── Settings ─────────────────────────────────────────────────────── */}
+      <section aria-labelledby="dev-settings-heading" data-testid="dev-settings" className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+        <h2 id="dev-settings-heading" className="flex items-center gap-2 text-sm font-semibold text-neutral-100"><Settings className="h-4 w-4 text-neutral-400" />Settings</h2>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 text-xs text-neutral-400">
+            <div className="font-semibold text-neutral-200">Cloud sync · Recently played</div>
+            <p className="mt-0.5">Sends your {items.length} most recent item{items.length === 1 ? '' : 's'} to <code className="font-mono text-neutral-300">{SYNC_ENDPOINT}</code>. This is a <strong>placeholder</strong> endpoint: it checks the data and replies, but nothing is stored yet.</p>
+          </div>
+          <button type="button" id="sync-to-cloud-btn" data-testid="sync-to-cloud" onClick={() => void runSync()} disabled={syncing}
+            className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-sky-500/50 bg-sky-500/10 px-4 py-2.5 text-xs font-semibold text-sky-200 transition hover:bg-sky-500/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400">
+            {syncing ? <RefreshCw className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" /> : <CloudUpload className="h-3.5 w-3.5" />}
+            {syncing ? 'Syncing…' : 'Sync to cloud'}
+          </button>
+        </div>
+        <div aria-live="polite" data-testid="sync-status" className="mt-3 text-xs">
+          {!syncResult && <span className="text-neutral-500">Not synced in this session.</span>}
+          {syncResult && syncResult.ok && <span className="text-emerald-300">{syncResult.at} · {syncResult.received} item{syncResult.received === 1 ? '' : 's'} received. {syncResult.stored ? 'Stored.' : 'Not stored (placeholder endpoint).'}</span>}
+          {syncResult && !syncResult.ok && <span className="text-red-300">{syncResult.at} · Sync failed: {syncResult.reason}</span>}
+        </div>
+        <details className="mt-3 text-xs text-neutral-400">
+          <summary className="cursor-pointer text-neutral-300">How to use</summary>
+          <ol className="mt-2 list-decimal space-y-1 pl-5">
+            <li>Play a few items so the recently-played list has entries (it keeps the last 5).</li>
+            <li>Open Developer Mode (address ending <code className="font-mono">#dev</code>) and find Settings.</li>
+            <li>Press <strong>Sync to cloud</strong>. Nothing syncs automatically.</li>
+            <li>Read the status line: "N items received · Not stored" means the placeholder accepted them. A red message means the sync failed and says why.</li>
+          </ol>
+        </details>
+      </section>
 
       {/* ── Diagnostic Modules Stack ─────────────────────────────────────── */}
       <div className="space-y-6">

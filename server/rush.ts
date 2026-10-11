@@ -68,7 +68,14 @@ export async function resolveRushItem(id: string): Promise<{ id: string; source:
   const hit = loadCache()[id];
   if (hit) { rushStats.cacheHits++; return { id, source: 'cache', resolvedAt: hit.resolvedAt, tracks: hit.files.map((f) => track(id, f)) }; }
   rushStats.archiveCalls++;
-  const r = await fetchImpl(`https://archive.org/metadata/${encodeURIComponent(id)}`);
+  // Archive answers 502/ECONNRESET in bursts (seen at boot): retry transient failures before giving up.
+  let r: Response | undefined; let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try { r = await fetchImpl(`https://archive.org/metadata/${encodeURIComponent(id)}`); if (r.ok || (r.status < 500 && r.status !== 429)) break; }
+    catch (e) { lastErr = e; r = undefined; }
+    if (attempt < 2) await new Promise((res) => setTimeout(res, attempt === 0 ? 700 : 2000));
+  }
+  if (!r) throw Object.assign(new Error(`metadata fetch failed: ${(lastErr as Error)?.message ?? 'network'}`), { status: 502 });
   if (!r.ok) throw Object.assign(new Error(`metadata HTTP ${r.status}`), { status: 502 });
   const meta: any = await r.json();
   if (meta?.is_dark || !Array.isArray(meta?.files)) throw Object.assign(new Error('item unavailable'), { status: 404 });

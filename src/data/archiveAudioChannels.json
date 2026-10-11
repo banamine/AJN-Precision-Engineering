@@ -1,0 +1,618 @@
+[
+ {
+  "id": "long-john-nebel",
+  "name": "Long John Nebel — Collection",
+  "group": "Old-Time Radio",
+  "itemId": "TheLongJohnNebelCollection",
+  "source": "https://archive.org/details/TheLongJohnNebelCollection",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "wnbc-1975",
+  "name": "WNBC 1975 — Airchecks (Cousin Brucie & more)",
+  "group": "Radio Airchecks",
+  "itemId": "wnbc1975-20260820",
+  "source": "https://archive.org/details/wnbc1975-20260820",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-otrr-dimension-x-singles",
+  "name": "Dimension X - Single Episodes",
+  "group": "Old-Time Radio",
+  "itemId": "OTRR_Dimension_X_Singles",
+  "source": "https://archive.org/details/OTRR_Dimension_X_Singles",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-the-puppet-masters",
+  "name": "The Puppet Masters",
+  "group": "Old-Time Radio",
+  "itemId": "The_Puppet_Masters",
+  "source": "https://archive.org/details/The_Puppet_Masters",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-ilium",
+  "name": "Ilium",
+  "group": "Old-Time Radio",
+  "itemId": "Ilium",
+  "source": "https://archive.org/details/Ilium",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-cbsrmt-74-02-08-33-conspiracy-to-defraud",
+  "name": "CBS Radio Mystery Theater - The (1399 episodes)",
+  "group": "Old-Time Radio",
+  "itemId": "cbsrmt-74-02-08-33-conspiracy-to-defraud",
+  "source": "https://archive.org/details/cbsrmt-74-02-08-33-conspiracy-to-defraud",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-iwcf-1952-07-16-13-rich-man-poor-man",
+  "name": "I Was a Communist for the FBI - 75 Episodes of the Old Time",
+  "group": "Old-Time Radio",
+  "itemId": "iwcf-1952-07-16-13-rich-man-poor-man",
+  "source": "https://archive.org/details/iwcf-1952-07-16-13-rich-man-poor-man",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-ever-after-high-monster-high-the-legend-of-shadow-high",
+  "name": "Monster High/Ever After High: The Legend of Shadow High",
+  "group": "Old-Time Radio",
+  "itemId": "ever-after-high-monster-high-the-legend-of-shadow-high",
+  "source": "https://archive.org/details/ever-after-high-monster-high-the-legend-of-shadow-high",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-otrr-dark-fantasy-singles",
+  "name": "Dark Fantasy - Single Episodes",
+  "group": "Old-Time Radio",
+  "itemId": "OTRR_Dark_Fantasy_Singles",
+  "source": "https://archive.org/details/OTRR_Dark_Fantasy_Singles",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-paul-harvey-trots-23",
+  "name": "Paul Harvey - The Rest of the Story (TROTS) - Collection 23",
+  "group": "Old-Time Radio",
+  "itemId": "paul-harvey-trots-23",
+  "source": "https://archive.org/details/paul-harvey-trots-23",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-otrr-space-patrol-singles",
+  "name": "Space Patrol - Single Episodes",
+  "group": "Old-Time Radio",
+  "itemId": "OTRR_Space_Patrol_Singles",
+  "source": "https://archive.org/details/OTRR_Space_Patrol_Singles",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-otrr-crime-classics-singles",
+  "name": "Crime Classics - Single Episodes",
+  "group": "Old-Time Radio",
+  "itemId": "OTRR_Crime_Classics_Singles",
+  "source": "https://archive.org/details/OTRR_Crime_Classics_Singles",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-coast-2-coast-2013-01-11",
+  "name": "Coast2Coast radio show by Wadadda 2013-01-11",
+  "group": "Old-Time Radio",
+  "itemId": "coast-2-coast-2013-01-11",
+  "source": "https://archive.org/details/coast-2-coast-2013-01-11",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-1912-antarctica",
+  "name": "1912: The Year the World Discovered Antarctica (Complete &",
+  "group": "Old-Time Radio",
+  "itemId": "1912-antarctica",
+  "source": "https://archive.org/details/1912-antarctica",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-george-orwell-audiobooks",
+  "name": "George Orwell Audiobooks",
+  "group": "Old-Time Radio",
+  "itemId": "george-orwell-audiobooks",
+  "source": "https://archive.org/details/george-orwell-audiobooks",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-20210317-20210317-1802",
+  "name": "Tony Dibbin Absolute Radio 70's Unedited",
+  "group": "Old-Time Radio",
+  "itemId": "20210317_20210317_1802",
+  "source": "https://archive.org/details/20210317_20210317_1802",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-lightsoutoldtimeradio",
+  "name": "Lights Out (Old Time Radio)",
+  "group": "Old-Time Radio",
+  "itemId": "LightsOutoldTimeRadio",
+  "source": "https://archive.org/details/LightsOutoldTimeRadio",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-suspense-radio-digitally-restored-collection",
+  "name": "SUSPENSE Radio Digitally Restored Collection",
+  "group": "Old-Time Radio",
+  "itemId": "SUSPENSE_Radio_Digitally_Restored_Collection",
+  "source": "https://archive.org/details/SUSPENSE_Radio_Digitally_Restored_Collection",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "otr-science-fiction-radio-atom-age-adventures",
+  "name": "Science Fiction Radio; Atom Age Adventures",
+  "group": "Old-Time Radio",
+  "itemId": "Science_Fiction_Radio_Atom_Age_Adventures",
+  "source": "https://archive.org/details/Science_Fiction_Radio_Atom_Age_Adventures",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "nwt-audio-alexjonesradioshow-march12010",
+  "name": "Alex Jones Radio Show - March 1 2010",
+  "group": "New World Tyranny",
+  "itemId": "AlexJonesRadioShow-March12010",
+  "source": "https://archive.org/details/AlexJonesRadioShow-March12010",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "nwt-audio-alexjonesradioshow-september172009",
+  "name": "Alex Jones Radio Show - September 17 2009",
+  "group": "New World Tyranny",
+  "itemId": "AlexJonesRadioShow-September172009",
+  "source": "https://archive.org/details/AlexJonesRadioShow-September172009",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "nwt-audio-new-world-order-exposed-by-insider-in-1969-deleated-from-web",
+  "name": "NEW WORLD ORDER EXPOSED BY INSIDER IN 1969 Deleated From",
+  "group": "New World Tyranny",
+  "itemId": "new-world-order-exposed-by-insider-in-1969-deleated-from-web",
+  "source": "https://archive.org/details/new-world-order-exposed-by-insider-in-1969-deleated-from-web",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "nwt-audio-alex-jones-depopulation",
+  "name": "Alex Jones Depopulation",
+  "group": "New World Tyranny",
+  "itemId": "Alex_Jones_Depopulation",
+  "source": "https://archive.org/details/Alex_Jones_Depopulation",
+  "verifiedAt": "2026-10-10"
+ },
+ {
+  "id": "music-slowrock-201707",
+  "name": "slow rock",
+  "group": "Music",
+  "itemId": "SlowRock_201707",
+  "source": "https://archive.org/details/SlowRock_201707",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-doja-cat-paint-the-town-red-official-video-202411",
+  "name": "doja-cat-paint-the-town-red-official-video_202411",
+  "group": "Music",
+  "itemId": "doja-cat-paint-the-town-red-official-video_202411",
+  "source": "https://archive.org/details/doja-cat-paint-the-town-red-official-video_202411",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-06-tunnel-13",
+  "name": "06.-tunnel-13",
+  "group": "Music",
+  "itemId": "06.-tunnel-13",
+  "source": "https://archive.org/details/06.-tunnel-13",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-cafe-del-mar-the-best-of-cafe-del-mar",
+  "name": "Café Del Mar: The Best Of Café Del Mar",
+  "group": "Music",
+  "itemId": "cafe-del-mar-the-best-of-cafe-del-mar",
+  "source": "https://archive.org/details/cafe-del-mar-the-best-of-cafe-del-mar",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-progressive-art-rock-frank-zappa-the-mothers-of-invention-fu",
+  "name": "Frank Zappa",
+  "group": "Music",
+  "itemId": "progressive-art-rock-frank-zappa-the-mothers-of-invention-full-discography-1963-",
+  "source": "https://archive.org/details/progressive-art-rock-frank-zappa-the-mothers-of-invention-full-discography-1963-",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-power-play",
+  "name": "Power Play Album",
+  "group": "Music",
+  "itemId": "power-play",
+  "source": "https://archive.org/details/power-play",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-all-star-country",
+  "name": "All Star Country record set",
+  "group": "Music",
+  "itemId": "all-star-country",
+  "source": "https://archive.org/details/all-star-country",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-dancemania-speed-collection-dance-dance-revolution-songs",
+  "name": "Dancemania Speed Collection (Dance Dance Revolution Songs)",
+  "group": "Music",
+  "itemId": "dancemania-speed-collection-dance-dance-revolution-songs",
+  "source": "https://archive.org/details/dancemania-speed-collection-dance-dance-revolution-songs",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-romantic-collection-best-erotic-songs-2010",
+  "name": "Romantic Collection - Best Erotic Songs (2010)",
+  "group": "Music",
+  "itemId": "romantic-collection-best-erotic-songs-2010",
+  "source": "https://archive.org/details/romantic-collection-best-erotic-songs-2010",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-ultimate-chillout-dreams-2018-202207",
+  "name": "Ultimate Chillout Dreams (2018)",
+  "group": "Music",
+  "itemId": "ultimate-chillout-dreams-2018_202207",
+  "source": "https://archive.org/details/ultimate-chillout-dreams-2018_202207",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-smooth-jazz-chill-groove-o-perfect-vibes-for-any-mood",
+  "name": "Smooth Jazz Chill Groove • Perfect Vibes For Any Mood",
+  "group": "Music",
+  "itemId": "smooth-jazz-chill-groove-o-perfect-vibes-for-any-mood",
+  "source": "https://archive.org/details/smooth-jazz-chill-groove-o-perfect-vibes-for-any-mood",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-bobjamesnearlklugh1on1sidea",
+  "name": "Bob James and Earl Klugh - One On One",
+  "group": "Music",
+  "itemId": "BobJamesnEarlKlugh1on1sideA",
+  "source": "https://archive.org/details/BobJamesnEarlKlugh1on1sideA",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-new-york-night-jazz-smooth-saxophone-jazz-music-soft-backgro",
+  "name": "000624 - New York Night Jazz Smooth Saxophone Jazz Music",
+  "group": "Music",
+  "itemId": "new-york-night-jazz-smooth-saxophone-jazz-music-soft-background-music-for-deep-sleep-relax",
+  "source": "https://archive.org/details/new-york-night-jazz-smooth-saxophone-jazz-music-soft-background-music-for-deep-sleep-relax",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-best-of-smooth-trumpet-jazz-smooth-jazz-trumpet-jazz",
+  "name": "Best Of Smooth Trumpet Jazz Smooth Jazz, Trumpet Jazz",
+  "group": "Music",
+  "itemId": "best-of-smooth-trumpet-jazz-smooth-jazz-trumpet-jazz",
+  "source": "https://archive.org/details/best-of-smooth-trumpet-jazz-smooth-jazz-trumpet-jazz",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-fourplay-2010-sumida-triphony-hall-tokyo-nhk",
+  "name": "Fourplay 2010 Sumida Triphony Hall Tokyo NHK",
+  "group": "Music",
+  "itemId": "fourplay-2010-sumida-triphony-hall-tokyo-nhk",
+  "source": "https://archive.org/details/fourplay-2010-sumida-triphony-hall-tokyo-nhk",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-america-4th-of-july-1978-universal-amphitheatre-kwst",
+  "name": "America 7.04.78 KWST Universal Amphitheatre",
+  "group": "Music",
+  "itemId": "america-4th-of-july-1978-universal-amphitheatre-kwst",
+  "source": "https://archive.org/details/america-4th-of-july-1978-universal-amphitheatre-kwst",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-eagles-the-summit-houston-tx-1976-k101",
+  "name": "Eagles 1976 Live at The Summit Houston K101",
+  "group": "Music",
+  "itemId": "eagles-the-summit-houston-tx-1976-k101",
+  "source": "https://archive.org/details/eagles-the-summit-houston-tx-1976-k101",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-james-taylor-montreux-jazz-fest-1988-rsr",
+  "name": "James Taylor Montreux Jazz Festival 1988 RSR",
+  "group": "Music",
+  "itemId": "james-taylor-montreux-jazz-fest-1988-rsr",
+  "source": "https://archive.org/details/james-taylor-montreux-jazz-fest-1988-rsr",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-jan-akkerman-montreux-jazz-festival-1978",
+  "name": "Jan Akkerman Montreux Jazz Festival 1978 DRS2",
+  "group": "Music",
+  "itemId": "jan-akkerman-montreux-jazz-festival-1978",
+  "source": "https://archive.org/details/jan-akkerman-montreux-jazz-festival-1978",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-moody-blues-1991-wbcn-whisky-a-go-go-l-a",
+  "name": "Moody Blues 1991 WBCN Whisky A Go Go L.A",
+  "group": "Music",
+  "itemId": "moody-blues-1991-wbcn-whisky-a-go-go-l.a.",
+  "source": "https://archive.org/details/moody-blues-1991-wbcn-whisky-a-go-go-l.a.",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-audioslave-montreux-jazz-festival-2005-drs-3",
+  "name": "Audioslave Montreux Jazz Festival 2005 DRS 3",
+  "group": "Music",
+  "itemId": "audioslave-montreux-jazz-festival-2005-drs-3",
+  "source": "https://archive.org/details/audioslave-montreux-jazz-festival-2005-drs-3",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-dexter-gordon-1987-round-midnight-band-montreux",
+  "name": "Dexter Gordon Montreux Round Midnight band '87",
+  "group": "Music",
+  "itemId": "dexter-gordon-1987-round-midnight-band-montreux",
+  "source": "https://archive.org/details/dexter-gordon-1987-round-midnight-band-montreux",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-santana-mc-laughlin-2016-montreux-jazz-rsi",
+  "name": "Santana & McLaughlin 2016 Montreux Jazz RSI",
+  "group": "Music",
+  "itemId": "santana-mc-laughlin-2016-montreux-jazz-rsi",
+  "source": "https://archive.org/details/santana-mc-laughlin-2016-montreux-jazz-rsi",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-rockpalast-al-jarreau-david-sanborn-1985",
+  "name": "Rockpalast Al Jarreau David Sanborn 1985 wdr",
+  "group": "Music",
+  "itemId": "rockpalast-al-jarreau-david-sanborn-1985",
+  "source": "https://archive.org/details/rockpalast-al-jarreau-david-sanborn-1985",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-weather-report-1976-montreux-jazz-festival-rts",
+  "name": "Weather Report '76 RTS Montreux Jazz Festival",
+  "group": "Music",
+  "itemId": "weather-report-1976-montreux-jazz-festival-rts",
+  "source": "https://archive.org/details/weather-report-1976-montreux-jazz-festival-rts",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-saxappeal-vol-1-2-2019-2022",
+  "name": "Saxappeal, Vol. 1-2 (2019-2022)",
+  "group": "Music",
+  "itemId": "saxappeal-vol.-1-2-2019-2022",
+  "source": "https://archive.org/details/saxappeal-vol.-1-2-2019-2022",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-the-dream-dance-2021",
+  "name": "The Dream Dance (2021)",
+  "group": "Music",
+  "itemId": "the-dream-dance-2021",
+  "source": "https://archive.org/details/the-dream-dance-2021",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-spacesynth-slowmegamix-1-4-2022",
+  "name": "Spacesynth SlowMegamix 1-4 (2022)",
+  "group": "Music",
+  "itemId": "spacesynth-slowmegamix-1-4-2022",
+  "source": "https://archive.org/details/spacesynth-slowmegamix-1-4-2022",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-legends-of-disco-80s-2022",
+  "name": "Legends Of Disco 80s (2022)",
+  "group": "Music",
+  "itemId": "legends-of-disco-80s-2022",
+  "source": "https://archive.org/details/legends-of-disco-80s-2022",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-the-most-relaxing-new-age-music-2018",
+  "name": "The Most Relaxing New Age Music (2018)",
+  "group": "Music",
+  "itemId": "the-most-relaxing-new-age-music-2018",
+  "source": "https://archive.org/details/the-most-relaxing-new-age-music-2018",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-oxigen-music-new-age-ambience-2016",
+  "name": "Oxigen Music: New Age Ambience (2016)",
+  "group": "Music",
+  "itemId": "oxigen-music-new-age-ambience-2016",
+  "source": "https://archive.org/details/oxigen-music-new-age-ambience-2016",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-everybody-clap-disco-party-vol-04",
+  "name": "Everybody Clap: Disco Party 1-4",
+  "group": "Music",
+  "itemId": "everybody-clap-disco-party-vol.04",
+  "source": "https://archive.org/details/everybody-clap-disco-party-vol.04",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-80-90",
+  "name": "80- 90",
+  "group": "Music",
+  "itemId": "80-90-",
+  "source": "https://archive.org/details/80-90-",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-w-2-d-1-15-22",
+  "name": "1980's New Wave / Rock of the 80’s, Reggae - Welcome 2 the",
+  "group": "Music",
+  "itemId": "w-2-d-1-15-22",
+  "source": "https://archive.org/details/w-2-d-1-15-22",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-18-hold-back",
+  "name": "70's The Original Soundtrack -Various Artists",
+  "group": "Music",
+  "itemId": "18-hold-back",
+  "source": "https://archive.org/details/18-hold-back",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-1a-tallis-scholars-russian-orthodox-music-05-anonymous-medie",
+  "name": "#1a Tallis Scholars Russkaya pravoslavnaya muzyka 05",
+  "group": "Music",
+  "itemId": "1a-tallis-scholars-russian-orthodox-music-05-anonymous-medieval-motets-y-vsyu-kr_202504",
+  "source": "https://archive.org/details/1a-tallis-scholars-russian-orthodox-music-05-anonymous-medieval-motets-y-vsyu-kr_202504",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-edm-rave-dance-2019-top-100-hits-psy-goa-trance-house-dubste",
+  "name": "EDM Rave Dance 2019: Top 100 Hits Psy Goa Trance House",
+  "group": "Music",
+  "itemId": "edm-rave-dance-2019-top-100-hits-psy-goa-trance-house-dubstep-bass-trap-techno",
+  "source": "https://archive.org/details/edm-rave-dance-2019-top-100-hits-psy-goa-trance-house-dubstep-bass-trap-techno",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-america-sigma-studios-1972-philadelphia-pa-wmmr",
+  "name": "America Sigma Studios Philadelphia 1972 wmmr",
+  "group": "Music",
+  "itemId": "america-sigma-studios-1972-philadelphia-pa-wmmr",
+  "source": "https://archive.org/details/america-sigma-studios-1972-philadelphia-pa-wmmr",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-hgmt2",
+  "name": "Hollywood Great Movie Theme ʚ(2) ɞ",
+  "group": "Music",
+  "itemId": "HGMT2",
+  "source": "https://archive.org/details/HGMT2",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-beautiful-vocal-trance-progressive-2020",
+  "name": "Beautiful Vocal Trance - Progressive (2020)",
+  "group": "Music",
+  "itemId": "beautiful-vocal-trance-progressive-2020",
+  "source": "https://archive.org/details/beautiful-vocal-trance-progressive-2020",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-martin-in-the-mix-vocal-trance-nation-61-87",
+  "name": "Martin in the Mix - Vocal Trance Nation 61-87",
+  "group": "Music",
+  "itemId": "martin-in-the-mix-vocal-trance-nation-61-87",
+  "source": "https://archive.org/details/martin-in-the-mix-vocal-trance-nation-61-87",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-lp-hit-movie-themes-enoch-light-and-the-light-brigade",
+  "name": "Hit Movie Themes",
+  "group": "Music",
+  "itemId": "lp_hit-movie-themes_enoch-light-and-the-light-brigade",
+  "source": "https://archive.org/details/lp_hit-movie-themes_enoch-light-and-the-light-brigade",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-house-music-sets-ep-16",
+  "name": "House Music Sets - Episode 16",
+  "group": "Music",
+  "itemId": "house_music_sets_-_ep_16",
+  "source": "https://archive.org/details/house_music_sets_-_ep_16",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-chicane-live-at-palladium-22-01-2000",
+  "name": "Chicane - Live At Palladium 22-01-2000",
+  "group": "Music",
+  "itemId": "chicane-live-at-palladium-22-01-2000",
+  "source": "https://archive.org/details/chicane-live-at-palladium-22-01-2000",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-scott-muni-wnew-fm-new-york-city-11-05-70",
+  "name": "Scott Muni WNEW FM New York City 11.05.70",
+  "group": "Music",
+  "itemId": "scott-muni-wnew-fm-new-york-city-11.05.70",
+  "source": "https://archive.org/details/scott-muni-wnew-fm-new-york-city-11.05.70",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-electric-light-orchestra-winterland-sf-1976-ksan",
+  "name": "Electric Light Orchestra Winterland SF 1976 ksan",
+  "group": "Music",
+  "itemId": "electric-light-orchestra-winterland-sf-1976-ksan",
+  "source": "https://archive.org/details/electric-light-orchestra-winterland-sf-1976-ksan",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-zztopeliminatorcdrearartwork",
+  "name": "ZZ+Top+Eliminator+CD+Rear+Artwork",
+  "group": "Music",
+  "itemId": "zztopeliminatorcdrearartwork",
+  "source": "https://archive.org/details/zztopeliminatorcdrearartwork",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-take-it-from-here-202605",
+  "name": "Justin Timberlake - Justified",
+  "group": "Music",
+  "itemId": "take-it-from-here_202605",
+  "source": "https://archive.org/details/take-it-from-here_202605",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ }
+]

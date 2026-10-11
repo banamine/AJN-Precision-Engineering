@@ -23,11 +23,15 @@ assert.equal(new Set(wormwood.map((program) => program.assetId)).size, 6, 'Wormw
 
 assert.ok(getAllGuides().some((guide) => guide.id === MOVIES_CLASSICS_GUIDE_ID), 'Movies Classics guide must be registered');
 
-const schedule = await getScheduleForGuide(MOVIES_CLASSICS_GUIDE_ID);
-assert.equal(schedule.length, 1, 'Movies Classics schedule must expose one curated channel');
+const schedule = await getScheduleForGuide(MOVIES_CLASSICS_GUIDE_ID, new Date('2026-10-07T12:00:00Z'));
+assert.equal(schedule[0].id, MOVIES_CLASSICS_CHANNEL_ID, 'curated Cinema Classics Vault is listed first');
+assert.ok(schedule.slice(1).every((c) => c.id.startsWith('mx-')), 'only the extra mx-* user channels follow it');
 assert.equal(schedule[0].id, MOVIES_CLASSICS_CHANNEL_ID);
 assert.equal(schedule[0].guideId, MOVIES_CLASSICS_GUIDE_ID);
-assert.equal(schedule[0].programs.length, 34, 'Movies Classics schedule must expose all 34 bounded Programs');
+assert.equal(schedule[0].programs.length, 15, 'Movies Classics rotates only the films that start within this UTC day');
+assert.equal(schedule[0].programs[0].startHour, 0);
+assert.equal(schedule[0].programs.at(-1).endHour, 24, 'Last movie is clipped at midnight');
+assert.equal(new Set(schedule[0].programs.map(p => p.assetId)).size, 15, 'No film repeats within this day');
 assert.ok(schedule[0].programs.every((program) => program.sourceClass === 'archive_org'));
 
 const canonicalMovies = getCanonicalPrograms().filter((program) => program.channelId === MOVIES_CLASSICS_CHANNEL_ID);

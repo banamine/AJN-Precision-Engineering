@@ -37,6 +37,8 @@ export interface SafeFetchOptions {
   headers?: Record<string, string>;
   signal?: AbortSignal;
   fetchImpl?: typeof fetch;
+  /** Default MAX_REDIRECTS. Podcast enclosures legitimately chain 3-9 tracker hops. */
+  maxRedirects?: number;
 }
 
 /** Fetch `url`, following up to MAX_REDIRECTS redirects, each hop checked. */
@@ -56,7 +58,8 @@ export async function safeFetch(url: string | URL, opts: SafeFetchOptions): Prom
     const loc = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;
     if (!loc) return { res, finalUrl: current };
     await res.body?.cancel().catch(() => {});
-    if (hop >= MAX_REDIRECTS) throw new SafeFetchError(`more than ${MAX_REDIRECTS} redirects`, 'too_many_redirects');
+    const maxHops = opts.maxRedirects ?? MAX_REDIRECTS;
+    if (hop >= maxHops) throw new SafeFetchError(`more than ${maxHops} redirects`, 'too_many_redirects');
     const next = new URL(loc, current);
     if (!urlAllowed(next, opts.allow)) throw new SafeFetchError(`redirect to ${next.protocol}//${next.host} not allowed`, 'redirect_blocked');
     current = next;

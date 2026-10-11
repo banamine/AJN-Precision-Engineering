@@ -1,0 +1,76 @@
+{
+ "ajn-infowars-nightly-news": {
+  "name": "INFOWARS NIGHTLY NEWS",
+  "guide": "cable-tv",
+  "rows": 9816,
+  "hours": 12953,
+  "dropped": {
+   "no_duration": 5,
+   "duplicate": 9,
+   "file_missing": 1
+  },
+  "note": "from the Alex 24 playlist"
+ },
+ "ajn-infowars-survival": {
+  "name": "INFO WARS SURVIVAL",
+  "guide": "cable-tv",
+  "rows": 1153,
+  "hours": 900,
+  "dropped": {
+   "no_duration": 2
+  },
+  "note": "from the Info Survior playlist"
+ },
+ "mx-lars-germany-mittank": {
+  "name": "Lars Germany Mittank Movies",
+  "guide": "movies-classics-vault",
+  "rows": 22,
+  "hours": 36,
+  "dropped": {
+   "duplicate": 2
+  },
+  "note": "all 16 movie uploads of @lars_germany_mittank"
+ },
+ "mx-jt-s-ghost": {
+  "name": "JT's Ghost Movies",
+  "guide": "movies-classics-vault",
+  "rows": 3478,
+  "hours": 2873,
+  "dropped": {
+   "duplicate": 2384,
+   "private": 610
+  },
+  "note": "all 13 movie uploads of @jt_s_ghost"
+ },
+ "mx-aiviixx": {
+  "name": "AIVIIXX Movies",
+  "guide": "movies-classics-vault",
+  "rows": 1437,
+  "hours": 511,
+  "dropped": {
+   "private": 92,
+   "duplicate": 504
+  },
+  "note": "all 28 movie uploads of @aiviixx"
+ },
+ "mx-random-movies": {
+  "name": "Random Movies",
+  "guide": "movies-classics-vault",
+  "rows": 426,
+  "hours": 723,
+  "dropped": {
+   "duplicate": 4
+  },
+  "note": "Archive item 36857 (untitled numbered files; fixed shuffle)"
+ },
+ "mx-star-wars": {
+  "name": "STAR WARS",
+  "guide": "movies-classics-vault",
+  "rows": 1,
+  "hours": 2,
+  "dropped": {
+   "duplicate": 1
+  },
+  "note": "Archive item a7c4f92b...; content confirmed from item thumbnails (Han Solo / C-3PO + R2-D2)"
+ }
+}

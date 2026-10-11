@@ -1,3 +1,4 @@
+import { SuggestInput } from './SuggestInput';
 import React, { useState, useEffect, useCallback, FormEvent } from 'react';
 import {
   Search,
@@ -16,6 +17,10 @@ import { PlayProgramCallback } from '../types';
 
 interface SearchViewProps {
   onPlayProgram: PlayProgramCallback;
+  /** Query submitted from the header search; `n` changes on every submit so repeats re-run. */
+  externalQuery?: { q: string; n: number };
+  suggestions?: import('../utils/suggest').SuggestCandidate[];
+  onRecordSearch?: (q: string) => void;
 }
 
 const NETWORKS = [
@@ -35,7 +40,7 @@ const SUGGESTIONS = [
   'Technology',
 ];
 
-export function SearchView({ onPlayProgram }: SearchViewProps) {
+export function SearchView({ onPlayProgram, externalQuery, suggestions = [], onRecordSearch }: SearchViewProps) {
     const [buildStatus, setBuildStatus] = useState<string>('');
   const [builtAssets, setBuiltAssets] = useState<any[]>([]);
 
@@ -105,12 +110,26 @@ const [query, setQuery] = useState<string>('');
   );
 
   // Initial search on mount
+  const firstRunRef = React.useRef(true);
   useEffect(() => {
+    const first = firstRunRef.current;
+    firstRunRef.current = false;
+    // The header search effect below owns the first load when a query was submitted.
+    if (first && externalQuery && externalQuery.n > 0) return;
     executeSearch('', selectedNetwork);
   }, [executeSearch, selectedNetwork]);
 
+  // A search typed into the header runs here, replacing the mount-time empty search.
+  useEffect(() => {
+    if (!externalQuery || externalQuery.n === 0) return;
+    setQuery(externalQuery.q);
+    executeSearch(externalQuery.q, selectedNetwork);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalQuery?.n]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    onRecordSearch?.(query);
     executeSearch(query, selectedNetwork);
   };
 
@@ -136,12 +155,14 @@ const [query, setQuery] = useState<string>('');
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-3 h-4 w-4 text-neutral-400" />
-            <input
-              type="text"
+            <SuggestInput
               id="tvnews-search-input"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={setQuery}
+              onPick={(text) => { onRecordSearch?.(text); executeSearch(text, selectedNetwork); }}
+              candidates={suggestions}
               placeholder="Search broadcast topics, speakers, or events..."
+              ariaLabel="Search broadcast topics"
               className="w-full rounded-xl border border-neutral-700 bg-neutral-950 pl-10 pr-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
             />
           </div>

@@ -1,0 +1,808 @@
+{
+ "skipped_in_app": {
+  "movies": [
+   "Murder_in_the_Clouds_1934",
+   "target-1985-blu-ray-high-fzmovies.net-de-5c-0ee-2638acbd-4b-673f-92ad-0486e-2c",
+   "best-of-the-best-1989-blu-ray-v-2-high-fzmovies.net-4790d-049e-7d-0fb-392e-4a-6024a-6f-7875b",
+   "3ad-298968c-056adcb-984dac-7f-66f-2b-016a-8de-4266aab-79341e-936db-0d-4f-7de-80",
+   "7-days-in-may",
+   "TIMETRAVELER1974",
+   "01-mark-lester",
+   "TheShiningFuture",
+   "deadly-mantis-1957-colorized",
+   "MercyPlane",
+   "GonewiththeWest",
+   "01-jeff-chandler-the-more-i-see-you-i-should-care-everything-happens-to-me-alway",
+   "suddenfear1952usafeaturingjoancrawfordjackpalancegloriagrahamefilmnoir",
+   "ItCanBeDoneAmigo",
+   "Gods_Gun",
+   "panic-in-the-streets-1950",
+   "the-man-in-the-iron-mask-1977-historical-adventure",
+   "holiday-inn-1942_202412",
+   "wormwood_frank-olson",
+   "DoomsdayMachine1972",
+   "forbiddenworld",
+   "m.-1931",
+   "all.-quiet.-on.-the.-western.-front.-1930"
+  ],
+  "opensource_claimed_by_earlier_list": [
+   "filmography-david-decoteau",
+   "filmography-david-cronenberg",
+   "filmography-elvis-presley",
+   "filmography-mike-leigh",
+   "filmography-john-woo-asian",
+   "filmography-bill-rebane"
+  ],
+  "nwt": [
+   "banned.video_-_the_alex_jones_show_2019-2h",
+   "bitchute_-_banned-dot-video_2021",
+   "banned.video_-_alex_jones_predictions_2022-1h",
+   "banned.video_-_nick_j_fuentes_2021-2h",
+   "1of-5.-fury.-720p.hdtv.x-264_202401",
+   "banned.video_-_the_alex_jones_show_2019-2h",
+   "bitchute_-_banned-dot-video_2021",
+   "banned.video_-_alex_jones_predictions_2022-1h",
+   "banned.video_-_nick_j_fuentes_2021-2h",
+   "1of-5.-fury.-720p.hdtv.x-264_202401"
+  ],
+  "tv": [
+   "The_Fugitive_Series",
+   "The_Baron_1966_Series",
+   "chico-the-man",
+   "thriller-s-01-e-010-spell-of-evil",
+   "s-02-e-07-e-08-tha-night-the-cylons-landed",
+   "political-animals-e-01-pilot",
+   "jack-bobby-1x-01-pilot",
+   "1600.-penn.-s-01-e-07.-hdtv.x-264",
+   "odyssey.5.s01e01.e02.ws.dvdrip.xvid-bia",
+   "partners-in-crime-e-01-pilot",
+   "Privatehd.toStarTrek1966S011080pBluRayVC1DTSHDMA7.1HDBEE1",
+   "the-secret-service-1969",
+   "01-tv-westerns-part-2-classical-western-theme-music-by-ennio-morricone-sergio-leones-boyhood-friend",
+   "01-tv-fighting-crime-part-7",
+   "father-ted-2005",
+   "001-tv_202409",
+   "it-aint-half-hot-mum-s-06-e-04-the-dhobi-wallahs",
+   "01-the-spoils-of-war-s-01-e-01-ends-and-beginnings",
+   "whoops-apocalypse-tv-show-1982-mp4",
+   "s-01.-e-17-ella-west.ia",
+   "bat-masterson-s-02-e-07-dead-men-dont-pay-debts",
+   "rawhide-3-x-30-incident-of-the-wager-on-payday",
+   "wagon-train-s-01-e-101-ep-101-the-willy-moran-story",
+   "branded-s-02-e-22-barbed-wire_202405",
+   "wanted-dead-or-alive-s-01-e-01-ep-1-the-martin-poster",
+   "naked-city-s-01-e-01-meridian",
+   "man-with-a-camera-s-01-e-04-turntable",
+   "04-twilight-zone-s-01-e-04-16-millimeter-shrine",
+   "johnny-staccato.-s-01-e-26.-a-nice-little-town",
+   "science-fiction-theatre-season-1",
+   "coach-season-1_202311",
+   "ironsides02",
+   "The-Loner-1965-Series",
+   "orson-welles-great-mysteries",
+   "Buck_Rogers_Series",
+   "special-branch-1969-73",
+   "the-new-statesman-1987-94",
+   "on-the-buses-1969-73",
+   "man-about-the-house-1973-76",
+   "doctor-at-large-1971",
+   "take-a-letter-mr-jones-1981",
+   "Most_Shocking-TV_Series-2006-2010",
+   "Taxi1x14SugarMama",
+   "TaxiS02E08TheGreatRace",
+   "TaxiS03E07TheCallOfTheMild",
+   "TaxiS04E12BobbyDoesntLiveHereAnymore",
+   "Episode1TheShloogelShowLoveUnAmericanStyle",
+   "TheBobNewhartShow",
+   "NewhartSeries",
+   "BobbyWalton",
+   "BobbyPrairie",
+   "PlanetOfTheApesTVSeries",
+   "geminiman_202203",
+   "lostinspaceseason1episode1incolor_202004",
+   "2017-the-saint-movie-1080p-spanish-or-english",
+   "the-sniffer-2013-s-03-e-01",
+   "tales-of-wells-fargo-s-06-e-30-royal-maroon",
+   "hondo-s-01-e-01-hondo-and-the-eagle-claw",
+   "01-the-duchess-of-duke-street-s-01-e-01-a-present-sovereign-1",
+   "01-rumpole-of-the-bailey-s-01-e-01-rumpole-and-the-younger-generation-1",
+   "colonel-march-of-scotland-yard-s-01-e-01-the-sorcerer-1",
+   "interpol-calling-s-01-e-14-the-mans-a-clown",
+   "the-buccaneers-s-01-e-01-blackbeard",
+   "s-01-e-01-murder-in-monmartre-1",
+   "the-adventures-of-sherlock-holmes-s-03-e-01-reluctant-carpenter",
+   "KolchakTheNightStalker",
+   "you-wish-1997-1998",
+   "she-spies-complete-tv-series",
+   "the.-apprentice.-s-12-e-01.-hdtv.xvid-2hd",
+   "the_green_hornet",
+   "hogans-heroes-s-01-e-01-the-informer_202509",
+   "bitchute_-_barnaby-jones_2022",
+   "trailerparkboys-season1",
+   "survivors-1975",
+   "fawlty-towers-complete-series-1975",
+   "pride-and-prejudice-1995-miniseries",
+   "mr-rogers-neighborhood",
+   "david-copperfield-1986_202404",
+   "tales-of-tomorrow-1951-53",
+   "the.protectors.120",
+   "s-01-e-02-a-pillar-of-the-community",
+   "thethinbluelinecomplete",
+   "bbc-red-dwarf",
+   "gunsmoke-s-01-e-01-matt-gets-it_202509",
+   "death-valley-days-s-01-e-04-the-lost-pegleg-mine",
+   "the-master-complete-series-1984",
+   "the-benny-hill-show",
+   "get-smart",
+   "HawaiianHeat",
+   "death-valley-days",
+   "0251114_1101",
+   "doctor-dolittle-complete-series-1970",
+   "duel-on-the-thin-rope",
+   "nty_20251115",
+   "trackdown-tv-1958-colorized-s01e21-the-bounty-hunter",
+   "the-rebel-tv-1959-s01e01-johnny-yuma",
+   "robins-nest-1977-81",
+   "rush_limbaugh_tv_series_1992-1996",
+   "enostvshow",
+   "OperationPetticoatS1",
+   "amen-season-1",
+   "MiddleTheInMalcolm",
+   "ba-baa_blacksheep_Lando18",
+   "the-net-complete-tv-series",
+   "the-single-guy-tvseries",
+   "pandora.-2019.-s-01-e-03.-masters.-of.-war.-1080p",
+   "perversions-of-science-HBO",
+   "major-dad",
+   "the-prisoner-complete-series-2009",
+   "the-prisoner-complete-series-1967",
+   "s-01-e-03",
+   "the-incredible-hulk-vhs_volumes",
+   "femme-fatales-s1-s2-complete",
+   "river-monsters-season-1-9-reupload",
+   "baywatch_202212",
+   "001-nypd-blue",
+   "joanieloveschachicompletedvdrip",
+   "archie-bunkers-place-complete-series",
+   "murder-she-wrote_202402",
+   "alien-nation-1988",
+   "east_side_west_side",
+   "johnny_staccato",
+   "starved",
+   "wonderfalls_2004",
+   "brooklyn_south",
+   "action_1999",
+   "01-tv-fighting-crime-part-2_202406",
+   "01-tv-fighting-crime",
+   "cracker-s-1-ep-1-the-mad-woman-in-the-attic-1993",
+   "readme_20250925"
+  ],
+  "tv_same_name_channel": [
+   "mamas-family-Lando18",
+   "y_20251113"
+  ],
+  "documentary": [
+   "mayday-aci",
+   "prehistoric-park-ep-3-of-6-dinobirds-with-nigel-marven-5-aug-2006",
+   "alex-jones-documentaries",
+   "volcanoes",
+   "alex-jones-mega-pack",
+   "the-long-long-trailer_202506",
+   "nova-wonders",
+   "classic-documentaries"
+  ],
+  "documentary_claimed_by_earlier_list": [
+   "ancientalienscollection",
+   "hitlers.-henchmen.-series.-1.1of-6.-hess.-the.-deputy.x-264.-ac-3.-mvgroup.org",
+   "hell-in-the-pacific-2001-part-1-inferno"
+  ],
+  "otr": [
+   "TheLongJohnNebelCollection"
+  ],
+  "nwt_claimed_by_earlier_list": [
+   "behind-the-green-mask-united-nations-agenda-21-videos",
+   "the-depopulation-agenda-is-right-on-track-newworldnextweek",
+   "the-matrix-revealed-the-illusion-of-choice-part-2a-peeling-back-the-layers-exoteric-deceptions",
+   "follow-up-questions-for-sargon-response-to-sargon-of-akkad-nov-10-2020",
+   "vhs-41-peter-jennings-kennedy-assassination",
+   "a-history-of-central-banking-and-the-enslavement-of-mankind-by-stephen-mitford-goodson-30",
+   "PSIIITE",
+   "banned.video_-_special_reports_2018-2h",
+   "one-world-order-new-world-order",
+   "bio-weapons-vaccines-graphene-microchips",
+   "19990129-you-tube-nelson-mandela",
+   "DwightD.Eisenhower-FarewellAddressmilitary-industrialComplexSpeech",
+   "MakeMine1948",
+   "apocalypse.-hitler.-takes.-on.-the.-west.-1of-2",
+   "wwii-in-hd-ep-01",
+   "apocalypse-verdun",
+   "stalingrad.-1of-3.-the.-attack.-xvi-d.mp-3",
+   "hitlers.-henchmen.-series.-1.1of-6.-hess.-the.-deputy.x-264.-ac-3.-mvgroup.org",
+   "hell-in-the-pacific-2001-part-1-inferno"
+  ],
+  "music": [
+   "09.-most-beautiful-soft-rock-love-songs-80s-90s-soft-rock-ballads-70s-80s-90s-ol"
+  ]
+ },
+ "dark": {
+  "movies": [
+   "moto_20210127",
+   "Wilderpeople",
+   "dogma_HD",
+   "for-the-boys-1991",
+   "files-assorted_202311",
+   "files-assorted-4",
+   "01-blake-edwards",
+   "01-alec-guinness",
+   "01-justine-waddell",
+   "01-clint-walker",
+   "01-stewart-granger-scaramouche-1952-original-soundtrack-composed-performed-by-victor-young",
+   "01-charlton-heston-ten-commandments-original-soundtack",
+   "01-tyrone-power",
+   "01-charles-bronson",
+   "gunsmoke-return-to-dodge",
+   "beyond-the-reef",
+   "01-john-ford",
+   "01-howard-hawks",
+   "first-men-in-the-moon_202501",
+   "back-to-the-future_202501",
+   "the-thomas-crown-affair",
+   "the-smiling-lieutenant-1931-lubitsch",
+   "topaze-1933-720p_202402",
+   "shane-1953-original-trailer-placeholder",
+   "seven-men-from-now_202509",
+   "filmography-stanley-kubrick",
+   "summer-magic.-1963",
+   "filmography-rainer-werner-fassbinder"
+  ],
+  "tv": [
+   "EnemyAtTheDoorSeason1",
+   "EnemyAtTheDoorSeason2",
+   "amazing-stories-1985-s-01",
+   "rod-serling-and-the-twilight-zone",
+   "thomas-and-sarah-1-of-13-birds-of-a-feather",
+   "its_always_sunny_complete_archive",
+   "doctor-who-2005-s01",
+   "where-no-man-has-gone-before",
+   "1-sixty-feet-below-s-1.-e-1",
+   "Bullet_Scars_1942",
+   "lou-grant-season-2",
+   "lou-grant-season-3",
+   "HowTheGrinchStoleChristmas1966",
+   "beauty-and-the-beast-the-enchanted-christmas-1997",
+   "s-01e-02.-point-blank",
+   "gunsmoke-s-16-e-01-the-noose",
+   "lawman-s-03-e-24-detweilers-kid",
+   "lawman-s-01-e-01-the-deputy",
+   "the-time-tunnel",
+   "happy.days.series",
+   "s-01-e-01-x-02-x-03-saga-of-the-worlds",
+   "SeinfeldComplete",
+   "midsomer-murders-season5",
+   "midsomer-murders-season1",
+   "episode-0-a_202402",
+   "s-01-e-32-crossroads",
+   "stargate-collection-1994-2018",
+   "ghost-squad-s-01e-03-hong-kong-story",
+   "s-01-e-04-the-night-of-sudden-death-color",
+   "s-03-e-02-episode-in-laredo",
+   "s-01.-e-02-the-outlaw",
+   "s-02.-e-05-duel-at-florence",
+   "s-04-e-01-the-fatalist",
+   "s-05-e-02-education-of-sarah-jane",
+   "s-06-e-01-genesis",
+   "01-cheyenne-season-1-episodes-1-2-3_202402",
+   "01-s-1.-e-1-destination-tucson-1",
+   "bewitchedcomplete_202310",
+   "millennium-s-1-d-6",
+   "rising-damp-1974-78",
+   "friends-1994-2004-full-series_20250419",
+   "the-green-promise-restored.-1949",
+   "risingdamp",
+   "peter-lorre-1904-1964",
+   "s-01-e-29-indian-fever_202509",
+   "hatfields-mc-coys-s-01-e-02-part-2"
+  ],
+  "documentary": [
+   "Les-Stroud-Survivorman-Training-Survival",
+   "the-rise-and-fall-of-an-empire-1of-6-caesar",
+   "bush-pilot-canadian-myth",
+   "Waterwalker",
+   "5-secretariat-sports-century.",
+   "the-world-at-war-1973",
+   "22-amazing-animals-animal-families_202507",
+   "amazing-animals-armored-animals-1_202506"
+  ],
+  "otr": [
+   "gta-sas-oundt"
+  ],
+  "music": [
+   "the-johnny-cash-show-part-one.mp-4",
+   "hard-rock-heavy-metal-pop-rock-soft-rock-def-leppard-discography-120-releases-19",
+   "rush-live-albums",
+   "lady-antebellum-discography-2008-2021",
+   "hard-rock-blues-rock-southern-rock-rockn-roll-classic-rock-ted-nugent-with-the-a",
+   "hard-rock-deep-purple-345-517-cd-1968-2017-mp-3-128-320-kbps-rutracker-5187033",
+   "classic-rock-hard-rock-van-halen-discography-1978-2016-20-albums-8-singles-2016-",
+   "03.-graveyard-train",
+   "Yes-Discography",
+   "hard-rock-classic-rock-deep-purple-discography-196-cd-3-web-1968-2021-aac-tracks",
+   "best-of-outlaw-country",
+   "rock-monsters",
+   "monsters-of-rock-vol.2",
+   "100-hits-more-80s-2009",
+   "k-tel-starburst-vol.2",
+   "k-tel-starburst-album-vol.1",
+   "the-definitive-collection-cd-rip",
+   "10015of10",
+   "1001viofx",
+   "ultimate-eurovision-party-2008",
+   "instrumental-collection.-familiar-melodias-1970-2020",
+   "music-love-romantic-sound-mix-2021",
+   "dance-90-100-best-hits-2016",
+   "disco-classics-2021",
+   "simpy_red-picture_book-vinyl-1985",
+   "disco-legends-2014_202205",
+   "va-second-chance-hits-a-butterboy-compilation",
+   "100-hits-rock-jukebox-2016",
+   "acdc-songs-compilation",
+   "05-let-there-be-rock-live",
+   "america-hits-2021",
+   "boz-scaggs_20220326_1100",
+   "the-short-20th-century-every-number-2-hit-1914-1991-plus-2-bonus-tracks-from-early-1992",
+   "history-of-rock",
+   "music-of-the-millennium-1999",
+   "kings-of-leon-come-around-sundown-2010_202305",
+   "dido-life-for-rent-2003",
+   "13-i-want-your-love_202412",
+   "14-disco-inferno",
+   "30FatherMotherSon",
+   "amy-grant-house-of-love",
+   "italo-disco-hits-101-150",
+   "retro-remix-vol.1-2-2022",
+   "02-shoot-to-thrill_202303"
+  ]
+ },
+ "excluded": {
+  "tv_episodes_in_movie_lists": 185,
+  "sex_whole_word_rows": 199,
+  "tv_no_playable_runtime": [
+   "sesame-street_202306",
+   "Y2mate.comAndyKaufmanOrsonWellesInterview1982XrGlWAFy1LU360p",
+   "01-wacky-tv-contintued",
+   "breaking.-bad.-s-01-e-01.-pilot.-1080p.-h-264.-blu-ray",
+   "s-06.7z"
+  ],
+  "tv": [
+   "honbasho-201903-haru",
+   "s01-19-20-20-freedownloadvideo.net_202312",
+   "BobbyGallery",
+   "BobbyEllery",
+   "fxm-retro-promos-and-commercials-20th-century-fox-20241937",
+   "bitchute_-_classictelevisionseries_2021",
+   "bitchute_-_full-fight_2022",
+   "tv-land-bewitched-most-frank-dean-and-sammy-woc",
+   "tv-land-new-years-day-2004-marathon-woc",
+   "tv-land-2005-woc",
+   "cbs-1991-woc",
+   "judge-judy-southern-cross-29-08-2002",
+   "wwf-1999-complete-collection",
+   "dvd-transfer-170",
+   "survivor-guatemala-bonus-content",
+   "survivor-island-of-the-idols-bonus-content",
+   "survivor-gabon-bonus-content_202010",
+   "s-1-survivor-borneo-moments-in-history"
+  ],
+  "documentary_no_playable_runtime": [
+   "ColdWarInSoviet1-BrezhnevMeetsEuropeanLeaders",
+   "secret-weapons-enter-the-secret-world-of-the-soviet-school-for-sex-spies-ia-copy",
+   "youtube-g6FTkj6OEWA",
+   "evel-knievel-happy-birthday-america",
+   "russia-hoax-by-gregg-jarrett"
+  ],
+  "russian_language_title": [
+   "rush-revere-and-the-american-revolution-by-rush-limbaugh"
+  ]
+ },
+ "channels": {
+  "mx-movies-classics-list": {
+   "guide": "movies-classics-vault",
+   "name": "Movies Classics (list)",
+   "rows": 3042,
+   "hours": 5261,
+   "note": "list 5, new items only; films >= 45 min; TV-episode titles excluded"
+  },
+  "mx-filmography": {
+   "guide": "movies-classics-vault",
+   "name": "Filmography Collection",
+   "rows": 2863,
+   "hours": 4809,
+   "note": "opensource_movies query filmography; full movie + english sub"
+  },
+  "mx-atlas-taggart": {
+   "guide": "movies-classics-vault",
+   "name": "Atlas Taggart Picks",
+   "rows": 1,
+   "hours": 1,
+   "note": "@atlas_taggart826; full movie + english sub"
+  },
+  "ajn-new-world-tyranny": {
+   "guide": "cable-tv",
+   "name": "NEW WORLD TYRANNY",
+   "rows": 851,
+   "hours": 714,
+   "note": "list 6, video items"
+  },
+  "tvx-riders-of-death-valley-1941": {
+   "guide": "classic-tv",
+   "name": "Riders of Death Valley (1941)",
+   "rows": 13,
+   "hours": 4,
+   "note": "item rdv-5"
+  },
+  "tvx-gang-busters-serial": {
+   "guide": "classic-tv",
+   "name": "Gang Busters serial",
+   "rows": 13,
+   "hours": 4,
+   "note": "item gb-1_20231212"
+  },
+  "tvx-airwolf-402": {
+   "guide": "classic-tv",
+   "name": "Airwolf 402",
+   "rows": 4,
+   "hours": 3,
+   "note": "item Airwolf402_201903"
+  },
+  "tvx-rod-serling": {
+   "guide": "classic-tv",
+   "name": "Rod Serling",
+   "rows": 119,
+   "hours": 73,
+   "note": "item 01-rod-serling"
+  },
+  "tvx-the-organization-1972": {
+   "guide": "classic-tv",
+   "name": "THE ORGANIZATION (1972)",
+   "rows": 7,
+   "hours": 6,
+   "note": "item the-organization-1972_20221125"
+  },
+  "tvx-a-the-six-million-dollar-man-special-numbers": {
+   "guide": "classic-tv",
+   "name": "A-THE SIX MILLION DOLLAR MAN ( SPECIAL NUMBERS )",
+   "rows": 31,
+   "hours": 25,
+   "note": "item the-six-million-dollar-man-sp.-no.-01-season-1-001-the-moon-and-the-desert-part-1"
+  },
+  "tvx-all-vikings-1-6": {
+   "guide": "classic-tv",
+   "name": "ALL VIKINGS (1-6)",
+   "rows": 26,
+   "hours": 20,
+   "note": "item watch-vikings-season-6-episode-10-the-best-laid-plans"
+  },
+  "tvx-iron-man-5x": {
+   "guide": "classic-tv",
+   "name": "IRON MAN 5X",
+   "rows": 5,
+   "hours": 9,
+   "note": "item iron-man-2-2010_202405"
+  },
+  "tvx-the-beverly-hillbillies-season-2": {
+   "guide": "classic-tv",
+   "name": "THE BEVERLY HILLBILLIES SEASON 2",
+   "rows": 24,
+   "hours": 9,
+   "note": "item 1ce-6aa-4d-1419f-3ea-53108b-15c-5179948-360p"
+  },
+  "tvx-the-phantom-of-the-air-1933-colorized-cliffhanger-serial-tom": {
+   "guide": "classic-tv",
+   "name": "The Phantom of the Air 1933 colorized cliffhanger serial",
+   "rows": 12,
+   "hours": 4,
+   "note": "item phantom-of-the-air"
+  },
+  "tvx-j-j-starbuck-dale-robertson": {
+   "guide": "classic-tv",
+   "name": "J.J. Starbuck - Dale Robertson",
+   "rows": 8,
+   "hours": 6,
+   "note": "item jj-starbuck-1.07"
+  },
+  "tvx-ripley-s-believe-it-or-not-2000-season-1": {
+   "guide": "classic-tv",
+   "name": "Ripley's Believe It or Not! (2000) Season 1",
+   "rows": 21,
+   "hours": 15,
+   "note": "item AULVAC-ripleys-believe-it-or-not-2000-season-1-2000-mpeg-4-xvi-d-avi"
+  },
+  "tvx-ripley-s-believe-it-or-not-2001-season-2": {
+   "guide": "classic-tv",
+   "name": "Ripley's Believe It or Not! (2001) Season 2",
+   "rows": 18,
+   "hours": 13,
+   "note": "item AULVAC-ripleys-believe-it-or-not-2001-season-2-mpeg-4-xvi-d-avi"
+  },
+  "tvx-ripley-s-believe-it-or-not-2003-season-4": {
+   "guide": "classic-tv",
+   "name": "Ripley's Believe It or Not! (2003) Season 4",
+   "rows": 17,
+   "hours": 12,
+   "note": "item AULVAC-ripleys-believe-it-or-not-2003-season-4-mpeg-4-xvi-d-avi"
+  },
+  "tvx-ripleys-believe-it-or-not-with-jack-palance-drew-s-favorite-": {
+   "guide": "classic-tv",
+   "name": "Ripleys Believe It or Not with Jack Palance - Drew's",
+   "rows": 3,
+   "hours": 2,
+   "note": "item Ripleys-Believe-It-or-Not-with-Jack-Palance-Drews-Favorite-Clips"
+  },
+  "tvx-vintage-tv-sci-fi": {
+   "guide": "classic-tv",
+   "name": "Vintage TV Sci-Fi",
+   "rows": 66,
+   "hours": 55,
+   "note": "item vintage-tv-sci-fi"
+  },
+  "tvx-hhgttg-tv-series": {
+   "guide": "classic-tv",
+   "name": "HHGTTG - TV series",
+   "rows": 7,
+   "hours": 5,
+   "note": "item hhgttg-tv-series"
+  },
+  "tvx-the-little-rascals-colorized-collection": {
+   "guide": "classic-tv",
+   "name": "The Little Rascals Colorized Collection",
+   "rows": 5,
+   "hours": 4,
+   "note": "item the-little-rascals-colorized-collection_202502"
+  },
+  "tvx-laurel-and-hardy-colorized-collection-vhs": {
+   "guide": "classic-tv",
+   "name": "Laurel and Hardy Colorized Collection VHS",
+   "rows": 22,
+   "hours": 11,
+   "note": "item laurel-hardy_202504"
+  },
+  "tvx-the-western-tradition-lost-annenberg-series-now-with-mkv": {
+   "guide": "classic-tv",
+   "name": "The Western Tradition \"Lost\" Annenberg Series now with MKV",
+   "rows": 51,
+   "hours": 23,
+   "note": "item western-tradition-01-the-dawn-of-history"
+  },
+  "tvx-robinson-crusoe-of-clipper-island-serial": {
+   "guide": "classic-tv",
+   "name": "Robinson Crusoe Of Clipper Island Serial",
+   "rows": 14,
+   "hours": 4,
+   "note": "item robinson-crusoe-of-clipper-island"
+  },
+  "tvx-ultraseven": {
+   "guide": "classic-tv",
+   "name": "Ultraseven",
+   "rows": 46,
+   "hours": 19,
+   "note": "item ultraseven-episode-3-the-secret-of-the-lake"
+  },
+  "tvx-the-phil-donahue-show-1976-1992": {
+   "guide": "classic-tv",
+   "name": "The Phil Donahue Show (1976 - 1992)",
+   "rows": 15,
+   "hours": 13,
+   "note": "item the-phil-donahue-show-1976-1992"
+  },
+  "tvx-highway-to-heaven-1984-1989-season-1-5": {
+   "guide": "classic-tv",
+   "name": "Highway To Heaven 1984-1989 Season 1-5",
+   "rows": 95,
+   "hours": 75,
+   "note": "item highway-to-heaven"
+  },
+  "tvx-the-odyssey-1968-eng-sub": {
+   "guide": "classic-tv",
+   "name": "THE ODYSSEY (1968) ENG SUB",
+   "rows": 8,
+   "hours": 7,
+   "note": "item odissea-e.-08-victory-of-ulysses-and-the-recognition-of-penelope-1968"
+  },
+  "tvx-the-green-hornet-film-serials-1940-1941": {
+   "guide": "classic-tv",
+   "name": "THE GREEN HORNET FILM SERIALS (1940-1941)",
+   "rows": 27,
+   "hours": 9,
+   "note": "item the-green-horent-1940-02-the-thundering-terror"
+  },
+  "tvx-dracula-series": {
+   "guide": "classic-tv",
+   "name": "Dracula Series",
+   "rows": 23,
+   "hours": 8,
+   "note": "item dracula-series"
+  },
+  "tvx-nothing-sacred": {
+   "guide": "classic-tv",
+   "name": "Nothing Sacred",
+   "rows": 38,
+   "hours": 28,
+   "note": "item nothing-sacred"
+  },
+  "tvx-the-fantastic-journey-1977": {
+   "guide": "classic-tv",
+   "name": "The Fantastic Journey 1977",
+   "rows": 10,
+   "hours": 8,
+   "note": "item the-fantastic-journey-1977_202504"
+  },
+  "tvx-alf": {
+   "guide": "classic-tv",
+   "name": "ALF",
+   "rows": 99,
+   "hours": 42,
+   "note": "item ALF-The-Complete-Series"
+  },
+  "tvx-heartland-brian-keith-daisy-keith": {
+   "guide": "classic-tv",
+   "name": "Heartland - Brian Keith, Daisy Keith",
+   "rows": 9,
+   "hours": 4,
+   "note": "item heartland-1.07"
+  },
+  "tvx-9-to-5-tv-series-sitcom-rachel-dennison-sally-struthers-vale": {
+   "guide": "classic-tv",
+   "name": "9 To 5 TV Series Sitcom -Rachel Dennison, Sally Struthers,",
+   "rows": 9,
+   "hours": 4,
+   "note": "item 9-to-5-tv-series-sitcom-rachel-dennison-sally-struthers-valerie-curtin-rita-moreno"
+  },
+  "tvx-counterstrike-1969-tv-series": {
+   "guide": "classic-tv",
+   "name": "Counterstrike 1969 TV series",
+   "rows": 4,
+   "hours": 3,
+   "note": "item counterstrike-1969-tv-series"
+  },
+  "tvx-m-a-s-h-no-laugh-track": {
+   "guide": "classic-tv",
+   "name": "M*A*S*H: (No Laugh Track)",
+   "rows": 109,
+   "hours": 49,
+   "note": "item mash-series_202509"
+  },
+  "tvx-soap": {
+   "guide": "classic-tv",
+   "name": "Soap",
+   "rows": 86,
+   "hours": 36,
+   "note": "item soap-1977-1981-s-01e-01"
+  },
+  "tvx-quincy-m-e": {
+   "guide": "classic-tv",
+   "name": "Quincy, M. E",
+   "rows": 144,
+   "hours": 115,
+   "note": "item Quincy-Lando18"
+  },
+  "tvx-mccloud": {
+   "guide": "classic-tv",
+   "name": "McCloud",
+   "rows": 44,
+   "hours": 61,
+   "note": "item mccloud-Lando18"
+  },
+  "tvx-airwolf": {
+   "guide": "classic-tv",
+   "name": "Airwolf",
+   "rows": 42,
+   "hours": 34,
+   "note": "item e_20251020"
+  },
+  "tvx-diff-rent-strokes": {
+   "guide": "classic-tv",
+   "name": "Diff'rent Strokes",
+   "rows": 179,
+   "hours": 77,
+   "note": "item diffrent-strokes-Lando18"
+  },
+  "tvx-doctor-who": {
+   "guide": "classic-tv",
+   "name": "Doctor Who",
+   "rows": 811,
+   "hours": 422,
+   "note": "item fun-internet-archive-website"
+  },
+  "tvx-galavant-2015": {
+   "guide": "classic-tv",
+   "name": "Galavant (2015)",
+   "rows": 18,
+   "hours": 6,
+   "note": "item galavant"
+  },
+  "tvx-everybody-loves-raymond": {
+   "guide": "classic-tv",
+   "name": "Everybody Loves Raymond",
+   "rows": 192,
+   "hours": 72,
+   "note": "item everybody-loves-raymond-complete-series_20251121_0430"
+  },
+  "tvx-star-trek-t-o-s-complete": {
+   "guide": "classic-tv",
+   "name": "Star Trek T.O.S. Complete",
+   "rows": 50,
+   "hours": 42,
+   "note": "item star-trek-1x-01-the-cage_20231231"
+  },
+  "tvx-supernatural-seasons-01-15-5-1-extras": {
+   "guide": "classic-tv",
+   "name": "Supernatural Seasons 01-15 5.1 + Extras",
+   "rows": 303,
+   "hours": 194,
+   "note": "item supernatural-seasons-01-15-1080p-bluray-x265-hevc-10bit-aac-5.1"
+  },
+  "tvx-ancient-aliens-seasons-1-18": {
+   "guide": "classic-tv",
+   "name": "Ancient Aliens Seasons 1-18",
+   "rows": 91,
+   "hours": 72,
+   "note": "item ancientalienscollection"
+  },
+  "tvx-specials-and-singles": {
+   "guide": "classic-tv",
+   "name": "Classic TV Specials & Singles",
+   "rows": 55,
+   "hours": 59,
+   "note": "44 one/two-file items"
+  },
+  "documentaries": {
+   "new_groups": 48,
+   "new_rows": 2531
+  },
+  "audio": {
+   "new": 69
+  }
+ },
+ "needs_decision": {
+  "otr_non_mp3_or_video": [
+   "jfks19610427"
+  ],
+  "nwt_non_mp3_or_video": [
+   "hunter-biden-laptop-files",
+   "data-set-1_20251220"
+  ],
+  "music_non_mp3_or_video": [
+   "billy-idol-greatest-hits-full-album-best-of-billy-idol",
+   "olivia-newton-john-twist-of-fate",
+   "yes-classic-video-hits-1977-1991",
+   "Sex_Pistols_The_Great_Rock_and_Roll_Swindle_1978_Film",
+   "aldo-nova-ball-and-chain-mtv-2",
+   "hard-rock-blues-rock-cd-aerosmith-discography-1973-2015-77-100-cd-flac-image.cue",
+   "lp_superstars-of-the-70s_various-alice-cooper-allman-brothers-band",
+   "bruce-cockburn-1980-my-fathers-place-ny-wlir",
+   "grateful-dead-june-1976-boston-music-hall-wbcn",
+   "youtube-8qxgb-JuyO0",
+   "judas-priest-battle-cry-live-dvd-rip",
+   "iron-maiden-rock-in-rio-2019-full-show-hd",
+   "steve-miller-band-kbfh-beacon-theater-nyc-75",
+   "tina-turner-whats-love-1994",
+   "tina-one-last-time-live-2000",
+   "sharing-the-night-together",
+   "power-to-the-people",
+   "do-they-know-its-christmas-1984-vhs-1080p-60",
+   "music-videos-MTV-00s",
+   "TheWho-LiveAtTheIsleOfWightFestival-Film-1970",
+   "sade-live-concert-1993",
+   "the-big-4_202303",
+   "acdc-live-at-donington-1991",
+   "classic-albums-stevie-wonder-songs-in-the-key-of-life-1976-1997",
+   "queen-news-of-the-world-tour-1977",
+   "rush-chronicles-the-video-collection",
+   "alan-parsons-live-in-madrid-2004-complete-concert",
+   "deep-purple-new-live-rare-the-video-collection-1984-2000",
+   "UB2008-05-10",
+   "love-disco-the-collection-vol-1-cd-2",
+   "tom-jones-hammersmith-odeon-london-1991-bbc"
+  ]
+ }
+}

@@ -22,6 +22,7 @@ const EXCLUDED_PLAYLISTS = [
   /^american\s+experience\.m3u8?$/i,
   /^the\s+man\s+from\s+u\.n\.c\.l\.e\.{1,2}m3u8?$/i,
   /^1000\s+classic\s+music\.m3u8?$/i,
+  /^hogans\.m3u8?$/i, // superseded by the curated series channel classic-series-hogans-heroes
 ];
 const EXCLUDED_CHANNEL_IDS = new Set([
   'classic-honey-mooners',
@@ -29,6 +30,7 @@ const EXCLUDED_CHANNEL_IDS = new Set([
   'classic-american-experience',
   'classic-the-man-from-u-n-c-l-e',
   'classic-1000-classic-music',
+  'classic-hogans',
 ]);
 export function isExcludedPlaylistChannel(channelId: string): boolean {
   return EXCLUDED_CHANNEL_IDS.has(channelId);

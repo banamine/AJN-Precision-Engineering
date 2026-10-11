@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Tv, Clock, Calendar, Radio, Headphones } from 'lucide-react';
+import { Tv, Clock, Calendar, Radio, Headphones, ListChecks } from 'lucide-react';
 import EpgGuide from '../EpgGuide';
-import { Guide, PlayProgramCallback } from '../types';
+import { Guide, PlayProgramCallback, Destination } from '../types';
 import { AjnResourcePanel } from './AjnResourcePanel';
 import { RushEpisodePicker } from './RushEpisodePicker';
 import { LiveHealthNote } from './LiveHealthNote';
+import { loadLastView, saveLastView, VALID_DESTINATIONS } from '../nav/lastView';
 
 interface TvGuideViewProps {
   onSelectProgram: PlayProgramCallback;
+  /** Opens the Today list page. */
+  onNavigate?: (dest: Destination) => void;
+  active?: boolean;
 }
 
 const AJN_RESOURCE_GUIDE: Guide = {
@@ -18,7 +22,7 @@ const AJN_RESOURCE_GUIDE: Guide = {
   description: 'Live AJN Audio/Video Resource Links: Alex, War Room, Sunday Live, Hourly Video, and Hourly Audio',
 };
 
-export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
+export function TvGuideView({ onSelectProgram, onNavigate, active = true }: TvGuideViewProps) {
   const [guides, setGuides] = useState<Guide[]>([
     {
       id: 'cable-tv',
@@ -32,11 +36,14 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
       name: 'Audio & Podcasts',
       type: 'audio',
       enabled: true,
-      description: 'Radio streams, historic aerospace vaults, audio dramas, and podcasts',
+      description: 'Music collections, radio streams, historic aerospace vaults, audio dramas, and podcasts',
     },
     AJN_RESOURCE_GUIDE,
   ]);
-  const [selectedGuideId, setSelectedGuideId] = useState<string>('cable-tv');
+  const [selectedGuideId, setSelectedGuideId] = useState<string>(() => {
+    const savedGuideId = loadLastView(VALID_DESTINATIONS)?.guideId;
+    return savedGuideId ? savedGuideId : 'cable-tv';
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -45,7 +52,9 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
       .then((data) => {
         if (!data || !Array.isArray(data.guides)) return;
         const serverGuides = data.guides as Guide[];
-        setGuides([...serverGuides.filter((guide) => guide.id !== AJN_RESOURCE_GUIDE.id), AJN_RESOURCE_GUIDE]);
+        const nextGuides = [...serverGuides.filter((guide) => guide.id !== AJN_RESOURCE_GUIDE.id), AJN_RESOURCE_GUIDE];
+        setGuides(nextGuides);
+        setSelectedGuideId((current) => (nextGuides.some((guide) => guide.id === current) ? current : 'cable-tv'));
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -75,8 +84,13 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
           <div className="flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300">
             <Calendar className="h-3.5 w-3.5 text-neutral-400" /><span>{dateFormatted}</span>
           </div>
+          {onNavigate && (
+            <button type="button" onClick={() => onNavigate('today')} data-testid="open-today-list" className="flex items-center gap-1.5 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-200 hover:bg-sky-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400">
+              <ListChecks className="h-3.5 w-3.5" /><span>Today's list</span>
+            </button>
+          )}
           <div className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs ${currentGuide.type === 'audio' ? 'border-amber-500/30 bg-amber-950/40 text-amber-300' : 'border-sky-500/30 bg-sky-950/40 text-sky-300'}`}>
-            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" /><span className="font-mono font-medium">Live Grid Active</span>
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" /><span className="font-mono font-medium">Schedule Running</span>
           </div>
         </div>
       </div>
@@ -89,7 +103,7 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
               const isSelected = guide.id === selectedGuideId;
               const isAudio = guide.type === 'audio';
               return (
-                <button key={guide.id} type="button" id={`guide-tab-${guide.id}`} onClick={() => setSelectedGuideId(guide.id)} className={`flex items-center gap-2 rounded-md px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer ${isSelected ? (isAudio ? 'bg-amber-500 text-neutral-950 shadow-sm' : 'bg-sky-500 text-white shadow-sm') : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60'}`}>
+                <button key={guide.id} type="button" id={`guide-tab-${guide.id}`} onClick={() => { setSelectedGuideId(guide.id); saveLastView({ guideId: guide.id }); }} className={`flex items-center gap-2 rounded-md px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer ${isSelected ? (isAudio ? 'bg-amber-500 text-neutral-950 shadow-sm' : 'bg-sky-500 text-white shadow-sm') : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60'}`}>
                   {isAudio ? <Radio className="h-3.5 w-3.5" /> : <Tv className="h-3.5 w-3.5" />}
                   <span>{guide.name}</span>
                   <span className={`text-[10px] font-mono uppercase px-1.5 py-0.2 rounded ${isSelected ? (isAudio ? 'bg-amber-600/30 text-neutral-950' : 'bg-sky-600/50 text-sky-100') : 'bg-neutral-800 text-neutral-400'}`}>{guide.type}</span>
@@ -110,7 +124,7 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
       ) : (
         <div className="space-y-4">
           <div className="overflow-hidden rounded-xl shadow-2xl border border-neutral-800">
-            <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} />
+            <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} active={active} />
           </div>
           {selectedGuideId === 'audio-podcasts' && <RushEpisodePicker onPlay={onSelectProgram} />}
           {selectedGuideId === 'live-tv' && <LiveHealthNote />}

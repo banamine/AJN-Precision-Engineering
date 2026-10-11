@@ -6,6 +6,7 @@
  *  3. HLS played through hls.js — segments arrive by XHR (already CORS) and
  *     the element plays a same-origin MediaSource blob.
  * Anything else plays natively without the bridge, never silently. */
+import podcastSources from "../data/podcastSources.json";
 import Hls from "hls.js";
 
 /** AJN file hosts that send no CORS headers: routed through /api/ajn/proxy. */
@@ -28,8 +29,21 @@ export function bridgeSrc(src: string | undefined): string | undefined {
   return src;
 }
 
-export function corsModeFor(src: string | undefined, isHls: boolean): "anonymous" | undefined {
+/** Marker appended once a CORS-mode load failed: the same file is then played natively (no signal meter). */
+export const NO_METER_MARK = "#nometer";
+/** Marker on a podcast URL the server already resolved (tracker chain walked): never resolved twice. */
+export const RESOLVED_MARK = "#resolved";
+const METER_PODCAST_PREFIXES = ((podcastSources as { sources: Array<{ id: string; enabled: boolean; corsVerified?: boolean }> }).sources)
+  .filter((p) => p.enabled && p.corsVerified).map((p) => `pod-${p.id}-`);
+/** True for podcast programs whose enclosure chain was verified to allow CORS-mode playback. */
+export function podcastAllowsMeter(programId?: string): boolean {
+  return Boolean(programId) && METER_PODCAST_PREFIXES.some((x) => programId!.startsWith(x));
+}
+
+export function corsModeFor(src: string | undefined, isHls: boolean, programId?: string): "anonymous" | undefined {
   if (!src) return undefined;
+  if (src.includes(NO_METER_MARK)) return undefined;
+  if (podcastAllowsMeter(programId) && src.startsWith("https://")) return "anonymous";
   if (src.startsWith("/")) return "anonymous";
   if (isHls && Hls.isSupported()) return "anonymous";
   try { if (CORS_HOSTS.includes(new URL(src).hostname)) return "anonymous"; } catch { /* ignore */ }

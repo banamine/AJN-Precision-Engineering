@@ -11,11 +11,14 @@ export interface PersistentMediaState {
   duration: number;
   /** An element exists in #persistent-player. */
   attached: boolean;
+  /** Current playback mute state */
+  muted: boolean;
 }
 
 export interface PersistentMedia extends PersistentMediaState {
   toggle: () => void;
   seek: (seconds: number) => void;
+  toggleMute: () => void;
 }
 
 export function findPersistentMedia(mediaType?: MediaType): HTMLMediaElement | null {
@@ -24,8 +27,8 @@ export function findPersistentMedia(mediaType?: MediaType): HTMLMediaElement | n
   return mediaType === 'audio' ? audio() ?? video() : video() ?? audio();
 }
 
-const EVENTS = ['play', 'pause', 'timeupdate', 'durationchange', 'loadedmetadata', 'ended', 'emptied'] as const;
-const IDLE: PersistentMediaState = { paused: true, currentTime: 0, duration: 0, attached: false };
+const EVENTS = ['play', 'pause', 'timeupdate', 'durationchange', 'loadedmetadata', 'ended', 'emptied', 'volumechange'] as const;
+const IDLE: PersistentMediaState = { paused: true, currentTime: 0, duration: 0, attached: false, muted: false };
 
 /** `sourceKey` should change whenever a different item is loaded (the element is replaced when the source changes). */
 export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: string | undefined, enabled = true): PersistentMedia {
@@ -37,9 +40,9 @@ export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: 
     let media: HTMLMediaElement | null = null;
     const read = () => {
       const next: PersistentMediaState = media
-        ? { paused: media.paused, currentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0, duration: Number.isFinite(media.duration) ? media.duration : 0, attached: true }
+        ? { paused: media.paused, currentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0, duration: Number.isFinite(media.duration) ? media.duration : 0, attached: true, muted: Boolean(media.muted) }
         : IDLE;
-      setState(prev => (prev.paused === next.paused && Math.floor(prev.currentTime) === Math.floor(next.currentTime) && prev.duration === next.duration && prev.attached === next.attached ? prev : next));
+      setState(prev => (prev.paused === next.paused && Math.floor(prev.currentTime) === Math.floor(next.currentTime) && prev.duration === next.duration && prev.attached === next.attached && prev.muted === next.muted ? prev : next));
     };
     const detach = () => { if (media) for (const e of EVENTS) media.removeEventListener(e, read); };
     const attach = () => {
@@ -66,5 +69,10 @@ export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: 
     const max = Number.isFinite(media.duration) ? media.duration : seconds;
     media.currentTime = Math.max(0, Math.min(seconds, max));
   }, [mediaType]);
-  return { ...state, toggle, seek };
+  const toggleMute = useCallback(() => {
+    const media = mediaRef.current ?? findPersistentMedia(mediaType);
+    if (!media) return;
+    media.muted = !media.muted;
+  }, [mediaType]);
+  return { ...state, toggle, seek, toggleMute };
 }

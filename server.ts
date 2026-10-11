@@ -3,13 +3,18 @@ import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGu
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { liveTvHealthSummary } from './guideRegistry';
+import { isKnownEnclosure, resolveEnclosure } from './server/podcasts';
 import { plutoEpgStats } from './server/sources/plutoEpg';
 import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES } from './server/safeFetch';
 import { proxySliceRange } from './server/proxyRange';
 import { getDigestState } from './server/newsDigest';
 import { unplayableReason } from './server/sources/archiveLinks';
 import { Readable } from 'node:stream';
+import { gzip as gzipCb } from 'node:zlib';
+import { promisify } from 'node:util';
+const gzipAsync=promisify(gzipCb);
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import { patchServer } from './server-patch.js';
 import { getRushIndex, rushEpisodesOn, resolveRushItem, rushStats, nextRushDate } from './server/rush';
 import { hlsProxyAllowed, rewritePlaylist } from './server/hlsPlaylistProxy';
@@ -26,6 +31,8 @@ import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
 import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
+import { registerFolderArtRoute } from './server/folderArt.js';
+import { registerSyncPlaceholder } from './server/routes/syncPlaceholder.js';
 
 const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(express.json());
 app.use(watchdogRouter);
@@ -35,6 +42,7 @@ const stats:ProxyStats={totalRequests:0,successfulRequests:0,retriedRequests:0,f
 
 app.get('/api/health',(_req,res)=>res.json({status:'ok',service:'ajn-precision-engineering-proxy',uptime:process.uptime(),timestamp:new Date().toISOString(),stats}));
 app.post('/api/health',(req,res)=>{console.log('[CLIENT ERROR]',req.body);res.json({received:true});});
+registerSyncPlaceholder(app); // placeholder cloud-sync endpoint (stores nothing)
 app.get('/api/guides',(_req,res)=>{const guides=getAllGuides();res.json({guides,total:guides.length});});
 app.get('/api/guides/:guideId',(req,res)=>{const g=getGuideById(req.params.guideId);if(!g)return res.status(404).json({error:`Guide not found: ${req.params.guideId}`});res.json(g);});
 app.get('/api/channels',(req,res)=>{const guideId=req.query.guide as string|undefined;const channels=getChannelsByGuide(guideId);res.json({guideId:guideId||'all',total:channels.length,channels});});
@@ -53,7 +61,7 @@ async function guideSnapshot(guideId:string):Promise<ExportSnapshot>{
   exportSnaps.set(guideId,{at:Date.now(),snap});
   return snap;
 }
-const EXPORT_GUIDES=['cable-tv','classic-tv','live-tv','audio-podcasts','movies-classics-vault','science-documentaries'];
+const EXPORT_GUIDES=['cable-tv','classic-tv','live-tv','audio-podcasts','movies-classics-vault','science-documentaries','old-british-tv'];
 const originOf=(req:any)=>`${(req.headers['x-forwarded-proto']||req.protocol||'https').toString().split(',')[0]}://${req.get('host')}`;
 let libraryCache:{at:number;items:any[];generatedAt:string}|null=null;
 // Library index: packaged snapshot (search categories) + guide categories, paged.
@@ -104,7 +112,32 @@ app.get('/api/channels/:id/playlist.m3u',async(req,res)=>{const s=await findChan
 app.get('/api/channels/:id/epg.xml',async(req,res)=>{const s=await findChannelGuide(req.params.id,req.query.guide as string|undefined);if(!s)return res.status(404).json({error:'unknown channel'});res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,[req.params.id]));});
 app.get('/api/guides/:guide/playlist.m3u',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('audio/x-mpegurl').set('X-AJN-Generated-At',s.generatedAt).send(toM3u(s,null,originOf(req)));});
 app.get('/api/guides/:guide/epg.xml',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,null));});
-app.get('/api/schedule',async(req,res)=>{const guideId=(req.query.guide as string)||'cable-tv';try{res.json({guideId,channels:await getScheduleForGuide(guideId),generatedAt:new Date().toISOString(),source:'archive.org-live'});}catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}});
+app.get('/api/schedule',async(req,res)=>{
+ res.set('Cache-Control','no-store');
+ const guideId=(req.query.guide as string)||'cable-tv';
+ // Date injection is a Movies-only test hook, never a production clock override.
+ let movieNow:Date|undefined;
+ if(process.env.NODE_ENV==='test'&&(guideId==='movies-classics-vault'||guideId==='old-british-tv')&&req.query.now!==undefined){
+  const value=req.query.now;
+  if(typeof value!=='string'||! /^\d{4}-\d{2}-\d{2}T.*Z$/.test(value)){
+   return res.status(400).json({error:'now must be a UTC ISO date at or after 2026-01-01',channels:[]});
+  }
+  movieNow=new Date(value);
+  if(!Number.isFinite(movieNow.getTime())||movieNow.getTime()<Date.UTC(2026,0,1)){
+   return res.status(400).json({error:'now must be a UTC ISO date at or after 2026-01-01',channels:[]});
+  }
+ }
+ try{
+  // The Classic guide is ~15 MB of JSON; Cloud Run does not compress, so gzip here (browsers always send Accept-Encoding: gzip).
+  const body=JSON.stringify({guideId,channels:await getScheduleForGuide(guideId,movieNow),generatedAt:new Date().toISOString(),source:'archive.org-live'});
+  res.set('Vary','Accept-Encoding').type('application/json');
+  if(/\bgzip\b/i.test(String(req.headers['accept-encoding']??'')))return res.set('Content-Encoding','gzip').send(await gzipAsync(body,{level:5}));
+  // Cloud Run drops any HTTP/1 response above 32 MiB with an opaque 5xx. Say why instead (browsers always send Accept-Encoding: gzip).
+  if(Buffer.byteLength(body)>28*1024*1024)return res.status(406).json({error:`schedule is ${(Buffer.byteLength(body)/1048576).toFixed(1)} MiB uncompressed; Cloud Run caps a response at 32 MiB. Send Accept-Encoding: gzip (curl --compressed).`,guideId,channels:[]});
+  return res.send(body);
+ }
+ catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}
+});
 app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const y=Number(req.query.year);const items=y?all.filter(e=>e.year===y):all;res.set('Cache-Control','public, max-age=3600');res.json({total:items.length,items});});
 app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});
 app.get('/api/rush/episode/:date',async(req,res)=>{const eps=await rushEpisodesOn(req.params.date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${req.params.date}`});try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({date:req.params.date,episodes,stats:rushStats});}catch(e:any){res.status(e.status??502).json({error:e.message,stats:rushStats});}});
@@ -166,6 +199,25 @@ function parseRangeHeader(header:string|undefined):ByteRange|null {
 }
 
 
+interface CachedProxyImage {
+  contentType: string;
+  buffer: Buffer;
+  etag?: string;
+  lastModified?: string;
+  expires: number;
+}
+const proxyImageCache = new Map<string, CachedProxyImage>();
+const MAX_IMAGE_CACHE_ENTRIES = 300;
+const IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+registerFolderArtRoute(app);
+app.get('/api/podcast/resolve',async(req,res)=>{
+ res.set('Cache-Control','no-store');
+ const url=String(req.query.url??'');
+ if(!isKnownEnclosure(url))return res.status(404).json({error:'Not a known podcast enclosure'});
+ try{const r=await resolveEnclosure(url);res.json(r);}
+ catch(e:any){console.error('[Podcasts] resolve failed:',e?.message);res.status(502).json({error:String(e?.message??e)});}
+});
 app.get('/api/archive/proxy', async (req,res)=>{
   stats.totalRequests++;
   const proxyRequestId=crypto.randomUUID();
@@ -183,29 +235,71 @@ app.get('/api/archive/proxy', async (req,res)=>{
     return res.status(400).json({error:'Invalid path parameter',details:v.error,proxyRequestId});
   }
 
+  const isImage = /\.(jpe?g|png|webp|gif|svg|bmp|ico)$/i.test(v.cleanPath) || v.cleanPath.endsWith('/__ia_thumb.jpg');
+  if (isImage) {
+    const cachedImg = proxyImageCache.get(v.cleanPath);
+    if (cachedImg && cachedImg.expires > Date.now()) {
+      stats.successfulRequests++;
+      stats.cacheHits++;
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Content-Type', cachedImg.contentType);
+      res.setHeader('Content-Length', cachedImg.buffer.length);
+      if (cachedImg.etag) res.setHeader('ETag', cachedImg.etag);
+      if (cachedImg.lastModified) res.setHeader('Last-Modified', cachedImg.lastModified);
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+      res.setHeader('X-AJN-Archive-Proxy', 'memory-cached-image');
+      return res.status(200).end(cachedImg.buffer);
+    }
+  }
+
   try{
     const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
-    const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Media-Console/ArchiveProxy','Accept':'*/*'};
+    const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Media-Console/ArchiveProxy','Accept': isImage ? 'image/*,*/*' : '*/*'};
     // Cloud Run rejects any HTTP/1 response larger than 32 MiB with an empty 500.
     // Browsers open media with "Range: bytes=0-" (or no Range), which asked for the
     // whole 500 MB file and died there, reported by the video element as
     // MediaError 4. Serve bounded 206 slices instead; the browser requests the
     // next slice itself as it plays or seeks.
-    const slice=proxySliceRange(req.headers.range);
-    upstreamHeaders.Range=`bytes=${slice.start}-${slice.end}`;
+    if (isImage) {
+      if (req.headers.range) {
+        const slice = proxySliceRange(req.headers.range);
+        upstreamHeaders.Range = `bytes=${slice.start}-${slice.end}`;
+      }
+    } else {
+      const slice=proxySliceRange(req.headers.range);
+      upstreamHeaders.Range=`bytes=${slice.start}-${slice.end}`;
+    }
 
     const upstreamAbort=new AbortController();
     res.on('close',()=>{ if(!res.writableFinished) upstreamAbort.abort(); });
 
+    const upstreamT0=Date.now();
     const upstream=await fetchArchiveMediaWithRetry(upstreamUrl,{
       headers:upstreamHeaders,
       signal:upstreamAbort.signal,
       requestId:proxyRequestId,
     });
     if(upstream.attempts>1) stats.retriedRequests++;
+    // Evidence for stall investigations: how long Archive took to answer this slice and how many attempts it needed.
+    res.setHeader('Server-Timing',`upstream;dur=${Date.now()-upstreamT0}, attempts;desc="${upstream.attempts}"`);
     const mediaResponse=upstream.response;
 
     if(!mediaResponse || upstream.failure){
+      if (isImage) {
+        try {
+          const fallbackPath = path.resolve('public/thumbs/classic-archive.jpg');
+          const fallbackData = await fs.promises.readFile(fallbackPath);
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Content-Type', 'image/jpeg');
+          res.setHeader('Content-Length', fallbackData.length);
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+          res.setHeader('X-AJN-Archive-Proxy', 'fallback-image');
+          stats.successfulRequests++;
+          return res.status(200).end(fallbackData);
+        } catch {
+          // Continue to error
+        }
+      }
       await mediaResponse?.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:upstream.status,stage:upstream.failure,attempts:upstream.attempts,path:v.cleanPath}));
@@ -219,7 +313,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
     // Archive answers not-yet-published or unavailable media with an HTML page
     // (still 200/206). Passing that on makes the browser report a demuxer error;
     // report it as what it is instead.
-    if(/text\/html/i.test(contentType||'')){
+    if(!isImage && /text\/html/i.test(contentType||'')){
       await mediaResponse.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:mediaResponse.status,stage:'not_media',contentType,path:v.cleanPath}));
@@ -238,9 +332,42 @@ app.get('/api/archive/proxy', async (req,res)=>{
     if(lastModified) res.setHeader('Last-Modified',lastModified);
 
     stats.successfulRequests++;
-    res.setHeader('Cache-Control','no-store');
+    if (isImage) {
+      res.setHeader('Cache-Control','public, max-age=86400, stale-while-revalidate=604800');
+    } else {
+      res.setHeader('Cache-Control','no-store');
+    }
     res.setHeader('X-AJN-Archive-Proxy','stream-from-validated-storage');
     res.status(mediaResponse.status);
+
+    if(isImage && mediaResponse.body){
+      try {
+        const chunks: Buffer[] = [];
+        const reader = mediaResponse.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) chunks.push(Buffer.from(value));
+        }
+        const fullBuffer = Buffer.concat(chunks);
+        if (proxyImageCache.size >= MAX_IMAGE_CACHE_ENTRIES) {
+          const oldestKey = proxyImageCache.keys().next().value;
+          if (oldestKey) proxyImageCache.delete(oldestKey);
+        }
+        proxyImageCache.set(v.cleanPath, {
+          contentType: contentType || 'image/jpeg',
+          buffer: fullBuffer,
+          etag: etag ?? undefined,
+          lastModified: lastModified ?? undefined,
+          expires: Date.now() + IMAGE_CACHE_TTL_MS,
+        });
+        return res.end(fullBuffer);
+      } catch (streamErr: any) {
+        if (!upstreamAbort.signal.aborted) console.error('[Archive Proxy Image Stream Error]', proxyRequestId, streamErr?.message);
+        return res.destroy();
+      }
+    }
+
     if(mediaResponse.body){
       stats.activeStreams++;
       const body=Readable.fromWeb(mediaResponse.body as any);
@@ -252,11 +379,31 @@ app.get('/api/archive/proxy', async (req,res)=>{
         res.destroy();
       });
       res.once('close',()=>{ if(!body.destroyed){ body.destroy(); } });
+      // One line per slice in the Cloud Run logs: where the time goes (Archive headers vs first byte vs body speed).
+      let firstByteAt=0,sent=0; const headersMs=Date.now()-upstreamT0;
+      body.on('data',(c:Buffer)=>{ if(!firstByteAt)firstByteAt=Date.now(); sent+=c.length; });
+      body.once('end',()=>{ const t=Date.now(),bodyMs=t-(firstByteAt||t);
+        console.log('[archive-proxy-slice]',JSON.stringify({id:proxyRequestId,range:upstreamHeaders.Range,path:v.cleanPath.slice(-70),status:mediaResponse.status,headersMs,firstByteMs:firstByteAt?firstByteAt-upstreamT0:null,bodyMs,bytes:sent,kBps:bodyMs>0?Math.round(sent/1024/(bodyMs/1000)):null})); });
       return body.pipe(res);
     }
     return res.end();
   }catch(err:any){
     if(err?.name==='AbortError'||res.headersSent) return;
+    if (isImage) {
+      try {
+        const fallbackPath = path.resolve('public/thumbs/classic-archive.jpg');
+        const fallbackData = await fs.promises.readFile(fallbackPath);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Content-Length', fallbackData.length);
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.setHeader('X-AJN-Archive-Proxy', 'fallback-image');
+        stats.successfulRequests++;
+        return res.status(200).end(fallbackData);
+      } catch {
+        // Fall through
+      }
+    }
     stats.failedRequests++;
     console.error('[Archive Proxy Redirect Failure]',proxyRequestId,err?.message || String(err));
     return res.status(502).json({
