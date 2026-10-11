@@ -41,4 +41,8 @@ assert.deepEqual(
   ['Radio Hour', 'MASH', 'Mash Years Retrospective']
 );
 
+assert.equal(L.needsProbe({ ...a, availability: 'unverified' }), true);
+assert.equal(L.needsProbe({ ...a, availability: 'unverified', guideId: 'classic-tv' }), false);
+assert.equal(L.needsProbe({ ...a, availability: 'verified' }), false);
+
 console.log('test-library-rank: all passed');

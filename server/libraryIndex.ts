@@ -236,12 +236,16 @@ export async function topUpCategory(c: LibraryCategory, maxNew = 15): Promise<nu
 
 let timers: ReturnType<typeof setInterval>[] = [];
 let nextCat = 0;
+export function needsProbe(r: IndexRecord): boolean {
+  return !r.guideId && r.path.startsWith('/download/') && r.availability === 'unverified';
+}
+
 export function startLibraryBackground(opts: { probeEveryMs?: number; topUpEveryMs?: number } = {}) {
   if (timers.length) return;
   const probeEvery = opts.probeEveryMs ?? 5000, topUpEvery = opts.topUpEveryMs ?? 3600_000;
   let cursor = 0;
   timers.push(setInterval(() => {
-    const list = allRecords().filter((r) => r.path.startsWith('/download/') && !probe.has(r.id) && r.availability === 'unverified');
+    const list = allRecords().filter((r) => needsProbe(r) && !probe.has(r.id));
     const pending = list.length ? list : allRecords().filter((r) => probe.get(r.id)?.status === 'unverified' || (probe.get(r.id)?.fails ?? 0) === 1);
     if (!pending.length) return;
     void probeRecord(pending[cursor++ % pending.length]);

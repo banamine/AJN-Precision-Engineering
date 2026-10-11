@@ -53,13 +53,14 @@ app.get('/api/live/health',(_req,res)=>{res.set('Cache-Control','no-store');res.
 // One cached snapshot per guide (10 min) feeds the Library and the M3U/XMLTV
 // exports, so both files of a channel describe the same lineup.
 const EXPORT_TTL_MS=10*60_000;
-const exportSnaps=new Map<string,{at:number;snap:ExportSnapshot}>();
-async function guideSnapshot(guideId:string):Promise<ExportSnapshot>{
+const exportSnaps=new Map<string,{at:number;p:Promise<ExportSnapshot>}>();
+function guideSnapshot(guideId:string):Promise<ExportSnapshot>{
   const hit=exportSnaps.get(guideId);
-  if(hit&&Date.now()-hit.at<EXPORT_TTL_MS)return hit.snap;
-  const snap={guideId,generatedAt:new Date().toISOString(),channels:await getScheduleForGuide(guideId)};
-  exportSnaps.set(guideId,{at:Date.now(),snap});
-  return snap;
+  if(hit&&Date.now()-hit.at<EXPORT_TTL_MS)return hit.p;
+  const p=getScheduleForGuide(guideId).then(channels=>({guideId,generatedAt:new Date().toISOString(),channels}));
+  exportSnaps.set(guideId,{at:Date.now(),p});
+  p.catch(()=>{if(exportSnaps.get(guideId)?.p===p)exportSnaps.delete(guideId);});
+  return p;
 }
 const EXPORT_GUIDES=['cable-tv','classic-tv','live-tv','audio-podcasts','movies-classics-vault','science-documentaries','old-british-tv'];
 const originOf=(req:any)=>`${(req.headers['x-forwarded-proto']||req.protocol||'https').toString().split(',')[0]}://${req.get('host')}`;
@@ -112,6 +113,17 @@ app.get('/api/channels/:id/playlist.m3u',async(req,res)=>{const s=await findChan
 app.get('/api/channels/:id/epg.xml',async(req,res)=>{const s=await findChannelGuide(req.params.id,req.query.guide as string|undefined);if(!s)return res.status(404).json({error:'unknown channel'});res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,[req.params.id]));});
 app.get('/api/guides/:guide/playlist.m3u',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('audio/x-mpegurl').set('X-AJN-Generated-At',s.generatedAt).send(toM3u(s,null,originOf(req)));});
 app.get('/api/guides/:guide/epg.xml',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,null));});
+const SCHEDULE_TTL_MS=60_000;
+const scheduleCache=new Map<string,{at:number;p:ReturnType<typeof getScheduleForGuide>}>();
+function cachedSchedule(guideId:string,movieNow?:Date){
+  if(process.env.NODE_ENV==='test'||movieNow)return getScheduleForGuide(guideId,movieNow);
+  const hit=scheduleCache.get(guideId);
+  if(hit&&Date.now()-hit.at<SCHEDULE_TTL_MS)return hit.p;
+  const p=getScheduleForGuide(guideId);
+  scheduleCache.set(guideId,{at:Date.now(),p});
+  p.catch(()=>{if(scheduleCache.get(guideId)?.p===p)scheduleCache.delete(guideId);});
+  return p;
+}
 app.get('/api/schedule',async(req,res)=>{
  res.set('Cache-Control','no-store');
  const guideId=(req.query.guide as string)||'cable-tv';
@@ -131,7 +143,7 @@ app.get('/api/schedule',async(req,res)=>{
   // The Classic guide is ~15 MB of JSON; Cloud Run does not compress, so gzip here (browsers always send Accept-Encoding: gzip).
   // Optional ?channel=<id>: only that channel (the player needs just its own list to pick the next program; the whole guide can be tens of MB).
   const only=typeof req.query.channel==='string'&&req.query.channel?req.query.channel:null;
-  const all=await getScheduleForGuide(guideId,movieNow);
+  const all=await cachedSchedule(guideId,movieNow);
   const body=JSON.stringify({guideId,channels:only?all.filter(c=>c.id===only):all,generatedAt:new Date().toISOString(),source:'archive.org-live'});
   res.set('Vary','Accept-Encoding').type('application/json');
   if(/\bgzip\b/i.test(String(req.headers['accept-encoding']??'')))return res.set('Content-Encoding','gzip').send(await gzipAsync(body,{level:5}));
