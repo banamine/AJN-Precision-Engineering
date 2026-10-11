@@ -2,7 +2,10 @@
  * Order of attempts: episode frame -> Archive item image -> captured frame (only for items Archive had no image for) -> local backup image.
  * The <Thumb> component walks this list on image errors and finally shows an initials tile, so a card is never an empty box
  * and a broken image is never shown. */
-export type ThumbSource = 'episode-frame' | 'item-image' | 'captured' | 'backup';
+export type ThumbSource = 'episode-frame' | 'item-image' | 'genre' | 'captured' | 'backup';
+import { genreForName, genreArtUrl, isMusicGroup } from './musicGenre';
+import musicNoArt from '../data/musicNoArt.json';
+const NO_ART = new Set<string>((musicNoArt as { noArt: string[] }).noArt);
 export interface ThumbCandidate { url: string; source: ThumbSource }
 export interface ThumbInput {
   /** Archive identifier, or null when unknown. */
@@ -15,6 +18,8 @@ export interface ThumbInput {
   category?: string | null;
   mediaType?: string | null;
   channelId?: string | null;
+  /** Channel name; with category 'Music' it picks the genre picture used when the cover is missing or unusable. */
+  name?: string | null;
 }
 
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
@@ -60,7 +65,11 @@ export function thumbCandidates(i: ThumbInput, captured?: string | null): ThumbC
   const id = i.identifier && ID_RE.test(i.identifier) ? i.identifier : archiveIdentifierFromPath(i.path);
   const out: ThumbCandidate[] = [];
   if (id && i.frameFile) out.push({ url: archiveFrameUrl(id, i.frameFile), source: 'episode-frame' });
-  if (id) out.push({ url: archiveItemImageUrl(id), source: 'item-image' });
+  // Music: an Archive cover that is a waveform strip or nearly black (src/data/musicNoArt.json) is skipped, and the genre
+  // picture follows the real cover in the chain (Thumb also skips a cover that loads as a thin strip).
+  const music = isMusicGroup(i.category);
+  if (id && !(music && NO_ART.has(id))) out.push({ url: archiveItemImageUrl(id), source: 'item-image' });
+  if (music) out.push({ url: genreArtUrl(genreForName(i.name)), source: 'genre' });
   if (captured && captured.startsWith('data:image/jpeg;base64,')) out.push({ url: captured, source: 'captured' });
   out.push({ url: backupThumb(i), source: 'backup' });
   return out.filter((c, n, a) => a.findIndex((x) => x.url === c.url) === n);

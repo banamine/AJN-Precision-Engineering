@@ -8,6 +8,7 @@ import { runSources } from './server/sources/runner';
 import { buildRushChannel, buildOtrChannel, buildArchiveItemChannel, type ArchiveAudioChannelSource } from './server/audioChannels';
 import archiveAudioChannelsJson from './src/data/archiveAudioChannels.json';
 import { getPodcastChannels } from './server/podcasts';
+import { windowByHour } from './server/scheduleWindow';
 import { getRtDocumentaryChannel, RT_CHANNEL_ID, RT_CHANNEL_NAME } from './server/rtDocumentary';
 import { layoutRotatingDailySchedule } from './server/dailyRotation';
 import { getNasaPrograms, NASA_CHANNEL_ID } from './server/sources/nasaArchive';
@@ -451,6 +452,12 @@ async function getDailyHighlightsChannels(guideId:string):Promise<ScheduleChanne
 /* ---------------- Audio & Podcasts: Rush (On This Day) + Old-Time Radio ----------------
  * Separate collections, separate rules (server/audioChannels.ts). Rebuilt once a
  * UTC day; stale-while-revalidate so the guide never waits on Archive after the first build. */
+let audioLoops:Map<string,Program[]>=new Map();
+/** Rows of a looped Audio channel that fall around the viewer's local clock hour (grid hours are local clock hours), bounded in size. */
+export function getAudioLoopRows(channelId:string,localHour:number):Program[]|null{
+  const full=audioLoops.get(channelId);
+  return full?windowByHour(full,localHour):null;
+}
 let audioCache:{day:string;data:ScheduleChannel[];incomplete:boolean;retryAt:number}|null=null;
 let audioRefreshing:Promise<ScheduleChannel[]>|null=null;
 const AUDIO_RETRY_MS=90_000; // a failed Archive lookup is retried quickly; only a COMPLETE build holds for the UTC day
@@ -467,14 +474,23 @@ async function refreshAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
   for(const x of itemSrcs)itemProgs.push(await buildArchiveItemChannel(guideId,x).catch(e=>{console.error('[Audio]',x.id,e?.message);return [] as Program[];}));
   const prev=audioCache?.data;
   let incomplete=false;
-  const ch=(id:string,name:string,group:string,programs:Program[],mins:number,maxSlots=120):ScheduleChannel=>{
+  const loops=new Map<string,Program[]>();
+  const ch=(id:string,name:string,group:string,programs:Program[],mins:number,maxSlots=120,loopDay=false):ScheduleChannel=>{
+    if(programs.length&&loopDay){
+      // Whole-item channel: its tracks cycle across the entire day. The full day is kept in audioLoops (the guide asks for a
+      // window of it, see getAudioLoopRows); everything else still gets the first maxSlots rows, exactly as before.
+      const full=layoutMusicDailySchedule(programs,now,mins);
+      loops.set(id,full);
+      return{id,guideId,name,mediaType:'audio',group,programs:full.slice(0,maxSlots),sourceStatus:'ok'};
+    }
     if(programs.length)return{id,guideId,name,mediaType:'audio',group,programs:layoutDailySchedule(programs,mins,now,maxSlots),sourceStatus:'ok'};
     incomplete=true;
     const last=prev?.find(c=>c.id===id&&c.programs.length);
     return last??{id,guideId,name,mediaType:'audio',group,programs:[],sourceStatus:'upstream_error',sourceError:'Archive did not answer; retrying shortly'};
   };
-  const data=[ch('rush-on-this-day','Rush Limbaugh — On This Day','Talk Radio',rush,36),ch('old-time-radio','Old-Time Radio','Old-Time Radio',otr,30),...itemSrcs.map((x,i)=>ch(x.id,x.name,x.group,itemProgs[i],30,x.maxSlots))];
+  const data=[ch('rush-on-this-day','Rush Limbaugh — On This Day','Talk Radio',rush,36),ch('old-time-radio','Old-Time Radio','Old-Time Radio',otr,30),...itemSrcs.map((x,i)=>ch(x.id,x.name,x.group,itemProgs[i],30,x.maxSlots,true))];
   audioCache={day:now.toISOString().slice(0,10),data,incomplete,retryAt:Date.now()+AUDIO_RETRY_MS};
+  audioLoops=loops;
   return data;
 }
 async function getAudioChannels(guideId:string):Promise<ScheduleChannel[]>{

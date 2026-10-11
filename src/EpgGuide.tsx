@@ -170,7 +170,8 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
     try {
       if (!getCachedSchedule(guideId)) setIsLoading(true);
       setFetchError(null);
-      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`, { signal: controller.signal });
+      // tz: the server windows looped music channels around this viewer's local hour (the grid draws on the local clock).
+      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}&tz=${new Date().getTimezoneOffset()}`, { signal: controller.signal });
       if (!res.ok) {
         throw new Error(`Schedule request failed: HTTP ${res.status}`);
       }
@@ -440,7 +441,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                   <ChannelLogo logo={channel.logo} name={channel.name} fallback={
                     <LazyThumb title={channel.name} input={{
                       path: liveItem?.program.archivePath ?? liveItem?.program.mediaUrl ?? channel.programs[0]?.archivePath ?? channel.programs[0]?.mediaUrl ?? null,
-                      guideId, channelId: channel.id, category: channel.group ?? null, mediaType: channel.mediaType,
+                      guideId, channelId: channel.id, category: channel.group ?? null, mediaType: channel.mediaType, name: channel.name,
                     }} />
                   } />
                   <span className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-100" title={channel.name}>

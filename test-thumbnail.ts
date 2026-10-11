@@ -43,3 +43,17 @@ assert.equal(P.pickEpisodeThumb(files, 'id1', 'Ep One.mp4'), 'id1.thumbs/Ep One_
 assert.equal(P.pickEpisodeThumb(files, 'id1', 'Ep One.ia.mp4'), 'id1.thumbs/Ep One_000364.jpg', 'derivative uses the same frames');
 assert.equal(P.pickEpisodeThumb(files, 'id1', 'Missing.mp4'), undefined);
 console.log('thumbnail regression: all passed');
+
+// ---- music genre fallback ----
+{
+  const assertEq = (a: unknown, b: unknown, m: string) => { if (JSON.stringify(a) !== JSON.stringify(b)) { console.error('FAIL', m, JSON.stringify(a), JSON.stringify(b)); process.exit(1); } };
+  const mk = (id: string, name: string) => T.thumbCandidates({ identifier: id, guideId: 'audio-podcasts', category: 'Music', mediaType: 'audio', channelId: 'music-x', name });
+  // normal music item: real cover first, genre picture after it
+  assertEq(mk('SlowRock_201707x', 'slow rock').map((c) => c.source), ['item-image', 'genre', 'backup'], 'music chain');
+  assertEq(mk('SlowRock_201707x', 'slow rock')[1].url, '/genre-art/rock.jpg', 'rock art');
+  // known no-art item: the Archive cover is skipped entirely
+  assertEq(mk('06.-tunnel-13', '06.-tunnel-13').map((c) => c.source), ['genre', 'backup'], 'no-art item skips cover');
+  // non-music channels are untouched
+  assertEq(T.thumbCandidates({ identifier: 'abc', guideId: 'audio-podcasts', category: 'Old-Time Radio', mediaType: 'audio', name: 'Old-Time Radio' }).map((c) => c.source), ['item-image', 'backup'], 'non-music unchanged');
+  console.log('thumbnail music genre: PASS');
+}

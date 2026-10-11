@@ -1,0 +1,13 @@
+{
+ "rule": "strip (width/height >= 3.0) or mean luma < 40",
+ "noArt": [
+  "06.-tunnel-13",
+  "1a-tallis-scholars-russian-orthodox-music-05-anonymous-medieval-motets-y-vsyu-kr_202504",
+  "SlowRock_201707",
+  "chicane-live-at-palladium-22-01-2000",
+  "eagles-the-summit-houston-tx-1976-k101",
+  "electric-light-orchestra-winterland-sf-1976-ksan",
+  "new-york-night-jazz-smooth-saxophone-jazz-music-soft-background-music-for-deep-sleep-relax",
+  "weather-report-1976-montreux-jazz-festival-rts"
+ ]
+}
