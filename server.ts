@@ -71,7 +71,7 @@ async function refreshLibraryGuideCategories(){
   }
 }
 let libraryGuideAt=0;
-async function libraryReady(){await loadLibrarySnapshot();if(Date.now()-libraryGuideAt>EXPORT_TTL_MS){libraryGuideAt=Date.now();await refreshLibraryGuideCategories();}}
+async function libraryReady(){await loadLibrarySnapshot();if(Date.now()-libraryGuideAt>EXPORT_TTL_MS){libraryGuideAt=Date.now();const p=refreshLibraryGuideCategories();if(libraryIndexStats.guideItems===0)await p;else void p.catch((e:any)=>console.warn('[Library refresh]',e?.message));}}
 app.get('/api/library/items',async(req,res)=>{
   try{await libraryReady();const d=req.query.decade;
     res.set('Cache-Control','no-store').json(queryLibrary({ids:req.query.ids?String(req.query.ids).split(',').filter(Boolean).slice(0,500):undefined,category:(req.query.category as string)||undefined,decade:d===undefined||d===''?null:Number(d),q:req.query.q as string,mediaType:req.query.mediaType as string,page:Number(req.query.page)||1,limit:Number(req.query.limit)||24}));

@@ -10,7 +10,7 @@
  * web-playable file exists (unsupported). No Node APIs at import time. */
 import type { Program, ScheduleChannel } from '../src/types';
 import { selectPlayableFile, type LibraryAvailability, type DurationSource } from './archive/mediaSelector';
-import { matchesQuery } from '../src/search/normalize';
+import { matchesQuery, scoreMatch } from '../src/search/normalize';
 import { archiveApiFetch } from './archiveLimiter';
 import { safeFetch } from './safeFetch';
 import { groupLibraryResults, findLibrarySeries, type LibrarySeries } from './library/series';
@@ -35,6 +35,8 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
   { id: 'old-time-radio', label: 'Old-Time Radio', mediaType: 'audio', query: 'collection:oldtimeradio AND mediatype:audio' },
   { id: 'audiobooks', label: 'Audiobooks', mediaType: 'audio', query: 'collection:librivoxaudio AND mediatype:audio' },
   { id: 'rush', label: 'Rush Limbaugh', mediaType: 'audio', guide: { guideId: 'audio-podcasts', channels: (c) => c.id === 'rush-on-this-day' } },
+  { id: 'classic-tv-channels', label: 'Classic TV Channels', mediaType: 'video', guide: { guideId: 'classic-tv', channels: () => true } },
+  { id: 'movie-vault', label: 'Movies Classics', mediaType: 'video', guide: { guideId: 'movies-classics-vault', channels: () => true } },
 ];
 export const ITEMS_PER_SEARCH = 150;
 
@@ -148,7 +150,12 @@ export function queryLibrary(qy: ItemsQuery) {
   if (qy.decade !== undefined && qy.decade !== null) rows = rows.filter((r) => (qy.decade === 0 ? r.decade === undefined : r.decade === qy.decade));
   if (qy.mediaType === 'video' || qy.mediaType === 'audio') rows = rows.filter((r) => r.mediaType === qy.mediaType);
   if (qy.q?.trim()) rows = rows.filter((r) => matchesQuery([r.title, r.description ?? '', r.identifier], qy.q!));
-  const grouped = groupLibraryResults(rows);
+  const text = String(qy.q ?? '').trim();
+  const grouped0 = groupLibraryResults(rows);
+  const best = (r: any): number => r.type === 'series'
+    ? Math.max(scoreMatch({ title: r.title }, text), ...r.episodes.map((e: any) => scoreMatch(e, text)))
+    : scoreMatch(r, text);
+  const grouped = text ? [...grouped0].sort((a, b) => best(b) - best(a)) : grouped0;
   const totalItems = grouped.length;
   return { snapshotAt, page, limit, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / limit)),
     rawCount: rows.length, uniqueCount: rows.length, groupCount: grouped.filter((r) => r.type === 'series').length,
