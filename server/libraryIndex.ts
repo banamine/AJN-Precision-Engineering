@@ -10,6 +10,7 @@
  * web-playable file exists (unsupported). No Node APIs at import time. */
 import type { Program, ScheduleChannel } from '../src/types';
 import { selectPlayableFile, type LibraryAvailability, type DurationSource } from './archive/mediaSelector';
+import { matchesQuery } from '../src/search/normalize';
 import { archiveApiFetch } from './archiveLimiter';
 import { safeFetch } from './safeFetch';
 import { groupLibraryResults, findLibrarySeries, type LibrarySeries } from './library/series';
@@ -146,7 +147,7 @@ export function queryLibrary(qy: ItemsQuery) {
   if (qy.category) rows = rows.filter((r) => r.categoryIds.includes(qy.category!));
   if (qy.decade !== undefined && qy.decade !== null) rows = rows.filter((r) => (qy.decade === 0 ? r.decade === undefined : r.decade === qy.decade));
   if (qy.mediaType === 'video' || qy.mediaType === 'audio') rows = rows.filter((r) => r.mediaType === qy.mediaType);
-  if (q) rows = rows.filter((r) => r.title.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q) || r.identifier.toLowerCase().includes(q));
+  if (qy.q?.trim()) rows = rows.filter((r) => matchesQuery([r.title, r.description ?? '', r.identifier], qy.q!));
   const grouped = groupLibraryResults(rows);
   const totalItems = grouped.length;
   return { snapshotAt, page, limit, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / limit)),
