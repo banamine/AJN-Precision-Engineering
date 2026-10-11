@@ -8,6 +8,10 @@ import { reportTelemetry } from "../telemetry";
 import { AvSyncControls } from "./AvSyncControls";
 import { FullShowStatus } from "./FullShowStatus";
 import { getShowQueue, isQueuePart, peekNextPart, stepShowQueue, syncShowQueue } from "../utils/showQueue";
+import { GUIDE_FALLBACK_ORDER, fullShowTargets, nextInLoop, pickAnotherItem, radioNext, targetKey, type PlayTarget } from "../utils/continuity";
+import { loadAjnFeeds } from "../services/ajnFeeds";
+import { buildRadioCatalog } from "../utils/ajnRadioCatalog";
+import { pickLatestFullShows, type FeedItemLike } from "../utils/latestFullShows";
 
 /** Readable, stable id for a show title: "<channelId>/<title-slug>". Used in logs
  *  and telemetry so a failing playback can be found by name. */
@@ -45,6 +49,8 @@ export function titleIdOf(channelId: string | undefined, title: string | undefin
 // past them quickly, but give up after a long run so a dead channel stops.
 const MAX_CONSECUTIVE_FAILURES = 20;
 const SKIP_AFTER_ERROR_MS = 1500;
+// After a long run of failures (offline?) keep trying, but slowly: playback is never left idle.
+const SLOW_RETRY_MS = 30_000;
 
 export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite }: any) {
   const failuresRef = useRef(0);
@@ -97,7 +103,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     if (cur && cur.instance === instance) return cur.promise;
     const guideId = instance.guideId || "cable-tv";
     const promise = (async () => {
-      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`);
+      // Ask for this channel only: the whole guide can be tens of MB and must never be what stops the next item from playing.
+      const chan = instance.channelId ? `&channel=${encodeURIComponent(instance.channelId)}` : "";
+      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}${chan}`);
       if (!res.ok) throw new Error(`schedule HTTP ${res.status}`);
       const data = await res.json();
       const channels = Array.isArray(data.channels) ? data.channels : [];
@@ -143,56 +151,134 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     } catch { return null; }
   }, [schedulePrograms]);
 
-  const advance = useCallback(async (reason: "ended" | "error") => {
-    const instance = nowPlaying;
-    if (!instance || advancingForRef.current === instance) return; // one transition per instance
-    advancingForRef.current = instance;
-    const stale = () => latestRef.current !== instance;
+  // Continuity bookkeeping. `failedRef` = items that failed since something last played (never picked again in this chain).
+  const failedRef = useRef<Set<string>>(new Set());
+  const fallbackLoopRef = useRef<PlayTarget[] | null>(null);
+  const retryTimerRef = useRef<number | null>(null);
+  /** Set while the AJN Full Shows fallback is what is playing: its end loops the fallback instead of walking the Radio list. A manual pick clears it. */
+  const fallbackKeyRef = useRef<string | null>(null);
 
+  const playTarget = useCallback((instance: any, t: PlayTarget, event: string): true => {
+    if (event === "playback.fallback_full_shows" || event === "playback.fallback_loop") fallbackKeyRef.current = targetKey(t);
+    reportTelemetry({ event, guideId: t.guideId ?? null, channelId: t.channelId ?? null, programId: t.programId ?? null,
+      titleId: titleIdOf(t.channelId, t.title), sourceId: t.sourceId ?? null, assetId: t.assetId ?? null, mediaPath: t.src });
+    // A one-item loop replays the same file: remount the player so it restarts instead of staying ended.
+    if (t.src === instance.src || t.src === instance.archivePath) setRetryNonce((n) => n + 1);
+    onSelectProgram(t.src, t.title, t.description, t.mediaType, t.channelId, t.guideId, t.programId, t.sourceId, t.assetId);
+    return true;
+  }, [onSelectProgram]);
+
+  /** Tier 2: another playable video/audio item from any guide (smallest guides first). Skips the current and failed items. */
+  const findOtherItem = useCallback(async (instance: any, stale: () => boolean): Promise<PlayTarget | null> => {
+    for (const guideId of GUIDE_FALLBACK_ORDER) {
+      if (stale()) return null;
+      try {
+        const ctl = new AbortController(); const timer = window.setTimeout(() => ctl.abort(), 25_000);
+        const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}`, { signal: ctl.signal }).finally(() => window.clearTimeout(timer));
+        if (!res.ok) continue;
+        const data = await res.json();
+        const t = pickAnotherItem([{ guideId, channels: Array.isArray(data.channels) ? data.channels : [] }], instance, failedRef.current, Date.now());
+        if (t) return t;
+      } catch { /* this guide is unavailable: try the next one */ }
+    }
+    return null;
+  }, []);
+
+  /** Tier 3: AJN Full Shows audio (newest whole show of each AJN show). Loaded once, then looped. */
+  const loadFullShowsLoop = useCallback(async (): Promise<PlayTarget[]> => {
+    if (fallbackLoopRef.current?.length) return fallbackLoopRef.current;
+    const byFeed: Record<string, FeedItemLike[]> = {};
+    await Promise.allSettled((["Alex", "WarRoom"] as const).map(async (id) => {
+      const r = await fetch(`/api/ajn/resources/${id}`);
+      if (!r.ok) throw new Error(`${id} HTTP ${r.status}`);
+      byFeed[id] = ((await r.json()).items ?? []) as FeedItemLike[];
+    }));
+    const loop = fullShowTargets(pickLatestFullShows(byFeed));
+    if (loop.length) fallbackLoopRef.current = loop;
+    return loop;
+  }, []);
+
+  /** Tiers 2-4. Returns true when something was started (or the instance was superseded). */
+  const continueElsewhere = useCallback(async (instance: any, stale: () => boolean): Promise<boolean> => {
+    const failed = failedRef.current; const curKey = targetKey(instance);
+    // Already inside the Full Shows loop: stay in it (and wrap around).
+    const loop0 = fallbackLoopRef.current;
+    if (loop0?.some((t) => targetKey(t) === curKey)) {
+      const t = nextInLoop(loop0, curKey, failed);
+      if (t) return playTarget(instance, t, "playback.fallback_loop");
+    }
+    const other = await findOtherItem(instance, stale);
+    if (stale()) return true;
+    if (other) return playTarget(instance, other, "playback.continue_other");
+    let loop: PlayTarget[] = [];
+    try { loop = await loadFullShowsLoop(); } catch { /* handled below */ }
+    if (stale()) return true;
+    const t = nextInLoop(loop, curKey, failed);
+    if (t) return playTarget(instance, t, "playback.fallback_full_shows");
+    return false;
+  }, [findOtherItem, loadFullShowsLoop, playTarget]);
+
+  /** Tier 1: what follows in the current list. true = started or superseded; false = nothing follows (fall through to tiers 2-4). */
+  const nextInList = useCallback(async (instance: any, reason: "ended" | "error", stale: () => boolean): Promise<boolean> => {
     // A Full Show plays its real parts in order (and reports a part that fails) before any channel-schedule logic.
     if (isQueuePart(instance.programId)) {
       const q = getShowQueue()!;
       const nextPart = stepShowQueue(1, reason === "error");
-      if (nextPart) onSelectProgram(nextPart.src, nextPart.title, `Full show · ${q.label}`, nextPart.mediaType, "ajn-radio", "ajn-radio", nextPart.programId);
-      return;
+      if (nextPart) { onSelectProgram(nextPart.src, nextPart.title, `Full show · ${q.label}`, nextPart.mediaType, "ajn-radio", "ajn-radio", nextPart.programId); return true; }
+      return false; // last part played: the rest of the chain decides
+    }
+
+    // AJN Radio items have no schedule: the next entry of the Radio list (wrapping).
+    if (instance.channelId === "ajn-radio" || instance.channelId === "ajn-exclusive") {
+      try {
+        const { items } = await loadAjnFeeds(new AbortController().signal);
+        const cat = buildRadioCatalog(items.filter((i) => i.url).map((i) => ({ id: i.id, title: i.title, url: i.url!, mediaType: i.mediaType as "audio" | "video", publishedAt: i.publishedAt })));
+        const list = [...cat.radio, ...cat.exclusive];
+        const t = radioNext(list, instance.programId, instance.mediaType === "video", failedRef.current);
+        if (stale()) return true;
+        if (t) return playTarget(instance, t, "playback.advance");
+      } catch { /* feeds unavailable: fall through */ }
+      return false;
     }
 
     // Rush picked from the calendar: the next hour, then (if the preference is on)
     // the next available date. Same computation as the Up Next line.
     if (instance.channelId === "rush-vod" && RUSH_PROGRAM.test(String(instance.programId ?? ""))) {
       const n = await rushPlanFor(instance);
-      if (stale()) return;
+      if (stale()) return true;
       const base = { guideId: instance.guideId ?? null, channelId: "rush-vod", programId: instance.programId ?? null,
         titleId: titleIdOf("rush-vod", instance.title), sourceId: null, assetId: null };
       if (n.kind === "failed") {
         reportTelemetry({ ...base, event: "rush.auto_advance_failed", mediaPath: null, httpStatus: n.httpStatus ?? null,
           failureReason: n.failureReason, lookupDurationMs: n.lookupDurationMs });
-        return;
+        return false;
       }
-      if (n.kind !== "next") { reportTelemetry({ ...base, event: `rush.auto_advance_${n.kind}`, mediaPath: null }); return; }
+      if (n.kind !== "next") { reportTelemetry({ ...base, event: `rush.auto_advance_${n.kind}`, mediaPath: null }); return false; }
       reportTelemetry({ ...base, event: n.item.date === RUSH_PROGRAM.exec(instance.programId)![1] ? "rush.auto_advance" : "rush.auto_advance_next_date",
         mediaPath: n.item.archivePath, lookupDurationMs: rushPlanRef.current?.ms ?? null });
       onSelectProgram(n.item.archivePath, n.item.title, n.item.subtitle, "audio", "rush-vod", "audio-podcasts", n.item.programId);
-      return;
+      return true;
     }
 
+    if (!instance.channelId) return false; // a single item with no list (e.g. opened from History): tiers 2-4
     const programs = await schedulePrograms(instance).catch(() => [] as any[]);
-    if (stale() || programs.length === 0) return;
+    if (stale()) return true;
+    if (programs.length === 0) return false;
 
     const pick = pickNext(instance, programs);
-    if (!pick) return;
+    if (!pick) return false;
     if (pick.kind === "segment") {
       const { cur, seg } = pick;
       reportTelemetry({ event: reason === "error" ? "playback.skip_failed" : "playback.segment", guideId: cur.guideId ?? null, channelId: cur.channelId ?? null,
         programId: cur.id ?? null, titleId: titleIdOf(cur.channelId, cur.title), sourceId: cur.sourceId ?? null, assetId: cur.assetId ?? null, mediaPath: seg.archivePath ?? seg.mediaUrl ?? null });
       onSelectProgram(seg.archivePath || seg.mediaUrl, cur.title, cur.description, cur.mediaType,
         cur.channelId, cur.guideId, cur.id, cur.sourceId ?? cur.metadata?.sourceId, cur.assetId ?? cur.metadata?.assetId);
-      return;
+      return true;
     }
     const { next, nextIndex } = pick;
     const sourceId = next.sourceId ?? next.metadata?.sourceId;
     const assetId = next.assetId ?? next.metadata?.assetId;
-
+    if (!(next.archivePath || next.mediaUrl)) return false;
     reportTelemetry({
       event: reason === "error" ? "playback.skip_failed" : nextIndex === 0 ? "playback.loop" : "playback.advance",
       guideId: next.guideId ?? null,
@@ -203,14 +289,38 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       assetId: assetId ?? null,
       mediaPath: (next.archivePath || next.mediaUrl) ?? null,
     });
-
     onSelectProgram(next.archivePath || next.mediaUrl, next.title, next.description, next.mediaType,
       next.channelId, next.guideId, next.id, sourceId, assetId);
-  }, [nowPlaying, onSelectProgram, rushPlanFor, schedulePrograms]);
+    return true;
+  }, [onSelectProgram, playTarget, rushPlanFor, schedulePrograms]);
 
+  /** Never idle: 1) next in the current list, 2) another item in the app, 3) AJN Full Shows audio, 4) loop; if even that
+   *  cannot start (offline), retry slowly instead of stopping. One transition per playback instance. */
+  const advance = useCallback(async (reason: "ended" | "error") => {
+    const instance = nowPlaying;
+    if (!instance || advancingForRef.current === instance) return;
+    advancingForRef.current = instance;
+    const stale = () => latestRef.current !== instance;
+    if (reason === "error") failedRef.current.add(targetKey(instance));
+    const inFallback = fallbackKeyRef.current !== null && fallbackKeyRef.current === targetKey(instance);
+    if (!inFallback && await nextInList(instance, reason, stale).catch(() => false)) return;
+    if (stale()) return;
+    if (await continueElsewhere(instance, stale).catch(() => false)) return;
+    if (stale()) return;
+    reportTelemetry({ event: "playback.continuity_exhausted", guideId: instance.guideId ?? null, channelId: instance.channelId ?? null, programId: instance.programId ?? null,
+      titleId: titleIdOf(instance.channelId, instance.title), sourceId: null, assetId: null, mediaPath: instance.archivePath ?? instance.src ?? null });
+    // Visible, honest, and not final: try again shortly (cleared when something else starts playing).
+    retryTimerRef.current = window.setTimeout(() => {
+      if (latestRef.current !== instance) return;
+      failedRef.current.clear(); advancingForRef.current = null; void advance(reason);
+    }, SLOW_RETRY_MS);
+  }, [nowPlaying, nextInList, continueElsewhere]);
+
+  // A manual pick (anything other than what the fallback started) ends fallback mode.
+  useEffect(() => { if (fallbackKeyRef.current && nowPlaying && targetKey(nowPlaying) !== fallbackKeyRef.current) fallbackKeyRef.current = null; }, [nowPlaying]);
   // Anything that is not a part of the active Full Show ends it; picking another part moves the position.
   useEffect(() => { syncShowQueue(nowPlaying?.programId); }, [nowPlaying?.programId]);
-  useEffect(() => () => { if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current); }, [nowPlaying?.src]);
+  useEffect(() => () => { if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current); if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current); }, [nowPlaying]);
 
   const meta = useMemo(() => nowPlaying ? ({
     titleId: titleIdOf(nowPlaying.channelId, nowPlaying.title),
@@ -227,9 +337,11 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     failuresRef.current += 1;
     // Skip a broken item so the channel keeps playing, but stop after a run of
     // failures instead of hammering the source.
-    if (!nowPlaying?.channelId || failuresRef.current > MAX_CONSECUTIVE_FAILURES) return;
-    skipTimerRef.current = window.setTimeout(() => void advance("error"), SKIP_AFTER_ERROR_MS);
-  }, [advance, meta, nowPlaying?.channelId]);
+    // Every item advances on failure (not only channel items); after a long run of failures, keep going slowly.
+    if (!nowPlaying) return;
+    const delay = failuresRef.current > MAX_CONSECUTIVE_FAILURES ? SLOW_RETRY_MS : SKIP_AFTER_ERROR_MS;
+    skipTimerRef.current = window.setTimeout(() => void advance("error"), delay);
+  }, [advance, meta, nowPlaying]);
 
   if (!nowPlaying) {
     return (
@@ -273,8 +385,8 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         onProgramEnded={() => void advance("ended")}
         resolveNext={resolveNext}
         onPrev={nowPlaying.channelId ? () => void goPrev() : undefined}
-        onNext={nowPlaying.channelId ? () => void advance("ended") : undefined}
-        onPlayEvent={() => { failuresRef.current = 0; console.log("[AJN PLAYBACK] play", meta); }}
+        onNext={() => void advance("ended")}
+        onPlayEvent={() => { failuresRef.current = 0; failedRef.current.clear(); console.log("[AJN PLAYBACK] play", meta); }}
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={onError}
         autoplayBlockedLabel={nowPlaying.channelId === "rush-vod" ? "Next hour ready — tap Play" : undefined}

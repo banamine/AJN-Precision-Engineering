@@ -129,11 +129,16 @@ app.get('/api/schedule',async(req,res)=>{
  }
  try{
   // The Classic guide is ~15 MB of JSON; Cloud Run does not compress, so gzip here (browsers always send Accept-Encoding: gzip).
-  const body=JSON.stringify({guideId,channels:await getScheduleForGuide(guideId,movieNow),generatedAt:new Date().toISOString(),source:'archive.org-live'});
+  // Optional ?channel=<id>: only that channel (the player needs just its own list to pick the next program; the whole guide can be tens of MB).
+  const only=typeof req.query.channel==='string'&&req.query.channel?req.query.channel:null;
+  const all=await getScheduleForGuide(guideId,movieNow);
+  const body=JSON.stringify({guideId,channels:only?all.filter(c=>c.id===only):all,generatedAt:new Date().toISOString(),source:'archive.org-live'});
   res.set('Vary','Accept-Encoding').type('application/json');
   if(/\bgzip\b/i.test(String(req.headers['accept-encoding']??'')))return res.set('Content-Encoding','gzip').send(await gzipAsync(body,{level:5}));
-  // Cloud Run drops any HTTP/1 response above 32 MiB with an opaque 5xx. Say why instead (browsers always send Accept-Encoding: gzip).
-  if(Buffer.byteLength(body)>28*1024*1024)return res.status(406).json({error:`schedule is ${(Buffer.byteLength(body)/1048576).toFixed(1)} MiB uncompressed; Cloud Run caps a response at 32 MiB. Send Accept-Encoding: gzip (curl --compressed).`,guideId,channels:[]});
+  // Cloud Run drops any HTTP/1 response above 32 MiB with an opaque 5xx. Some proxies (e.g. the AI Studio preview) strip Accept-Encoding,
+  // and answering those with 406 broke the guide and auto-advance. A large body is therefore always sent gzipped (browsers decode
+  // Content-Encoding whether or not they advertised it); the header below says so.
+  if(Buffer.byteLength(body)>28*1024*1024)return res.set('Content-Encoding','gzip').set('X-AJN-Forced-Gzip','1').send(await gzipAsync(body,{level:5}));
   return res.send(body);
  }
  catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}
