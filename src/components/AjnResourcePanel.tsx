@@ -1,77 +1,38 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { Headphones, Play, RefreshCw, Tv } from 'lucide-react';
-
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 import type { PlayProgramCallback } from '../types';
-import { loadAjnFeeds, type AjnFeedItem, type AjnResourceCatalog } from '../services/ajnFeeds';
+import type { AjnFeedItem } from '../services/ajnFeeds';
+import { useAjnFeeds } from '../hooks/useAjnFeeds';
 
 interface Props {
   onPlayProgram: PlayProgramCallback;
 }
 
+function byNewest(a: AjnFeedItem, b: AjnFeedItem): number {
+  const aTime = Date.parse(a.publishedAt || '');
+  const bTime = Date.parse(b.publishedAt || '');
+  return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+}
+
 export function AjnResourcePanel({ onPlayProgram }: Props) {
-  const [catalog, setCatalog] = useState<AjnResourceCatalog | null>(null);
-  const [items, setItems] = useState<AjnFeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
-  const requestController = useRef<AbortController | null>(null);
+  const feeds = useAjnFeeds();
+  const catalog = feeds.data?.catalog ?? null;
+  const lastCheckedAt = feeds.checkedAt;
+  const loading = feeds.status === 'loading';
 
-  const load = async () => {
-    requestController.current?.abort();
-    const controller = new AbortController();
-    requestController.current = controller;
-    const { signal } = controller;
+  const items = useMemo(() => {
+    const all = feeds.data?.items ?? [];
+    const video = all.filter((i) => i.mediaType === 'video').sort(byNewest).slice(0, 6);
+    const audio = all.filter((i) => i.mediaType === 'audio').sort(byNewest).slice(0, 6);
+    return [...video, ...audio];
+  }, [feeds.data]);
 
-    setLoading(true);
-    setError(null);
-    try {
-      const { catalog: nextCatalog, items: feeds, failures: failureCount } = await loadAjnFeeds(signal);
-      setCatalog(nextCatalog);
-      if (signal.aborted) return;
-
-      const videoItems = feeds
-        .filter((item) => item.mediaType === 'video')
-        .sort((a, b) => {
-          const aTime = Date.parse(a.publishedAt || '');
-          const bTime = Date.parse(b.publishedAt || '');
-          return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
-        })
-        .slice(0, 6);
-      const audioItems = feeds
-        .filter((item) => item.mediaType === 'audio')
-        .sort((a, b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')))
-        .slice(0, 6);
-
-      setItems([...videoItems, ...audioItems]);
-      setLastCheckedAt(new Date().toISOString());
-
-      if (feeds.length === 0 && failureCount > 0) {
-        setError('AJN resource feeds are currently unavailable.');
-      } else if (failureCount > 0) {
-        setError(`${failureCount} AJN resource feed${failureCount === 1 ? '' : 's'} unavailable; showing available items.`);
-      }
-    } catch (err) {
-      if (signal.aborted) return;
-      setError(err instanceof Error ? err.message : 'Unable to load AJN resources');
-    } finally {
-      if (!signal.aborted) setLoading(false);
-      if (requestController.current === controller) requestController.current = null;
-    }
-  };
-
-  useEffect(() => {
-    void load();
-    return () => {
-      requestController.current?.abort();
-      requestController.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => void load(), REFRESH_INTERVAL_MS);
-    return () => window.clearInterval(interval);
-  }, []);
+  let error: string | null = feeds.error;
+  if (feeds.data) {
+    const failures = feeds.data.failures;
+    if (feeds.data.items.length === 0 && failures > 0) error = 'AJN resource feeds are currently unavailable.';
+    else if (failures > 0) error = `${failures} AJN resource feed${failures === 1 ? '' : 's'} unavailable; showing available items.`;
+  }
 
   return (
     <section aria-labelledby="ajn-resource-heading" className="space-y-4">
@@ -91,11 +52,11 @@ export function AjnResourcePanel({ onPlayProgram }: Props) {
         </div>
         <button
           type="button"
-          onClick={() => void load()}
+          onClick={() => void feeds.reload()}
           className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
-          disabled={loading}
+          disabled={feeds.refreshing}
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3.5 w-3.5 ${feeds.refreshing ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
