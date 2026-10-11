@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { joinedKey, matchesQuery } from './src/search/normalize';
+import { joinedKey, matchesQuery, scoreMatch } from './src/search/normalize';
 
 // joinedKey tests
 assert.equal(joinedKey('M*A*S*H (1970)'), 'mash1970');
@@ -50,6 +50,32 @@ assert.equal(matchesQuery([], ''), true);
 assert.equal(matchesQuery(['Gunsmoke'], '**'), false);
 assert.equal(matchesQuery(['M*A*S*H (1970)'], '**'), false);
 assert.equal(matchesQuery([], '**'), false);
+
+// scoreMatch tests
+// 100: Exact match with title
+assert.equal(scoreMatch({ title: 'Gunsmoke' }, 'Gunsmoke'), 100);
+assert.equal(scoreMatch({ title: 'M*A*S*H' }, 'mash'), 100);
+
+// 80: Title starts with query
+assert.equal(scoreMatch({ title: 'Gunsmoke Season 1' }, 'Gunsmoke'), 80);
+
+// 60: Title includes query
+assert.equal(scoreMatch({ title: 'The Gunsmoke Show' }, 'Gunsmoke'), 60);
+
+// 50: Multi-token query where every token is in title (any order)
+assert.equal(scoreMatch({ title: 'The Twilight Zone' }, 'zone twilight'), 50);
+
+// 20: Query in description or identifier
+assert.equal(scoreMatch({ title: 'Classic Western', description: 'Episode of Gunsmoke' }, 'Gunsmoke'), 20);
+assert.equal(scoreMatch({ title: 'Classic Western', identifier: 'ia-gunsmoke-01' }, 'gunsmoke'), 20);
+
+// 10: Fallback matchesQuery (e.g. multi-token match spread across title and description)
+assert.equal(scoreMatch({ title: 'Twilight Series', description: 'The Zone episode' }, 'twilight zone'), 10);
+
+// 0: Punctuation-only, empty query, or no match
+assert.equal(scoreMatch({ title: 'Gunsmoke' }, ''), 0);
+assert.equal(scoreMatch({ title: 'Gunsmoke' }, '***'), 0);
+assert.equal(scoreMatch({ title: 'Gunsmoke' }, 'Bonanza'), 0);
 
 console.log('test-search-normalize: all passed');
 process.exit(0);

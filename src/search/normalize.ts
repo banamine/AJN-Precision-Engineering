@@ -38,3 +38,16 @@ export function matchesQuery(fields: readonly string[], query: string): boolean 
 
   return false;
 }
+
+/** 0 = no match. Higher is better. Title beats description/identifier. */
+export function scoreMatch(f: { title: string; description?: string; identifier?: string }, query: string): number {
+  const qj = joinedKey(query); if (!qj) return 0;
+  const t = joinedKey(f.title);
+  if (t === qj) return 100;
+  if (t.startsWith(qj)) return 80;
+  if (t.includes(qj)) return 60;
+  const toks = query.trim().split(/\s+/).map(joinedKey).filter((k) => k.length >= 2);
+  if (toks.length >= 2 && toks.every((k) => t.includes(k))) return 50;
+  if (joinedKey(f.description ?? '').includes(qj) || joinedKey(f.identifier ?? '').includes(qj)) return 20;
+  return matchesQuery([f.title, f.description ?? '', f.identifier ?? ''], query) ? 10 : 0;
+}
