@@ -35,7 +35,6 @@ export const EPISODES_PER_SHOW: number = (sourcesJson as any).episodesPerShow ??
 const MAX_FEED_BYTES = 6 * 1024 * 1024;   // safety stop; the newest items are at the top of every feed read so far
 const FEED_TIMEOUT_MS = 15_000;
 const REFRESH_MS = 30 * 60_000;
-const STALE_DAYS = 14;
 const FIRST_LOAD_WAIT_MS = 8_000;
 const CONCURRENCY = 4;
 
@@ -201,7 +200,6 @@ function ensureFresh(now: Date): Promise<void> {
 }
 export function podcastStates(): PodcastState[] { return PODCAST_SOURCES.filter((s) => s.enabled).map((s) => cache.get(s.id)).filter(Boolean) as PodcastState[]; }
 
-const shortDate = (ms: number) => new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 /** Channel rows for the Audio & Podcasts guide. `layout` is the guide's daily layout function. */
 export function buildPodcastChannels(guideId: string, now: Date, layout: (p: Program[], mins: number, now: Date, maxSlots: number) => Program[]): ScheduleChannel[] {
@@ -211,9 +209,7 @@ export function buildPodcastChannels(guideId: string, now: Date, layout: (p: Pro
     const row = { id, guideId, name: source.name, mediaType: 'audio' as const, ...(source.highlight ? { highlight: source.highlight } : {}) };
     if (!state) { out.push({ ...row, group: 'Podcast', programs: [], sourceStatus: 'loading', sourceError: 'loading podcast feed — refresh in a minute' }); continue; }
     if (!state.episodes.length) { out.push({ ...row, group: 'Podcast', programs: [], sourceStatus: 'upstream_error', sourceError: state.error ?? 'no playable episodes' }); continue; }
-    const newest = state.episodes[0].publishedAt;
-    const old = now.getTime() - newest > STALE_DAYS * 86_400_000;
-    out.push({ ...row, logo: smallArtwork(state.imageUrl), group: old ? `Podcast · last episode ${shortDate(newest)}` : 'Podcast',
+    out.push({ ...row, logo: smallArtwork(state.imageUrl), group: 'Podcast',
       programs: layout([...toPrograms(state, guideId), ...archivePrograms(source, guideId)], 45, now, 160), sourceStatus: state.status === 'ok' ? 'ok' : 'partial', sourceError: state.error,
       rejected: state.rejected.length ? state.rejected : undefined });
   }

@@ -1,4 +1,5 @@
 import { notWebPlayableVideo, unplayableReason } from './server/sources/archiveLinks';
+import audioGroupOverrides from './src/data/audioGroupOverrides.json';
 import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
 } from './src/types';
@@ -842,9 +843,10 @@ async function getScheduleForGuideRaw(guideId='cable-tv',movieNow?:Date):Promise
     const now=new Date();
     const music=catalog.channels.filter(channel=>channel.programs.length>0
       &&channel.programs.every(program=>program.metadata?.lane==='music'));
+    const groupOf=(audioGroupOverrides as {overrides:Record<string,string>}).overrides;
     return [...existing,...genericChannels(guideId),...podcasts,...music.map(channel=>({
       ...channel,programs:layoutMusicDailySchedule(channel.programs,now),
-    }))];
+    }))].map(c=>groupOf[c.id]?{...c,group:groupOf[c.id]}:c);
   }
   if(guideId==='movies-classics-vault'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');

@@ -78,7 +78,7 @@ await P.refreshPodcastSource(quash, NOW);
 const other = reg.find((s) => s.enabled && s.id !== 'quash')!; await P.refreshPodcastSource(other, NOW);
 const rows = P.buildPodcastChannels('audio-podcasts', NOW, layoutDailySchedule as any);
 const q = rows.find((r) => r.id === 'pod-quash')!;
-assert.equal(q.highlight, 'must-listen'); assert.ok(q.programs.length > 0); assert.match(q.group!, /last episode Jun 28/, 'stale show says when its last episode was');
+assert.equal(q.highlight, 'must-listen'); assert.ok(q.programs.length > 0); assert.equal(q.group, 'Podcast', 'every podcast sits under the Podcast chip, stale or not');
 assert.ok(q.programs.filter((p) => p.sourceClass === 'podcast_rss').every((p) => !String(p.mediaUrl).includes('/api/')), 'RSS episodes stay direct');
 const ia = q.programs.filter((p) => p.sourceClass === 'archive_org');
 assert.ok(ia.length > 0, 'Quash Archive back-catalog is on the channel');
