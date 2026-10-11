@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createScrubber } from "../utils/seekScrub";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, PictureInPicture2, AudioLines, ChevronDown, SkipBack, SkipForward, Rewind, FastForward, Repeat1 } from "lucide-react";
 import type { AnalyzerState } from "./AudioVisualizerOverlay";
 
@@ -57,6 +58,13 @@ const PILL: Record<AnalyzerState, { dot: string; text: string; label: string }> 
  */
 export function PlayerChrome(p: PlayerChromeProps) {
   const [time, setTime] = useState({ t: 0, d: NaN, b: 0 });
+  const [draft, setDraft] = useState<number | null>(null);
+  const mediaRefForSeek = p.mediaRef;
+  const scrubber = useMemo(() => createScrubber({
+    commit: (sec) => { const m = mediaRefForSeek.current; if (m) { try { m.currentTime = sec; } catch { /* not seekable yet */ } } },
+    onDraft: setDraft,
+  }), [mediaRefForSeek]);
+  useEffect(() => () => scrubber.cancel(), [scrubber]);
   const [visible, setVisible] = useState(true);
   const [pip, setPip] = useState(false);
   const hideTimer = useRef<number | null>(null);
@@ -115,9 +123,11 @@ export function PlayerChrome(p: PlayerChromeProps) {
   // loading (or a stalled archive file never reports one) the duration is NaN/0: that is "unknown", never LIVE.
   const live = time.d === Infinity;
   const noDuration = !(Number.isFinite(time.d) && time.d > 0);
-  const pct = noDuration ? 0 : Math.min(100, (time.t / time.d) * 100);
+  // While the bar is being dragged the thumb and clock follow the DRAFT; the media is sought once, on release (see utils/seekScrub.ts).
+  const shownT = draft !== null && !noDuration ? Math.min(draft, time.d) : time.t;
+  const pct = noDuration ? 0 : Math.min(100, (shownT / time.d) * 100);
   const bufPct = noDuration ? 0 : Math.min(100, (time.b / time.d) * 100);
-  const clockLabel = live ? <span className="text-red-400">LIVE ●</span> : noDuration ? <span className="text-neutral-400">Loading…</span> : `${formatClock(time.t)} / ${formatClock(time.d)}`;
+  const clockLabel = live ? <span className="text-red-400">LIVE ●</span> : noDuration ? <span className="text-neutral-400">Loading…</span> : `${formatClock(shownT)} / ${formatClock(time.d)}`;
   const canPip = p.isVideo && typeof document !== "undefined" && (document as Document & { pictureInPictureEnabled?: boolean }).pictureInPictureEnabled === true;
 
   const togglePip = async () => {
@@ -130,8 +140,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
   };
 
   const seek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const m = p.mediaRef.current;
-    if (m && !noDuration) m.currentTime = (Number(e.target.value) / 1000) * time.d;
+    if (!noDuration) scrubber.update((Number(e.target.value) / 1000) * time.d);
   };
 
   const btn = "flex h-8 w-8 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-neutral-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400";
@@ -188,6 +197,10 @@ export function PlayerChrome(p: PlayerChromeProps) {
           type="range" min={0} max={1000} step={1}
           value={Math.round(pct * 10)}
           onChange={seek}
+          onPointerDown={() => scrubber.begin()}
+          onPointerUp={() => scrubber.end()}
+          onPointerCancel={() => scrubber.end()}
+          onBlur={() => scrubber.end()}
           disabled={noDuration}
           aria-label="Seek"
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"

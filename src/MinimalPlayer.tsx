@@ -422,7 +422,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       // Offline while buffering/stalled: stop the watchdog from counting this as a failure.
       if (!media.paused && media.readyState < 3) scheduleRecover("offline");
     };
-    const onStalled = () => setStatusText("Network stalled…");
+    // A seek into a part that is not buffered is a normal wait (Archive can take several seconds to the first byte), not a stall.
+    const onSeeking = () => setStatusText("Seeking…");
+    const onStalled = () => setStatusText(media.seeking ? "Seeking…" : "Network stalled…");
     const onPause = () => {
       setIsPlaying(false);
       fx().saveResumePosition(media);
@@ -522,6 +524,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     media.addEventListener("timeupdate", onTimeUpdate);
     media.addEventListener("waiting", onWaiting);
     media.addEventListener("stalled", onStalled);
+    media.addEventListener("seeking", onSeeking);
     media.addEventListener("pause", onPause);
     media.addEventListener("ended", onEnded);
     media.addEventListener("error", onError);
@@ -551,6 +554,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       media.removeEventListener("timeupdate", onTimeUpdate);
       media.removeEventListener("waiting", onWaiting);
       media.removeEventListener("stalled", onStalled);
+      media.removeEventListener("seeking", onSeeking);
       media.removeEventListener("pause", onPause);
       media.removeEventListener("ended", onEnded);
       media.removeEventListener("error", onError);
