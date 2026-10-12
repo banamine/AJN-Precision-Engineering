@@ -143,7 +143,7 @@ export function DevModeView({ onNavigate, recentlyPlayed }: DevModeViewProps) {
         <div aria-live="polite" data-testid="sync-status" className="mt-3 text-xs">
           {!syncResult && <span className="text-neutral-500">Not synced in this session.</span>}
           {syncResult && syncResult.ok && <span className="text-emerald-300">{syncResult.at} · {syncResult.received} item{syncResult.received === 1 ? '' : 's'} received. {syncResult.stored ? 'Stored.' : 'Not stored (placeholder endpoint).'}</span>}
-          {syncResult && !syncResult.ok && <span className="text-red-300">{syncResult.at} · Sync failed: {syncResult.reason}</span>}
+          {syncResult && !syncResult.ok && <span className="text-red-300">{syncResult.at} · Sync failed: {'reason' in syncResult ? syncResult.reason : 'unknown'}</span>}
         </div>
         <div className="mt-4 border-t border-neutral-800 pt-4" data-testid="clear-app-data">
           {!confirmClear ? (

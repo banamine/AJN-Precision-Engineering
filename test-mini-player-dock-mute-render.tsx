@@ -5,13 +5,11 @@ import { MiniPlayerDock } from './src/components/MiniPlayerDock';
 import type { NowPlayingMedia } from './src/types';
 
 const mockNowPlaying: NowPlayingMedia = {
-  id: 'test-1',
+  programId: 'test-1',
   src: 'https://example.com/audio.mp3',
   title: 'Test Audio Broadcast',
   subtitle: 'Channel 1',
   mediaType: 'audio',
-  progressSeconds: 0,
-  updatedAt: Date.now(),
 };
 
 const html = renderToStaticMarkup(
