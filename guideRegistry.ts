@@ -462,36 +462,65 @@ export function getAudioLoopRows(channelId:string,localHour:number):Program[]|nu
 let audioCache:{day:string;data:ScheduleChannel[];incomplete:boolean;retryAt:number}|null=null;
 let audioRefreshing:Promise<ScheduleChannel[]>|null=null;
 const AUDIO_RETRY_MS=90_000; // a failed Archive lookup is retried quickly; only a COMPLETE build holds for the UTC day
-async function refreshAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
-  const now=new Date();
+type AudioTask={id:string;name:string;group:string;mins:number;maxSlots:number;loopDay:boolean;build:()=>Promise<Program[]>};
+/** Programs resolved so far in the running build (undefined = not finished yet, [] = failed). Lets the guide show every channel
+ *  that is ready instead of "loading" for all of them until the slowest Archive lookup finishes. */
+let audioProgress:Map<string,Program[]>|null=null;
+let audioProgressNow:Date|null=null;
+const LOADING_MSG='loading shows from Archive — refresh in a minute';
+function audioTasks(guideId:string,now:Date):AudioTask[]{
   const itemSrcs=archiveAudioChannelsJson as ArchiveAudioChannelSource[];
-  // Rush and Old-Time Radio first, then the whole-item channels one at a time, so a cold boot never
-  // starves Rush behind the Archive API limiter (seen live: Archive answered 502 during boot).
-  const [rush,otr]=await Promise.all([
-    buildRushChannel(guideId,now).catch(e=>{console.error('[Audio] Rush',e?.message);return [] as Program[];}),
-    buildOtrChannel(guideId,now).catch(e=>{console.error('[Audio] OTR',e?.message);return [] as Program[];}),
-  ]);
-  const itemProgs:Program[][]=[];
-  for(const x of itemSrcs)itemProgs.push(await buildArchiveItemChannel(guideId,x).catch(e=>{console.error('[Audio]',x.id,e?.message);return [] as Program[];}));
-  const prev=audioCache?.data;
+  return [
+    {id:'rush-on-this-day',name:'Rush Limbaugh — On This Day',group:'Talk Radio',mins:36,maxSlots:120,loopDay:false,build:()=>buildRushChannel(guideId,now)},
+    {id:'old-time-radio',name:'Old-Time Radio',group:'Old-Time Radio',mins:30,maxSlots:120,loopDay:false,build:()=>buildOtrChannel(guideId,now)},
+    ...itemSrcs.map(x=>({id:x.id,name:x.name,group:x.group,mins:30,maxSlots:x.maxSlots??120,loopDay:true,build:()=>buildArchiveItemChannel(guideId,x)})),
+  ];
+}
+/** Turn whatever has resolved into channels. Pending ones are explicit "loading" rows; failed ones are explicit upstream_error rows. */
+function assembleAudio(tasks:AudioTask[],progress:Map<string,Program[]>,now:Date,prev?:ScheduleChannel[]):{data:ScheduleChannel[];incomplete:boolean;loops:Map<string,Program[]>}{
   let incomplete=false;
   const loops=new Map<string,Program[]>();
-  const ch=(id:string,name:string,group:string,programs:Program[],mins:number,maxSlots=120,loopDay=false):ScheduleChannel=>{
-    if(programs.length&&loopDay){
+  const data=tasks.map((t):ScheduleChannel=>{
+    const programs=progress.get(t.id);
+    const base={id:t.id,guideId:'audio-podcasts',name:t.name,mediaType:'audio' as MediaType,group:t.group};
+    if(programs===undefined){
+      incomplete=true;
+      const last=prev?.find(c=>c.id===t.id&&c.programs.length);
+      return last??{...base,programs:[],sourceStatus:'loading',sourceError:LOADING_MSG};
+    }
+    if(programs.length&&t.loopDay){
       // Whole-item channel: its tracks cycle across the entire day. The full day is kept in audioLoops (the guide asks for a
       // window of it, see getAudioLoopRows); everything else still gets the first maxSlots rows, exactly as before.
-      const full=layoutMusicDailySchedule(programs,now,mins);
-      loops.set(id,full);
-      return{id,guideId,name,mediaType:'audio',group,programs:full.slice(0,maxSlots),sourceStatus:'ok'};
+      const full=layoutMusicDailySchedule(programs,now,t.mins);
+      loops.set(t.id,full);
+      return{...base,programs:full.slice(0,t.maxSlots),sourceStatus:'ok'};
     }
-    if(programs.length)return{id,guideId,name,mediaType:'audio',group,programs:layoutDailySchedule(programs,mins,now,maxSlots),sourceStatus:'ok'};
+    if(programs.length)return{...base,programs:layoutDailySchedule(programs,t.mins,now,t.maxSlots),sourceStatus:'ok'};
     incomplete=true;
-    const last=prev?.find(c=>c.id===id&&c.programs.length);
-    return last??{id,guideId,name,mediaType:'audio',group,programs:[],sourceStatus:'upstream_error',sourceError:'Archive did not answer; retrying shortly'};
-  };
-  const data=[ch('rush-on-this-day','Rush Limbaugh — On This Day','Talk Radio',rush,36),ch('old-time-radio','Old-Time Radio','Old-Time Radio',otr,30),...itemSrcs.map((x,i)=>ch(x.id,x.name,x.group,itemProgs[i],30,x.maxSlots,true))];
+    const last=prev?.find(c=>c.id===t.id&&c.programs.length);
+    return last??{...base,programs:[],sourceStatus:'upstream_error',sourceError:'Archive did not answer; retrying shortly'};
+  });
+  return{data,incomplete,loops};
+}
+async function refreshAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
+  const now=new Date();
+  const tasks=audioTasks(guideId,now);
+  const prev=audioCache?.data;
+  const progress=new Map<string,Program[]>();
+  audioProgress=progress;audioProgressNow=now;
+  // Three at a time (the Archive limiter allows 3 anyway). Each channel is published the moment it resolves, so a slow or
+  // failing item never holds back the others; Rush and OTR are just two more tasks, not a gate in front of everything.
+  let next=0;
+  await Promise.all(Array.from({length:3},async()=>{
+    while(next<tasks.length){
+      const t=tasks[next++];
+      progress.set(t.id,await t.build().catch(e=>{console.error('[Audio]',t.id,e?.message);return [] as Program[];}));
+    }
+  }));
+  const {data,incomplete,loops}=assembleAudio(tasks,progress,now,prev);
   audioCache={day:now.toISOString().slice(0,10),data,incomplete,retryAt:Date.now()+AUDIO_RETRY_MS};
   audioLoops=loops;
+  audioProgress=null;
   return data;
 }
 async function getAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
@@ -500,8 +529,14 @@ async function getAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
   if(fresh)return audioCache!.data;
   if(!audioRefreshing)audioRefreshing=refreshAudioChannels(guideId).finally(()=>{audioRefreshing=null;});
   if(audioCache)return audioCache.data; // stale-while-revalidate: last good rows stay visible
-  const loading=(id:string,name:string,group:string):ScheduleChannel=>({id,guideId,name,mediaType:'audio',group,programs:[],sourceStatus:'loading',sourceError:'loading shows from Archive — refresh in a minute'});
-  return Promise.race([audioRefreshing,new Promise<ScheduleChannel[]>(r=>setTimeout(()=>r([loading('rush-on-this-day','Rush Limbaugh — On This Day','Talk Radio'),loading('old-time-radio','Old-Time Radio','Old-Time Radio'),...(archiveAudioChannelsJson as ArchiveAudioChannelSource[]).map(x=>loading(x.id,x.name,x.group))]),8000))]);
+  // Cold start: wait briefly, then answer with every channel resolved so far (the rest are explicit loading rows).
+  const partial=()=>{
+    const now=audioProgressNow??new Date();
+    const r=assembleAudio(audioTasks(guideId,now),audioProgress??new Map(),now);
+    for(const [k,v] of r.loops)audioLoops.set(k,v); // so the per-hour window works for channels that are already ready
+    return r.data;
+  };
+  return Promise.race([audioRefreshing,new Promise<ScheduleChannel[]>(r=>setTimeout(()=>r(partial()),8000))]);
 }
 
 /* ---------------- Cable TV news: snapshot first, quiet refresh ----------------

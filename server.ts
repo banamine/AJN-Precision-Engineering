@@ -134,13 +134,16 @@ app.get('/api/channels/:id/epg.xml',async(req,res)=>{const s=await findChannelGu
 app.get('/api/guides/:guide/playlist.m3u',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('audio/x-mpegurl').set('X-AJN-Generated-At',s.generatedAt).send(toM3u(s,null,originOf(req)));});
 app.get('/api/guides/:guide/epg.xml',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,null));});
 const SCHEDULE_TTL_MS=60_000;
-const scheduleCache=new Map<string,{at:number;p:ReturnType<typeof getScheduleForGuide>}>();
+const SCHEDULE_LOADING_TTL_MS=4_000; // a guide that still has channels loading is re-asked quickly, so rows appear as they resolve
+const scheduleCache=new Map<string,{at:number;ttl:number;p:ReturnType<typeof getScheduleForGuide>}>();
 function cachedSchedule(guideId:string,movieNow?:Date){
   if(process.env.NODE_ENV==='test'||movieNow)return getScheduleForGuide(guideId,movieNow);
   const hit=scheduleCache.get(guideId);
-  if(hit&&Date.now()-hit.at<SCHEDULE_TTL_MS)return hit.p;
+  if(hit&&Date.now()-hit.at<hit.ttl)return hit.p;
   const p=getScheduleForGuide(guideId);
-  scheduleCache.set(guideId,{at:Date.now(),p});
+  const entry={at:Date.now(),ttl:SCHEDULE_TTL_MS,p};
+  scheduleCache.set(guideId,entry);
+  p.then(ch=>{if(ch.some(c=>c.sourceStatus==='loading'))entry.ttl=SCHEDULE_LOADING_TTL_MS;}).catch(()=>{});
   p.catch(()=>{if(scheduleCache.get(guideId)?.p===p)scheduleCache.delete(guideId);});
   return p;
 }
