@@ -8,47 +8,155 @@
     "retryAfterMs": 25000
   },
   "kinds": {
-    "loading": { "label": "Loading" },
-    "seeking": { "label": "Seeking" },
-    "buffering": { "label": "Buffering" },
-    "stalled": { "label": "Stalled" }
+    "loading": {
+      "label": "Loading"
+    },
+    "seeking": {
+      "label": "Seeking"
+    },
+    "buffering": {
+      "label": "Buffering"
+    },
+    "stalled": {
+      "label": "Stalled"
+    }
   },
   "acronyms": {
     "any": [
-      { "short": "R.A.T.S.", "long": "Rodents Assisting Transmission Services" },
-      { "short": "V.H.S.", "long": "Very Hopeful Shipment" },
-      { "short": "W.I.R.E.S.", "long": "Wiggling Into Radio, Eventually Streaming" },
-      { "short": "B.R.B.", "long": "Bytes Running Briskly (they are not)" },
-      { "short": "T.A.P.E.", "long": "Tracking Adjustment, Please Excuse" },
-      { "short": "P.O.P.C.O.R.N.", "long": "Please Observe Patient Content Of Reels Nearly Nearby" },
-      { "short": "S.N.A.C.K.", "long": "Signal Needs A Cookie, Kindly" },
-      { "short": "F.L.U.F.F.", "long": "Fetching Lots Of Unrelated Fuzzy Frames" },
-      { "short": "D.I.A.L.", "long": "Dust In All Lines" },
-      { "short": "B.O.B.", "long": "Bits On Bicycles" },
-      { "short": "K.N.O.B.", "long": "Kindly Nudging Our Buffering" },
-      { "short": "C.R.T.", "long": "Cozy Retro Tube warming up" },
-      { "short": "M.O.O.S.E.", "long": "Media Occasionally Ordered, Slow Express" },
-      { "short": "G.E.A.R.", "long": "Gently Escorting A Reel" },
-      { "short": "L.A.M.P.", "long": "Loading, A Moment Please" },
-      { "short": "Z.Z.Z.", "long": "Zipping Zeroes Zlowly" }
+      {
+        "short": "R.A.T.S.",
+        "long": "Rodents Actually Tearing Spliced-wires"
+      },
+      {
+        "short": "V.H.S.",
+        "long": "Vastly Heavy Static"
+      },
+      {
+        "short": "W.I.R.E.S.",
+        "long": "Wiggling Into Radio, Eventually Streaming"
+      },
+      {
+        "short": "B.R.B.",
+        "long": "Bytes Running Briskly (they are not)"
+      },
+      {
+        "short": "T.A.P.E.",
+        "long": "Tangled Analog Packet Engine"
+      },
+      {
+        "short": "P.O.P.C.O.R.N.",
+        "long": "Please Observe Patient Content Of Reels Nearly Nearby"
+      },
+      {
+        "short": "S.N.A.C.K.",
+        "long": "Signal Needs A Cookie, Kindly"
+      },
+      {
+        "short": "F.L.U.F.F.",
+        "long": "Fetching Lots Of Unrelated Fuzzy Frames"
+      },
+      {
+        "short": "D.I.A.L.",
+        "long": "Dust In All Lines"
+      },
+      {
+        "short": "B.O.B.",
+        "long": "Bits On Bicycles"
+      },
+      {
+        "short": "K.N.O.B.",
+        "long": "Kindly Nudging Our Buffering"
+      },
+      {
+        "short": "C.R.T.",
+        "long": "Cozy Retro Tube warming up"
+      },
+      {
+        "short": "M.O.O.S.E.",
+        "long": "Media Occasionally Ordered, Slow Express"
+      },
+      {
+        "short": "G.E.A.R.",
+        "long": "Gently Escorting A Reel"
+      },
+      {
+        "short": "L.A.M.P.",
+        "long": "Loading, A Moment Please"
+      },
+      {
+        "short": "Z.Z.Z.",
+        "long": "Zipping Zeroes Zlowly"
+      },
+      {
+        "short": "P.A.C.K.",
+        "long": "Pestering Analog Cable Kinks"
+      },
+      {
+        "short": "B.U.F.F.E.R.",
+        "long": "Bafflingly Under-powered Flux Field Emitting Resonance"
+      },
+      {
+        "short": "V.C.R.",
+        "long": "Vaguely Cooperative Reel"
+      },
+      {
+        "short": "S.T.A.T.I.C.",
+        "long": "Sluggish Transmission Attempting To Initiate Connection"
+      }
     ],
     "seeking": [
-      { "short": "F.F.W.D.", "long": "Frantically Fetching Where Distant" },
-      { "short": "R.E.W.I.N.D.", "long": "Reel Eventually Wound, Is Nearly Done" },
-      { "short": "S.K.I.P.", "long": "Sending Kittens In Pursuit" },
-      { "short": "H.O.P.", "long": "Hunting Our Place" },
-      { "short": "J.U.M.P.", "long": "Jolly Unspooling, Mind the Pause" }
+      {
+        "short": "F.F.W.D.",
+        "long": "Frantically Fetching Where Distant"
+      },
+      {
+        "short": "R.E.W.I.N.D.",
+        "long": "Reel Eventually Wound, Is Nearly Done"
+      },
+      {
+        "short": "S.K.I.P.",
+        "long": "Sending Kittens In Pursuit"
+      },
+      {
+        "short": "H.O.P.",
+        "long": "Hunting Our Place"
+      },
+      {
+        "short": "J.U.M.P.",
+        "long": "Jolly Unspooling, Mind the Pause"
+      }
     ],
     "stalled": [
-      { "short": "H.M.M.", "long": "Hold Music Mode" },
-      { "short": "O.O.P.S.", "long": "Orderly Outage, Patience Suggested" },
-      { "short": "Y.A.W.N.", "long": "Yonder Archive Wakes Nowish" },
-      { "short": "S.H.H.", "long": "Server Having a Hiccup" }
+      {
+        "short": "H.M.M.",
+        "long": "Hold Music Mode"
+      },
+      {
+        "short": "O.O.P.S.",
+        "long": "Orderly Outage, Patience Suggested"
+      },
+      {
+        "short": "Y.A.W.N.",
+        "long": "Yonder Archive Wakes Nowish"
+      },
+      {
+        "short": "S.H.H.",
+        "long": "Server Having a Hiccup"
+      }
     ],
     "buffering": [
-      { "short": "B.U.F.F.", "long": "Bits Undergoing Fluffy Filling" },
-      { "short": "S.I.P.", "long": "Slowly Inflating the Pipe" },
-      { "short": "T.O.A.S.T.", "long": "Transmission Of A Slightly Toasty Track" }
+      {
+        "short": "B.U.F.F.",
+        "long": "Bits Undergoing Fluffy Filling"
+      },
+      {
+        "short": "S.I.P.",
+        "long": "Slowly Inflating the Pipe"
+      },
+      {
+        "short": "T.O.A.S.T.",
+        "long": "Transmission Of A Slightly Toasty Track"
+      }
     ]
   },
   "themes": [
@@ -177,6 +285,24 @@
         "Tip: stay put after a jump and the next stretch loads faster.",
         "The show will begin the moment it begins. Not before.",
         "Fun fact: patience has never once made the video slower."
+      ]
+    },
+    {
+      "id": "retro",
+      "label": "Retro tech",
+      "emoji": "🖥️",
+      "lines": [
+        "Waking up the hamsters on the wheel inside the modem...",
+        "Rats are currently chewing through the high-voltage wires out back...",
+        "Blowing dust out of the VCR cartridge and crossing our fingers...",
+        "Rewinding the magnetic tape with a standard yellow pencil...",
+        "Adjusting the bunny-ear antennas for better analog reception...",
+        "Waiting for the dial-up modem to finish making its strange robot noises...",
+        "Loading pixels one by one from the floppy disk box...",
+        "Brushing crumb-chewers away from the motherboard...",
+        "Packing the VHS video back out of the dusty cardboard box...",
+        "Thumping the top of the monitor to fix horizontal tracking...",
+        "Waiting for the vacuum tubes to warm up to operating temperature..."
       ]
     }
   ],

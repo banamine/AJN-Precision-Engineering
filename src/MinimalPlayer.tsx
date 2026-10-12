@@ -7,6 +7,7 @@ import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
 import { PlayerChrome } from "./components/PlayerChrome";
 import { WaitingNotes } from "./components/WaitingNotes";
+import { classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
 import { useAudioNormalization } from "./use-audio-normalization";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
@@ -447,14 +448,25 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       // in place first. Definite failures (restricted, removed, not streamable) skip at once.
       const failedSrc0 = media.currentSrc || activeSrc;
       let definite = false;
+      let overloaded: ProxyErrorBody | null = null;
       if (failedSrc0 && failedSrc0.includes("/api/archive/proxy")) {
         try {
           const r = await fetch(failedSrc0, { headers: { Range: "bytes=0-0" } });
           if (!r.ok) {
-            const b = await r.json().catch(() => ({} as any));
-            definite = b.reason === "UNPLAYABLE_ARCHIVE_MEMBER" || [403, 404, 410].includes(b.upstreamStatus) || r.status === 400 || r.status === 422;
+            const b = (await r.json().catch(() => ({}))) as ProxyErrorBody;
+            const kind = classifyArchiveFailure(r.status, b);
+            definite = kind === "definite";
+            if (kind === "overloaded") overloaded = b;
           }
         } catch { /* proxy unreachable: treat as transient */ }
+      }
+      if (overloaded) {
+        // The proxy already tried Archive 3 times. Retrying again only piles on; say what is happening, once.
+        if (mediaRef.current !== media) return;
+        setStatusText(`Unavailable — ${overloadedMessage(overloaded)}. Skipping…`);
+        reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), httpStatus: overloaded.upstreamStatus ?? 0, reason: "archive_overloaded", proxyRequestId: overloaded.proxyRequestId ?? null });
+        fx().onErrorEvent?.(err);
+        return;
       }
       // A CORS-mode load of a verified podcast failed (a tracker hop dropped its CORS headers): play the same file
       // natively once. The signal meter then shows its honest "no signal" state; nothing is faked.
