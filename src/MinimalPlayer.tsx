@@ -6,6 +6,7 @@ import Hls from "hls.js";
 import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
 import { PlayerChrome } from "./components/PlayerChrome";
+import { WaitingNotes } from "./components/WaitingNotes";
 import { useAudioNormalization } from "./use-audio-normalization";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
@@ -873,7 +874,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         </div>
       )}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
-      {/^(Network stalled|Failed to load|Unavailable)/.test(statusText) && (onRetry || onBackToGuide) && (
+      <WaitingNotes status={statusText} onRetry={onRetry} />
+      {/^(Failed to load|Unavailable)/.test(statusText) && (onRetry || onBackToGuide) && (
         <div role="alert" data-testid="playback-recovery" className="absolute inset-x-3 bottom-14 z-30 flex flex-wrap items-center gap-2 rounded-lg bg-black/85 p-3 text-xs text-white shadow-lg sm:bottom-16">
           <span className="min-w-0 flex-1 basis-40">{statusText}</span>
           {onRetry && <button type="button" onClick={onRetry} data-testid="playback-retry" className="rounded bg-white px-3 py-1.5 font-semibold text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400">Retry</button>}
