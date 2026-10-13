@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import "../news/news.test";
 import { classifyKind, reconcile, sortItems, validateBaseline } from "./logic";
 import type { RumbleBaseline, RumbleItem } from "./types";
 import { RUMBLE_TEST_ITEMS } from "./fixtures";
@@ -243,9 +244,16 @@ registerRumbleRoutes({
   get(path: string, handler: Function) {
     handlers.set(path, handler);
   },
+  post(path: string, handler: Function) {
+    handlers.set(path, handler);
+  },
 } as never);
 
 assert.deepEqual([...handlers.keys()], [
+  "/api/news/resolve",
+  "/api/youtube/channels",
+  "/api/youtube/channel-latest",
+  "/api/youtube/playlist-resolve",
   "/api/rumble",
   "/api/rumble/baseline",
   "/api/rumble/channels",
@@ -265,6 +273,9 @@ const invoke = (path: string, query = {}, env?: string, injected: RumbleBaseline
   const handlerMap = new Map<string, Function>();
   registerRumbleRoutes({
     get(route: string, handler: Function) {
+      handlerMap.set(route, handler);
+    },
+    post(route: string, handler: Function) {
       handlerMap.set(route, handler);
     },
   } as never, injected);

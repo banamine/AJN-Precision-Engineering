@@ -27,7 +27,10 @@ setCableNewsFetchForTests((async (input: any) => {
 
 const channels = await getScheduleForGuide('cable-tv');
 const by = Object.fromEntries(channels.map((c) => [c.id, c]));
-assert.deepEqual(channels.map((c) => c.id), ['fox-news', 'cnn', 'msnbc', 'bbc', 'rt', 'kpix']);
+// RT Documentaries is the always-on first row; the six news rows keep their order.
+assert.deepEqual(channels.map((c) => c.id), ['rt-documentaries', 'fox-news', 'cnn', 'msnbc', 'bbc', 'rt', 'kpix', 'cbc', 'ctv', 'aljazeera', 'france24', 'trt-world', 'dw', 'ajn-infowars-nightly-news', 'ajn-infowars-survival']);
+assert.ok(by['rt-documentaries'].programs.length > 30, 'RT Documentaries covers the day from the packaged index');
+assert.ok(by['rt-documentaries'].programs.every((p) => p.channelId === 'rt-documentaries' && p.guideId === 'cable-tv'));
 
 const cnn = by['cnn'];
 assert.equal(cnn.sourceStatus, 'ok');
@@ -39,7 +42,7 @@ assert.equal(prog.startTimeUtc!.slice(11), '00:00:00.000Z');
 const aired = Date.parse((prog.metadata as any).airedUtc);
 assert.ok(Math.abs(aired - (today.getTime() - 30 * 3600_000)) < 3600_000, 'real air time kept in metadata');
 assert.equal(Date.parse(prog.endTimeUtc!) - Date.parse(prog.startTimeUtc!), 3600_000);
-assert.equal(cnn.logo, 'https://archive.org/services/img/CNNW');
+assert.equal(cnn.logo, '/logos/news/cnn.png');
 
 // Restricted TV News item -> 282s exact clips of the item-level MP4 (reference M3U format).
 const fox = by['fox-news'];

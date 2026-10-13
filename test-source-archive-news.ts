@@ -121,3 +121,10 @@ const input = (fetchImpl: typeof fetch) => ({ network: 'CNNW', channelId: 'cnn',
   console.log('PASS metadata fetched in parallel (peak', peak, ')');
 }
 console.log('archive news contract regression: all passed');
+
+// Suffix-less identifiers (CTV_, ALJAZ_, FRANCE24_) must still parse: air time from the id, empty show.
+assert.equal(parseAirTime('CTV_20261009_023000')?.airedUtc.toISOString(), '2026-10-09T02:30:00.000Z');
+assert.equal(parseAirTime('CTV_20261009_023000')?.show, '');
+assert.equal(parseAirTime('ALJAZ_20261009_043000')?.airedUtc.toISOString(), '2026-10-09T04:30:00.000Z');
+assert.equal(parseAirTime('FRANCE24_20261009_013000')?.airedUtc.toISOString(), '2026-10-09T01:30:00.000Z');
+console.log('suffix-less news identifiers OK');

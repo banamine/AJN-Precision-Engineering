@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { classifyArchiveFailure as c, overloadedMessage as m } from './src/utils/archiveFailure.ts';
+assert.equal(c(502, { upstreamStatus: 504, attempts: 3 }), 'overloaded');
+assert.equal(c(502, { upstreamStatus: 500 }), 'overloaded');
+assert.equal(c(502, { upstreamStatus: 0, attempts: 3 }), 'overloaded', 'no answer after 3 attempts');
+assert.equal(c(502, { upstreamStatus: 0, attempts: 1 }), 'transient');
+assert.equal(c(502, {}), 'transient');
+assert.equal(c(502, { upstreamStatus: 404 }), 'definite'); assert.equal(c(403, { upstreamStatus: 403 }), 'definite');
+assert.equal(c(422, { reason: 'UNPLAYABLE_ARCHIVE_MEMBER' }), 'definite'); assert.equal(c(400, {}), 'definite');
+assert.equal(c(502, { upstreamStatus: 503 }), 'transient', '503 keeps the existing path');
+assert.match(m({ upstreamStatus: 504 }), /overloaded right now \(HTTP 504\)\. Try again in a few minutes/); assert.doesNotMatch(m({}), /HTTP/);
+console.log('archive failure: all passed');

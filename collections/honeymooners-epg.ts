@@ -1,6 +1,6 @@
 import { Program } from '../src/types';
 import { normalizeProgramIdentity, normalizeAssetIdentity } from '../src/utils/epgIdentity';
-import { HONEYMOONERS_COLLECTION, HONEYMOONERS_CHANNEL_ID, HONEYMOONERS_CHANNEL_NAME } from './honeymooners-collection';
+import { HONEYMOONERS_COLLECTION, HONEYMOONERS_CHANNEL_ID, HONEYMOONERS_CHANNEL_NAME, type ArchiveCollectionItem } from './honeymooners-collection';
 
 const ARCHIVE_BASE = 'https://archive.org';
 const REQUEST_TIMEOUT_MS = 60000;
@@ -14,7 +14,30 @@ export interface HoneymoonersResolvedAsset {
   quality: string;
 }
 
-async function fetchMetadata(identifier: string): Promise<any | null> {
+interface ArchiveFile {
+  name?: string;
+  length?: number | string;
+  duration?: number | string;
+  width?: number | string;
+}
+interface ArchiveMetadata { files?: ArchiveFile[] }
+interface ResolveOptions {
+  collection?: readonly ArchiveCollectionItem[];
+  loadMetadata?: (identifier: string) => Promise<ArchiveMetadata | null>;
+}
+
+// Case-sensitive code-unit lexical ordering, independent of locale/ICU.
+const lexical = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
+const sourcePath = (identifier: string, name = '') =>
+  `/download/${identifier}/${encodeURIComponent(name).replace(/%2F/g, '/')}`;
+function compareSourceKeys(aPath: string, bPath: string, aName = '', bName = '', aId = '', bId = '') {
+  return lexical(aPath, bPath) || lexical(aName, bName) || lexical(aId, bId);
+}
+const fileName = (path: string) => decodeURIComponent(path.slice(path.lastIndexOf('/') + 1));
+const compareAssets = (a: HoneymoonersResolvedAsset, b: HoneymoonersResolvedAsset) =>
+  compareSourceKeys(a.mediaUrl, b.mediaUrl, fileName(a.mediaUrl), fileName(b.mediaUrl), a.id, b.id);
+
+async function fetchMetadata(identifier: string): Promise<ArchiveMetadata | null> {
   try {
     const response = await fetch(`${ARCHIVE_BASE}/metadata/${encodeURIComponent(identifier)}`, {
       headers: { Accept: 'application/json', 'User-Agent': 'AJN-Precision-Engineering/1.0' },
@@ -27,12 +50,12 @@ async function fetchMetadata(identifier: string): Promise<any | null> {
   }
 }
 
-function durationSeconds(file: any): number {
+function durationSeconds(file: ArchiveFile): number {
   const value = Number(file?.length ?? file?.duration ?? 0);
   return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
 }
 
-function quality(fileName: string, file: any): string {
+function quality(fileName: string, file: ArchiveFile): string {
   const lower = fileName.toLowerCase();
   const width = Number(file?.width ?? 0);
   if (lower.includes('4k') || width >= 3840) return '4K';
@@ -41,46 +64,55 @@ function quality(fileName: string, file: any): string {
   return 'SD';
 }
 
-export async function resolveHoneymoonersAssets(): Promise<HoneymoonersResolvedAsset[]> {
+export async function resolveHoneymoonersAssets(options: ResolveOptions = {}): Promise<HoneymoonersResolvedAsset[]> {
   const assets: HoneymoonersResolvedAsset[] = [];
-  const seen = new Set<string>();
+  const loadMetadata = options.loadMetadata ?? fetchMetadata;
+  // Sort collection candidates BEFORE launching any network worker.
+  const collection = [...(options.collection ?? HONEYMOONERS_COLLECTION)].sort((a, b) =>
+    compareSourceKeys(sourcePath(a.archiveIdentifier), sourcePath(b.archiveIdentifier), '', '', a.id, b.id));
   let cursor = 0;
-  const workers = Array.from({ length: Math.min(4, HONEYMOONERS_COLLECTION.length) }, async () => {
-    while (cursor < HONEYMOONERS_COLLECTION.length) {
-      const item = HONEYMOONERS_COLLECTION[cursor++];
-      const metadata = await fetchMetadata(item.archiveIdentifier);
+  const workers = Array.from({ length: Math.min(4, collection.length) }, async () => {
+    while (cursor < collection.length) {
+      const item = collection[cursor++];
+      const metadata = await loadMetadata(item.archiveIdentifier);
       if (!metadata || !Array.isArray(metadata.files)) continue;
       const candidates = metadata.files
-        .map((file: any) => ({ file, name: String(file?.name ?? '') }))
-        .filter(({ name }: { name: string }) => /\.(mp4|m4v)$/i.test(name))
-        .sort((a: { file: any; name: string }, b: { file: any; name: string }) => {
+        .map(file => ({ file, name: String(file?.name ?? '') }))
+        .filter(({ name }) => /\.(mp4|m4v)$/i.test(name))
+        .sort((a, b) => {
           const aDuration = durationSeconds(a.file);
           const bDuration = durationSeconds(b.file);
-          return bDuration - aDuration;
+          return bDuration - aDuration || compareSourceKeys(
+            sourcePath(item.archiveIdentifier, a.name), sourcePath(item.archiveIdentifier, b.name), a.name, b.name);
         });
       const selected = candidates[0];
       if (!selected) continue;
       const duration = durationSeconds(selected.file);
       if (duration <= 0) continue;
-      const identity = `${item.archiveIdentifier}|${selected.name}`;
-      if (seen.has(identity)) continue;
-      seen.add(identity);
       assets.push({
         id: `asset-${item.id}`,
         title: item.title,
         archiveIdentifier: item.archiveIdentifier,
-        mediaUrl: `/download/${item.archiveIdentifier}/${encodeURIComponent(selected.name).replace(/%2F/g, '/')}`,
+        mediaUrl: sourcePath(item.archiveIdentifier, selected.name),
         durationSeconds: duration,
         quality: quality(selected.name, selected.file),
       });
     }
   });
   await Promise.all(workers);
-  return assets;
+  // Completion order and duplicate winner must never depend on worker timing.
+  const seen = new Set<string>();
+  return assets.sort(compareAssets).filter(asset => {
+    if (seen.has(asset.mediaUrl)) return false;
+    seen.add(asset.mediaUrl);
+    return true;
+  });
 }
 
-export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolvedAsset[]) {
-  const assets = resolvedAssets ?? await resolveHoneymoonersAssets();
+export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolvedAsset[], now = new Date()) {
+  const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  // Also sort injected fixtures; never mutate the caller's array.
+  const assets = [...(resolvedAssets ?? await resolveHoneymoonersAssets())].sort(compareAssets);
   const secondsInDay = 24 * 3600;
   const programs: Program[] = [];
   let currentSecond = 0;
@@ -102,8 +134,8 @@ export async function buildHoneymoonersEpg(resolvedAssets?: HoneymoonersResolved
       description: `Archive.org collection item: ${asset.archiveIdentifier}`,
       startTime: currentSecond / 3600,
       endTime: endSecond / 3600,
-      startTimeUtc: new Date(Date.now() + currentSecond * 1000).toISOString(),
-      endTimeUtc: new Date(Date.now() + endSecond * 1000).toISOString(),
+      startTimeUtc: new Date(dayStart + currentSecond * 1000).toISOString(),
+      endTimeUtc: new Date(dayStart + endSecond * 1000).toISOString(),
       startHour: currentSecond / 3600,
       endHour: endSecond / 3600,
       mediaType: 'video',

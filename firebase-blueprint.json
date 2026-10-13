@@ -1,0 +1,21 @@
+{
+  "entities": {
+    "UserDocument": {
+      "title": "UserDocument",
+      "description": "User specific data document",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the user who owns this document"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{uid}/{document=**}": {
+      "schema": "UserDocument",
+      "description": "User documents accessible only by the signed-in user"
+    }
+  }
+}

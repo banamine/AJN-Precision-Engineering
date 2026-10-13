@@ -1,48 +1,44 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { NewsReadyNotice } from './components/NewsReadyNotice';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
 import { AjnResourcePanel } from './components/AjnResourcePanel';
 import { TvGuideView } from './components/TvGuideView';
+import { TodayView } from './components/TodayView';
 import { PlayerView } from './components/PlayerView';
-import { LibraryTabs } from './components/LibraryTabs';
+import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
-import { RumbleNewsWall } from './components/RumbleNewsWall';
+import { NewsTabs as RumbleNewsWall } from './components/NewsTabs';
 import { RadioView } from './components/RadioView';
 import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
 import { SyncedVideoPip } from './components/SyncedVideoPip';
 import { useAvSyncRecorder } from './hooks/useAvSync';
+import { toPlayableSrc } from './utils/playableSrc';
+import { bridgeSrc } from './utils/mediaRoute';
+import { HistoryView } from './components/HistoryView';
+import { HistoryEntry, loadHistory, saveHistory, recordPlay, updateHistoryProgress, removeHistoryEntry } from './utils/historyStore';
+import { FavoriteMedia, loadMediaFavorites, saveMediaFavorites, toggleFavorite, isFavorite as isMediaFavorite } from './utils/mediaFavorites';
+import { useCloudSync } from './hooks/useCloudSync';
+import { buildSuggestCandidates, addRecentSearch, loadRecentSearches, saveRecentSearches } from './utils/suggest';
+import { loadLastView, saveLastView, VALID_DESTINATIONS } from './nav/lastView';
 
-const ARCHIVE_PROXY_BASE = '/api/archive/proxy?path=';
-const ARCHIVE_DOWNLOAD_PREFIX = '/download/';
 const RECENTLY_PLAYED_STORAGE_KEY = 'ajn.recentlyPlayed.v1';
 const RECENTLY_PLAYED_LIMIT = 5;
+const RESTORE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-/** Resolve a media reference to exactly one playable transport URL. */
-function toPlayableSrc(rawPath: string): string {
-  const value = String(rawPath ?? '').trim();
-  if (!value) return value;
-  if (value.startsWith(ARCHIVE_PROXY_BASE)) return value;
-
+/** The last audio item, ready but NOT playing, so a phone/Bluetooth Play press or one tap continues it after the app was
+ *  closed or killed (e.g. the car was switched off). Null when there is none or it is older than a day. */
+function restoreLastAudio(): NowPlayingMedia | null {
+  const last = readRecentlyPlayed().find((i) => i.mediaType === 'audio' && Date.now() - i.updatedAt < RESTORE_MAX_AGE_MS);
+  if (!last) return null;
+  let at = last.progressSeconds;
   try {
-    const parsed = new URL(value, window.location.origin);
-    if (parsed.pathname === '/api/archive/proxy' && parsed.searchParams.has('path')) {
-      return `${parsed.pathname}${parsed.search}`;
-    }
-    if (parsed.hostname === 'archive.org' && parsed.pathname.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) {
-      const archivePath = `${parsed.pathname}${parsed.search}`;
-      return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(archivePath)}`;
-    }
-  } catch {
-    // Preserve non-URL references unchanged below.
-  }
-
-  if (value.startsWith(ARCHIVE_DOWNLOAD_PREFIX)) {
-    return `${ARCHIVE_PROXY_BASE}${encodeURIComponent(value)}`;
-  }
-  return value;
+    const saved = Number.parseFloat(window.localStorage.getItem(`ajn-playback-position:${last.programId ?? bridgeSrc(last.src)}`) ?? '');
+    if (Number.isFinite(saved) && saved > 0) at = saved;
+  } catch { /* storage unavailable: use the stored progress */ }
+  return { ...last, startAtSeconds: at > 5 ? at : undefined, restoredPaused: true };
 }
 
 function getDestinationFromHash(): Destination {
@@ -57,6 +53,8 @@ function getDestinationFromHash(): Destination {
     case 'library':
     case 'archive': return 'library';
     case 'search': return 'search';
+    case 'today': return 'today';
+    case 'history': return 'history';
     case 'news': return 'news';
     case 'radio':
     case 'ajn-radio': return 'radio';
@@ -65,6 +63,17 @@ function getDestinationFromHash(): Destination {
     case 'diagnostics': return 'dev';
     default: return 'home';
   }
+}
+
+function getInitialView(): { destination: Destination; fromStorage: boolean } {
+  if (typeof window === 'undefined' || window.location.hash) {
+    return { destination: getDestinationFromHash(), fromStorage: false };
+  }
+  const saved = loadLastView(VALID_DESTINATIONS);
+  if (!saved) return { destination: 'home', fromStorage: false };
+  const destination = saved.destination === 'player' || saved.destination === 'dev'
+    ? 'home' : saved.destination as Destination;
+  return { destination, fromStorage: true };
 }
 
 function mediaIdentity(media: Pick<NowPlayingMedia, 'src' | 'archivePath' | 'programId' | 'sourceId' | 'assetId'>): string {
@@ -103,9 +112,40 @@ function writeRecentlyPlayed(items: RecentlyPlayedItem[]): void {
 }
 
 export default function App() {
-  const [destination, setDestination] = useState<Destination>(() => getDestinationFromHash());
-  const [nowPlaying, setNowPlaying] = useState<NowPlayingMedia | null>(null);
+  const [initialView] = useState(getInitialView);
+  const [destination, setDestination] = useState<Destination>(initialView.destination);
+  const [hasVisitedTvGuide, setHasVisitedTvGuide] = useState(initialView.destination === 'tv-guide');
+  const [nowPlaying, setNowPlaying] = useState<NowPlayingMedia | null>(() => restoreLastAudio());
+  const [externalSearch, setExternalSearch] = useState<{ q: string; n: number }>({ q: '', n: 0 });
   const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedItem[]>(() => readRecentlyPlayed());
+  const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
+  const [favorites, setFavorites] = useState<FavoriteMedia[]>(() => loadMediaFavorites());
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => loadRecentSearches());
+
+  // History is written at most once a second: playback progress updates it every few seconds.
+  useEffect(() => {
+    const t = window.setTimeout(() => saveHistory(history), 1000);
+    return () => window.clearTimeout(t);
+  }, [history]);
+  useEffect(() => { saveMediaFavorites(favorites); }, [favorites]);
+  useEffect(() => { saveRecentSearches(recentSearches); }, [recentSearches]);
+  useEffect(() => {
+    const flush = () => saveHistory(history);
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, [history]);
+  const sync = useCloudSync({ favorites, setFavorites, history, setHistory });
+  const suggestCandidates = useMemo(
+    () => buildSuggestCandidates(recentSearches, favorites.map((f) => f.title), history.map((h) => h.title)),
+    [recentSearches, favorites, history],
+  );
+  const recordSearch = useCallback((q: string) => setRecentSearches((l) => addRecentSearch(l, q)), []);
+
+  useEffect(() => {
+    if (initialView.fromStorage) {
+      window.location.hash = initialView.destination === 'home' ? '' : `#${initialView.destination}`;
+    }
+  }, [initialView]);
 
   useEffect(() => {
     writeRecentlyPlayed(recentlyPlayed);
@@ -113,11 +153,18 @@ export default function App() {
 
   const navigateTo = useCallback((dest: Destination) => {
     setDestination(dest);
+    if (dest === 'tv-guide') setHasVisitedTvGuide(true);
+    if (dest !== 'player' && dest !== 'dev') saveLastView({ destination: dest });
     if (typeof window !== 'undefined') window.location.hash = dest === 'home' ? '' : `#${dest}`;
   }, []);
 
   useEffect(() => {
-    const handleHashChange = () => setDestination(getDestinationFromHash());
+    const handleHashChange = () => {
+      const dest = getDestinationFromHash();
+      setDestination(dest);
+      if (dest === 'tv-guide') setHasVisitedTvGuide(true);
+      if (dest !== 'player' && dest !== 'dev') saveLastView({ destination: dest });
+    };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
@@ -162,6 +209,7 @@ export default function App() {
     };
 
     setRecentlyPlayed((items) => [nextRecentlyPlayed, ...items.filter((item) => item.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
+    setHistory((h) => recordPlay(h, id, nextRecentlyPlayed, Date.now(), nextRecentlyPlayed.progressSeconds));
 
     // startAtSeconds is a one-shot instruction for this play only: it is not stored in recently played.
     setNowPlaying({ ...nextRecentlyPlayed, ...(typeof startAtSeconds === 'number' && Number.isFinite(startAtSeconds) && startAtSeconds > 0 ? { startAtSeconds } : {}) });
@@ -177,28 +225,49 @@ export default function App() {
   }, [handlePlayProgram]);
 
   const handleEpgSelect: PlayProgramCallback = useCallback((
-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId
+    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds
   ) => {
-    handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId);
+    handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds);
   }, [handlePlayProgram]);
 
   const updateRecentlyPlayedProgress = useCallback((itemId: string, positionSeconds: number) => {
     if (!Number.isFinite(positionSeconds) || positionSeconds < 0) return;
     setRecentlyPlayed((items) => items.map((item) => item.id === itemId ? { ...item, progressSeconds: positionSeconds, updatedAt: Date.now() } : item));
+    setHistory((h) => updateHistoryProgress(h, itemId, positionSeconds));
   }, []);
 
   const resumeRecentlyPlayed = useCallback((item: RecentlyPlayedItem) => {
     setNowPlaying(item);
     setRecentlyPlayed((items) => [item, ...items.filter((candidate) => candidate.id !== item.id)].slice(0, RECENTLY_PLAYED_LIMIT));
+    setHistory((h) => recordPlay(h, item.id, item, Date.now(), item.progressSeconds));
     setDestination('player');
     if (typeof window !== 'undefined') window.location.hash = '#player';
   }, []);
+
+  /** Replay a History / Favorites row: same item, resuming where it left off (live items start live). */
+  const playSaved = useCallback((entry: NowPlayingMedia & { id: string; progressSeconds?: number }) => {
+    const { id, progressSeconds, ...media } = entry as any;
+    const at = typeof progressSeconds === 'number' && progressSeconds >= 5 && !media.isLive ? progressSeconds : undefined;
+    const item: RecentlyPlayedItem = { ...media, id, progressSeconds: progressSeconds ?? 0, updatedAt: Date.now() };
+    delete (item as any).savedAt; delete (item as any).playedAt; delete (item as any).plays;
+    setNowPlaying({ ...item, ...(at ? { startAtSeconds: at } : {}) });
+    setRecentlyPlayed((items) => [item, ...items.filter((c) => c.id !== id)].slice(0, RECENTLY_PLAYED_LIMIT));
+    setHistory((h) => recordPlay(h, id, item, Date.now(), item.progressSeconds));
+    setDestination('player');
+    if (typeof window !== 'undefined') window.location.hash = '#player';
+  }, []);
+  const nowPlayingId = nowPlaying ? mediaIdentity(nowPlaying) : null;
+  const toggleNowPlayingFavorite = useCallback(() => {
+    if (!nowPlaying) return;
+    const id = mediaIdentity(nowPlaying);
+    setFavorites((list) => { const r = toggleFavorite(list, id, nowPlaying, Date.now()); if (!r.added && isMediaFavorite(list, id)) sync.noteFavoriteRemoved(id); return r.list; });
+  }, [nowPlaying, sync]);
 
   useAvSyncRecorder(nowPlaying);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
-      <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} />
+      <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
       <main id="canonical-main-viewport" className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-20 md:pb-8">
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full">
@@ -208,13 +277,15 @@ export default function App() {
               nowPlaying={nowPlaying}
               recentlyPlayed={recentlyPlayed}
               onResumeRecentlyPlayed={resumeRecentlyPlayed}
+              favorites={favorites}
+              onPlayFavorite={playSaved}
             />
-            <AjnResourcePanel onPlayProgram={handlePlayProgram} />
+            <AjnResourcePanel onPlayProgram={handlePlayProgram} className="mt-14" />
           </div>
         )}
-        {destination === 'tv-guide' && (
-          <div key="view-tv-guide" className="view-fade-in w-full">
-            <TvGuideView onSelectProgram={handleEpgSelect} />
+        {hasVisitedTvGuide && (
+          <div key="view-tv-guide" hidden={destination !== 'tv-guide'} className="view-fade-in w-full">
+            <TvGuideView onSelectProgram={handleEpgSelect} onNavigate={navigateTo} active={destination === 'tv-guide'} />
           </div>
         )}
         {/* The player stays mounted while you browse other pages, so audio keeps
@@ -225,21 +296,26 @@ export default function App() {
             hidden={destination !== 'player'}
             className={`w-full ${destination === 'player' ? 'view-fade-in' : ''}`}
           >
-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingId ? isMediaFavorite(favorites, nowPlayingId) : false} onToggleFavorite={toggleNowPlayingFavorite} />
           </div>
         ) : destination === 'player' && (
           <div key="view-player" className="view-fade-in w-full">
-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} />
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingId ? isMediaFavorite(favorites, nowPlayingId) : false} onToggleFavorite={toggleNowPlayingFavorite} />
+          </div>
+        )}
+        {destination === 'today' && (
+          <div key="view-today" className="view-fade-in w-full">
+            <TodayView onSelectProgram={handleEpgSelect} onNavigate={navigateTo} />
           </div>
         )}
         {destination === 'library' && (
           <div key="view-library" className="view-fade-in w-full">
-            <LibraryTabs onPlayProgram={handlePlayProgram} />
+            <LibraryView onPlayProgram={handlePlayProgram} />
           </div>
         )}
         {destination === 'search' && (
           <div key="view-search" className="view-fade-in w-full">
-            <SearchView onPlayProgram={handlePlayProgram} />
+            <SearchView onPlayProgram={handlePlayProgram} externalQuery={externalSearch} suggestions={suggestCandidates} onRecordSearch={recordSearch} />
           </div>
         )}
         {destination === 'news' && (
@@ -250,6 +326,18 @@ export default function App() {
         {destination === 'radio' && (
           <div key="view-radio" className="view-fade-in w-full">
             <RadioView onPlayProgram={handleAdvanceProgram} nowPlaying={nowPlaying} recentlyPlayed={recentlyPlayed} onNavigate={navigateTo} />
+          </div>
+        )}
+        {destination === 'history' && (
+          <div key="view-history" className="view-fade-in w-full">
+            <HistoryView
+              entries={history}
+              onPlay={playSaved}
+              onRemove={(id) => { sync.noteHistoryRemoved(id); setHistory((h) => removeHistoryEntry(h, id)); }}
+              onClear={() => { sync.noteHistoryCleared(); setHistory([]); }}
+              sync={sync}
+              isFavorite={(id) => isMediaFavorite(favorites, id)}
+            />
           </div>
         )}
         {destination === 'dev' && (

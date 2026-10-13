@@ -17,8 +17,8 @@
     "mediaCount": 1
   },
   {
-    "identifier": "bandofoutsiders",
-    "title": "Band Of Outsiders (1964)",
+    "identifier": "band.of.-outsiders.-1964.",
+    "title": "Band of Outsiders (1964)",
     "year": 1964,
     "description": "French crime film",
     "creators": [
@@ -26,11 +26,11 @@
     ],
     "files": [
       {
-        "name": "Band_Of_Outsiders_1964.mp4",
-        "format": "MPEG4",
-        "title": "Band_Of_Outsiders_1964",
-        "size": 416135193,
-        "mtime": 1762254095
+        "name": "Band.of.Outsiders.1964..mp4",
+        "format": "h.264",
+        "title": "Band of Outsiders (1964)",
+        "size": 594989891,
+        "mtime": 1596266645
       }
     ],
     "mediaCount": 1
@@ -70,58 +70,58 @@
     "mediaCount": 1
   },
   {
-    "identifier": "EscapeByNight",
-    "title": "EscapeByNight",
-    "year": null,
+    "identifier": "Escape.by.Night",
+    "title": "Escape by Night (1937)",
+    "year": 1937,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "EscapeByNight.mp4",
+        "name": "Escape.by.Night.mp4",
         "format": "MPEG4",
-        "title": "EscapeByNight",
-        "size": 341275077,
-        "mtime": 1720451478
+        "title": "Escape by Night (1937)",
+        "size": 791611311,
+        "mtime": 1267191421
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "ForbiddenWorld",
-    "title": "ForbiddenWorld",
+    "identifier": "forbiddenworld",
+    "title": "Forbidden World",
     "year": null,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "ForbiddenWorld.mp4",
+        "name": "Forbidden World.mp4",
         "format": "MPEG4",
-        "title": "ForbiddenWorld",
-        "size": 168105589,
-        "mtime": 1636987622
+        "title": "Forbidden World",
+        "size": 235164572,
+        "mtime": 1573795463
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "GodsGun",
-    "title": "GodsGun",
-    "year": null,
+    "identifier": "Gods_Gun.avi",
+    "title": "God's Gun (1976)",
+    "year": 1976,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "GodsGun.mp4",
-        "format": "MPEG4",
-        "title": "GodsGun",
-        "size": 132353732,
-        "mtime": 1756402570
+        "name": "Gods_Gun.mp4",
+        "format": "h.264",
+        "title": "God's Gun (1976)",
+        "size": 602119938,
+        "mtime": 1540587798
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "GoneWithTheWest",
+    "identifier": "GonewiththeWest",
     "title": "Gone with the West",
     "year": 1975,
     "description": "Western film",
@@ -130,18 +130,18 @@
     ],
     "files": [
       {
-        "name": "Gone_with_the_West.mp4",
-        "format": "MPEG4",
-        "title": "Gone_with_the_West",
-        "size": 206063644,
-        "mtime": 1644736858
+        "name": "GonewiththeWest.mp4",
+        "format": "h.264",
+        "title": "Gone with the West",
+        "size": 566352715,
+        "mtime": 1540598454
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "HolidayInn1942Colorized",
-    "title": "Holiday Inn 1942 *colorized",
+    "identifier": "holiday-inn-1942_202412",
+    "title": "Holiday Inn (1942, colorized)",
     "year": 1942,
     "description": "Musical comedy with Fred Astaire and Bing Crosby",
     "creators": [
@@ -149,11 +149,11 @@
     ],
     "files": [
       {
-        "name": "Holiday_Inn_1942.mp4",
+        "name": "HolidayInn1942.mp4",
         "format": "MPEG4",
-        "title": "Holiday_Inn_1942",
-        "size": 261769185,
-        "mtime": 1704981532
+        "title": "Holiday Inn (1942, colorized)",
+        "size": 110588680,
+        "mtime": 1733714916
       }
     ],
     "mediaCount": 1
@@ -166,17 +166,17 @@
     "creators": [],
     "files": [
       {
-        "name": "ItCanBeDoneAmigo.mp4",
-        "format": "MPEG4",
+        "name": "MoviePowderPresentsItCanBeDoneAmigo.mp4",
+        "format": "h.264",
         "title": "ItCanBeDoneAmigo",
-        "size": 585080048,
-        "mtime": 1727298923
+        "size": 613796725,
+        "mtime": 1540593300
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "m-1931",
+    "identifier": "MLeMaudit1931",
     "title": "M (1931)",
     "year": 1931,
     "description": "Fritz Lang masterpiece about a child murderer",
@@ -185,11 +185,11 @@
     ],
     "files": [
       {
-        "name": "M_1931_512kb.mp4",
-        "format": "MPEG4",
-        "title": "M_1931_512kb",
-        "size": 428368807,
-        "mtime": 1727924260
+        "name": "M le maudit  (1931).mp4",
+        "format": "h.264",
+        "title": "M (1931)",
+        "size": 689897772,
+        "mtime": 1533233567
       }
     ],
     "mediaCount": 1
@@ -202,11 +202,11 @@
     "creators": [],
     "files": [
       {
-        "name": "ManInTheAttic.mp4",
-        "format": "MPEG4",
+        "name": "ManInTheAtticPresentedByMoviePowder.mp4",
+        "format": "h.264",
         "title": "ManInTheAttic",
-        "size": 422240704,
-        "mtime": 1718182668
+        "size": 513243127,
+        "mtime": 1540592047
       }
     ],
     "mediaCount": 1
@@ -229,18 +229,18 @@
     "mediaCount": 1
   },
   {
-    "identifier": "MurderInTheClouds",
-    "title": "MurderInTheClouds",
-    "year": null,
+    "identifier": "Murder_in_the_Clouds_1934",
+    "title": "Murder in the Clouds (1934)",
+    "year": 1934,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "MurderInTheClouds.mp4",
-        "format": "MPEG4",
-        "title": "MurderInTheClouds",
-        "size": 234411830,
-        "mtime": 1773773351
+        "name": "Murder_in_the_Clouds.mp4",
+        "format": "h.264",
+        "title": "Murder in the Clouds (1934)",
+        "size": 377635067,
+        "mtime": 1492088226
       }
     ],
     "mediaCount": 1
@@ -263,58 +263,58 @@
     "mediaCount": 1
   },
   {
-    "identifier": "PanicInTheStreets1950",
-    "title": "PanicInTheStreets1950",
-    "year": null,
+    "identifier": "panic-in-the-streets-1950",
+    "title": "Panic in the Streets (1950)",
+    "year": 1950,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "PanicInTheStreets.mp4",
+        "name": "Panic_in_the_Streets 1950.mp4",
         "format": "MPEG4",
-        "title": "PanicInTheStreets",
-        "size": 101258586,
-        "mtime": 1748770469
+        "title": "Panic in the Streets (1950)",
+        "size": 600231083,
+        "mtime": 1599731335
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "SevenDaysInMay",
-    "title": "SevenDaysInMay",
-    "year": null,
+    "identifier": "7-days-in-may",
+    "title": "Seven Days in May (1964)",
+    "year": 1964,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "SevenDaysInMay.mp4",
+        "name": "7 Days in May.mp4",
         "format": "MPEG4",
-        "title": "SevenDaysInMay",
-        "size": 411954812,
-        "mtime": 1778867631
+        "title": "Seven Days in May (1964)",
+        "size": 1247158802,
+        "mtime": 1651720808
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "SongOfTheSouth",
-    "title": "SongOfTheSouth",
-    "year": null,
+    "identifier": "songofthesouth1946originaltheatricalprintrecreation",
+    "title": "Song of the South (1946)",
+    "year": 1946,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "SongOfTheSouth.mp4",
+        "name": "Song of the South (1946) - original theatrical print recreation.mp4",
         "format": "MPEG4",
-        "title": "SongOfTheSouth",
-        "size": 155638120,
-        "mtime": 1749405277
+        "title": "Song of the South (1946)",
+        "size": 545497787,
+        "mtime": 1570528694
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "SuddenFear1952",
+    "identifier": "suddenfear1952usafeaturingjoancrawfordjackpalancegloriagrahamefilmnoir",
     "title": "Sudden Fear (1952)",
     "year": 1952,
     "description": "Film noir thriller",
@@ -323,28 +323,28 @@
     ],
     "files": [
       {
-        "name": "Sudden_Fear_1952.mp4",
+        "name": "Sudden Fear  (1952, USA) Featuring Joan Crawford, Jack Palance, Gloria Grahame  - Film Noir.mp4",
         "format": "MPEG4",
-        "title": "Sudden_Fear_1952",
-        "size": 211068540,
-        "mtime": 1653478511
+        "title": "Sudden Fear (1952)",
+        "size": 329779257,
+        "mtime": 1580139047
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "TheBigCombo1955",
-    "title": "TheBigCombo1955",
-    "year": null,
+    "identifier": "the-big-combo-1955-remastered-movie-720p-hd",
+    "title": "The Big Combo (1955)",
+    "year": 1955,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "TheBigCombo1955.mp4",
-        "format": "MPEG4",
-        "title": "TheBigCombo1955",
-        "size": 353629537,
-        "mtime": 1641720824
+        "name": "the big combo-1955-remastered movie-720p-hd.mp4",
+        "format": "h.264",
+        "title": "The Big Combo (1955)",
+        "size": 505857543,
+        "mtime": 1634294087
       }
     ],
     "mediaCount": 1
@@ -357,18 +357,18 @@
     "creators": [],
     "files": [
       {
-        "name": "TheDeathKiss.mp4",
-        "format": "MPEG4",
+        "name": "DeathKiss_512kb.mp4",
+        "format": "512Kb MPEG4",
         "title": "TheDeathKiss",
-        "size": 226458532,
-        "mtime": 1641154933
+        "size": 307452042,
+        "mtime": 1207857241
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "TheDeadlyMantis1957",
-    "title": "The Deadly Mantis 1957 colorized",
+    "identifier": "deadly-mantis-1957-colorized",
+    "title": "The Deadly Mantis (1957, colorized)",
     "year": 1957,
     "description": "Giant monster sci-fi film",
     "creators": [
@@ -376,35 +376,35 @@
     ],
     "files": [
       {
-        "name": "TheDeadlyMantis.mp4",
+        "name": "Deadly Mantis 1957 colorized.mp4",
         "format": "MPEG4",
-        "title": "TheDeadlyMantis",
-        "size": 133965873,
-        "mtime": 1661274004
+        "title": "The Deadly Mantis (1957, colorized)",
+        "size": 996696950,
+        "mtime": 1661481319
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "TheGayDeceivers1969",
-    "title": "The Gay Deceivers 1969",
+    "identifier": "the.-gay.-deceivers.-1969.-dvdrip.x-264-zuul",
+    "title": "The Gay Deceivers (1969)",
     "year": 1969,
     "description": "Comedy film",
     "creators": [],
     "files": [
       {
-        "name": "TheGayDeceivers1969.mp4",
-        "format": "MPEG4",
-        "title": "TheGayDeceivers1969",
-        "size": 352229276,
-        "mtime": 1772752612
+        "name": "The.Gay.Deceivers.1969.Dvdrip.x264-Zuul.mp4",
+        "format": "h.264",
+        "title": "The Gay Deceivers (1969)",
+        "size": 519808444,
+        "mtime": 1775154996
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "TheManInTheIronMask1977",
-    "title": "The Man In The Iron Mask (1977)",
+    "identifier": "the-man-in-the-iron-mask-1977-historical-adventure",
+    "title": "The Man in the Iron Mask (1977)",
     "year": 1977,
     "description": "Classic period drama",
     "creators": [
@@ -412,11 +412,11 @@
     ],
     "files": [
       {
-        "name": "The_Man_In_The_Iron_Mask.mp4",
+        "name": "The Man in the Iron Mask (1977 +++++ Historical Adventure).mp4",
         "format": "MPEG4",
-        "title": "The_Man_In_The_Iron_Mask",
-        "size": 593691640,
-        "mtime": 1750707362
+        "title": "The Man in the Iron Mask (1977)",
+        "size": 399507522,
+        "mtime": 1627899840
       }
     ],
     "mediaCount": 1
@@ -456,35 +456,35 @@
     "mediaCount": 1
   },
   {
-    "identifier": "TimeTraveler1974",
-    "title": "TimeTraveler1974",
-    "year": null,
+    "identifier": "TIMETRAVELER1974",
+    "title": "Time Traveler (1974)",
+    "year": 1974,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "TimeTraveler1974.mp4",
-        "format": "MPEG4",
-        "title": "TimeTraveler1974",
-        "size": 342658240,
-        "mtime": 1721750936
+        "name": "TIME_TRAVELER__1975_mpeg2video_mpeg2video.mp4",
+        "format": "h.264",
+        "title": "Time Traveler (1974)",
+        "size": 436481447,
+        "mtime": 1669008584
       }
     ],
     "mediaCount": 1
   },
   {
-    "identifier": "WalkaCrookedMile1948",
-    "title": "WalkaCrookedMile1948",
-    "year": null,
+    "identifier": "walk-a-crooked-mile-1948",
+    "title": "Walk a Crooked Mile (1948)",
+    "year": 1948,
     "description": "Classic film from Archive.org",
     "creators": [],
     "files": [
       {
-        "name": "WalkaCrookedMile1948.mp4",
+        "name": "Walk a Crooked Mile (1948).mp4",
         "format": "MPEG4",
-        "title": "WalkaCrookedMile1948",
-        "size": 574709364,
-        "mtime": 1678115101
+        "title": "Walk a Crooked Mile (1948)",
+        "size": 165268982,
+        "mtime": 1689399801
       }
     ],
     "mediaCount": 1

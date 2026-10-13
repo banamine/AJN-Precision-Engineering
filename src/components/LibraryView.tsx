@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FolderArchive, Search, Play, FileVideo, FileAudio, Clock, Star, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import type { PlayProgramCallback } from '../types';
 import { loadFavorites, saveFavorites } from '../utils/favoritesStore';
+import { Thumb } from './Thumb';
 
 interface LibraryViewProps { onPlayProgram: PlayProgramCallback }
 
@@ -156,6 +157,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
               return (
                 <div key={item.id} className="group flex flex-col rounded-xl border border-neutral-800 bg-neutral-900/50 p-4 transition hover:border-neutral-700 hover:bg-neutral-900">
                   <button type="button" onClick={() => toggleSeries(item.id)} aria-expanded={open} className="w-full text-left">
+                    <Thumb className="mb-3 aspect-video w-full rounded-lg text-lg" title={item.title} input={{ identifier: item.episodes[0]?.identifier, path: item.episodes[0]?.path, category: item.categoryIds[0], mediaType: item.mediaType }} />
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{isAudio ? 'Audio' : 'Series'}</span>
                       <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
@@ -184,6 +186,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
             return (
               <div key={item.id} className="group flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-4 transition hover:border-neutral-700 hover:bg-neutral-900">
                 <div className="space-y-2">
+                  <Thumb className="mb-1 aspect-video w-full rounded-lg text-lg" title={item.title} input={{ identifier: item.identifier, path: item.path, category: item.categoryIds[0], mediaType: item.mediaType, channelId: item.channelId, guideId: item.guideId }} />
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{isAudio ? 'Audio' : 'Video'}{item.format && item.format !== 'none' ? ` · ${item.format}` : ''}</span>
                     <span className="flex items-center gap-1">

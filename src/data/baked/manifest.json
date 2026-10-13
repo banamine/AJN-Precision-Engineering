@@ -1,0 +1,20 @@
+{
+ "schema": "ajn.baked.v1",
+ "version": "v20261011-032957",
+ "generatedAt": "2026-10-11T03:29:57.915Z",
+ "dir": "v20261011-032957",
+ "files": {
+  "audio-otr.json": {
+   "sha256": "1f6b3be18e4ed4a97e1bbb46cf6cf4c455236e009d6a678e806356f61847e926",
+   "bytes": 1353036,
+   "items": 2636,
+   "channels": 18
+  },
+  "video-daily-highlights.json": {
+   "sha256": "8aab28e9ab7ea3f7b4b6f75a0467c66f03d1b127e038319636c5bf9bb4351ed2",
+   "bytes": 18211469,
+   "items": 43082,
+   "channels": 27
+  }
+ }
+}

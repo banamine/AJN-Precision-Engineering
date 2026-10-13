@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Tv, Clock, Calendar, Radio, Headphones } from 'lucide-react';
+import { Tv, Clock, Calendar, Radio, Headphones, ListChecks } from 'lucide-react';
 import EpgGuide from '../EpgGuide';
-import { Guide, PlayProgramCallback } from '../types';
+import { Guide, PlayProgramCallback, Destination } from '../types';
 import { AjnResourcePanel } from './AjnResourcePanel';
 import { RushEpisodePicker } from './RushEpisodePicker';
+import { LiveRadioBadge } from './LiveRadioBadge';
+import { LiveRadioDirectory } from './LiveRadioDirectory';
 import { LiveHealthNote } from './LiveHealthNote';
+import { loadLastView, saveLastView, VALID_DESTINATIONS } from '../nav/lastView';
 
 interface TvGuideViewProps {
   onSelectProgram: PlayProgramCallback;
+  /** Opens the Today list page. */
+  onNavigate?: (dest: Destination) => void;
+  active?: boolean;
 }
 
 const AJN_RESOURCE_GUIDE: Guide = {
@@ -18,7 +24,14 @@ const AJN_RESOURCE_GUIDE: Guide = {
   description: 'Live AJN Audio/Video Resource Links: Alex, War Room, Sunday Live, Hourly Video, and Hourly Audio',
 };
 
-export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
+// Display-only short names so the eight guide buttons stay one line and equal width (server names are unchanged).
+const GUIDE_SHORT_NAMES: Record<string, string> = {
+  'cable-tv': 'Cable TV', 'classic-tv': 'Classic TV', 'audio-podcasts': 'Audio & Podcasts', 'science-documentaries': 'Documentaries',
+  'live-tv': 'Live TV', 'movies-classics-vault': 'Movies', 'old-british-tv': 'British TV', 'ajn-archive-special-feeds': 'AJN Feeds',
+};
+
+export function TvGuideView({ onSelectProgram, onNavigate, active = true }: TvGuideViewProps) {
+  const [radioOpen, setRadioOpen] = useState<boolean>(false);
   const [guides, setGuides] = useState<Guide[]>([
     {
       id: 'cable-tv',
@@ -32,11 +45,14 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
       name: 'Audio & Podcasts',
       type: 'audio',
       enabled: true,
-      description: 'Radio streams, historic aerospace vaults, audio dramas, and podcasts',
+      description: 'Music collections, radio streams, historic aerospace vaults, audio dramas, and podcasts',
     },
     AJN_RESOURCE_GUIDE,
   ]);
-  const [selectedGuideId, setSelectedGuideId] = useState<string>('cable-tv');
+  const [selectedGuideId, setSelectedGuideId] = useState<string>(() => {
+    const savedGuideId = loadLastView(VALID_DESTINATIONS)?.guideId;
+    return savedGuideId ? savedGuideId : 'cable-tv';
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -45,13 +61,25 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
       .then((data) => {
         if (!data || !Array.isArray(data.guides)) return;
         const serverGuides = data.guides as Guide[];
-        setGuides([...serverGuides.filter((guide) => guide.id !== AJN_RESOURCE_GUIDE.id), AJN_RESOURCE_GUIDE]);
+        const nextGuides = [...serverGuides.filter((guide) => guide.id !== AJN_RESOURCE_GUIDE.id), AJN_RESOURCE_GUIDE];
+        setGuides(nextGuides);
+        setSelectedGuideId((current) => (nextGuides.some((guide) => guide.id === current) ? current : 'cable-tv'));
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
       });
     return () => controller.abort();
   }, []);
+
+  // Home genre tiles ask for a specific guide; the TV Guide stays mounted, so it listens as well as reading the saved view.
+  useEffect(() => {
+    const on = (e: Event) => {
+      const id = (e as CustomEvent).detail?.guideId;
+      if (typeof id === 'string' && guides.some((g) => g.id === id)) setSelectedGuideId(id);
+    };
+    window.addEventListener('ajn:select-guide', on);
+    return () => window.removeEventListener('ajn:select-guide', on);
+  }, [guides]);
 
   const currentGuide = guides.find((g) => g.id === selectedGuideId) || AJN_RESOURCE_GUIDE;
   const isAjnResourceGuide = selectedGuideId === AJN_RESOURCE_GUIDE.id;
@@ -75,31 +103,33 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
           <div className="flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300">
             <Calendar className="h-3.5 w-3.5 text-neutral-400" /><span>{dateFormatted}</span>
           </div>
+          {onNavigate && (
+            <button type="button" onClick={() => onNavigate('today')} data-testid="open-today-list" className="flex items-center gap-1.5 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-200 hover:bg-sky-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400">
+              <ListChecks className="h-3.5 w-3.5" /><span>Today's list</span>
+            </button>
+          )}
           <div className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs ${currentGuide.type === 'audio' ? 'border-amber-500/30 bg-amber-950/40 text-amber-300' : 'border-sky-500/30 bg-sky-950/40 text-sky-300'}`}>
-            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" /><span className="font-mono font-medium">Live Grid Active</span>
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" /><span className="font-mono font-medium">Schedule Running</span>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-2.5 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-neutral-400 pl-2">Select Guide:</span>
-          <div className="flex flex-wrap items-center gap-1.5 bg-neutral-950/80 p-1 rounded-lg border border-neutral-800">
+      <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-2.5 backdrop-blur">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <span className="shrink-0 pl-2 text-xs font-medium text-neutral-400">Select Guide:</span>
+          <div role="tablist" aria-label="Guides" className="grid flex-1 grid-cols-2 gap-1.5 rounded-lg border border-neutral-800 bg-neutral-950/80 p-1 sm:grid-cols-4">
             {guides.map((guide) => {
               const isSelected = guide.id === selectedGuideId;
               const isAudio = guide.type === 'audio';
               return (
-                <button key={guide.id} type="button" id={`guide-tab-${guide.id}`} onClick={() => setSelectedGuideId(guide.id)} className={`flex items-center gap-2 rounded-md px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer ${isSelected ? (isAudio ? 'bg-amber-500 text-neutral-950 shadow-sm' : 'bg-sky-500 text-white shadow-sm') : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60'}`}>
-                  {isAudio ? <Radio className="h-3.5 w-3.5" /> : <Tv className="h-3.5 w-3.5" />}
-                  <span>{guide.name}</span>
-                  <span className={`text-[10px] font-mono uppercase px-1.5 py-0.2 rounded ${isSelected ? (isAudio ? 'bg-amber-600/30 text-neutral-950' : 'bg-sky-600/50 text-sky-100') : 'bg-neutral-800 text-neutral-400'}`}>{guide.type}</span>
+                <button key={guide.id} type="button" role="tab" aria-selected={isSelected} id={`guide-tab-${guide.id}`} title={guide.name} onClick={() => { setSelectedGuideId(guide.id); saveLastView({ guideId: guide.id }); }} className={`flex h-10 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-xs font-semibold transition ${isSelected ? (isAudio ? 'bg-amber-500 text-neutral-950 shadow-sm' : 'bg-sky-500 text-white shadow-sm') : 'text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200'}`}>
+                  {isAudio ? <Radio className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : <Tv className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
+                  <span className="truncate">{GUIDE_SHORT_NAMES[guide.id] ?? guide.name}</span>
+                  <span className="sr-only">{guide.type}</span>
                 </button>
               );
             })}
           </div>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-neutral-400 pr-2">
-          <Clock className="h-3.5 w-3.5 text-sky-400 shrink-0" /><span className="text-[11px]">Unified timeline contract • Single-owner Web Audio pipeline</span>
         </div>
       </div>
 
@@ -110,9 +140,15 @@ export function TvGuideView({ onSelectProgram }: TvGuideViewProps) {
       ) : (
         <div className="space-y-4">
           <div className="overflow-hidden rounded-xl shadow-2xl border border-neutral-800">
-            <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} />
+            <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} active={active} />
           </div>
-          {selectedGuideId === 'audio-podcasts' && <RushEpisodePicker onPlay={onSelectProgram} />}
+          {selectedGuideId === 'audio-podcasts' && (
+            <>
+              <RushEpisodePicker onPlay={onSelectProgram} />
+              <LiveRadioBadge open={radioOpen} onToggle={() => setRadioOpen((v) => !v)} />
+              {radioOpen && <LiveRadioDirectory onPlay={onSelectProgram} />}
+            </>
+          )}
           {selectedGuideId === 'live-tv' && <LiveHealthNote />}
         </div>
       )}

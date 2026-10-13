@@ -28,8 +28,8 @@ export function validateArchiveRedirect(target: URL): void {
 // A storage node that silently drops connections used to hang a request for 10-15 s and
 // then fail with "fetch failed". Bound the wait for response headers (the body is never
 // cut off once headers arrive) and fall back to Archive's other replicas.
-export const NODE_HEADER_TIMEOUT_MS = 6_000;
-export const METADATA_TIMEOUT_MS = 5_000;
+export const NODE_HEADER_TIMEOUT_MS = 25_000;
+export const METADATA_TIMEOUT_MS = 10_000;
 const MAX_ALTERNATE_NODES = 2;
 
 function timedFetch(
@@ -123,7 +123,10 @@ export async function resolveArchiveMediaRedirect(
       response = await timedFetch(
         fetchImpl,
         currentUrl,
-        { method: 'GET', redirect: 'manual', headers: { 'User-Agent': USER_AGENT, Accept: '*/*' } },
+        // Probe with a 1-byte range: a bare GET made Archive start sending (or, for TV
+        // clips, cut) the whole file just to read the redirect headers, which stalled
+        // past the header timeout under load and surfaced as 502s.
+        { method: 'GET', redirect: 'manual', headers: { 'User-Agent': USER_AGENT, Accept: '*/*', Range: 'bytes=0-0' } },
         opts.signal,
         opts.timeoutMs ?? NODE_HEADER_TIMEOUT_MS,
       );
@@ -232,7 +235,7 @@ export async function fetchArchiveMediaWithRetry(
   const attempts = Math.max(1, opts.attempts ?? 3);
   const baseDelayMs = opts.baseDelayMs ?? 400;
   const sleep = opts.sleep ?? defaultSleep;
-  const log = opts.log ?? ((message, detail) => console.warn(message, JSON.stringify(detail)));
+  const log = opts.log ?? ((message, detail) => console.log(message, JSON.stringify(detail)));
 
   let last: ArchiveFetchResult = { response: null, status: 0, attempts: 0 };
 
@@ -290,6 +293,28 @@ export async function fetchArchiveMediaWithRetry(
         return { response: alternate.response, status: alternate.response.status, attempts: attempt };
       }
       last = { response: null, status: 0, attempts: attempt, failure: 'resolve' };
+      if (attempt < attempts && !opts.signal?.aborted) {
+        const delayMs = baseDelayMs * 2 ** (attempt - 1);
+        log('[archive-proxy] transient upstream retry', {
+          requestId: opts.requestId ?? null,
+          upstreamStatus: 0,
+          stage: 'resolve',
+          attempt,
+          maxAttempts: attempts,
+          delayMs,
+          url: upstreamUrl,
+        });
+        await sleep(delayMs);
+        continue;
+      }
+      const cause = (networkError as { cause?: { code?: string; message?: string } }).cause;
+      console.warn('[archive-proxy] upstream network error', JSON.stringify({
+        requestId: opts.requestId ?? null,
+        url: upstreamUrl,
+        host: (networkError as { archiveHost?: string }).archiveHost ?? failedHost,
+        error: networkError instanceof Error ? networkError.message : String(networkError),
+        cause: cause?.code ?? cause?.message ?? null,
+      }));
       return last;
     }
 
@@ -302,7 +327,7 @@ export async function fetchArchiveMediaWithRetry(
 
     await response?.body?.cancel().catch(() => {});
     const delayMs = baseDelayMs * 2 ** (attempt - 1);
-    log('[archive-proxy] transient upstream error, retrying', {
+    log('[archive-proxy] transient upstream retry', {
       requestId: opts.requestId ?? null,
       upstreamStatus: status,
       stage: failure,
