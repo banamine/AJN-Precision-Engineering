@@ -92,10 +92,13 @@ export function TrackDrawer({ channel, block, guideId, nowHour, opener, onClose,
 
   useLayoutEffect(() => {
     const el = listRef.current; if (!el) return;
-    setViewH(el.clientHeight || 400);
+    // Batch layout reads before any write: one clientHeight read, then a single scrollTop write.
+    // (Reading scrollTop back after writing it forced a synchronous layout.)
+    const height = el.clientHeight;
+    setViewH(height || 400);
     const target = block.liveProgramId ? items.findIndex(i => i.program.id === block.liveProgramId)
       : items.findIndex(i => i.index + 1 === block.first);
-    if (target >= 0) { el.scrollTop = Math.max(0, target * ROW_PX - el.clientHeight / 2); setScrollTop(el.scrollTop); setFocusIdx(target); }
+    if (target >= 0) { const top = Math.max(0, target * ROW_PX - height / 2); el.scrollTop = top; setScrollTop(top); setFocusIdx(target); }
   }, [items, block]);
   useEffect(() => {
     closeRef.current?.focus();

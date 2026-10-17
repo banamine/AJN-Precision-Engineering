@@ -143,10 +143,16 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   const [preferredHours, setPreferredHours] = useState<number | null>(null);
   useEffect(() => {
     if (!viewEl) return;
-    const measure = () => { const w = viewEl.clientWidth; if (w > 0) setViewWidth(w); };
-    measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(measure);
+    // ResizeObserver reports the size without a layout read; its first callback fires on observe().
+    // Only fall back to a direct read when ResizeObserver does not exist.
+    if (typeof ResizeObserver === "undefined") {
+      const w = viewEl.clientWidth; if (w > 0) setViewWidth(w);
+      return;
+    }
+    const ro = new ResizeObserver(entries => {
+      const w = Math.round(entries[entries.length - 1]?.contentRect.width ?? 0);
+      if (w > 0) setViewWidth(prev => (prev === w ? prev : w));
+    });
     ro.observe(viewEl);
     return () => ro.disconnect();
   }, [viewEl]);

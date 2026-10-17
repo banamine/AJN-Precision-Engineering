@@ -88,13 +88,18 @@ export function AudioVisualizerOverlay({ analyser, enabled, mode }: OverlayProps
     if (!run || !analyser) { clear(); return; }
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const fit = () => {
-      const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-      const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+    const fitTo = (cssW: number, cssH: number) => {
+      const w = Math.max(1, Math.round(cssW * dpr));
+      const h = Math.max(1, Math.round(cssH * dpr));
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     };
-    fit();
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
+    // ResizeObserver supplies the size (no layout read); read directly only when it is unavailable.
+    const fit = (entries?: ResizeObserverEntry[]) => {
+      const box = entries?.[entries.length - 1]?.contentRect;
+      if (box) fitTo(box.width, box.height); else fitTo(canvas.clientWidth, canvas.clientHeight);
+    };
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(entries => fit(entries)) : null;
+    if (!ro) fit();
     ro?.observe(canvas);
 
     const data = new Uint8Array(analyser.frequencyBinCount);
