@@ -124,6 +124,8 @@ console.log('daily highlights regression: all passed');
   assert.equal(channels.some((channel) => channel.id === 'classic-american-experience'), false);
   assert.equal(channels.some((channel) => channel.id === 'classic-the-man-from-u-n-c-l-e'), false);
   assert.equal(channels.some((channel) => channel.id === 'classic-1000-classic-music'), false);
+  assert.equal(filtered.some((p) => p.channelId === 'classic-hogans'), false, 'old classic-hogans is superseded by classic-series-hogans-heroes');
+  assert.equal(channels.some((channel) => channel.id === 'classic-hogans'), false);
   console.log(`current snapshot channels: ${channels.map((channel) => channel.name).join(', ')}`);
   console.log('current snapshot dark-channel filter: passed');
 }

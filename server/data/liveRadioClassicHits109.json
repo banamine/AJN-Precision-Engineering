@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "note": "Classic Hits 109 family (9 streams from classichits109.com/assets/js/stations.js, probed 2026-10-14: all HTTP 200 audio/mpeg, access-control-allow-origin *, icy-metaint 8192). 'stations' are additions (skipped when the base lists already carry the id or stream URL). 'genreAdditions' are merged into stations already in the base lists. No logos yet.",
+  "stations": [
+    {
+      "id": "radio:ch109-original",
+      "name": "Classic Hits 109 - The Original (60s 70s 80s)",
+      "country": "CA",
+      "region": "Ontario",
+      "city": "Toronto",
+      "timeZone": "America/Toronto",
+      "genres": [
+        "Classic Hits",
+        "Oldies"
+      ],
+      "description": "The station that started it all. Unforgettable music from the 60s, 70s and 80s.",
+      "language": "en",
+      "streamUrl": "https://broadcast.classichits109.com/70s",
+      "streamType": "mp3",
+      "homepage": "https://www.classichits109.com/",
+      "enabled": true,
+      "verifiedAt": "2026-10-14",
+      "corsVerified": true,
+      "inGuide": false
+    },
+    {
+      "id": "radio:ch109-classic-rock-109",
+      "name": "Classic Hits 109 - Classic Rock 109",
+      "country": "CA",
+      "region": "Ontario",
+      "city": "Toronto",
+      "timeZone": "America/Toronto",
+      "genres": [
+        "Classic Rock",
+        "Classic Hits"
+      ],
+      "description": "The greatest bands and guitar-driven anthems of all time.",
+      "language": "en",
+      "streamUrl": "https://broadcast.classichits109.com/cr109",
+      "streamType": "mp3",
+      "homepage": "https://www.classichits109.com/",
+      "enabled": true,
+      "verifiedAt": "2026-10-14",
+      "corsVerified": true,
+      "inGuide": false
+    },
+    {
+      "id": "radio:ch109-warm-109",
+      "name": "Classic Hits 109 - Warm 109",
+      "country": "CA",
+      "region": "Ontario",
+      "city": "Toronto",
+      "timeZone": "America/Toronto",
+      "genres": [
+        "Easy Listening",
+        "Classic Hits"
+      ],
+      "description": "Easy listening, all day. Music for the office and beyond.",
+      "language": "en",
+      "streamUrl": "https://broadcast.classichits109.com/warm109",
+      "streamType": "mp3",
+      "homepage": "https://www.classichits109.com/",
+      "enabled": true,
+      "verifiedAt": "2026-10-14",
+      "corsVerified": true,
+      "inGuide": false
+    },
+    {
+      "id": "radio:ch109-summertime-hits",
+      "name": "Classic Hits 109 - Summertime Hits",
+      "country": "CA",
+      "region": "Ontario",
+      "city": "Toronto",
+      "timeZone": "America/Toronto",
+      "genres": [
+        "Classic Hits",
+        "Pop"
+      ],
+      "description": "Songs that bring back the summers you never forgot.",
+      "language": "en",
+      "streamUrl": "https://broadcast.classichits109.com/summerhits",
+      "streamType": "mp3",
+      "homepage": "https://www.classichits109.com/",
+      "enabled": true,
+      "verifiedAt": "2026-10-14",
+      "corsVerified": true,
+      "inGuide": false
+    },
+    {
+      "id": "radio:ch109-one-hit-wonders",
+      "name": "Classic Hits 109 - One Hit Wonders",
+      "country": "CA",
+      "region": "Ontario",
+      "city": "Toronto",
+      "timeZone": "America/Toronto",
+      "genres": [
+        "Classic Hits",
+        "Oldies"
+      ],
+      "description": "Unforgettable one-hit wonders that still sound incredible.",
+      "language": "en",
+      "streamUrl": "https://broadcast.classichits109.com/onehitwonders",
+      "streamType": "mp3",
+      "homepage": "https://www.classichits109.com/",
+      "enabled": true,
+      "verifiedAt": "2026-10-14",
+      "corsVerified": true,
+      "inGuide": false
+    },
+    {
+      "id": "radio:ch109-christmas",
+      "name": "Classic Hits 109 - Christmas",
+      "country": "CA",
+      "region": "Ontario",
+      "city": "Toronto",
+      "timeZone": "America/Toronto",
+      "genres": [
+        "Christmas",
+        "Classic Hits"
+      ],
+      "description": "Nonstop holiday favorites during the Christmas season.",
+      "language": "en",
+      "streamUrl": "https://broadcast.classichits109.com/christmas",
+      "streamType": "mp3",
+      "homepage": "https://www.classichits109.com/",
+      "enabled": true,
+      "verifiedAt": "2026-10-14",
+      "corsVerified": true,
+      "inGuide": false
+    }
+  ],
+  "genreAdditions": {
+    "radio:rb-34135e58-c4b4-4aaa-89b3-c42254ba7307": [
+      "Classic Hits"
+    ],
+    "radio:rb-c1cf4123-bf67-4058-a89a-70008a531976": [
+      "Country",
+      "Classic Hits"
+    ],
+    "radio:rb-c4481bd4-0a22-44f5-bec0-1b2556ddbe89": [
+      "Classic Hits"
+    ]
+  },
+  "descriptionAdditions": {
+    "radio:rb-34135e58-c4b4-4aaa-89b3-c42254ba7307": "Your favorite hits from three unforgettable decades: the 70s, 80s and 90s.",
+    "radio:rb-c1cf4123-bf67-4058-a89a-70008a531976": "Classic country favorites and timeless legends.",
+    "radio:rb-c4481bd4-0a22-44f5-bec0-1b2556ddbe89": "Unforgettable music from the 60s, 70s and 80s."
+  }
+}

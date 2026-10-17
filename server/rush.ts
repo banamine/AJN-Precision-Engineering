@@ -50,7 +50,7 @@ function saveCache() {
 
 export const rushStats = { cacheHits: 0, archiveCalls: 0 };
 let fetchImpl: typeof fetch = archiveApiFetch;
-export function setRushFetchForTests(f?: typeof fetch) { fetchImpl = f ?? archiveApiFetch; cache = {}; rushStats.cacheHits = 0; rushStats.archiveCalls = 0; }
+export function setRushFetchForTests(f?: typeof fetch) { fetchImpl = f ?? archiveApiFetch; cache = {}; snapshotSeeded = true; /* tests never read the packaged snapshot */ rushStats.cacheHits = 0; rushStats.archiveCalls = 0; }
 
 function seconds(v: unknown): number {
   if (typeof v === 'number') return v;
@@ -63,22 +63,51 @@ const track = (id: string, f: CacheEntry['files'][number]): RushTrack => {
   return { ...f, archivePath, mediaUrl: `/api/archive/proxy?path=${encodeURIComponent(archivePath)}` };
 };
 
-/** Files + durations for one Archive item: cache first, Archive metadata on a miss. */
-export async function resolveRushItem(id: string): Promise<{ id: string; source: 'cache' | 'archive'; resolvedAt: string; tracks: RushTrack[] }> {
-  const hit = loadCache()[id];
-  if (hit) { rushStats.cacheHits++; return { id, source: 'cache', resolvedAt: hit.resolvedAt, tracks: hit.files.map((f) => track(id, f)) }; }
-  rushStats.archiveCalls++;
-  const r = await fetchImpl(`https://archive.org/metadata/${encodeURIComponent(id)}`);
-  if (!r.ok) throw Object.assign(new Error(`metadata HTTP ${r.status}`), { status: 502 });
-  const meta: any = await r.json();
-  if (meta?.is_dark || !Array.isArray(meta?.files)) throw Object.assign(new Error('item unavailable'), { status: 404 });
-  const mp3 = meta.files.filter((f: any) => /\.mp3$/i.test(f.name) && String(f.private) !== 'true');
-  // Prefer the uploaded originals; fall back to derivatives (e.g. 64kb) if that is all there is.
+
+/** The playable MP3s of one Archive item's metadata: not private, uploaded originals preferred (derivatives only if that is all there is),
+ *  known duration, natural filename order. Shared by the live resolver and tools/build-audio-snapshot.ts so both always agree. */
+export function filesFromMetadata(meta: any): CacheEntry['files'] {
+  const mp3 = (meta?.files ?? []).filter((f: any) => /\.mp3$/i.test(f.name) && String(f.private) !== 'true');
   const originals = mp3.filter((f: any) => f.source === 'original');
-  const files = (originals.length ? originals : mp3)
+  return (originals.length ? originals : mp3)
     .map((f: any) => ({ file: String(f.name), durationSeconds: seconds(f.length), size: f.size ? Number(f.size) : undefined, format: f.format }))
     .filter((f: any) => f.durationSeconds > 0)
     .sort((a: any, b: any) => a.file.localeCompare(b.file, undefined, { numeric: true }));
+}
+
+/** Packaged snapshot of every whole-item audio channel's tracks (src/data/audioItemSnapshot.json, built by tools/build-audio-snapshot.ts).
+ *  A cold server (Cloud Run starts with no disk cache) answers from it with zero Archive calls; anything already in the
+ *  live/disk cache wins, and an item missing from the snapshot is still resolved from Archive as before. */
+let snapshotSeeded = false;
+async function seedSnapshot() {
+  if (snapshotSeeded) return;
+  snapshotSeeded = true;
+  try {
+    const mod: any = await import('../src/data/audioItemSnapshot.json');
+    const items = (mod.default ?? mod)?.items ?? {};
+    const c = loadCache();
+    for (const [id, e] of Object.entries<any>(items)) if (!c[id] && Array.isArray(e?.files) && e.files.length) c[id] = { resolvedAt: String(e.resolvedAt ?? ''), files: e.files };
+  } catch { /* no snapshot packaged: fall back to Archive */ }
+}
+
+/** Files + durations for one Archive item: cache first, Archive metadata on a miss. */
+export async function resolveRushItem(id: string): Promise<{ id: string; source: 'cache' | 'archive'; resolvedAt: string; tracks: RushTrack[] }> {
+  await seedSnapshot();
+  const hit = loadCache()[id];
+  if (hit) { rushStats.cacheHits++; return { id, source: 'cache', resolvedAt: hit.resolvedAt, tracks: hit.files.map((f) => track(id, f)) }; }
+  rushStats.archiveCalls++;
+  // Archive answers 502/ECONNRESET in bursts (seen at boot): retry transient failures before giving up.
+  let r: Response | undefined; let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try { r = await fetchImpl(`https://archive.org/metadata/${encodeURIComponent(id)}`); if (r.ok || (r.status < 500 && r.status !== 429)) break; }
+    catch (e) { lastErr = e; r = undefined; }
+    if (attempt < 2) await new Promise((res) => setTimeout(res, attempt === 0 ? 700 : 2000));
+  }
+  if (!r) throw Object.assign(new Error(`metadata fetch failed: ${(lastErr as Error)?.message ?? 'network'}`), { status: 502 });
+  if (!r.ok) throw Object.assign(new Error(`metadata HTTP ${r.status}`), { status: 502 });
+  const meta: any = await r.json();
+  if (meta?.is_dark || !Array.isArray(meta?.files)) throw Object.assign(new Error('item unavailable'), { status: 404 });
+  const files = filesFromMetadata(meta);
   if (!files.length) throw Object.assign(new Error('no MP3 with a known duration'), { status: 422 });
   const entry = { resolvedAt: new Date().toISOString(), files };
   loadCache()[id] = entry;

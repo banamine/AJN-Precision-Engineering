@@ -1,0 +1,5722 @@
+{
+ "schema": "ajn.showInfo.v1",
+ "generatedAt": "2026-10-06T23:59:24Z",
+ "source": "TVmaze (https://www.tvmaze.com), CC BY-SA 4.0. Credit TVmaze wherever this data is shown.",
+ "note": "overview and details.note are intentionally empty: they are written by a human. Reference text for the writer is in showInfo.writer-notes.json (CC BY-SA; do not display).",
+ "count": 104,
+ "shows": [
+  {
+   "id": "tvmaze-1407",
+   "title": "1600 Penn",
+   "years": {
+    "start": 2012,
+    "end": 2013
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 2012-13 · Josh Gad +5",
+   "cast": [
+    {
+     "name": "Josh Gad",
+     "role": "Standrich 'Skip' Gilchrist"
+    },
+    {
+     "name": "Jenna Elfman",
+     "role": "Emily Nash Gilchrist"
+    },
+    {
+     "name": "Martha MacIsaac",
+     "role": "Becca Gilchrist"
+    },
+    {
+     "name": "André Holland",
+     "role": "Marshall Malloy"
+    },
+    {
+     "name": "Bill Pullman",
+     "role": "President Dale Gilchrist"
+    },
+    {
+     "name": "Amara Miller",
+     "role": "Marigold Gilchrist"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1407/1600-penn",
+    "id": 1407,
+    "imdbId": "tt2266639",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "1600.-penn.-s-01-e-07.-hdtv.x-264"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt2266639/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-15046",
+   "title": "Action",
+   "years": {
+    "start": 1999,
+    "end": 1999
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1999 · Jack Plotnick +4",
+   "cast": [
+    {
+     "name": "Jack Plotnick",
+     "role": "Stuart Glazer"
+    },
+    {
+     "name": "Buddy Hackett",
+     "role": "Lonnie Dragon"
+    },
+    {
+     "name": "Jay Mohr",
+     "role": "Peter Dragon"
+    },
+    {
+     "name": "Jarrad Paul",
+     "role": "Adam Rafkin"
+    },
+    {
+     "name": "Illeana Douglas",
+     "role": "Wendy Ward"
+    }
+   ],
+   "details": {
+    "network": "FOX",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/15046/action",
+    "id": 15046,
+    "imdbId": "tt0206467",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "action_1999"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0206467/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-3646",
+   "title": "Alien Nation",
+   "years": {
+    "start": 1989,
+    "end": 1997
+   },
+   "genres": [
+    "Drama",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Drama, Science-Fiction · 1989-97 · Michele Scarabelli +5",
+   "cast": [
+    {
+     "name": "Michele Scarabelli",
+     "role": "Susan Francisco"
+    },
+    {
+     "name": "Eric Pierpoint",
+     "role": "Detective George Francisco"
+    },
+    {
+     "name": "Gary Graham",
+     "role": "Detective Matthew Sikes"
+    },
+    {
+     "name": "Sean Six",
+     "role": "Buck Francisco"
+    },
+    {
+     "name": "Terri Treas",
+     "role": "Cathy Frankel"
+    },
+    {
+     "name": "Lauren Woodland",
+     "role": "Emily Francisco"
+    }
+   ],
+   "details": {
+    "network": "FOX",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3646/alien-nation",
+    "id": 3646,
+    "imdbId": "tt0096531",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "alien-nation-1988"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0096531/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-5388",
+   "title": "Amen",
+   "years": {
+    "start": 1986,
+    "end": 1991
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1986-91 · Sherman Hemsley +5",
+   "cast": [
+    {
+     "name": "Sherman Hemsley",
+     "role": "Deacon Ernest Frye"
+    },
+    {
+     "name": "Anna Maria Horsford",
+     "role": "Thelma Frye-Gregory"
+    },
+    {
+     "name": "Jester Hairston",
+     "role": "Rolly Forbes"
+    },
+    {
+     "name": "Roz Ryan",
+     "role": "Amelia Hetebrink"
+    },
+    {
+     "name": "Clifton Davis",
+     "role": "Rev. Reuben Gregory"
+    },
+    {
+     "name": "Barbara Montgomery",
+     "role": "Casietta Hetebrink"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/5388/amen",
+    "id": 5388,
+    "imdbId": "tt0090395",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "amen-season-1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0090395/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-3509",
+   "title": "American Experience",
+   "years": {
+    "start": 1988,
+    "end": null
+   },
+   "genres": [
+    "History"
+   ],
+   "overview": "",
+   "blurb": "History · 1988-present · David McCullough +1",
+   "cast": [
+    {
+     "name": "David McCullough",
+     "role": "Host"
+    },
+    {
+     "name": "Will Lyman",
+     "role": "Narrator"
+    }
+   ],
+   "details": {
+    "network": "PBS",
+    "status": "running",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3509/american-experience",
+    "id": 3509,
+    "imdbId": "tt0094416",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-american-experience"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0094416/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-3767",
+   "title": "Archie Bunker's Place",
+   "years": {
+    "start": 1979,
+    "end": 1983
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1979-83 · Carroll O'Connor +5",
+   "cast": [
+    {
+     "name": "Carroll O'Connor",
+     "role": "Archie Bunker"
+    },
+    {
+     "name": "Barry Gordon",
+     "role": "Gary Rabinowitz"
+    },
+    {
+     "name": "Allan Melvin",
+     "role": "Barney Hefner"
+    },
+    {
+     "name": "Anne Meara",
+     "role": "Veronica Rooney"
+    },
+    {
+     "name": "Jean Stapleton",
+     "role": "Edith Bunker"
+    },
+    {
+     "name": "Barbara Meek",
+     "role": "Ellen Canby"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3767/archie-bunkers-place",
+    "id": 3767,
+    "imdbId": "tt0078562",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "archie-bunkers-place-complete-series"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0078562/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-4379",
+   "title": "Bat Masterson",
+   "years": {
+    "start": 1958,
+    "end": 1961
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1958-61 · Gene Barry",
+   "cast": [
+    {
+     "name": "Gene Barry",
+     "role": "Bat Masterson"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/4379/bat-masterson",
+    "id": 4379,
+    "imdbId": "tt0052445",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "bat-masterson-s-02-e-07-dead-men-dont-pay-debts"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0052445/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-1070",
+   "title": "Baywatch",
+   "years": {
+    "start": 1989,
+    "end": 2001
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Adventure"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1989-01 · David Hasselhoff +5",
+   "cast": [
+    {
+     "name": "David Hasselhoff",
+     "role": "Mitch Buchannon"
+    },
+    {
+     "name": "Jeremy Jackson",
+     "role": "Hobie Buchannon"
+    },
+    {
+     "name": "Brandon Call",
+     "role": "Hobie Buchannon"
+    },
+    {
+     "name": "Michael Newman",
+     "role": "Mike \"Newmie\" Newman"
+    },
+    {
+     "name": "Pamela Anderson",
+     "role": "C.J. Parker"
+    },
+    {
+     "name": "David Chokachi",
+     "role": "Cody Madison"
+    }
+   ],
+   "details": {
+    "network": "Syndication",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1070/baywatch",
+    "id": 1070,
+    "imdbId": "tt0096542",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "baywatch_202212"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0096542/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-2891",
+   "title": "Black Sheep Squadron",
+   "years": {
+    "start": 1976,
+    "end": 1978
+   },
+   "genres": [
+    "Drama",
+    "War"
+   ],
+   "overview": "",
+   "blurb": "Drama, War · 1976-78 · Robert Conrad +5",
+   "cast": [
+    {
+     "name": "Robert Conrad",
+     "role": "Maj. Gregory \"Pappy\" Boyington"
+    },
+    {
+     "name": "Dirk Blocker",
+     "role": "Lt. Jerome \"Jerry\" Bragg"
+    },
+    {
+     "name": "W.K. Stratton",
+     "role": "Lawrence \"Larry\" Casey"
+    },
+    {
+     "name": "Jeff MacKay",
+     "role": "1st. Lt. Donald French"
+    },
+    {
+     "name": "Larry Manetti",
+     "role": "1st. Lt. Robert Boyle"
+    },
+    {
+     "name": "Dana Elcar",
+     "role": "Col. Thomas Lard"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2891/black-sheep-squadron",
+    "id": 2891,
+    "imdbId": "tt0073961",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "ba-baa_blacksheep_Lando18"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0073961/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-8423",
+   "title": "Branded",
+   "years": {
+    "start": 1965,
+    "end": 1966
+   },
+   "genres": [
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Western · 1965-66 · Chuck Connors",
+   "cast": [
+    {
+     "name": "Chuck Connors",
+     "role": "Jason McCord"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/8423/branded",
+    "id": 8423,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "branded-s-02-e-22-barbed-wire_202405"
+    ],
+    "imdbUrl": null
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-11518",
+   "title": "Brooklyn South",
+   "years": {
+    "start": 1997,
+    "end": 1998
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1997-98 · Dylan Walsh +5",
+   "cast": [
+    {
+     "name": "Dylan Walsh",
+     "role": "Off. Jimmy Doyle"
+    },
+    {
+     "name": "Jon Tenney",
+     "role": "Patrol Sgt. Francis X. Donovan"
+    },
+    {
+     "name": "Michael DeLuise",
+     "role": "Off. Phil Roussakoff"
+    },
+    {
+     "name": "Adam Rodriguez",
+     "role": "Off. Hector Villanueva"
+    },
+    {
+     "name": "Gary Basaraba",
+     "role": "Sgt. Richard Santoro"
+    },
+    {
+     "name": "James B. Sikking",
+     "role": "Capt. Stan Jonas"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/11518/brooklyn-south",
+    "id": 11518,
+    "imdbId": "tt0118275",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "brooklyn_south"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0118275/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-5486",
+   "title": "Chico and the Man",
+   "years": {
+    "start": 1974,
+    "end": 1978
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1974-78 · Jack Albertson +1",
+   "cast": [
+    {
+     "name": "Jack Albertson",
+     "role": "Ed Brown"
+    },
+    {
+     "name": "Freddie Prinze",
+     "role": "Chico Rodriguez"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/5486/chico-and-the-man",
+    "id": 5486,
+    "imdbId": "tt0070975",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "chico-the-man"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0070975/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-7531",
+   "title": "Coach",
+   "years": {
+    "start": 1989,
+    "end": 1997
+   },
+   "genres": [
+    "Comedy",
+    "Sports"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Sports · 1989-97 · Craig T. Nelson +5",
+   "cast": [
+    {
+     "name": "Craig T. Nelson",
+     "role": "Hayden Fox"
+    },
+    {
+     "name": "Jerry Van Dyke",
+     "role": "Luther Van Dam"
+    },
+    {
+     "name": "Shelley Fabares",
+     "role": "Christine Armstrong"
+    },
+    {
+     "name": "Bill Fagerbakke",
+     "role": "Michael \"Dauber\" Dybinski"
+    },
+    {
+     "name": "Clare Carey",
+     "role": "Kelly Fox"
+    },
+    {
+     "name": "Kris Kamm",
+     "role": "Stuart Rosebrock"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/7531/coach",
+    "id": 7531,
+    "imdbId": "tt0096560",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "coach-season-1_202311"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0096560/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-58442",
+   "title": "Colonel March of Scotland Yard",
+   "years": {
+    "start": 1956,
+    "end": 1957
+   },
+   "genres": [
+    "Drama",
+    "Crime",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1956-57",
+   "cast": [],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/58442/colonel-march-of-scotland-yard",
+    "id": 58442,
+    "imdbId": "tt0046588",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "colonel-march-of-scotland-yard-s-01-e-01-the-sorcerer-1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0046588/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-36162",
+   "title": "David Copperfield",
+   "years": {
+    "start": 1986,
+    "end": 1986
+   },
+   "genres": [
+    "Drama"
+   ],
+   "overview": "",
+   "blurb": "Drama · 1986",
+   "cast": [],
+   "details": {
+    "network": "BBC One",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/36162/david-copperfield",
+    "id": 36162,
+    "imdbId": "tt0092335",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "david-copperfield-1986_202404"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0092335/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-21771",
+   "title": "Death Valley Days",
+   "years": {
+    "start": 1952,
+    "end": 1970
+   },
+   "genres": [
+    "Drama",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Drama, Western · 1952-70 · Stanley Andrews +4",
+   "cast": [
+    {
+     "name": "Stanley Andrews",
+     "role": "Old Ranger"
+    },
+    {
+     "name": "Robert Taylor",
+     "role": "Presenter"
+    },
+    {
+     "name": "Ronald Reagan",
+     "role": "Presenter"
+    },
+    {
+     "name": "Rosemary DeCamp",
+     "role": "Presenter"
+    },
+    {
+     "name": "Dale Robertson",
+     "role": "Presenter"
+    }
+   ],
+   "details": {
+    "network": "Syndication",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/21771/death-valley-days",
+    "id": 21771,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "0251114_1101",
+     "death-valley-days-s-01-e-04-the-lost-pegleg-mine",
+     "death-valley-days"
+    ],
+    "imdbUrl": null
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-94465",
+   "title": "Doctor at Large",
+   "years": {
+    "start": 1971,
+    "end": 1971
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1971 · Barry Evans",
+   "cast": [
+    {
+     "name": "Barry Evans",
+     "role": "Michael Upton"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/94465/doctor-at-large",
+    "id": 94465,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "doctor-at-large-1971"
+    ],
+    "imdbUrl": null
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-40072",
+   "title": "Doctor Dolittle",
+   "years": {
+    "start": 1970,
+    "end": 1971
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Children"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1970-71 · Bob Holt +2",
+   "cast": [
+    {
+     "name": "Bob Holt",
+     "role": "Doctor Dolittle"
+    },
+    {
+     "name": "Hal Smith",
+     "role": "Tommy Stubbins"
+    },
+    {
+     "name": "Lennie Weinrib",
+     "role": "Sam Scurvy"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/40072/doctor-dolittle",
+    "id": 40072,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "doctor-dolittle-complete-series-1970"
+    ],
+    "imdbUrl": null
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-40790",
+   "title": "East Side/West Side",
+   "years": {
+    "start": 1963,
+    "end": 1964
+   },
+   "genres": [
+    "Drama",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1963-64 · George C. Scott +2",
+   "cast": [
+    {
+     "name": "George C. Scott",
+     "role": "Neil Brock"
+    },
+    {
+     "name": "Elizabeth Wilson",
+     "role": "Frieda Hechlinger"
+    },
+    {
+     "name": "Cicely Tyson",
+     "role": "Jane Foster"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/40790/east-sidewest-side",
+    "id": 40790,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "east_side_west_side"
+    ],
+    "imdbUrl": null
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-58702",
+   "title": "Enos",
+   "years": {
+    "start": 1980,
+    "end": 1981
+   },
+   "genres": [],
+   "overview": "",
+   "blurb": "1980-81 · Sonny Shroyer +4",
+   "cast": [
+    {
+     "name": "Sonny Shroyer",
+     "role": "Officer Enos Strate"
+    },
+    {
+     "name": "John Dehner",
+     "role": "Lt. Jacob Broggi"
+    },
+    {
+     "name": "Samuel E. Wright",
+     "role": "Officer Turk Adams"
+    },
+    {
+     "name": "John Milford",
+     "role": "Capt. Dempsey"
+    },
+    {
+     "name": "C. Pete Munro",
+     "role": "Detective Bigalow"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/58702/enos",
+    "id": 58702,
+    "imdbId": "tt0080213",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "enostvshow"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0080213/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-3254",
+   "title": "Father Ted",
+   "years": {
+    "start": 1995,
+    "end": 1998
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1995-98 · Dermot Morgan +3",
+   "cast": [
+    {
+     "name": "Dermot Morgan",
+     "role": "Father Ted Crilly"
+    },
+    {
+     "name": "Ardal O'Hanlon",
+     "role": "Father Dougal McGuire"
+    },
+    {
+     "name": "Frank Kelly",
+     "role": "Father Jack Hackett"
+    },
+    {
+     "name": "Pauline McLynn",
+     "role": "Mrs. Doyle"
+    }
+   ],
+   "details": {
+    "network": "Channel 4",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3254/father-ted",
+    "id": 3254,
+    "imdbId": "tt0111958",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "father-ted-2005"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0111958/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-577",
+   "title": "Fawlty Towers",
+   "years": {
+    "start": 1975,
+    "end": 1979
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1975-79 · John Cleese +5",
+   "cast": [
+    {
+     "name": "John Cleese",
+     "role": "Basil Fawlty"
+    },
+    {
+     "name": "Prunella Scales",
+     "role": "Sybil Fawlty"
+    },
+    {
+     "name": "Connie Booth",
+     "role": "Polly Sherman"
+    },
+    {
+     "name": "Andrew Sachs",
+     "role": "Manuel"
+    },
+    {
+     "name": "Ballard Berkeley",
+     "role": "The Major"
+    },
+    {
+     "name": "Gilly Flower",
+     "role": "Miss Tibbs"
+    }
+   ],
+   "details": {
+    "network": "BBC Two",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/577/fawlty-towers",
+    "id": 577,
+    "imdbId": "tt0072500",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "fawlty-towers-complete-series-1975"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0072500/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-1879",
+   "title": "Femme Fatales",
+   "years": {
+    "start": 2011,
+    "end": 2012
+   },
+   "genres": [
+    "Crime",
+    "Thriller"
+   ],
+   "overview": "",
+   "blurb": "Crime, Thriller · 2011-12 · Tanit Phoenix",
+   "cast": [
+    {
+     "name": "Tanit Phoenix",
+     "role": "Lilith"
+    }
+   ],
+   "details": {
+    "network": "Cinemax",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1879/femme-fatales",
+    "id": 1879,
+    "imdbId": "tt1841108",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "femme-fatales-s1-s2-complete"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt1841108/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-6032",
+   "title": "Galactica 1980",
+   "years": {
+    "start": 1980,
+    "end": 1980
+   },
+   "genres": [
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Science-Fiction · 1980 · Lorne Greene +5",
+   "cast": [
+    {
+     "name": "Lorne Greene",
+     "role": "Commander Adama"
+    },
+    {
+     "name": "Barry Van Dyke",
+     "role": "Lt. Dillon"
+    },
+    {
+     "name": "James Patrick Stuart",
+     "role": "Dr. Zee"
+    },
+    {
+     "name": "Kent McCord",
+     "role": "Captain Troy"
+    },
+    {
+     "name": "Robyn Douglass",
+     "role": "Jamie Hamilton"
+    },
+    {
+     "name": "Herbert Jefferson, Jr.",
+     "role": "Colonel Boomer"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/6032/galactica-1980",
+    "id": 6032,
+    "imdbId": "tt0080221",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "s-02-e-07-e-08-tha-night-the-cylons-landed"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0080221/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-3659",
+   "title": "Gemini Man",
+   "years": {
+    "start": 1976,
+    "end": 1976
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1976 · Ben Murphy +2",
+   "cast": [
+    {
+     "name": "Ben Murphy",
+     "role": "Sam Casey"
+    },
+    {
+     "name": "William Sylvester",
+     "role": "Leonard Driscoll"
+    },
+    {
+     "name": "Katherine Crawford",
+     "role": "Dr. Abbey Lawrence"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3659/gemini-man",
+    "id": 3659,
+    "imdbId": "tt0073994",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "geminiman_202203"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0073994/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-4340",
+   "title": "Get Smart",
+   "years": {
+    "start": 1965,
+    "end": 1970
+   },
+   "genres": [
+    "Comedy",
+    "Science-Fiction",
+    "Espionage"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Science-Fiction · 1965-70 · Don Adams +2",
+   "cast": [
+    {
+     "name": "Don Adams",
+     "role": "Maxwell Smart"
+    },
+    {
+     "name": "Barbara Feldon",
+     "role": "Agent 99"
+    },
+    {
+     "name": "Edward Platt",
+     "role": "Chief"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/4340/get-smart",
+    "id": 4340,
+    "imdbId": "tt0058805",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "get-smart"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0058805/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-782",
+   "title": "Gunsmoke",
+   "years": {
+    "start": 1955,
+    "end": 1975
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1955-75 · James Arness +5",
+   "cast": [
+    {
+     "name": "James Arness",
+     "role": "Marshall Matt Dillon"
+    },
+    {
+     "name": "Milburn Stone",
+     "role": "Dr. Galen \"Doc\" Adams"
+    },
+    {
+     "name": "Amanda Blake",
+     "role": "Kitty Russell"
+    },
+    {
+     "name": "Ken Curtis",
+     "role": "Festus Haggen"
+    },
+    {
+     "name": "Dennis Weaver",
+     "role": "Deputy Chester Goode"
+    },
+    {
+     "name": "Buck Taylor",
+     "role": "Newly O'Brien"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/782/gunsmoke",
+    "id": 782,
+    "imdbId": "tt0047736",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "gunsmoke-s-01-e-01-matt-gets-it_202509"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0047736/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-16545",
+   "title": "Hamish Macbeth",
+   "years": {
+    "start": 1995,
+    "end": 1997
+   },
+   "genres": [
+    "Drama",
+    "Comedy",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Comedy · 1995-97 · Robert Carlyle +5",
+   "cast": [
+    {
+     "name": "Robert Carlyle",
+     "role": "Hamish Macbeth"
+    },
+    {
+     "name": "Ralph Riach",
+     "role": "John James McIver \"TV John\""
+    },
+    {
+     "name": "Barbara Rafferty",
+     "role": "Agnes Meldrum"
+    },
+    {
+     "name": "Anne Lacey",
+     "role": "Esme Murray"
+    },
+    {
+     "name": "Brian Pettifer",
+     "role": "Rory Duncan Campbell"
+    },
+    {
+     "name": "Shirley Henderson",
+     "role": "Isobel Sutherland"
+    }
+   ],
+   "details": {
+    "network": "BBC One",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/16545/hamish-macbeth",
+    "id": 16545,
+    "imdbId": "tt0111993",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "s-01-e-02-a-pillar-of-the-community"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0111993/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-3360",
+   "title": "Have Gun - Will Travel",
+   "years": {
+    "start": 1957,
+    "end": 1963
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1957-63 · Richard Boone",
+   "cast": [
+    {
+     "name": "Richard Boone",
+     "role": "Paladin"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3360/have-gun-will-travel",
+    "id": 3360,
+    "imdbId": "tt0050025",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "s-01.-e-17-ella-west.ia"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0050025/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-23976",
+   "title": "Hawaiian Heat",
+   "years": {
+    "start": 1984,
+    "end": 1984
+   },
+   "genres": [
+    "Drama"
+   ],
+   "overview": "",
+   "blurb": "Drama · 1984 · Robert Ginty +4",
+   "cast": [
+    {
+     "name": "Robert Ginty",
+     "role": "Mac Riley"
+    },
+    {
+     "name": "Jeff McCracken",
+     "role": "Andy Senkowski"
+    },
+    {
+     "name": "Tracy Scoggins",
+     "role": "Irene Gorley"
+    },
+    {
+     "name": "Branscombe Richmond",
+     "role": "Harker"
+    },
+    {
+     "name": "Mako",
+     "role": "Maj. Taro Oshira"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/23976/hawaiian-heat",
+    "id": 23976,
+    "imdbId": "tt0086724",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "HawaiianHeat"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0086724/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-1475",
+   "title": "Hogan's Heroes",
+   "years": {
+    "start": 1965,
+    "end": 1971
+   },
+   "genres": [
+    "Comedy",
+    "Action",
+    "War"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Action · 1965-71 · Bob Crane +5",
+   "cast": [
+    {
+     "name": "Bob Crane",
+     "role": "Col. Robert Hogan"
+    },
+    {
+     "name": "Werner Klemperer",
+     "role": "Col. Wilhelm Klink"
+    },
+    {
+     "name": "John Banner",
+     "role": "Sgt. Hans Schultz"
+    },
+    {
+     "name": "Robert Clary",
+     "role": "Cpl. Louis LeBeau"
+    },
+    {
+     "name": "Richard Dawson",
+     "role": "Cpl. Peter Newkirk"
+    },
+    {
+     "name": "Larry Hovis",
+     "role": "Sgt. Andrew Carter"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1475/hogans-heroes",
+    "id": 1475,
+    "imdbId": "tt0058812",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-hogans"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0058812/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-20985",
+   "title": "Hondo",
+   "years": {
+    "start": 1967,
+    "end": 1967
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1967 · Ralph Taeger +5",
+   "cast": [
+    {
+     "name": "Ralph Taeger",
+     "role": "Hondo Lane"
+    },
+    {
+     "name": "Noah Beery, Jr.",
+     "role": "Buffalo Baker"
+    },
+    {
+     "name": "Gary Clarke",
+     "role": "Captain Richards"
+    },
+    {
+     "name": "Kathie Browne",
+     "role": "Angie Dow"
+    },
+    {
+     "name": "Buddy Foster",
+     "role": "Johnny Dow"
+    },
+    {
+     "name": "William Bryant",
+     "role": "Colonel Crook"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/20985/hondo",
+    "id": 20985,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "hondo-s-01-e-01-hondo-and-the-eagle-claw"
+    ],
+    "imdbUrl": null
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-42815",
+   "title": "Interpol Calling",
+   "years": {
+    "start": 1959,
+    "end": 1960
+   },
+   "genres": [
+    "Drama",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1959-60 · Charles Korvin +1",
+   "cast": [
+    {
+     "name": "Charles Korvin",
+     "role": "Inspector Duval"
+    },
+    {
+     "name": "Edwin Richfield",
+     "role": "Inspector Mornay"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/42815/interpol-calling",
+    "id": 42815,
+    "imdbId": "tt0052475",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "interpol-calling-s-01-e-14-the-mans-a-clown"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0052475/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-1754",
+   "title": "Ironside",
+   "years": {
+    "start": 1967,
+    "end": 1993
+   },
+   "genres": [
+    "Drama",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1967-93 · Raymond Burr +4",
+   "cast": [
+    {
+     "name": "Raymond Burr",
+     "role": "Robert Ironside"
+    },
+    {
+     "name": "Don Galloway",
+     "role": "Det. Sgt. Ed Brown"
+    },
+    {
+     "name": "Don Mitchell",
+     "role": "Mark Sanger"
+    },
+    {
+     "name": "Elizabeth Baur",
+     "role": "Fran Belding"
+    },
+    {
+     "name": "Barbara Anderson",
+     "role": "Eve Whitfield"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1754/ironside",
+    "id": 1754,
+    "imdbId": "tt0061266",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "ironsides02"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0061266/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-1483",
+   "title": "Irwin Allen's Lost in Space",
+   "years": {
+    "start": 1965,
+    "end": 1968
+   },
+   "genres": [
+    "Drama",
+    "Adventure",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Drama, Adventure · 1965-68 · Guy Williams +5",
+   "cast": [
+    {
+     "name": "Guy Williams",
+     "role": "Professor John Robinson"
+    },
+    {
+     "name": "June Lockhart",
+     "role": "Dr. Maureen Robinson"
+    },
+    {
+     "name": "Jonathan Harris",
+     "role": "Dr. Zachary Smith"
+    },
+    {
+     "name": "Bill Mumy",
+     "role": "Will Robinson"
+    },
+    {
+     "name": "Dick Tufeld",
+     "role": "Narrator"
+    },
+    {
+     "name": "Dick Tufeld",
+     "role": "Robot"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1483/irwin-allens-lost-in-space",
+    "id": 1483,
+    "imdbId": "tt0058824",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "lostinspaceseason1episode1incolor_202004"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0058824/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-7738",
+   "title": "It Ain't Half Hot Mum",
+   "years": {
+    "start": 1974,
+    "end": 1981
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1974-81 · Windsor Davies +5",
+   "cast": [
+    {
+     "name": "Windsor Davies",
+     "role": "Battery Sergeant-Major 'Shut Up' Williams"
+    },
+    {
+     "name": "Melvyn Hayes",
+     "role": "'Gloria' Beaumont"
+    },
+    {
+     "name": "Don Estelle",
+     "role": "Gunner 'Lofty' Sugden"
+    },
+    {
+     "name": "Donald Hewlett",
+     "role": "Colonel Reynolds"
+    },
+    {
+     "name": "Michael Knowles",
+     "role": "Captain Ashwood"
+    },
+    {
+     "name": "Michael Bates",
+     "role": "Rangi Ram"
+    }
+   ],
+   "details": {
+    "network": "BBC One",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/7738/it-aint-half-hot-mum",
+    "id": 7738,
+    "imdbId": "tt0081878",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "it-aint-half-hot-mum-s-06-e-04-the-dhobi-wallahs"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0081878/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-7048",
+   "title": "Jack & Bobby",
+   "years": {
+    "start": 2004,
+    "end": 2005
+   },
+   "genres": [
+    "Drama"
+   ],
+   "overview": "",
+   "blurb": "Drama · 2004-05 · Christine Lahti +5",
+   "cast": [
+    {
+     "name": "Christine Lahti",
+     "role": "Grace McCallister"
+    },
+    {
+     "name": "Matt Long",
+     "role": "Jack McCallister"
+    },
+    {
+     "name": "Logan Lerman",
+     "role": "Bobby McCallister"
+    },
+    {
+     "name": "Jessica Paré",
+     "role": "Courtney Benedict"
+    },
+    {
+     "name": "Edwin Hodge",
+     "role": "Marcus Ride"
+    },
+    {
+     "name": "John Slattery",
+     "role": "Peter Benedict"
+    }
+   ],
+   "details": {
+    "network": "The WB",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/7048/jack-bobby",
+    "id": 7048,
+    "imdbId": "tt0410997",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "jack-bobby-1x-01-pilot"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0410997/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-4722",
+   "title": "Joanie Loves Chachi",
+   "years": {
+    "start": 1982,
+    "end": 1983
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1982-83 · Erin Moran +5",
+   "cast": [
+    {
+     "name": "Erin Moran",
+     "role": "Joanie Cunningham"
+    },
+    {
+     "name": "Al Molinaro",
+     "role": "Al Delvecchio"
+    },
+    {
+     "name": "Derrel Maury",
+     "role": "Mario"
+    },
+    {
+     "name": "Ellen Travolta",
+     "role": "Louisa Arcola Delvecchio"
+    },
+    {
+     "name": "Winifred Freedman",
+     "role": "Annette"
+    },
+    {
+     "name": "Robert Pierce",
+     "role": "Bingo"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/4722/joanie-loves-chachi",
+    "id": 4722,
+    "imdbId": "tt0083433",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "joanieloveschachicompletedvdrip"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0083433/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-21767",
+   "title": "Johnny Staccato",
+   "years": {
+    "start": 1959,
+    "end": 1960
+   },
+   "genres": [
+    "Drama",
+    "Crime",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1959-60 · John Cassavetes",
+   "cast": [
+    {
+     "name": "John Cassavetes",
+     "role": "Johnny Staccato"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/21767/johnny-staccato",
+    "id": 21767,
+    "imdbId": "tt0052479",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "johnny-staccato.-s-01-e-26.-a-nice-little-town",
+     "johnny_staccato"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0052479/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-3564",
+   "title": "Kolchak: The Night Stalker",
+   "years": {
+    "start": 1972,
+    "end": 1975
+   },
+   "genres": [
+    "Comedy",
+    "Horror",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Horror · 1972-75 · Darren McGavin +5",
+   "cast": [
+    {
+     "name": "Darren McGavin",
+     "role": "Carl Kolchak"
+    },
+    {
+     "name": "Simon Oakland",
+     "role": "Tony Vincenzo"
+    },
+    {
+     "name": "Wally Cox",
+     "role": "Titus Berry"
+    },
+    {
+     "name": "Margaret Hamilton",
+     "role": "Prof. Hester Crabwell"
+    },
+    {
+     "name": "Scott Brady",
+     "role": "Capt. Roscoe Schubert"
+    },
+    {
+     "name": "Jo Ann Pflug",
+     "role": "Louise Harper"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3564/kolchak-the-night-stalker",
+    "id": 3564,
+    "imdbId": "tt0071003",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "KolchakTheNightStalker"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0071003/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-14924",
+   "title": "Maigret",
+   "years": {
+    "start": 1960,
+    "end": 1963
+   },
+   "genres": [],
+   "overview": "",
+   "blurb": "1960-63 · Rupert Davies +1",
+   "cast": [
+    {
+     "name": "Rupert Davies",
+     "role": "Inspector Maigret"
+    },
+    {
+     "name": "Ewen Solon",
+     "role": "Sgt. Lucas"
+    }
+   ],
+   "details": {
+    "network": "BBC One",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/14924/maigret",
+    "id": 14924,
+    "imdbId": "tt0159178",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "s-01-e-01-murder-in-monmartre-1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0159178/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-2131",
+   "title": "Major Dad",
+   "years": {
+    "start": 1989,
+    "end": 1993
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1989-93 · Gerald McRaney +5",
+   "cast": [
+    {
+     "name": "Gerald McRaney",
+     "role": "Major John D. \"Mac\" MacGillis"
+    },
+    {
+     "name": "Shanna Reed",
+     "role": "Polly Cooper-MacGillis"
+    },
+    {
+     "name": "Marisa Ryan",
+     "role": "Elizabeth Cooper-MacGillis"
+    },
+    {
+     "name": "Matt Mulhern",
+     "role": "Lt. Gene Holowachuk"
+    },
+    {
+     "name": "Chelsea Hertford",
+     "role": "Casey Cooper-MacGillis"
+    },
+    {
+     "name": "Nicole Dubuc",
+     "role": "Robin Cooper-MacGillis"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2131/major-dad",
+    "id": 2131,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "major-dad"
+    ],
+    "imdbUrl": null
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-6028",
+   "title": "Man About the House",
+   "years": {
+    "start": 1973,
+    "end": 1976
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1973-76 · Richard O'Sullivan +4",
+   "cast": [
+    {
+     "name": "Richard O'Sullivan",
+     "role": "Robin Tripp"
+    },
+    {
+     "name": "Paula Wilcox",
+     "role": "Chrissy Plumber"
+    },
+    {
+     "name": "Sally Thomsett",
+     "role": "Jo"
+    },
+    {
+     "name": "Yootha Joyce",
+     "role": "Mrs. Mildred Roper"
+    },
+    {
+     "name": "Brian Murphy",
+     "role": "Mr. George Roper"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/6028/man-about-the-house",
+    "id": 6028,
+    "imdbId": "tt0069607",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "man-about-the-house-1973-76"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0069607/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-38770",
+   "title": "Man with a Camera",
+   "years": {
+    "start": 1958,
+    "end": 1960
+   },
+   "genres": [
+    "Drama",
+    "Crime",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1958-60 · Charles Bronson +2",
+   "cast": [
+    {
+     "name": "Charles Bronson",
+     "role": "Mike Kovac"
+    },
+    {
+     "name": "Ludwig Stossel",
+     "role": "Anton Kovac"
+    },
+    {
+     "name": "James Flavin",
+     "role": "Lt. Donovan"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/38770/man-with-a-camera",
+    "id": 38770,
+    "imdbId": "tt0051293",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "man-with-a-camera-s-01-e-04-turntable"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0051293/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-10561",
+   "title": "Most Shocking",
+   "years": {
+    "start": 2006,
+    "end": 2010
+   },
+   "genres": [],
+   "overview": "",
+   "blurb": "2006-10",
+   "cast": [],
+   "details": {
+    "network": "truTV",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/10561/most-shocking",
+    "id": 10561,
+    "imdbId": "tt0944181",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "Most_Shocking-TV_Series-2006-2010"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0944181/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-2083",
+   "title": "Murder, She Wrote",
+   "years": {
+    "start": 1984,
+    "end": 2003
+   },
+   "genres": [
+    "Drama",
+    "Crime",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1984-03 · Angela Lansbury +1",
+   "cast": [
+    {
+     "name": "Angela Lansbury",
+     "role": "Jessica Beatrice \"J.B.\" Fletcher"
+    },
+    {
+     "name": "Keith Michell",
+     "role": "Dennis Stanton"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2083/murder-she-wrote",
+    "id": 2083,
+    "imdbId": "tt0086765",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "murder-she-wrote_202402"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0086765/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-14401",
+   "title": "Naked City",
+   "years": {
+    "start": 1958,
+    "end": 1963
+   },
+   "genres": [
+    "Drama",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1958-63 · Lawrence Dobkin +5",
+   "cast": [
+    {
+     "name": "Lawrence Dobkin",
+     "role": "Narrator"
+    },
+    {
+     "name": "Harry Bellaver",
+     "role": "Det. Frank Arcaro"
+    },
+    {
+     "name": "Horace McMahon",
+     "role": "Lt. Mike Parker"
+    },
+    {
+     "name": "Paul Burke",
+     "role": "Det. Adam Flint"
+    },
+    {
+     "name": "Nancy Malone",
+     "role": "Libby Kingston"
+    },
+    {
+     "name": "James Franciscus",
+     "role": "Det. James 'Jimmy' Halloran"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/14401/naked-city",
+    "id": 14401,
+    "imdbId": "tt0051297",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "naked-city-s-01-e-01-meridian"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0051297/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-1488",
+   "title": "Newhart",
+   "years": {
+    "start": 1982,
+    "end": 1990
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1982-90 · Bob Newhart +5",
+   "cast": [
+    {
+     "name": "Bob Newhart",
+     "role": "Dick Loudon"
+    },
+    {
+     "name": "Mary Frann",
+     "role": "Joanna Loudon"
+    },
+    {
+     "name": "Tom Poston",
+     "role": "George Utley"
+    },
+    {
+     "name": "Julia Duffy",
+     "role": "Stephanie Vanderkellen"
+    },
+    {
+     "name": "Peter Scolari",
+     "role": "Michael Harris"
+    },
+    {
+     "name": "John Voldstad",
+     "role": "Darryl #2"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1488/newhart",
+    "id": 1488,
+    "imdbId": "tt0083455",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "NewhartSeries"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0083455/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-570",
+   "title": "NYPD Blue",
+   "years": {
+    "start": 1993,
+    "end": 2005
+   },
+   "genres": [
+    "Drama",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1993-05 · Henry Simmons +5",
+   "cast": [
+    {
+     "name": "Henry Simmons",
+     "role": "Det. Baldwin Jones"
+    },
+    {
+     "name": "Dennis Franz",
+     "role": "Sgt. Andy Sipowicz"
+    },
+    {
+     "name": "Gordon Clapp",
+     "role": "Det. Greg Medavoy"
+    },
+    {
+     "name": "James McDaniel",
+     "role": "Lt. Arthur Fancy"
+    },
+    {
+     "name": "Nicholas Turturro",
+     "role": "Det. James Martinez"
+    },
+    {
+     "name": "Jimmy Smits",
+     "role": "Det. Bobby Simone"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/570/nypd-blue",
+    "id": 570,
+    "imdbId": "tt0106079",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "001-nypd-blue"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0106079/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-4566",
+   "title": "Odyssey 5",
+   "years": {
+    "start": 2002,
+    "end": 2004
+   },
+   "genres": [
+    "Drama",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Drama, Science-Fiction · 2002-04 · Christopher Gorham +5",
+   "cast": [
+    {
+     "name": "Christopher Gorham",
+     "role": "Neil Taggart"
+    },
+    {
+     "name": "Peter Weller",
+     "role": "Chuck Taggart"
+    },
+    {
+     "name": "Leslie Silva",
+     "role": "Sarah Forbes"
+    },
+    {
+     "name": "Sebastian Roché",
+     "role": "Kurt Mendel"
+    },
+    {
+     "name": "Tamara Craig Thomas",
+     "role": "Angela Perry"
+    },
+    {
+     "name": "Gina Clayton",
+     "role": "Paige Taggart"
+    }
+   ],
+   "details": {
+    "network": "Paramount+ with Showtime",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/4566/odyssey-5",
+    "id": 4566,
+    "imdbId": "tt0318236",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "odyssey.5.s01e01.e02.ws.dvdrip.xvid-bia"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0318236/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-5972",
+   "title": "On the Buses",
+   "years": {
+    "start": 1969,
+    "end": 1973
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1969-73 · Anna Karen +5",
+   "cast": [
+    {
+     "name": "Anna Karen",
+     "role": "Olive"
+    },
+    {
+     "name": "Bob Grant",
+     "role": "Jack"
+    },
+    {
+     "name": "Stephen Lewis",
+     "role": "Inspector"
+    },
+    {
+     "name": "Doris Hare",
+     "role": "Mum"
+    },
+    {
+     "name": "Cicely Courtneidge",
+     "role": "Mum"
+    },
+    {
+     "name": "Reg Varney",
+     "role": "Stan"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/5972/on-the-buses",
+    "id": 5972,
+    "imdbId": "tt0063936",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "on-the-buses-1969-73"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0063936/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-18585",
+   "title": "Operation Petticoat",
+   "years": {
+    "start": 1977,
+    "end": 1979
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1977-79 · Melinda Naud +5",
+   "cast": [
+    {
+     "name": "Melinda Naud",
+     "role": "Lt. Dolores Crandall"
+    },
+    {
+     "name": "Jim Varney",
+     "role": "Seaman 'Doom & Gloom' Broom"
+    },
+    {
+     "name": "Richard Brestoff",
+     "role": "Yeoman Hunkle"
+    },
+    {
+     "name": "John Astin",
+     "role": "Lt. Cmdr. Matthew Sherman"
+    },
+    {
+     "name": "Richard Gilliland",
+     "role": "Lt. Nick Holden"
+    },
+    {
+     "name": "Yvonne Wilder",
+     "role": "Major Edna Howard"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/18585/operation-petticoat",
+    "id": 18585,
+    "imdbId": "tt0075551",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "OperationPetticoatS1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0075551/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-25822",
+   "title": "Orson Welles' Great Mysteries",
+   "years": {
+    "start": 1974,
+    "end": 1976
+   },
+   "genres": [
+    "Drama",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Drama, Mystery · 1974-76 · Orson Welles",
+   "cast": [
+    {
+     "name": "Orson Welles",
+     "role": "Host"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/25822/orson-welles-great-mysteries",
+    "id": 25822,
+    "imdbId": "tt0159875",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "orson-welles-great-mysteries"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0159875/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-41835",
+   "title": "Pandora",
+   "years": {
+    "start": 2019,
+    "end": 2020
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 2019-20 · Priscilla Quintana +5",
+   "cast": [
+    {
+     "name": "Priscilla Quintana",
+     "role": "Jacqueline \"Jax\" Zhou"
+    },
+    {
+     "name": "Oliver Dench",
+     "role": "Xander Duvall"
+    },
+    {
+     "name": "Ben Radcliffe",
+     "role": "Ralen Maht"
+    },
+    {
+     "name": "Noah Huntley",
+     "role": "Professor Donovan Osborn"
+    },
+    {
+     "name": "Vikash Bhai",
+     "role": "Professor Martin Shral"
+    },
+    {
+     "name": "Raechelle Banno",
+     "role": "Atria Nine"
+    }
+   ],
+   "details": {
+    "network": "The CW",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/41835/pandora",
+    "id": 41835,
+    "imdbId": "tt10207090",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "pandora.-2019.-s-01-e-03.-masters.-of.-war.-1080p"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt10207090/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-37899",
+   "title": "Partners in Crime",
+   "years": {
+    "start": 1984,
+    "end": 1984
+   },
+   "genres": [
+    "Drama",
+    "Crime",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1984 · Lynda Carter +4",
+   "cast": [
+    {
+     "name": "Lynda Carter",
+     "role": "Carole Stanwyck"
+    },
+    {
+     "name": "Loni Anderson",
+     "role": "Sydney Kovak"
+    },
+    {
+     "name": "Leo Rossi",
+     "role": "Lt. Ed Vronsky"
+    },
+    {
+     "name": "Walter Olkewicz",
+     "role": "Harmon Shain"
+    },
+    {
+     "name": "Eileen Heckart",
+     "role": "Jeanine"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/37899/partners-in-crime",
+    "id": 37899,
+    "imdbId": "tt0086776",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "partners-in-crime-e-01-pilot"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0086776/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-16893",
+   "title": "Perversions of Science",
+   "years": {
+    "start": 1997,
+    "end": 1997
+   },
+   "genres": [
+    "Drama",
+    "Horror",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Drama, Horror · 1997 · Maureen Teefy",
+   "cast": [
+    {
+     "name": "Maureen Teefy",
+     "role": "Chrome"
+    }
+   ],
+   "details": {
+    "network": "HBO",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/16893/perversions-of-science",
+    "id": 16893,
+    "imdbId": "tt0118426",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "perversions-of-science-HBO"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0118426/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-2134",
+   "title": "Petticoat Junction",
+   "years": {
+    "start": 1963,
+    "end": 1970
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1963-70 · Edgar Buchanan +5",
+   "cast": [
+    {
+     "name": "Edgar Buchanan",
+     "role": "Uncle Joe Carson"
+    },
+    {
+     "name": "Linda Henning",
+     "role": "Betty Jo Bradley Elliott"
+    },
+    {
+     "name": "Bea Benaderet",
+     "role": "Kate Bradley"
+    },
+    {
+     "name": "Frank Cady",
+     "role": "Sam Drucker"
+    },
+    {
+     "name": "Lori Saunders",
+     "role": "Bobbie Jo Bradley"
+    },
+    {
+     "name": "Rufe Davis",
+     "role": "Floyd Smoot"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2134/petticoat-junction",
+    "id": 2134,
+    "imdbId": "tt0056780",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-petticoat"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0056780/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-1133",
+   "title": "Planet of the Apes",
+   "years": {
+    "start": 1974,
+    "end": 1974
+   },
+   "genres": [
+    "Drama",
+    "Adventure",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Drama, Adventure · 1974 · Roddy McDowall +2",
+   "cast": [
+    {
+     "name": "Roddy McDowall",
+     "role": "Galen"
+    },
+    {
+     "name": "Ron Harper",
+     "role": "Alan Virdon"
+    },
+    {
+     "name": "James Naughton",
+     "role": "Peter Burke"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1133/planet-of-the-apes",
+    "id": 1133,
+    "imdbId": "tt0071033",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "PlanetOfTheApesTVSeries"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0071033/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-1082",
+   "title": "Political Animals",
+   "years": {
+    "start": 2012,
+    "end": 2012
+   },
+   "genres": [
+    "Drama"
+   ],
+   "overview": "",
+   "blurb": "Drama · 2012 · Sigourney Weaver +5",
+   "cast": [
+    {
+     "name": "Sigourney Weaver",
+     "role": "Elaine Barrish"
+    },
+    {
+     "name": "Adrian Pasdar",
+     "role": "President Paul Garcetti"
+    },
+    {
+     "name": "Brittany Ishibashi",
+     "role": "Anne Ogami"
+    },
+    {
+     "name": "Carla Gugino",
+     "role": "Susan Berg"
+    },
+    {
+     "name": "Ciarán Hinds",
+     "role": "Bud Hammond"
+    },
+    {
+     "name": "Dan Futterman",
+     "role": "Alex Davies"
+    }
+   ],
+   "details": {
+    "network": "USA Network",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1082/political-animals",
+    "id": 1082,
+    "imdbId": "tt2239947",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "political-animals-e-01-pilot"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt2239947/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-2355",
+   "title": "Pride and Prejudice",
+   "years": {
+    "start": 1995,
+    "end": 1995
+   },
+   "genres": [
+    "Drama",
+    "Romance"
+   ],
+   "overview": "",
+   "blurb": "Drama, Romance · 1995 · Tim Wylton +5",
+   "cast": [
+    {
+     "name": "Tim Wylton",
+     "role": "Mr. Gardiner"
+    },
+    {
+     "name": "Joanna David",
+     "role": "Mr. Gardiner"
+    },
+    {
+     "name": "Colin Firth",
+     "role": "Mr. Darcy"
+    },
+    {
+     "name": "Jennifer Ehle",
+     "role": "Elizabeth Bennett"
+    },
+    {
+     "name": "Adrian Lukis",
+     "role": "Mr. Wickham"
+    },
+    {
+     "name": "Alison Steadman",
+     "role": "Mrs. Bennett"
+    }
+   ],
+   "details": {
+    "network": "BBC One",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2355/pride-and-prejudice",
+    "id": 2355,
+    "imdbId": "tt0112130",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "pride-and-prejudice-1995-miniseries"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0112130/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-3488",
+   "title": "Rawhide",
+   "years": {
+    "start": 1959,
+    "end": 1965
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1959-65 · Paul Brinegar +5",
+   "cast": [
+    {
+     "name": "Paul Brinegar",
+     "role": "Wishbone"
+    },
+    {
+     "name": "Steve Raines",
+     "role": "Jim Quince"
+    },
+    {
+     "name": "Clint Eastwood",
+     "role": "Rowdy Yates"
+    },
+    {
+     "name": "Eric Fleming",
+     "role": "Gil Favor"
+    },
+    {
+     "name": "James Murdock",
+     "role": "Mushy"
+    },
+    {
+     "name": "Rocky Shahan",
+     "role": "Joe Scarlet"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3488/rawhide",
+    "id": 3488,
+    "imdbId": "tt0052504",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "rawhide-3-x-30-incident-of-the-wager-on-payday"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0052504/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-368",
+   "title": "Red Dwarf",
+   "years": {
+    "start": 1988,
+    "end": 2020
+   },
+   "genres": [
+    "Comedy",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Science-Fiction · 1988-20 · Craig Charles +5",
+   "cast": [
+    {
+     "name": "Craig Charles",
+     "role": "Dave Lister"
+    },
+    {
+     "name": "Danny John-Jules",
+     "role": "Cat"
+    },
+    {
+     "name": "Chris Barrie",
+     "role": "Arnold Rimmer"
+    },
+    {
+     "name": "Robert Llewellyn",
+     "role": "Kryten"
+    },
+    {
+     "name": "Norman Lovett",
+     "role": "Holly"
+    },
+    {
+     "name": "Hattie Hayridge",
+     "role": "Holly"
+    }
+   ],
+   "details": {
+    "network": "U&Dave",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/368/red-dwarf",
+    "id": 368,
+    "imdbId": "tt0094535",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "bbc-red-dwarf"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0094535/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-4073",
+   "title": "River Monsters",
+   "years": {
+    "start": 2009,
+    "end": 2017
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Nature"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 2009-17 · Jeremy Wade",
+   "cast": [
+    {
+     "name": "Jeremy Wade",
+     "role": "Host"
+    }
+   ],
+   "details": {
+    "network": "Animal Planet",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/4073/river-monsters",
+    "id": 4073,
+    "imdbId": "tt1476750",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-river-monsters"
+    ],
+    "archiveIdentifiers": [
+     "river-monsters-season-1-9-reupload"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt1476750/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-6030",
+   "title": "Robin's Nest",
+   "years": {
+    "start": 1977,
+    "end": 1981
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1977-81 · Richard O'Sullivan +4",
+   "cast": [
+    {
+     "name": "Richard O'Sullivan",
+     "role": "Robin Tripp"
+    },
+    {
+     "name": "Tessa Wyatt",
+     "role": "Victoria Tripp"
+    },
+    {
+     "name": "Tony Britton",
+     "role": "James Nicholls"
+    },
+    {
+     "name": "David Kelly",
+     "role": "Albert Riddle"
+    },
+    {
+     "name": "Peggy Aitchison",
+     "role": "Gertrude"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/6030/robins-nest",
+    "id": 6030,
+    "imdbId": "tt0075569",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "robins-nest-1977-81"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0075569/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-12144",
+   "title": "Rumpole of the Bailey",
+   "years": {
+    "start": 1978,
+    "end": 1992
+   },
+   "genres": [
+    "Drama"
+   ],
+   "overview": "",
+   "blurb": "Drama · 1978-92 · Leo McKern +4",
+   "cast": [
+    {
+     "name": "Leo McKern",
+     "role": "Horace Rumpole"
+    },
+    {
+     "name": "Patricia Hodge",
+     "role": "Phyllida Erskine Brown"
+    },
+    {
+     "name": "Richard Murdoch",
+     "role": "Uncle Tom"
+    },
+    {
+     "name": "Jonathan Coy",
+     "role": "Henry"
+    },
+    {
+     "name": "Joanna Van Gyseghem",
+     "role": "Marigold Featherstone"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/12144/rumpole-of-the-bailey",
+    "id": 12144,
+    "imdbId": "tt0078680",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "01-rumpole-of-the-bailey-s-01-e-01-rumpole-and-the-younger-generation-1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0078680/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-31783",
+   "title": "Science Fiction Theatre",
+   "years": {
+    "start": 1955,
+    "end": 1957
+   },
+   "genres": [
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Science-Fiction · 1955-57",
+   "cast": [],
+   "details": {
+    "network": "Syndication",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/31783/science-fiction-theatre",
+    "id": 31783,
+    "imdbId": "tt0047767",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "science-fiction-theatre-season-1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0047767/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-3711",
+   "title": "She Spies",
+   "years": {
+    "start": 2002,
+    "end": 2004
+   },
+   "genres": [
+    "Comedy",
+    "Action",
+    "Adventure"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Action · 2002-04 · Natasha Henstridge +5",
+   "cast": [
+    {
+     "name": "Natasha Henstridge",
+     "role": "Cassie McBain"
+    },
+    {
+     "name": "Kristen Miller",
+     "role": "D.D. Cummings"
+    },
+    {
+     "name": "Natashia Williams",
+     "role": "Shane Phillips"
+    },
+    {
+     "name": "Carlos Jacott",
+     "role": "Jack Wilde"
+    },
+    {
+     "name": "Cameron Daddo",
+     "role": "Quentin Cross"
+    },
+    {
+     "name": "Jamie Iglehart",
+     "role": "Duncan Baleu"
+    }
+   ],
+   "details": {
+    "network": "Syndication",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3711/she-spies",
+    "id": 3711,
+    "imdbId": "tt0315064",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "she-spies-complete-tv-series"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0315064/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-8760",
+   "title": "Special Branch",
+   "years": {
+    "start": 1969,
+    "end": 1974
+   },
+   "genres": [
+    "Drama",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1969-74 · Derren Nesbitt +5",
+   "cast": [
+    {
+     "name": "Derren Nesbitt",
+     "role": "Det. Chief Insp. Jordan"
+    },
+    {
+     "name": "George Sewell",
+     "role": "Det. Chief Insp. Alan Craven"
+    },
+    {
+     "name": "Fulton Mackay",
+     "role": "Det. Chief Supt. Inman"
+    },
+    {
+     "name": "Morris Perry",
+     "role": "Charles Moxon"
+    },
+    {
+     "name": "Roger Rowland",
+     "role": "Det. Sgt. Bill North"
+    },
+    {
+     "name": "Patrick Mower",
+     "role": "Det. Chief Insp. Tom Haggerty"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/8760/special-branch",
+    "id": 8760,
+    "imdbId": "tt0063953",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "special-branch-1969-73"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0063953/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-490",
+   "title": "Star Trek",
+   "years": {
+    "start": 1966,
+    "end": 1969
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1966-69 · Leonard Nimoy +3",
+   "cast": [
+    {
+     "name": "Leonard Nimoy",
+     "role": "Mr. Spock"
+    },
+    {
+     "name": "William Shatner",
+     "role": "Captain James Tiberius Kirk"
+    },
+    {
+     "name": "DeForest Kelley",
+     "role": "Dr. Leonard Horatio \"Bones\" McCoy"
+    },
+    {
+     "name": "Jeffrey Hunter",
+     "role": "Captain Christopher Pike"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/490/star-trek",
+    "id": 490,
+    "imdbId": "tt0060028",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "Privatehd.toStarTrek1966S011080pBluRayVC1DTSHDMA7.1HDBEE1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0060028/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-7856",
+   "title": "Starved",
+   "years": {
+    "start": 2005,
+    "end": 2005
+   },
+   "genres": [
+    "Drama",
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Drama, Comedy · 2005 · Sterling K. Brown",
+   "cast": [
+    {
+     "name": "Sterling K. Brown",
+     "role": "Adam Williams"
+    }
+   ],
+   "details": {
+    "network": "FX",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/7856/starved",
+    "id": 7856,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "starved"
+    ],
+    "imdbUrl": null
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-1607",
+   "title": "Survivors",
+   "years": {
+    "start": 1975,
+    "end": 1977
+   },
+   "genres": [],
+   "overview": "",
+   "blurb": "1975-77 · Carolyn Seymour +5",
+   "cast": [
+    {
+     "name": "Carolyn Seymour",
+     "role": "Abby Grant"
+    },
+    {
+     "name": "Celia Gregory",
+     "role": "Ruth Anderson"
+    },
+    {
+     "name": "Ian McCulloch",
+     "role": "Greg Preston"
+    },
+    {
+     "name": "John Abineri",
+     "role": "Hubert Goss"
+    },
+    {
+     "name": "Lorna Lewis",
+     "role": "Pet Simpson"
+    },
+    {
+     "name": "Lucy Fleming",
+     "role": "Jenny Richards"
+    }
+   ],
+   "details": {
+    "network": "BBC One",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1607/survivors",
+    "id": 1607,
+    "imdbId": "tt0072572",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "survivors-1975"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0072572/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-29297",
+   "title": "Take a Letter Mr. Jones...",
+   "years": {
+    "start": 1981,
+    "end": 1981
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1981 · John Inman +5",
+   "cast": [
+    {
+     "name": "John Inman",
+     "role": "Graham Jones"
+    },
+    {
+     "name": "Rula Lenska",
+     "role": "Ms. Joan Warner"
+    },
+    {
+     "name": "Gina Maher",
+     "role": "Brenda"
+    },
+    {
+     "name": "Joan Blackham",
+     "role": "Ruth"
+    },
+    {
+     "name": "Christine Ozanne",
+     "role": "Daisy"
+    },
+    {
+     "name": "Miriam Margolyes",
+     "role": "Maria"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/29297/take-a-letter-mr-jones",
+    "id": 29297,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "take-a-letter-mr-jones-1981"
+    ],
+    "imdbUrl": null
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-6620",
+   "title": "Tales of Tomorrow",
+   "years": {
+    "start": 1951,
+    "end": 1953
+   },
+   "genres": [
+    "Horror",
+    "Science-Fiction",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Horror, Science-Fiction · 1951-53",
+   "cast": [],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/6620/tales-of-tomorrow",
+    "id": 6620,
+    "imdbId": "tt0043238",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "tales-of-tomorrow-1951-53"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0043238/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-2218",
+   "title": "Taxi",
+   "years": {
+    "start": 1978,
+    "end": 1983
+   },
+   "genres": [
+    "Drama",
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Drama, Comedy · 1978-83 · Judd Hirsch +5",
+   "cast": [
+    {
+     "name": "Judd Hirsch",
+     "role": "Alex Reiger"
+    },
+    {
+     "name": "Tony Danza",
+     "role": "Tony Banta"
+    },
+    {
+     "name": "Danny DeVito",
+     "role": "Louie DePalma"
+    },
+    {
+     "name": "Marilu Henner",
+     "role": "Elaine Nardo"
+    },
+    {
+     "name": "Christopher Lloyd",
+     "role": "Jim Ignatowski"
+    },
+    {
+     "name": "Jeff Conaway",
+     "role": "Bobby Wheeler"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2218/taxi",
+    "id": 2218,
+    "imdbId": "tt0077089",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-series-taxi"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0077089/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-14813",
+   "title": "The Baron",
+   "years": {
+    "start": 1966,
+    "end": 1967
+   },
+   "genres": [
+    "Drama",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1966-67 · Steve Forrest +1",
+   "cast": [
+    {
+     "name": "Steve Forrest",
+     "role": "John \"The Baron\" Mannering"
+    },
+    {
+     "name": "Sue Lloyd",
+     "role": "Cordelia Winfield"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/14813/the-baron",
+    "id": 14813,
+    "imdbId": "tt0059966",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "The_Baron_1966_Series"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0059966/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-26872",
+   "title": "The Benny Hill Show",
+   "years": {
+    "start": 1969,
+    "end": 1989
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1969-89 · Benny Hill",
+   "cast": [
+    {
+     "name": "Benny Hill",
+     "role": "Host"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/26872/the-benny-hill-show",
+    "id": 26872,
+    "imdbId": "tt0063869",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the-benny-hill-show"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0063869/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-5734",
+   "title": "The Bob Newhart Show",
+   "years": {
+    "start": 1972,
+    "end": 1978
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1972-78 · Bob Newhart +5",
+   "cast": [
+    {
+     "name": "Bob Newhart",
+     "role": "Dr. Robert 'Bob' Hartley"
+    },
+    {
+     "name": "Suzanne Pleshette",
+     "role": "Emily Hartley"
+    },
+    {
+     "name": "Marcia Wallace",
+     "role": "Carol Kester"
+    },
+    {
+     "name": "Bill Daily",
+     "role": "Howard Borden"
+    },
+    {
+     "name": "Peter Bonerz",
+     "role": "Dr. Jerry Robinson"
+    },
+    {
+     "name": "Patricia Smith",
+     "role": "Margaret Hoover"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/5734/the-bob-newhart-show",
+    "id": 5734,
+    "imdbId": "tt0068049",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "TheBobNewhartShow"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0068049/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-13354",
+   "title": "The Duchess of Duke Street",
+   "years": {
+    "start": 1976,
+    "end": 1977
+   },
+   "genres": [
+    "Drama"
+   ],
+   "overview": "",
+   "blurb": "Drama · 1976-77 · Gemma Jones +5",
+   "cast": [
+    {
+     "name": "Gemma Jones",
+     "role": "Louisa Trotter"
+    },
+    {
+     "name": "Christopher Cazenove",
+     "role": "Charles \"Charlie\" Tyrrell, later Lord Haslemere"
+    },
+    {
+     "name": "Richard Vernon",
+     "role": "Major Smith-Barton"
+    },
+    {
+     "name": "Victoria Plucknett",
+     "role": "Mary"
+    },
+    {
+     "name": "John Cater",
+     "role": "Starr"
+    },
+    {
+     "name": "John Rapley",
+     "role": "Mr. Ernest Leyton"
+    }
+   ],
+   "details": {
+    "network": "BBC One",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/13354/the-duchess-of-duke-street",
+    "id": 13354,
+    "imdbId": "tt0077004",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "01-the-duchess-of-duke-street-s-01-e-01-a-present-sovereign-1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0077004/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-7150",
+   "title": "The Fugitive",
+   "years": {
+    "start": 1963,
+    "end": 1967
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Adventure"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1963-67 · David Janssen +4",
+   "cast": [
+    {
+     "name": "David Janssen",
+     "role": "Dr. Richard Kimble"
+    },
+    {
+     "name": "William Conrad",
+     "role": "Narrator"
+    },
+    {
+     "name": "Barry Morse",
+     "role": "Lt. Philip Gerard"
+    },
+    {
+     "name": "Jacqueline Scott",
+     "role": "Donna Kimble Taft"
+    },
+    {
+     "name": "Bill Raisch",
+     "role": "Fred Johnson"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/7150/the-fugitive",
+    "id": 7150,
+    "imdbId": "tt0056757",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-the-fugitive"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0056757/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-3777",
+   "title": "The Green Hornet",
+   "years": {
+    "start": 1966,
+    "end": 1967
+   },
+   "genres": [
+    "Action",
+    "Adventure"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1966-67 · Bruce Lee +4",
+   "cast": [
+    {
+     "name": "Bruce Lee",
+     "role": "Kato"
+    },
+    {
+     "name": "Wende Wagner",
+     "role": "Lenore \"Casey\" Case"
+    },
+    {
+     "name": "Van Williams",
+     "role": "Britt Reid / The Green Hornet"
+    },
+    {
+     "name": "Walter Brooke",
+     "role": "District Attorney Frank P. Scanlon"
+    },
+    {
+     "name": "Lloyd Gough",
+     "role": "Mike Axford"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3777/the-green-hornet",
+    "id": 3777,
+    "imdbId": "tt0059991",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the_green_hornet"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0059991/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-2151",
+   "title": "The Incredible Hulk",
+   "years": {
+    "start": 1977,
+    "end": 1982
+   },
+   "genres": [
+    "Action",
+    "Fantasy",
+    "Science-Fiction"
+   ],
+   "overview": "",
+   "blurb": "Action, Fantasy · 1977-82 · Lou Ferrigno +2",
+   "cast": [
+    {
+     "name": "Lou Ferrigno",
+     "role": "The Hulk"
+    },
+    {
+     "name": "Bill Bixby",
+     "role": "David Banner"
+    },
+    {
+     "name": "Jack Colvin",
+     "role": "Jack McGee"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2151/the-incredible-hulk",
+    "id": 2151,
+    "imdbId": "tt0077031",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the-incredible-hulk-vhs_volumes"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0077031/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-21554",
+   "title": "The Loner",
+   "years": {
+    "start": 1965,
+    "end": 1966
+   },
+   "genres": [
+    "Drama",
+    "Adventure",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Drama, Adventure · 1965-66 · Lloyd Bridges",
+   "cast": [
+    {
+     "name": "Lloyd Bridges",
+     "role": "William Colton"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/21554/the-loner",
+    "id": 21554,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "The-Loner-1965-Series"
+    ],
+    "imdbUrl": null
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-2132",
+   "title": "The Man from U.N.C.L.E.",
+   "years": {
+    "start": 1964,
+    "end": 1968
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Adventure"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1964-68 · Robert Vaughn +2",
+   "cast": [
+    {
+     "name": "Robert Vaughn",
+     "role": "Napoleon Solo"
+    },
+    {
+     "name": "Leo G. Carroll",
+     "role": "Alexander Waverly"
+    },
+    {
+     "name": "David McCallum",
+     "role": "Illya Kuryakin"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2132/the-man-from-uncle",
+    "id": 2132,
+    "imdbId": "tt0057765",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-the-man-from-u-n-c-l-e"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0057765/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-3846",
+   "title": "The Master",
+   "years": {
+    "start": 1984,
+    "end": 1984
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Adventure"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1984 · Lee Van Cleef +2",
+   "cast": [
+    {
+     "name": "Lee Van Cleef",
+     "role": "John Peter McAllister"
+    },
+    {
+     "name": "Tim Van Patten",
+     "role": "Max Keller"
+    },
+    {
+     "name": "Shô Kosugi",
+     "role": "Okasa"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3846/the-master",
+    "id": 3846,
+    "imdbId": "tt0086756",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the-master-complete-series-1984"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0086756/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-13357",
+   "title": "The New Statesman",
+   "years": {
+    "start": 1987,
+    "end": 1994
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1987-94 · Rik Mayall +2",
+   "cast": [
+    {
+     "name": "Rik Mayall",
+     "role": "Alan B'Stard"
+    },
+    {
+     "name": "Michael Troughton",
+     "role": "Piers Fletcher-Dervish"
+    },
+    {
+     "name": "Marsha Fitzalan",
+     "role": "Sarah B'Stard"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/13357/the-new-statesman",
+    "id": 13357,
+    "imdbId": "tt0094519",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the-new-statesman-1987-94"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0094519/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-5735",
+   "title": "The Odd Couple",
+   "years": {
+    "start": 1970,
+    "end": 1975
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1970-75 · Jack Klugman +5",
+   "cast": [
+    {
+     "name": "Jack Klugman",
+     "role": "Oscar Madison"
+    },
+    {
+     "name": "Tony Randall",
+     "role": "Felix Unger"
+    },
+    {
+     "name": "Al Molinaro",
+     "role": "Murray Greshler"
+    },
+    {
+     "name": "Pamelyn Ferdin",
+     "role": "Edna Unger"
+    },
+    {
+     "name": "Doney Oatman",
+     "role": "Edna Unger"
+    },
+    {
+     "name": "Penny Marshall",
+     "role": "Myrna Turner"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/5735/the-odd-couple",
+    "id": 5735,
+    "imdbId": "tt0065329",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-70-odd-couple"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0065329/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-470",
+   "title": "The Prisoner",
+   "years": {
+    "start": 1967,
+    "end": 1968
+   },
+   "genres": [
+    "Drama",
+    "Science-Fiction",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Drama, Science-Fiction · 1967-68 · Patrick McGoohan",
+   "cast": [
+    {
+     "name": "Patrick McGoohan",
+     "role": "Number Six"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/470/the-prisoner",
+    "id": 470,
+    "imdbId": "tt0061287",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the-prisoner-complete-series-1967"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0061287/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-471",
+   "title": "The Prisoner",
+   "years": {
+    "start": 2009,
+    "end": 2009
+   },
+   "genres": [
+    "Drama",
+    "Science-Fiction",
+    "Mystery"
+   ],
+   "overview": "",
+   "blurb": "Drama, Science-Fiction · 2009 · Ian McKellen +5",
+   "cast": [
+    {
+     "name": "Ian McKellen",
+     "role": "Nr. 2"
+    },
+    {
+     "name": "Jim Caviezel",
+     "role": "Michael / Nr. 6"
+    },
+    {
+     "name": "Ruth Wilson",
+     "role": "Nr. 313"
+    },
+    {
+     "name": "Lennie James",
+     "role": "Nr. 147"
+    },
+    {
+     "name": "Jamie Campbell Bower",
+     "role": "11-12"
+    },
+    {
+     "name": "Hayley Atwell",
+     "role": "Lucy"
+    }
+   ],
+   "details": {
+    "network": "AMC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/471/the-prisoner",
+    "id": 471,
+    "imdbId": "tt1043714",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the-prisoner-complete-series-2009"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt1043714/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-2148",
+   "title": "The Rat Patrol",
+   "years": {
+    "start": 1966,
+    "end": 1968
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "War"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1966-68 · Christopher George +4",
+   "cast": [
+    {
+     "name": "Christopher George",
+     "role": "Sgt. Sam Troy"
+    },
+    {
+     "name": "Gary Raymond",
+     "role": "Sgt. Jack Moffitt"
+    },
+    {
+     "name": "Lawrence P. Casey",
+     "role": "Pvt. Mark \"Hitch\" Hitchcock"
+    },
+    {
+     "name": "Justin Tarr",
+     "role": "Pvt. Tully Pettigrew"
+    },
+    {
+     "name": "Eric Braeden",
+     "role": "Hauptmann Hans Dietrich"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/2148/the-rat-patrol",
+    "id": 2148,
+    "imdbId": "tt0060018",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-rat-patrol"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0060018/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-3878",
+   "title": "The Saint",
+   "years": {
+    "start": 1962,
+    "end": 1969
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1962-69 · Roger Moore +5",
+   "cast": [
+    {
+     "name": "Roger Moore",
+     "role": "Simon Templar"
+    },
+    {
+     "name": "Ivor Dean",
+     "role": "Ch Insp Teal"
+    },
+    {
+     "name": "Arnold Diamond",
+     "role": "Colonel Latignant"
+    },
+    {
+     "name": "Manning Wilson",
+     "role": "Insp Quercy"
+    },
+    {
+     "name": "John Serret",
+     "role": "Insp Quercy"
+    },
+    {
+     "name": "Robert Cawdron",
+     "role": "Sgt Leduc"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3878/the-saint",
+    "id": 3878,
+    "imdbId": "tt0055701",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "2017-the-saint-movie-1080p-spanish-or-english"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0055701/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-13176",
+   "title": "The Secret Service",
+   "years": {
+    "start": 1969,
+    "end": 1969
+   },
+   "genres": [
+    "Action",
+    "Adventure",
+    "Espionage"
+   ],
+   "overview": "",
+   "blurb": "Action, Adventure · 1969 · Stanley Unwin +4",
+   "cast": [
+    {
+     "name": "Stanley Unwin",
+     "role": "Father Stanley Unwin"
+    },
+    {
+     "name": "Gary Files",
+     "role": "Matthew Harding"
+    },
+    {
+     "name": "Jeremy Wilkin",
+     "role": "The Bishop"
+    },
+    {
+     "name": "Keith Alexander",
+     "role": "Agent Blake"
+    },
+    {
+     "name": "Sylvia Anderson",
+     "role": "Mrs. Appleby"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/13176/the-secret-service",
+    "id": 13176,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the-secret-service-1969"
+    ],
+    "imdbUrl": null
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-8225",
+   "title": "The Single Guy",
+   "years": {
+    "start": 1995,
+    "end": 1997
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1995-97 · Ming-Na Wen +5",
+   "cast": [
+    {
+     "name": "Ming-Na Wen",
+     "role": "Trudy"
+    },
+    {
+     "name": "Jonathan Silverman",
+     "role": "Jonathan Eliot"
+    },
+    {
+     "name": "Joey Slotnick",
+     "role": "Sam Sloan"
+    },
+    {
+     "name": "Ernest Borgnine",
+     "role": "Manny Cordoba"
+    },
+    {
+     "name": "Jessica Hecht",
+     "role": "Janeane Percy-Parker"
+    },
+    {
+     "name": "Mark Moses",
+     "role": "Matt Parker"
+    }
+   ],
+   "details": {
+    "network": "NBC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/8225/the-single-guy",
+    "id": 8225,
+    "imdbId": "tt0112163",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "the-single-guy-tvseries"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0112163/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-527",
+   "title": "The Sopranos",
+   "years": {
+    "start": 1999,
+    "end": 2007
+   },
+   "genres": [
+    "Drama",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Drama, Crime · 1999-07 · James Gandolfini +5",
+   "cast": [
+    {
+     "name": "James Gandolfini",
+     "role": "Tony Soprano"
+    },
+    {
+     "name": "Edie Falco",
+     "role": "Carmela Soprano"
+    },
+    {
+     "name": "Michael Imperioli",
+     "role": "Christopher Moltisanti"
+    },
+    {
+     "name": "Steven Van Zandt",
+     "role": "Silvio Dante"
+    },
+    {
+     "name": "Tony Sirico",
+     "role": "Paulie 'Walnuts' Gualtieri"
+    },
+    {
+     "name": "Robert Iler",
+     "role": "Anthony Soprano"
+    }
+   ],
+   "details": {
+    "network": "HBO",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/527/the-sopranos",
+    "id": 527,
+    "imdbId": "tt0141842",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-the-sopranos"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt0141842/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-51627",
+   "title": "The Spoils of War",
+   "years": {
+    "start": 1980,
+    "end": 1981
+   },
+   "genres": [
+    "Drama",
+    "Family"
+   ],
+   "overview": "",
+   "blurb": "Drama, Family · 1980-81 · Alan Hunter +5",
+   "cast": [
+    {
+     "name": "Alan Hunter",
+     "role": "Blake Hayward"
+    },
+    {
+     "name": "William Lucas",
+     "role": "George Hayward"
+    },
+    {
+     "name": "James Bate",
+     "role": "Mark Warrington"
+    },
+    {
+     "name": "Ian Hastings",
+     "role": "Keir Hayward"
+    },
+    {
+     "name": "Jane How",
+     "role": "Rosalynde Warrington"
+    },
+    {
+     "name": "David Langton",
+     "role": "John Warrington"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/51627/the-spoils-of-war",
+    "id": 51627,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "01-the-spoils-of-war-s-01-e-01-ends-and-beginnings"
+    ],
+    "imdbUrl": null
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "none+owner-default"
+  },
+  {
+   "id": "tvmaze-7576",
+   "title": "The Thin Blue Line",
+   "years": {
+    "start": 1995,
+    "end": 1996
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1995-96 · Rowan Atkinson +5",
+   "cast": [
+    {
+     "name": "Rowan Atkinson",
+     "role": "Inspector Raymond Fowler"
+    },
+    {
+     "name": "James Dreyfus",
+     "role": "Constable Kevin Goody"
+    },
+    {
+     "name": "Mina Anwar",
+     "role": "Constable Maggie Habib"
+    },
+    {
+     "name": "Serena Evans",
+     "role": "Sergeant Patricia Dawkins"
+    },
+    {
+     "name": "David Haig",
+     "role": "Detective Inspector Derek Grim"
+    },
+    {
+     "name": "Rudolph Walker",
+     "role": "Constable Frank Gladstone"
+    }
+   ],
+   "details": {
+    "network": "BBC One",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/7576/the-thin-blue-line",
+    "id": 7576,
+    "imdbId": "tt0112194",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "thethinbluelinecomplete"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0112194/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-787",
+   "title": "The Twilight Zone",
+   "years": {
+    "start": 1959,
+    "end": 1964
+   },
+   "genres": [
+    "Science-Fiction",
+    "Mystery",
+    "Supernatural"
+   ],
+   "overview": "",
+   "blurb": "Science-Fiction, Mystery · 1959-64 · Rod Serling",
+   "cast": [
+    {
+     "name": "Rod Serling",
+     "role": "Narrator"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/787/the-twilight-zone",
+    "id": 787,
+    "imdbId": "tt0052520",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "04-twilight-zone-s-01-e-04-16-millimeter-shrine"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0052520/"
+   },
+   "match": "manual-pick",
+   "status": "verified",
+   "corroboratedBy": "manual-pick+owner-default"
+  },
+  {
+   "id": "tvmaze-13452",
+   "title": "Thriller",
+   "years": {
+    "start": 1973,
+    "end": 1976
+   },
+   "genres": [
+    "Drama",
+    "Thriller"
+   ],
+   "overview": "",
+   "blurb": "Drama, Thriller · 1973-76",
+   "cast": [],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/13452/thriller",
+    "id": 13452,
+    "imdbId": "tt0164295",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "thriller-s-01-e-010-spell-of-evil"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0164295/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-4779",
+   "title": "Total Drama",
+   "years": {
+    "start": 2007,
+    "end": 2014
+   },
+   "genres": [
+    "Comedy",
+    "Action"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Action · 2007-14 · Christian Potenza +5",
+   "cast": [
+    {
+     "name": "Christian Potenza",
+     "role": "Chris McLean"
+    },
+    {
+     "name": "Clé Bennett",
+     "role": "Chef Hatchet"
+    },
+    {
+     "name": "Christian Potenza",
+     "role": "Various Characters"
+    },
+    {
+     "name": "Clé Bennett",
+     "role": "Various Characters"
+    },
+    {
+     "name": "Katie Crown",
+     "role": "Various Characters"
+    },
+    {
+     "name": "Kevin Duhaney",
+     "role": "Various Characters"
+    }
+   ],
+   "details": {
+    "network": "Cartoon Network",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/4779/total-drama",
+    "id": 4779,
+    "imdbId": "tt1173427",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [
+     "classic-total-drama"
+    ],
+    "archiveIdentifiers": [],
+    "imdbUrl": "https://www.imdb.com/title/tt1173427/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-302",
+   "title": "Trailer Park Boys",
+   "years": {
+    "start": 2001,
+    "end": null
+   },
+   "genres": [
+    "Comedy",
+    "Crime"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Crime · 2001-present · Tyrone Parsons +5",
+   "cast": [
+    {
+     "name": "Tyrone Parsons",
+     "role": "Tyrone"
+    },
+    {
+     "name": "Bernard Robichaud",
+     "role": "Cyrus"
+    },
+    {
+     "name": "Robb Wells",
+     "role": "Ricky"
+    },
+    {
+     "name": "John Paul Tremblay",
+     "role": "Julian"
+    },
+    {
+     "name": "Mike Smith",
+     "role": "Bubbles"
+    },
+    {
+     "name": "John Dunsworth",
+     "role": "Jim Lahey"
+    }
+   ],
+   "details": {
+    "network": "SwearNet",
+    "status": "running",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/302/trailer-park-boys",
+    "id": 302,
+    "imdbId": "tt0290988",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "trailerparkboys-season1"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0290988/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-8420",
+   "title": "Wagon Train",
+   "years": {
+    "start": 1957,
+    "end": 1965
+   },
+   "genres": [
+    "Drama",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Drama, Western · 1957-65 · Frank McGrath +5",
+   "cast": [
+    {
+     "name": "Frank McGrath",
+     "role": "Charlie Wooster"
+    },
+    {
+     "name": "Terry Wilson",
+     "role": "Bill Hawks"
+    },
+    {
+     "name": "Robert Horton",
+     "role": "Flint McCullough"
+    },
+    {
+     "name": "John McIntire",
+     "role": "Christopher Hale"
+    },
+    {
+     "name": "Ward Bond",
+     "role": "Major Seth Adams"
+    },
+    {
+     "name": "Denny Miller",
+     "role": "Duke Shannon"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/8420/wagon-train",
+    "id": 8420,
+    "imdbId": "tt0050073",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "wagon-train-s-01-e-101-ep-101-the-willy-moran-story"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0050073/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-4380",
+   "title": "Wanted: Dead or Alive",
+   "years": {
+    "start": 1958,
+    "end": 1961
+   },
+   "genres": [
+    "Drama",
+    "Action",
+    "Western"
+   ],
+   "overview": "",
+   "blurb": "Drama, Action · 1958-61 · Steve McQueen +1",
+   "cast": [
+    {
+     "name": "Steve McQueen",
+     "role": "Josh Randall"
+    },
+    {
+     "name": "Wright King",
+     "role": "Jason Nichols"
+    }
+   ],
+   "details": {
+    "network": "CBS",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/4380/wanted-dead-or-alive",
+    "id": 4380,
+    "imdbId": "tt0051327",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "wanted-dead-or-alive-s-01-e-01-ep-1-the-martin-poster",
+     "nty_20251115"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0051327/"
+   },
+   "match": "unique-exact-name",
+   "status": "verified",
+   "corroboratedBy": "archive-item-date"
+  },
+  {
+   "id": "tvmaze-3680",
+   "title": "Whoops Apocalypse",
+   "years": {
+    "start": 1982,
+    "end": 1982
+   },
+   "genres": [
+    "Comedy"
+   ],
+   "overview": "",
+   "blurb": "Comedy · 1982 · Barry Morse +5",
+   "cast": [
+    {
+     "name": "Barry Morse",
+     "role": "President Johnny Cyclops"
+    },
+    {
+     "name": "John Barron",
+     "role": "The Deacon"
+    },
+    {
+     "name": "Richard Griffiths",
+     "role": "Premier Dubienkin"
+    },
+    {
+     "name": "Richard Davies",
+     "role": "British Chancellor Of The Exchequer"
+    },
+    {
+     "name": "Geoffrey Palmer",
+     "role": "British Foreign Secrety"
+    },
+    {
+     "name": "Alexei Sayle",
+     "role": "Commissar Alexei Solzhenitsyn"
+    }
+   ],
+   "details": {
+    "network": "ITV1",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/3680/whoops-apocalypse",
+    "id": 3680,
+    "imdbId": "tt0083502",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "whoops-apocalypse-tv-show-1982-mp4"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0083502/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-1042",
+   "title": "Wonderfalls",
+   "years": {
+    "start": 2004,
+    "end": 2004
+   },
+   "genres": [
+    "Drama",
+    "Comedy",
+    "Fantasy"
+   ],
+   "overview": "",
+   "blurb": "Drama, Comedy · 2004 · Caroline Dhavernas +5",
+   "cast": [
+    {
+     "name": "Caroline Dhavernas",
+     "role": "Jaye Tyler"
+    },
+    {
+     "name": "Katie Finneran",
+     "role": "Sharon Tyler"
+    },
+    {
+     "name": "Tyron Leitso",
+     "role": "Eric Gotts"
+    },
+    {
+     "name": "Tracie Thoms",
+     "role": "Mahandra McGinty"
+    },
+    {
+     "name": "Lee Pace",
+     "role": "Aaron Tyler"
+    },
+    {
+     "name": "William Sadler",
+     "role": "Dr. Darrin Tyler"
+    }
+   ],
+   "details": {
+    "network": "VisionTV",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/1042/wonderfalls",
+    "id": 1042,
+    "imdbId": "tt0361256",
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "wonderfalls_2004"
+    ],
+    "imdbUrl": "https://www.imdb.com/title/tt0361256/"
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  },
+  {
+   "id": "tvmaze-7986",
+   "title": "You Wish",
+   "years": {
+    "start": 1997,
+    "end": 1998
+   },
+   "genres": [
+    "Comedy",
+    "Family",
+    "Fantasy"
+   ],
+   "overview": "",
+   "blurb": "Comedy, Family · 1997-98 · Harley Jane Kozak +4",
+   "cast": [
+    {
+     "name": "Harley Jane Kozak",
+     "role": "Gillian Apple"
+    },
+    {
+     "name": "Alex McKenna",
+     "role": "Mickey Apple"
+    },
+    {
+     "name": "John Ales",
+     "role": "Genie"
+    },
+    {
+     "name": "Nathan Lawrence",
+     "role": "Travis Apple"
+    },
+    {
+     "name": "Jerry Van Dyke",
+     "role": "Grampa Max"
+    }
+   ],
+   "details": {
+    "network": "ABC",
+    "status": "ended",
+    "note": ""
+   },
+   "source": {
+    "name": "TVmaze",
+    "url": "https://www.tvmaze.com/shows/7986/you-wish",
+    "id": 7986,
+    "imdbId": null,
+    "fetchedAt": "2026-10-06T23:59:24Z"
+   },
+   "links": {
+    "channelIds": [],
+    "archiveIdentifiers": [
+     "you-wish-1997-1998"
+    ],
+    "imdbUrl": null
+   },
+   "match": "name+year",
+   "status": "verified",
+   "corroboratedBy": "name+year"
+  }
+ ]
+}

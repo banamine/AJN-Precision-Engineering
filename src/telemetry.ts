@@ -13,6 +13,13 @@ export interface AjnTelemetryEvent {
   proxyRequestId: string | null;
   httpStatus?: number | null;
   failureReason?: string | null;
+  /** Recovery / unavailable events: why (stall-watchdog, media-error-4, offline, archive_overloaded...). */
+  reason?: string | null;
+  positionSeconds?: number | null;
+  resolvedHost?: string | null;
+  hlsType?: string | null;
+  hlsDetails?: string | null;
+  attempt?: number | null;
   lookupDurationMs?: number | null;
   contentType?: string | null;
   mediaErrorCode?: number | null;

@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "note": "Live radio stations (US and Canada). Only https streams. A station is shown only when enabled=true AND verifiedAt is set. verifiedAt = date a real stream response was checked (HTTP status + audio content type). Entries without verifiedAt are kept here but rejected with the reason 'not verified' (see /api/live-radio/status). description and genres[] feed the Live Radio directory (search, genre chips). First test list, 2026-10-13: 4 verified, 2 pending. All stations are directory-only (inGuide:false): none are guide channels.",
+  "countries": [
+    "US",
+    "CA"
+  ],
+  "stations": [
+    {
+      "id": "radio:us-kexp",
+      "name": "KEXP 90.3 FM",
+      "country": "US",
+      "region": "Washington",
+      "city": "Seattle",
+      "callSign": "KEXP",
+      "format": "Alternative",
+      "language": "en",
+      "streamUrl": "https://kexp-mp3-128.streamguys1.com/kexp128.mp3",
+      "streamType": "mp3",
+      "homepage": "https://www.kexp.org/",
+      "enabled": true,
+      "verifiedAt": "2026-10-13",
+      "corsVerified": true,
+      "description": "Independent music radio",
+      "genres": [
+        "Alternative"
+      ],
+      "inGuide": false
+    },
+    {
+      "id": "radio:us-wuky",
+      "name": "WUKY 91.3 FM",
+      "country": "US",
+      "region": "Kentucky",
+      "city": "Lexington",
+      "callSign": "WUKY",
+      "format": "Public Radio",
+      "language": "en",
+      "streamUrl": "https://wuky.streamguys1.com/wuky",
+      "streamType": "aac",
+      "homepage": "https://www.wuky.org/",
+      "enabled": true,
+      "verifiedAt": "2026-10-13",
+      "corsVerified": true,
+      "description": "University of Kentucky public radio",
+      "genres": [
+        "Public Radio"
+      ],
+      "inGuide": false
+    },
+    {
+      "id": "radio:ca-citr",
+      "name": "CiTR 101.9 FM",
+      "country": "CA",
+      "region": "British Columbia",
+      "city": "Vancouver",
+      "callSign": "CiTR",
+      "format": "Campus Radio",
+      "language": "en",
+      "streamUrl": "https://live.citr.ca/live.mp3",
+      "streamType": "mp3",
+      "homepage": "https://www.citr.ca/",
+      "enabled": true,
+      "verifiedAt": "2026-10-13",
+      "corsVerified": true,
+      "description": "Campus and community radio from UBC",
+      "genres": [
+        "Campus Radio"
+      ],
+      "inGuide": false
+    },
+    {
+      "id": "radio:ca-cjad",
+      "name": "CJAD 800",
+      "country": "CA",
+      "region": "Quebec",
+      "city": "Montreal",
+      "callSign": "CJAD",
+      "format": "News / Talk",
+      "language": "en",
+      "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/CJADAMAAC.aac",
+      "streamType": "aac",
+      "homepage": "https://www.iheartradio.ca/cjad/",
+      "enabled": true,
+      "verifiedAt": "2026-10-13",
+      "corsVerified": true,
+      "description": "Montreal news and talk radio",
+      "genres": [
+        "News / Talk"
+      ],
+      "inGuide": false
+    },
+    {
+      "id": "radio:us-wrfl",
+      "name": "WRFL FM 88.1",
+      "country": "US",
+      "region": "Kentucky",
+      "city": "Lexington",
+      "callSign": "WRFL",
+      "format": "College Radio",
+      "language": "en",
+      "streamUrl": "https://stream.wrfl.fm/stream",
+      "streamType": "mp3",
+      "homepage": "https://wrfl.fm/",
+      "enabled": false,
+      "description": "University of Kentucky student radio",
+      "genres": [
+        "College Radio"
+      ],
+      "inGuide": false
+    },
+    {
+      "id": "radio:ca-cbc-radio-one-toronto",
+      "name": "CBC Radio One (Toronto)",
+      "country": "CA",
+      "region": "Ontario",
+      "city": "Toronto",
+      "callSign": "CBC",
+      "format": "Public Radio",
+      "language": "en",
+      "streamUrl": "https://cbcliveradio-lh.akamaihd.net/i/CBCR1_TOR@14942/master.m3u8",
+      "streamType": "hls",
+      "homepage": "https://www.cbc.ca/listen/live-radio/1-27-cbc-radio-one-toronto",
+      "enabled": false,
+      "description": "Canadian public radio programming",
+      "genres": [
+        "Public Radio"
+      ],
+      "inGuide": false
+    }
+  ]
+}

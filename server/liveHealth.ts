@@ -26,7 +26,7 @@ export function healthReason(url: string): string | undefined { return state.get
 /** One check: the playlist (and, for a master, its first variant) must load and be HLS. */
 export async function checkStream(url: string): Promise<{ ok: boolean; reason?: string }> {
   try {
-    const { res, finalUrl } = await safeFetch(url, { allow: anyPublicHost, timeoutMs: 8_000, fetchImpl, headers: { 'User-Agent': 'Mozilla/5.0 AJN-Precision-Engineering/LiveHealth' } });
+    const { res, finalUrl } = await safeFetch(url, { allow: anyPublicHost, timeoutMs: 6_000, fetchImpl, headers: { 'User-Agent': 'Mozilla/5.0 AJN-Precision-Engineering/LiveHealth' } });
     if (!res.ok) { await res.body?.cancel().catch(() => {}); return { ok: false, reason: `playlist HTTP ${res.status}` }; }
     const text = await readTextCapped(res, PLAYLIST_MAX_BYTES);
     if (!text.trimStart().startsWith('#EXTM3U')) return { ok: false, reason: 'not an HLS playlist' };
@@ -35,7 +35,7 @@ export async function checkStream(url: string): Promise<{ ok: boolean; reason?: 
     const i = lines.findIndex((l) => l.startsWith('#EXT-X-STREAM-INF'));
     const v = lines.slice(i + 1).map((l) => l.trim()).find((l) => l && !l.startsWith('#'));
     if (!v) return { ok: false, reason: 'master playlist has no variants' };
-    const vr = await safeFetch(new URL(v, finalUrl), { allow: anyPublicHost, timeoutMs: 8_000, fetchImpl });
+    const vr = await safeFetch(new URL(v, finalUrl), { allow: anyPublicHost, timeoutMs: 6_000, fetchImpl });
     await vr.res.body?.cancel().catch(() => {});
     return vr.res.ok ? { ok: true } : { ok: false, reason: `variant HTTP ${vr.res.status}` };
   } catch (e: any) {
@@ -46,7 +46,7 @@ export async function checkStream(url: string): Promise<{ ok: boolean; reason?: 
 /** Check every URL (bounded concurrency) and update state. Returns counts. */
 /** full=true: every channel (prunes URLs no longer listed; skipped if >80% fail).
  *  full=false: a recheck of some URLs (e.g. those that just failed). */
-export async function runHealthCheck(urls: string[], concurrency = 8, full = true): Promise<{ checked: number; ok: number; failed: number; applied: boolean }> {
+export async function runHealthCheck(urls: string[], concurrency = 24, full = true): Promise<{ checked: number; ok: number; failed: number; applied: boolean }> {
   if (liveHealthStats.running) return { checked: 0, ok: 0, failed: 0, applied: false };
   liveHealthStats.running = true;
   try {

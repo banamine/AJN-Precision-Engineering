@@ -6,6 +6,9 @@ import { loadAjnFeeds } from '../services/ajnFeeds';
 import { buildRadioCatalog, type RadioEntry, type RadioFeedItem } from '../utils/ajnRadioCatalog';
 import { AJN_CHANNEL_LABELS, formatAirDate, type AjnChannel } from '../utils/ajnClassify';
 import { filterEntries, formatClock, isPlayingEntry, neighbour, showChips, showInitials, showKey, showLabel, typeChips, typeKey, typeLabel, type RadioFilter, type RadioSort } from '../utils/ajnRadioBrowse';
+import { dayKindLabel, groupShowDays, planFullShow, type FullShowMode, type ShowDay } from '../utils/ajnShowGroups';
+import { startShowQueue } from '../utils/showQueue';
+import { FullShowStatus } from './FullShowStatus';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
 import { useDigest } from '../hooks/useDigest';
 import { DailyBriefing, NewsTicker } from './DailyBriefing';
@@ -25,6 +28,39 @@ interface Props {
 
 const NO_FILTER: RadioFilter = { show: null, type: null, query: '', sort: 'newest' };
 
+function FullShowDays({ days, onPlay }: { days: ShowDay[]; onPlay: (day: ShowDay, mode: FullShowMode) => void }) {
+  if (days.length === 0) return null;
+  return (
+    <section aria-label="Full shows by day" data-testid="full-show-days" className="mb-6">
+      <div className="ajr-label mb-2">FULL SHOWS BY DAY</div>
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {days.map((day) => {
+          const audio = planFullShow(day, 'audio');
+          const video = planFullShow(day, 'video');
+          const hours = day.parts.map((p) => p.hour);
+          const range = hours.length ? `Hours ${hours[0]}${hours.length > 1 ? `–${hours[hours.length - 1]}` : ''} published` : day.special ? 'Single special broadcast' : 'Whole-show audio';
+          return (
+            <li key={day.key} data-testid="full-show-day" className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <strong className="min-w-0 truncate text-sm text-neutral-50">{day.showName} · {formatAirDate(day.airDate)}</strong>
+                <span data-testid="day-kind" className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${day.dayKind === 'special' ? 'bg-amber-500/20 text-amber-300' : day.dayKind === 'sunday-lineup' ? 'bg-sky-500/20 text-sky-300' : 'bg-neutral-700 text-neutral-200'}`}>{dayKindLabel(day.dayKind)}</span>
+              </div>
+              <div className="mt-1 text-[11px] text-neutral-400">Recorded · {range}</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" disabled={!audio.playable} onClick={() => onPlay(day, 'audio')} aria-label={`Play full show audio: ${day.showName} ${formatAirDate(day.airDate)}`} className="flex items-center gap-1.5 rounded-lg bg-sky-500 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-400 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"><Headphones size={14} /> FULL SHOW · AUDIO{audio.singleFile ? '' : ` · ${audio.items.length} parts`}</button>
+                <button type="button" disabled={!video.playable} onClick={() => onPlay(day, 'video')} aria-label={`Play full show video: ${day.showName} ${formatAirDate(day.airDate)}`} className="flex items-center gap-1.5 rounded-lg border border-sky-500/50 px-3 py-2 text-xs font-semibold text-sky-200 hover:bg-sky-500/10 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"><Tv size={14} /> FULL SHOW · VIDEO{video.playable && !video.singleFile ? ` · ${video.items.length} parts` : ''}</button>
+              </div>
+              {!video.playable && video.reason && <p className="mt-1 text-[11px] text-neutral-400">Video: {video.reason}</p>}
+              {video.playable && video.missingHours.length > 0 && <p data-testid="video-missing" className="mt-1 text-[11px] text-amber-300">Video not published for hour {video.missingHours.join(', ')}; the video show is not complete.</p>}
+              {audio.playable && audio.missingHours.length > 0 && <p className="mt-1 text-[11px] text-amber-300">Audio not published for hour {audio.missingHours.join(', ')}.</p>}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onPlayProgram, onNavigate }: {
   nowPlaying: NowPlayingMedia | null; playingEntry: RadioEntry | null; list: readonly RadioEntry[]; onPlayEntry: (entry: RadioEntry) => void; onPlayProgram: PlayProgramCallback; onNavigate?: (destination: Destination) => void;
 }) {
@@ -40,6 +76,7 @@ function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onPlayPr
     : { cls: 'rec', text: playingEntry ? `RECORDED · ${typeLabel(typeKey(playingEntry)).toUpperCase()}` : 'RECORDED' };
   return (
     <section className="ajr-now" aria-label="Now playing" data-testid="radio-now-playing">
+      <FullShowStatus className="col-span-full" />
       <div className="ajr-now-art" aria-hidden="true"><div className="ajr-art-sun" /><div className="ajr-art-horizon" /><span className="ajr-art-index">AJN{playingEntry ? ` — ${showInitials(playingEntry)}` : ''}</span></div>
       <div>
         <div className="ajr-label"><span className={`ajr-eq ${nowPlaying && !media.paused ? 'on' : ''}`} aria-hidden="true"><i /><i /><i /></span>NOW PLAYING</div>
@@ -117,6 +154,15 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   const playEntry = useCallback((entry: RadioEntry) => {
     onPlayProgram(entry.audioUrl, entry.title, AJN_CHANNEL_LABELS[entry.channel], 'audio', 'ajn-radio', 'ajn-radio', entry.id);
   }, [onPlayProgram]);
+  const showDays = useMemo(() => groupShowDays(everyEntry), [everyEntry]);
+  const dayByKey = useMemo(() => new Map(showDays.map((d) => [d.key, d])), [showDays]);
+  /** Full Show = the day's real parts, in order, played as one session (audio or video). Never merges files in the UI. */
+  const playFullShow = useCallback((day: ShowDay, mode: FullShowMode) => {
+    const plan = planFullShow(day, mode);
+    const first = startShowQueue(plan, `${day.showName} · ${formatAirDate(day.airDate)}`);
+    if (!first) return;
+    onPlayProgram(first.src, first.title, `Full show · ${day.showName} · ${formatAirDate(day.airDate)}`, first.mediaType, 'ajn-radio', 'ajn-radio', first.programId);
+  }, [onPlayProgram]);
   const playVideo = (entry: RadioEntry) => {
     onPlayProgram(entry.videoUrl!, entry.title, AJN_CHANNEL_LABELS[entry.channel], 'video', 'ajn-radio', 'ajn-radio', `${entry.id}:video`);
   };
@@ -161,6 +207,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
 
       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
+        <FullShowDays days={showDays.slice(0, 12)} onPlay={playFullShow} />
         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>
         {error && <p className="ajr-status ajr-status-error" role="alert">{error}</p>}
         {loading && items.length === 0 && !error && <p className="ajr-status" role="status">Loading AJN feeds…</p>}
@@ -201,8 +248,24 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
                     <span className="ajr-label">{showLabel(showKey(entry)).toUpperCase()} · {typeLabel(typeKey(entry)).toUpperCase()}</span>
                     <strong>{entry.title}</strong>
                     {entry.airDate && !entry.needsReview ? <small>Aired {formatAirDate(entry.airDate)}</small> : <small className="warn">Date not verified from filename</small>}
-                    <span className="ajr-card-play"><Play size={12} fill="currentColor" /> {playing ? (liveMedia.paused ? 'PAUSED' : 'PLAYING') : 'LISTEN TO EPISODE'}{!playing && saved >= 5 && <span className="ajr-card-resume">RESUME {formatClock(saved)}</span>}</span>
+                    <span className="ajr-card-play"><Play size={14} fill="currentColor" /> {playing ? (liveMedia.paused ? 'PAUSED' : 'PLAYING') : 'LISTEN TO EPISODE'}{!playing && saved >= 5 && <span className="ajr-card-resume">RESUME {formatClock(saved)}</span>}</span>
                   </span>
+                </button>
+                <button
+                  type="button"
+                  className="ajr-fullshow-btn"
+                  aria-label={`Play full show: ${entry.title}`}
+                  title="Play Full Show (High-Visibility Drive Mode)"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const day = entry.airDate && entry.classified.showSlug ? dayByKey.get(`${entry.airDate}|${entry.classified.showSlug}`) : undefined;
+                    if (day) playFullShow(day, 'audio'); else playEntry(entry);
+                  }}
+                >
+                  <span className="ajr-fullshow-icon">
+                    <Play size={16} fill="currentColor" />
+                  </span>
+                  <span className="ajr-fullshow-text">FULL SHOW</span>
                 </button>
                 {entry.videoUrl && <button type="button" className="ajr-video" aria-label={`Watch video: ${entry.title}`} onClick={() => playVideo(entry)}><Tv size={12} /> VIDEO</button>}
                 {fraction > 0 && <span className="ajr-bar" role="progressbar" aria-label="Played so far" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)}><i style={{ width: `${Math.round(fraction * 100)}%` }} /></span>}

@@ -31,6 +31,7 @@
     "node_modules",
     "dist",
     "AJN-Precision-Engineering",
-    "app"
+    "app",
+    "tools/checks/firestore-emulator-check.ts"
   ]
 }

@@ -1,0 +1,205 @@
+{
+  "_readme": "Waiting-room notes shown while media is really waiting (loading / seeking / buffering / network stalled). Edit freely: add lines, themes, acronyms. Rules: keep every line under ~90 characters; never claim the media is ready or that something was fixed (the elapsed timer and the real status are always shown beside the joke); no real quotes from copyrighted works or real people, everything here is original.",
+  "version": 1,
+  "settings": {
+    "showAfterMs": 1500,
+    "rotateMs": 3600,
+    "slowAfterMs": 15000,
+    "retryAfterMs": 25000
+  },
+  "kinds": {
+    "loading": { "label": "Loading" },
+    "seeking": { "label": "Seeking" },
+    "buffering": { "label": "Buffering" },
+    "stalled": { "label": "Stalled" }
+  },
+  "acronyms": {
+    "any": [
+      { "short": "R.A.T.S.", "long": "Rodents Assisting Transmission Services" },
+      { "short": "V.H.S.", "long": "Very Hopeful Shipment" },
+      { "short": "W.I.R.E.S.", "long": "Wiggling Into Radio, Eventually Streaming" },
+      { "short": "B.R.B.", "long": "Bytes Running Briskly (they are not)" },
+      { "short": "T.A.P.E.", "long": "Tracking Adjustment, Please Excuse" },
+      { "short": "P.O.P.C.O.R.N.", "long": "Please Observe Patient Content Of Reels Nearly Nearby" },
+      { "short": "S.N.A.C.K.", "long": "Signal Needs A Cookie, Kindly" },
+      { "short": "F.L.U.F.F.", "long": "Fetching Lots Of Unrelated Fuzzy Frames" },
+      { "short": "D.I.A.L.", "long": "Dust In All Lines" },
+      { "short": "B.O.B.", "long": "Bits On Bicycles" },
+      { "short": "K.N.O.B.", "long": "Kindly Nudging Our Buffering" },
+      { "short": "C.R.T.", "long": "Cozy Retro Tube warming up" },
+      { "short": "M.O.O.S.E.", "long": "Media Occasionally Ordered, Slow Express" },
+      { "short": "G.E.A.R.", "long": "Gently Escorting A Reel" },
+      { "short": "L.A.M.P.", "long": "Loading, A Moment Please" },
+      { "short": "Z.Z.Z.", "long": "Zipping Zeroes Zlowly" }
+    ],
+    "seeking": [
+      { "short": "F.F.W.D.", "long": "Frantically Fetching Where Distant" },
+      { "short": "R.E.W.I.N.D.", "long": "Reel Eventually Wound, Is Nearly Done" },
+      { "short": "S.K.I.P.", "long": "Sending Kittens In Pursuit" },
+      { "short": "H.O.P.", "long": "Hunting Our Place" },
+      { "short": "J.U.M.P.", "long": "Jolly Unspooling, Mind the Pause" }
+    ],
+    "stalled": [
+      { "short": "H.M.M.", "long": "Hold Music Mode" },
+      { "short": "O.O.P.S.", "long": "Orderly Outage, Patience Suggested" },
+      { "short": "Y.A.W.N.", "long": "Yonder Archive Wakes Nowish" },
+      { "short": "S.H.H.", "long": "Server Having a Hiccup" }
+    ],
+    "buffering": [
+      { "short": "B.U.F.F.", "long": "Bits Undergoing Fluffy Filling" },
+      { "short": "S.I.P.", "long": "Slowly Inflating the Pipe" },
+      { "short": "T.O.A.S.T.", "long": "Transmission Of A Slightly Toasty Track" }
+    ]
+  },
+  "themes": [
+    {
+      "id": "wires",
+      "label": "Wires",
+      "emoji": "🔌",
+      "lines": [
+        "Untangling the wires. There were more knots than wires.",
+        "Our best cable is currently doing yoga. Please hold.",
+        "Plugging it in the other way around. Third time lucky.",
+        "A wire has been located behind the couch. Following it.",
+        "Checking the cable for kinks. It has a lot of feelings.",
+        "The signal is taking the scenic route through the cables.",
+        "Blowing dust out of the connector, like a gentleman.",
+        "Someone tripped on the extension cord. Not naming names.",
+        "Wiggling the antenna until the picture likes us again.",
+        "Duct-taping the cable to the wall. Very professional."
+      ]
+    },
+    {
+      "id": "rats",
+      "label": "Rats",
+      "emoji": "🐀",
+      "lines": [
+        "A rat is chewing on the cable. We are negotiating with cheese.",
+        "The rat union has called a lunch break mid-transmission.",
+        "Rat spotted on the line. It says it is 'just reviewing the bandwidth'.",
+        "Tiny rat carrying one packet at a time. Very committed.",
+        "The rat found the good cable. The cable is now a snack.",
+        "Rat supervisor says the delay is 'within snack tolerances'.",
+        "Offering the rat a cracker for a faster connection.",
+        "The rats are rewiring this. They have not read the manual.",
+        "A very small rat is pushing the buffer uphill.",
+        "Rat in the router. It looks happy. We are not."
+      ]
+    },
+    {
+      "id": "vhs",
+      "label": "VHS",
+      "emoji": "📼",
+      "lines": [
+        "Taking the tape out of the box. The box fought back.",
+        "Peeling the 'BE KIND, REWIND' sticker off the old tape.",
+        "Blowing on the cartridge, because that always worked.",
+        "Slotting the tape in. It goes in sideways. Always sideways.",
+        "Fast-forwarding past the trailers nobody asked for.",
+        "Tracking is a bit off. Twisting the little knob.",
+        "Rewinding, because somebody did not rewind last time.",
+        "The tape is in the shop's 'new releases' pile. Walking there.",
+        "Checking if the label says 'Do Not Tape Over'. It does.",
+        "Cleaning the heads with a wet cloth and a prayer."
+      ]
+    },
+    {
+      "id": "vcr",
+      "label": "VCR era",
+      "emoji": "📺",
+      "lines": [
+        "Warming up the VCR. The clock is blinking 12:00 as tradition demands.",
+        "Loading the VCR era. Please keep your arms inside the living room.",
+        "Pressing PLAY and STOP at the same time, for luck.",
+        "The remote needs new batteries. Borrowing two from the smoke alarm.",
+        "Setting the timer to record. It is set to record Tuesday forever.",
+        "Hooking up the yellow, white, and red plugs. Pretty sure that is right.",
+        "Channel 3 or 4? Flipping the little switch to find out.",
+        "Rolling a fresh pack of static into the screen.",
+        "Waiting for the TV to find its blue screen. It always finds it.",
+        "The VCR is making the noise. That is the good noise."
+      ]
+    },
+    {
+      "id": "dialup",
+      "label": "Old modem",
+      "emoji": "☎️",
+      "lines": [
+        "Dialing in. Please do not pick up the phone.",
+        "The modem is singing its little song of progress.",
+        "Handshaking with Archive. It has not yet decided to shake back.",
+        "Everyone in the house is asked to please stay off the phone line.",
+        "Downloading the image one stripe at a time, the old way.",
+        "Squeaks, hisses and beeps. This is the sound of ambition.",
+        "Asking the dial tone for permission to continue.",
+        "Reaching the internet by carrier pigeon. The pigeon is stretching."
+      ]
+    },
+    {
+      "id": "librarian",
+      "label": "The Archive",
+      "emoji": "🗄️",
+      "lines": [
+        "The librarian has gone to the very back shelf for this one.",
+        "Archive is climbing a tall ladder. We can hear the ladder.",
+        "A librarian is blowing dust off the box. Dust is winning.",
+        "They keep the good reels in the cellar. Cellar stairs are steep.",
+        "Looking in the 'miscellaneous' drawer, which is the whole building.",
+        "The librarian said 'one moment' eleven seconds ago. Honouring it.",
+        "Reel located. Reel is under another reel. Reel-ception.",
+        "Checking out your item. Library card was in the other coat."
+      ]
+    },
+    {
+      "id": "bytes",
+      "label": "Bytes",
+      "emoji": "📦",
+      "lines": [
+        "Bytes are lining up politely. A few are cutting.",
+        "Packing the bytes into very small suitcases.",
+        "The bytes are carpooling. One is still looking for its shoes.",
+        "Counting the ones and zeroes. Twice, to be sure.",
+        "A bit fell off the truck. Sending out a very small search party.",
+        "Inflating the buffer. Do not pop the buffer.",
+        "The packets left on time. The road did not.",
+        "Ferrying audio across the internet one bucket at a time."
+      ]
+    },
+    {
+      "id": "snacks",
+      "label": "Snack break",
+      "emoji": "🍿",
+      "lines": [
+        "Good time for popcorn. We will shout when the show is ready.",
+        "Stretch break! Roll the shoulders, look out the window.",
+        "A sip of something warm is highly recommended.",
+        "Tip: seeking far ahead takes a bit longer than seeking near.",
+        "Tip: stay put after a jump and the next stretch loads faster.",
+        "The show will begin the moment it begins. Not before.",
+        "Fun fact: patience has never once made the video slower."
+      ]
+    }
+  ],
+  "slow": [
+    "Still waiting. The rat is asking for a raise.",
+    "Archive is taking its sweet time. We are taking ours too.",
+    "Still on it. The kettle has boiled and re-boiled.",
+    "Longer than usual. Somewhere a cable is being very dramatic.",
+    "No, it did not forget you. It is just walking slowly.",
+    "This is the long way round. You may press Retry if you like."
+  ],
+  "quotes": [
+    "Good things come to those who wait, and slightly better things to those who rewind.",
+    "A buffer is just a very patient hug.",
+    "Every great show begins with a small pause and a smaller rat.",
+    "The wire is long, but the song is longer.",
+    "Slow internet builds character. And snacks.",
+    "Somewhere a reel is spinning just for you.",
+    "Patience: the original streaming service.",
+    "Tape hiss is the sound of the past clearing its throat.",
+    "Even the fastest cable has a Monday.",
+    "A watched progress bar never moves. Look at the picture on the wall instead.",
+    "Rewind kindly, buffer gently.",
+    "The best sound in the world is the click right before the music starts."
+  ]
+}

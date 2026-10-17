@@ -14,10 +14,14 @@ export interface RumbleItem {
   channelId: string;
   videoId: string;
   embedId: string;
+  /** Optional full video page URL from the export. If absent, one is built from videoId (any slug resolves). */
+  pageUrl?: string | null;
   title: string;
   thumbnailUrl: string | null;
   publishedAt: string | null;
   startedAt?: string | null;
+  /** When this item was last read from Rumble (export time). Falls back to baseline.generatedAt. */
+  seenAt?: string | null;
   durationSec: number | null;
   kind: RumbleItemKind;
   liveStreamId?: string;

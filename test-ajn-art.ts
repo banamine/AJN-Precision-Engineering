@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { ajnArtFor, AJN_ART } from './src/utils/ajnArt';
+assert.equal(ajnArtFor({ feedId: 'WarRoom', mediaType: 'video' }), AJN_ART.warRoomVideo);
+assert.equal(ajnArtFor({ show: 'War Room · Hour 2', mediaType: 'audio' }), AJN_ART.warRoomAudio);
+assert.equal(ajnArtFor({ feedId: 'Alex', mediaType: 'video' }), AJN_ART.alexVideo);
+assert.equal(ajnArtFor({ show: 'Alex Jones', mediaType: 'audio' }), AJN_ART.audioGeneric);
+assert.equal(ajnArtFor({ show: 'Alex Jones Show', mediaType: 'video', live: true }), AJN_ART.liveStream);
+assert.equal(ajnArtFor({ feedId: 'SundayLive', mediaType: 'audio' }), AJN_ART.audioGeneric, 'unknown show, audio: generic only');
+assert.equal(ajnArtFor({ feedId: 'SundayLive', mediaType: 'video' }), AJN_ART.alexVideo, 'Sunday Night Live is an Alex Jones show');
+assert.equal(ajnArtFor({ feedId: 'AJNHourlyVideo', show: 'unknown', mediaType: 'video' }), AJN_ART.alexVideo, 'unrecognised show in an AJN feed');
+assert.equal(ajnArtFor({ show: 'Infowars Live', mediaType: 'video' }), AJN_ART.alexVideo);
+assert.equal(ajnArtFor({ show: 'CNN', mediaType: 'video', onlyAjn: true }), undefined, 'guide: non-AJN gets nothing');
+assert.equal(ajnArtFor({ show: 'Jazz FM', mediaType: 'audio', onlyAjn: true }), undefined, 'guide: non-AJN audio gets nothing');
+assert.equal(ajnArtFor({ show: 'War Room Live', mediaType: 'video', onlyAjn: true }), AJN_ART.warRoomVideo);
+assert.equal(ajnArtFor({}), undefined);
+for (const p of Object.values(AJN_ART)) assert.ok(existsSync('public' + p), p + ' exists in public/');
+console.log('[ajn-art] PASS');

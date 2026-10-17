@@ -27,6 +27,12 @@
     "test:nova-canonical": "tsx test-nova-canonical.js",
     "test:movies-classics-producer": "tsx test-movies-classics-producer.js",
     "test:movies-classics": "tsx test-movies-classics.js",
+    "test:ui-phase12": "node test-ui-phase12.mjs",
+    "test:ui-phase34": "node test-ui-phase34.mjs",
+    "test:old-british-tv": "tsx test-old-british-tv.ts",
+    "test:epg-tune-window": "tsx test-epg-tune-window.ts",
+    "test:daily-rotation": "tsx test-daily-rotation.ts",
+    "test:rt-documentary": "tsx test-rt-documentary.ts",
     "test:classic-tv-canonical": "tsx test-classic-tv-canonical.js",
     "test:real-archive-playback": "tsx test-real-archive-playback.js",
     "test:archive-retry": "tsx test-archive-retry.ts",
@@ -67,7 +73,8 @@
     "test:canonical-slice": "tsx test-canonical-playback-slice.ts",
     "test:search-cache": "tsx test-search-cache.ts",
     "test:playable-admission": "tsx test-playable-admission.ts",
-    "test:rumble": "tsx src/rumble/logic.test.ts"
+    "test:rumble": "tsx src/rumble/logic.test.ts && NODE_ENV=test tsx test-archive-item-guide.tsx",
+    "test:honeymooners": "tsx test-honeymooners-order.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -75,6 +82,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "firebase": "^13.0.0",
     "hls.js": "^1.7.3",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
@@ -85,6 +93,8 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
     "puppeteer": "^25.9.0",

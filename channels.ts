@@ -1,3 +1,4 @@
+import { tvNewsQueryClause } from './server/tvNewsQuery';
 import { archiveApiFetch } from './server/archiveLimiter';
 /**
  * channels.ts — real archive.org-backed channel schedule, config-driven.
@@ -92,9 +93,8 @@ async function probeArchiveCollection(
     "-mediatype:collection",
   ];
 
-  if (opts.query?.trim()) {
-    clauses.push(`(${opts.query.trim()})`);
-  }
+  const queryClause = tvNewsQueryClause(opts.query);
+  if (queryClause) clauses.push(queryClause);
 
   if (opts.startDate) {
     clauses.push(`date:[${opts.startDate}T00:00:00Z TO ${effectiveEndDate}T23:59:59Z]`);
@@ -121,7 +121,7 @@ async function probeArchiveCollection(
   console.log(`[ARCHIVE COLLECTION TEST] url: ${url}`);
 
   try {
-    const response = await archiveApiFetch(url, {
+    const response = await archiveCollectionFetch(url, {
       headers: {
         "User-Agent": "AJN-Precision-Engineering/1.0",
         Accept: "application/json",
@@ -186,6 +186,7 @@ async function probeArchiveCollection(
       ok: response.ok && !data.error,
       total,
       docs,
+      ...(data.error ? { error: `Archive rejected the query: ${String(data.error).slice(0, 200)}` } : {}),
     };
   } catch (error) {
     console.error(
@@ -210,6 +211,11 @@ async function probeArchiveCollection(
 // and Search views request the same five networks repeatedly, and each uncached
 // call costs 2 searches + up to 24 metadata requests against Archive.
 const searchCache = new Map<string, { expires: number; value: Promise<SearchTVNewsResult> }>();
+let archiveCollectionFetch: typeof archiveApiFetch = archiveApiFetch;
+export function setTVNewsSearchFetchForTests(fetchImpl: typeof fetch | undefined) {
+  archiveCollectionFetch = fetchImpl ?? archiveApiFetch;
+  searchCache.clear();
+}
 export async function searchTVNews(opts: Parameters<typeof searchTVNewsUncached>[0]): ReturnType<typeof searchTVNewsUncached> {
   const key = JSON.stringify(opts);
   const hit = searchCache.get(key);
@@ -218,10 +224,10 @@ export async function searchTVNews(opts: Parameters<typeof searchTVNewsUncached>
   const entry = { expires: Date.now() + 5 * 60_000, value };
   searchCache.set(key, entry);
   // Keep the entry while the search is in flight (concurrent callers share it), but
-  // evict failures so the next request retries Archive. An upstream_error resolves
-  // rather than rejects, so it must be checked explicitly; ok and empty stay cached.
+  // evict failures and empty results so a transiently empty Archive response is
+  // never presented as a successful cached search.
   const evict = () => { if (searchCache.get(key) === entry) searchCache.delete(key); };
-  value.then((result) => { if (result.status === 'upstream_error') evict(); }, evict);
+  value.then((result) => { if (result.status !== 'ok' || result.items.length === 0) evict(); }, evict);
   if (searchCache.size > 200) searchCache.delete(searchCache.keys().next().value!);
   return value;
 }

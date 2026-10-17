@@ -10,6 +10,7 @@ export const LIBRARY_SOURCES: Array<{ guideId: string; category: (ch: ScheduleCh
   { guideId: 'science-documentaries', category: (ch) => (ch.id === 'nasa-missions' || ch.id === 'nova-wonders' ? 'science' : 'documentary') },
   { guideId: 'movies-classics-vault', category: () => 'classics' },
   { guideId: 'classic-tv', category: () => 'classics' },
+  { guideId: 'old-british-tv', category: () => 'classics' },
   { guideId: 'audio-podcasts', category: (ch) => (ch.mediaType === 'audio' ? 'audio' : null) },
 ];
 const PER_CHANNEL = 60, PER_CATEGORY = 400;
@@ -34,11 +35,11 @@ export function libraryFromChannels(groups: Array<{ guideId: string; channels: S
       if (n >= PER_CHANNEL || (perCat.get(cat) ?? 0) >= PER_CATEGORY) break;
       const media = p.archivePath || p.mediaUrl;
       const m = (p.metadata ?? {}) as any;
-      if (!media || m.live) continue;
+      if (!media || m.live || m.externalClip) continue;
       const id = baseProgramId(p.id);
       if (seen.has(id)) continue;
       seen.add(id); n++; perCat.set(cat, (perCat.get(cat) ?? 0) + 1);
-      const sc = p.sourceClass === 'ajn_archive' || p.sourceClass === 'ajn_rss' ? p.sourceClass : 'archive_org';
+      const sc = p.sourceClass === 'ajn_archive' || p.sourceClass === 'ajn_rss' || p.sourceClass === 'podcast_rss' ? p.sourceClass : 'archive_org';
       out.push({
         id, programId: id, title: p.title, description: p.description || ch.name,
         category: cat, archivePath: media, duration: fmtDuration(p),

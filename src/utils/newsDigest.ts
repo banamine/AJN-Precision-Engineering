@@ -24,8 +24,9 @@ export const decodeEntities = (value: string): string => value.replace(/&(#x[0-9
 });
 const clean = (value: unknown, max: number): string | null => {
   if (typeof value !== 'string') return null;
+  // Feeds are often double or triple encoded (`&lt;a href=...&gt;` decodes to a real tag), so tags are stripped AFTER every decode pass, not only before.
   let text = value.replace(/<[^>]*>/g, ' ');
-  for (let pass = 0; pass < 4; pass++) { const next = decodeEntities(text); if (next === text) break; text = next; } // feeds are often double or triple encoded
+  for (let pass = 0; pass < 4; pass++) { const next = decodeEntities(text).replace(/<[^>]*>/g, ' '); if (next === text) break; text = next; }
   text = text.replace(/\s+/g, ' ').trim();
   return text ? text.slice(0, max) : null;
 };
@@ -55,7 +56,11 @@ export function parseBriefing(raw: unknown): BriefingBlock[] {
     if (!headline) continue;
     const body = lines.slice(1).join('\n');
     const field = (label: string) => clean(new RegExp(`\\*\\*${label}:\\*\\*\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\*[A-Za-z ]+:\\*\\*|$)`).exec(body)?.[1], 700);
-    blocks.push({ headline, source: field('Source'), summary: field('Summary'), theme: field('Key Theme') });
+    const source = field('Source');
+    let summary = field('Summary');
+    // Google News descriptions are only "headline + outlet"; repeating the headline as a summary adds nothing, so it is not shown.
+    if (summary) { const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); const s0 = norm(summary), h0 = norm(headline); if (s0 === h0 || (s0.startsWith(h0) && (!source || norm(s0.slice(h0.length)) === '' || norm(source).includes(norm(s0.slice(h0.length)))))) summary = null; }
+    blocks.push({ headline, source, summary, theme: field('Key Theme') });
   }
   return blocks;
 }
