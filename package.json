@@ -73,10 +73,11 @@
     "test:canonical-slice": "tsx test-canonical-playback-slice.ts",
     "test:search-cache": "tsx test-search-cache.ts",
     "test:playable-admission": "tsx test-playable-admission.ts",
-    "test:rumble": "tsx src/rumble/logic.test.ts && NODE_ENV=test tsx test-archive-item-guide.tsx",
+    "test:rumble": "tsx src/rumble/logic.test.ts",
     "test:honeymooners": "tsx test-honeymooners-order.ts",
     "test:series": "tsx test-series.ts",
-    "test:thumbnail": "tsx test-thumbnail.ts"
+    "test:thumbnail": "tsx test-thumbnail.ts",
+    "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
