@@ -35,7 +35,8 @@ const baseUrl = process.env.AJN_TEST_URL || 'http://localhost:3000';
     const novaProbe = await page.evaluate(async () => {
       const path = '/download/nova-wonders/NOVA%20Wonders%202%20Living%20in%20You.mp4';
       const response = await fetch('/api/archive/proxy?path=' + encodeURIComponent('/download/nova-wonders/NOVA Wonders 2 Living in You.mp4'), {
-        headers: { Range: 'bytes=0-1023' }
+        headers: { Range: 'bytes=0-1023' },
+        cache: 'no-store'
       });
       const body = await response.arrayBuffer();
       return {
@@ -49,11 +50,13 @@ const baseUrl = process.env.AJN_TEST_URL || 'http://localhost:3000';
       };
     });
     console.log('[NOVA proxy probe]', JSON.stringify(novaProbe));
+    // cache:'no-store' on both probes: the proxy now sends Cache-Control private,max-age=3600, so Chrome's HTTP cache would
+    // stitch the cached 0-1023 slice with a follow-up fetch and hand back a synthetic full-file 206. We test the server, not the browser cache.
     // Browsers open media with an open-ended range. On Cloud Run a response over
     // 32 MiB fails with an empty 500, so the proxy must answer a bounded 206 slice.
     const openRange = await page.evaluate(async () => {
       const c = new AbortController();
-      const r = await fetch('/api/archive/proxy?path=' + encodeURIComponent('/download/nova-wonders/NOVA Wonders 2 Living in You.mp4'), { headers: { Range: 'bytes=0-' }, signal: c.signal });
+      const r = await fetch('/api/archive/proxy?path=' + encodeURIComponent('/download/nova-wonders/NOVA Wonders 2 Living in You.mp4'), { headers: { Range: 'bytes=0-' }, signal: c.signal, cache: 'no-store' });
       const out = { status: r.status, length: Number(r.headers.get('content-length')), contentRange: r.headers.get('content-range') };
       c.abort();
       return out;
