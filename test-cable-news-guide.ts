@@ -28,7 +28,14 @@ setCableNewsFetchForTests((async (input: any) => {
 const channels = await getScheduleForGuide('cable-tv');
 const by = Object.fromEntries(channels.map((c) => [c.id, c]));
 // RT Documentaries is the always-on first row; the six news rows keep their order.
-assert.deepEqual(channels.map((c) => c.id), ['rt-documentaries', 'fox-news', 'cnn', 'msnbc', 'bbc', 'rt', 'kpix', 'cbc', 'ctv', 'aljazeera', 'france24', 'trt-world', 'dw', 'ajn-infowars-nightly-news', 'ajn-infowars-survival']);
+// The original 15 rows keep their exact order at the top; channels added later (live news streams,
+// New World Tyranny, Fox police-chase clips) append after them and may never reorder or displace them.
+const BASE_ROWS = ['rt-documentaries', 'fox-news', 'cnn', 'msnbc', 'bbc', 'rt', 'kpix', 'cbc', 'ctv', 'aljazeera', 'france24', 'trt-world', 'dw', 'ajn-infowars-nightly-news', 'ajn-infowars-survival'];
+const allIds = channels.map((c) => c.id);
+assert.deepEqual(allIds.slice(0, BASE_ROWS.length), BASE_ROWS);
+const appended = allIds.slice(BASE_ROWS.length);
+assert.ok(appended.every((id) => id === 'ajn-new-world-tyranny' || id === 'fox-clips-police-chase' || id.startsWith('live-news-')), `unexpected appended rows: ${appended.filter((id) => !(id === 'ajn-new-world-tyranny' || id === 'fox-clips-police-chase' || id.startsWith('live-news-'))).join(', ')}`);
+assert.equal(new Set(allIds).size, allIds.length, 'no duplicate channel ids');
 assert.ok(by['rt-documentaries'].programs.length > 30, 'RT Documentaries covers the day from the packaged index');
 assert.ok(by['rt-documentaries'].programs.every((p) => p.channelId === 'rt-documentaries' && p.guideId === 'cable-tv'));
 

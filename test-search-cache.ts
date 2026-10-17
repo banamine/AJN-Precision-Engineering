@@ -57,7 +57,7 @@ try {
   });
   assert.equal(repeat, 0, 'B: cached ok result must not reach Archive');
 
-  // C. A valid empty result is cached.
+  // C. An empty result is NOT cached: a transiently empty Archive answer must not be remembered as a successful search.
   mode = 'empty';
   const c1 = await searchTVNews({ network: 'CACHE_C', rows: 5 });
   assert.equal(c1.status, 'empty');
@@ -65,7 +65,7 @@ try {
     const c2 = await searchTVNews({ network: 'CACHE_C', rows: 5 });
     assert.equal(c2.status, 'empty');
   });
-  assert.equal(cRepeat, 0, 'C: cached empty result must not reach Archive');
+  assert.ok(cRepeat > 0, 'C: an empty result is evicted, so the next identical search must reach Archive again');
 
   // D. Concurrent identical requests share one in-flight search (ok: first collection answers).
   mode = 'ok';

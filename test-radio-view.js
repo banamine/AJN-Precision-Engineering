@@ -168,7 +168,16 @@ try {
   await page.goto(`${baseUrl}/#radio`, { waitUntil: 'domcontentloaded' });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-testid="radio-now-title"]');
-  check((await text('[data-testid="radio-now-title"]')) === 'Nothing playing', 'after a hard reload the panel says "Nothing playing" (no stale state)');
+  // Since the 2026-10-08 "restore after restart" feature the app reopens the last audio item
+  // (<24 h) LOADED BUT PAUSED. So after a hard reload the panel must never be playing by itself.
+  await new Promise((r) => setTimeout(r, 800));
+  const afterReload = await media();
+  check(!afterReload || afterReload.paused === true, 'after a hard reload nothing starts playing by itself (restored item stays paused)');
+  // With no saved history there is nothing to restore: the panel says "Nothing playing".
+  await page.evaluate(() => { localStorage.removeItem('ajn.recentlyPlayed.v1'); });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-testid="radio-now-title"]');
+  check((await text('[data-testid="radio-now-title"]')) === 'Nothing playing', 'after a hard reload with no saved history the panel says "Nothing playing" (no stale state)');
 
   check(errors.length === 0, `no page errors (${errors.slice(0, 3).join(' | ')})`);
 } catch (error) {
