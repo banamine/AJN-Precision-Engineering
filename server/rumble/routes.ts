@@ -2,6 +2,8 @@ import type { Express, Request, Response } from "express";
 import { RUMBLE_BASELINE } from "../../src/rumble/baseline";
 import { sortItems, validateBaseline } from "../../src/rumble/logic";
 import type { RumbleBaseline } from "../../src/rumble/types";
+import { registerNewsRoutes } from "../news/routes";
+import { registerYoutubeRoutes } from "../youtube/routes";
 
 function enabled(): boolean {
   return process.env.RUMBLE_ENGINE_ENABLED !== "false";
@@ -13,6 +15,10 @@ function failure(reason: string, res: Response): Response {
 
 export function registerRumbleRoutes(app: Express, baseline: RumbleBaseline = RUMBLE_BASELINE): void {
   const validation = validateBaseline(baseline);
+
+  // Provider-agnostic link resolver (Rumble today, YouTube later). Registered here so server.ts is untouched.
+  registerNewsRoutes(app);
+  registerYoutubeRoutes(app);
 
   const guard = (res: Response): Response | null => {
     if (!enabled()) return failure("disabled", res);

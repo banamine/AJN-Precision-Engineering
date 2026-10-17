@@ -10,6 +10,7 @@
  * web-playable file exists (unsupported). No Node APIs at import time. */
 import type { Program, ScheduleChannel } from '../src/types';
 import { selectPlayableFile, type LibraryAvailability, type DurationSource } from './archive/mediaSelector';
+import { matchesQuery, scoreMatch } from '../src/search/normalize';
 import { archiveApiFetch } from './archiveLimiter';
 import { safeFetch } from './safeFetch';
 import { groupLibraryResults, findLibrarySeries, type LibrarySeries } from './library/series';
@@ -34,6 +35,8 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
   { id: 'old-time-radio', label: 'Old-Time Radio', mediaType: 'audio', query: 'collection:oldtimeradio AND mediatype:audio' },
   { id: 'audiobooks', label: 'Audiobooks', mediaType: 'audio', query: 'collection:librivoxaudio AND mediatype:audio' },
   { id: 'rush', label: 'Rush Limbaugh', mediaType: 'audio', guide: { guideId: 'audio-podcasts', channels: (c) => c.id === 'rush-on-this-day' } },
+  { id: 'classic-tv-channels', label: 'Classic TV Channels', mediaType: 'video', guide: { guideId: 'classic-tv', channels: () => true } },
+  { id: 'movie-vault', label: 'Movies Classics', mediaType: 'video', guide: { guideId: 'movies-classics-vault', channels: () => true } },
 ];
 export const ITEMS_PER_SEARCH = 150;
 
@@ -88,7 +91,7 @@ export function recordsFromGuide(cat: LibraryCategory, channels: ScheduleChannel
       const mt = (p.metadata ?? {}) as any;
       const path = p.archivePath || p.mediaUrl;
       const id = baseId(p.id);
-      if (!path || mt.live || seen.has(id)) continue;
+      if (!path || mt.live || mt.externalClip || seen.has(id)) continue;
       seen.add(id);
       const secs = Number(mt.durationSeconds) || (p.endTimeUtc && p.startTimeUtc ? (Date.parse(p.endTimeUtc) - Date.parse(p.startTimeUtc)) / 1000 : 0);
       const year = yearOf(mt.year) ?? yearOf(mt.airedUtc) ?? yearOf(mt.date) ?? yearOf(/(\d{4}-\d{2}-\d{2})/.exec(p.id)?.[1]);
@@ -146,8 +149,13 @@ export function queryLibrary(qy: ItemsQuery) {
   if (qy.category) rows = rows.filter((r) => r.categoryIds.includes(qy.category!));
   if (qy.decade !== undefined && qy.decade !== null) rows = rows.filter((r) => (qy.decade === 0 ? r.decade === undefined : r.decade === qy.decade));
   if (qy.mediaType === 'video' || qy.mediaType === 'audio') rows = rows.filter((r) => r.mediaType === qy.mediaType);
-  if (q) rows = rows.filter((r) => r.title.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q) || r.identifier.toLowerCase().includes(q));
-  const grouped = groupLibraryResults(rows);
+  if (qy.q?.trim()) rows = rows.filter((r) => matchesQuery([r.title, r.description ?? '', r.identifier], qy.q!));
+  const text = String(qy.q ?? '').trim();
+  const grouped0 = groupLibraryResults(rows);
+  const best = (r: any): number => r.type === 'series'
+    ? Math.max(scoreMatch({ title: r.title }, text), ...r.episodes.map((e: any) => scoreMatch(e, text)))
+    : scoreMatch(r, text);
+  const grouped = text ? [...grouped0].sort((a, b) => best(b) - best(a)) : grouped0;
   const totalItems = grouped.length;
   return { snapshotAt, page, limit, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / limit)),
     rawCount: rows.length, uniqueCount: rows.length, groupCount: grouped.filter((r) => r.type === 'series').length,
@@ -228,12 +236,16 @@ export async function topUpCategory(c: LibraryCategory, maxNew = 15): Promise<nu
 
 let timers: ReturnType<typeof setInterval>[] = [];
 let nextCat = 0;
+export function needsProbe(r: IndexRecord): boolean {
+  return !r.guideId && r.path.startsWith('/download/') && r.availability === 'unverified';
+}
+
 export function startLibraryBackground(opts: { probeEveryMs?: number; topUpEveryMs?: number } = {}) {
   if (timers.length) return;
   const probeEvery = opts.probeEveryMs ?? 5000, topUpEvery = opts.topUpEveryMs ?? 3600_000;
   let cursor = 0;
   timers.push(setInterval(() => {
-    const list = allRecords().filter((r) => r.path.startsWith('/download/') && !probe.has(r.id) && r.availability === 'unverified');
+    const list = allRecords().filter((r) => needsProbe(r) && !probe.has(r.id));
     const pending = list.length ? list : allRecords().filter((r) => probe.get(r.id)?.status === 'unverified' || (probe.get(r.id)?.fails ?? 0) === 1);
     if (!pending.length) return;
     void probeRecord(pending[cursor++ % pending.length]);

@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { queryLiveRadioStations } from './server/liveRadio.ts';
+import reg from './server/data/liveRadioNumbers.json' with { type: 'json' };
+const first = queryLiveRadioStations({ pageSize: 100, page: 1 });
+const all: any[] = []; for (let p = 1; p <= Math.ceil(first.total / 100); p++) all.push(...queryLiveRadioStations({ pageSize: 100, page: p }).items);
+const missing = all.filter((s) => typeof s.number !== 'number');
+assert.equal(missing.length, 0, `${missing.length} stations have no number; run: npx tsx tools/assign-radio-numbers.ts (e.g. ${missing.slice(0, 3).map((s) => s.name).join(', ')})`);
+assert.equal(new Set(all.map((s) => s.number)).size, all.length, 'numbers are unique');
+assert.ok(all.every((s) => Number.isInteger(s.number) && s.number >= 1 && s.number < reg.next));
+const pick = all[1234]; const hit = queryLiveRadioStations({ q: `#${pick.number}` }).items;
+assert.equal(hit.length, 1); assert.equal(hit[0].id, pick.id, '#N finds exactly that station');
+assert.equal(queryLiveRadioStations({ q: `#${reg.next + 5}` }).total, 0, 'unknown number = nothing');
+const bare = queryLiveRadioStations({ q: String(pick.number), pageSize: 100 }).items; assert.ok(bare.some((s) => s.id === pick.id), 'bare number also finds it');
+assert.doesNotThrow(() => queryLiveRadioStations({ q: '#' }), 'a lone # is plain text, not a number');
+const ch = all.filter((s) => /classichits109\.com/.test(s.streamUrl)); assert.equal(ch.length, 9); assert.ok(ch.every((s) => typeof s.number === 'number'));
+console.log('PASS station numbers', all.length, 'stations; example #' + pick.number, pick.name);

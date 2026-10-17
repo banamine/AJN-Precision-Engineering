@@ -42,7 +42,7 @@ export function NewsViewer({ article, onClose }: NewsViewerProps) {
       <aside
         id="ajn-news-viewer"
         aria-label="Minimized news story"
-        className="fixed bottom-20 md:bottom-24 right-4 sm:right-6 z-50 flex w-[calc(100vw-2rem)] max-w-md items-center gap-3 rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-3 shadow-2xl backdrop-blur-md"
+        className="fixed left-4 top-[7.5rem] sm:left-6 sm:top-auto sm:bottom-20 md:bottom-24 z-50 flex w-[calc(100vw-2rem)] max-w-md items-center gap-3 rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-3 shadow-2xl backdrop-blur-md"
       >
         {article.imageUrl ? (
           <img

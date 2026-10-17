@@ -1,4 +1,4 @@
-export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'radio' | 'dev';
+export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'radio' | 'today' | 'history' | 'dev';
 
 export type MediaType = 'video' | 'audio';
 
@@ -52,7 +52,7 @@ export interface Program {
   archivePath?: string;
   assetId?: string;
   sourceId?: string;
-  sourceClass?: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'm3u_live';
+  sourceClass?: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'm3u_live' | 'podcast_rss';
   isArchivedSource?: boolean;
   metadata?: Record<string, any>;
 }
@@ -89,6 +89,8 @@ export interface ScheduleChannel {
   mediaType: MediaType;
   group?: string;
   logo?: string;
+  /** 'must-listen' draws the row and its cells in the highlight colour. */
+  highlight?: 'must-listen';
   programs: Program[];
   /** Source layer health for this channel (ok | partial | restricted | upstream_error | offline). */
   sourceStatus?: string;
@@ -114,6 +116,8 @@ export interface NowPlayingMedia {
   isLive?: boolean;
   /** One-shot start offset (seconds) applied when this item loads: used by the audio/video switch. Never persisted. */
   startAtSeconds?: number;
+  /** Set only on the session restored at app launch: load it and wait for one tap/Play press (browsers refuse sound without a gesture). Never persisted. */
+  restoredPaused?: boolean;
 }
 
 export interface RecentlyPlayedItem extends NowPlayingMedia {
@@ -141,7 +145,7 @@ export interface LibraryItem {
   sourceId: string;
   programId: string;
   assetId: string;
-  sourceClass: 'archive_org' | 'ajn_archive' | 'ajn_rss';
+  sourceClass: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'podcast_rss';
   mediaType?: MediaType;
 }
 

@@ -1,0 +1,15 @@
+{
+ "fox-news": "/logos/news/fox-news.png",
+ "cnn": "/logos/news/cnn.png",
+ "msnbc": "/logos/news/msnbc.png",
+ "bbc": "/logos/news/bbc.png",
+ "kpix": "/logos/news/kpix.png",
+ "cbc": "/logos/news/cbc.png",
+ "ctv": "/logos/news/ctv.png",
+ "aljazeera": "/logos/news/aljazeera.png",
+ "france24": "/logos/news/france24.png",
+ "trt-world": "/logos/news/trt-world.png",
+ "dw": "/logos/news/dw.png",
+ "rt": "/logos/news/rt.png",
+ "rt-documentaries": "/logos/news/rt-documentaries.png"
+}

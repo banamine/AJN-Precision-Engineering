@@ -101,3 +101,16 @@ export async function buildOtrChannel(guideId: string, now = new Date(), fetchIm
   // Interleave shows so the loop doesn't play one series back to back.
   return programs.map((p) => ({ p, k: rand() })).sort((a, b) => a.k - b.k).map((x) => x.p);
 }
+
+/* Whole-item Archive audio channels (src/data/archiveAudioChannels.json): every MP3 of one Archive
+ * item, in filename order, looped. Same resolver, limiter and bounded-206 proxy as Rush/OTR.
+ * A failed resolve returns [] so the caller shows an explicit upstream_error row, never a stand-in. */
+/** maxSlots caps the programs listed per day for large items (default 120 in guideRegistry). */
+export interface ArchiveAudioChannelSource { id: string; name: string; group: string; itemId: string; source?: string; verifiedAt?: string; maxSlots?: number; }
+export async function buildArchiveItemChannel(guideId: string, src: ArchiveAudioChannelSource): Promise<Program[]> {
+  const r = await resolveAudioItem(src.itemId);
+  return r.tracks.map((t, i) => {
+    const name = t.file.split('/').pop()!.replace(/\.mp3$/i, '').replace(/[_]+/g, ' ').trim();
+    return trackProgram(t, { guideId, channelId: src.id, id: `${src.id}-${i + 1}-${t.file}`, title: name, description: src.name });
+  });
+}

@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-07T03:30:00Z",
+  "note": "Seed catalog. Each playlist id was read once from the channel's Playlists tab and then verified via YouTube oEmbed (HTTP 200, author FilmRise Television). It is NOT proven complete: the page showed 28 playlists and a continuation may exist. Treat completeness as 'partial' until tools/collect-youtube-playlists.mjs runs with a Data API key.",
+  "channels": [
+    {
+      "registryId": "yt-filmrise-television",
+      "channelId": "UCVVXDVee0JZ2dlPYtpdTZVg",
+      "completeness": "partial",
+      "live": {
+        "embedId": "6dUDnERMz8k",
+        "status": "unverified",
+        "suppliedBy": "user",
+        "suppliedAt": "2026-10-06"
+      },
+      "playlists": [
+        {
+          "id": "PLXtsaav09kxI",
+          "title": "Days That Shocked the World",
+          "thumbnailUrl": "https://i.ytimg.com/vi/QFZnuVA4atc/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLfpTDN10MR5w",
+          "title": "Z Nation | Season 5",
+          "thumbnailUrl": "https://i.ytimg.com/vi/L24YAydhsbg/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2msoFDGmaJPWwhzRwZ2kxvVw",
+          "title": "Z Nation | Season 4",
+          "thumbnailUrl": "https://i.ytimg.com/vi/8nUbPT9woNI/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLLF3bnMt4B0Q",
+          "title": "Unthinkable: Moments That Shocked the World",
+          "thumbnailUrl": "https://i.ytimg.com/vi/ABoj0Ie66_4/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mtYjjnWj05kO5ebgqa48UKO",
+          "title": "Z Nation | Season 3",
+          "thumbnailUrl": "https://i.ytimg.com/vi/AVmVbc9Xyx8/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mtpoTAcD1wQqkkoI3L7WRPs",
+          "title": "Z Nation | Season 2",
+          "thumbnailUrl": "https://i.ytimg.com/vi/8yT5cm8Q3Zk/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mvXjCUmB8bTjcTNds_LthBa",
+          "title": "The Kids in the Hall | Season 1",
+          "thumbnailUrl": "https://i.ytimg.com/vi/96r0M0tJxto/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mtDdgqnRuZWB1WFU4bz7_Nr",
+          "title": "Z Nation | Season 1",
+          "thumbnailUrl": "https://i.ytimg.com/vi/5ZQx0VRJ2uI/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2muZWt5ZuVq1a7n_CsYJZNyw",
+          "title": "Holiday Specials | Free Full Episodes | FilmRise",
+          "thumbnailUrl": "https://i.ytimg.com/vi/dFuL9d2IN78/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mumuRnJUm6CfpL39WqdsCaJ",
+          "title": "Cheaters - ¡Ahora disponible en español!",
+          "thumbnailUrl": "https://i.ytimg.com/vi/dIW6RFlibMI/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2msbcfb70AbeBU5jql49RHRP",
+          "title": "Cheaters | Reality TV — Season 15",
+          "thumbnailUrl": "https://i.ytimg.com/vi/S5nSlf1Xd1I/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2ms5uh2F7ESSi217ntoSGhBn",
+          "title": "Cheaters | Reality TV — Season 14",
+          "thumbnailUrl": "https://i.ytimg.com/vi/-Ce9zWeS36U/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mu8FE2_2yt-fHzTbffR5kaw",
+          "title": "Cheaters | Reality TV — Season 11",
+          "thumbnailUrl": "https://i.ytimg.com/vi/QODFsWFZ4g8/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mta1v0qmsYeaCjzr2uo18nJ",
+          "title": "Cheaters | Reality TV — Season 10",
+          "thumbnailUrl": "https://i.ytimg.com/vi/vNhWXORJcu8/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mu9BJnpG3tX-Vz9RS3u0xBy",
+          "title": "Cheaters | Reality TV — Season 9",
+          "thumbnailUrl": "https://i.ytimg.com/vi/jmQPTMOGa9s/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mukrqf8N1eOotV6DbAfuFID",
+          "title": "Cheaters | Reality TV — Season 8",
+          "thumbnailUrl": "https://i.ytimg.com/vi/Da_ELjC_Q6k/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mt1qzw0oBj9DtRRYTdc9DBE",
+          "title": "Cheaters | Reality TV — Season 7",
+          "thumbnailUrl": "https://i.ytimg.com/vi/IL9QMGceaZE/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2ms5fm8g36h7c-wqyjg6_8vQ",
+          "title": "The Classic Friars Club Roasts — Season 1",
+          "thumbnailUrl": "https://i.ytimg.com/vi/nP8TkggVKlo/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2muL-XLkq94nyTVBIF_k9M1I",
+          "title": "Greatest Prison Escapes — Season 1",
+          "thumbnailUrl": "https://i.ytimg.com/vi/hRKnLZ6sbtk/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mtluHNz9XCUTZUf8k2cV9bV",
+          "title": "Gotham Comedy — Season 5",
+          "thumbnailUrl": "https://i.ytimg.com/vi/3CBQ3TjX4nY/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2muOTrnSLDQ50SKwsQrs1rq8",
+          "title": "Cheaters | Reality TV — Season 6",
+          "thumbnailUrl": "https://i.ytimg.com/vi/4V5O7laA4vc/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2msl2Eh5LlA4JacCRblrbXyp",
+          "title": "Cheaters | Reality TV — Season 5",
+          "thumbnailUrl": "https://i.ytimg.com/vi/hWaAxSA57vU/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mthDtKsR3zpgBNaltGKAJk7",
+          "title": "Gotham Comedy — Season 4",
+          "thumbnailUrl": "https://i.ytimg.com/vi/Hnsx15iW9Js/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2muE8CLPMlKOhLsf9_5Y1sNX",
+          "title": "Cheaters | Reality TV — Season 4",
+          "thumbnailUrl": "https://i.ytimg.com/vi/mYYdM7bhHRE/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mu3RqqRukjCcJK-GUEbp8Kt",
+          "title": "Cheaters | Reality TV — Season 3",
+          "thumbnailUrl": "https://i.ytimg.com/vi/J4Oe7W73_Lg/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mtcZhH-HszVrHtS7DQ-aQNR",
+          "title": "Cheaters | Reality TV — Season 2",
+          "thumbnailUrl": "https://i.ytimg.com/vi/QLxMgKkzfPs/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mt3HpepYW1WAbEeJWSonSvp",
+          "title": "Cheaters | Reality TV – Season 1",
+          "thumbnailUrl": "https://i.ytimg.com/vi/FKd8KvZPKJo/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        },
+        {
+          "id": "PLtbMv4lXX2mvOyI5gh0da_AQlan1b0V80",
+          "title": "The Danny Thomas Show – Season 11",
+          "thumbnailUrl": "https://i.ytimg.com/vi/NsaE0EsM_lI/hqdefault.jpg",
+          "verifiedAt": "2026-10-06"
+        }
+      ]
+    }
+  ]
+}

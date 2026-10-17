@@ -1,4 +1,4 @@
-import { Play, Pause, Maximize2, X, Tv, Radio } from 'lucide-react';
+import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX } from 'lucide-react';
 import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
 import { AvSyncControls } from './AvSyncControls';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
@@ -20,7 +20,7 @@ export function MiniPlayerDock({
   onNavigate,
 }: MiniPlayerDockProps) {
   // The real player stays mounted (hidden) in #persistent-player; the dock drives it through the shared hook.
-  const { paused, toggle: togglePlay } = usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
+  const { paused, muted, toggle: togglePlay, toggleMute } = usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
   const isAudio = nowPlaying.mediaType === 'audio';
   return (
     <aside
@@ -70,6 +70,22 @@ export function MiniPlayerDock({
           className="flex h-10 w-10 sm:h-8 sm:w-8 min-h-[44px] min-w-[42px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded-lg bg-neutral-800 text-neutral-100 transition hover:bg-neutral-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 cursor-pointer touch-manipulation"
         >
           {paused ? <Play className="h-4 w-4 fill-current ml-0.5" /> : <Pause className="h-4 w-4" />}
+        </button>
+        <button
+          type="button"
+          id="mini-player-mute-btn"
+          data-testid="mute-button"
+          data-muted={muted ? "true" : "false"}
+          onClick={toggleMute}
+          aria-label={muted ? "Muted — click to unmute" : "Unmuted — click to mute"}
+          aria-pressed={muted}
+          title={muted ? "Muted — click to unmute" : "Mute"}
+          className={`flex h-10 w-10 sm:h-8 sm:w-8 min-h-[44px] min-w-[42px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded-lg bg-neutral-800 text-neutral-100 transition hover:bg-neutral-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 cursor-pointer touch-manipulation relative ${
+            muted ? "mute-indicator-ring text-red-200 bg-red-950/50" : ""
+          }`}
+        >
+          {muted ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
+          <span className="sr-only">{muted ? "Muted" : "Unmuted"}</span>
         </button>
         <button
           type="button"
