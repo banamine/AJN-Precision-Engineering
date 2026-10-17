@@ -292,28 +292,67 @@ async function fetchAjnFeedOnce(id: AjnFeedId, resource: AjnResourceLink, signal
   }
 }
 
-export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise<AjnFeedResult> {
-  const resource = byId.get(id);
-  if (!resource) throw new Error(`Unknown AJN feed: ${id}`);
+// Home loads 5 feeds, several components ask for the same feed at once, and the upstream RSS host can take
+// 8 s+ per attempt (live trace: AJNHourlyAudio 16.8 s). Every request used to hit upstream with a cache-buster.
+// Now: concurrent callers share one upstream fetch; a fresh copy is served for FEED_FRESH_MS; a stale copy
+// (<= FEED_STALE_MAX_AGE_MS) is served immediately while one background refresh runs. Failures are never cached
+// as success, and an upstream timeout is not retried (a second 8 s wait rarely succeeds and doubled cold latency).
+const FEED_FRESH_MS = 60_000;
+const inflightFeeds = new Map<AjnFeedId, Promise<AjnFeedResult>>();
 
+function isAbortLike(error: unknown): boolean {
+  return (error as { name?: string })?.name === 'AbortError';
+}
+
+async function fetchAjnFeedUpstream(id: AjnFeedId, resource: AjnResourceLink): Promise<AjnFeedResult> {
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= FEED_ATTEMPTS; attempt++) {
-    if (signal?.aborted) break;
     try {
-      const result = await fetchAjnFeedOnce(id, resource, signal);
+      const result = await fetchAjnFeedOnce(id, resource);
       lastGoodFeeds.set(id, result);
       return result;
     } catch (error) {
       lastError = error;
+      if (isAbortLike(error)) break; // timed out: do not wait another full timeout
     }
   }
-
-  const stale = lastGoodFeeds.get(id);
-  if (!signal?.aborted && stale && Date.now() - Date.parse(stale.fetchedAt) < FEED_STALE_MAX_AGE_MS) {
-    console.warn(`[ajn-feed] ${id} unreachable, serving last good copy from ${stale.fetchedAt}`);
-    return stale;
-  }
   throw lastError instanceof Error ? lastError : new Error(`AJN feed ${id} unavailable`);
+}
+
+function refreshAjnFeed(id: AjnFeedId, resource: AjnResourceLink): Promise<AjnFeedResult> {
+  const existing = inflightFeeds.get(id);
+  if (existing) return existing;
+  const p = fetchAjnFeedUpstream(id, resource).finally(() => { inflightFeeds.delete(id); });
+  inflightFeeds.set(id, p);
+  return p;
+}
+
+export async function fetchAjnFeed(id: AjnFeedId, signal?: AbortSignal): Promise<AjnFeedResult> {
+  const resource = byId.get(id);
+  if (!resource) throw new Error(`Unknown AJN feed: ${id}`);
+
+  const cached = lastGoodFeeds.get(id);
+  const age = cached ? Date.now() - Date.parse(cached.fetchedAt) : Infinity;
+  if (cached && age < FEED_FRESH_MS) return cached;
+  if (cached && age < FEED_STALE_MAX_AGE_MS) {
+    refreshAjnFeed(id, resource).catch((error) => {
+      console.warn(`[ajn-feed] ${id} background refresh failed, still serving copy from ${cached.fetchedAt}:`, error instanceof Error ? error.message : String(error));
+    });
+    return cached;
+  }
+
+  if (signal?.aborted) throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+  return refreshAjnFeed(id, resource);
+}
+
+/** Warm every feed once at boot so the first Home load is not a cold upstream round trip. Never throws. */
+export function prewarmAjnFeeds(): void {
+  for (const id of byId.keys()) {
+    const resource = byId.get(id);
+    if (resource && /^(Alex|WarRoom|SundayLive|AJNHourlyVideo|AJNHourlyAudio)$/.test(id)) {
+      refreshAjnFeed(id as AjnFeedId, resource).catch(() => {});
+    }
+  }
 }
 
 

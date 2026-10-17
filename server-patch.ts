@@ -1,11 +1,12 @@
 import express from 'express';
 import { buildChannelFromSearch, searchArchiveGeneral } from './archive-discovery.js';
 import { addChannelSource } from './guideRegistry.js';
-import { fetchAjnAudioIndex, fetchAjnFeed, getAjnAffiliateLinks, getAjnAudioIndexes, getAjnResource, getAjnResources, getAjnStreams, type AjnFeedId } from './ajnResourceService.js';
+import { fetchAjnAudioIndex, fetchAjnFeed, prewarmAjnFeeds, getAjnAffiliateLinks, getAjnAudioIndexes, getAjnResource, getAjnResources, getAjnStreams, type AjnFeedId } from './ajnResourceService.js';
 
 const AJN_FEED_IDS: AjnFeedId[] = ['Alex', 'WarRoom', 'SundayLive', 'AJNHourlyVideo', 'AJNHourlyAudio'];
 
 export function patchServer(app: express.Express) {
+  if (process.env.NODE_ENV !== "test") prewarmAjnFeeds();
   app.get('/api/search/collection', async (req, res) => {
     try {
       const query = (req.query.q as string) || '';
@@ -70,7 +71,7 @@ export function patchServer(app: express.Express) {
     const timer = setTimeout(() => controller.abort(), 20000);
     try {
       const feed = await fetchAjnFeed(feedId, controller.signal);
-      res.json(feed);
+      res.set('Cache-Control', 'private, max-age=30').json(feed);
     } catch (e: any) {
       const aborted = e?.name === 'AbortError';
       res.status(aborted ? 504 : 502).json({
