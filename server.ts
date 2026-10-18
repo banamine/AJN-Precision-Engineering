@@ -490,7 +490,7 @@ app.get('/api/ajn/proxy',async(req,res)=>{
   res.on('close',()=>{if(!res.writableFinished)abort.abort();});
   try{
     // Every redirect hop is checked against the allowlist; 60 s bounds one 8 MiB slice.
-    const {res:up}=await safeFetch(target,{allow:(h)=>AJN_PROXY_HOSTS.has(h),timeoutMs:60_000,signal:abort.signal,headers:{'User-Agent':'AJN-Media-Console/AjnProxy',Range:`bytes=${slice.start}-${slice.end}`}});
+    const {res:up}=await safeFetch(target,{allow:(h)=>AJN_PROXY_HOSTS.has(h),timeoutMs:100_000,signal:abort.signal,headers:{'User-Agent':'AJN-Media-Console/AjnProxy',Range:`bytes=${slice.start}-${slice.end}`}});
     if(!up.ok){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:`AJN media HTTP ${up.status}`,upstreamStatus:up.status});}
     const ct=up.headers.get('content-type')||'';
     if(/text\/html/i.test(ct)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:'AJN host returned a web page, not media'});}

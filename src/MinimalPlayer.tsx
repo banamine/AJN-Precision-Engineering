@@ -51,7 +51,8 @@ const RESUME_SAVE_INTERVAL_MS = 5000;
 // (same position) before the item is declared failed and the channel skips ahead.
 const RECOVER_DELAYS_MS = [1000, 3000, 6000];
 const STALL_WATCHDOG_MS = 20_000; // "Buffering…" longer than this triggers a reconnect, not a skip
-const START_WATCHDOG_MS = 25_000; // "Loading…" with no metadata after this is retried (same budget), then reported as failed
+const WAIT_BUDGET_MS = 108_000; // Archive can take a long time to first byte: the wait counter and the start watchdog both run to 108 s
+const START_WATCHDOG_MS = WAIT_BUDGET_MS; // "Loading…" with no metadata after this is retried (same budget), then reported as failed
 const RECOVERED_AFTER_SECONDS = 20; // playing this far past a failure resets the retry budget
 // Audio gapless-ish handoff: this close to the end the next track is fetched into a hidden element.
 const PRELOAD_LEAD_SEC = 45;
@@ -426,7 +427,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         if (mediaRef.current !== media || media.readyState >= 1) return;
         if (!scheduleRecover("start-timeout")) {
           setStatusText("Failed to load — the source did not respond (timed out)");
-          reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), reason: "start_timeout" });
+          reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), reason: "start_timeout", waitedSeconds: Math.round(WAIT_BUDGET_MS / 1000) });
         }
       }, START_WATCHDOG_MS);
     };
@@ -436,6 +437,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       if (stallTimer !== null) return;
       stallTimer = window.setTimeout(() => {
         stallTimer = null;
+        if (media.readyState < 1) return; // first byte still pending: the 108 s start watchdog owns this wait
         if (media.paused || media.readyState >= 3 && media.currentTime > 0 && !media.seeking && media.networkState !== 2) return;
         if (!scheduleRecover("stall-watchdog")) {
           // Out of retries: say so (it used to stay on "Buffering…" for ever).
@@ -595,6 +597,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       sample: () => ({ wantsPlay: !media.paused && !media.ended, readyState: media.readyState, currentTime: media.currentTime || 0, bufferedEnd: media.buffered.length ? media.buffered.end(media.buffered.length - 1) : 0 }),
       onStall: () => {
         if (mediaRef.current !== media) return;
+        if (media.readyState < 1 && !liveRadio) return; // no metadata yet: the start watchdog (108 s) decides, not this 20 s check
         reportTelemetry({ event: "playback.stall_detected", ...fx().eventMeta(), reason: "progress-watchdog", readyState: media.readyState, networkState: media.networkState });
         if (!scheduleRecover("progress-watchdog")) {
           setStatusText("Failed to load — the source stopped responding");

@@ -7,6 +7,8 @@ export interface AjnTelemetryEvent {
   sourceId: string | null;
   programId: string | null;
   titleId?: string | null;
+  /** Seconds the listener waited before the event (start budget is 108 s). */
+  waitedSeconds?: number;
   assetId: string | null;
   archiveIdentifier: string | null;
   mediaPath: string | null;
