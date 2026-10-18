@@ -97,7 +97,7 @@ def main():
     for g, title, ident, rows in sorted(series, key=lambda s: (GENRE_ORDER.index(s[0]), s[1].lower())):
         new.append({"guideId": "classic-tv", "id": "tvb-" + re.sub(r"[^a-z0-9]+", "-", ident.lower()).strip("-"), "name": title, "group": f"{g} TV", "rows": rows})
     d["channels"] += new
-    json.dump(d, open(p, "w"), separators=(",", ":"), ensure_ascii=False)
+    json.dump(d, open(p, "w", encoding="ascii"), separators=(",", ":"), ensure_ascii=True)  # ASCII-only: Google Builder export mangled astral chars (CESU-8) in file names
     for c in new: print(f"{c['guideId']:22} {c['id']:60} {len(c['rows']):4} rows  {sum(r['durationSeconds'] for r in c['rows'])/3600:6.1f} h  [{c['group']}] {c['name'][:50]}")
     print("skipped:", dict(skipped), "| movie channels", sum(1 for c in new if c['guideId'].startswith('movies')), "| series channels", len(series), "| films", sum(len(v) for v in movies.values()))
 main()
