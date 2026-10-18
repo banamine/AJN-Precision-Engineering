@@ -26,7 +26,7 @@ assert.ok(cable.some((c) => c.id === 'rt-documentaries' || c.group === 'News'), 
 assert.ok(!(await getScheduleForGuide('classic-tv', d1)).some((c) => c.id.startsWith('ajn-infowars') || c.id.startsWith('mx-')), 'not duplicated into Classic TV');
 const movies = await getScheduleForGuide('movies-classics-vault', d1);
 assert.equal(movies[0].id, 'classic-cinema');
-assert.deepEqual(movies.slice(1).map((c) => c.id).sort(), ['mx-aiviixx', 'mx-jt-s-ghost', 'mx-lars-germany-mittank', 'mx-random-movies', 'mx-star-wars']);
+assert.deepEqual(movies.slice(1).map((c) => c.id).sort(), ['mx-aiviixx', 'mx-atlas-taggart', 'mx-filmography', 'mx-genre-action-adventure-western', 'mx-genre-british-comedy', 'mx-genre-documentaries', 'mx-genre-horror-monsters', 'mx-genre-mystery-crime', 'mx-genre-scifi-superhero', 'mx-jt-s-ghost', 'mx-lars-germany-mittank', 'mx-movies-classics-list', 'mx-random-movies', 'mx-star-wars']);
 for (const ch of movies.slice(1)) { assert.equal(ch.programs[0].startHour, 0); assert.ok(Math.abs(ch.programs.at(-1)!.endHour! - 24) < 1e-6, `${ch.id} fills the day`); }
 const sw = movies.find((c) => c.id === 'mx-star-wars')!; assert.equal(sw.name, 'STAR WARS'); assert.ok(sw.programs.every((p) => /\.ia\.mp4$/.test(p.archivePath!)));
 console.log('PASS extra-channels:', Object.fromEntries(m.channels.map((c: any) => [c.id, c.rows.length])));
