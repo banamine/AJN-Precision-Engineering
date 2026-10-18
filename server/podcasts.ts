@@ -18,6 +18,10 @@ export interface PodcastSource {
   corsVerified?: boolean;
   /** Back-catalog hosted on Archive.org (built by tools/podcast_archive_episodes.py). Played through /api/archive/proxy, never direct. */
   archiveFolder?: { item: string; folder: string };
+  /** How often the show normally posts, in days (Kyle: weekdays = 1, The Quash: ~30). Only used to tell "quiet by design" from "inactive". */
+  cadenceDays?: number;
+  /** Override: feed counts as inactive when its newest episode is older than this many days. Default max(14, 3 x cadenceDays). */
+  staleAfterDays?: number;
 }
 export interface PodcastEpisode {
   guid: string; title: string; description: string; publishedAt: number; url: string;
@@ -134,10 +138,26 @@ export function buildState(source: PodcastSource, parts: { head: string; items: 
     ...(ascending ? { error: 'feed lists oldest episodes first; the newest episodes may be missing' } : {}) };
 }
 
-export function toPrograms(state: PodcastState, guideId: string): Program[] {
+/** Real publish date as shown in the guide cell. UTC so server and every viewer agree. */
+export function formatPublished(ms: number): string {
+  return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+export interface Staleness { stale: boolean; newestAt: number; ageDays: number; thresholdDays: number }
+/** Is the feed inactive? Judged only by the newest episode's real publish date (never by when we last fetched). */
+export function stalenessOf(state: PodcastState, now: Date): Staleness | null {
+  if (!state.episodes.length) return null;
+  const newestAt = Math.max(...state.episodes.map((e) => e.publishedAt));
+  const ageDays = Math.floor((now.getTime() - newestAt) / 86_400_000);
+  const thresholdDays = state.source.staleAfterDays ?? Math.max(14, 3 * (state.source.cadenceDays ?? 1));
+  return { stale: ageDays > thresholdDays, newestAt, ageDays, thresholdDays };
+}
+
+export function toPrograms(state: PodcastState, guideId: string, now: Date = new Date()): Program[] {
   const { source } = state; const channelId = `pod-${source.id}`;
+  const st = stalenessOf(state, now);
+  const inactive = st?.stale ? ` · Feed inactive: last episode ${formatPublished(st.newestAt)} (${st.ageDays} days ago)` : '';
   return state.episodes.map((e) => ({
-    id: `${channelId}-${fnv(e.guid)}`, guideId, channelId, title: e.title, description: e.description || source.name,
+    id: `${channelId}-${fnv(e.guid)}`, guideId, channelId, title: e.title, description: `Published ${formatPublished(e.publishedAt)}${inactive} · ${e.description || source.name}`,
     startTime: 0, endTime: 0, startTimeUtc: new Date(e.publishedAt).toISOString(), endTimeUtc: new Date(e.publishedAt + (e.durationSeconds ?? 2700) * 1000).toISOString(),
     mediaType: 'audio', mediaUrl: e.url, sourceClass: 'podcast_rss', isArchivedSource: false,
     metadata: { externalId: `${source.id}:${e.guid}`, guid: e.guid, feedId: source.id, sourceFeed: source.feedUrl, airedUtc: new Date(e.publishedAt).toISOString(),
@@ -210,7 +230,9 @@ export function buildPodcastChannels(guideId: string, now: Date, layout: (p: Pro
     if (!state) { out.push({ ...row, group: 'Podcast', programs: [], sourceStatus: 'loading', sourceError: 'loading podcast feed — refresh in a minute' }); continue; }
     if (!state.episodes.length) { out.push({ ...row, group: 'Podcast', programs: [], sourceStatus: 'upstream_error', sourceError: state.error ?? 'no playable episodes' }); continue; }
     out.push({ ...row, logo: smallArtwork(state.imageUrl), group: 'Podcast',
-      programs: layout([...toPrograms(state, guideId), ...archivePrograms(source, guideId)], 45, now, 160), sourceStatus: state.status === 'ok' ? 'ok' : 'partial', sourceError: state.error,
+      programs: layout([...toPrograms(state, guideId, now), ...archivePrograms(source, guideId)], 45, now, 160),
+      sourceStatus: stalenessOf(state, now)?.stale ? 'stale' : state.status === 'ok' ? 'ok' : 'partial',
+      sourceError: [stalenessOf(state, now)?.stale ? `Feed inactive: last episode ${formatPublished(stalenessOf(state, now)!.newestAt)} (${stalenessOf(state, now)!.ageDays} days ago)` : '', state.error].filter(Boolean).join('; ') || undefined,
       rejected: state.rejected.length ? state.rejected : undefined });
   }
   return out;
