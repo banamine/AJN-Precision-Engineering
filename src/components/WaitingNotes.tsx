@@ -66,6 +66,11 @@ export function WaitingNotes({ status, onRetry, archive = false }: { status: str
               </>
             )}
           </p>
+          {archive && elapsed >= DATA.settings.slowAfterMs && (
+            <p data-testid="waiting-slow-source" className="mt-1 text-[11px] leading-snug text-amber-300">
+              Archive.org is sending this file very slowly (the delay is on Archive's servers, not AJN). It may not play smoothly; Retry or pick another episode.
+            </p>
+          )}
         </div>
       </div>
     </div>
