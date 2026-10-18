@@ -43,6 +43,10 @@ const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(expres
 app.use(watchdogRouter);
 
 interface ProxyStats{totalRequests:number;successfulRequests:number;retriedRequests:number;failedRequests:number;cacheHits:number;lastUpstreamLatencyMs:number;activeStreams:number}
+/** Last time a viewer asked for media. Boot-time background warmers wait for a quiet proxy so the first click after a cold start is not competing with them for Archive. */
+let lastMediaAt=0;
+const mediaIdle=async(quietMs=15_000,maxWaitMs=120_000)=>{const t0=Date.now();while(Date.now()-lastMediaAt<quietMs&&Date.now()-t0<maxWaitMs)await new Promise(r=>setTimeout(r,1000));};
+const bootQuiet=async()=>{await new Promise(r=>setTimeout(r,20_000));await mediaIdle();};
 const stats:ProxyStats={totalRequests:0,successfulRequests:0,retriedRequests:0,failedRequests:0,cacheHits:0,lastUpstreamLatencyMs:0,activeStreams:0};
 
 app.get('/api/health',(_req,res)=>res.json({status:'ok',service:'ajn-precision-engineering-proxy',uptime:process.uptime(),timestamp:new Date().toISOString(),stats}));
@@ -280,7 +284,7 @@ app.get('/api/podcast/resolve',async(req,res)=>{
  catch(e:any){console.error('[Podcasts] resolve failed:',e?.message);res.status(502).json({error:String(e?.message??e)});}
 });
 app.get('/api/archive/proxy', async (req,res)=>{
-  stats.totalRequests++;
+  stats.totalRequests++; lastMediaAt=Date.now();
   const proxyRequestId=crypto.randomUUID();
   res.setHeader('x-proxy-request-id',proxyRequestId);
   res.setHeader('Access-Control-Allow-Origin','*');
@@ -530,11 +534,11 @@ app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.origi
 
 async function startServer(){
  if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
- app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));
+ app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ bootQuiet().then(()=>refreshMoviesClassicsFromArchive()).then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); bootQuiet().then(()=>buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive')).then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));
   // Warm the guides one at a time (Archive rate-limits bursts) so the first
   // viewer gets a filled grid instead of waiting on every source.
   if(process.env.NODE_ENV!=='test'&&process.env.LIBRARY_BACKGROUND!=='off'){void loadLibrarySnapshot().then(()=>startLibraryBackground());}
-  if(process.env.NODE_ENV!=='test'){void (async()=>{for(const g of ['cable-tv','classic-tv','live-tv','science-documentaries','movies-classics-vault']){try{const t=Date.now();const ch=await getScheduleForGuide(g);console.log(`[AJN] warmed ${g}: ${ch.length} channels in ${Date.now()-t}ms`);}catch(e:any){console.error(`[AJN] warm ${g} failed:`,e?.message);}await new Promise(r=>setTimeout(r,2000));}})();}
+  if(process.env.NODE_ENV!=='test'){void (async()=>{await new Promise(r=>setTimeout(r,20_000));for(const g of ['cable-tv','classic-tv','live-tv','science-documentaries','movies-classics-vault']){await mediaIdle();try{const t=Date.now();const ch=await getScheduleForGuide(g);console.log(`[AJN] warmed ${g}: ${ch.length} channels in ${Date.now()-t}ms`);}catch(e:any){console.error(`[AJN] warm ${g} failed:`,e?.message);}await new Promise(r=>setTimeout(r,2000));}})();}
  });
 }
 startServer();
