@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { initialsOf, thumbCandidates, archiveIdentifierFromPath, type ThumbInput } from '../utils/thumbnail';
 import { getCaptured, markMissing, THUMB_EVENT } from '../utils/thumbStore';
+import { LaneImage } from './LaneImage';
 
 interface ThumbProps { input: ThumbInput; title?: string; className?: string }
 
@@ -27,11 +28,8 @@ export function Thumb({ input, title, className = '' }: ThumbProps) {
     const im = e.currentTarget;
     if (current?.source === 'item-image' && candidates.some((c, n) => n > idx && c.source === 'genre') && im.naturalHeight > 0 && im.naturalWidth / im.naturalHeight >= 3) setIdx((n) => n + 1);
   };
-  if (!current && input.placeholder) {
-    return <img src={input.placeholder} alt={title ?? ''} loading="lazy" decoding="async" data-thumb-source="placeholder" className={`object-cover bg-neutral-800 ${className}`} />;
-  }
   if (!current) {
     return <div role="img" aria-label={title ?? 'No thumbnail'} data-thumb-source="initials" className={`flex items-center justify-center bg-neutral-800 text-neutral-300 font-semibold ${className}`}>{initialsOf(title)}</div>;
   }
-  return <img key={current.url} src={current.url} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" data-thumb-source={current.source} onError={onError} onLoad={onLoad} className={`object-cover bg-neutral-800 ${className}`} />;
+  return <LaneImage key={current.url} src={current.url} alt="" referrerPolicy="no-referrer" data-thumb-source={current.source} onError={onError} onLoad={onLoad} className={`object-cover bg-neutral-800 ${className}`} />;
 }

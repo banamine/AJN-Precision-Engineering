@@ -746,7 +746,7 @@ export function layoutMusicDailySchedule(programs:Program[],now=new Date(),fallb
 function toProxy(u?:string){return u&&u.startsWith('/download/')?`/api/archive/proxy?path=${encodeURIComponent(u)}`:u;}
 /** Every program leaves the server with a playable URL: raw Archive paths go
  *  through the proxy (archivePath keeps the exact path for tracing). */
-function normalizeChannels(chs:ScheduleChannel[]):ScheduleChannel[]{
+export function normalizeChannels(chs:ScheduleChannel[]):ScheduleChannel[]{
   return chs.map(ch=>{
     const rejected=[...(ch.rejected??[])];
     const programs:Program[]=[];

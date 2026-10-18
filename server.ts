@@ -3,6 +3,8 @@ import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGu
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
 import { pickOnNow, type HomeNowItem } from './server/homeNow';
 import { localHourAt } from './server/scheduleWindow';
+import { buildClassicLightSchedule } from './server/classicLightSchedule';
+import { searchClassicProgramTitles } from './server/classicScheduleSearch';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { liveTvHealthSummary, getAudioLoopRows } from './guideRegistry';
 import { isKnownEnclosure, resolveEnclosure } from './server/podcasts';
@@ -32,6 +34,7 @@ import {
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
+import { buildArchiveRateLimitHttpResponse } from './server/archiveCooldown.js';
 import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
 import { registerFolderArtRoute } from './server/folderArt.js';
@@ -153,9 +156,22 @@ function cachedSchedule(guideId:string,movieNow?:Date){
   p.catch(()=>{if(scheduleCache.get(guideId)?.p===p)scheduleCache.delete(guideId);});
   return p;
 }
+app.get('/api/schedule/search',async(req,res)=>{
+  res.set('Cache-Control','no-store');
+  if(req.query.guide!=='classic-tv')return res.status(400).json({error:'title search is available only for classic-tv'});
+  const query=req.query.q;
+  if(typeof query!=='string'||query.length>120)return res.status(400).json({error:'q must be a string of at most 120 characters'});
+  try{
+   const channels=await cachedSchedule('classic-tv');
+   return res.json({guideId:'classic-tv',matches:searchClassicProgramTitles(channels,query)});
+  }catch{
+   return res.status(500).json({error:'Classic TV title search unavailable'});
+  }
+});
 app.get('/api/schedule',async(req,res)=>{
  res.set('Cache-Control','no-store');
  const guideId=(req.query.guide as string)||'cable-tv';
+ if(req.query.light==='1'&&guideId!=='classic-tv')return res.status(400).json({error:'light mode is available only for classic-tv'});
  // Date injection is a Movies-only test hook, never a production clock override.
  let movieNow:Date|undefined;
  if(process.env.NODE_ENV==='test'&&(guideId==='movies-classics-vault'||guideId==='old-british-tv')&&req.query.now!==undefined){
@@ -172,7 +188,21 @@ app.get('/api/schedule',async(req,res)=>{
   // The Classic guide is ~15 MB of JSON; Cloud Run does not compress, so gzip here (browsers always send Accept-Encoding: gzip).
   // Optional ?channel=<id>: only that channel (the player needs just its own list to pick the next program; the whole guide can be tens of MB).
   const only=typeof req.query.channel==='string'&&req.query.channel?req.query.channel:null;
-  let all=await cachedSchedule(guideId,movieNow);
+   let all=await cachedSchedule(guideId,movieNow);
+    if(req.query.light==='1'){
+    try{
+     const light=buildClassicLightSchedule(all,Date.now(),req.query.tz);
+     const channels=only?light.channels.filter(c=>c.id===only):light.channels;
+     const body=JSON.stringify({...light,channels});
+     const rawBytes=Buffer.byteLength(body);
+     if(rawBytes>2*1024*1024)return res.status(500).json({error:'Classic TV light schedule exceeds its 2 MiB raw budget',rawBytes});
+     res.set('Vary','Accept-Encoding').set('X-AJN-Light-Raw-Bytes',String(rawBytes)).type('application/json');
+     if(/\bgzip\b/i.test(String(req.headers['accept-encoding']??'')))return res.set('Content-Encoding','gzip').send(await gzipAsync(body,{level:5}));
+     return res.send(body);
+    }catch(e){
+     return res.status(400).json({error:e instanceof Error?e.message:'invalid light schedule request'});
+    }
+   }
   // Audio guide: ?tz=<Date#getTimezoneOffset()> asks for the looped music channels' rows around the viewer's local hour (full-day loop, bounded).
   // Without it the response is unchanged (first rows only), which is what the budget test, exports and other callers see.
   const lh=guideId==='audio-podcasts'?localHourAt(Date.now(),req.query.tz):null;
@@ -345,6 +375,13 @@ app.get('/api/archive/proxy', async (req,res)=>{
     res.setHeader('Server-Timing',`upstream;dur=${Date.now()-upstreamT0}, attempts;desc="${upstream.attempts}"`);
     const mediaResponse=upstream.response;
 
+    if(upstream.rateLimit){
+      stats.failedRequests++;
+      const rateLimitResponse=buildArchiveRateLimitHttpResponse(upstream.rateLimit,upstream.attempts,proxyRequestId);
+      res.setHeader('Retry-After',rateLimitResponse.retryAfterHeader);
+      return res.status(rateLimitResponse.status).json(rateLimitResponse.body);
+    }
+
     if(!mediaResponse || upstream.failure){
       if (isImage) {
         try {
@@ -364,10 +401,16 @@ app.get('/api/archive/proxy', async (req,res)=>{
       await mediaResponse?.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:upstream.status,stage:upstream.failure,attempts:upstream.attempts,path:v.cleanPath}));
-      const error=upstream.failure==='resolve'
+      const error=upstream.reason
+        ? 'Archive redirect rejected'
+        : upstream.failure==='resolve'
         ? 'Archive did not return a validated media response'
         : `Archive media returned HTTP ${upstream.status}`;
-      return res.status(502).json({error,upstreamStatus:upstream.status,attempts:upstream.attempts,proxyRequestId});
+      return res.status(502).json({
+        error,
+        ...(upstream.reason ? { reason: upstream.reason } : {}),
+        upstreamStatus:upstream.status,attempts:upstream.attempts,proxyRequestId,
+      });
     }
 
     const contentType=mediaResponse.headers.get('content-type');
@@ -530,7 +573,14 @@ app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.origi
 
 async function startServer(){
  if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
- app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));
+ app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`);
+  if(process.env.AJN_BOOT_WARMERS!=='1'){
+    console.log('[AJN] Archive boot warmers disabled (set AJN_BOOT_WARMERS=1 to enable)');
+    return;
+  }
+  for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */
+  refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message));
+  buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));
   // Warm the guides one at a time (Archive rate-limits bursts) so the first
   // viewer gets a filled grid instead of waiting on every source.
   if(process.env.NODE_ENV!=='test'&&process.env.LIBRARY_BACKGROUND!=='off'){void loadLibrarySnapshot().then(()=>startLibraryBackground());}

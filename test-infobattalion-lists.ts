@@ -5,7 +5,7 @@ import extra from './src/data/extraChannelsManifest.json';
 import docs from './src/data/documentariesManifest.json';
 import audio from './src/data/archiveAudioChannels.json';
 
-const BUDGET_MB: Record<string, number> = { 'classic-tv': 30, 'movies-classics-vault': 3, 'cable-tv': 4, 'science-documentaries': 6 };
+const BUDGET_MB: Record<string, number> = { 'classic-tv': 32, /* was 30; +153 @boris1971 series channels (tools/add-boris1971-genre-channels.py) add 8.2 MB. Lazy per-channel loading (/api/schedule?channel=) is the real fix */ 'movies-classics-vault': 3, 'cable-tv': 4, 'science-documentaries': 6 };
 for (const guide of Object.keys(BUDGET_MB)) {
   const channels = await getScheduleForGuide(guide);
   const ids = channels.map((c: any) => c.id);

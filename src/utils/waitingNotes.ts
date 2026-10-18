@@ -3,7 +3,7 @@
 export type WaitKind = 'loading' | 'seeking' | 'buffering' | 'stalled';
 export interface Acronym { short: string; long: string }
 export interface WaitingNotesData {
-  settings: { showAfterMs: number; rotateMs: number; slowAfterMs: number; retryAfterMs: number };
+  settings: { showAfterMs: number; rotateMs: number; slowAfterMs: number; retryAfterMs: number; archiveRotateMs?: number };
   kinds: Record<string, { label: string }>;
   acronyms: Record<string, Acronym[]>;
   themes: { id: string; label: string; emoji: string; lines: string[] }[];
@@ -31,7 +31,9 @@ function shuffle<T>(arr: readonly T[], rng: Rng): T[] {
   const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a;
 }
 
-export interface Deck { acronym(kind: WaitKind): Acronym; next(elapsedMs: number): Note }
+/** 'archive' = the wait is for Archive.org itself (a proxied archive media URL): only the Archive-themed acronyms are used. */
+export type AcronymKind = WaitKind | 'archive';
+export interface Deck { acronym(kind: AcronymKind): Acronym; next(elapsedMs: number): Note }
 
 export function createDeck(data: WaitingNotesData, rng: Rng = Math.random): Deck {
   const lineBag: Note[] = []; let last = '';
@@ -51,7 +53,7 @@ export function createDeck(data: WaitingNotesData, rng: Rng = Math.random): Deck
   };
   return {
     acronym(kind) {
-      const pool = [...(data.acronyms[kind] ?? []), ...(data.acronyms.any ?? [])];
+      const pool = kind === 'archive' && data.acronyms.archive?.length ? [...data.acronyms.archive] : [...(data.acronyms[kind] ?? []), ...(data.acronyms.any ?? [])];
       const key = kind; let bag = acrBags.get(key); if (!bag) { bag = []; acrBags.set(key, bag); }
       const a = pull(bag, pool, (x) => x.short === lastAcr); lastAcr = a.short; return a;
     },

@@ -1,14 +1,15 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback, useDeferredValue } from "react";
 import { ScheduleChannel, Program, MediaType, PlayProgramCallback } from "./types";
-import { Tv, Radio, Disc3, Sparkles, Play, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { Tv, Radio, Disc3, Sparkles, Play, ChevronLeft, ChevronRight, Search, X, CircleAlert } from "lucide-react";
 import { ShowInfoButton } from "./components/ShowInfoButton";
 import { ChannelLogo } from './components/ChannelLogo';
-import { ajnArtFor } from './utils/ajnArt';
 import { LazyThumb } from './components/LazyThumb';
+import { LaneImage } from './components/LaneImage';
 import { ALL_CATEGORIES, buildSearchIndex, categoryCounts, filterChannels, numberChannels, stationLabel, type SearchIndex } from './guide/channelIndex';
 import { FOCUS_EVENT, peekChannelFocus, takeChannelFocus } from "./guide/focusRequest";
 import { buildFallbackShowInfo } from "./showinfo/fallback";
-import { getCachedSchedule, isStale, setCachedSchedule } from "./guide/scheduleCache";
+import { getCachedChannelRows, getCachedLightSchedule, getCachedSchedule, isStale, setCachedChannelRows, setCachedLightSchedule, setCachedSchedule } from "./guide/scheduleCache";
+import { channelSchedulePool } from "./guide/channelSchedulePool";
 import { groupProgramsForGrid, isMusicChannel, type GridBlock } from "./guide/groupProgramsForGrid";
 import { BlockCell, NowPlayingLine, TrackDrawer } from "./guide/BlockCell";
 import { findLiveProgram, tuneIn, mediaTypeFor, isLiveStream, type LiveItem } from "./guide/liveTune";
@@ -38,9 +39,36 @@ function withLocalHours(program: Program): { program: Program; sHour: number; eH
   return { program, sHour: program.startHour ?? program.startTime ?? 0, eHour: program.endHour ?? program.endTime ?? 24 };
 }
 
+function airedTimeLabel(program: Program): { label: string; tooltip: string } | null {
+  const raw = program.metadata?.airedUtc;
+  if ((typeof raw !== 'string' && typeof raw !== 'number') || raw === '') return null;
+  const aired = new Date(raw);
+  if (!Number.isFinite(aired.getTime())) return null;
+  const local = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  }).format(aired);
+  return {
+    label: `Aired ${local}`,
+    tooltip: `Aired UTC: ${aired.toISOString()}`,
+  };
+}
+
 function currentHourFraction(): number {
   const now = new Date();
   return now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+}
+
+function cachedGuideChannels(guideId: string): ScheduleChannel[] | null {
+  if (guideId === 'classic-tv') {
+    return getCachedLightSchedule(guideId)?.channels ?? getCachedSchedule(guideId)?.channels ?? null;
+  }
+  return getCachedSchedule(guideId)?.channels ?? null;
+}
+
+function isScheduleChannel(value: unknown): value is ScheduleChannel {
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return typeof record.id === 'string' && typeof record.name === 'string' && Array.isArray(record.programs);
 }
 
 interface EpgGuideProps {
@@ -51,23 +79,27 @@ interface EpgGuideProps {
 }
 
 /** Also used by hermetic render/click tests; no player or browser dependencies. */
-export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, width, onSelectProgram, tune }: {
+export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, width, onSelectProgram, tune, onRequestFullRows, onAiredTimeVisibilityChange }: {
   program: Program; channel: ScheduleChannel; guideId: string; idx: number;
   isLive: boolean; left: number; width: number; onSelectProgram?: PlayProgramCallback;
   /** When set and the block is on air, a click joins at the clock time instead of the start. */
   tune?: { sHour: number; eHour: number; nowHour: () => number };
+  onRequestFullRows?: () => void;
+  onAiredTimeVisibilityChange?: (target: HTMLButtonElement, label: string | null) => void;
 }) {
   const mediaType = program.mediaType || channel.mediaType || (guideId === 'audio-podcasts' ? 'audio' : 'video');
   const isManifestRow = typeof program.metadata?.manifestId === 'string';
   const thumbnail = program.metadata?.thumbnailUrl;
   const useBackgroundThumbnail = width < 150;
+  const aired = airedTimeLabel(program);
   return (
     <button
       type="button"
       id={`epg-prog-${channel.id}-${idx}`}
       title={program.title}
-      aria-label={`${program.title}, ${channel.name}`}
+      aria-label={`${program.title}, ${channel.name}${aired ? `, ${aired.label}` : ''}`}
       onClick={() => {
+        onRequestFullRows?.();
         const sourceId = program.sourceId ?? program.metadata?.sourceId;
         const assetId = program.assetId ?? program.metadata?.assetId;
         if (isLive && tune) {
@@ -77,7 +109,11 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
         }
         onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id, sourceId, assetId);
       }}
-      className={`group absolute isolate top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs transition hover:scale-[1.005] hover:z-10 cursor-pointer ${
+      onFocus={(event) => { if (aired) onAiredTimeVisibilityChange?.(event.currentTarget, aired.label); }}
+      onMouseEnter={(event) => { if (aired) onAiredTimeVisibilityChange?.(event.currentTarget, aired.label); }}
+      onBlur={(event) => { if (aired) onAiredTimeVisibilityChange?.(event.currentTarget, null); }}
+      onMouseLeave={(event) => { if (aired) onAiredTimeVisibilityChange?.(event.currentTarget, null); }}
+      className={`group absolute isolate top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs transition hover:scale-[1.005] hover:z-10 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 ${
         channel.highlight === 'must-listen'
           ? isLive
             ? "border border-fuchsia-300/80 bg-fuchsia-500/30 text-fuchsia-50 shadow-md shadow-fuchsia-500/20"
@@ -91,10 +127,11 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
       style={{ left, width: Math.max(width - 4, 20) }}
     >
       {isManifestRow && useBackgroundThumbnail && typeof thumbnail === 'string' && (
-        <img
+        <LaneImage
+          key={thumbnail}
           src={thumbnail}
+          data-lane-src={thumbnail}
           alt=""
-          loading="lazy"
           onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
           className="pointer-events-none absolute inset-0 z-0 h-full w-full rounded-lg object-cover opacity-30"
         />
@@ -114,10 +151,11 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
       )}
       <span className="relative z-10 flex min-w-0 items-center gap-1.5">
         {isManifestRow && !useBackgroundThumbnail && typeof thumbnail === 'string' && (
-          <img
+          <LaneImage
+            key={thumbnail}
             src={thumbnail}
+            data-lane-src={thumbnail}
             alt=""
-            loading="lazy"
             onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             className="h-7 w-9 shrink-0 rounded object-cover"
           />
@@ -127,20 +165,51 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
       {program.description && (
         <span className="relative z-10 truncate text-[10px] text-neutral-400">{program.description}</span>
       )}
+      {aired && (
+        <span
+          data-testid="epg-aired-time"
+          title={aired.tooltip}
+          className="relative z-10 truncate text-[10px] font-medium text-amber-200"
+        >
+          {aired.label}
+        </span>
+      )}
     </button>
   );
 }
 
 export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active = true }: EpgGuideProps) {
   const [nowHour, setNowHour] = useState(currentHourFraction());
-  const [channels, setChannels] = useState<ScheduleChannel[] | null>(() => getCachedSchedule(guideId)?.channels ?? null);
+  const [channels, setChannels] = useState<ScheduleChannel[] | null>(() => cachedGuideChannels(guideId));
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(() => !getCachedSchedule(guideId));
+  const [isLoading, setIsLoading] = useState<boolean>(() => cachedGuideChannels(guideId) === null);
+  const [channelRowState, setChannelRowState] = useState<Record<string, 'loading' | 'error'>>({});
   // Short window that follows the red line: no side-scrolling to find what is on now.
   const [viewEl, setViewEl] = useState<HTMLDivElement | null>(null);
   const [viewWidth, setViewWidth] = useState(DEFAULT_VIEW_WIDTH_PX);
   const [panStart, setPanStart] = useState<number | null>(null);
   const [preferredHours, setPreferredHours] = useState<number | null>(null);
+  const guideRootRef = useRef<HTMLDivElement | null>(null);
+  const [airedPopover, setAiredPopover] = useState<{ label: string; left: number; top: number } | null>(null);
+  const onAiredTimeVisibilityChange = useCallback((target: HTMLButtonElement, label: string | null) => {
+    if (label === null) {
+      if (document.activeElement === target || target.matches(':hover')) return;
+      setAiredPopover(null);
+      return;
+    }
+    const root = guideRootRef.current;
+    if (!root) return;
+    const blockRect = target.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    const popoverWidth = Math.min(288, Math.max(0, root.clientWidth - 16));
+    const left = Math.min(
+      Math.max(8, blockRect.left - rootRect.left),
+      Math.max(8, root.clientWidth - popoverWidth - 8),
+    );
+    // Keep the overlay above its block so the EPG's clipped timeline viewport
+    // cannot cut off its lower edge on phone-sized schedules.
+    setAiredPopover({ label, left, top: Math.max(8, blockRect.top - rootRect.top - 48) });
+  }, []);
   useEffect(() => {
     if (!viewEl) return;
     const measure = () => { const w = viewEl.clientWidth; if (w > 0) setViewWidth(w); };
@@ -171,23 +240,36 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
     const controller = new AbortController();
     requestRef.current = controller;
     try {
-      if (!getCachedSchedule(guideId)) setIsLoading(true);
+      if (!cachedGuideChannels(guideId)) setIsLoading(true);
       setFetchError(null);
       // tz: the server windows looped music channels around this viewer's local hour (the grid draws on the local clock).
-      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}&tz=${new Date().getTimezoneOffset()}`, { signal: controller.signal });
+      const lightMode = guideId === 'classic-tv';
+      const lightQuery = lightMode ? '&light=1' : '';
+      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}&tz=${new Date().getTimezoneOffset()}${lightQuery}`, { signal: controller.signal });
       if (!res.ok) {
         throw new Error(`Schedule request failed: HTTP ${res.status}`);
       }
-      const data = await res.json();
-      if (!Array.isArray(data.channels)) {
+      const payload: unknown = await res.json();
+      if (typeof payload !== 'object' || payload === null || !Array.isArray((payload as Record<string, unknown>).channels)) {
         throw new Error('Schedule response missing channels array');
       }
-      if (data.channels.length === 0) {
+      const record = payload as Record<string, unknown>;
+      const rawChannels = record.channels as unknown[];
+      if (rawChannels.length === 0 || !rawChannels.every(isScheduleChannel)) {
         throw new Error('Schedule response returned no channels');
       }
       if (controller.signal.aborted) return;
-      setCachedSchedule(guideId, data.channels);
-      setChannels(data.channels);
+      const receivedChannels = rawChannels as ScheduleChannel[];
+      if (lightMode) {
+        if (record.light !== true || !receivedChannels.every((channel) => channel.programsComplete === false)) {
+          throw new Error('Classic light schedule response is incomplete');
+        }
+        setCachedLightSchedule(guideId, receivedChannels);
+      } else {
+        setCachedSchedule(guideId, receivedChannels);
+      }
+      const hydrated = receivedChannels.map((channel) => getCachedChannelRows(guideId, channel.id) ?? channel);
+      setChannels(hydrated);
     } catch (err) {
       if (controller.signal.aborted) return;
       setFetchError(err instanceof Error ? err.message : String(err));
@@ -198,9 +280,11 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
 
   useEffect(() => {
     if (!active) return;
-    const entry = getCachedSchedule(guideId);
+    const entry = guideId === 'classic-tv'
+      ? getCachedLightSchedule(guideId) ?? getCachedSchedule(guideId)
+      : getCachedSchedule(guideId);
     if (entry) {
-      setChannels(entry.channels);
+      setChannels(entry.channels.map((channel) => getCachedChannelRows(guideId, channel.id) ?? channel));
       setIsLoading(false);
       setFetchError(null);
     } else {
@@ -226,6 +310,69 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
     return () => clearInterval(interval);
   }, [active]);
 
+  const channelRowRequests = useRef(new Map<string, { controller: AbortController; promise: Promise<ScheduleChannel | null> }>());
+  const failedChannelRows = useRef(new Set<string>());
+  const ensureChannelRows = useCallback((channelId: string, explicitRetry = false): Promise<ScheduleChannel | null> => {
+    if (guideId !== 'classic-tv') return Promise.resolve(null);
+    if (explicitRetry) failedChannelRows.current.delete(channelId);
+    else if (failedChannelRows.current.has(channelId)) return Promise.resolve(null);
+    const current = channels?.find((channel) => channel.id === channelId);
+    if (current && current.programsComplete !== false) return Promise.resolve(current);
+    const cached = getCachedChannelRows(guideId, channelId);
+    if (cached) {
+      setChannels((previous) => previous?.map((channel) => channel.id === channelId ? cached : channel) ?? previous);
+      return Promise.resolve(cached);
+    }
+    const existing = channelRowRequests.current.get(channelId);
+    if (existing) return existing.promise;
+    const controller = new AbortController();
+    setChannelRowState((previous) => ({ ...previous, [channelId]: 'loading' }));
+    let request: { controller: AbortController; promise: Promise<ScheduleChannel | null> };
+    const promise = channelSchedulePool.run(async (signal) => {
+      const response = await fetch(`/api/schedule?guide=${encodeURIComponent(guideId)}&channel=${encodeURIComponent(channelId)}`, { signal });
+      if (!response.ok) throw new Error(`Channel schedule request failed: HTTP ${response.status}`);
+      const payload: unknown = await response.json();
+      if (typeof payload !== 'object' || payload === null || !Array.isArray((payload as Record<string, unknown>).channels)) {
+        throw new Error('Channel schedule response is missing channels');
+      }
+      const candidates = (payload as Record<string, unknown>).channels as unknown[];
+      const full = candidates.find(isScheduleChannel);
+      if (!full || full.id !== channelId) throw new Error('Channel schedule response did not contain the requested channel');
+      if (signal.aborted) return null;
+      const previous = channels?.find((channel) => channel.id === channelId);
+      const complete: ScheduleChannel = {
+        ...full,
+        programsComplete: true,
+        ...(previous?.titles ? { titles: previous.titles } : {}),
+      };
+      setCachedChannelRows(guideId, complete);
+      failedChannelRows.current.delete(channelId);
+      setChannels((current) => current?.map((channel) => channel.id === channelId ? complete : channel) ?? current);
+      setChannelRowState((current) => {
+        const next = { ...current };
+        delete next[channelId];
+        return next;
+      });
+      return complete;
+    }, controller.signal).catch(() => {
+      if (!controller.signal.aborted) {
+        failedChannelRows.current.add(channelId);
+        setChannelRowState((previous) => ({ ...previous, [channelId]: 'error' }));
+      }
+      return null;
+    }).finally(() => {
+      if (channelRowRequests.current.get(channelId) === request) channelRowRequests.current.delete(channelId);
+    });
+    request = { controller, promise };
+    channelRowRequests.current.set(channelId, request);
+    return promise;
+  }, [channels, guideId]);
+
+  useEffect(() => () => {
+    for (const { controller } of channelRowRequests.current.values()) controller.abort();
+    channelRowRequests.current.clear();
+  }, [guideId]);
+
   // Large guides (Live TV ~1,300 rows, documentaries) render in pages of 40
   // rows; the next page loads when the bottom sentinel scrolls into view.
   const PAGE_ROWS = 40;
@@ -243,6 +390,9 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>(() => loadFilterPrefs(guideId).category);
   const [onNowOnly, setOnNowOnly] = useState<boolean>(() => loadFilterPrefs(guideId).onNow);
+  const [titleSearchResults, setTitleSearchResults] = useState<Map<string, string[]>>(() => new Map());
+  const [titleSearchState, setTitleSearchState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [titleSearchRetry, setTitleSearchRetry] = useState(0);
   // A different guide brings that guide's own remembered filters.
   const prefsGuide = useRef(guideId);
   useEffect(() => {
@@ -263,10 +413,57 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   }, [guideId]);
   const deferredQuery = useDeferredValue(query);
   const hasQuery = deferredQuery.trim().length > 0;
+  useEffect(() => {
+    const normalizedQuery = deferredQuery.trim();
+    if (guideId !== 'classic-tv' || !normalizedQuery) {
+      setTitleSearchResults(new Map());
+      setTitleSearchState('idle');
+      return;
+    }
+    const controller = new AbortController();
+    setTitleSearchResults(new Map());
+    setTitleSearchState('loading');
+    void (async () => {
+      try {
+        const response = await fetch(`/api/schedule/search?guide=classic-tv&q=${encodeURIComponent(normalizedQuery)}`, { signal: controller.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload: unknown = await response.json();
+        if (typeof payload !== 'object' || payload === null || !Array.isArray((payload as Record<string, unknown>).matches)) {
+          throw new Error('Search response is missing matches');
+        }
+        const matches = (payload as Record<string, unknown>).matches as unknown[];
+        const byChannel = new Map<string, string[]>();
+        for (const item of matches) {
+          if (typeof item !== 'object' || item === null) continue;
+          const match = item as Record<string, unknown>;
+          if (typeof match.channelId !== 'string') continue;
+          const current = byChannel.get(match.channelId) ?? [];
+          const titles = Array.isArray(match.titles)
+            ? match.titles.filter((title): title is string => typeof title === 'string')
+            : typeof match.title === 'string' ? [match.title] : [];
+          for (const title of titles) if (!current.includes(title)) current.push(title);
+          byChannel.set(match.channelId, current);
+        }
+        if (controller.signal.aborted) return;
+        setTitleSearchResults(byChannel);
+        setTitleSearchState('idle');
+      } catch {
+        if (!controller.signal.aborted) setTitleSearchState('error');
+      }
+    })();
+    return () => controller.abort();
+  }, [deferredQuery, guideId, titleSearchRetry]);
   const numbered = useMemo(() => numberChannels(channels ?? []), [channels]);
   const stationOf = useMemo(() => new Map(numbered.map((n) => [n.channel.id, n.station])), [numbered]);
   const categories = useMemo(() => categoryCounts(numbered), [numbered]);
-  const searchIndex = useMemo<SearchIndex>(() => (hasQuery ? buildSearchIndex(numbered) : new Map()), [numbered, hasQuery]);
+  const lightTitles = useMemo<ReadonlyMap<string, readonly string[]> | undefined>(() => guideId === 'classic-tv'
+    ? new Map(numbered.map(({ channel }) => [channel.id, [
+      ...(channel.titles ?? []),
+      ...(channel.programs ?? []).map((program) => program.title),
+      ...(titleSearchResults.get(channel.id) ?? []),
+    ]] as const))
+    : undefined, [guideId, numbered, titleSearchResults]);
+  const searchIndex = useMemo<SearchIndex>(() => (hasQuery ? buildSearchIndex(numbered, lightTitles) : new Map()), [numbered, hasQuery, lightTitles]);
   // "On now": a channel qualifies when one of its programs covers the current local time (same hours the grid draws).
   const onNowTest = useMemo(() => (onNowOnly
     ? (c: ScheduleChannel) => (c.programs ?? []).some((p) => { const w = withLocalHours(p); return nowHour >= w.sHour && nowHour < w.eHour; })
@@ -281,6 +478,27 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   }, [deferredQuery, category, onNowOnly]);
   const visible = useMemo(() => filtered.rows.slice(0, visibleCount).map((r) => r.channel), [filtered, visibleCount]);
   const hasMore = filtered.rows.length > visibleCount;
+
+  useEffect(() => {
+    if (!active || guideId !== 'classic-tv') return;
+    const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-epg-channel-row]'));
+    if (typeof IntersectionObserver === 'undefined') {
+      for (const target of targets) {
+        const id = target.dataset.channelId;
+        if (id && channelRowState[id] !== 'error' && channels?.find((channel) => channel.id === id)?.programsComplete === false) void ensureChannelRows(id);
+      }
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const id = (entry.target as HTMLElement).dataset.channelId;
+        if (id && channelRowState[id] !== 'error' && channels?.find((channel) => channel.id === id)?.programsComplete === false) void ensureChannelRows(id);
+      }
+    }, { rootMargin: '160px 0px' });
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, [active, channelRowState, channels, ensureChannelRows, guideId, visibleCount]);
 
   // Land on one channel (Home tile / link): wait for this guide's schedule, clear filters that could hide it, mount its page
   // of rows, scroll it to the middle and flash it. A request for a channel that is not in the guide is dropped after 15 s.
@@ -392,13 +610,14 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   const nowLeftPx = redLineLeft(nowHour, win);
   const playLive = useCallback((channel: ScheduleChannel, item: LiveItem | null) => {
     if (!item) return;
+    void ensureChannelRows(channel.id);
     const now = currentHourFraction();
     const t = tuneIn(item.program, item.sHour, item.eHour, now);
     const p = item.program;
     onSelectProgram?.(t.path, p.title, channel.name, mediaTypeFor(p, channel, guideId), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds);
-  }, [onSelectProgram, guideId]);
+  }, [ensureChannelRows, onSelectProgram, guideId]);
 
-  if (fetchError && !getCachedSchedule(guideId)) {
+  if (fetchError && !cachedGuideChannels(guideId)) {
     return (
       <div className="w-full rounded-xl border border-red-900/50 bg-red-950/20 p-8 text-center text-sm text-red-300 space-y-3">
         <p>Error fetching guide: {fetchError}</p>
@@ -422,7 +641,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   }
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950 shadow-2xl">
+    <div ref={guideRootRef} className="relative w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950 shadow-2xl">
       {fetchError && (
         <p role="status" className="border-b border-neutral-800 px-3.5 py-2 text-xs text-amber-300">
           Couldn't refresh the guide. Showing the last loaded version.
@@ -463,6 +682,16 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
             ))}
           </div>
         )}
+        {guideId === 'classic-tv' && hasQuery && titleSearchState === 'loading' && (
+          <p role="status" data-testid="classic-title-search-loading" className="text-[11px] text-sky-200">Searching all Classic TV program titles…</p>
+        )}
+        {guideId === 'classic-tv' && hasQuery && titleSearchState === 'error' && (
+          <p role="alert" data-testid="classic-title-search-error" className="flex items-center gap-2 text-[11px] text-amber-200">
+            <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            Full title search unavailable; results include channel names and currently loaded rows only.
+            <button type="button" onClick={() => setTitleSearchRetry((value) => value + 1)} className="shrink-0 rounded border border-amber-600/70 px-2 py-1 font-semibold hover:bg-amber-900/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">Retry full search</button>
+          </p>
+        )}
       </div>
       {filtered.rows.length === 0 && (
         <div role="status" data-testid="epg-no-match" className="p-10 text-center text-sm text-neutral-400">
@@ -502,6 +731,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                 key={channel.id}
                 data-highlight={channel.highlight}
                 data-channel-id={channel.id}
+                data-epg-channel-row
                 className={`flex flex-col justify-center border-b border-neutral-800 px-3.5 ${flashId === channel.id ? 'bg-amber-500/15 ring-2 ring-inset ring-amber-400/70 ' : ''}${channel.highlight === 'must-listen' ? 'border-l-4 border-l-fuchsia-400 bg-gradient-to-r from-fuchsia-500/20 via-fuchsia-500/5 to-transparent' : ''}`}
                 style={{ height: ROW_HEIGHT_PX }}
               >
@@ -511,7 +741,6 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                     <LazyThumb title={channel.name} input={{
                       path: liveItem?.program.archivePath ?? liveItem?.program.mediaUrl ?? channel.programs[0]?.archivePath ?? channel.programs[0]?.mediaUrl ?? null,
                       guideId, channelId: channel.id, category: channel.group ?? null, mediaType: channel.mediaType, name: channel.name,
-                      placeholder: ajnArtFor({ show: `${channel.name} ${channel.group ?? ''}`, mediaType: channel.mediaType, onlyAjn: true }),
                     }} />
                   } />
                   <span className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-100" title={channel.name}>
@@ -591,13 +820,13 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
 
                   {channel.programs.length === 0 ? (
                     <div className="absolute inset-y-0 flex items-center px-4 text-xs font-medium text-neutral-500 italic bg-neutral-900/30" style={{ left: win.startHour * pxPerHour, width: viewWidth }}>
-                      {channel.sourceError ? `Unavailable — ${channel.sourceError}` : channel.sourceStatus === 'restricted' ? 'Restricted by Archive' : 'No programs available'}
+                      {channel.sourceError ? `Unavailable — ${channel.sourceError}` : channel.sourceStatus === 'restricted' ? 'Restricted by Archive' : channel.programCount ? 'No programs in the current window' : 'No programs available'}
                     </div>
                   ) : isBlocks ? (
                     g!.cells.filter((b) => intersects(b.startHour, b.endHour, win)).map((b) => (
                       <span key={b.id} className="contents">
                         <BlockCell channel={channel} block={b} nowHour={nowHour} pxPerHour={pxPerHour}
-                          onOpen={(block, opener) => setDrawer({ channel, block, opener })} />
+                          onOpen={(block, opener) => { void ensureChannelRows(channel.id); setDrawer({ channel, block, opener }); }} />
                       </span>
                     ))
                   ) : (
@@ -614,10 +843,25 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                               isLive={isLive} left={clip.s * pxPerHour} width={(clip.e - clip.s) * pxPerHour}
                               onSelectProgram={onSelectProgram}
                               tune={{ sHour, eHour, nowHour: currentHourFraction }}
+                              onRequestFullRows={() => { void ensureChannelRows(channel.id); }}
+                              onAiredTimeVisibilityChange={onAiredTimeVisibilityChange}
                             />
                           </span>
                         );
                       }))}
+                  {channel.programsComplete === false && channelRowState[channel.id] === 'loading' && (
+                    <div role="status" data-channel-row-loading={channel.id} className="absolute right-2 top-1 z-30 inline-flex items-center gap-1 rounded border border-sky-700/60 bg-neutral-950/95 px-2 py-1 text-[10px] text-sky-200">
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-sky-300" />
+                      Loading full schedule…
+                    </div>
+                  )}
+                  {channelRowState[channel.id] === 'error' && (
+                    <div role="alert" data-channel-row-error={channel.id} className="absolute right-2 top-1 z-30 inline-flex items-center gap-1.5 rounded border border-amber-700/70 bg-neutral-950/95 px-2 py-1 text-[10px] text-amber-200">
+                      <CircleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
+                      <span>Full schedule unavailable.</span>
+                      <button type="button" onClick={() => { void ensureChannelRows(channel.id, true); }} data-retry-channel={channel.id} className="rounded border border-amber-600/70 px-1.5 py-0.5 font-semibold hover:bg-amber-900/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">Retry</button>
+                    </div>
+                  )}
                 </div>
                 );
               })}
@@ -644,6 +888,17 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
         <div ref={sentinelRef} className="border-t border-neutral-800 p-3 text-center text-xs text-neutral-500">
           Showing {visible.length} of {filtered.rows.length} channels — scroll for more
           <button type="button" onClick={() => setVisibleCount((n) => n + PAGE_ROWS)} className="ml-3 rounded border border-neutral-700 px-2 py-0.5 text-neutral-300 hover:bg-neutral-800 cursor-pointer">Load more</button>
+        </div>
+      )}
+      {airedPopover && (
+        <div
+          role="tooltip"
+          aria-hidden="false"
+          data-testid="epg-aired-popover"
+          className="epg-aired-popover"
+          style={{ left: airedPopover.left, top: airedPopover.top }}
+        >
+          {airedPopover.label}
         </div>
       )}
     </div>

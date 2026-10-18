@@ -137,7 +137,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       prev.sourceId ?? prev.metadata?.sourceId, prev.assetId ?? prev.metadata?.assetId);
   }, [onSelectProgram, schedulePrograms]);
   /** The playable URL + media type of what follows, or null (Rush, unknown, lookup failed). */
-  const resolveNext = useCallback(async (): Promise<{ src: string; mediaType: string; programId?: string } | null> => {
+  const resolveNext = useCallback(async (): Promise<{ src: string; mediaType: string; programId?: string; guideId?: string; channelId?: string } | null> => {
     const instance = latestRef.current;
     if (instance && isQueuePart(instance.programId)) { const n = peekNextPart(); return n ? { src: toPlayableSrc(n.src), mediaType: n.mediaType } : null; }
     if (!instance || (instance.channelId === "rush-vod" && RUSH_PROGRAM.test(String(instance.programId ?? "")))) return null;
@@ -147,9 +147,16 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       const pick = pickNext(instance, programs);
       if (!pick) return null;
       const item = pick.kind === "segment" ? pick.seg : pick.next;
+       const parent = pick.kind === "segment" ? pick.cur : pick.next;
       const ref = String(item.archivePath || item.mediaUrl || "").trim();
       if (!ref) return null;
-      return { src: toPlayableSrc(ref), mediaType: String((pick.kind === "segment" ? pick.cur : pick.next).mediaType ?? ""), programId: String((item as { id?: string }).id ?? "") || undefined };
+       return {
+         src: toPlayableSrc(ref),
+         mediaType: String(parent.mediaType ?? ""),
+         programId: String(item.id ?? "") || undefined,
+         guideId: String(parent.guideId ?? instance.guideId ?? "") || undefined,
+         channelId: String(parent.channelId ?? instance.channelId ?? "") || undefined,
+       };
     } catch { return null; }
   }, [schedulePrograms]);
 

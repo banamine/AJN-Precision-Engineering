@@ -104,3 +104,27 @@
 @keyframes ajnDotGlow { 0%, 100% { box-shadow: 0 0 3px 1px rgba(110, 231, 183, 0.45); opacity: 0.85; } 50% { box-shadow: 0 0 9px 3px rgba(110, 231, 183, 0.85); opacity: 1; } }
 .ajn-live-dot { animation: ajnDotGlow 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .ajn-ripple { animation: none; opacity: 0; } .ajn-live-dot { animation: none; box-shadow: 0 0 6px 2px rgba(110, 231, 183, 0.7); } }
+
+/* On narrow EPGs the schedule block keeps its exact geometry; focus/tap reveals
+   the complete local aired time in an overlay rather than squeezing its text. */
+.epg-aired-popover {
+  display: none;
+  position: absolute;
+  z-index: 1000;
+  width: min(18rem, calc(100vw - 1rem));
+  padding: 0.5rem 0.625rem;
+  border: 1px solid rgb(120 113 108 / 0.8);
+  border-radius: 0.5rem;
+  background: rgb(23 23 23 / 0.98);
+  color: rgb(254 243 199);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.55);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .epg-aired-popover { display: block; }
+}

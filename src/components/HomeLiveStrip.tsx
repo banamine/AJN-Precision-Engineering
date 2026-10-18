@@ -7,7 +7,6 @@ import { loadSchedule } from '../guide/loadSchedule';
 import { buildLiveRows, liveCategories, rowsForCategory, LIVE_ALL, type GuideChannels, type LiveStripRow } from '../guide/liveStrip';
 import { tuneIn } from '../guide/liveTune';
 import { saveFilterPrefs } from '../guide/filterPrefs';
-import { ajnArtFor } from '../utils/ajnArt';
 import type { Destination, MediaType, PlayProgramCallback, ScheduleChannel } from '../types';
 
 const TV_GUIDE = 'cable-tv';
@@ -133,7 +132,6 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
                     <LazyThumb title={r.channel.name} input={{
                       path: r.program?.archivePath ?? r.program?.mediaUrl ?? r.channel.programs[0]?.archivePath ?? r.channel.programs[0]?.mediaUrl ?? null,
                       guideId: r.guideId, channelId: r.channel.id, category: r.channel.group ?? null, mediaType: r.channel.mediaType, name: r.channel.name,
-                      placeholder: ajnArtFor({ show: `${r.channel.name} ${r.channel.group ?? ''}`, mediaType: r.channel.mediaType, onlyAjn: true }),
                     }} />
                   } />
                   <div className="min-w-0 flex-1">

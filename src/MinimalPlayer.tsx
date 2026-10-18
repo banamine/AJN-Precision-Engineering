@@ -19,6 +19,7 @@ import { useFrameCapture } from "./utils/useFrameCapture";
 import { archiveIdentifierFromPath } from "./utils/thumbnail";
 import { isLiveRadioPlayback } from "./utils/isLiveRadioPlayback";
 import { RadioBriefingPlayerOverlay } from "./components/RadioBriefingPlayerOverlay";
+import { attachArchiveVideoPrefetch, type VideoPrefetchTarget } from "./utils/videoPrefetch";
 
 interface MinimalPlayerProps {
   src: string;
@@ -33,7 +34,7 @@ interface MinimalPlayerProps {
   onErrorEvent?: (err: MediaError | null) => void;
   onProgressEvent?: (positionSeconds: number) => void;
   /** Audio only: what plays after this item (already a playable URL), or null. Called once, near the end of the track. */
-  resolveNext?: () => Promise<{ src: string; mediaType: string; programId?: string } | null>;
+  resolveNext?: () => Promise<VideoPrefetchTarget | null>;
   /** Audio bar skip buttons; omitted (button disabled) when there is no neighbour to go to. */
   onPrev?: () => void;
   onNext?: () => void;
@@ -51,7 +52,8 @@ const RESUME_SAVE_INTERVAL_MS = 5000;
 // (same position) before the item is declared failed and the channel skips ahead.
 const RECOVER_DELAYS_MS = [1000, 3000, 6000];
 const STALL_WATCHDOG_MS = 20_000; // "Buffering…" longer than this triggers a reconnect, not a skip
-const START_WATCHDOG_MS = 25_000; // "Loading…" with no metadata after this is retried (same budget), then reported as failed
+const WAIT_BUDGET_MS = 108_000; // Archive can take a long time to first byte: the wait counter and the start watchdog both run to 108 s
+const START_WATCHDOG_MS = WAIT_BUDGET_MS; // "Loading…" with no metadata after this is retried (same budget), then reported as failed
 const RECOVERED_AFTER_SECONDS = 20; // playing this far past a failure resets the retry budget
 // Audio gapless-ish handoff: this close to the end the next track is fetched into a hidden element.
 const PRELOAD_LEAD_SEC = 45;
@@ -263,6 +265,23 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   }, [isVideo, isHls, activeSrc, resolveNext, disposePreload]);
 
   useEffect(() => {
+    if (!isVideo || isHls || !resolveNext) return;
+    const media = mediaRef.current;
+    if (!media) return;
+    return attachArchiveVideoPrefetch({
+      media,
+      currentSrc: activeSrc,
+      currentMediaType: mediaType,
+      currentGuideId: nowPlaying?.guideId,
+      currentChannelId: nowPlaying?.channelId,
+      currentProgramId: nowPlaying?.programId,
+      isHls,
+      resolveNext,
+      onTelemetry: (event) => reportTelemetry(event),
+    });
+  }, [activeSrc, isHls, isVideo, mediaType, nowPlaying?.channelId, nowPlaying?.guideId, nowPlaying?.programId, resolveNext]);
+
+  useEffect(() => {
     setActiveSrc(bridgeSrc(src));
     setStatusText("Loading…");
     setIsPlaying(false);
@@ -426,7 +445,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         if (mediaRef.current !== media || media.readyState >= 1) return;
         if (!scheduleRecover("start-timeout")) {
           setStatusText("Failed to load — the source did not respond (timed out)");
-          reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), reason: "start_timeout" });
+          reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), reason: "start_timeout", waitedSeconds: Math.round(WAIT_BUDGET_MS / 1000) });
         }
       }, START_WATCHDOG_MS);
     };
@@ -436,6 +455,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       if (stallTimer !== null) return;
       stallTimer = window.setTimeout(() => {
         stallTimer = null;
+        if (media.readyState < 1) return; // first byte still pending: the 108 s start watchdog owns this wait
         if (media.paused || media.readyState >= 3 && media.currentTime > 0 && !media.seeking && media.networkState !== 2) return;
         if (!scheduleRecover("stall-watchdog")) {
           // Out of retries: say so (it used to stay on "Buffering…" for ever).
@@ -595,6 +615,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       sample: () => ({ wantsPlay: !media.paused && !media.ended, readyState: media.readyState, currentTime: media.currentTime || 0, bufferedEnd: media.buffered.length ? media.buffered.end(media.buffered.length - 1) : 0 }),
       onStall: () => {
         if (mediaRef.current !== media) return;
+        if (media.readyState < 1 && !liveRadio) return; // no metadata yet: the start watchdog (108 s) decides, not this 20 s check
         reportTelemetry({ event: "playback.stall_detected", ...fx().eventMeta(), reason: "progress-watchdog", readyState: media.readyState, networkState: media.networkState });
         if (!scheduleRecover("progress-watchdog")) {
           setStatusText("Failed to load — the source stopped responding");
@@ -964,7 +985,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         </div>
       )}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
-      <WaitingNotes status={statusText} onRetry={onRetry} />
+      <WaitingNotes status={statusText} onRetry={onRetry} archive={typeof src === "string" && src.includes("/api/archive/proxy")} />
       {/^(Failed to load|Unavailable)/.test(statusText) && (onRetry || onBackToGuide) && (
         <div role="alert" data-testid="playback-recovery" className="absolute inset-x-3 bottom-14 z-30 flex flex-wrap items-center gap-2 rounded-lg bg-black/85 p-3 text-xs text-white shadow-lg sm:bottom-16">
           <span className="min-w-0 flex-1 basis-40">{statusText}</span>

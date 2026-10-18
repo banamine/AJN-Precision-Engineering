@@ -7,6 +7,8 @@ export interface AjnTelemetryEvent {
   sourceId: string | null;
   programId: string | null;
   titleId?: string | null;
+  /** Seconds the listener waited before the event (start budget is 108 s). */
+  waitedSeconds?: number;
   assetId: string | null;
   archiveIdentifier: string | null;
   mediaPath: string | null;
@@ -26,6 +28,10 @@ export interface AjnTelemetryEvent {
   mediaErrorMessage?: string | null;
   readyState?: number | null;
   networkState?: number | null;
+  nextPath?: string | null;
+  bytes?: number | null;
+  ms?: number | null;
+  outcome?: string | null;
   unresolved?: { kind: "file" | "datetime" | "location"; field: string; reason: string } | null;
 }
 

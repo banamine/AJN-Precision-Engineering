@@ -5,6 +5,7 @@ import { getCachedSchedule, isStale, setCachedSchedule } from "../guide/schedule
 import { buildToday, formatHour, thumbnailOf, type TodayChannel, type TodayEntry } from "../guide/todayList";
 import { tuneIn, mediaTypeFor } from "../guide/liveTune";
 import { ChannelLogo } from "./ChannelLogo";
+import { LaneImage } from "./LaneImage";
 
 const AJN_RESOURCE_GUIDE_ID = "ajn-archive-special-feeds";
 const FALLBACK_GUIDES: Guide[] = [
@@ -40,7 +41,7 @@ function Thumb({ entry, channel, className }: { entry: TodayEntry; channel: Sche
   const [failed, setFailed] = useState(false);
   const isAudio = (entry.program.mediaType || channel.mediaType) === "audio";
   if (url && !failed) {
-    return <img src={url} alt="" loading="lazy" onError={() => setFailed(true)} className={`${className} object-cover`} />;
+    return <LaneImage key={url} src={url} alt="" onError={() => setFailed(true)} className={`${className} object-cover`} />;
   }
   return (
     <div aria-hidden="true" className={`${className} flex items-center justify-center bg-neutral-800 text-neutral-500`}>

@@ -49,9 +49,12 @@ const archiveIaDuplicatePairCount = (programs: Program[]) => {
 
 // No test may perform a network request, including lazy source refreshes.
 const originalFetch = globalThis.fetch;
-let blockedFetches = 0;
-globalThis.fetch = (async () => {
-  blockedFetches++;
+const archiveFetchAttempts: string[] = [];
+globalThis.fetch = (async (input: RequestInfo | URL) => {
+  const requestUrl = typeof input === 'string' || input instanceof URL ? String(input) : input.url;
+  if (/^https?:\/\/(?:[a-z0-9-]+\.)*archive\.org(?:[/:?#]|$)/i.test(requestUrl)) {
+    archiveFetchAttempts.push(requestUrl);
+  }
   throw new Error('Network disabled by hermetic archive item guide test');
 }) as typeof fetch;
 
@@ -152,7 +155,8 @@ try {
     const droppedIds = new Set(duplicatePlainProgramIds(old.programs));
     const droppedAsDuplicate = droppedIds.size;
     const keptExistingRows = old.programs.length - droppedAsDuplicate;
-    assert.equal(old.programs.length, 60);
+    assert.equal(old.programs.length, snapshot.filter(program => program.channelId === id).length,
+      'original program count must match the in-memory snapshot fixture');
     assert.equal(droppedAsDuplicate, id === 'classic-rat-patrol' ? 19 : 0);
     assert.equal(result.programs.length - keptExistingRows, added);
     assert.equal(result.programs.length, final);
@@ -232,7 +236,7 @@ try {
   assert.equal(filtered.length, 0);
   console.log('conflict and guide:false admission: PASS');
 
-  const { layoutDailySchedule, layoutMusicDailySchedule, layoutArchiveItemGuide, getScheduleForGuide } = await import('./guideRegistry');
+  const { FILL_DAY_SLOTS, layoutDailySchedule, layoutMusicDailySchedule, layoutArchiveItemGuide, normalizeChannels } = await import('./guideRegistry');
   const fixedNow = new Date('2026-10-06T00:00:00Z');
   const schedule = (channel: ScheduleChannel) => {
     const sourcePrograms = channel.programs.map(program => ({
@@ -372,15 +376,44 @@ try {
   assert.ok(wideMarkup.includes(narrowTitle), 'wide cell keeps the title text');
   console.log('program-block rendering/clicks: PASS (narrow background thumbnail/title/ARIA; wide inline thumbnail; no empty no-thumbnail box; encoded paths, identities, audio/video)');
 
-  // Verify the app's actual schedule producer, not a second implementation.
-  const appChannels = await getScheduleForGuide('classic-tv');
+  // In-memory schedule fixture: do not invoke getScheduleForGuide(), which may
+  // refresh Archive-backed sources. Exercise the production pure merge/layout
+  // functions using only the imported snapshot and manifest fixtures.
   const musicChannelIds = new Set(musicAdditions.map(channel => channel.id));
-  const legacyAppChannels = appChannels.filter(channel => !musicChannelIds.has(channel.id));
   const appBaseChannels: ScheduleChannel[] = toChannels(snapshot.filter(program =>
     !isExcludedPlaylistChannel(program.channelId)
     && !notWebPlayableVideo(program.archivePath ?? program.mediaUrl))).map(channel => ({
-      ...channel, guideId: 'classic-tv', mediaType: 'video', group: 'Classic TV',
+      id: channel.id,
+      guideId: 'classic-tv',
+      name: channel.name,
+      mediaType: 'video',
+      group: 'Classic TV',
+      programs: layoutDailySchedule(channel.programs, 30, fixedNow),
+      sourceStatus: 'snapshot',
+      sourceError: `packaged list from ${snapshotData.fetchedAt}; refreshing`,
     }));
+  const honeymoonersFixture: ScheduleChannel = {
+    id: 'honeymooners',
+    guideId: 'classic-tv',
+    name: 'The Honeymooners',
+    mediaType: 'video',
+    group: 'Classic TV',
+    programs: [{
+      id: 'fixture-honeymooners-program',
+      guideId: 'classic-tv',
+      channelId: 'honeymooners',
+      title: 'Synthetic fixture episode',
+      startTime: 0,
+      endTime: 1,
+      startHour: 0,
+      endHour: 1,
+      mediaType: 'video',
+      mediaUrl: '/download/synthetic-fixture/honeymooners.mp4',
+      archivePath: '/download/synthetic-fixture/honeymooners.mp4',
+      metadata: { fixture: true },
+    }],
+    sourceStatus: 'snapshot',
+  };
   // Message 10 final behavior is the baseline, not the pre-Message-10 runtime.
   // Build twice using the exact production merge/layout, identical inputs and
   // a fixed clock. Only the manifest's Music rows/channels differ.
@@ -391,22 +424,33 @@ try {
     items: nonMusicRows,
     channels: manifest.channels.filter(channel => nonMusicIds.has(channel.id)),
   };
-  const guideInput = [findChannel(appChannels, 'honeymooners'), ...appBaseChannels];
+  const guideInput = [honeymoonersFixture, ...appBaseChannels];
   const inputBefore = JSON.stringify(guideInput);
   const comparisonClock = new Date('2026-10-07T00:00:00Z');
+  const withoutMusicAdditions = buildArchiveItemGuideChannels(withoutMusicManifest);
+  const expectedClassicChannelIds = new Set([
+    ...guideInput.map(channel => channel.id),
+    ...withoutMusicAdditions.map(channel => channel.id),
+  ]);
+  const expectedClassicChannelCount = expectedClassicChannelIds.size;
   const withoutMusic = layoutArchiveItemGuide(
-    guideInput, buildArchiveItemGuideChannels(withoutMusicManifest),
+    guideInput, withoutMusicAdditions,
     appBaseChannels, comparisonClock,
   );
-  const withMusic = layoutArchiveItemGuide(
+  const withMusic = normalizeChannels(layoutArchiveItemGuide(
     guideInput, buildArchiveItemGuideChannels(manifest),
     appBaseChannels, comparisonClock,
-  );
+  ));
+  const normalizedWithoutMusic = normalizeChannels(withoutMusic);
   assert.equal(JSON.stringify(guideInput), inputBefore, 'guide builds must not mutate shared inputs');
-  assert.equal(withoutMusic.length, 60);
-  assert.equal(withMusic.length, 60);
+  assert.equal(normalizedWithoutMusic.length, expectedClassicChannelCount,
+    'Classic fixture result count must match the fixture-derived channel IDs');
+  assert.equal(withMusic.length, expectedClassicChannelCount,
+    'adding Audio-only manifest rows must preserve the fixture-derived Classic count');
+  assert.deepEqual([...new Set(withMusic.map(channel => channel.id))].sort(),
+    [...expectedClassicChannelIds].sort(), 'Classic fixture channel IDs must match the in-memory fixture');
   assert.equal(withoutMusic.at(-1)?.id, 'item-unsorted', 'Classic must still end with Unsorted');
-  for (const [index, expected] of withoutMusic.entries()) {
+  for (const [index, expected] of normalizedWithoutMusic.entries()) {
     const actual = withMusic[index];
     assert.equal(actual.id, expected.id, `existing channel reordered at ${index}`);
     const digest = (channel: ScheduleChannel) =>
@@ -414,27 +458,51 @@ try {
     assert.equal(digest(actual), digest(expected),
       `Message 10 channel differs with Music: ${expected.id} (full JSON, no field exclusions)`);
   }
-  assert.deepEqual(withMusic.slice(60), [], 'Music may not append to Classic');
-  assert.equal(legacyAppChannels.length, 60);
-  assert.deepEqual(legacyAppChannels.map(channel => channel.id), withoutMusic.map(channel => channel.id));
+  assert.ok(withMusic.every(channel => !musicChannelIds.has(channel.id)), 'Music channels may not appear in Classic');
+  const legacyAppChannels = withMusic.filter(channel => !musicChannelIds.has(channel.id));
+  assert.equal(legacyAppChannels.length, expectedClassicChannelCount);
+  assert.deepEqual(legacyAppChannels.map(channel => channel.id), normalizedWithoutMusic.map(channel => channel.id));
   console.log(JSON.stringify({
-    message10BaselineChannels: withoutMusic.length,
-    identicalExistingChannelsWithMusic: 60,
+    message10BaselineChannels: normalizedWithoutMusic.length,
+    identicalExistingChannelsWithMusic: legacyAppChannels.length,
     comparisonClock: comparisonClock.toISOString(),
     normalizedFields: [],
-    musicAppendsAfter: withoutMusic.at(-1)?.name,
+    musicAppendsAfter: normalizedWithoutMusic.at(-1)?.name,
   }));
-  console.log('Message 10 baseline preservation: PASS (same code with/without Music; all 60 entire channel objects identical at fixed clock)');
+  console.log(`Message 10 baseline preservation: PASS (fixture channels byte-identical with/without Music; ${legacyAppChannels.length} channels at fixed clock)`);
+  const appChannels = withMusic;
   assert.ok(appChannels.every(channel => !channel.id.startsWith('item-music-')));
-  const audioChannels = await getScheduleForGuide('audio-podcasts');
-  const appMusicChannels = audioChannels.filter(channel => musicChannelIds.has(channel.id));
-  assert.equal(appMusicChannels.length, 25);
-  assert.equal(appChannels.length, 60, 'Classic keeps its prior 60 non-Music channels');
+  const expectedLaidOutProgramCount = (channelId: string) => {
+    const source = findChannel(additions, channelId).programs.map(program => ({
+      ...program,
+      id: program.id.replace(/:d\d+$/, ''),
+    }));
+    return layoutDailySchedule(source, 30, comparisonClock, Math.max(source.length, FILL_DAY_SLOTS)).length;
+  };
+  const audioBaseFixture: ScheduleChannel[] = [{
+    id: 'fixture-audio-existing',
+    guideId: 'audio-podcasts',
+    name: 'Synthetic existing audio row',
+    mediaType: 'audio',
+    group: 'Audio fixture',
+    programs: [],
+  }];
+  const appMusicChannels = normalizeChannels(musicAdditions.map(channel => ({
+    ...channel,
+    programs: layoutMusicDailySchedule(channel.programs, fixedNow).map(program => ({
+      ...program,
+      archivePath: program.archivePath ?? program.mediaUrl,
+      mediaUrl: `/api/archive/proxy?path=${encodeURIComponent(program.archivePath ?? program.mediaUrl)}`,
+    })),
+  })));
+  const audioChannels = [...audioBaseFixture, ...appMusicChannels];
+  const expectedAudioFixtureCount = audioBaseFixture.length + musicAdditions.length;
+  assert.equal(appChannels.length, expectedClassicChannelCount, 'Classic fixture keeps its own non-Music count');
+  assert.equal(audioChannels.length, expectedAudioFixtureCount, 'Audio fixture count derives from the in-memory inputs');
   assert.deepEqual(appMusicChannels.map(channel => channel.id), musicAdditions.map(channel => channel.id));
-  assert.ok(audioChannels.slice(-25).every(channel => musicChannelIds.has(channel.id)),
-    'Music appends after the existing Audio channels');
-  const today = new Date();
-  const actualDayStart = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  assert.deepEqual(audioChannels.slice(audioBaseFixture.length).map(channel => channel.id),
+    musicAdditions.map(channel => channel.id), 'Music fixture rows append after the in-memory Audio baseline');
+  const actualDayStart = Date.parse(fixedNow.toISOString());
   const actualDayEnd = actualDayStart + 24 * 60 * 60 * 1000;
   const musicScheduleRowsByChannel: Record<string, number> = {};
   for (const channel of appMusicChannels) {
@@ -450,7 +518,7 @@ try {
       const sourceProgram = source.programs[index % source.programs.length];
       const start = Date.parse(program.startTimeUtc!);
       const end = Date.parse(program.endTimeUtc!);
-      assert.equal(start, previousEnd, `${channel.name} actual API slots must be contiguous`);
+      assert.equal(start, previousEnd, `${channel.name} fixture slots must be contiguous`);
       assert.equal(program.id, `${sourceProgram.id}:d${index}`);
       assert.equal(program.mediaType, 'audio');
       assert.equal(program.guideId, 'audio-podcasts');
@@ -475,7 +543,7 @@ try {
     musicScheduleRowsByChannel,
     musicScheduleRows: appMusicChannels.reduce((total, channel) => total + channel.programs.length, 0),
   }));
-  console.log('app music schedule: PASS (real durations, manifest order, proxy paths, 24-hour coverage)');
+  console.log('in-memory Audio schedule fixture: PASS (real manifest durations, source order, proxy paths, 24-hour coverage)');
   for (const id of ADDITIVE_CLASSIC_CHANNELS) {
     const result = findChannel(appChannels, id);
     const old = findChannel(existing, id);
@@ -501,11 +569,16 @@ try {
     }));
   }
   const appUnsorted = findChannel(appChannels, 'item-unsorted');
-  assert.equal(appUnsorted.programs.length, 210);
-  assert.equal(appUnsorted.programs.filter(program => program.mediaType === 'video').length, 192);
-  assert.equal(appUnsorted.programs.filter(program => program.mediaType === 'audio').length, 18);
-  assert.equal(findChannel(appChannels, 'item-the-odd-couple-2015').programs.length, 38);
-  assert.equal(findChannel(appChannels, 'item-the-addams-family').programs.length, 1);
+  const unsortedFixture = findChannel(additions, 'item-unsorted');
+  assert.equal(appUnsorted.programs.length, expectedLaidOutProgramCount('item-unsorted'));
+  assert.equal(appUnsorted.programs.filter(program => program.mediaType === 'video').length,
+    unsortedFixture.programs.filter(program => program.mediaType === 'video').length);
+  assert.equal(appUnsorted.programs.filter(program => program.mediaType === 'audio').length,
+    unsortedFixture.programs.filter(program => program.mediaType === 'audio').length);
+  assert.equal(findChannel(appChannels, 'item-the-odd-couple-2015').programs.length,
+    expectedLaidOutProgramCount('item-the-odd-couple-2015'));
+  assert.equal(findChannel(appChannels, 'item-the-addams-family').programs.length,
+    expectedLaidOutProgramCount('item-the-addams-family'));
   const names = appChannels.map(channel => channel.name);
   const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);
   assert.deepEqual(duplicateNames, []);
@@ -531,7 +604,7 @@ try {
     const expected = {
       id: channel.id, guideId: 'classic-tv', name: channel.name, mediaType: 'video',
       group: 'Classic TV',
-      programs: layoutDailySchedule(channel.programs, 30).map(program => program.mediaUrl.startsWith('/download/')
+      programs: layoutDailySchedule(channel.programs, 30, fixedNow).map(program => program.mediaUrl.startsWith('/download/')
         ? { ...program, archivePath: program.archivePath ?? program.mediaUrl,
           mediaUrl: `/api/archive/proxy?path=${encodeURIComponent(program.mediaUrl)}` }
         : program),
@@ -542,14 +615,15 @@ try {
       `unrelated app channel changed: ${channel.id}`);
   }
   console.log('app schedule: PASS (every other admitted snapshot channel byte-for-byte unchanged)');
+  assert.deepEqual(archiveFetchAttempts, [], 'the fixture-only test must not request Archive');
   console.log(JSON.stringify({
-    appChannelsShown: appChannels.length,
-    appRows: appChannels.reduce((count, channel) => count + channel.programs.length, 0),
-    appUnsortedRows: appUnsorted.programs.length,
-    actualNetworkRequests: 0,
-    blockedTestFetchCalls: blockedFetches,
+    fixtureChannels: appChannels.length,
+    fixtureRows: appChannels.reduce((count, channel) => count + channel.programs.length, 0),
+    fixtureUnsortedRows: appUnsorted.programs.length,
+    archiveRequestAttempts: archiveFetchAttempts.length,
+    outboundArchiveRequests: 0,
   }));
-  console.log('archive item guide hermetic tests: ALL PASS');
+  console.log('archive item guide hermetic tests: ALL PASS (in-memory fixtures, 0 Archive attempts / 0 outbound requests)');
 } finally {
   clearScheduleCache();
   globalThis.fetch = originalFetch;

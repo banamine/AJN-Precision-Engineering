@@ -8,8 +8,6 @@ import musicNoArt from '../data/musicNoArt.json';
 const NO_ART = new Set<string>((musicNoArt as { noArt: string[] }).noArt);
 export interface ThumbCandidate { url: string; source: ThumbSource }
 export interface ThumbInput {
-  /** Shown only after every real candidate has failed (instead of initials). Never replaces a real image. */
-  placeholder?: string | null;
   /** Archive identifier, or null when unknown. */
   identifier?: string | null;
   /** Any reference that contains the identifier: /download/<id>/..., archive.org URL, or /api/archive/proxy?path=... */

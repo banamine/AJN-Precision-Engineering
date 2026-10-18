@@ -3,6 +3,7 @@ import { Pause, Play } from 'lucide-react';
 import { loadSchedule } from '../guide/loadSchedule';
 import { clipsFromChannels, pickPlaying, previewStart, scrollStep, shuffled, PREVIEW_SECONDS, POLICE_CHASE_CHANNEL_ID, type ReelClip } from '../guide/policeChase';
 import type { PlayProgramCallback } from '../types';
+import { LaneImage } from './LaneImage';
 
 const GUIDE = 'cable-tv';
 const SCROLL_PX_PER_FRAME = 0.35; // about 20 px/s at 60 fps
@@ -43,7 +44,7 @@ function ReelCard({ clip, playing, onVisible, onPlay, onHover }: { clip: ReelCli
       onClick={() => onPlay(clip)} onPointerEnter={() => onHover(clip.key)} onPointerLeave={() => onHover(null)} onFocus={() => onHover(clip.key)} onBlur={() => onHover(null)}
       aria-label={`Play ${clip.title}, ${mmss(clip.seconds)}`}
       className="group relative h-[140px] w-[200px] shrink-0 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/80 text-left transition duration-150 hover:scale-[1.02] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 sm:w-[240px]">
-      {clip.thumb && <img src={clip.thumb} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />}
+      {clip.thumb && <LaneImage src={clip.thumb} alt="" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />}
       <video ref={vid} muted playsInline preload="none" aria-hidden="true" tabIndex={-1} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${playing && live ? 'opacity-100' : 'opacity-0'}`} />
       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2.5 pt-8">
         <span className="block truncate text-[13px] font-medium text-neutral-100">{clip.title}</span>
