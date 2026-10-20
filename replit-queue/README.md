@@ -59,3 +59,4 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 (Claude): NEW job queue/04c_GO_CH109_NINE_STATIONS_LEAN.txt (Classic Hits 109: 9 stations, permanent preset, Next/Previous Station; news RSS feed URL still unknown). Order: 01 AUDIO_GUIDE_SLIM -> LIVE-NTD -> 04b lag probe -> 04c CH109 -> 03 G6 ... (owner may reorder).
 - 2026-10-20 (Claude): CH109 news = the app's existing Vault/AJN radio Daily News Digest (/api/digest, NewsTicker/DailyBriefing); job 04c updated, no feed URL needed.
 - 2026-10-20 (Claude): 04c target look = the existing Player panel (station card + now playing + recently played + Daily briefing) for all 9 stations, same components.
+- 2026-10-20 (Claude): 04c layout plan: separate Ch109Strip (collapsed row + horizontally scrolling 9 chips + Prev/Next in its own header) so the 5 user presets and the now-playing row are untouched; layout proof screenshots required.
