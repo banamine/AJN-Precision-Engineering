@@ -55,3 +55,5 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 (Claude): NEW job queue/02_NEXT_GO_LIVE_NTD_NEWS_LEAN.txt (add the 10 NTD live streams, group News). Run after 01 AUDIO_GUIDE_SLIM. Evidence: claude/AJN_Live_NTD_Channels_Finding_2026-10-20.md.
 
 - 2026-10-20 (Claude): job 04 CAPTIONSDAILY returned PARTIAL and was reviewed: tooling ACCEPT (31 tests, orphan-branch simulation), ACTIVATION HELD. Published inert at overlays/captions-daily-2026-10-20/. New measurement job queue/04b_GO_TV_CAPTION_LAG_PROBE_LEAN.txt (public TV captions not found for 2026-10-19). Note: Replit ran job 04 before 01; job 01 AUDIO_GUIDE_SLIM is still outstanding.
+
+- 2026-10-20 (Claude): NEW job queue/04c_GO_CH109_NINE_STATIONS_LEAN.txt (Classic Hits 109: 9 stations, permanent preset, Next/Previous Station; news RSS feed URL still unknown). Order: 01 AUDIO_GUIDE_SLIM -> LIVE-NTD -> 04b lag probe -> 04c CH109 -> 03 G6 ... (owner may reorder).
