@@ -41,3 +41,4 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - DONE + reviewed: G17 build (PASS), G18 probe, G18B (ACCEPT, live check pending). Combined drop-in: branch overlay/p2-plus-captions-2026-10-20, overlays/all-in-one-2026-10-20/.
 - RULE: every Replit job must end with ONE combined drop-in ZIP (complete files at repo paths, UPLOAD_ORDER, ROLLBACK), attached as a file.
 - Last queued job: queue/10_LAST_GO_ONLINE_VIEWERS_LEAN.txt (run only on owner GO).
+- 2026-10-20: live check passed (P2, G17, G18B). NEXT = queue/01_NOW_GO_G6_CT_G7MEASURE_LEAN.txt (G6 dedupe + content-type fix + G7 measure only). Old G6/G7 brief kept under reference/.
