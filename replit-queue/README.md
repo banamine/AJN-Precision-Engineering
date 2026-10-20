@@ -36,3 +36,8 @@ Finished and reviewed (reference only, do not rerun): done/ folder; G0, G1/G1B, 
 
 ## How the owner starts a job
 Paste one line to Replit: "Read replit-queue/README.md from the repo branch replit/queue-2026-10-20 (raw URL base https://raw.githubusercontent.com/banamine/AJN-Precision-Engineering/replit/queue-2026-10-20/replit-queue/), then run job <N> only." Or download the whole folder as replit-queue.zip next to this README.
+
+## Status 2026-10-20 (Claude)
+- DONE + reviewed: G17 build (PASS), G18 probe, G18B (ACCEPT, live check pending). Combined drop-in: branch overlay/p2-plus-captions-2026-10-20, overlays/all-in-one-2026-10-20/.
+- RULE: every Replit job must end with ONE combined drop-in ZIP (complete files at repo paths, UPLOAD_ORDER, ROLLBACK), attached as a file.
+- Last queued job: queue/10_LAST_GO_ONLINE_VIEWERS_LEAN.txt (run only on owner GO).
