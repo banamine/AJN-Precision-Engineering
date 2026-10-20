@@ -44,3 +44,4 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20: live check passed (P2, G17, G18B). NEXT = queue/01_NOW_GO_G6_CT_G7MEASURE_LEAN.txt (G6 dedupe + content-type fix + G7 measure only). Old G6/G7 brief kept under reference/.
 - 2026-10-20: audio guide payload (19.45 MB raw with tz; limit rule 8 MiB advisory) must be fixed FIRST -> queue/01_NOW_GO_AUDIO_GUIDE_SLIM_LEAN.txt; G6 job is now 02_NEXT.
 - 2026-10-20 QUEUE ORDER: 01 AUDIO_GUIDE_SLIM -> 02 RADIO_CAPTIONS (INFOWARS transcript as live news-style caption strip) -> 03 G6+CT-fix+G7 measure -> 04 G8/G9 -> 05 G10/G11 (+05b) -> 06 G3 -> 07 G15/G16 -> 08 G12-G14 plan -> 09 GR2-4 -> 10 ONLINE_VIEWERS (last).
+- 2026-10-20: added 03b CAPTIONS_DAILY_CSV (daily caption CSV archive, 50 MB cap). HOLD until owner confirms D1-D4 (policy change on storing caption text, private repo, network list, radio meaning). Runs after 03 G6.
