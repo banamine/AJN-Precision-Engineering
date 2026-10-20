@@ -8,7 +8,7 @@ WHY (Claude's live evidence 2026-10-20): the owner's Vocl list had dead and live
  - Identity of both feeds is UNKNOWN (owner labelled them Unverified). Uplynk URLs on the owner list carried pbs= tokens; the master has none.
 
 BUILD (smallest change)
- PIECE 1: add exactly 2 rows to server/data/liveTvPinned.json, group "News", names "Unverified Rumble Live (DVR)" and "Unverified Uplynk Live Channel", ids live-extra-rumble-79qjh2 and live-extra-uplynk-971464. No logo (use existing fallback). Do NOT add the variant/duplicate URLs.
+ PIECE 1: add exactly 2 rows to server/data/liveTvPinned.json, group "News", names "Overcomers.TV (Rumble live)" [Claude verified 2026-10-20: rumble.com/embed/v79qjh2 title = "Overcomers TV"] and "Unverified Uplynk Live Channel", ids live-extra-rumble-79qjh2 and live-extra-uplynk-971464. No logo (use existing fallback). Do NOT add the variant/duplicate URLs.
  PIECE 2: tools/check-live-links.mjs (read-only, no deps): reads liveTvPinned.json + server/data/liveNewsChannels.json, for each https URL does one GET with 10 s timeout, passes only if HTTP 200 AND body starts with #EXTM3U (and, for a master list, contains #EXT-X-STREAM-INF or #EXTINF). HTML 200 = FAIL ("returned HTML, not a playlist"). Writes live-link-report.json {checkedAt, rows:[{id,url,ok,status,contentType,reason}]} and exits 1 if any fail. One request per URL, no retries, no archive.org.
  PIECE 3: workflow .github/workflows/ajn-live-links.yml as INERT: put it under files/ACTIVATION_ONLY/ (not .github/), cron weekly, Node 22, uploads the report as an artifact, never commits, never edits the guide. A failing link must show as a failed run, never a silent skip.
 
