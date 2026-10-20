@@ -1,0 +1,50 @@
+GO AUDIO-GUIDE-SLIM   (Lean Mode V3; one job; ONE combined drop-in ZIP; STOP after ZIP)   *** RUNS BEFORE G6 ***
+Owner 2026-10-20: "we not breaking our own rules" -> the Audio & Podcasts guide payload must meet our 8 MiB advisory (test-music-schedule-budget.mjs, AUDIO_ADVISORY = 8 MiB; hard limit 24 MiB). It currently prints "ADVISORY: Audio exceeds 8 MiB; propose slimming repeated metadata, do not implement it in Phase A." This is that proposal, now approved to implement.
+
+EVIDENCE (Claude, live site 2026-10-20; use as the baseline, re-measure offline and report your own numbers)
+ GET /api/schedule?guide=audio-podcasts            raw 16,807,947 B, gzip on the wire 1,792,222 B, 2.4 s
+ GET /api/schedule?guide=audio-podcasts&tz=420     raw 19,453,083 B (18.55 MiB; this is what the browser really sends), gzip 1,988,778 B, 2.1 s
+ 111 channels, 12,343 rows (default) / 15,241 rows (tz). Split of the tz payload: 25 channels `item-music-*` = 13,755,189 B with 9,281 rows (71 %); the other 86 channels = 5,800,848 B with 5,960 rows (already < 8 MiB on their own).
+ Per-row cost inside the music channels (fields, bytes over all rows, default payload): metadata 4.44 MB, mediaUrl 3.14 MB (a double-encoded copy of archivePath), archivePath 2.27 MB, description 0.78 MB, channelId 0.74 MB, id 0.57 MB, title 0.56 MB. metadata.path (1.22 MB) is a third copy of the same path.
+ Cause: every music channel ships ~370 full rows (the whole-day loop) in the first response although the guide shows only a few hours of one channel at a time.
+ INFOWARS Archive RADIO adds only 8,590 B; it is not the cause.
+
+ATTACHED (base, in this order): 1) ajn-precision-engineering.zip (newest owner export, sha 002749be...9353)  2) AJN_ALL_IN_ONE_DROPIN_2026-10-20.zip (sha 1f424357...fab047; already contains Phase 2 + captions fix + G17 + G18B; extract over the export). If either is missing STOP and say which. Report both SHA-256 first. Work in a temp copy; never edit the ZIPs. Branch name for the record: feat/audio-guide-light. Node 22. Ignore the ~56 TS2307 errors in full-files-for-export-baseline/ (say so).
+
+LEAN MODE
+ L1 DO NOT RE-TEST: Phase 1, Phase 2/AMC/Library, G17, G18B (channel, ASR, M4A), proxy 206 slicing, visualizer, TV-News captions, Classic TV light mode (it must stay byte-identical: prove with its existing test only).
+ L2 Test only what you build: new tests + ONE worked example per feature; temp tsconfig of changed/new files + imports; NODE_OPTIONS=--max-old-space-size=1400.
+ L3 Worked examples show real channel ids, real byte counts.
+ L4 Extend test-cloudrun-smoke.ts (offline, production bundle, NODE_ENV=production PORT=8080 NET_GUARD=block, warmers off): existing checks still pass PLUS the three audio requests below with their raw bytes and the channel-row fetch. 0 Archive requests.
+ L5 End with NEXT BUILD OUTLINE (<= 15 lines) incl. "I will NOT re-test: ...".
+ L6 Archive requests in this job: 0. Use cached/fixture channel data exactly as test-music-schedule-budget.mjs and your G18B real-cache run did.
+
+DESIGN (follow it; if you find a hard blocker say so before changing the design)
+ Mirror the proven Classic mechanism (server/classicLightSchedule.ts, `light=1`, `programsComplete:false`, on-demand `&channel=`), but ONLY for the long looped music channels:
+ 1. NEW server/audioLightSchedule.ts (pure): input channels + local hour; for every channel whose rows are a day loop with MORE THAN 24 rows (that is the `item-music-*` set; INFOWARS has 9 rows and stays whole, rush/OTR/podcasts/live stay whole) replace `programs` by the current + next 2 rows (reuse selectNowAndNext from classicLightSchedule.ts if it fits, else a tiny local copy; ONE implementation, no parallel one) and add `programCount` (full row count) and `programsComplete:false`. Keep id/name/group/mediaType/sourceStatus/diagnostics untouched. Never change program ids, never invent rows, never add fields to the rows themselves.
+ 2. server.ts /api/schedule: `light=1` is allowed for classic-tv (unchanged) and now also audio-podcasts. For audio-podcasts + light, `tz` is REQUIRED (same RangeError->400 as Classic). Add header X-AJN-Light-Raw-Bytes. NO new route; the existing `&channel=<id>` keeps returning that channel's FULL rows; for audio-podcasts the channel request must also honour `tz` so it returns the SAME local-hour window the full request returns today (getAudioLoopRows). Without `light` the response is byte-for-byte what it is today (exports, tests, other callers). Flag AJN_AUDIO_LIGHT (default ON; =0 makes `light=1` return the old full body) so rollback is one env var. Register nothing after the `/api` 404 handler.
+ 3. Client (minimum wiring, protected core: list every touched line, and stop if EpgGuide.tsx needs > ~25 changed lines):
+    - src/EpgGuide.tsx: lightMode currently `guideId === 'classic-tv'`; make it classic-tv OR audio-podcasts. The per-channel row fetch (`&channel=`) must append `&tz=<getTimezoneOffset()>` for audio-podcasts only (Classic request URL must not change).
+    - src/guide/loadSchedule.ts and src/components/TodayView.tsx: they only need what is on now/next -> for guide `audio-podcasts` add `&light=1&tz=...` (loadSchedule already sends tz). If either needs full rows of a music channel, say so and keep it full there instead (report the consumer table below).
+    - src/components/PlayerView.tsx (per-channel fetch for the next track) stays as is unless your consumer audit shows a break.
+ 4. Consumer audit (report as a table, verified by grep + reading): every place that reads `programs` of an audio-podcasts channel (EpgGuide, BlockCell, TodayView, loadSchedule, HomeLiveStrip, RadioDock, RadioPresetsBar, digestModel, continuity, liveTune, homeFeatures, PlayerView, exports): needs full rows / needs now-next only / not affected, and what you did.
+ 5. Honesty: while a music channel's full rows load the row shows an explicit loading state; if the row fetch fails, an explicit error with retry. No synthetic rows, no stale rows shown as current.
+
+BUDGET GATES (numbers; make them FAIL the test, not just print)
+ - audio-podcasts `light=1&tz=420` raw <= 6 MiB (target) and in any case < 8 MiB; report the number and X-AJN-Light-Raw-Bytes.
+ - audio-podcasts without light: unchanged raw size (report: must equal today's number for the same fixture) and still < 24 MiB.
+ - update test-music-schedule-budget.mjs: replace the ADVISORY print by an assertion on the LIGHT request (<= 8 MiB), keep the 24 MiB hard assertions on the unlight one and the Classic limits as they are.
+ - Classic TV light: existing test unchanged and passing (report its bytes before/after = identical).
+
+WORKED EXAMPLES (numbers)
+ E1 byte table: default / tz / light+tz / one channel full (`&channel=item-music-00s-radio-hits-2024&tz=420`): raw and gzip for each.
+ E2 equality: the channel-fetch rows for item-music-00s-radio-hits-2024 with tz=420 are IDENTICAL (deep-equal ids and times) to that channel's rows in today's full tz response; and the 3 rows in the light response are a subset of them (the current + next 2 by local hour). Show the three ids.
+ E3 exports unchanged: sha256 of /api/guides/audio-podcasts/epg.xml and playlist.m3u before vs after = identical.
+ E4 browser (Chromium, 390 px and 1440 px, stubbed media, NET_GUARD): audio guide opens; a music channel row shows the loading state then its rows (time-to-rows in ms from the stubbed endpoint); clicking a program in that row starts playback of that program id; INFOWARS channel row still renders with its 9 programs; Classic TV guide still loads light (request URL unchanged). Screenshots under REVIEW/screens/.
+ E5 failure: make the channel-row endpoint return 503 -> the row shows an explicit error with a retry that works; no fake rows.
+ E6 flag: AJN_AUDIO_LIGHT=0 -> `light=1` returns the same body as without light (bytes equal).
+
+DELIVER (this is what counts as finished)
+ ONE combined drop-in ZIP: AJN_PACK_AUDIOSLIM_2026-10-20.zip with ONLY the final complete files (not diffs) changed vs (export + all-in-one), at repo-relative paths, plus UPLOAD_ORDER.txt (exact order, on top of export + all-in-one), ROLLBACK.txt, sha256 of every file, new/changed tests, and a REVIEW/ folder (REPORT.md with E1-E6 numbers, the consumer table, VERIFIED / NOT VERIFIED with reasons, request ledger; numeric-evidence.json; screenshots; NEXT BUILD OUTLINE). Do not mix review files with files to upload.
+ ATTACH the ZIP and REPORT.md to the chat as files (not just a path). Final line: GATE AUDIOSLIM DONE | ZIP READY: <path> <size> <sha256> | verdict PASS/PARTIAL/FAIL | audio light raw bytes <n> (limit 8 MiB 8,388,608) | NOT VERIFIED | owner decisions needed.
+STOP. Do not start G6 or anything else.
