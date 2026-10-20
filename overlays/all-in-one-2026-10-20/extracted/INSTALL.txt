@@ -1,0 +1,25 @@
+AJN ALL-IN-ONE DROP-IN  2026-10-20  (Phase 2 AMC + captions types fix + G17 Classic Radio Theatre + G18B INFOWARS Archive RADIO / M4A / machine transcript)
+
+ONE ZIP. Extract it OVER your project root (Builder: upload each file at the same path; every file is COMPLETE, not a diff).
+Nothing else is needed. No package.json / lockfile change. Do NOT upload INSTALL.txt, SHA256SUMS.txt or the test files if Builder complains; the tests are optional (see bottom).
+
+RUNTIME FILES (29 files incl. tests; 20 runtime):
+  guideRegistry.ts
+  server.ts
+  server/archiveMediaTypes.ts   server/audioAsr.ts   server/audioAsrRoutes.ts   server/audioChannels.ts
+  server/classicRadioTheatre.ts   server/infowarsRadio.ts   server/rush.ts
+  server/captions/captionService.ts   server/captions/routes.ts
+  src/EpgGuide.tsx   src/types.ts
+  src/components/AjnResourcePanel.tsx   src/components/AudioAsrTranscriptPanel.tsx
+  src/components/ClassicRadioTheatreShelf.tsx   src/components/PlayerView.tsx
+  src/data/archiveAudioChannels.json   src/data/audioGroupOverrides.json   src/data/classicRadioTheatreRegistry.json
+OPTIONAL TESTS (root): test-amc-phase2.ts test-captions.ts test-classic-radio-theatre.ts test-infowars-radio.ts test-audio-asr.ts test-rush.ts test-proxy-range.ts test-cloudrun-smoke.ts test-infowars-audio-browser.mjs
+
+WHAT YOU GET
+  Phase 2: All My Children Episodes rotate daily, Extras show "Library only", Library stays whole.
+  G17: Classic Radio Theatre shelf in the Audio resource panel (/api/classic-radio/shows, /search).
+  G18B: channel "INFOWARS Archive RADIO" under Talk Radio; M4A/AAC fallback; proxy sends audio/mp4 for .m4a;
+        machine transcript panel (/api/audio-asr/:id/plan and /slice, flag AJN_AUDIO_ASR=0 turns it off).
+
+AFTER PUBLISHING: tell Claude "live check".
+ROLLBACK: restore the same paths from your previous Builder version (this package changes no package files).
