@@ -3,7 +3,7 @@
 Purpose: one place where the build team (Replit) can fetch every queued job and its helper files. NOTHING here is applied to main. Do not merge this branch. Do not push to GitHub from Replit; deliver ZIPs to the owner.
 
 ## BASE (updated 2026-10-20, overrides the base line in rule 1 below)
-BASE = owner export ZIP + all-in-one overlay (branch overlay/p2-plus-captions-2026-10-20, overlays/all-in-one-2026-10-20/, sha256 1f424357...fab047) + RADIOCAPTIONS pack (this branch, overlays/radio-captions-2026-10-20/, sha256 f1a2d3c8...b1cfb, delete AudioAsrTranscriptPanel.tsx). Fetch both from GitHub yourself; the owner only attaches the export. Report the SHA-256 of all three.
+BASE = owner export ZIP + all-in-one overlay (branch overlay/p2-plus-captions-2026-10-20, overlays/all-in-one-2026-10-20/, sha256 1f424357...fab047) + RADIOCAPTIONS pack (this branch, overlays/radio-captions-2026-10-20/, sha256 f1a2d3c8...b1cfb, delete AudioAsrTranscriptPanel.tsx) + AUDIOSLIM pack (overlays/audioslim-2026-10-20/, sha256 0d92b050...f2ed). Fetch both from GitHub yourself; the owner only attaches the export. Report the SHA-256 of all three.
 
 ## Base rule (overrides every older job file)
 The older job files (queue/03..09, runbook/) were written against a branch chain (feat/library-allmychildren -> feat/buffer-gauge-readahead -> ...). IGNORE the branch chain. Source of truth is Google AI Studio (Builder), not GitHub main. For every job:
@@ -64,3 +64,4 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 (Claude): 04c target look = the existing Player panel (station card + now playing + recently played + Daily briefing) for all 9 stations, same components.
 - 2026-10-20 (Claude): 04c layout plan: separate Ch109Strip (collapsed row + horizontally scrolling 9 chips + Prev/Next in its own header) so the 5 user presets and the now-playing row are untouched; layout proof screenshots required.
 - 2026-10-20 (Claude): NEW job queue/03b_GO_VERIFY_KIT_AND_CAPABILITY_PROBE_LEAN.txt (capability probe + tools/ajn-verify kit: test registry, runner, placement map, rules lint, pack builder). Recommended right after 01. Standing rule 'solve, don't just flag' added at top.
+- 2026-10-20 (Claude): job 01 AUDIOSLIM reviewed ACCEPT (light audio guide 5,507,202 B raw). Published at overlays/audioslim-2026-10-20/. Found a real live defect: Classic XML lacks 619 untimed ajn-allmychildren-extras programmes (schedule 38,964 vs XML 38,345); fix goes into job 03 (G6) as a small item.

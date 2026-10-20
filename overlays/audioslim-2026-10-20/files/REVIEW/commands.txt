@@ -1,0 +1,33 @@
+Runtime: Node v22.22.0
+
+Focused TypeScript:
+NODE_OPTIONS=--max-old-space-size=1400 node_modules/.bin/tsc --noEmit -p REVIEW/audioslim-tsconfig.json
+Output: exit 0; no diagnostics.
+The included REVIEW/audioslim-tsconfig.json covers changed files and imports and excludes full-files-for-export-baseline/.
+
+Production build:
+npm run build
+Output: exit 0; Vite emitted the existing large-chunk advisory, then built dist/server.cjs successfully.
+
+Focused tests:
+node_modules/.bin/tsx test-audio-light-schedule.ts
+PASS audio-light-schedule: 3-row selection, wrap, identity, untouched channels, and invalid inputs
+node_modules/.bin/tsx test-audio-light-client.ts
+PASS audio-light-client: light cache separation, stale audio rejection, and unchanged Classic URL
+node_modules/.bin/tsx test-group-programs-for-grid.ts
+grouping tests passed
+node_modules/.bin/tsx test-classic-light-schedule.ts
+PASS classic-light-schedule: now+next2, title index, empty/restricted rows, timezone validation, 2 MiB budget
+node_modules/.bin/tsx test-audio-light-guide.mjs
+PASS audio-light-guide: synthetic fixture; load, row fetch, exact program ID, explicit 503/retry, 390/1440 Chromium, no non-local traffic
+
+Offline production smoke:
+NET_GUARD=block NODE_ENV=production PORT=8080 AJN_BOOT_WARMERS=0 node_modules/.bin/tsx test-cloudrun-smoke.ts
+Exit 1. Audio E1/E2, E3 export hashes, E6 flag-off equality, health/smoke checks, shutdown, and 0 physical Archive starts passed. The nested existing schedule budget assertion failed on Classic-TV XML track-exact:
+AssertionError [ERR_ASSERTION]: classic-tv XML remains track-exact
+26098 !== 26717
+The mismatch is 619 rows; no Classic-TV export code or assertion was changed.
+
+Browser captures:
+390x844 phone and 1440x900 desktop PNGs under REVIEW/screens/.
+Synthetic channel full-row stub delay: 600 ms; measured click-to-full-row render: 719 ms phone, 728 ms desktop.

@@ -1,0 +1,63 @@
+{
+  "node": "v22.22.0",
+  "baseSha256": {
+    "ownerExport": "002749be159fb37413495bdfd0273475b8dfdaf21ca9a4a9ee2d154577249353",
+    "allInOneOverlay": "1f4243577e5f160c5f96688cc0067ad1f9ae57fee277ce5b7dffe98b88fab047",
+    "radioCaptionsOverlay": "f1a2d3c85834ada38cdfeb992e336c120a1f16c8aed9f11b6c7ddcb55a9b1cfb"
+  },
+  "payload": {
+    "channelCount": 111,
+    "default": { "rawBytes": 16472936, "gzipWireBytes": 1761138 },
+    "timezone420": { "rawBytes": 19111602, "gzipWireBytes": 1960098 },
+    "lightTimezone420": {
+      "rawBytes": 5507202,
+      "rawHeaderBytes": 5507202,
+      "gzipWireBytes": 458452,
+      "targetLimitBytes": 6291456,
+      "hardLimitBytes": 8388608,
+      "passesTarget": true
+    },
+    "fullTargetChannel": { "rawBytes": 529762, "gzipWireBytes": 66501, "programRows": 376 },
+    "lightTargetChannel": {
+      "programRows": 3,
+      "programIds": [
+        "ia-0fcc41964684:d81",
+        "ia-315320bc03e4:d82",
+        "ia-0e6e0b89fa6c:d83"
+      ],
+      "deepEqualToFullChannelIdsAndTimes": true,
+      "subsetOfFullChannel": true
+    }
+  },
+  "browser": {
+    "viewports": [
+      { "width": 390, "height": 844 },
+      { "width": 1440, "height": 900 }
+    ],
+    "syntheticLightResponseBytes": 6907,
+    "infowarsFixtureRows": 9,
+    "fullRowStubDelayMs": 600,
+    "timeToRowsMs": [719, 728],
+    "staleAudioRowsShownAsCurrent": false,
+    "retryRequestsPerViewport": 2,
+    "archiveRequests": 0,
+    "externalRequests": 0
+  },
+  "exports": {
+    "epgXmlSha256": "d1055ce1213ba405c89a6dbb9091a1ccbd4c875246007428364c4b494cf2b8d6",
+    "playlistM3uSha256": "dc78896c145a39e2e3230b6f9a2a5de43a51e6eaae22b931d4bee2104201d07c",
+    "matchPreChange": true
+  },
+  "flagOff": { "fullRawBytes": 19111602, "bodyEqual": true, "physicalArchiveStarts": 0 },
+  "network": { "cloudSmokeBlockedAttempts": 63, "physicalArchiveStarts": 0 },
+  "classicXmlBudgetAssertion": { "scheduleRows": 26717, "xmlProgrammeRows": 26098, "difference": 619, "cloudSmokeExitCode": 1 },
+  "classicLight": { "existingTestPass": true, "rawByteIdentityVerified": false },
+  "verification": {
+    "focusedTypecheckExitCode": 0,
+    "productionBuildExitCode": 0,
+    "audioUnitTestsPass": true,
+    "groupingTestPass": true,
+    "browserTestPass": true,
+    "cloudSmokeExitCode": 1
+  }
+}

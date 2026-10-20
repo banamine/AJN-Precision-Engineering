@@ -1,0 +1,28 @@
+d7a3d7748beac2aebad083ee3c76a957c93ae9827fe14fd40bef0a0c8fcd05d8  ./REVIEW/audioslim-tsconfig.json
+b88b8afd991729827f83efc4eaa3fc0cb4ecdcb645d742ecf758c6901d6ebf07  ./REVIEW/commands.txt
+10098d62505f895c383afbbfea2a18fa437163e161a6acb051f3aa5ad6a4873e  ./REVIEW/NEXT_BUILD_OUTLINE.md
+d15189de3a3d231887a203cefc17f6cdd0a0a61d9786b9e54ee9cd08b36c9840  ./REVIEW/numeric-evidence.json
+271a7eea80aec2d2f533e33ef7caccc2a1b483838ee638e355b0084a20732fbe  ./REVIEW/REPORT.md
+a19549005b357c954ae2359c83d7d09b4fbafbd7d3335219c51c6287236df53c  ./REVIEW/screens/audio-guide-desktop.png
+a705e76587954f62b1f082ea3e5e899505d52c1b4e2c3d113c024742f954b836  ./REVIEW/screens/audio-guide-phone.png
+efb53abd4ee800317c09ceb433c93290d6a9455eb2b3347836a33d63642548a7  ./REVIEW/STATE.md
+29fe02b18252863794bb218d5dcfa6d9636ce7ba941934273a9b69715b8c7d36  ./ROLLBACK.txt
+0f870f335cdb774897c0bc31fbf76a92c1e0a205e453c7272dadea28118ec375  ./server/audioLightSchedule.ts
+dca497deefdc054d76790b4ecbd6a34646187c36b3c45bda1adc63498727573d  ./server.ts
+bd044f2c9e31458dc091a9ba1b5915961be749ed4efe3587e37ba9ccdce42483  ./src/components/HomeLiveStrip.tsx
+3fea70c70a7b49396074e31a8a21ae15aeccd2daed4e5e9702e9abe2569c39da  ./src/components/TodayView.tsx
+9adf2a8e95c106e0c706b56e279a26b57dc1236e2f4380fdcec08a8a5cc24bb2  ./src/EpgGuide.tsx
+6036ad7ff7f6e1020ffffcc4b53c489f0b2cd2aa269c3e36982a8e805c554b46  ./src/guide/groupProgramsForGrid.ts
+21e2b4f88cf2fb7b0b7e0fe269f551ada9a30c984bc0365e906b2e09ab1cfeb2  ./src/guide/loadSchedule.ts
+6dbb63aaf4d5d2640bacfa0701ea9806ab7672530dd616ccbeb0e8630d6c8e10  ./src/guide/scheduleCache.ts
+c609b52699f7407d69167e6dc054aeb7332a373c512138c2665d28a0dddbbb71  ./test-audio-light-client.ts
+58885540d29f92c83d4d4d62dfbe28da017c943fe7f155c15bf3a4cb6d1f5f65  ./test-audio-light-guide-fixture.ts
+80446777efa6d073458a0ecd06d6edc2f54e47dde9bbd103dd32de4c3f02b644  ./test-audio-light-guide.html
+56935d17249e64deabb4bea9945f215055d55c150844c03cb4595d2d49c5c3db  ./test-audio-light-guide.mjs
+6486296fad54979a2eecd647e21a3d1edb68da208574ec9e3281263b88d559f8  ./test-audio-light-guide.tsx
+b629bce1f2905719502e5dbea7c3e3ea86c559825c1449cc7f5ef2a5f31bf5cb  ./test-audio-light-schedule.ts
+bf9eb3123d26eddcaf5f4567380aabb8d96bffee16b99372ade44706d0bfac7d  ./test-cloudrun-smoke.ts
+710ea9e336262ebcb83770b8fbc1269edce0c1b7854bc4db69e95c1829423f8d  ./test-music-schedule-budget.mjs
+d26b70c030f834d11f8088453dd2601647260cd9324974752027ff851b3f646e  ./UPLOAD_ORDER.txt
+
+# Self-hash omitted by design; the manifest's SHA-256 is included in the delivery receipt.

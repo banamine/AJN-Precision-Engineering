@@ -1,0 +1,21 @@
+AJN AUDIO GUIDE SLIM — package upload manifest
+Apply only these 16 repo-path files after the owner export, all-in-one overlay, and RadioCaptions overlay, in this order.
+The ZIP-root UPLOAD_ORDER.txt and ROLLBACK.txt are package instructions, not repository upload targets. Do not upload REVIEW/*.
+No package.json or lockfile changes; no dependencies added.
+
+1. server/audioLightSchedule.ts | 1306 B | 0f870f335cdb774897c0bc31fbf76a92c1e0a205e453c7272dadea28118ec375
+2. server.ts | 50174 B | dca497deefdc054d76790b4ecbd6a34646187c36b3c45bda1adc63498727573d
+3. src/guide/scheduleCache.ts | 2732 B | 6dbb63aaf4d5d2640bacfa0701ea9806ab7672530dd616ccbeb0e8630d6c8e10
+4. src/guide/loadSchedule.ts | 1994 B | 21e2b4f88cf2fb7b0b7e0fe269f551ada9a30c984bc0365e906b2e09ab1cfeb2
+5. src/guide/groupProgramsForGrid.ts | 5312 B | 6036ad7ff7f6e1020ffffcc4b53c489f0b2cd2aa269c3e36982a8e805c554b46
+6. src/components/TodayView.tsx | 16769 B | 3fea70c70a7b49396074e31a8a21ae15aeccd2daed4e5e9702e9abe2569c39da
+7. src/components/HomeLiveStrip.tsx | 11476 B | bd044f2c9e31458dc091a9ba1b5915961be749ed4efe3587e37ba9ccdce42483
+8. src/EpgGuide.tsx | 55701 B | 9adf2a8e95c106e0c706b56e279a26b57dc1236e2f4380fdcec08a8a5cc24bb2
+9. test-audio-light-schedule.ts | 3614 B | b629bce1f2905719502e5dbea7c3e3ea86c559825c1449cc7f5ef2a5f31bf5cb
+10. test-audio-light-client.ts | 3172 B | c609b52699f7407d69167e6dc054aeb7332a373c512138c2665d28a0dddbbb71
+11. test-audio-light-guide-fixture.ts | 1921 B | 58885540d29f92c83d4d4d62dfbe28da017c943fe7f155c15bf3a4cb6d1f5f65
+12. test-audio-light-guide.html | 334 B | 80446777efa6d073458a0ecd06d6edc2f54e47dde9bbd103dd32de4c3f02b644
+13. test-audio-light-guide.tsx | 841 B | 6486296fad54979a2eecd647e21a3d1edb68da208574ec9e3281263b88d559f8
+14. test-audio-light-guide.mjs | 10818 B | 56935d17249e64deabb4bea9945f215055d55c150844c03cb4595d2d49c5c3db
+15. test-music-schedule-budget.mjs | 6831 B | 710ea9e336262ebcb83770b8fbc1269edce0c1b7854bc4db69e95c1829423f8d
+16. test-cloudrun-smoke.ts | 17614 B | bf9eb3123d26eddcaf5f4567380aabb8d96bffee16b99372ade44706d0bfac7d

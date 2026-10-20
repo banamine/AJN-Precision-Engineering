@@ -1,0 +1,14 @@
+AJN Audio Guide Slim rollback
+
+Immediate runtime rollback:
+1. Set AJN_AUDIO_LIGHT=0 in the app environment. The `light=1` audio request then returns the same full response body as the no-light request. Verified offline: 19,111,602 bytes, byte-equal.
+
+Code rollback, if needed:
+1. Restore the base versions of test-cloudrun-smoke.ts and test-music-schedule-budget.mjs.
+2. Restore the base version of src/EpgGuide.tsx.
+3. Restore the base versions of src/components/HomeLiveStrip.tsx and src/components/TodayView.tsx.
+4. Restore the base versions of src/guide/groupProgramsForGrid.ts, src/guide/loadSchedule.ts, and src/guide/scheduleCache.ts.
+5. Restore the base version of server.ts.
+6. Delete server/audioLightSchedule.ts and the six test-audio-light-* files.
+
+Do not roll back or change the owner export, all-in-one overlay, RadioCaptions overlay, or unrelated files. No commit, push, merge, or deployment was performed.

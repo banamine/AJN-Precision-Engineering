@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "files": [
+    "../server/audioLightSchedule.ts",
+    "../server.ts",
+    "../src/components/HomeLiveStrip.tsx",
+    "../src/components/TodayView.tsx",
+    "../src/EpgGuide.tsx",
+    "../src/guide/groupProgramsForGrid.ts",
+    "../src/guide/loadSchedule.ts",
+    "../src/guide/scheduleCache.ts",
+    "../test-audio-light-client.ts",
+    "../test-audio-light-guide-fixture.ts",
+    "../test-audio-light-guide.tsx",
+    "../test-audio-light-schedule.ts",
+    "../test-cloudrun-smoke.ts"
+  ],
+  "include": []
+}
