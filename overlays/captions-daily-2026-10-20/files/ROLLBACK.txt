@@ -1,0 +1,8 @@
+Rollback order
+
+1. Disable the “AJN Daily Captions Archive” schedule in GitHub Actions immediately; this prevents new public data writes.
+2. Revert or delete `.github/workflows/ajn-captions-daily.yml` from `main`.
+3. Revert or delete `tools/captions-daily/` from `main`. No application runtime, Builder, package, or lockfile changes are part of this drop-in.
+4. The public `captions-archive` branch remains until the owner separately replaces or deletes it. Removing `data/captions/` or deleting that branch does not erase copies in reachable Git commits, forks, clones, or caches.
+
+No rollback action was performed by this task. No project/GitHub commit, push, merge, workflow run, or deployment was made. The local orphan-branch protocol simulation created two temporary commits in a disposable bare-Git harness, which was removed after the check.

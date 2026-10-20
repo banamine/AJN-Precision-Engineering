@@ -53,3 +53,5 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 (Claude): RADIOCAPTIONS reviewed ACCEPT and published as overlays/radio-captions-2026-10-20/. Queue job 02 is DONE (moved to done/). Remaining order: 01 AUDIO_GUIDE_SLIM (not yet returned; run first, base includes radio captions) -> 03 G6+CT+G7 measure -> 04 CAPTIONS_DAILY_CSV -> 05.. as listed. Owner does live testing on Builder and reports issues.
 
 - 2026-10-20 (Claude): NEW job queue/02_NEXT_GO_LIVE_NTD_NEWS_LEAN.txt (add the 10 NTD live streams, group News). Run after 01 AUDIO_GUIDE_SLIM. Evidence: claude/AJN_Live_NTD_Channels_Finding_2026-10-20.md.
+
+- 2026-10-20 (Claude): job 04 CAPTIONSDAILY returned PARTIAL and was reviewed: tooling ACCEPT (31 tests, orphan-branch simulation), ACTIVATION HELD. Published inert at overlays/captions-daily-2026-10-20/. New measurement job queue/04b_GO_TV_CAPTION_LAG_PROBE_LEAN.txt (public TV captions not found for 2026-10-19). Note: Replit ran job 04 before 01; job 01 AUDIO_GUIDE_SLIM is still outstanding.

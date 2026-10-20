@@ -1,0 +1,93 @@
+name: AJN Daily Captions Archive
+
+on:
+  schedule:
+    - cron: "23 12 * * *"
+  workflow_dispatch:
+    inputs:
+      day:
+        description: "Optional UTC date (YYYY-MM-DD); blank selects the previous complete UTC day."
+        required: false
+        type: string
+      dry_run:
+        description: "Build in temporary storage, report counts, and do not push."
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ajn-captions-daily
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      AJN_DAY: ${{ github.event.inputs.day || '' }}
+      AJN_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+      TV_ADDITIONAL_LAG_DAYS: ${{ vars.AJN_TV_ADDITIONAL_LAG_DAYS || '0' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+
+      - name: Install existing dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Read prior data branch (if present)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/captions-previous"
+          if git ls-remote --exit-code --heads origin refs/heads/captions-archive >/dev/null 2>&1; then
+            git fetch --no-tags origin refs/heads/captions-archive:refs/remotes/origin/captions-archive
+            if git cat-file -e refs/remotes/origin/captions-archive:data/captions/MANIFEST.csv 2>/dev/null; then
+              git archive refs/remotes/origin/captions-archive data/captions | tar -x -C "$RUNNER_TEMP/captions-previous"
+            fi
+          fi
+
+      - name: Build daily CSVs
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--existing-dir "$RUNNER_TEMP/captions-previous/data/captions" --out "$RUNNER_TEMP/captions-output" --request-cap 240)
+          if [[ -n "$AJN_DAY" ]]; then args+=(--day "$AJN_DAY"); fi
+          if [[ "${AJN_DRY_RUN,,}" == "true" ]]; then args+=(--dry-run); fi
+          node --import tsx tools/captions-daily/cli.mjs "${args[@]}" | tee "$RUNNER_TEMP/captions-summary.json"
+
+      - name: Publish one orphan data commit
+        if: github.event.inputs.dry_run != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/captions-archive-tree"
+          mkdir -p "$stage"
+          cp "$RUNNER_TEMP/captions-output/README.md" "$stage/README.md"
+          cp -a "$RUNNER_TEMP/captions-output/data" "$stage/data"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          expected="$(git ls-remote origin refs/heads/captions-archive | awk 'NR==1 {print $1}')"
+          index="$RUNNER_TEMP/captions-index"
+          rm -f "$index"
+          export GIT_INDEX_FILE="$index"
+          git read-tree --empty
+          git --work-tree="$stage" add -A
+          tree="$(git write-tree)"
+          read -r rows items bytes < <(node -e 'const fs=require("node:fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(`${s.rows} ${s.itemsOk} ${s.csvBytes}\n`)' "$RUNNER_TEMP/captions-summary.json")
+          commit="$(printf '%s %s %s\n' "$rows" "$items" "$bytes" | git commit-tree "$tree")"
+          git push "--force-with-lease=refs/heads/captions-archive:${expected}" origin "$commit:refs/heads/captions-archive"
+
+      - name: Remove temporary caption files
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/captions-previous" "$RUNNER_TEMP/captions-output" "$RUNNER_TEMP/captions-archive-tree" "$RUNNER_TEMP/captions-index" "$RUNNER_TEMP/captions-summary.json"
