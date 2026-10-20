@@ -1,0 +1,18 @@
+GO LIVE-EXTRA (Lean Mode V3; one job; ZIP only; STOP after ZIP)  -- RUN ONLY AFTER J2 (LIVE-NTD) IS REVIEWED. Not part of the J1-J4 run.
+BASE: J2 LIVE-NTD output (server/data/liveTvPinned.json must exist). Report SHA-256 of base inputs first. Temp copy. No push/merge/deploy.
+
+WHY (Claude's live evidence 2026-10-20): the owner's Vocl list had dead and live URLs.
+ - DEAD, DO NOT ADD: vocl.com/live/*, vocl.com/vod/*, vocl.com/epg.xml, vocl.com/assets/profiles/* (all return the web-app HTML with HTTP 200, content-type text/html); videos.vocl.com single VOD files (recorded, not channels); the AWS IVS s3 link (403).
+ - Vocl's real live/VOD URLs are id-based (VIDEO_URL/<id>/video.m3u8) behind api.vocl.com (401 without login). No public channel list exists. Do NOT build a Vocl source.
+ - LIVE and open (200, valid playlist, CORS *): Rumble DVR https://rumble.com/live-hls-dvr/79qjh2/playlist.m3u8 (its variants point to hugh.cdn.rumble.cloud; the chunklist the owner listed is the same stream); Uplynk master https://content.uplynk.com/channel/971464cf16d341c3ac6e2d7ace48830c.m3u8 (the owner's a.m3u8 / d.m3u8 are variants of the same channel).
+ - Identity of both feeds is UNKNOWN (owner labelled them Unverified). Uplynk URLs on the owner list carried pbs= tokens; the master has none.
+
+BUILD (smallest change)
+ PIECE 1: add exactly 2 rows to server/data/liveTvPinned.json, group "News", names "Unverified Rumble Live (DVR)" and "Unverified Uplynk Live Channel", ids live-extra-rumble-79qjh2 and live-extra-uplynk-971464. No logo (use existing fallback). Do NOT add the variant/duplicate URLs.
+ PIECE 2: tools/check-live-links.mjs (read-only, no deps): reads liveTvPinned.json + server/data/liveNewsChannels.json, for each https URL does one GET with 10 s timeout, passes only if HTTP 200 AND body starts with #EXTM3U (and, for a master list, contains #EXT-X-STREAM-INF or #EXTINF). HTML 200 = FAIL ("returned HTML, not a playlist"). Writes live-link-report.json {checkedAt, rows:[{id,url,ok,status,contentType,reason}]} and exits 1 if any fail. One request per URL, no retries, no archive.org.
+ PIECE 3: workflow .github/workflows/ajn-live-links.yml as INERT: put it under files/ACTIVATION_ONLY/ (not .github/), cron weekly, Node 22, uploads the report as an artifact, never commits, never edits the guide. A failing link must show as a failed run, never a silent skip.
+
+TESTS (only what you build): offline test with fixture responses: valid playlist -> ok; HTML 200 -> FAIL; 403 -> FAIL; timeout -> FAIL; master playlist -> ok. test-live-tv.ts still passes. 0 real network in tests (net-guard).
+DO NOT TOUCH: Cable TV curated Live News content, proxy, player, Classic TV, captions. No dependency or package.json change.
+NOT VERIFIED (say so): browser playback of both feeds; what the feeds are; how long the Rumble slot URL lives (session-style); whether the Uplynk master needs a token later.
+DELIVER: ONE ZIP (complete files + UPLOAD_ORDER.txt + ROLLBACK.txt + sha256s + REVIEW/REPORT.md). Final line: GATE LIVE-EXTRA DONE | ZIP READY: <name> <size> <sha256> | verdict | NOT VERIFIED | owner decisions needed. STOP.
