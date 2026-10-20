@@ -57,3 +57,4 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 (Claude): job 04 CAPTIONSDAILY returned PARTIAL and was reviewed: tooling ACCEPT (31 tests, orphan-branch simulation), ACTIVATION HELD. Published inert at overlays/captions-daily-2026-10-20/. New measurement job queue/04b_GO_TV_CAPTION_LAG_PROBE_LEAN.txt (public TV captions not found for 2026-10-19). Note: Replit ran job 04 before 01; job 01 AUDIO_GUIDE_SLIM is still outstanding.
 
 - 2026-10-20 (Claude): NEW job queue/04c_GO_CH109_NINE_STATIONS_LEAN.txt (Classic Hits 109: 9 stations, permanent preset, Next/Previous Station; news RSS feed URL still unknown). Order: 01 AUDIO_GUIDE_SLIM -> LIVE-NTD -> 04b lag probe -> 04c CH109 -> 03 G6 ... (owner may reorder).
+- 2026-10-20 (Claude): CH109 news = the app's existing Vault/AJN radio Daily News Digest (/api/digest, NewsTicker/DailyBriefing); job 04c updated, no feed URL needed.
