@@ -1,0 +1,10 @@
+AJN DROP-IN P2 + CAPTIONS TYPE FIX (apply on top of Phase 1). Keep folders; replace when asked.
+ 1. guideRegistry.ts
+ 2. server.ts
+ 3. src/EpgGuide.tsx
+ 4. server/captions/captionService.ts
+ 5. server/captions/routes.ts
+ 6. test-captions.ts
+ 7. test-amc-phase2.ts   (new, optional)
+Then republish. No dependency or package.json changes.
+ROLLBACK: re-upload items 1-3 from the Phase 1 drop-in; items 4-6 from your previous export.
