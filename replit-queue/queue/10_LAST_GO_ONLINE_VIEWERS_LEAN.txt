@@ -1,0 +1,41 @@
+GO FINAL JOB: "Online viewers" counter   (Lean Mode V3; one job; ZIP only; STOP after ZIP)
+QUEUE POSITION: LAST item. Run it only after the owner says GO. Google Builder is NOT used for this (it failed twice); Replit builds it, owner uploads the ZIP.
+Owner decision 2026-10-20: instance-scoped count is accepted for v1. Label it "this server", never a global total.
+
+ATTACHED (base): newest owner export + AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip + the G17 pack + the G18B pack (all accepted by then; apply in that order). Report SHA-256 of every ZIP first. If any is missing, STOP and say which. Work in a temp copy. Do NOT touch: player, proxy, guides, sync, captions/ASR, G17/G18 files. Ignore the ~56 TS2307 errors in full-files-for-export-baseline/ (say so).
+
+LEAN MODE: do not re-test Phase 1/2, G17, G18B, proxy 206, visualizer, captions. Test only what you build. Temp tsconfig with only new/changed files + imports; NODE_OPTIONS=--max-old-space-size=1400. 0 Archive requests in this job (it needs none). End with NEXT BUILD OUTLINE (<= 15 lines) incl. "I will NOT re-test: ...".
+
+FACTS (Claude read the repo): there is NO component called StatusIndicatorBar in this repo (do not search for it). server.ts line ~529 already has `app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:...}))`: the new routes MUST be registered BEFORE that line. Production static + `app.get('*')` come after it. No ws/socket.io dependency: do NOT add any dependency. Check whether a compression middleware exists (grep found none in server.ts/package.json at the time); if one exists, SSE must bypass it.
+
+BUILD (smallest change)
+1) NEW server/presence.ts  (pure; no Express import)
+   class PresenceTracker { constructor(opts:{ttlMs:number; maxEntries?:number; now?:()=>number})
+     touch(clientId):number  remove(clientId):number  count():number (prunes entries older than ttlMs first)  subscribe(fn:(n:number)=>void):()=>void }
+   clientId must match /^[A-Za-z0-9_-]{16,64}$/ else throw RangeError('invalid_client_id'). Map<string,number> of lastSeen. Default cap 5000: a NEW id beyond the cap throws RangeError('presence_full') (existing ids may still touch). Subscribers are notified only when the count CHANGES; a throwing subscriber must not break others. Export default instance `presence` with ttlMs 45000. Also export a pure helper `viewersEvent(n)` returning exactly `data: {"viewers":N,"scope":"instance"}\n\n`.
+2) server.ts, before the /api 404 handler:
+   GET /api/presence            -> JSON {viewers:N, scope:'instance'}, Cache-Control no-store.
+   GET /api/presence/stream?cid=<id> -> SSE. Invalid cid -> 400 JSON {error:'invalid_client_id'}; full -> 503 JSON {error:'presence_full'}.
+     Headers: Content-Type text/event-stream; Cache-Control no-cache, no-transform; Connection keep-alive; X-Accel-Buffering no; res.flushHeaders().
+     On open: presence.touch(cid); write viewersEvent. Subscribe and write on every change. Every 20 s: write `: hb\n\n` AND presence.touch(cid). Max stream life 55 min: then end the response so EventSource reconnects (Cloud Run request timeout).
+     Cleanup on req 'close' AND res 'error'/'close': clearInterval, clearTimeout, unsubscribe, presence.remove(cid). Exactly once (idempotent).
+   Do not add any other route; unknown /api/presence/* already falls to the JSON 404.
+3) NEW src/hooks/usePresence.ts
+   cid: 24-char random id from crypto.getRandomValues (alphabet A-Za-z0-9_-), kept in sessionStorage under 'ajn.presence.cid' inside try/catch, in-memory fallback. (Two tabs = two viewers; document this in a comment.)
+   Returns {viewers:number|null, status:'connecting'|'live'|'unavailable'}. EventSource('/api/presence/stream?cid='+cid). onmessage: validate JSON shape (viewers is a non-negative integer, scope==='instance') else treat as unavailable. onerror: status 'unavailable', viewers null (NO stale or invented number; EventSource reconnects by itself). Close on unmount. No `any`. React StrictMode double-mount must not leave a second open stream.
+4) Display: ONE small text in the existing top header of src/components/Navigation.tsx (the <header> near line 114). Text: `Online now (this server): N` when live; `Online: unavailable` otherwise; nothing while 'connecting' longer than a render. Hidden on the smallest breakpoint is fine (hidden sm:inline). If this needs more than ~12 changed lines in Navigation.tsx, STOP and say so; the fallback is a tiny standalone component the owner places.
+5) NEW test-presence.ts (tsx, offline, no network) with an injected fake clock:
+   same id twice -> 1; two ids -> 2; remove -> 1; advance past ttl -> 0 and a subscriber sees the drop; invalid ids ('', 'short', 'has space...' 24 chars, 65 chars) throw RangeError; cap: the (max+1)th new id throws, an existing id still touches; subscriber called only on change; throwing subscriber does not break others; viewersEvent(3) equals the exact string above. Add npm script "test:presence": "tsx test-presence.ts".
+6) Extend test-cloudrun-smoke.ts (offline, production bundle, NODE_ENV=production PORT=8080 NET_GUARD=block, warmers off): GET /api/presence -> 200 JSON {viewers:0,scope:'instance'}; open 2 SSE connections with different cids (plain http client, read first event of each): first sees viewers 1, after the second connects the first receives viewers 2; destroy the second -> first receives viewers 1 within 2 s; bad cid -> 400 JSON; /api/presence/nope -> 404 JSON (not HTML); SIGTERM exits <= 10 s with open streams (no hang). Content-Type of the stream is text/event-stream and the first bytes arrive without buffering (< 1 s).
+
+WORKED EXAMPLES (numbers, not words; the only live checks, all local)
+ E1 tracker math with the fake clock: show the count after each step of test-presence.ts (e.g. t=0 touch a ->1; t=10 s touch b ->2; t=46 s ->? with ttl 45 s, show which ids pruned).
+ E2 the two-connection SSE sequence from the smoke test, with the exact event lines received and timestamps in ms.
+ E3 heartbeat: with a 20 s interval, show a stream held 45 s receives >= 2 `: hb` lines and the id is still counted (use a shortened interval injected for the test, state the value).
+ E4 StrictMode: render usePresence under React.StrictMode once and show exactly 1 open EventSource at steady state (offline, jsdom or a counting stub).
+ E5 Cloud Run caveat, measured nothing: state in the report, in one sentence, that the count is per container instance and that with N instances users will see the count of the instance they are connected to.
+
+DELIVER
+ AJN_PACK_ONLINEVIEWERS_2026-10-20.zip: ONLY new/changed runtime files (server/presence.ts, server.ts, src/hooks/usePresence.ts, src/components/Navigation.tsx), test-presence.ts, test-cloudrun-smoke.ts, package.json ONLY if you changed it (the script line; otherwise give the one line to add by hand), UPLOAD_ORDER.txt (exact order on top of export + P2 + G17 + G18B), ROLLBACK.txt, sha256 of each file, REPORT.md (E1-E5 numbers, L1 not-retested list, typecheck/build/test results with exit codes), numeric-evidence.json, NEXT BUILD OUTLINE. ATTACH the ZIP and REPORT.md as files to the chat.
+ Final line: GATE ONLINEVIEWERS DONE | ZIP READY: <path> <size> <sha256> | verdict PASS/PARTIAL/FAIL | NOT VERIFIED | owner decisions needed.
+STOP. This is the last queued job: do not start anything else.
