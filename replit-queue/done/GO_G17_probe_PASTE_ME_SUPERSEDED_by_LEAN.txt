@@ -1,0 +1,49 @@
+ATTACHED FILES (use as your base, in this order):
+1. ajn-precision-engineering.zip = newest owner export (Google Builder). Extract it as the review tree.
+2. AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip = overlay. Extract it over the export at the same repo-relative paths (7 files: guideRegistry.ts, server.ts, src/EpgGuide.tsx, server/captions/captionService.ts, server/captions/routes.ts, test-captions.ts, test-amc-phase2.ts). Do not use any other overlay.
+
+Rules for the base:
+- Work in a temporary copy. Never edit the uploaded ZIPs.
+- Phase 1 and Phase 2 are already in. Do not redo them.
+- Do not change ASR or caption behaviour.
+- Ignore the ~56 TS2307 errors inside full-files-for-export-baseline/ and say you ignored them.
+- First line of your report: the SHA-256 of both ZIPs you used.
+- If a file in the export does not match what the overlay expects, STOP and tell me which one.
+
+BASE UPDATE (2026-10-20) - read first:
+ - Base = the NEWEST owner export (ajn-precision-engineering.zip, attached) + AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip applied on top. Phase 1 and Phase 2 are in; do not redo them. Do not touch ASR/caption behaviour.
+ - GV is finished and ACCEPTED: keep the existing AudioVisualizerOverlay + media-time seekbar as is. Do NOT propose Archive .afpk scrubbers or spectrogram art in this plan (spectrogram art is on hold pending Archive terms). The diagnostics-canvas RAF loop cleanup is deferred; do not touch it.
+ - This job is plan + probe only: change NO app source, commit nothing.
+ - Ignore the ~56 TS2307 errors inside full-files-for-export-baseline/ (not yours).
+
+GO G17  (QUEUED - send after GV; Working Mode V2; investigation + plan only; NO building; ZIP only; STOP after ZIP)
+Name: G17 = "Radio Classic Theatre" catalog probe. Add row "G17 | classic radio theatre" to STATE.md.
+
+GOAL: give AJN a Classic Radio Theatre shelf (Golden Age old-time radio, 1930s-1960s) inside the existing audio side (Radio / AJN Audio / audio guide), searchable by show, episode and genre, without growing the Classic TV schedule payload (headroom 34 KB) and without adding new Library categories beyond the existing 'audio'.
+
+OWNER SHOW LIST (use ONLY as search aliases/seed, years are the owner's text, not verified data):
+ Drama: The Campbell Playhouse; The Mercury Theatre on the Air; Cavalcade of America; Lux Radio Theatre (also spelled Theater).
+ Mystery & Suspense: The Shadow; Suspense; Inner Sanctum Mysteries; The Whistler; Yours Truly, Johnny Dollar.
+ Science Fiction: Dimension X; X Minus One; Buck Rogers in the 25th Century; The CBS Radio Workshop.
+ True Story & True Crime: Gang Busters; The FBI in Peace and War; Dragnet; The Black Museum.
+
+CLAUDE-VERIFIED FACTS (public page endpoint, 2026-10-18):
+- Text query (Lux Radio Theatre) in the audio collection: 181 hits, mediatype audio, collections radioprograms 105, oldtimeradio 84, lumedwards 32; creators include old time radio researchers group 36, the suspense project 17, those old radio shows 10; subjects Lux Radio Theatre 40, Lux Radio Theater 28, OTR 54, Old Time Radio 57, OTRR 33.
+- OTR pool (subject Old Time Radio OR OTR) in audio: 11,752 items; collections radioprograms 6,661, oldtimeradio 5,225, podcasts_mirror 2,840 (mirror of podcasts, likely duplicates), opensource_audio 1,110, the-suspense-project 921, lumedwards 673, theoldtimeradio 383, podcasts 377. Top creators boxcars711 old time radio 2,200, the suspense project 925, old time radio researchers group 502, relic radio 443. Project-style creators exist for some shows (the whistler project 40, the casey crime photographer project 81, the big story project 53).
+- WARNING: the owner's link uses and[]=subject:"Lux Radio Theatre" AND "Lux Radio Theater" AND "OTR" AND mediatype audio. These are ANDed, so it only matches items carrying all three tags. Use OR groups or the text query instead.
+- Duplicates are certain (same episode uploaded by several people; podcasts_mirror overlaps). Not verified: audio format/bitrate mix, episode dates/titles quality, transcripts (.asr.srt) for these items, licence status of individual shows.
+
+PART A - OFFLINE (NET_GUARD=block, 0 Archive requests)
+A1 Where audio items enter the app today (Radio view, AJN Audio, audio guide/audioChannels, Library 'audio', audioItemSnapshot, Rush): file:line, caps, and how a new audio source would plug in without touching schedule program objects.
+A2 Design the show registry: one JSON (<= 60 KB) with show id, display name, aliases (Theatre/Theater, "The" prefixes, "Johnny Dollar"), genre (drama | mystery-suspense | sci-fi | true-crime), era, preferred Archive source (collection id and/or creator), dedupe rule. Propose how search finds a show by alias and an episode by title/date; how genre chips map to the existing tag scheme (see G10 addendum) and the soaps/audio categories.
+A3 Feature shape (plan only): "Classic Radio Theatre" shelf with 4 genre rows + show pages; optional 24/7 "Classic Radio Theatre" audio channel with daily rotation by genre block (rotation like dailyRotation.ts, no new schedule fields); AJN Audio view backdrop idea reuses the G12-G14 plan; truthful empty state when a show has no items.
+
+PART B - ARCHIVE, cap 40 physical request starts, redirect hops count, spacing >=1.8 s with the fixed helper; stop on 403/429/Retry-After or two 5xx in a row. Use the public page_production endpoint (hits_per_page=0, aggregations_size=15) and /metadata only:
+B1 (<= 18) one count query per owner show (text query with the show name and alias variants; collection audio): numFound, top 3 collections, top 3 creators, year range (min/max only). Numbers only.
+B2 (<= 4) pool checks: oldtimeradio, radioprograms, the-suspense-project, lumedwards: item counts and creator split.
+B3 (<= 10) metadata of 5 different shows' items (pick 1 per genre + 1 extra from different creators): formats present (mp3/ogg/flac), file sizes, length, any .asr.srt/spectrogram/.afpk presence (feeds GV), 'private' flag, licence field presence. Do not store titles or descriptions.
+B4 (<= 8) Range 0-1 on 4 mp3 files through the proxy shape; confirm 206 and content-type; note total size for the bounded-slice rule (8 MiB slices; episodes are often 5-15 MB).
+Report dedupe estimate: for 3 shows, how many episodes appear from >= 2 creators (numbers only, by comparing episode-date keys locally).
+
+PART C - DELIVER
+REPORT.md (verified vs not, per-show counts table, source/creator recommendation per show, duplicate rate, format findings, risks incl. licence/terms unknown, wiring plan with files and routes, size budget) + registry JSON draft + numeric evidence; ZIP AJN_PACK_G17_2026-10-18.zip; usual GATE G17 DONE line. No app source changes; no titles/descriptions/transcripts in outputs.

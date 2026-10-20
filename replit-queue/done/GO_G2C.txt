@@ -1,0 +1,16 @@
+GO G2C (owner-defined; add row "G2C | G2B follow-up" to STATE.md). Working Mode V2. Stop after the ZIP. Do the parts IN THIS ORDER.
+
+PART 0 - BROWSER LAUNCH FIRST (before any server/build is started; nothing else running)
+Launch Puppeteer once with: executablePath /repl/tools/bin/chromium, headless 'new', pipe: true, timeout 120000, userDataDir /tmp/pptr-g2c, args --no-sandbox --disable-gpu --disable-dev-shm-usage, env DBUS_SESSION_BUS_ADDRESS=/dev/null. Open a data: URL, read document.title, close. Report time-to-launch. If it fails, save the first 40 lines of Chromium stderr (dumpio: true) and try once without pipe and once with headless:'shell'. Stop at first success.
+Only if launch succeeds: serve a built frontend with a tiny static server (not Vite dev, not Express dev), run test-radio-view.js against it with all non-local requests aborted. Report assertions run/passed. If a build is needed, run it BEFORE launching Chromium and let it finish.
+
+PART A - OFFLINE (NET_GUARD=block, 0 Archive requests): label the gap groups
+For the top 12 gap groups from G2B (all m3u.json, rtDocumentaryIndex, extraChannelsManifest, AJN ARCHIVE.json, Alex 24.m3u, audioItemSnapshot, Info Survior.m3u, Reality Channels.json, organizerShowsManifest, rushIndex, archiveItemManifest(.guide), oldBritishTvManifest/documentariesManifest): trace by code reading which file:line consumes it and which surface it feeds. Label each INTENTIONAL (cite rule/comment), ACCIDENTAL (consumer exists but admission drops it - give the predicate), or NO_CONSUMER (loaded nowhere). Also: reconcile U 194,728 vs 180,684 if possible, and confirm the 2 malformed JSON files. No titles.
+
+PART B - ARCHIVE, cap 14 physical request starts, redirect hops count, spacing >=1.8 s with the fixed helper. Stop on 403/429/Retry-After or two 5xx in a row.
+Account recount for @def_gp using the public page endpoint (no login):
+GET https://archive.org/services/search/beta/page_production/?page_type=account_details&page_target=%40def_gp&hits_per_page=100&page=N&aggregations=false  (N = 1..10; the response has response.body.page_elements.{favorites,collections,lending,web_archives,uploads,reviews}.hits.{total,returned,hits[].fields.{identifier,mediatype,collection}}).
+Owner-verified facts: uploads total 927 (movies 788, audio 137, collection 1, image 1); favorites 20 (movies 19, collection 1). First confirm from page 1 that paging advances the uploads array (compare returned counts); stop paging when uploads.returned == 0. Keep only identifier+mediatype+collection in a LOCAL, gitignored temp file; the ZIP gets counts only.
+Report: uploads fetched by mediatype; how many of the 788 movie uploads and 137 audio uploads are already in U (by stable key); how many of the 19 favorites are in U; which of these the Prompt E ingest covered (19 = favorites or uploads?). No titles.
+
+Deliver AJN_PACK_G2C_2026-10-18.zip, STATE.md row, GATE G2C DONE line. No app source changes.

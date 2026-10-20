@@ -1,0 +1,35 @@
+GO LIVE REVIEW  (read-only; NO code changes, NO commits, NO branches)
+Target: https://ajn-precision-engineering.ai.studio   (published app)
+Expected build: Phase 1 + Phase 2 (AMC guide) + captions type fix. If the app is still Phase 1 only, say so - that is a finding, not a failure.
+
+RULES
+- Read-only. Do not edit the repo. Do not change env vars. Do not hammer Archive: use only the app's own endpoints, max 40 requests total, 1 at a time, and at most 6 /api/archive/proxy calls (each with an explicit Range of 0-1048575 or smaller).
+- Evidence only: paste exact curl commands and the real response (status, key headers, trimmed JSON). Never write "looks fine". If a check cannot be run from your environment, write NOT RUN and why.
+- No Math.random, no guesses. Mark every line PASS / FAIL / NOT RUN.
+
+CHECKS
+A. Server
+ 1. GET /api/health -> status ok; list stats.readahead* counters and whether readahead is OFF (header X-AJN-Readahead absent or "off" on a proxy 206).
+ 2. GET /api/library/heatmap and /api/library/items?category=soaps&limit=24 -> expect rawCount 1176, totalItems 620. Report any other value.
+B. Guide (Phase 2)
+ 3. GET /api/schedule?guide=classic-tv&channel=ajn-allmychildren-episodes -> expect ~34 programs for today (UTC), ids ending :d0..:dN, contiguous startTimeUtc/endTimeUtc covering 00:00Z-24:00Z, ids unique, air-date order. Paste first 3 and last 1.
+ 4. Same call for ajn-allmychildren-extras -> expect 619 programs, startTime 0 / endTime 0 (Library-only). Not rotated.
+ 5. Payload: report uncompressed and gzip size of /api/schedule?guide=classic-tv (was 48.7 MB / 4.6 MB for the full schedule; the light call is the one the UI uses - report both if you can).
+C. Library must still be whole
+ 6. /api/library/series for AMC (or the soaps year counts): same year totals as before Phase 2. Report the per-year numbers.
+D. Proxy
+ 7. Pick one AMC episode path from check 3 (programs[0].archivePath) and one clip path from check 4. For each: GET /api/archive/proxy?path=<path> with Range: bytes=0-1048575 -> expect 206, Content-Range, Accept-Ranges: bytes, body <= 8 MiB. Paste headers.
+ 8. Same path with Range: bytes=0- -> must still return a bounded 206 (<= 8 MiB), never 200 full body.
+E. Browser (headless Chromium, desktop 1400x900 and phone 390x844)
+ 9. Open site -> Guide -> Classic TV -> scroll to "All My Children" rows (Soap Operas). Report: Episodes row shows program blocks (not dark); Extras row shows the text "Library only - open Library > Soap Operas" and a greyed play button; the two rows have the same visible name (known, just confirm). Screenshots both viewports.
+ 10. Click the Episodes row play button (red-line item). Report: does the Player open, does <video> reach readyState>=3 within 20 s, any console errors, any failed requests (status + url). If it does not play, STOP and report the exact failing request; do not retry in a loop.
+ 11. Library -> Soap Operas -> open one Clip -> plays? Player "Developer playback identity" shows channelId ajn-allmychildren-extras. Report the Buffer line text if present.
+ 12. Console: list every console.error / pageerror during checks 9-11, deduplicated.
+F. Regression glance
+ 13. Home loads; Classic TV guide first screen loads < 10 s; Search "taxi" returns results; Radio view opens. One line each, PASS/FAIL.
+
+OUT OF SCOPE: fixing anything. If something fails, report cause hypotheses clearly labelled as hypotheses.
+
+DELIVER
+Reply with: GATE LIVE REVIEW DONE | build detected (Phase 1 only / Phase 1+2) | counts PASS/FAIL/NOT RUN | top 3 findings | what I could not verify.
+Attach REPORT.md (all commands + outputs) and the 4 screenshots. No ZIP of code is needed.

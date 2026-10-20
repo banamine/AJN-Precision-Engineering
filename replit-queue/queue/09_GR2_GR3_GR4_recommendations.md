@@ -1,0 +1,11 @@
+# Recommendation gates (optional; each is its own ZIP; start only on "GO GR<n>")
+Source: Claude's review of Prompt E (2026-10-18). Each one is something Replit can fully do with its own tools.
+
+## GR2 - Classic TV schedule headroom (investigation + proposal ZIP)
+Problem: the full Classic TV schedule is 33,520,269 bytes against a 33,554,432-byte cap; 34,163 bytes of headroom. Measure: which consumers actually need the full schedule (find every caller of the schedule builder and of the budget test), the per-channel byte distribution, the 20 largest channels, what Prompt D's lazy `?channel=` route already covers. Propose the smallest change that gets the full schedule off the cap (for example lazy per-channel assembly for the consumers that do not need everything, or a smaller field set), with expected bytes saved, files touched, tests, risks and rollback. Build NOTHING unless the owner replies GO GR2-BUILD; then deliver it as a drop-in ZIP on its own branch from the current chain head.
+
+## GR3 - Where is the video index (moov) in the All My Children files? (bounded probes)
+Problem: E's five samples were inconclusive and two look like the index is at the end of the file; real playback of such files is NOT VERIFIED. Budget: 60 Archive requests, 1 per 1.8 s, stop on 403/429. For up to 25 files (at least 3 per item for the items with the largest sizes, plus the two inconclusive E samples) read a bounded head slice (<= 8 MiB) and a bounded tail slice (<= 8 MiB) through the shipped parsing approach and report per file: moov at front / at end / not found in either slice, moov size, ftyp brand, whether the proxy's 8 MiB slices would let a browser start (index inside the first slice or one extra tail slice). Numbers only; save no media. Do not claim playback.
+
+## GR4 - Guarded test runner for the whole suite
+Problem: one E test ran unguarded and may have made up to about 30 Archive requests. Build `tools/run-guarded.mjs`: runs every `test:*` npm script (and the root test scripts) one at a time under tools/net-guard.mjs in BLOCK mode, with a per-test timeout, and prints a table: test, exit code, seconds, guard attempts, blocked, watched-host attempts. List which tests attempt archive.org or any non-local host WITHOUT a stub (these are the tests to fix). Do not change any test; deliver the runner, the table and a proposal.

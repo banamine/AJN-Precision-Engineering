@@ -1,0 +1,53 @@
+GO PHASE2 (v2)  -  APPLY + VERIFY the All My Children guide change.  This REPLACES GO_PHASE2_AMC_EPG.txt (do not use the old one).
+
+WHY v2: the owner's reviewer already wrote the Phase 2 code and tested it locally (tsc, build, unit test, Chromium screenshots, 0 Archive requests). Your job is NOT to redesign it. Apply it, prove it on your side, report differences.
+
+ATTACHED TO THIS JOB (owner uploads):
+  1. ajn-precision-engineering.zip  = newest Builder export (BASE; already contains Phase 1, byte-identical).
+  2. AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip  = the change (6 runtime files + test-amc-phase2.ts + UPLOAD_ORDER.txt).
+  3. extraChannelsManifest.json is already in the base at src/data/ (9,164,207 B, sha256 starts 70cf3d87). Do not touch it.
+
+BRANCH: new branch feat/phase2-amc-epg from the base export. Do NOT restructure. Do NOT change any file not listed below.
+
+STEP 1 - APPLY (exact paths, replace whole files)
+  guideRegistry.ts, server.ts, src/EpgGuide.tsx, server/captions/captionService.ts, server/captions/routes.ts, test-captions.ts, and add test-amc-phase2.ts.
+  Report `git diff --stat` and the sha256 of each of the 7 files. If any file in the base differs from what the ZIP's UPLOAD_ORDER.txt expects, STOP and report which.
+
+WHAT THE CHANGE DOES (verify it, do not rewrite it)
+  a. guideRegistry.ts getExtraChannels: channel id `ajn-allmychildren-episodes` is laid out with layoutRotatingDailySchedule(programs, 45, now). Extras (`ajn-allmychildren-extras`) are NOT laid out (date-only, Library-only). New export getAllMyChildrenLibraryChannels() returns the full unrotated, cached channels.
+  b. server.ts refreshLibraryGuideCategories: swaps the AMC channels for the full unrotated ones before recordsFromGuide, so the Library never shrinks to one day.
+  c. src/EpgGuide.tsx: isLibraryOnlyChannel(): when every program has no air slot, the row shows "Library only - open Library > <group>" (data-library-only attr), play button disabled. General rule.
+  d. captions files: type-only fix so `npm run lint` is clean. No behaviour change.
+
+STEP 2 - GATES (paste real output)
+  npm run lint        -> 0 errors (ignore the full-files-for-export-baseline/, _archive/, hubh/ folders only if they are excluded by tsconfig; say so)
+  npm run build
+  npx tsx test-amc-phase2.ts   -> expect: PASS amc-phase2 | day slots 34 | ... (slots may be 33-35 depending on the day; report the number)
+  npx tsx test-captions.ts, and every existing test script that already passed on the base (list before/after).
+
+STEP 3 - LOCAL SERVER EVIDENCE (NET_GUARD=block, READAHEAD_MAX_MB unset; 0 Archive requests)
+  - GET /api/schedule?guide=classic-tv&channel=ajn-allmychildren-episodes -> ~34 programs, ids end :d0..:dN, contiguous startTimeUtc/endTimeUtc 00:00Z-24:00Z, unique ids, air-date order. Paste first 3 + last 1.
+  - same for ...-extras -> 619 programs, startTime 0 / endTime 0.
+  - GET /api/library/items?category=soaps&limit=24 -> rawCount 1176, totalItems 620 (HARD requirement; report anything else as FAIL).
+  - GET /api/library/series/soaps%3Aall%20my%20children -> years buckets (live baseline: 1981:8, 1983:27, 1984:20, 1986:15, 1987:13, 1988:3 ...). Must be identical.
+  - Payload: bytes of /api/schedule?guide=classic-tv before vs after (base vs branch), uncompressed and gzip.
+
+STEP 4 - BROWSER (local Chromium, desktop 1400x900 AND phone 390x844)
+  Guide > Classic TV > scroll to the two "All My Children" rows (station ~024/025).
+  - Episodes row: shows program blocks, an ON AIR NOW block under the red line.
+  - Extras row: text "Library only - open Library > Soap Operas", greyed play button.
+  - Click the Episodes play button: report whether <video> reaches readyState>=3 (offline = expected to fail on the Archive fetch; say so, do not fake). Report the exact request it makes (should be /api/archive/proxy with a bounded 206 path) - NO mock video.
+  - Library > Soap Operas: counts unchanged; open one clip: the player identity block shows channelId ajn-allmychildren-extras.
+  - Screenshots: desktop + phone, full real captures. Phone: the Library-only text should not wrap into a column.
+
+RULES
+  No Math.random, no new dependencies, no package.json change, no edits to proxyRange / archiveFetch / HLS / readahead / watchdogs, no silent fallbacks. Do not rename the Episodes/Extras channels (known: both display as "All My Childre..."; list it as a finding only).
+  One request at a time to any external host; app-internal localhost calls are fine without a cap.
+
+KNOWN, NOT YOURS TO FIX (report only)
+  - base channels.ts is older than origin/main 68bd8d5 (lacks tvNewsQueryClause/archiveCollectionFetch). Say whether main's channels.ts would conflict with this change (it should not).
+  - times are rotation times, not original air dates; REPLAY chip stays.
+
+DELIVER
+  AJN_PACK_P2_2026-10-19.zip containing ONLY changed runtime files that differ from the ATTACHED change ZIP (expected: none) + REPORT.md (all commands/outputs) + 4 screenshots + patch. If you changed nothing, say "NO DIFFERENCES - ZIP IS APPLY-AS-IS".
+  Final line:  GATE P2 DONE | applied as-is / differences listed | lint / build / tests | Library 1176/620 PASS|FAIL | rows PASS|FAIL | NOT VERIFIED | owner decisions needed

@@ -1,0 +1,6 @@
+Replit: new work pack. Do ONLY gate G0 now.
+
+1. Unzip AJN_REPLIT_PACK_2026-10-18.zip OUTSIDE the repo (for example /home/runner/workspace/_pack/).
+2. Read, in order: _pack/00_README_RUNBOOK.md, _pack/docs/replit-starter/00_START_HERE.md, 01_DELIVERY_PROTOCOL.md, 04_PHASE_GATES.md, then _pack/jobs/J0_setup_and_baseline.md.
+3. Run G0 exactly as the job file says, ship the ZIP, update STATE.md, end with the GATE DONE line from the runbook, and STOP. Do not start any other gate. Wait for my message "GO G1" (or another gate).
+Scope is AJN Precision Engineering only. Nothing is pushed, merged or deployed.

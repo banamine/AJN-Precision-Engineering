@@ -1,0 +1,31 @@
+# Replit gates G15 + G16 (queued 2026-10-18). Paste the text below to Replit as the GO message.
+
+REPLIT: new gates G15 and G16 (read-only Archive ASR probes). Working Mode V2 applies. Do G15 first, ship its ZIP and STOP. Do G16 only after I send "GO G16". Run under tools/net-guard.mjs in COUNT mode (archive.org budget host). No push/merge/deploy. No transcript text, descriptions or e-mails stored or logged: numbers, file names, sizes, status codes only.
+
+Owner permission is granted for these Archive reads. Politeness: 1.8 s between request starts, 1 at a time, descriptive User-Agent, stop on 403/429, no retries, no media downloads.
+
+BACKGROUND (from Claude's first-hand metadata reads on 2026-10-18; verify, do not trust):
+- Archive's radio ASR collection `radio_asr` has ~921,159 one-hour items named STATION_FREQ_AM_YYYYMMDD_HHMMSS (e.g. KKNT_960_AM_20231123_190000).
+- That item lists 21 files. Public: `.asr.srt` (224,007 B), `_speech_vs_music_asr.json` (285,947 B, "JSON SRT"). Private-listed: `.asr.vtt`, `_whisper_asr.json` (3.4 MB), `_intermediate_asr.json`, `_speech_vs_music.json` (325 B), `_speech_confidence.json`, `_censor_as_music.json`.
+- A community-video sample (Lake_County_Partners_Big_Event_-_Full_Presentation) listed public `.mp4` (h.264, 481 MB), `.asr.srt` (95,497 B), `.asr.js` (754 KB), thumbnails.
+- Do NOT copy Archive's front-end code. We never run Whisper ourselves.
+
+=== GATE G15: radio ASR probe (budget <= 20 Archive requests) ===
+Items: 3 recent radio items from collection radio_asr (one search request, newest >= 12 h old, 3 different stations), plus 2 TV items already known to have ASR: one RT and one DW item from the G1B census (reuse the ids from the local census files, do not search again).
+For each of the 5 items (metadata read, 5 requests): list which of these exist and their size and private flag: .asr.srt, .asr.vtt, _whisper_asr.json, _intermediate_asr.json, _speech_vs_music.json, _speech_vs_music_asr.json, _speech_confidence.json, _censor_as_music.json, audio/video file formats.
+Slices (5 requests): for each item one 60 s window `?t=S/E` of the public `.asr.srt` (fall back to the private-listed one only if no public .asr.srt): status, bytes, cue count, first cue start. Say what time base the cues use (media start vs slice start) by comparing two different windows on ONE item (2 more requests).
+Shape probe (up to 5 requests): `Range: bytes=0-2047` of the public `_speech_vs_music_asr.json` on 2 items: status, whether Range is honoured (206), and the JSON KEY NAMES and value types only (no values that are text). Same for `_speech_vs_music.json` on 1 item if public.
+Report: file families present per item; whether `.asr.srt` slices work for radio like TV; time base; whether speech/music spans exist and in what shape; whether they could mark song boundaries for the Radio Song Index (G3). Verdict per item. Ship deliver/AJN_PACK_G15_2026-10-18.zip and STOP.
+
+=== GATE G16: ASR video library probe (budget <= 30 Archive requests) - wait for "GO G16" ===
+GENRES: sample ONLY items that map to categories the app already uses (LibraryItem category 'news' | 'classics' | 'science' | 'audio' | 'documentary', plus the existing guide categories newsroom, documentaries, aerospace). Use these three bins and nothing else:
+ - news / public affairs: collection newsandpublicaffairs within the community video pool
+ - documentary: subject documentary
+ - science: subject science (or collection science if present)
+Pool query base (from the owner): `(video with asr) AND mediatype:movies AND language:English`, add `-access-restricted-item:true` and the bin filter. Report numFound for each bin (3 search requests, rows=0) and fetch 5 identifiers per bin from DIFFERENT collections (3 more requests, fl=identifier,collection,runtime only).
+Metadata (up to 12 requests): 4 items per bin: files listed (h.264 .mp4 / .ia.mp4, .asr.srt, .asr.js), sizes, runtime, private flags, licenseurl present or not, collection id.
+Second sample (up to 6 requests): 6 items ALREADY in our Library (pick from the G2 coverage list: 2 news, 2 documentary, 2 science/classics-style) and check the same fields, to answer "which shows we already have can do this".
+Moov probe (up to 4 requests): `Range: bytes=0-65535` on 4 of the MP4s; report whether the moov atom is in the first 64 KB (head) or not, and each file's size.
+Report: percent of the sample with a public h.264 mp4 + public .asr.srt per bin; list of collection ids worth adding as Library collections; list of the app files that would need wiring (Library sources, CaptionPanel for non-news, caption route allowance for public non-news items); whether license fields exist; decision list for the owner. No code, no caption text. Ship deliver/AJN_PACK_G16_2026-10-18.zip and STOP.
+
+End each gate with the standard GATE DONE line and update STATE.md (add rows G15 and G16).

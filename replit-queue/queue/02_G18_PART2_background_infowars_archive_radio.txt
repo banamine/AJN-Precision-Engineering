@@ -1,0 +1,32 @@
+GO G18  (QUEUED - send after G17 is reviewed; Working Mode V2; PART 1 = investigation + plan only, STOP after ZIP; PART 2 only on "GO G18 PART 2")
+Name: G18 = new Audio & Podcasts channel "INFOWARS Archive RADIO". Add row "G18 | infowars archive radio" to STATE.md.
+
+BASE: newest owner export + AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip (Phase 1 and 2 are in; do not redo; do not touch ASR/captions or the visualizer). Report SHA-256 of both ZIPs first. Ignore the ~56 TS2307 errors inside full-files-for-export-baseline/.
+
+SOURCE (owner): https://archive.org/details/Radio-The-Alex-Jones-Radio-Show   (identifier: Radio-The-Alex-Jones-Radio-Show)
+OWNER INTENT: add it to the Audio & Podcasts guide under the "Talk Radio" chip as ONE new channel named exactly "INFOWARS Archive RADIO".
+OWNER CORRECTION (2026-10-20): these channels use **radio_asr** (the Archive collection `radio_asr`, radio recordings that carry Archive's own machine transcripts, `.asr.srt`). The earlier word "VSR" was a mistake; ignore it. Meaning to verify, not assume: (a) is this item (or its files) a member of collection `radio_asr`; (b) which files carry a public `<file>.asr.srt`; (c) how the owner wants it used: as the channel's audio source, as its transcript source, or both. Report what you find for (a) and (b); for (c) assume BOTH are wanted: the audio plays as the channel, and where a public `.asr.srt` exists it is offered through the EXISTING caption/ASR service as a "machine transcript" (labelled machine-generated, separate from broadcast captions). Do NOT change ASR/caption service behaviour or flags; the repo currently has no radio_asr code (grep found none), so say plainly what is new vs existing.
+
+KNOWN LOCAL FACTS (Claude read from the repo, not from Archive; the cloud shell cannot reach archive.org):
+- Talk Radio chip today = src/data/audioGroupOverrides.json (id -> group), applied last in guideRegistry's audio-podcasts branch. Existing Alex Jones rows (ids nwt-audio-alex-jones-depopulation, nwt-audio-alexjonesradioshow-march12010, nwt-audio-alexjonesradioshow-september172009) are single-episode Archive items. The new source is a multi-file item/collection, so it needs a rotating channel, not one row per file.
+- Station numbers are the alphabetical position over the whole guide (src/guide/channelIndex.ts); adding a channel renumbers later stations. REPORT the before/after numbers of the neighbours; do not hide this.
+- Audio schedule rules from the brief: programs on the viewer's LOCAL clock via ?tz=; schedule JSON hard limit 24 MiB (advisory 8 MiB); XML programmes must equal schedule programs; no invented air dates or durations; RSS plays direct, Archive files via /api/archive/proxy as bounded 8 MiB 206 slices (<= 32 MiB rule).
+- Group-name rule: INFOWARS is the owner's channel name. Keep it separate from "Real America's Voice" content; never merge the two "War Room" channels.
+
+PART 1 - INVESTIGATION + PLAN (no app source changes, NET_GUARD=block for Part A, 0 Archive requests in A)
+A1 Show exactly how the existing Talk Radio / Archive audio channels are built (file:line): source of items, layout (rotation), group assignment, id scheme, thumbnails, how a multi-file Archive item becomes a channel (look at the Long John Nebel and Rush/OTR channels as the closest patterns).
+A2 Design the channel: id (proposal: archive-infowars-radio), name "INFOWARS Archive RADIO", group "Talk Radio", ordering of episodes (by real date if the file names/metadata carry one; otherwise by file name; state the rule), daily rotation like server/dailyRotation.ts, track-exact XML/schedule parity, size budget.
+A3 Station-number impact table (neighbours before/after).
+A4 radio_asr wiring: how an ASR transcript for an Archive audio program would reach the player through the existing caption/ASR service (file:line), what is missing for audio items, and the labelling rule. Plan only.
+
+PART B - ARCHIVE, cap 30 physical request starts (redirect hops count), spacing >= 1.8 s with the fixed helper; stop on 403/429/Retry-After or two 5xx in a row. Numbers only; do not store titles/descriptions beyond what the design needs.
+B1 (1-2) /metadata/Radio-The-Alex-Jones-Radio-Show: file count by format (mp3/ogg/flac/other), total bytes, size range, length range, private/restricted flags, licence field, derivative vs original, whether it lists files in subfolders, whether it is an item or collection (mediatype, collection membership).
+B2 (<= 6) if it is a collection: advancedsearch count of child items (numFound), top creators, year range min/max, and 3 sample child ids; if a single item: the sorted file-name pattern (date pattern present? how many files carry a parsable YYYY-MM-DD or similar key).
+B3 (<= 8) Range 0-1 on 4 audio files (smallest, largest, 2 random by index) through the proxy shape: 206 + content-type + total size; check the largest against the 8 MiB-slice / 32 MiB rule.
+B4 (<= 6) duplicate check against the existing Alex Jones items already in the app (identifiers behind nwt-audio-alexjonesradioshow-*): do any of the 3 existing rows' files also appear in this item? (so the owner can decide on dedupe).
+B5 (<= 6) radio_asr: from the metadata in B1 report collection membership (is `radio_asr` listed in `collection`?), and for 3 sample audio files whether a public `.asr.srt` is listed (private flag) and, if yes, ONE 60 s slice `?t=0/60` each via the existing slice route: status, cue count, first-cue time only; no text kept. Note whether cue times are relative to the slice.
+
+PART C - DELIVER
+REPORT.md (verified vs not; file/format/size table; date-parsing rate; the radio_asr findings (membership, .asr.srt coverage, slice result); wiring plan with exact files; station-number impact; risks incl. licence/terms unknown and content-policy exposure being the owner's call; recommendation GO/NO-GO for Part 2) + draft channel config JSON + numeric evidence; ZIP AJN_PACK_G18_2026-10-20.zip; usual line: GATE G18 DONE | ZIP READY: <path> <size> <sha256> | verdict | NOT VERIFIED | owner decisions needed. STOP.
+
+PART 2 (ONLY after "GO G18 PART 2"): implement the channel per the approved plan as the smallest change (data entry + group override + tests), new branch from the owner export, tests for: channel present, group Talk Radio, rotation determinism, XML == schedule programs, schedule payload delta, bounded-slice proxy path, 0 Archive requests in tests; deliver AJN_PACK_G18B ZIP with exact upload order + rollback, like the Phase 2 pack.

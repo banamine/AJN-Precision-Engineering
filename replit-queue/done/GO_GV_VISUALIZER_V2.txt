@@ -1,0 +1,39 @@
+BASE UPDATE (2026-10-19) - read first:
+ - Your base for this job is the NEWEST owner export (ajn-precision-engineering.zip, attached) + AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip applied on top (Phase 1 and Phase 2 are both in; do not redo them; do not touch ASR/caption behaviour - owner decision: ASR stays as it is).
+ - This job changes NO app source. If a branch is needed for reading, do not commit anything.
+ - Known: root `tsc` reports ~56 TS2307 errors only inside full-files-for-export-baseline/ (ignore, not yours).
+ - Phase 2 AMC rotation means the Classic TV guide now has "Library only" rows; ignore for this job.
+
+GO GV  (QUEUED - send after G2C is reviewed; Working Mode V2; investigation + recommendation only; NO building; ZIP only; STOP after ZIP)
+Name: GV = visualizer comparison. Add row "GV | visualizer comparison" to STATE.md.
+
+QUESTION: should AJN keep its own audio visualizer, add Archive's per-item analysis files, or use both? Decide with evidence, not taste.
+
+ARCHIVE FILE FACTS (Claude verified first-hand, 2026-10-18; re-verify what you touch):
+- Per audio track Archive may publish: <track>.afpk (format label "Columbia Peaks", public, no private field), <track>_spectrogram.png (public), <track>.png (waveform/graphic still), .mp3/.flac/.m4a/.aac, fingerprint.ffp.txt, _meta.sqlite, _files.xml.
+- Sizes seen: jrad2026-08-21.-jazzbuph track "1-02 ...": afpk 83,928 B; spectrogram.png 224,673 B; .png 37,781 B; mp3 8,986,089 B; flac 142,741,146 B. Item has 18 afpk (7 KB-219 KB each). KKNT_960_AM_20231123_190000 (1 h radio): whole-item afpk 1,986,816 B + 3 hourly afpk (632-689 KB); spectrogram.png 143,918 B.
+- The claim that .afpk drives Archive's waveform scrubber and that the format is an "audio find/peak" file is NOT VERIFIED. Treat as hypothesis.
+
+PART A - OFFLINE (NET_GUARD=block, 0 Archive requests)
+A1 Find every audio visualizer / waveform / scrubber / progress component in the repo (file:line): what it draws from (Web Audio AnalyserNode? canvas? CSS?), when it runs, CPU use, what happens when CORS blocks AnalyserNode access (silent bars? fake data? - flag any Math.random() or fake telemetry), mobile behaviour, and which views use it (Radio, AJN Audio, Podcasts, Classic).
+A2 Using your verified headless Chromium (pipe:true, launch BEFORE anything else): render the existing visualizer on a local synthetic tone file, 3 screenshots (idle, playing, seeking) and record main-thread frame time over 10 s on this 1-CPU box. Local only, non-local requests aborted.
+A3 From the existing local audio inventory, count audio items by source (Archive item / podcast feed / live radio / M3U stream) = the share that could even have Archive analysis files. Numbers only.
+
+PART B - ARCHIVE, cap 12 physical request starts (redirect hops count), spacing >=1.8 s with the fixed helper. Stop on 403/429/Retry-After or two 5xx in a row.
+Targets (metadata already known, so no metadata requests): 
+ T1 jrad2026-08-21.-jazzbuph, track "1-02 Beat It On Down The Line": GET whole .afpk (84 KB) via the app proxy shape (bounded range <= 8 MiB), GET _spectrogram.png (225 KB), read PNG width/height only.
+ T2 KKNT_960_AM_20231123_190000: Range 0-4095 of the whole-item .afpk; Range 0-1 of _spectrogram.png (confirm 206/200 and content-type).
+ T3 one classic or podcast audio item already in the app (pick from local inventory): Range 0-1 of its likely _spectrogram.png and .afpk names; record 404/200 only (answers: coverage outside radio/music).
+For each afpk fetched: report numbers only - byte length, first 64 bytes as hex, whether length is consistent with fixed-size records (e.g. samples-per-second x duration), and a decode hypothesis. Do not publish any audio content. If the format cannot be decoded in 30 minutes of analysis, say so and stop that sub-step.
+
+PART C - COMPARISON TABLE (the deliverable)
+Columns: Option / what the user sees / bytes + requests per track / works with 8 MiB slice + Cloud Run 32 MiB rule / works when CORS blocks AnalyserNode / mobile + 1-CPU cost / coverage % of our audio / licence + terms risk / build size (S/M/L) / verdict.
+Options to compare:
+ O1 keep our live visualizer unchanged.
+ O2 add Archive spectrogram.png as (a) seekbar backdrop, (b) full-screen backdrop behind the visualizer for the planned AJN audio view (G12-G14 plan), (c) track art fallback.
+ O3 add .afpk waveform scrubber (only if decodable) as instant seek bar before audio loads.
+ O4 compute our own peaks once server-side (ffmpeg available) and cache - cost and risk.
+ O5 anything else you found useful in A1 (name it).
+Rules: say plainly which options need Archive files that exist for only some items and what the fallback is (truthful empty state, never fake data). Recommend exactly one primary path and one optional add-on, each with a 5-line wiring plan (files, routes, proxy changes) - plan only.
+
+Deliver AJN_PACK_GV_2026-10-18.zip (report + screenshots + numeric evidence; no audio, no transcript text). No app source changes. Usual GATE GV DONE line.

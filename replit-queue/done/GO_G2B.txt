@@ -1,0 +1,41 @@
+GO G2B  (owner-approved follow-up to G2; Working Mode V2 applies)
+
+G2 is accepted as PARTIAL-GOOD. Keep: wiring map, local inventory, helper baseline.
+Do NOT redo those. G2B finishes only what G2 skipped.
+
+PART A - OFFLINE ONLY (NET_GUARD=block, zero Archive requests). This is the main job.
+All source data is already in the checkout, so the S1-S4 matrix CAN be computed locally.
+1. Build one stable key per item (same rule as G2: assetId, else canonical media URL/path
+   without query/fragment, else Archive identifier/file).
+2. For every key in U (180,684 lower bound) compute 4 booleans, using the real code paths,
+   not source-file membership:
+   S1 findable by title in at least one search box (run the real helpers: queryLibrary,
+      classic schedule search, live radio query; list which box).
+   S2 present in Library (static libraryIndex + guide-derived categories, load the real
+      guide snapshots this time, not guideItems=0).
+   S3 present in a TV Guide schedule (real guideRegistry admission, not raw manifest rows).
+   S4 eligible for Home Now / Daily Digest / Discover (apply the actual predicates).
+3. Report totals per media type (video/audio/embed/live/unknown) for each S and for
+   "none of S1-S4". Then rank the 40 largest gap groups (group by source file + media type
+   + reason). Mark each group INTENTIONAL (cite the code/rule) or ACCIDENTAL or UNKNOWN.
+4. Numbers and file/line cites only. No titles of items, no caption text.
+5. If any S cannot be computed, say exactly which predicate blocked it and stop that S only.
+
+PART B - ARCHIVE FOLLOW-UP (cap 25 physical request starts, redirect hops count)
+   Spacing: at least 1.8 s measured from the guard timestamps. Use the SAME helper that was
+   fixed in G1B-FU (min 1,802 ms), not the temporary runner.
+   B1 (<=4): re-test the one-byte Range on identifier 01_20200728_20200728_1511 once, and
+      once on a second Classic item from a different identifier. Also report whether file
+      path 20190101_Tue_Alex-HD.mp4 really belongs to that identifier (check the item's
+      /metadata files list we already fetched, no new request). A single CDN 500 is a
+      finding to record, not a reason to abandon Part B.
+   B2 (<=20): @def_gp recount. Use advancedsearch with creator/uploader of the owner's
+      account (owner profile id @def_gp), rows=0 then totals by mediatype and by
+      collection only (numFound + facet counts). Then reconcile 788 vs the 19 items from
+      Prompt E: report how many of the 788 are already in U (by stable key) using local
+      data only. Do not list titles.
+   STOP rule for Part B: stop on 403, 429, any Retry-After, or two 5xx in a row. ONE
+   isolated 5xx is recorded and the run continues with the next probe.
+
+Deliver: AJN_PACK_G2B_2026-10-18.zip, STATE.md row G2B, GATE G2B DONE line in the usual
+format. No app source changes. STOP after the ZIP.

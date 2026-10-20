@@ -1,0 +1,39 @@
+G10 ADDENDUM (owner request 2026-10-18): @def_gp subject tags as discovery filters. Send together with "GO G10". NOT part of G4/G5 (Phase 1 ZIP stays unchanged).
+
+WHAT IT IS: not a new search field and not a new Library category. A small, normalized TAG list stored on the ingested @def_gp items and offered as (a) optional tag chips next to the existing Library category/decade filters, (b) a pool filter for Discover/random picks and the live-page "choose something to watch" list. No schema change to schedule programs (Classic schedule headroom is 34 KB).
+
+VERIFIED INPUT (Claude, public page endpoint, 2026-10-18): @def_gp uploads 927 = movies 788 + audio 137 + image 1 + collection 1. Subject counts seen (top of list): Drama 237, Family 200, Romance 180, USA 151, Old Time Radio 131, 5 star 111, Movie 101, Comedy 90, Christmas 89, California 76, Faith 74, Film 74, 5 Star 61, Dramady 61, Love 61, Mystery 60, Adventure 59, Christian 56, TV Movie 52, Based on novel 51, Fantasy 51, OTR Soap Opera 49, Canada 48, Classic 48, England 44, OTR Comedy 44 ... (list truncated at "PG"; fetch the full set yourself).
+WARNING ABOUT THE OWNER'S LINK: the pasted archive.org search URL repeats and[]=subject:"..." ~100 times. Those filters are ANDed, so the URL matches (almost) nothing. Do not use it as a query. Use the public page endpoint (works, no login):
+ https://archive.org/services/search/beta/page_production/?page_type=account_details&page_target=%40def_gp&hits_per_page=100&page=N&aggregations_size=200 (uploads section; N=1..10)
+and take tags from each hit's fields.subject.
+
+PART 1 - NORMALIZE (offline once the 927 hits are in a local gitignored file)
+Tag map (case-insensitive, trim, merge variants); target <= 14 AJN tags, each item gets <= 3 (priority order below):
+ drama <- Drama, Film Drama, Dramady, Period Drama, Mini series. Period drama, Historical, 19th century
+ comedy <- Comedy, Film Comedy, OTR Comedy, OTR Sitcom
+ romance <- Romance, Love, Film Romance
+ family <- Family, Wholesome, Family viewing, Family relationships, Friendship, Children, Cartoon
+ christmas <- Christmas
+ faith <- Faith, Christian, EncourageTV
+ mystery-crime <- Mystery, Crime, Murder, Suspense, Thriller, Investigation
+ western <- Western
+ fantasy-scifi <- Fantasy, SciFi, Sci-Fi, Time travel
+ adventure-action <- Adventure, Action
+ british <- BBC, BBC - UK, UK, England, PBS - USA (only when also British)
+ classic <- Classic, 1930s Pre-Code B&W Film, TCM, Old Time Radio is NOT here (audio)
+ music <- Music, Musical, Soundtrack, Dancing
+ docs-news <- Documentary, Biography, News & Politics, Jordan Peterson, free speech
+ soaps <- Soap Opera, All My Children, TV Serial (maps to the existing soaps category; do not duplicate)
+ old-time-radio (AUDIO ONLY; feeds Radio/AJN Audio, never the video pools) <- Old Time Radio, OTR Soap Opera, OTR Continuing Drama, OTRadio NBC, OTRadio CBS
+DROP as noise (never shown as tags): ratings and quality (PG, PG-13, TV-PG, TV-G, PG-TV, 5 star/5 Star/5+star/4 Star, 5 Eps), years, generic words (Movie, Film, video, Youtube, TV, TV Series, TV Movie, USA, Color), place-only tags (California, Los Angeles, Canada, British Columbia, Filmed in Vancouver) unless owner wants a Places chip (default: no), props (Dog, Horse(s), Train, Tree, Farm, Airplane, Fox hunt, Riding sidesaddle).
+CONTENT-WARNING flags (not browse tags; default HIDDEN from random pools and Discover, still findable by title search): Violence, Death, cannabis, marijuana. Owner exclusion rules from D3 still apply on top.
+Report: tags per item histogram, % items with >=1 AJN tag, the unmapped subject list (names + counts only), no titles.
+
+PART 2 - WIRE (only after owner OK of the tag map in the report; plan first, then build in the same gate if tag map unchanged)
+ - Store tags as an optional short array on the Library index entry of the INGESTED @def_gp items only (identifier-level manifest src/data/defGpTags.json, <= 150 KB). Do not touch schedule program objects. Report bytes before/after for libraryIndex.json.
+ - Library: tag chips (multi-select = OR within tags, AND with category/decade). Mobile: horizontally scrollable chip row, icon + text, not colour alone.
+ - Discover/random and the live page's "pick something" list: optional tag filter; default pool excludes old-time-radio (audio) and the content-warning set; mediatype movies only for video pools.
+ - Search box: a typed tag word (for example "western") matches tag OR title; tags never override the existing title ranking.
+ - Fallback = truthful empty state ("No items tagged X yet"), never synthetic items.
+Archive budget for Part 1+2: the 10 page requests above (count them) + <= 3 for full subject aggregation. Durations are NOT in the page hits: do NOT fetch 788 metadata files in this gate; admit items at Library level with duration unknown and resolve length lazily on first play; report how many have item_size/files_count only. (Owner may later authorize a separate resumable metadata batch.)
+Tests: tag map unit tests (variants merge, noise dropped, warning flags hidden), Library filter test, pool test (audio never in video pool), screenshots 390x844 and 1440x900 using the verified Chromium (pipe:true, launch first). 0 requests outside the budget. No titles/descriptions in outputs.
