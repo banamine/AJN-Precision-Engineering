@@ -1,0 +1,59 @@
+GO G18 PART 2 + M4A   (Lean Mode V3; one job; ZIP only; STOP after ZIP)
+Owner decisions 2026-10-20 (all three confirmed):
+ D1 INTENT: "INFOWARS Archive RADIO" plays as a rotating channel AND offers the item's Archive machine transcript (.asr.srt, collection radio_asr) through a labelled "Machine transcript" path.
+ D2 AAC/M4A playback IS IN SCOPE (the 3 sampled children have only .m4a + .aac, no MP3).
+ D3 Rights/content risk accepted by the owner (Archive-hosted public files, not private/dark). Not your call, not a blocker; do not add editorial filtering.
+
+ATTACHED (base, in this order): 1) ajn-precision-engineering.zip (newest owner export, sha 002749be...9353)  2) AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip (overlay, sha f9121711...)  3) AJN_PACK_G17BUILD_G18PROBE_2026-10-20.zip (your own G17 pack; apply its UPLOAD_ORDER on top: it is ACCEPTED). If any of the three is missing, STOP and say which. First report line = SHA-256 of all three.
+Overlay order: export -> P2+captions overlay -> G17 files. Work in a temp copy; never edit the ZIPs. Branch name for the record: feat/infowars-archive-radio. Do NOT touch: TV-News caption behaviour/flags, the visualizer, read-ahead, HLS, Classic TV schedule/manifest, Library caps, G17 files (except mounting if needed). Ignore the ~56 TS2307 errors inside full-files-for-export-baseline/ (say so).
+
+LEAN MODE (same as before)
+ L1 DO NOT RE-TEST: Phase 1, Phase 2 (AMC, Library 1176/620), G17 shelf (already passed), existing bounded 206 behaviour for MP3, visualizer, TV-News captions/ASR, `npm run build` of the untouched tree.
+ L2 Test only what you just built: new unit tests + ONE worked example per feature. Temp tsconfig with only new/changed files + their imports (say you did). NODE_OPTIONS=--max-old-space-size=1400.
+ L3 Worked examples show the real link, real file path, real math (numbers).
+ L4 Extend test-cloudrun-smoke.ts (offline, NET_GUARD=block, NODE_ENV=production, PORT=8080, warmers off): the new routes answer with correct JSON shape; bad id -> truthful JSON error (not HTML, not 200 index.html); the channel is present in the audio guide payload with the exact name; schedule payload size delta reported; XML programmes == schedule programs for the channel; response sizes < 32 MiB; clean SIGTERM <= 10 s; 0 Archive requests.
+ L5 End with NEXT BUILD OUTLINE (<= 15 lines) incl. "I will NOT re-test: ...".
+ L6 Archive budget for the WHOLE job: 45 physical starts (redirect hops count), >= 1.85 s spacing with the fixed helper (sha256 399f70b8...), stop on 403/429/Retry-After or two 5xx in a row. Only /metadata, advancedsearch (identifier-only, see B1), Range 0-1 through the local proxy, and ONE .asr.srt slice. No exploration.
+
+KNOWN FROM YOUR PROBE (use it, do not re-probe): source Radio-The-Alex-Jones-Radio-Show is a COLLECTION (mediatype collection, member of radio_asr, 7,119 child items, no audio at root). Child ids look like The_Alex_Jones_Radio_Show_YYYYMMDD_HHMMSS (date + time in the id, 6/6 parsed). Each sampled child: 2 public audio files (one AAC, one M4A, ~43 MB to ~100 MB, ~10,800 s), 1 public .asr.srt, not private/dark/restricted, no licence field. 2/6 audio files show length 0 in metadata. Proxy range 0-1 returned 206 for all 4; content-type came back application/octet-stream (and once audio/mpeg).
+
+======== BUILD (smallest change; each piece separately rollbackable) ========
+PIECE 1 - M4A/AAC in the whole-item audio resolver (server/rush.ts:67-75 area, and server/audioChannels.ts if needed)
+ - Keep MP3 behaviour byte-for-byte identical for every existing channel. Add M4A then AAC as lower-preference fallbacks ONLY when no admissible MP3 exists in the item. Preference: mp3 > m4a > aac. Still public-only (private flag), still requires a known positive duration; an item whose only audio has length 0/missing is SKIPPED and counted (no invented duration).
+ - Proxy content-type: if /api/archive/proxy returns application/octet-stream for .m4a/.aac, map by file extension to audio/mp4 (.m4a) and audio/aac (.aac) in the proxy response ONLY (no change to range/206/slice logic, no change for other extensions). Unit test the mapping. Report the exact line(s) changed.
+ - Tests: item with mp3+m4a -> mp3 chosen; m4a+aac only -> m4a chosen; length 0 -> skipped; private -> skipped; all existing rush/audio tests still pass (run only test-rush.ts, test-audio-channels.ts, test-proxy-range.ts as regression for what you touched).
+
+PIECE 2 - channel "INFOWARS Archive RADIO"
+ - Id archive-infowars-radio, name EXACTLY "INFOWARS Archive RADIO", group "Talk Radio" via src/data/audioGroupOverrides.json, in the Audio & Podcasts guide. Keep it separate from Real America's Voice and from both War Room channels; do not merge with the 3 existing Alex Jones rows (nwt-audio-alex-jones-depopulation, nwt-audio-alexjonesradioshow-march12010, nwt-audio-alexjonesradioshow-september172009).
+ - A COLLECTION of 7,119 children cannot be resolved item-by-item up front. Design (follow it unless you find a hard blocker, then say so):
+   a) Candidate list: ONE identifier-only advancedsearch for collection:Radio-The-Alex-Jones-Radio-Show (fl[]=identifier, sort identifier asc, rows large enough for all 7,119; if Archive caps rows, page and REPORT how many pages/starts). Cache in memory with a long TTL AND a persisted last-good copy (same pattern as daily-highlights last-good, commit 0d8f219). Never cache an empty/error result as success. If the list cannot be loaded and there is no last-good, the channel shows a truthful empty/error state, no fabricated programs.
+   b) Order = real date parsed from the id (YYYYMMDD_HHMMSS, validate as a real UTC calendar date/time; unparsable ids sort after, by name). State the rule in the report.
+   c) Daily rotation: deterministic UTC-day seed over the sorted list (same style as server/dailyRotation.ts / OTR in audioChannels.ts). For each day only resolve the metadata of the few items needed to fill the schedule window the guide already uses (report that window and the item count; expect ~8 items per 24 h at ~3 h each). Bounded: <= 12 metadata fetches per day, concurrency 1-2 through archiveApiFetch (shared limiter), per-item result cached. Skipped items (no admissible audio / length 0 / private) are skipped and the next candidate is taken; the number skipped is exposed in the channel's diagnostics, not hidden.
+   d) Program shape: reuse the existing Program type; durations ONLY from metadata length; no invented air dates. Archive item identifier as the program id/source id; path /download/<id>/<file> canonical, played through /api/archive/proxy in bounded 206 slices <= 8 MiB. Thumbnail: reuse existing audio artwork/initials fallback, NO new thumbnail requests.
+   e) Schedule JSON stays under the advisory 8 MiB / hard 24 MiB; XML programmes must equal schedule programs; report the payload delta in bytes.
+ - Station numbers: alphabetical. Your offline estimate was 47 (previous neighbour 46 Ilium; stations 47-110 shift +1). Recompute from the real built guide data and report before/after for the two neighbours.
+
+PIECE 3 - machine transcript (radio_asr) for audio items, SEPARATE from TV-News captions
+ - New, separate typed path; do NOT widen isTvNewsId/NEWS_NETWORKS or change TV-News behaviour. Suggested: GET /api/audio-asr/:identifier?t=<start>/<len> (or the closest fit to the existing slice-route shape you already inspected).
+ - Allowlist: identifier must match ^The_Alex_Jones_Radio_Show_\d{8}_\d{6}$ AND be listed as a child of the collection candidate list (or pass the same pattern if the list is not loaded: say which you chose). Resolve the public `<audioFile>.asr.srt` NAME only from that item's metadata (never build names from user input); skip if private/not listed; fetch only the slice through archiveApiFetch; response bytes bounded (<= 256 KiB per slice); truthful JSON error otherwise (404 no transcript, 502/503 upstream with the real reason).
+ - Every response/UI string labels it "Machine transcript (Archive ASR, may contain errors)" and source 'asr', never "captions"/"broadcaster captions". Cue times are slice-relative (your probe: t=0/60 returned relative cues): the client must add the slice start, and the test must prove the offset math with numbers.
+ - UI: smallest mount on the existing audio now-playing surface (report file:line). If a transcript panel needs more than ~15 lines in a protected file (UnifiedPlaybackEngine, PlayerStore, BroadcastTVGuide, StatusIndicatorBar), STOP the UI part, ship routes + tests + a drop-in component, and say so. Default: the transcript is shown only for archive-infowars-radio programs; no autoplay of transcript fetches (fetch on user open, slice-by-slice, not the whole file).
+ - Keep a single flag AJN_AUDIO_ASR (default ON for this channel's identifiers; setting it to 0 disables the route with a truthful 404 JSON). Nothing else changes.
+
+======== WORKED EXAMPLES (the ONLY live checks; numbers, not words) ========
+ E1 (offline) resolver preference: show the chosen file for the 3 fixture cases (mp3+m4a, m4a+aac, length-0 only).
+ E2 (live, <= 6 starts) candidate list: report numFound (expect 7,119), first/last id after date sort, parse rate (n/7,119 valid dates), pages/starts used.
+ E3 (offline) rotation: for UTC day D and D+1 show the seed index, the first 3 ids of each lineup, and that the same input gives the same output twice; show that the lineup sums to >= the window length using the metadata durations from E4.
+ E4 (live, <= 24 starts) ONE day's lineup: resolve the lineup items' metadata; report per item: id, chosen file, format, bytes, length s; count skipped and why. Total schedule seconds vs window.
+ E5 (live, <= 4 starts) link + file + math on the FIRST lineup item through the local production bundle: Range bytes=0-1 -> status 206, content-type (must now be audio/mp4 for .m4a), Content-Range total. Slices = ceil(total / 8,388,608); first and last range; no slice > 8 MiB; last ends at total-1.
+ E6 (live, <= 3 starts) transcript: same item, `?t=0/60` through YOUR new route: status, cue count, first cue (slice-relative AND absolute after offset), label string, bytes. Then t=60/60: show first-cue absolute time >= 60.
+ E7 (offline) new route error paths: bad identifier pattern -> 400 JSON; valid pattern but no .asr.srt in fixture -> 404 JSON; flag off -> 404 JSON.
+ E8 (offline) station numbers + payload: neighbours before/after; schedule JSON size before/after; XML == schedule for this channel.
+ E9 (browser, SAFE LABEL): if your Chromium can play AAC/M4A, load one local production page and report `canPlayType('audio/mp4; codecs="mp4a.40.2"')` and whether `audio.currentTime` advances 3 s from a proxied slice. If Playwright's Chromium lacks AAC, say exactly that; the owner will confirm in his real browser. Do not claim playback worked without that evidence.
+
+NOT IN THIS JOB: any other queue item, any other channel, changes to the 3 existing Alex Jones rows, spectrogram art, diagnostics canvas loop.
+
+DELIVER
+ AJN_PACK_G18B_2026-10-20.zip containing: ONLY new/changed runtime files (with UPLOAD_ORDER.txt on top of export + P2 overlay + G17 pack, ROLLBACK.txt per PIECE 1/2/3, sha256 of each file), new/changed tests, REPORT.md (verdict per piece, E1-E9 numbers, L1 not-retested list, request ledger, station-number table, diagnostics), numeric-evidence.json, NEXT BUILD OUTLINE (L5).
+ ATTACH the ZIP and REPORT.md to the chat as files (not just a path). Final line: GATE G18B DONE | ZIP READY: <path> <size> <sha256> | verdict PASS/PARTIAL/FAIL per piece | NOT VERIFIED | owner decisions needed.
+STOP. Do not start anything else.
