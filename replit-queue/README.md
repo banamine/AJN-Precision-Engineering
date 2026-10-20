@@ -2,8 +2,8 @@
 
 Purpose: one place where the build team (Replit) can fetch every queued job and its helper files. NOTHING here is applied to main. Do not merge this branch. Do not push to GitHub from Replit; deliver ZIPs to the owner.
 
-## BASE (updated 2026-10-20, overrides the base line in rule 1 below)
-BASE = owner export ZIP + all-in-one overlay (branch overlay/p2-plus-captions-2026-10-20, overlays/all-in-one-2026-10-20/, sha256 1f424357...fab047) + RADIOCAPTIONS pack (this branch, overlays/radio-captions-2026-10-20/, sha256 f1a2d3c8...b1cfb, delete AudioAsrTranscriptPanel.tsx) + AUDIOSLIM pack (overlays/audioslim-2026-10-20/, sha256 0d92b050...f2ed). Fetch both from GitHub yourself; the owner only attaches the export. Report the SHA-256 of all three.
+## BASE (updated 2026-10-20 evening - SUPERSEDES earlier BASE lines)
+BASE = owner export ZIP (the newest one the owner attaches; sha256 002749be...9353) + ONE combined overlay from this branch: overlays/google-builder-2026-10-20/AJN_GOOGLE_BUILDER_DROPIN_2026-10-20.zip (sha256 240a3ce9...1e3b; raw: https://raw.githubusercontent.com/banamine/AJN-Precision-Engineering/replit/queue-2026-10-20/overlays/google-builder-2026-10-20/AJN_GOOGLE_BUILDER_DROPIN_2026-10-20.zip). Extract its files over the export, then DELETE src/components/AudioAsrTranscriptPanel.tsx. It already contains all-in-one + RadioCaptions + AudioSlim. Report the SHA-256 of the export and of this overlay (2 hashes). If the owner says this drop-in is LIVE on Builder, also say your base equals the live app. Every later accepted pack is applied on top and listed here.
 
 ## Base rule (overrides every older job file)
 The older job files (queue/03..09, runbook/) were written against a branch chain (feat/library-allmychildren -> feat/buffer-gauge-readahead -> ...). IGNORE the branch chain. Source of truth is Google AI Studio (Builder), not GitHub main. For every job:
@@ -66,3 +66,4 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 (Claude): NEW job queue/03b_GO_VERIFY_KIT_AND_CAPABILITY_PROBE_LEAN.txt (capability probe + tools/ajn-verify kit: test registry, runner, placement map, rules lint, pack builder). Recommended right after 01. Standing rule 'solve, don't just flag' added at top.
 - 2026-10-20 (Claude): job 01 AUDIOSLIM reviewed ACCEPT (light audio guide 5,507,202 B raw). Published at overlays/audioslim-2026-10-20/. Found a real live defect: Classic XML lacks 619 untimed ajn-allmychildren-extras programmes (schedule 38,964 vs XML 38,345); fix goes into job 03 (G6) as a small item.
 - 2026-10-20 (Claude): 03b returned NO ZIP (packer refused on 35 baseline FAILs). Spec error on my side: refuse on regressions, not baseline failures. New addendum queue/03b2_GO_VERIFY_KIT_FINISH_AND_SHIP_ZIP_LEAN.txt: re-classify (KNOWN-FAIL/NEEDS-*), regression-based packer, proposed fixes (not applied), ship the ZIP. Do 03b2 before LIVE-NTD.
+- 2026-10-20 (Claude): COMBINED Builder drop-in built and published (overlays/google-builder-2026-10-20/). It is the new single BASE. Replit order now: 03b2 -> LIVE-NTD -> 04c CH109 -> 03 G6 (+ later 04b probe). CAPTIONSDAILY stays held (tools only).

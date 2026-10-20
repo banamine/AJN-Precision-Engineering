@@ -1,0 +1,15 @@
+AJN GOOGLE BUILDER DROP-IN - 2026-10-20 (combined, ACCEPTED packs only)
+Base: your newest owner export (sha256 002749be159fb37413495bdfd0273475b8dfdaf21ca9a4a9ee2d154577249353).
+Contains: all-in-one (P2 + captions + G17 + G18B) + RADIOCAPTIONS + AUDIOSLIM, plus one test-only fix (see below).
+NOT included: CAPTIONSDAILY (held), LIVE-NTD / Classic Hits 109 / G6 / VERIFY-KIT (not built yet).
+
+UPLOAD (Google AI Studio / Builder):
+ 1. Upload ALL files in this ZIP at their repo-relative paths, replacing existing files (23 replaced, 29 new). Skip SHA256SUMS.txt, INSTALL.txt and ROLLBACK.txt (package notes).
+ 2. DELETE src/components/AudioAsrTranscriptPanel.tsx (replaced by the shared radio caption strip). Do this in the same upload, otherwise a stale unused file remains (harmless, but remove it).
+ 3. No package.json / lockfile change. No new dependencies.
+ 4. Publish, then tell Claude "live check".
+
+Test-only change: test-music-schedule-budget.mjs now counts only TIMED Classic programs for the XML parity check (619 untimed rows of ajn-allmychildren-extras are not exported by design; live: schedule 38,964 vs XML 38,345). No runtime code changed for this.
+
+Verified offline by Claude on this exact file set (Node 22.22): npm run build OK; test-captions 20 checks; test-radio-caption-track, test-caption-strip-output, test-audio-light-schedule, test-audio-light-client, test-group-programs-for-grid, test-classic-light-schedule PASS; test-cloudrun-smoke exit 0 (audio light 5,507,202 B raw, full 16,472,936 B / 19,111,602 B with tz, exports byte-identical, flag-off identical, 0 Archive starts, SIGTERM < 10 s).
+NOT verified: live Cloud Run behaviour, real browser playback, Safari/iOS M4A.

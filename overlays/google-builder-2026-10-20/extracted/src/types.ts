@@ -1,0 +1,221 @@
+import type { BufferGaugeMetadata } from "./utils/bufferGauge";
+
+export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'radio' | 'today' | 'history' | 'dev';
+
+export type MediaType = 'video' | 'audio';
+
+export interface Guide {
+  id: string;
+  name: string;
+  type: MediaType;
+  enabled: boolean;
+  description?: string;
+}
+
+export interface ChannelSource {
+  id: string;
+  channelId: string;
+  protocol: 'http' | 'https' | 'hls' | 'custom' | 'direct_archive';
+  url: string;
+  title?: string;
+  type?: string;
+  priority: number;
+  enabled: boolean;
+  metadata?: Record<string, any>;
+}
+
+export interface Channel {
+  id: string;
+  guideId: string;
+  name: string;
+  mediaType: MediaType;
+  logo?: string;
+  group?: string;
+  tvgId?: string;
+  tvgName?: string;
+  enabled: boolean;
+  sources?: ChannelSource[];
+}
+
+export interface Program {
+  id: string;
+  guideId: string;
+  channelId: string;
+  title: string;
+  description?: string;
+  startTime: number;
+  endTime: number;
+  startTimeUtc?: string;
+  endTimeUtc?: string;
+  startHour?: number;
+  endHour?: number;
+  mediaType: MediaType;
+  mediaUrl: string;
+  archivePath?: string;
+  assetId?: string;
+  sourceId?: string;
+  sourceClass?: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'm3u_live' | 'podcast_rss';
+  isArchivedSource?: boolean;
+  metadata?: Record<string, any>;
+}
+
+export interface Playlist {
+  id: string;
+  name: string;
+  sourceUrl: string;
+  category: 'News' | 'TV Shows' | 'Movies' | string;
+  enabled: boolean;
+  lastSyncedAt: string;
+  syncStatus: 'synced' | 'pending' | 'failed';
+  itemCount?: number;
+  rawM3u?: string;
+}
+
+export interface MediaItem {
+  id: string;
+  title: string;
+  mediaType: MediaType;
+  url: string;
+  archivePath?: string;
+  channelId?: string;
+  guideId?: string;
+  category?: string;
+  duration?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ScheduleChannel {
+  id: string;
+  guideId: string;
+  name: string;
+  mediaType: MediaType;
+  group?: string;
+  logo?: string;
+  /** 'must-listen' draws the row and its cells in the highlight colour. */
+  highlight?: 'must-listen';
+  programs: Program[];
+  /** Source layer health for this channel (ok | partial | restricted | upstream_error | offline). */
+  sourceStatus?: string;
+  /** Why items were left out, e.g. "restricted: all MP4 files are private". */
+  rejected?: Array<{ id: string; reason: string }>;
+  sourceError?: string;
+  /** Structured source health details; only populated by channels that expose measurable selection diagnostics. */
+  diagnostics?: {
+    candidateCount?: number;
+    candidateListStatus?: string;
+    seedIndex?: number | null;
+    metadataRequests?: number;
+    resolvedItems?: number;
+    skippedCount?: number;
+    skippedByReason?: Record<string, number>;
+    scheduleSeconds?: number;
+    windowSeconds?: number;
+    error?: string;
+  };
+  /** Present on the Classic TV light response; title-only search data, never a replacement for program rows. */
+  titles?: string[];
+  /** Total number of rows in the full channel schedule. */
+  programCount?: number;
+  /** True when more titles/rows exist beyond the light window. */
+  moreTitles?: boolean;
+  /** Optional playlist label carried into the Classic TV light response. */
+  playlistName?: string;
+  /** False marks the 3-row light window; true marks a fully loaded channel. */
+  programsComplete?: boolean;
+}
+
+export interface NowPlayingMedia {
+  programId?: string;
+  sourceId?: string;
+  assetId?: string;
+  src: string;
+  title: string;
+  subtitle?: string;
+  channelName?: string;
+  channelId?: string;
+  guideId?: string;
+  mediaType?: MediaType;
+  archivePath?: string;
+  thumbnailUrl?: string;
+  duration?: string;
+  /** Ephemeral size/runtime inputs for the player gauge; not copied into the saved-play history record. */
+  bufferMetadata?: BufferGaugeMetadata;
+  isLive?: boolean;
+  /** One-shot start offset (seconds) applied when this item loads: used by the audio/video switch. Never persisted. */
+  startAtSeconds?: number;
+  /** Set only on the session restored at app launch: load it and wait for one tap/Play press (browsers refuse sound without a gesture). Never persisted. */
+  restoredPaused?: boolean;
+}
+
+export interface RecentlyPlayedItem extends NowPlayingMedia {
+  id: string;
+  progressSeconds: number;
+  updatedAt: number;
+}
+
+export interface LibraryItem {
+  id: string;
+  title: string;
+  category: 'news' | 'classics' | 'science' | 'audio' | 'documentary' | 'soaps';
+  description: string;
+  archivePath: string;
+  duration: string;
+  format: string;
+  year?: string;
+  source: string;
+  thumbnailUrl?: string;
+  featured?: boolean;
+  tags: string[];
+  channelId: string;
+  guideId: string;
+  isCurated: boolean;
+  sourceId: string;
+  programId: string;
+  assetId: string;
+  sourceClass: 'archive_org' | 'ajn_archive' | 'ajn_rss' | 'podcast_rss';
+  mediaType?: MediaType;
+}
+
+export interface ProxyStats {
+  totalRequests: number;
+  successfulRequests: number;
+  retriedRequests: number;
+  failedRequests: number;
+  cacheHits: number;
+  lastUpstreamLatencyMs: number;
+  activeStreams: number;
+}
+
+export interface HealthResponse {
+  status: string;
+  service: string;
+  uptime: number;
+  timestamp: string;
+  stats: ProxyStats;
+}
+
+export interface ProbeResult {
+  path: string;
+  status: number;
+  ok: boolean;
+  contentType?: string;
+  contentLength?: string;
+  acceptRanges?: string;
+  proxyUrl: string;
+  latencyMs: number;
+  error?: string;
+}
+
+export type PlayProgramCallback = (
+  archivePath: string,
+  title: string,
+  subtitle?: string,
+  mediaType?: MediaType,
+  channelId?: string,
+  guideId?: string,
+  programId?: string,
+  sourceId?: string,
+  assetId?: string,
+  startAtSeconds?: number,
+  bufferMetadata?: BufferGaugeMetadata
+) => void;
