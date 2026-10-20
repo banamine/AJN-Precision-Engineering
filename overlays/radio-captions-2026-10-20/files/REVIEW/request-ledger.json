@@ -1,0 +1,19 @@
+{
+  "archive_physical_request_starts": 0,
+  "archive_redirect_hops": 0,
+  "browser_external_attempts_blocked": 36,
+  "browser_local_stub_api_requests": 23,
+  "news_client_fake_upstream_requests": 19,
+  "news_route_fake_upstream_requests": 2,
+  "actual_archive_hosts_reached": false,
+  "caption_or_page_text_written_to_disk": false,
+  "caption_or_page_text_logged": false,
+  "captured_test_content": "synthetic fixture identifiers only",
+  "test_runs": [
+    "focused radio pure logic",
+    "caption strip state output",
+    "News caption client checks",
+    "News route smoke checks with fake upstream",
+    "headless Chromium with intercepted local API and in-memory silent WAV"
+  ]
+}

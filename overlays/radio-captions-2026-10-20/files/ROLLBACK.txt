@@ -1,0 +1,20 @@
+ROLLBACK — RADIO CAPTIONS STRIP
+
+This package contains complete replacement files; no server/API change is included.
+
+1. Restore `src/components/PlayerView.tsx` from the supplied AJN_ALL_IN_ONE_DROPIN_2026-10-20.zip (or the clean pre-radio-captions base).
+2. Restore `src/components/AudioAsrTranscriptPanel.tsx` from that same base.
+3. Restore `src/news/captions/CaptionPanel.tsx` and `src/news/captions/useCaptionTrack.ts` from that same base.
+4. Delete the added files:
+   - `src/news/captions/CaptionStrip.tsx`
+   - `src/news/captions/RadioCaptionPanel.tsx`
+   - `src/news/captions/useRadioCaptionTrack.ts`
+   - `test-caption-strip-output.tsx`
+   - `test-radio-caption-browser-entry.tsx`
+   - `test-radio-caption-browser.html`
+   - `test-radio-caption-browser.mjs`
+   - `test-radio-caption-fixtures.ts`
+   - `test-radio-caption-track.ts`
+5. Do not change or roll back `server/audioAsr.ts`, `server/audioAsrRoutes.ts`, or `server/captions/*`; this patch leaves them unchanged.
+
+No commit, push, merge, or deployment was performed.

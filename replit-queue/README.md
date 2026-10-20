@@ -2,6 +2,9 @@
 
 Purpose: one place where the build team (Replit) can fetch every queued job and its helper files. NOTHING here is applied to main. Do not merge this branch. Do not push to GitHub from Replit; deliver ZIPs to the owner.
 
+## BASE (updated 2026-10-20, overrides the base line in rule 1 below)
+BASE = owner export ZIP + all-in-one overlay (branch overlay/p2-plus-captions-2026-10-20, overlays/all-in-one-2026-10-20/, sha256 1f424357...fab047) + RADIOCAPTIONS pack (this branch, overlays/radio-captions-2026-10-20/, sha256 f1a2d3c8...b1cfb, delete AudioAsrTranscriptPanel.tsx). Fetch both from GitHub yourself; the owner only attaches the export. Report the SHA-256 of all three.
+
 ## Base rule (overrides every older job file)
 The older job files (queue/03..09, runbook/) were written against a branch chain (feat/library-allmychildren -> feat/buffer-gauge-readahead -> ...). IGNORE the branch chain. Source of truth is Google AI Studio (Builder), not GitHub main. For every job:
 1. BASE = the newest owner export ZIP attached by the owner (ajn-precision-engineering.zip) + overlay https://raw.githubusercontent.com/banamine/AJN-Precision-Engineering/overlay/p2-plus-captions-2026-10-20/overlays/AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip (SHA-256 f9121711f49d684eb8d8354d95584c2471a8248f5fc8676fa172bafbbfccd70c) extracted on top. Phase 1 and Phase 2 are already in; do not redo them.
@@ -46,3 +49,5 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 QUEUE ORDER: 01 AUDIO_GUIDE_SLIM -> 02 RADIO_CAPTIONS (INFOWARS transcript as live news-style caption strip) -> 03 G6+CT-fix+G7 measure -> 04 G8/G9 -> 05 G10/G11 (+05b) -> 06 G3 -> 07 G15/G16 -> 08 G12-G14 plan -> 09 GR2-4 -> 10 ONLINE_VIEWERS (last).
 - 2026-10-20: added 03b CAPTIONS_DAILY_CSV (daily caption CSV archive, 50 MB cap). HOLD until owner confirms D1-D4 (policy change on storing caption text, private repo, network list, radio meaning). Runs after 03 G6.
 - 2026-10-20 FINAL QUEUE ORDER (files renumbered): 01 AUDIO_GUIDE_SLIM -> 02 RADIO_CAPTIONS -> 03 G6+CT+G7 measure -> 04 CAPTIONS_DAILY_CSV (owner decisions confirmed: store text yes; PUBLIC repo orphan data branch; 5 networks; radio = what the app played) -> 05 G8/G9 -> 06 G10/G11 (+06b) -> 07 G3 -> 08 G15/G16 -> 09 G12-G14 plan -> 10 GR2-4 -> 11 ONLINE_VIEWERS (last).
+
+- 2026-10-20 (Claude): RADIOCAPTIONS reviewed ACCEPT and published as overlays/radio-captions-2026-10-20/. Queue job 02 is DONE (moved to done/). Remaining order: 01 AUDIO_GUIDE_SLIM (not yet returned; run first, base includes radio captions) -> 03 G6+CT+G7 measure -> 04 CAPTIONS_DAILY_CSV -> 05.. as listed. Owner does live testing on Builder and reports issues.

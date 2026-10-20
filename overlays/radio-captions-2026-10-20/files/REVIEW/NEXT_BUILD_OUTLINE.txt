@@ -1,0 +1,5 @@
+1. Keep the server ASR API and existing source fields unchanged.
+2. Keep radio ASR visibly distinct from broadcaster captions.
+3. Keep radio on the shared caption hook, strip, slice store, and request budget.
+4. Change the radio display wording only with owner approval to use “BROADCAST CLOSED CAPTIONS”.
+5. I will NOT re-test: Phase 1/2, G17, G18B channel/M4A, audio-guide size, proxy 206, visualizer, or TV News captions beyond the named regression checks.

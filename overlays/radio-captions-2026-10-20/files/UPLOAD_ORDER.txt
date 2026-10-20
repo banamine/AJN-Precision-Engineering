@@ -1,0 +1,27 @@
+AJN Radio Captions Strip — upload order
+Base: owner export 002749be159fb37413495bdfd0273475b8dfdaf21ca9a4a9ee2d154577249353, then all-in-one overlay 1f4243577e5f160c5f96688cc0067ad1f9ae57fee277ce5b7dffe98b88fab047.
+Only complete files at the listed repo-relative paths are packaged; no diff hunks. Replace in this order, then remove the deleted legacy component. Source/test rows include exact bytes and SHA-256.
+
+01 | src/news/captions/CaptionStrip.tsx | 1871 bytes | 71e440022b60bcf3570ed91cd27683b53165af9124b07b8e86e9365ddd04190b
+02 | src/news/captions/useCaptionTrack.ts | 8941 bytes | fe4f043648bcc6a757d7b3f2d1afd1c9d24dcb4a71ffab15e9078ea32741ac58
+03 | src/news/captions/CaptionPanel.tsx | 616 bytes | d1f37f96613d0a9667a139059139f8647a987202ebc91265613f8d77bd9bdff9
+04 | src/news/captions/useRadioCaptionTrack.ts | 1876 bytes | 56ffcf0c928e16fae3e7ffc81d8b50a82c45be73b6fc827fdd33d21969a3808c
+05 | src/news/captions/RadioCaptionPanel.tsx | 357 bytes | 9698f1b8a99859f50360b33c505ff6acf31f4056d6ee0cc15c33af42daac0610
+06 | src/components/PlayerView.tsx | 27303 bytes | 85bb8b7231e358921f057e9e8b1bd40cd5f88ff6cf81ce44aa5fbda7a5677b60
+07 | DELETE (not packaged) | src/components/AudioAsrTranscriptPanel.tsx | replace with the radio panel wiring first; restore from base on rollback
+08 | test-radio-caption-fixtures.ts | 1354 bytes | aef2b7435e3c4c4713c72303541642c305e20c76a43b9f9fe3b0136c0140fa90
+09 | test-radio-caption-track.ts | 2090 bytes | 6a94c988ef34d8f690e4e142e89f510cbb01500a0cbb9eacabb15b7a56f0b02b
+10 | test-caption-strip-output.tsx | 2935 bytes | fbfea9ee2c643fa4dd396814272da146b26db36491d16574874be8d2a6426e47
+11 | test-radio-caption-browser-entry.tsx | 3158 bytes | ef8f7f4fd37ba35a46a4244ef8520112175f9594ff6b15a9bd77d30efff1f8a8
+12 | test-radio-caption-browser.html | 348 bytes | 9a4dab936ac1a64eab60271dadff9973c7238f0eb8da63e1682a2a6e559434f1
+13 | test-radio-caption-browser.mjs | 12816 bytes | 006cb79fd6e49681fbb114726d1b497e78e5eec0fe5ac94a090bf509ef4ec803
+14 | REVIEW/REPORT.md | 7484 bytes | 85b1219ed6f6bb28e631fbf678afb6cbb3ff1fa984b7e4643c6e1e451d266015
+15 | REVIEW/numeric-evidence.json | 3091 bytes | d34d503ce7151922fb88cefa39abf321389c93c331a1b528c100fcfab78a7f8c
+16 | REVIEW/request-ledger.json | 686 bytes | d5f3accef54d7aec960a081a1f96c158ff2ca34d76f5b77402a6efa5e20a33ea
+17 | REVIEW/NEXT_BUILD_OUTLINE.txt | 464 bytes | 2c366e3835cdee7128f5cee2c64e44180466fac1d7fa914b54357efc167b760e
+18 | REVIEW/screens/radio-caption-390.png | 22819 bytes | a03e2b9ea935f3ecf02430d88f79cef7fa882e90a37950319a059f2d620fdc13
+19 | REVIEW/screens/radio-caption-1440.png | 27036 bytes | e67d5d0c919de48d30ca017731cadd7e27a7f6114a325c3211ef1fff82c606e3
+20 | REVIEW/screens/news-caption-unchanged-1440.png | 22881 bytes | 6a5c11e7a18e5a86ac78c4921030eef8d06da58e1d19f512364786133f902c1b
+21 | ROLLBACK.txt | 1035 bytes | fc3f3fb4bbc7a72a5d2ebb5102b3d0427dfb1d49fc86fe98d507393ee4bb9737
+
+`UPLOAD_ORDER.txt` is a self-describing manifest and does not list its own hash. Its SHA-256 is reported with the ZIP delivery. No package-lock, server/ASR files, existing News tests, temporary tsconfig, or export-baseline errors are included.
