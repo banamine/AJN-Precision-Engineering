@@ -13,6 +13,9 @@ The older job files (queue/03..09, runbook/) were written against a branch chain
 4. First report line = SHA-256 of the export and the overlay. If the overlay hash differs: STOP.
 5. Follow LEAN MODE V3 (below) in every job.
 
+## STANDING RULE (2026-10-20): solve, don't just flag
+Every defect in a report needs: root cause (file:line), >= 2 candidate fixes with trade-offs, the recommended one, the patch/drop-in, the proving test, regression risk. Use diagrams (Mermaid+SVG), screenshots and, for UI work, short video demos when your environment proves it can (see job 03b capability probe). Delivery stays: attach ZIP + REPORT.md to chat; no push/merge/deploy.
+
 ## LEAN MODE V3
 - Do NOT re-test what is known to work: Phase 1 (read-ahead off by default, buffer gauge), Phase 2 (AMC rotation, Library 1176 raw / 620 grouped), bounded 206 slices <= 8 MiB through /api/archive/proxy, the visualizer, existing caption code, the untouched build.
 - Test ONLY what you just built: unit tests for new files + ONE worked example per feature showing the real link, the real file path and the real math (slices = ceil(total / 8,388,608); no slice > 8 MiB; last ends at total-1).
@@ -60,3 +63,4 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 (Claude): CH109 news = the app's existing Vault/AJN radio Daily News Digest (/api/digest, NewsTicker/DailyBriefing); job 04c updated, no feed URL needed.
 - 2026-10-20 (Claude): 04c target look = the existing Player panel (station card + now playing + recently played + Daily briefing) for all 9 stations, same components.
 - 2026-10-20 (Claude): 04c layout plan: separate Ch109Strip (collapsed row + horizontally scrolling 9 chips + Prev/Next in its own header) so the 5 user presets and the now-playing row are untouched; layout proof screenshots required.
+- 2026-10-20 (Claude): NEW job queue/03b_GO_VERIFY_KIT_AND_CAPABILITY_PROBE_LEAN.txt (capability probe + tools/ajn-verify kit: test registry, runner, placement map, rules lint, pack builder). Recommended right after 01. Standing rule 'solve, don't just flag' added at top.
