@@ -1,0 +1,27 @@
+MASTER RUN ORDER (owner authorized 2026-10-20 10:16: run the buildable queue in sequence with automatic check stops; Claude reviews the ZIPs afterwards)
+Read replit-queue/README.md (BASE, STANDING RULE, LEAN MODE V3) first. Everything in those files still applies. Do NOT skip a rule because this is a chain.
+
+RUN THESE JOBS IN THIS ORDER (each job file is in replit-queue/queue/ on branch replit/queue-2026-10-20):
+  J1  03b2_GO_VERIFY_KIT_FINISH_AND_SHIP_ZIP_LEAN.txt   (finish tools/ajn-verify; regression-based packer)
+  J2  02_NEXT_GO_LIVE_NTD_NEWS_LEAN.txt                  (10 NTD live streams under News)
+  J3  04c_GO_CH109_NINE_STATIONS_LEAN.txt                (Classic Hits 109: 9 stations, strip, Prev/Next, digest)
+  J4  03_GO_G6_CT_G7MEASURE_LEAN.txt                     (G6 Classic duplicates, content-type fix, G7 measure; the Classic XML test fix is ALREADY in the base: do not redo it)
+NOT part of this run (need owner input or are held): 04 CAPTIONS_DAILY (held), 04b (probe, separate GO), 05, 06/06b, 07, 08, 09, 10, 11.
+
+BASE for J1: owner export + overlays/google-builder-2026-10-20 (see README BASE). BASE for J2..J4 = the same base + the files from your OWN previous job ZIPs in this run, applied in order (mark them "UNREVIEWED BASE" in every report; report SHA-256 of the export, the Builder overlay, and each previous job ZIP you stacked).
+
+CHECK STOPS (a job is "passed" only if ALL are true; otherwise STOP the whole run and report, do not start the next job):
+  C1 base hashes match the README values; the stacked job ZIPs match the sha256 you printed for them.
+  C2 the job's own focused typecheck and unit tests pass; production build passes (npm run build) on the stacked tree - run it once per job, it was NOT verified in earlier jobs.
+  C3 the job's worked examples/numbers are produced as the job file requires (real links, real math).
+  C4 the offline Cloud Run smoke (test-cloudrun-smoke.ts) exits 0 on the stacked tree. If it fails because of YOUR change, fix it; if it fails on something pre-existing, STOP and report with evidence.
+  C5 if the J1 kit exists on the stacked tree: `node tools/ajn-verify/run.mjs --changed` shows 0 REGRESSIONS versus the seeded ledger; any regression stops the run.
+  C6 Archive/network: 0 physical Archive requests unless the job file grants a budget; stop on 403/429/Retry-After or two 5xx in a row; NET_GUARD=block for tests.
+  C7 no protected-core file edited beyond what its job file allows; no `any`, no Math.random telemetry, no silent fallback (kit rules lint if present).
+  C8 the job ZIP exists, hashes verify, UPLOAD_ORDER lists complete files at repo paths only, ROLLBACK exists, REVIEW/REPORT.md follows the STANDING RULE (root cause, >=2 options, recommendation, patch, proving test, regression risk).
+After each passed job: attach that job's ZIP + REPORT.md to the chat, print one line "GATE <name> PASSED | zip | size | sha256", and continue.
+AFTER J4 PASSES: build ONE cumulative drop-in AJN_CUMULATIVE_J1_J4_2026-10-20.zip = complete files of every file changed by J1..J4 relative to the Builder overlay base (latest version of each file), + UPLOAD_ORDER.txt (include "delete" lines), ROLLBACK.txt, SHA256SUMS.txt, REVIEW/ (all reports, the stacked-base hashes, kit ledger). Verify it by extracting export + Builder overlay + cumulative ZIP into a clean tree and re-running build + smoke + kit --changed. Attach it and its REPORT.md.
+
+HARD LIMITS (unchanged): no git push, no merge, no deploy, no scheduled/automatic runs, no changes to package.json/lockfile unless a job file says so, no Archive terms/rights decisions, no activation of held items. Replit cannot message the owner on its own: attach files in chat and stop.
+IF ANYTHING IS AMBIGUOUS OR BLOCKED: stop at that gate, write what you tried and the exact question, attach what exists, do not guess.
+Final line when finished or stopped: RUN J1-J4 DONE|STOPPED AT <job/check> | zips: <names sizes sha256> | verdicts | NOT VERIFIED | owner decisions needed.
