@@ -51,3 +51,5 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 FINAL QUEUE ORDER (files renumbered): 01 AUDIO_GUIDE_SLIM -> 02 RADIO_CAPTIONS -> 03 G6+CT+G7 measure -> 04 CAPTIONS_DAILY_CSV (owner decisions confirmed: store text yes; PUBLIC repo orphan data branch; 5 networks; radio = what the app played) -> 05 G8/G9 -> 06 G10/G11 (+06b) -> 07 G3 -> 08 G15/G16 -> 09 G12-G14 plan -> 10 GR2-4 -> 11 ONLINE_VIEWERS (last).
 
 - 2026-10-20 (Claude): RADIOCAPTIONS reviewed ACCEPT and published as overlays/radio-captions-2026-10-20/. Queue job 02 is DONE (moved to done/). Remaining order: 01 AUDIO_GUIDE_SLIM (not yet returned; run first, base includes radio captions) -> 03 G6+CT+G7 measure -> 04 CAPTIONS_DAILY_CSV -> 05.. as listed. Owner does live testing on Builder and reports issues.
+
+- 2026-10-20 (Claude): NEW job queue/02_NEXT_GO_LIVE_NTD_NEWS_LEAN.txt (add the 10 NTD live streams, group News). Run after 01 AUDIO_GUIDE_SLIM. Evidence: claude/AJN_Live_NTD_Channels_Finding_2026-10-20.md.

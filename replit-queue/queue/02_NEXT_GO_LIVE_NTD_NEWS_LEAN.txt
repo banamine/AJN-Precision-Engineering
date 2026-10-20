@@ -1,0 +1,30 @@
+GO LIVE-NTD (Lean Mode V3; one job; ZIP only; STOP after ZIP)
+BASE: owner export + all-in-one overlay + RADIOCAPTIONS overlay (see README "BASE"). Report SHA-256 of all three first. Work in a temp copy. No push/merge/deploy.
+
+WHY (Claude's evidence, 2026-10-20, live site /api/schedule?guide=live-tv = 1,504 channels):
+ - The Live TV guide reads https://iptv-org.github.io/iptv/countries/us.m3u (server/sources/liveTv.ts DEFAULT_LIVE_SOURCES). That RENDERED list has only 3 NTD rows. The owner's list (iptv-org streams/us.m3u, the raw database) has 10 NTD streams. Live site has: NTD TV (1080p) [East], NTD TV West (720p) [HD-LA], NTD TV English (1080p) [Rakuten URL, differs from owner's Amagi "worldwide" URL], plus Rakuten "NTD News" (group News). MISSING: NTD TV Asia-Pacific, Canada, Canada West, China, English 720p (NTDA), English UK, NTD TV West (uwlive990), English 1080p (Amagi worldwide URL).
+ - Genre: the app files a channel under the FIRST group of group-title ("General;News" -> General). NTD English is therefore in General, not News. 86 rows in the rendered list have multiple groups; 7 have News but not first (NTD TV English, BX Inform, Channel One, Entertainment Tonight, HollyWire, 30A x2) - do NOT change the general rule; owner decides.
+ - Header probe 2026-10-20 from Claude's sandbox: all 10 owner URLs + the HD-LA URL answer 200 with a valid #EXTM3U; ACAO is * (or the AJN origin for the two Amagi URLs); the five live.ntdtv.com lists are media playlists whose segments answer 200. This is NOT a play test.
+
+BUILD (smallest change)
+ PIECE 1 - pinned supplement list: new server/data/liveTvPinned.json + merge in server/sources/liveTv.ts (after the upstream lists, before URL dedupe: upstream wins on identical URL, pinned fills the rest). Entries (id, name, url, group "News", logo, tvgId):
+   live-ntdtv-east | NTD TV (1080p) | https://ntd02.akamaized.net/HD-NY/index.m3u8
+   live-ntdtv-asia-pacific | NTD TV Asia-Pacific | https://live.ntdtv.com/aplive200/playlist.m3u8
+   live-ntdtv-canada | NTD TV Canada | https://live.ntdtv.com/mllive860/playlist.m3u8
+   live-ntdtv-canada-west | NTD TV Canada West | https://live.ntdtv.com/cwlive220/playlist.m3u8
+   live-ntdtv-china | NTD TV China | https://live.ntdtv.com/cnlive900/playlist.m3u8
+   live-ntdtv-english-1080 | NTD TV English (1080p) | https://amg17596-amg17596c1-ntdtv-worldwide-3276.playouts.now.amagi.tv/playlist/amg17596-newtangdynastytelevision-ntdtv-ntdtvworldwide/playlist.m3u8
+   live-ntdtv-english-720 | NTD TV English (720p) | https://ntd02.akamaized.net/NTDA/index.m3u8
+   live-ntdtv-english-uk | NTD TV English UK (1080p) | https://ntd02.akamaized.net/NTD-UK/index.m3u8
+   live-ntdtv-west | NTD TV West | https://live.ntdtv.com/uwlive990/playlist.m3u8
+   (the HD-LA "NTD TV West (720p)" already comes from upstream; keep it, group News via PIECE 2)
+   Logos (iptv-org logos.json): East/West/UK = https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/NTD_Logo_with_symbol.svg/960px-NTD_Logo_with_symbol.svg.png ; Asia-Pacific/Canada/Canada West = https://i.imgur.com/iyFXcDy.png ; China = https://i.imgur.com/OpWTWdh.png ; English = https://i.imgur.com/26uv1ww.png. Use the existing logo fallback (no new requests at build time); say if an imgur hotlink is not reachable.
+   Same rules as upstream rows: https only, no credentialed panel URLs, no adult groups. Stable explicit ids (not order-dependent slug suffixes).
+ PIECE 2 - genre override for NTD only: any live row whose tvg-id starts with "NTDTV" gets group "News" (small override table in liveTvPinned.json, e.g. groupOverrides by tvg-id prefix). No change to the multi-group rule for any other channel.
+ PIECE 3 - report-only: list the 10 NTD rows as the guide would show them (id, name, group, station order within News), and the count of Live TV channels before/after (expect +8; 1,504 -> 1,512 minus any URL dedupe).
+
+TESTS (only what you build): extend test-live-tv.ts offline: pinned merge, URL dedupe (upstream wins), https filter, group override, stable ids, 0 network. Worked example E1: feed a fixture upstream with the 3 current NTD rows -> output has 10 distinct NTD URLs, all group News, ids as above. E2: live-news Cable TV list untouched (test-live-news-channels.ts passes unchanged). Smoke: /api/schedule?guide=live-tv offline fixture shows the 10 rows; response < 32 MiB (live-tv payload today is 7.1 MB raw); report the payload delta in bytes.
+ARCHIVE BUDGET: 0 archive.org requests. Header probe of the 10 stream URLs is already done by Claude; do NOT probe them again unless the owner says so.
+DO NOT TOUCH: Cable TV curated Live News list, TV-News captions, EPG for CNN/FOX/MSNBC/BBC/NTD archive news, proxy, player, Classic TV.
+NOT VERIFIED (say so): real playback of each stream in a browser; whether upstream URLs rotate; imgur logo hotlinks.
+DELIVER: ONE combined ZIP of complete files at repo paths + UPLOAD_ORDER.txt + ROLLBACK.txt + sha256s + REVIEW/REPORT.md + NEXT BUILD OUTLINE (<=15 lines, incl. "I will NOT re-test: ..."). Attach ZIP and REPORT.md to the chat. Final line: GATE LIVE-NTD DONE | ZIP READY: <name> <size> <sha256> | verdict | NOT VERIFIED | owner decisions needed. STOP.
