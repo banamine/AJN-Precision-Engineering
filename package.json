@@ -69,6 +69,8 @@
     "test:rush": "tsx test-rush.ts",
     "classic:snapshot": "tsx scripts/classic-snapshot.ts",
     "test:audio-channels": "tsx test-audio-channels.ts",
+    "test:group-programs": "tsx test-group-programs-for-grid.ts",
+    "test:music-lane-tag": "tsx test-music-lane-tag.ts",
     "test:hls-proxy": "tsx test-hls-playlist-proxy.ts",
     "test:favorites": "tsx test-favorites-store.ts",
     "test:safe-fetch": "tsx test-safe-fetch.ts",

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { groupProgramsForGrid, MIN_CELL_PX, COMFORT_CELL_PX } from "./src/guide/groupProgramsForGrid";
+import { groupProgramsForGrid, bucketHoursFor, MIN_CELL_PX, COMFORT_CELL_PX } from "./src/guide/groupProgramsForGrid";
 import type { ScheduleChannel, Program } from "./src/types";
 
 function prog(i: number, s: number, e: number, lane?: string): Program {
@@ -59,4 +59,21 @@ export function runGroupingTests(): void {
     "20% is not more than 20%");
 }
 
-if (process.argv[1]?.endsWith("test-group-programs-for-grid.ts")) { runGroupingTests(); console.log("grouping tests passed"); }
+if (process.argv[1]?.endsWith("test-group-programs-for-grid.ts")) { runGroupingTests(); console.log("grouping tests passed"); 
+  // Zoom-based buckets: wider spans of time per block when zoomed out.
+  assert.equal(bucketHoursFor(160), 1); assert.equal(bucketHoursFor(120), 2); assert.equal(bucketHoursFor(60), 3);
+  assert.equal(bucketHoursFor(40), 4); assert.equal(bucketHoursFor(10), 6); assert.equal(bucketHoursFor(0), 1);
+  const dense = Array.from({ length: 480 }, (_, i) => prog(i, i * 0.05, (i + 1) * 0.05, "music"));
+  const z = groupProgramsForGrid(chan(dense), 60, 10.4); // 60px/h -> 3h buckets
+  assert.equal(z.mode, "blocks");
+  assert.ok(z.cells.every((c) => c.endHour - c.startHour === 3 && c.startHour % 3 === 0));
+  assert.equal(z.cells.flatMap((c) => c.items).length, dense.filter((p) => p.startHour! < 24).length, "every track assigned once");
+  const liveZ = z.cells.filter((c) => c.liveProgramId);
+  assert.equal(liveZ.length, 1); assert.equal(liveZ[0].startHour, 9, "live track marks the 3h bucket containing now");
+  // A track straddling a bucket boundary still marks the bucket that contains now.
+  const strad = [prog(0, 0, 2.5, "music"), ...Array.from({ length: 80 }, (_, i) => prog(i + 1, 2.5 + i * 0.05, 2.55 + i * 0.05, "music"))];
+  const rs = groupProgramsForGrid(chan(strad), 60, 3.2); // live = p0? no: 3.2 is in a short track; check p0 case below
+  assert.equal(rs.cells.filter((c) => c.liveProgramId).length, 1);
+  const rs2 = groupProgramsForGrid(chan(strad), 60, 2.9); // inside the 2.5..3.0 region, bucket 0..3
+  assert.equal(rs2.cells.find((c) => c.liveProgramId)!.startHour, 0);
+}

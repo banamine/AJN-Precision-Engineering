@@ -19,6 +19,8 @@ import { loadFilterPrefs, saveFilterPrefs } from "./guide/filterPrefs";
 const DEFAULT_VIEW_WIDTH_PX = 960; // used until the real width is measured (and in server-side tests)
 const CHANNEL_COLUMN_WIDTH_PX = 272;
 const ROW_HEIGHT_PX = 68;
+/** Audio stations get more vertical room so station numbers, thumbnails and track blocks do not touch. */
+export const AUDIO_ROW_HEIGHT_PX = 84;
 
 function hourLabel(hour: number): string {
   const h = Math.floor(hour) % 24;
@@ -132,6 +134,7 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
 }
 
 export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active = true }: EpgGuideProps) {
+  const rowH = guideId === 'audio-podcasts' ? AUDIO_ROW_HEIGHT_PX : ROW_HEIGHT_PX;
   const [nowHour, setNowHour] = useState(currentHourFraction());
   const [channels, setChannels] = useState<ScheduleChannel[] | null>(() => getCachedSchedule(guideId)?.channels ?? null);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -231,7 +234,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   const PAGE_ROWS = 40;
   // Include the rows needed for a saved vertical position before restoring it.
   const [visibleCount, setVisibleCount] = useState(() =>
-    Math.max(PAGE_ROWS, Math.ceil((savedView?.scrollY ?? 0) / ROW_HEIGHT_PX) + PAGE_ROWS));
+    Math.max(PAGE_ROWS, Math.ceil((savedView?.scrollY ?? 0) / rowH) + PAGE_ROWS));
   const sentinelRef = useRef<HTMLDivElement>(null);
   const previousGuideId = useRef(guideId);
   useEffect(() => {
@@ -503,7 +506,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                 data-highlight={channel.highlight}
                 data-channel-id={channel.id}
                 className={`flex flex-col justify-center border-b border-neutral-800 px-3.5 ${flashId === channel.id ? 'bg-amber-500/15 ring-2 ring-inset ring-amber-400/70 ' : ''}${channel.highlight === 'must-listen' ? 'border-l-4 border-l-fuchsia-400 bg-gradient-to-r from-fuchsia-500/20 via-fuchsia-500/5 to-transparent' : ''}`}
-                style={{ height: ROW_HEIGHT_PX }}
+                style={{ height: rowH }}
               >
                 <div className="flex min-w-0 items-center gap-2">
                   <span data-testid="station-number" title={`Station ${stationOf.get(channel.id)}`} className="w-8 shrink-0 text-right font-mono text-[11px] font-semibold tabular-nums text-neutral-400">{stationLabel(stationOf.get(channel.id) ?? 0)}</span>
@@ -575,7 +578,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                 <div
                   key={channel.id}
                   className="relative border-b border-neutral-800/80"
-                  style={{ height: ROW_HEIGHT_PX }}
+                  style={{ height: rowH }}
                   {...(g ? {
                     role: 'group',
                     'aria-label': `${channel.name}, ${g.mode === 'programs' ? g.items.length : g.cells.length} ${g.mode === 'programs' ? 'tracks' : g.mode === 'radio' ? 'daily block' : 'hourly blocks'}`,
@@ -627,7 +630,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                 <div
                   className="pointer-events-none absolute top-0 z-20 w-px bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
                   data-now-hour={nowHour}
-                  style={{ left: win.startHour * pxPerHour + nowLeftPx, height: 44 + visible.length * ROW_HEIGHT_PX }}
+                  style={{ left: win.startHour * pxPerHour + nowLeftPx, height: 44 + visible.length * rowH }}
                 >
                   <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-red-400/40" />
                 </div>
