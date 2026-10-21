@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { NewsReadyNotice } from './components/NewsReadyNotice';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
@@ -24,6 +24,9 @@ import { useRadioFavorites, toggleRadioFavorite } from './utils/radioFavorites';
 import { useCloudSync } from './hooks/useCloudSync';
 import { buildSuggestCandidates, addRecentSearch, loadRecentSearches, saveRecentSearches } from './utils/suggest';
 import { loadLastView, saveLastView, VALID_DESTINATIONS } from './nav/lastView';
+import type { CubeArticle } from './news-cube/adapter';
+
+const NewsCubePage = lazy(() => import('./news-cube/NewsCubePage'));
 
 const RECENTLY_PLAYED_STORAGE_KEY = 'ajn.recentlyPlayed.v1';
 const RECENTLY_PLAYED_LIMIT = 5;
@@ -62,6 +65,7 @@ function getDestinationFromHash(): Destination {
     case 'today': return 'today';
     case 'history': return 'history';
     case 'news': return 'news';
+    case 'news-cube': return 'news-cube';
     case 'radio':
     case 'ajn-radio': return 'radio';
     case 'dev':
@@ -230,6 +234,16 @@ export default function App() {
     handlePlayProgram(...args);
   }, [handlePlayProgram]);
 
+  const pauseExistingPlayerForCube = useCallback(() => {
+    document.querySelector<HTMLMediaElement>('#persistent-player audio, #persistent-player video')?.pause();
+  }, []);
+  const startCubeArticlePlayback = useCallback((article: CubeArticle) => {
+    const media = article.mediaReference;
+    if (!media) return;
+    // News Cube media, if introduced later, still enters the single App/player route.
+    handlePlayProgram(media.src, article.title, article.publisherName, 'video');
+  }, [handlePlayProgram]);
+
   const handleEpgSelect: PlayProgramCallback = useCallback((
     archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds
   ) => {
@@ -331,6 +345,16 @@ export default function App() {
         {destination === 'news' && (
           <div key="view-news" className="view-fade-in w-full">
             <RumbleNewsWall />
+          </div>
+        )}
+        {destination === 'news-cube' && (
+          <div key="view-news-cube" className="view-fade-in w-full">
+            <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading News Cube…</p>}>
+              <NewsCubePage
+                startExistingPlayback={startCubeArticlePlayback}
+                stopExistingPlayback={pauseExistingPlayerForCube}
+              />
+            </Suspense>
           </div>
         )}
         {destination === 'radio' && (
