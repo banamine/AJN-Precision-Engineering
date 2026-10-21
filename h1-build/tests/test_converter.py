@@ -9,6 +9,12 @@ def item(ident, title, cat, status="provisional"):
             "playback": {"type": "archive-embed", "url": "https://archive.org/embed/" + ident}}
 
 class Converter(unittest.TestCase):
+    def test_no_category_skip_list(self):
+        # Owner rule: Music/News/Radio/Unsorted are included (test_end_to_end proves they reach the output).
+        import extra_channels_lib
+        self.assertFalse(hasattr(extra_channels_lib, "category_excluded"))
+        self.assertFalse(hasattr(extra_channels_lib, "EXCLUDED_CATEGORY_RE"))
+
     def test_end_to_end(self):
         d = tempfile.mkdtemp(); os.makedirs(d + "/meta")
         base = {"schema": "ajn.extraChannelsManifest.v1", "channels": [

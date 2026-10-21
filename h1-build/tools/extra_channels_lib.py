@@ -10,11 +10,9 @@ ALLOWED_EXT = (".mp4", ".m4v", ".webm")
 ROW_KEYS = {"id", "identifier", "file", "title", "bytes", "durationSeconds", "thumb"}
 CHANNEL_KEYS = {"guideId", "id", "name", "group", "rows"}
 
-# ---- Rule 1: explicit category skip list (regex, case-insensitive) --------------------------------
-EXCLUDED_CATEGORY_RE = re.compile(r"music|news|radio|unsorted", re.I)
-
-def category_excluded(category):
-    return bool(EXCLUDED_CATEGORY_RE.search(category or ""))
+# ---- Category policy ---------------------------------------------------------------------------------
+# Owner rule: Music, News, Radio and Unsorted items are INCLUDED. There is deliberately no category
+# skip list here (a former unused `category_excluded()` encoded the opposite rule and was removed).
 
 # ---- IDs --------------------------------------------------------------------------------------------
 def row_id(identifier, file):
