@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import express from 'express';
-import { createArchiveHealth } from './server/archiveHealth.ts';
+import { createArchiveHealth, type ArchiveHealthLogEntry } from './server/archiveHealth.ts';
 import { startArchiveHealthProber } from './server/archiveHealthProbe.ts';
 import { registerArchiveHealthRoutes } from './server/archiveHealthRoutes.ts';
 import { fetchArchiveMediaWithRetry, resetArchiveFetchStateForTests } from './server/archiveFetch.ts';
@@ -18,7 +18,7 @@ for (let i = 0; i < 3; i++) health.record({ ts: clock, itemKey: `fixture-${i}`, 
 assert.equal(health.getStatus().state, 'degraded');
 
 {
-  const retryLines: Array<Record<string, unknown>> = [];
+  const retryLines: ArchiveHealthLogEntry[] = [];
   const retryHealth = createArchiveHealth({}, { now: () => clock, log: (line) => retryLines.push(line) });
   let physicalCalls = 0;
   resetArchiveFetchStateForTests();
@@ -45,7 +45,7 @@ assert.equal(health.getStatus().state, 'degraded');
 }
 
 {
-  const retrySuccessLines: Array<Record<string, unknown>> = [];
+  const retrySuccessLines: ArchiveHealthLogEntry[] = [];
   const retryHealth = createArchiveHealth({}, { now: () => clock, log: (line) => retrySuccessLines.push(line) });
   const statuses = [503, 503, 200, 206];
   let physicalCalls = 0;
@@ -74,7 +74,7 @@ assert.equal(health.getStatus().state, 'degraded');
 }
 
 {
-  const singleFlightLines: Array<Record<string, unknown>> = [];
+  const singleFlightLines: ArchiveHealthLogEntry[] = [];
   const singleFlightHealth = createArchiveHealth({}, { now: () => clock, log: (line) => singleFlightLines.push(line) });
   const recordOnce = createLogicalArchiveHealthRecorder(singleFlightHealth, '/services/search/v1/scrape?q=secret');
   recordOnce({ ts: clock, status: 200 });
@@ -105,7 +105,7 @@ assert.equal(health.getStatus().state, 'degraded');
 
 let intervalCallback: (() => void | Promise<void>) | null = null;
 const probeCalls: Array<{ url: string; method: string }> = [];
-const probeLines: Array<Record<string, unknown>> = [];
+const probeLines: ArchiveHealthLogEntry[] = [];
 const probeHealth = createArchiveHealth({}, { now: () => clock, log: (line) => probeLines.push(line) });
 for (let i = 0; i < 5; i++) {
   probeHealth.record({ ts: clock, itemKey: `probe-fixture-${i}`, kind: 'network', errorCode: 'ECONNRESET' });

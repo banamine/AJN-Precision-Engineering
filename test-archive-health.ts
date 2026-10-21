@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { createArchiveHealth, type ArchiveProbeOutcome } from './server/archiveHealth.ts';
+import { createArchiveHealth, type ArchiveHealthLogEntry, type ArchiveProbeOutcome } from './server/archiveHealth.ts';
 
 let clock = 100_000;
 const make = () => {
-  const lines: Array<Record<string, unknown>> = [];
+  const lines: ArchiveHealthLogEntry[] = [];
   const health = createArchiveHealth({}, { now: () => clock, log: (line) => lines.push(line) });
   return { health, lines };
 };

@@ -107,7 +107,7 @@ export function createArchiveStatusPoller(deps: ArchiveStatusPollerDeps): Archiv
 }
 
 const browserStatusStore = createArchiveStatusPoller({
-  fetchImpl: (...args) => fetch(...args),
+  fetchImpl: (input, init) => fetch(input, init),
   isVisible: () => typeof document === 'undefined' || document.visibilityState === 'visible',
   onVisibilityChange: (listener) => {
     if (typeof document === 'undefined') return () => {};
