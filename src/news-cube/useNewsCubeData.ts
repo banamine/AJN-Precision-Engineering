@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toCubeArticles, type CubeAdapterResult, type CubeDropCounts } from './adapter';
 
 export const NEWS_CUBE_CONFIG = {
-  digestUrl: import.meta.env.VITE_NEWS_DIGEST_URL || 'https://banamine.github.io/Daily-News-Digest-/data/current/data.json',
+  // Optional build-time override. `env` is absent outside Vite (tsx tests), so read it defensively.
+  digestUrl: (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_NEWS_DIGEST_URL
+    || 'https://banamine.github.io/Daily-News-Digest-/data/current/data.json',
   refreshMs: 10 * 60 * 1000,
   staleHours: 36,
 } as const;
