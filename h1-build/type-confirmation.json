@@ -1,0 +1,30 @@
+{
+ "archive-embed:audio": {
+  "confirmed": false,
+  "itemCount": 10,
+  "testItemId": "ajn-ia-u2-orpheum-theatre-boston-1981-wbcn",
+  "testUrl": "https://archive.org/embed/u2-orpheum-theatre-boston-1981-wbcn",
+  "note": "Set confirmed=true after this one item plays in the playlist; all items of this type then inherit it."
+ },
+ "archive-embed:unknown": {
+  "confirmed": false,
+  "itemCount": 202,
+  "testItemId": "ajn-ia-001-nypd-blue",
+  "testUrl": "https://archive.org/embed/001-nypd-blue",
+  "note": "Set confirmed=true after this one item plays in the playlist; all items of this type then inherit it."
+ },
+ "archive-embed:video": {
+  "confirmed": false,
+  "itemCount": 950,
+  "testItemId": "ajn-ia-mary59_gmx_414",
+  "testUrl": "https://archive.org/embed/mary59_gmx_414",
+  "note": "Set confirmed=true after this one item plays in the playlist; all items of this type then inherit it."
+ },
+ "direct-file:video": {
+  "confirmed": false,
+  "itemCount": 11,
+  "testItemId": "ajn-ia-04-for-as-long-as-the-waters-flow_202606--e03",
+  "testUrl": "https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/03%20-%20The%20Wagon%20and%20the%20Elephant.mp4",
+  "note": "Set confirmed=true after this one item plays in the playlist; all items of this type then inherit it."
+ }
+}

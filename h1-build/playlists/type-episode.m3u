@@ -1,0 +1,358 @@
+#EXTM3U
+# archive-embed entries are archive.org/embed pages: use an iframe-aware player.
+#EXTINF:-1 tvg-id="ajn-ia-001-nypd-blue" tvg-name="001 NYPD Blue" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",001 NYPD Blue
+https://archive.org/embed/001-nypd-blue
+#EXTINF:-1 tvg-id="ajn-ia-01-cheyenne-season-1-episodes-1-2-3_202402" tvg-name="01 Cheyenne Season 1 Episodes 1 2 3" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",01 Cheyenne Season 1 Episodes 1 2 3
+https://archive.org/embed/01-cheyenne-season-1-episodes-1-2-3_202402
+#EXTINF:-1 tvg-id="ajn-ia-01-s-1.-e-1-destination-tucson-1" tvg-name="01 S01E01 Destination Tucson 1" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",01 S01E01 Destination Tucson 1
+https://archive.org/embed/01-s-1.-e-1-destination-tucson-1
+#EXTINF:-1 tvg-id="ajn-ia-01-wacky-tv-contintued" tvg-name="01 Wacky TV Contintued" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",01 Wacky TV Contintued
+https://archive.org/embed/01-wacky-tv-contintued
+#EXTINF:-1 tvg-id="ajn-ia-0251114_1101" tvg-name="0251114 1101" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",0251114 1101
+https://archive.org/embed/0251114_1101
+#EXTINF:-1 tvg-id="ajn-ia-1-sixty-feet-below-s-1.-e-1" tvg-name="1 Sixty Feet Below S01E01" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",1 Sixty Feet Below S01E01
+https://archive.org/embed/1-sixty-feet-below-s-1.-e-1
+#EXTINF:-1 tvg-id="ajn-ia-05-all-in-the-family-1977" tvg-name="All In The Family - Rob Reiner Tribute (1977) The Marion Stokes VHS Archive Part 2" group-title="Classic TV" ajn-type="episode" ajn-status="ready",All In The Family - Rob Reiner Tribute (1977) The Marion Stokes VHS Archive Part 2
+https://archive.org/embed/05-all-in-the-family-1977
+#EXTINF:-1 tvg-id="ajn-ia-amazing-stories-1985-s-01" tvg-name="Amazing Stories 1985 S01" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Amazing Stories 1985 S01
+https://archive.org/embed/amazing-stories-1985-s-01
+#EXTINF:-1 tvg-id="ajn-ia-ArrestAndTrial1963" tvg-name="Arrest and Trial (1963-1964) complete series" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Arrest and Trial (1963-1964) complete series
+https://archive.org/embed/ArrestAndTrial1963
+#EXTINF:-1 tvg-id="ajn-ia-baywatch_202212" tvg-name="Baywatch" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Baywatch
+https://archive.org/embed/baywatch_202212
+#EXTINF:-1 tvg-id="ajn-ia-bbc-red-dwarf" tvg-name="BBC Red Dwarf" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",BBC Red Dwarf
+https://archive.org/embed/bbc-red-dwarf
+#EXTINF:-1 tvg-id="ajn-ia-beauty-and-the-beast-the-enchanted-christmas-1997" tvg-name="Beauty And The Beast The Enchanted Christmas 1997" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Beauty And The Beast The Enchanted Christmas 1997
+https://archive.org/embed/beauty-and-the-beast-the-enchanted-christmas-1997
+#EXTINF:-1 tvg-id="ajn-ia-bewitchedcomplete_202310" tvg-name="Bewitchedcomplete" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Bewitchedcomplete
+https://archive.org/embed/bewitchedcomplete_202310
+#EXTINF:-1 tvg-id="ajn-ia-BobbyEllery" tvg-name="Bobby Ellery" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Bobby Ellery
+https://archive.org/embed/BobbyEllery
+#EXTINF:-1 tvg-id="ajn-ia-BobbyGallery" tvg-name="Bobby Gallery" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Bobby Gallery
+https://archive.org/embed/BobbyGallery
+#EXTINF:-1 tvg-id="ajn-ia-breaking.-bad.-s-01-e-01.-pilot.-1080p.-h-264.-blu-ray" tvg-name="Breaking Bad S01E01 Pilot 1080p H 264 Blu Ray" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Breaking Bad S01E01 Pilot 1080p H 264 Blu Ray
+https://archive.org/embed/breaking.-bad.-s-01-e-01.-pilot.-1080p.-h-264.-blu-ray
+#EXTINF:-1 tvg-id="ajn-ia-brooklyn_south" tvg-name="Brooklyn South" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Brooklyn South
+https://archive.org/embed/brooklyn_south
+#EXTINF:-1 tvg-id="ajn-ia-Bullet_Scars_1942" tvg-name="Bullet Scars 1942" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Bullet Scars 1942
+https://archive.org/embed/Bullet_Scars_1942
+#EXTINF:-1 tvg-id="ajn-ia-cagney-lacey-s-01" tvg-name="Cagney & Lacey Season 1" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Cagney & Lacey Season 1
+https://archive.org/embed/cagney-lacey-s-01
+#EXTINF:8334 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e01" tvg-name="Centennial (1978) (580p) - 01 - Only the Rocks Live Forever" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 01 - Only the Rocks Live Forever
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/01%20-%20Only%20the%20Rocks%20Live%20Forever.mp4
+#EXTINF:5428 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e02" tvg-name="Centennial (1978) (580p) - 02 - The Yellow Apron" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 02 - The Yellow Apron
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/02%20-%20The%20Yellow%20Apron.mp4
+#EXTINF:5544 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e03" tvg-name="Centennial (1978) (580p) - 03 - The Wagon and the Elephant" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 03 - The Wagon and the Elephant
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/03%20-%20The%20Wagon%20and%20the%20Elephant.mp4
+#EXTINF:5542 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e04" tvg-name="Centennial (1978) (580p) - 04 - For as Long as the Waters Flow" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 04 - For as Long as the Waters Flow
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/04%20-%20For%20as%20Long%20as%20the%20Waters%20Flow.mp4
+#EXTINF:5569 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e05" tvg-name="Centennial (1978) (580p) - 05 - The Massacre" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 05 - The Massacre
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/05%20-%20The%20Massacre.mp4
+#EXTINF:5657 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e06" tvg-name="Centennial (1978) (580p) - 06 - The Longhorns" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 06 - The Longhorns
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/06%20-%20The%20Longhorns.mp4
+#EXTINF:5338 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e07" tvg-name="Centennial (1978) (580p) - 07 - The Shepherds" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 07 - The Shepherds
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/07%20-%20The%20Shepherds.mp4
+#EXTINF:5445 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e08" tvg-name="Centennial (1978) (580p) - 08 - The Storm" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 08 - The Storm
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/08%20-%20The%20Storm.mp4
+#EXTINF:5541 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e09" tvg-name="Centennial (1978) (580p) - 09 - The Crime" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 09 - The Crime
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/09%20-%20The%20Crime.mp4
+#EXTINF:5499 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e10" tvg-name="Centennial (1978) (580p) - 10 - The Winds of Fortune" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 10 - The Winds of Fortune
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/10%20-%20The%20Winds%20of%20Fortune.mp4
+#EXTINF:5698 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e11" tvg-name="Centennial (1978) (580p) - 11 - The Winds of Death" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 11 - The Winds of Death
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/11%20-%20The%20Winds%20of%20Death.mp4
+#EXTINF:-1 tvg-id="ajn-ia-Coronet-Blue-1967-Series" tvg-name="Coronet Blue (1967) - Complete Series" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Coronet Blue (1967) - Complete Series
+https://archive.org/embed/Coronet-Blue-1967-Series
+#EXTINF:-1 tvg-id="ajn-ia-david-copperfield-1986_202404" tvg-name="David Copperfield 1986" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",David Copperfield 1986
+https://archive.org/embed/david-copperfield-1986_202404
+#EXTINF:-1 tvg-id="ajn-ia-death-valley-days" tvg-name="Death Valley Days" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Death Valley Days
+https://archive.org/embed/death-valley-days
+#EXTINF:-1 tvg-id="ajn-ia-death-valley-days-s-01-e-04-the-lost-pegleg-mine" tvg-name="Death Valley Days" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Death Valley Days
+https://archive.org/embed/death-valley-days-s-01-e-04-the-lost-pegleg-mine
+#EXTINF:-1 tvg-id="ajn-ia-doctor-at-large-1971" tvg-name="Doctor At Large 1971" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Doctor At Large 1971
+https://archive.org/embed/doctor-at-large-1971
+#EXTINF:-1 tvg-id="ajn-ia-doctor-dolittle-complete-series-1970" tvg-name="Doctor Dolittle Complete Series 1970" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Doctor Dolittle Complete Series 1970
+https://archive.org/embed/doctor-dolittle-complete-series-1970
+#EXTINF:-1 tvg-id="ajn-ia-doctor-who-2005-s01" tvg-name="Doctor Who 2005 S01" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Doctor Who 2005 S01
+https://archive.org/embed/doctor-who-2005-s01
+#EXTINF:-1 tvg-id="ajn-ia-east_side_west_side" tvg-name="East Side West Side" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",East Side West Side
+https://archive.org/embed/east_side_west_side
+#EXTINF:-1 tvg-id="ajn-ia-EnemyAtTheDoorSeason1" tvg-name="Enemy At The Door Season1" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Enemy At The Door Season1
+https://archive.org/embed/EnemyAtTheDoorSeason1
+#EXTINF:-1 tvg-id="ajn-ia-EnemyAtTheDoorSeason2" tvg-name="Enemy At The Door Season2" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Enemy At The Door Season2
+https://archive.org/embed/EnemyAtTheDoorSeason2
+#EXTINF:-1 tvg-id="ajn-ia-episode-0-a_202402" tvg-name="Episode 0 A" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Episode 0 A
+https://archive.org/embed/episode-0-a_202402
+#EXTINF:-1 tvg-id="ajn-ia-friends-1994-2004-full-series_20250419" tvg-name="Friends 1994 2004 Full Series" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Friends 1994 2004 Full Series
+https://archive.org/embed/friends-1994-2004-full-series_20250419
+#EXTINF:-1 tvg-id="ajn-ia-ghost-squad-s-01e-03-hong-kong-story" tvg-name="Ghost Squad S01E03 Hong Kong Story" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Ghost Squad S01E03 Hong Kong Story
+https://archive.org/embed/ghost-squad-s-01e-03-hong-kong-story
+#EXTINF:-1 tvg-id="ajn-ia-happy.days.series" tvg-name="Happy Days Series" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Happy Days Series
+https://archive.org/embed/happy.days.series
+#EXTINF:-1 tvg-id="ajn-ia-hart-to-hart-s04" tvg-name="Hart To Hart Season 4" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Hart To Hart Season 4
+https://archive.org/embed/hart-to-hart-s04
+#EXTINF:-1 tvg-id="ajn-ia-hatfields-mc-coys-s-01-e-02-part-2" tvg-name="Hatfields Mc Coys S01E02 Part 2" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Hatfields Mc Coys S01E02 Part 2
+https://archive.org/embed/hatfields-mc-coys-s-01-e-02-part-2
+#EXTINF:-1 tvg-id="ajn-ia-HawaiianHeat" tvg-name="Hawaiian Heat" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Hawaiian Heat
+https://archive.org/embed/HawaiianHeat
+#EXTINF:-1 tvg-id="ajn-ia-hill.-street.-blues.-s-01" tvg-name="Hill Street Blues Season 1" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Hill Street Blues Season 1
+https://archive.org/embed/hill.-street.-blues.-s-01
+#EXTINF:-1 tvg-id="ajn-ia-hill.street.blues.s-04e-01.heres.adventure.heres.romance.sdtv.x-264" tvg-name="Hill street blues season 4" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Hill street blues season 4
+https://archive.org/embed/hill.street.blues.s-04e-01.heres.adventure.heres.romance.sdtv.x-264
+#EXTINF:-1 tvg-id="ajn-ia-hill.street.blues.s-07" tvg-name="Hill Street Blues Season 7" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Hill Street Blues Season 7
+https://archive.org/embed/hill.street.blues.s-07
+#EXTINF:-1 tvg-id="ajn-ia-HowTheGrinchStoleChristmas1966" tvg-name="How The Grinch Stole Christmas1966" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",How The Grinch Stole Christmas1966
+https://archive.org/embed/HowTheGrinchStoleChristmas1966
+#EXTINF:-1 tvg-id="ajn-ia-ironside-2013" tvg-name="Ironside 2013 Complete Season" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Ironside 2013 Complete Season
+https://archive.org/embed/ironside-2013
+#EXTINF:-1 tvg-id="ajn-ia-ironsideS03" tvg-name="Ironside Season 3" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Ironside Season 3
+https://archive.org/embed/ironsideS03
+#EXTINF:-1 tvg-id="ajn-ia-its_always_sunny_complete_archive" tvg-name="Its Always Sunny Complete Archive" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Its Always Sunny Complete Archive
+https://archive.org/embed/its_always_sunny_complete_archive
+#EXTINF:-1 tvg-id="ajn-ia-johnny_staccato" tvg-name="Johnny Staccato" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Johnny Staccato
+https://archive.org/embed/johnny_staccato
+#EXTINF:-1 tvg-id="ajn-ia-lostinspaceseason1episode1incolor_202004" tvg-name="Lostinspaceseason1episode1incolor" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Lostinspaceseason1episode1incolor
+https://archive.org/embed/lostinspaceseason1episode1incolor_202004
+#EXTINF:-1 tvg-id="ajn-ia-lou-grant-season-2" tvg-name="Lou Grant Season 2" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Lou Grant Season 2
+https://archive.org/embed/lou-grant-season-2
+#EXTINF:-1 tvg-id="ajn-ia-lou-grant-season-3" tvg-name="Lou Grant Season 3" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Lou Grant Season 3
+https://archive.org/embed/lou-grant-season-3
+#EXTINF:-1 tvg-id="ajn-ia-mamas-family-Lando18" tvg-name="Mamas Family Lando18" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Mamas Family Lando18
+https://archive.org/embed/mamas-family-Lando18
+#EXTINF:-1 tvg-id="ajn-ia-man-about-the-house-1973-76" tvg-name="Man About The House 1973 76" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Man About The House 1973 76
+https://archive.org/embed/man-about-the-house-1973-76
+#EXTINF:-1 tvg-id="ajn-ia-midsomer-murders-season1" tvg-name="Midsomer Murders Season1" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Midsomer Murders Season1
+https://archive.org/embed/midsomer-murders-season1
+#EXTINF:-1 tvg-id="ajn-ia-midsomer-murders-season5" tvg-name="Midsomer Murders Season5" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Midsomer Murders Season5
+https://archive.org/embed/midsomer-murders-season5
+#EXTINF:-1 tvg-id="ajn-ia-millennium-s-1-d-6" tvg-name="Millennium S 1 D 6" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Millennium S 1 D 6
+https://archive.org/embed/millennium-s-1-d-6
+#EXTINF:-1 tvg-id="ajn-ia-s-02-e-16-the-attacker_202309" tvg-name="N.Y.P. D (1967) - Full Series" group-title="Classic TV" ajn-type="episode" ajn-status="ready",N.Y.P. D (1967) - Full Series
+https://archive.org/embed/s-02-e-16-the-attacker_202309
+#EXTINF:-1 tvg-id="ajn-ia-NewhartSeries" tvg-name="Newhart Series" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Newhart Series
+https://archive.org/embed/NewhartSeries
+#EXTINF:-1 tvg-id="ajn-ia-NormMacDonaldArchive1" tvg-name="Norm Archive" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Norm Archive
+https://archive.org/embed/NormMacDonaldArchive1
+#EXTINF:-1 tvg-id="ajn-ia-orson-welles-great-mysteries" tvg-name="Orson Welles Great Mysteries" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Orson Welles Great Mysteries
+https://archive.org/embed/orson-welles-great-mysteries
+#EXTINF:-1 tvg-id="ajn-ia-partners-in-crime-e-01-pilot" tvg-name="Partners In Crime E 01 Pilot" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Partners In Crime E 01 Pilot
+https://archive.org/embed/partners-in-crime-e-01-pilot
+#EXTINF:-1 tvg-id="ajn-ia-perversions-of-science-HBO" tvg-name="Perversions Of Science HBO" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Perversions Of Science HBO
+https://archive.org/embed/perversions-of-science-HBO
+#EXTINF:-1 tvg-id="ajn-ia-peter-lorre-1904-1964" tvg-name="Peter Lorre 1904 1964" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Peter Lorre 1904 1964
+https://archive.org/embed/peter-lorre-1904-1964
+#EXTINF:-1 tvg-id="ajn-ia-PlanetOfTheApesTVSeries" tvg-name="PlanetOfTheApesTVSeries" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",PlanetOfTheApesTVSeries
+https://archive.org/embed/PlanetOfTheApesTVSeries
+#EXTINF:-1 tvg-id="ajn-ia-political-animals-e-01-pilot" tvg-name="Political Animals E 01 Pilot" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Political Animals E 01 Pilot
+https://archive.org/embed/political-animals-e-01-pilot
+#EXTINF:-1 tvg-id="ajn-ia-Privatehd.toStarTrek1966S011080pBluRayVC1DTSHDMA7.1HDBEE1" tvg-name="Privatehd toStarTrek1966S011080pBluRayVC1DTSHDMA7 1HDBEE1" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Privatehd toStarTrek1966S011080pBluRayVC1DTSHDMA7 1HDBEE1
+https://archive.org/embed/Privatehd.toStarTrek1966S011080pBluRayVC1DTSHDMA7.1HDBEE1
+#EXTINF:-1 tvg-id="ajn-ia-rising-damp-1974-78" tvg-name="Rising Damp 1974 78" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Rising Damp 1974 78
+https://archive.org/embed/rising-damp-1974-78
+#EXTINF:-1 tvg-id="ajn-ia-risingdamp" tvg-name="Risingdamp" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Risingdamp
+https://archive.org/embed/risingdamp
+#EXTINF:-1 tvg-id="ajn-ia-river-monsters-season-1-9-reupload" tvg-name="River Monsters Season 1 9 Reupload" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",River Monsters Season 1 9 Reupload
+https://archive.org/embed/river-monsters-season-1-9-reupload
+#EXTINF:-1 tvg-id="ajn-ia-robins-nest-1977-81" tvg-name="Robins Nest 1977 81" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Robins Nest 1977 81
+https://archive.org/embed/robins-nest-1977-81
+#EXTINF:-1 tvg-id="ajn-ia-rod-serling-and-the-twilight-zone" tvg-name="Rod Serling And The Twilight Zone" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Rod Serling And The Twilight Zone
+https://archive.org/embed/rod-serling-and-the-twilight-zone
+#EXTINF:-1 tvg-id="ajn-ia-Room-222-Season-1" tvg-name="Room 222 (1969) - Complete Season 1" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Room 222 (1969) - Complete Season 1
+https://archive.org/embed/Room-222-Season-1
+#EXTINF:-1 tvg-id="ajn-ia-Room-222-Season-4" tvg-name="Room 222 (1969) - Complete Season 4" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Room 222 (1969) - Complete Season 4
+https://archive.org/embed/Room-222-Season-4
+#EXTINF:-1 tvg-id="ajn-ia-s-06.7z" tvg-name="S 06 7z" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S 06 7z
+https://archive.org/embed/s-06.7z
+#EXTINF:-1 tvg-id="ajn-ia-s-01-e-01-x-02-x-03-saga-of-the-worlds" tvg-name="S01E01 X 02 X 03 Saga Of The Worlds" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S01E01 X 02 X 03 Saga Of The Worlds
+https://archive.org/embed/s-01-e-01-x-02-x-03-saga-of-the-worlds
+#EXTINF:-1 tvg-id="ajn-ia-s-01.-e-02-the-outlaw" tvg-name="S01E02 The Outlaw" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S01E02 The Outlaw
+https://archive.org/embed/s-01.-e-02-the-outlaw
+#EXTINF:-1 tvg-id="ajn-ia-s-01-e-04-the-night-of-sudden-death-color" tvg-name="S01E04 The Night Of Sudden Death Color" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S01E04 The Night Of Sudden Death Color
+https://archive.org/embed/s-01-e-04-the-night-of-sudden-death-color
+#EXTINF:-1 tvg-id="ajn-ia-s-01-e-29-indian-fever_202509" tvg-name="S01E29 Indian Fever" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S01E29 Indian Fever
+https://archive.org/embed/s-01-e-29-indian-fever_202509
+#EXTINF:-1 tvg-id="ajn-ia-s-01-e-32-crossroads" tvg-name="S01E32 Crossroads" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S01E32 Crossroads
+https://archive.org/embed/s-01-e-32-crossroads
+#EXTINF:-1 tvg-id="ajn-ia-s-02.-e-05-duel-at-florence" tvg-name="S02E05 Duel At Florence" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S02E05 Duel At Florence
+https://archive.org/embed/s-02.-e-05-duel-at-florence
+#EXTINF:-1 tvg-id="ajn-ia-s-03-e-02-episode-in-laredo" tvg-name="S03E02 Episode In Laredo" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S03E02 Episode In Laredo
+https://archive.org/embed/s-03-e-02-episode-in-laredo
+#EXTINF:-1 tvg-id="ajn-ia-s-04-e-01-the-fatalist" tvg-name="S04E01 The Fatalist" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S04E01 The Fatalist
+https://archive.org/embed/s-04-e-01-the-fatalist
+#EXTINF:-1 tvg-id="ajn-ia-s-05-e-02-education-of-sarah-jane" tvg-name="S05E02 Education Of Sarah Jane" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S05E02 Education Of Sarah Jane
+https://archive.org/embed/s-05-e-02-education-of-sarah-jane
+#EXTINF:-1 tvg-id="ajn-ia-s-06-e-01-genesis" tvg-name="S06E01 Genesis" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",S06E01 Genesis
+https://archive.org/embed/s-06-e-01-genesis
+#EXTINF:-1 tvg-id="ajn-ia-science-fiction-theatre-season-1" tvg-name="Science Fiction Theatre season 1 eps 1-13 (1955) full color" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Science Fiction Theatre season 1 eps 1-13 (1955) full color
+https://archive.org/embed/science-fiction-theatre-season-1
+#EXTINF:-1 tvg-id="ajn-ia-SeinfeldComplete" tvg-name="Seinfeld Complete" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Seinfeld Complete
+https://archive.org/embed/SeinfeldComplete
+#EXTINF:-1 tvg-id="ajn-ia-SergeantPrestonOfTheYukon-EmergencyAtScarefaceFlat" tvg-name="Sergeant Preston of the Yukon - Emergency at Scareface Flat" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Sergeant Preston of the Yukon - Emergency at Scareface Flat
+https://archive.org/embed/SergeantPrestonOfTheYukon-EmergencyAtScarefaceFlat
+#EXTINF:-1 tvg-id="ajn-ia-sesame-street_202306" tvg-name="Sesame Street" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Sesame Street
+https://archive.org/embed/sesame-street_202306
+#EXTINF:-1 tvg-id="ajn-ia-stargate-collection-1994-2018" tvg-name="Stargate Collection 1994 2018" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Stargate Collection 1994 2018
+https://archive.org/embed/stargate-collection-1994-2018
+#EXTINF:-1 tvg-id="ajn-ia-take-a-letter-mr-jones-1981" tvg-name="Take A Letter Mr Jones 1981" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Take A Letter Mr Jones 1981
+https://archive.org/embed/take-a-letter-mr-jones-1981
+#EXTINF:-1 tvg-id="ajn-ia-tales-of-tomorrow-1951-53" tvg-name="Tales Of Tomorrow 1951 53" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Tales Of Tomorrow 1951 53
+https://archive.org/embed/tales-of-tomorrow-1951-53
+#EXTINF:-1 tvg-id="ajn-ia-the-addams-family-volume-one-1992-uk-vhs" tvg-name="The Addams Family Volume One (1992 UK VHS)" group-title="Classic TV" ajn-type="episode" ajn-status="ready",The Addams Family Volume One (1992 UK VHS)
+https://archive.org/embed/the-addams-family-volume-one-1992-uk-vhs
+#EXTINF:-1 tvg-id="ajn-ia-the-felony-squad-1967-season-2" tvg-name="The Felony Squad (1967) - Complete Season 2" group-title="Classic TV" ajn-type="episode" ajn-status="ready",The Felony Squad (1967) - Complete Season 2
+https://archive.org/embed/the-felony-squad-1967-season-2
+#EXTINF:-1 tvg-id="ajn-ia-the_green_hornet" tvg-name="The Green Hornet" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",The Green Hornet
+https://archive.org/embed/the_green_hornet
+#EXTINF:-1 tvg-id="ajn-ia-the-green-promise-restored.-1949" tvg-name="The Green Promise Restored 1949" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",The Green Promise Restored 1949
+https://archive.org/embed/the-green-promise-restored.-1949
+#EXTINF:-1 tvg-id="ajn-ia-the-incredible-hulk-vhs_volumes" tvg-name="The Incredible Hulk VHS Volumes" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",The Incredible Hulk VHS Volumes
+https://archive.org/embed/the-incredible-hulk-vhs_volumes
+#EXTINF:-1 tvg-id="ajn-ia-the-new-statesman-1987-94" tvg-name="The New Statesman 1987 94" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",The New Statesman 1987 94
+https://archive.org/embed/the-new-statesman-1987-94
+#EXTINF:-1 tvg-id="ajn-ia-the-time-tunnel" tvg-name="The Time Tunnel" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",The Time Tunnel
+https://archive.org/embed/the-time-tunnel
+#EXTINF:-1 tvg-id="ajn-ia-turner_video_104946" tvg-name="The Virginian" group-title="Classic TV" ajn-type="episode" ajn-status="ready",The Virginian
+https://archive.org/embed/turner_video_104946
+#EXTINF:-1 tvg-id="ajn-ia-thethinbluelinecomplete" tvg-name="Thethinbluelinecomplete" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Thethinbluelinecomplete
+https://archive.org/embed/thethinbluelinecomplete
+#EXTINF:-1 tvg-id="ajn-ia-thomas-and-sarah-1-of-13-birds-of-a-feather" tvg-name="Thomas And Sarah 1 Of 13 Birds Of A Feather" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Thomas And Sarah 1 Of 13 Birds Of A Feather
+https://archive.org/embed/thomas-and-sarah-1-of-13-birds-of-a-feather
+#EXTINF:-1 tvg-id="ajn-ia-s-01-e-26-papa-benjamin" tvg-name="Thriller (1960) - Complete Series" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Thriller (1960) - Complete Series
+https://archive.org/embed/s-01-e-26-papa-benjamin
+#EXTINF:-1 tvg-id="ajn-ia-where-no-man-has-gone-before" tvg-name="Where No Man Has Gone Before" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Where No Man Has Gone Before
+https://archive.org/embed/where-no-man-has-gone-before
+#EXTINF:-1 tvg-id="ajn-ia-w-i-l-f-r-e-d" tvg-name="Wilfred (2011–2014)" group-title="Classic TV" ajn-type="episode" ajn-status="ready",Wilfred (2011–2014)
+https://archive.org/embed/w-i-l-f-r-e-d
+#EXTINF:-1 tvg-id="ajn-ia-wkrp-s-1-e-20-young-master-carlson" tvg-name="WKRP in Cincinnati" group-title="Classic TV" ajn-type="episode" ajn-status="ready",WKRP in Cincinnati
+https://archive.org/embed/wkrp-s-1-e-20-young-master-carlson
+#EXTINF:-1 tvg-id="ajn-ia-wonderfalls_2004" tvg-name="Wonderfalls 2004" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Wonderfalls 2004
+https://archive.org/embed/wonderfalls_2004
+#EXTINF:-1 tvg-id="ajn-ia-y_20251113" tvg-name="Y" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Y
+https://archive.org/embed/y_20251113
+#EXTINF:-1 tvg-id="ajn-ia-Y2mate.comAndyKaufmanOrsonWellesInterview1982XrGlWAFy1LU360p" tvg-name="Y2mate comAndyKaufmanOrsonWellesInterview1982XrGlWAFy1LU360p" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Y2mate comAndyKaufmanOrsonWellesInterview1982XrGlWAFy1LU360p
+https://archive.org/embed/Y2mate.comAndyKaufmanOrsonWellesInterview1982XrGlWAFy1LU360p
+#EXTINF:-1 tvg-id="ajn-ia-you-wish-1997-1998" tvg-name="You Wish 1997 1998" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",You Wish 1997 1998
+https://archive.org/embed/you-wish-1997-1998
+#EXTINF:-1 tvg-id="ajn-ia-the-life-and-legend-of-wyatt-earp-s-02-e-39-the-time-for-all-good-men" tvg-name="𝕋𝕙𝕖 𝕃𝕚𝕗𝕖 𝔸𝕟𝕕 𝕃𝕖𝕘𝕖𝕟𝕕 𝕆𝕗 𝕎𝕪𝕒𝕥𝕥 𝔼𝕒𝕣𝕡" group-title="Classic TV" ajn-type="episode" ajn-status="ready",𝕋𝕙𝕖 𝕃𝕚𝕗𝕖 𝔸𝕟𝕕 𝕃𝕖𝕘𝕖𝕟𝕕 𝕆𝕗 𝕎𝕪𝕒𝕥𝕥 𝔼𝕒𝕣𝕡
+https://archive.org/embed/the-life-and-legend-of-wyatt-earp-s-02-e-39-the-time-for-all-good-men
+#EXTINF:-1 tvg-id="ajn-ia-TheAvengersS4E7" tvg-name="'The Avengers' - The Murder Market (S04E07)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",'The Avengers' - The Murder Market (S04E07)
+https://archive.org/embed/TheAvengersS4E7
+#EXTINF:-1 tvg-id="ajn-ia-turn-on-ep1" tvg-name="'Turn-On' Episode 1 (1969)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",'Turn-On' Episode 1 (1969)
+https://archive.org/embed/turn-on-ep1
+#EXTINF:-1 tvg-id="ajn-ia-turn-on-ep2" tvg-name="'Turn-On' Episode 2 (1969, Unaired)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",'Turn-On' Episode 2 (1969, Unaired)
+https://archive.org/embed/turn-on-ep2
+#EXTINF:-1 tvg-id="ajn-ia-personal-journey-through-movies-s-01e-01-e-02" tvg-name="A Personal Journey with Martin Scorsese Through American Movies" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",A Personal Journey with Martin Scorsese Through American Movies
+https://archive.org/embed/personal-journey-through-movies-s-01e-01-e-02
+#EXTINF:-1 tvg-id="ajn-ia-battlestar.-galactica.-s-1.-e-1" tvg-name="Battlestar Galactica S 1 E 1" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Battlestar Galactica S 1 E 1
+https://archive.org/embed/battlestar.-galactica.-s-1.-e-1
+#EXTINF:-1 tvg-id="ajn-ia-Big_Day_2006" tvg-name="Big Day (2006-2007) complete series" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",Big Day (2006-2007) complete series
+https://archive.org/embed/Big_Day_2006
+#EXTINF:-1 tvg-id="ajn-ia-billy.-the.-kid-s-01-e-01" tvg-name="Billy. The. Kid" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",Billy. The. Kid
+https://archive.org/embed/billy.-the.-kid-s-01-e-01
+#EXTINF:-1 tvg-id="ajn-ia-bramwell-s-01-e-01-episode-1" tvg-name="Bramwell" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",Bramwell
+https://archive.org/embed/bramwell-s-01-e-01-episode-1
+#EXTINF:-1 tvg-id="ajn-ia-cisco-kid-s-01-e-08-convict-story" tvg-name="Cisco Kid" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",Cisco Kid
+https://archive.org/embed/cisco-kid-s-01-e-08-convict-story
+#EXTINF:-1 tvg-id="ajn-ia-dark-shadows_202210" tvg-name="Dark Shadows(The Complete Series)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Dark Shadows(The Complete Series)
+https://archive.org/embed/dark-shadows_202210
+#EXTINF:-1 tvg-id="ajn-ia-Day_by_Day_1988" tvg-name="Day by Day (1988-1989) complete series" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",Day by Day (1988-1989) complete series
+https://archive.org/embed/Day_by_Day_1988
+#EXTINF:-1 tvg-id="ajn-ia-1-death-valley-days-s-1-e-1-how-death-valley-got-its-name" tvg-name="Death Valley Days Seasons 1and 2 How Death Valley Got Its Name" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Death Valley Days Seasons 1and 2 How Death Valley Got Its Name
+https://archive.org/embed/1-death-valley-days-s-1-e-1-how-death-valley-got-its-name
+#EXTINF:-1 tvg-id="ajn-ia-decoy-s-01-e-26-earthbound-satellite" tvg-name="Decoy 1957" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",Decoy 1957
+https://archive.org/embed/decoy-s-01-e-26-earthbound-satellite
+#EXTINF:-1 tvg-id="ajn-ia-dilbert" tvg-name="Dilbert: The Complete Series [DVD ISO NTSC]" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Dilbert: The Complete Series [DVD ISO NTSC]
+https://archive.org/embed/dilbert
+#EXTINF:-1 tvg-id="ajn-ia-ethics-in-america" tvg-name="Ethics in America I ★ 'Lost' Annenberg Series - Complete Series" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Ethics in America I ★ 'Lost' Annenberg Series - Complete Series
+https://archive.org/embed/ethics-in-america
+#EXTINF:-1 tvg-id="ajn-ia-s-01-e-00-pilot" tvg-name="First of the Summer Wine (1988-1989) complete series" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",First of the Summer Wine (1988-1989) complete series
+https://archive.org/embed/s-01-e-00-pilot
+#EXTINF:-1 tvg-id="ajn-ia-106itssports_201911" tvg-name="Hey Vern, It's Ernest Complete Series (1988)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Hey Vern, It's Ernest Complete Series (1988)
+https://archive.org/embed/106itssports_201911
+#EXTINF:-1 tvg-id="ajn-ia-highway-patrol-s-01-e-18" tvg-name="Highway Patrol S01" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Highway Patrol S01
+https://archive.org/embed/highway-patrol-s-01-e-18
+#EXTINF:-1 tvg-id="ajn-ia-jake.-and.-the.-fatman.-s-01" tvg-name="Jake And The Fatman Season 1" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Jake And The Fatman Season 1
+https://archive.org/embed/jake.-and.-the.-fatman.-s-01
+#EXTINF:-1 tvg-id="ajn-ia-journey-to-the-unknown-tv-series" tvg-name="Journey to the Unknown TV Series" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Journey to the Unknown TV Series
+https://archive.org/embed/journey-to-the-unknown-tv-series
+#EXTINF:-1 tvg-id="ajn-ia-mpfc-remastered_20210305_1553" tvg-name="Monty Python's Flying Circus: The Complete Series 1 to 4 [BLU-RAY] [SD]" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Monty Python's Flying Circus: The Complete Series 1 to 4 [BLU-RAY] [SD]
+https://archive.org/embed/mpfc-remastered_20210305_1553
+#EXTINF:-1 tvg-id="ajn-ia-naked-city-season-1-post-hack" tvg-name="Naked City Season 1, POST HACK" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Naked City Season 1, POST HACK
+https://archive.org/embed/naked-city-season-1-post-hack
+#EXTINF:-1 tvg-id="ajn-ia-naked-city-season-2-post-hack" tvg-name="Naked City Season 2, POST HACK" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Naked City Season 2, POST HACK
+https://archive.org/embed/naked-city-season-2-post-hack
+#EXTINF:-1 tvg-id="ajn-ia-naked-city-season-3-post-hack" tvg-name="Naked City Season 3, POST HACK" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Naked City Season 3, POST HACK
+https://archive.org/embed/naked-city-season-3-post-hack
+#EXTINF:-1 tvg-id="ajn-ia-naked-city-season-4-post-hack" tvg-name="Naked City Season 4, POST HACK" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Naked City Season 4, POST HACK
+https://archive.org/embed/naked-city-season-4-post-hack
+#EXTINF:-1 tvg-id="ajn-ia-Ned_and_Stacey" tvg-name="Ned and Stacey (1995-1997) complete series" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",Ned and Stacey (1995-1997) complete series
+https://archive.org/embed/Ned_and_Stacey
+#EXTINF:-1 tvg-id="ajn-ia-one-step-beyond-season-1-1959" tvg-name="One Step Beyond - Season 1 (1959)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",One Step Beyond - Season 1 (1959)
+https://archive.org/embed/one-step-beyond-season-1-1959
+#EXTINF:-1 tvg-id="ajn-ia-mercury-theater-1938-07-18-2-treasure-island" tvg-name="Orson Welles Compilation - 126 episodes of Orson Welles' Old Time Radio Shows" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Orson Welles Compilation - 126 episodes of Orson Welles' Old Time Radio Shows
+https://archive.org/embed/mercury-theater-1938-07-18-2-treasure-island
+#EXTINF:-1 tvg-id="ajn-ia-101-panic-no-warning-the-priest" tvg-name="Panic TV Series" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Panic TV Series
+https://archive.org/embed/101-panic-no-warning-the-priest
+#EXTINF:-1 tvg-id="ajn-ia-ramblin-rod-full-episode-2-8-84" tvg-name="Ramblin' Rod (Full Episode) - 2/8/84" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Ramblin' Rod (Full Episode) - 2/8/84
+https://archive.org/embed/ramblin-rod-full-episode-2-8-84
+#EXTINF:-1 tvg-id="ajn-ia-ripcord.-s-01-e-16" tvg-name="Ripcord. S01" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Ripcord. S01
+https://archive.org/embed/ripcord.-s-01-e-16
+#EXTINF:-1 tvg-id="ajn-ia-ripping-yarns-1976-79" tvg-name="Ripping Yarns (1976 - 79) Complete Series" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Ripping Yarns (1976 - 79) Complete Series
+https://archive.org/embed/ripping-yarns-1976-79
+#EXTINF:-1 tvg-id="ajn-ia-soup-or-sonic" tvg-name="Road Runner (All Episodes)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Road Runner (All Episodes)
+https://archive.org/embed/soup-or-sonic
+#EXTINF:-1 tvg-id="ajn-ia-rocky-and-bullwinkle-s-04-e-09" tvg-name="Rocky And Bullwinkle S04E09" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Rocky And Bullwinkle S04E09
+https://archive.org/embed/rocky-and-bullwinkle-s-04-e-09
+#EXTINF:-1 tvg-id="ajn-ia-Rooksby" tvg-name="S01E01" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",S01E01
+https://archive.org/embed/Rooksby
+#EXTINF:-1 tvg-id="ajn-ia-sf-theatre-s-01-e-16-stones-began-to-move" tvg-name="Science Fiction Theatre S01" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Science Fiction Theatre S01
+https://archive.org/embed/sf-theatre-s-01-e-16-stones-began-to-move
+#EXTINF:-1 tvg-id="ajn-ia-sf-theatre-s-02-e-33-facsimile" tvg-name="Science Fiction Theatre S02" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Science Fiction Theatre S02
+https://archive.org/embed/sf-theatre-s-02-e-33-facsimile
+#EXTINF:-1 tvg-id="ajn-ia-sherlock-holmes-1954-s-01-e-09-the-case-of-harry-crocker" tvg-name="Sherlock Holmes 1954 S01E09 The Case Of Harry Crocker" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Sherlock Holmes 1954 S01E09 The Case Of Harry Crocker
+https://archive.org/embed/sherlock-holmes-1954-s-01-e-09-the-case-of-harry-crocker
+#EXTINF:-1 tvg-id="ajn-ia-sherlock-holmes-1955-s-01-e-24-the-case-of-the-night-train-riddle-web-arf" tvg-name="Sherlock Holmes 1955 S01E24 The Case Of The Night Train Riddle , WEB '' ARF''" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Sherlock Holmes 1955 S01E24 The Case Of The Night Train Riddle , WEB '' ARF''
+https://archive.org/embed/sherlock-holmes-1955-s-01-e-24-the-case-of-the-night-train-riddle-web-arf
+#EXTINF:-1 tvg-id="ajn-ia-sherlock-holmes-1955-s-01-e-27-the-case-of-the-perfect-husband-1955-05-20-color-mys-susp" tvg-name="Sherlock Holmes 1955 S01E27 The Case Of The Perfect Husband (1955 05 20 Color, Mys Susp)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Sherlock Holmes 1955 S01E27 The Case Of The Perfect Husband (1955 05 20 Color, Mys Susp)
+https://archive.org/embed/sherlock-holmes-1955-s-01-e-27-the-case-of-the-perfect-husband-1955-05-20-color-mys-susp
+#EXTINF:-1 tvg-id="ajn-ia-strange-paradise-episode-01" tvg-name="Strange Paradise 1969 S01" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Strange Paradise 1969 S01
+https://archive.org/embed/strange-paradise-episode-01
+#EXTINF:-1 tvg-id="ajn-ia-t.-h.-e.-cat-s-01-e-01" tvg-name="T.H.E. Cat" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",T.H.E. Cat
+https://archive.org/embed/t.-h.-e.-cat-s-01-e-01
+#EXTINF:-1 tvg-id="ajn-ia-the-avengers-s-4e-1" tvg-name="The Avengers - Complete Season 4 (24 Episodes) (restored, colorized) (1966, TV series)" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Avengers - Complete Season 4 (24 Episodes) (restored, colorized) (1966, TV series)
+https://archive.org/embed/the-avengers-s-4e-1
+#EXTINF:-1 tvg-id="ajn-ia-the.avengers.1965.s04e09.the.hour.that.never.was" tvg-name="The Avengers 1965 S04E09 The Hour That Never Was" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Avengers 1965 S04E09 The Hour That Never Was
+https://archive.org/embed/the.avengers.1965.s04e09.the.hour.that.never.was
+#EXTINF:-1 tvg-id="ajn-ia-the.avengers.1966.s04e15.room.without.a.view" tvg-name="The Avengers 1966 S04E15 Room Without a View" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Avengers 1966 S04E15 Room Without a View
+https://archive.org/embed/the.avengers.1966.s04e15.room.without.a.view
+#EXTINF:-1 tvg-id="ajn-ia-the.avengers.1966.s04e22.what.the.butler.saw" tvg-name="The Avengers 1966 S04E22 What the Butler Saw" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Avengers 1966 S04E22 What the Butler Saw
+https://archive.org/embed/the.avengers.1966.s04e22.what.the.butler.saw
+#EXTINF:-1 tvg-id="ajn-ia-theavengerss04e03.the.cybernauts" tvg-name="The Avengers S04E03 The Cybernauts" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Avengers S04E03 The Cybernauts
+https://archive.org/embed/theavengerss04e03.the.cybernauts
+#EXTINF:-1 tvg-id="ajn-ia-theavengers.s04e05.castle.death" tvg-name="The Avengers S04E05 Castle De'ath" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Avengers S04E05 Castle De'ath
+https://archive.org/embed/theavengers.s04e05.castle.death
+#EXTINF:-1 tvg-id="ajn-ia-the.avengers.s05e12.the.superlative.seven" tvg-name="The Avengers S05E12 The Superlative Seven" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Avengers S05E12 The Superlative Seven
+https://archive.org/embed/the.avengers.s05e12.the.superlative.seven
+#EXTINF:-1 tvg-id="ajn-ia-the-honeymooners-DVD" tvg-name="The Honeymooners S01 Original 39 Episodes" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Honeymooners S01 Original 39 Episodes
+https://archive.org/embed/the-honeymooners-DVD
+#EXTINF:-1 tvg-id="ajn-ia-face-of-the-dead-is-low-360p-1" tvg-name="The Inner Sanctum TV Series" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Inner Sanctum TV Series
+https://archive.org/embed/face-of-the-dead-is-low-360p-1
+#EXTINF:-1 tvg-id="ajn-ia-TheJackBennyProgramSeason2Episode1Aired11041951" tvg-name="The Jack Benny Program, Season 2, Episode 1 â Aired: 11/04/1951" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Jack Benny Program, Season 2, Episode 1 â Aired: 11/04/1951
+https://archive.org/embed/TheJackBennyProgramSeason2Episode1Aired11041951
+#EXTINF:-1 tvg-id="ajn-ia-the-psych-ward-episode-42" tvg-name="The Psych Ward Episode 42" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",The Psych Ward Episode 42
+https://archive.org/embed/the-psych-ward-episode-42
+#EXTINF:-1 tvg-id="ajn-ia-the-sandbaggers-1978-80" tvg-name="The Sandbaggers (1978 - 80) Complete Series" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Sandbaggers (1978 - 80) Complete Series
+https://archive.org/embed/the-sandbaggers-1978-80
+#EXTINF:-1 tvg-id="ajn-ia-TheSmurfsChristmasSpecialTisTheSeasonToBeSmurfy1982" tvg-name="The Smurfs Christmas Special & Tis The Season To Be Smurfy" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",The Smurfs Christmas Special & Tis The Season To Be Smurfy
+https://archive.org/embed/TheSmurfsChristmasSpecialTisTheSeasonToBeSmurfy1982
+#EXTINF:-1 tvg-id="ajn-ia-the-texan-s-01-e-02-the-man-with-the-solid-gold-star" tvg-name="The Texan" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",The Texan
+https://archive.org/embed/the-texan-s-01-e-02-the-man-with-the-solid-gold-star
+#EXTINF:-1 tvg-id="ajn-ia-worst_witch_weirdsister_college" tvg-name="The Worst Witch (1998-2001) + Weirdsister College (2001) complete series" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",The Worst Witch (1998-2001) + Weirdsister College (2001) complete series
+https://archive.org/embed/worst_witch_weirdsister_college
+#EXTINF:-1 tvg-id="ajn-ia-Tom_Terrific" tvg-name="Tom Terrific (1957) complete series" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",Tom Terrific (1957) complete series
+https://archive.org/embed/Tom_Terrific
+#EXTINF:-1 tvg-id="ajn-ia-topper-tv-series" tvg-name="Topper TV Series" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",Topper TV Series
+https://archive.org/embed/topper-tv-series
+#EXTINF:-1 tvg-id="ajn-ia-truedetective_202406" tvg-name="True Detective Season 1 Interviews" group-title="Unsorted - review" ajn-type="episode" ajn-status="provisional",True Detective Season 1 Interviews
+https://archive.org/embed/truedetective_202406
+#EXTINF:-1 tvg-id="ajn-ia-burkes-law-s-02-e-30-who-killed-the-jackpot-intro-honey-west" tvg-name="༺ 𝓗𝓸𝓷𝓮𝔂 𝓦𝓮𝓼𝓽 ༻" group-title="Unsorted - review" ajn-type="episode" ajn-status="ready",༺ 𝓗𝓸𝓷𝓮𝔂 𝓦𝓮𝓼𝓽 ༻
+https://archive.org/embed/burkes-law-s-02-e-30-who-killed-the-jackpot-intro-honey-west
