@@ -13,6 +13,9 @@ import { loadAjnFeeds } from "../services/ajnFeeds";
 import { buildRadioCatalog } from "../utils/ajnRadioCatalog";
 import { pickLatestFullShows, type FeedItemLike } from "../utils/latestFullShows";
 import { CaptionPanel } from "../news/captions/CaptionPanel";
+import type { ProxyErrorBody } from "../utils/archiveFailure";
+import { MAX_CONSECUTIVE_PLAYBACK_FAILURES, shouldStopAfterConsecutiveFailures } from "../utils/playbackFailurePolicy";
+import { archiveIdentifierFromPath } from "../utils/thumbnail";
 
 /** Readable, stable id for a show title: "<channelId>/<title-slug>". Used in logs
  *  and telemetry so a failing playback can be found by name. */
@@ -48,15 +51,17 @@ export function titleIdOf(channelId: string | undefined, title: string | undefin
 
 // Playlists often contain a few items Archive has restricted or removed; skip
 // past them quickly, but give up after a long run so a dead channel stops.
-const MAX_CONSECUTIVE_FAILURES = 20;
 const SKIP_AFTER_ERROR_MS = 1500;
 // After a long run of failures (offline?) keep trying, but slowly: playback is never left idle.
 const SLOW_RETRY_MS = 30_000;
 
 export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite }: any) {
   const failuresRef = useRef(0);
+  const failureContextRef = useRef<ProxyErrorBody | null>(null);
+  const stoppedInstanceRef = useRef<unknown>(null);
   const playerWrapRef = useRef<HTMLDivElement | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
+  const [playbackStopped, setPlaybackStopped] = useState(false);
   const skipTimerRef = useRef<number | null>(null);
 
   // 24/7 continuity: when a program ends (or fails), play the next program on the
@@ -271,7 +276,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     if (!pick) return false;
     if (pick.kind === "segment") {
       const { cur, seg } = pick;
-      reportTelemetry({ event: reason === "error" ? "playback.skip_failed" : "playback.segment", guideId: cur.guideId ?? null, channelId: cur.channelId ?? null,
+      reportTelemetry({ event: "playback.segment", guideId: cur.guideId ?? null, channelId: cur.channelId ?? null,
         programId: cur.id ?? null, titleId: titleIdOf(cur.channelId, cur.title), sourceId: cur.sourceId ?? null, assetId: cur.assetId ?? null, mediaPath: seg.archivePath ?? seg.mediaUrl ?? null });
       onSelectProgram(seg.archivePath || seg.mediaUrl, cur.title, cur.description, cur.mediaType,
         cur.channelId, cur.guideId, cur.id, cur.sourceId ?? cur.metadata?.sourceId, cur.assetId ?? cur.metadata?.assetId);
@@ -282,7 +287,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     const assetId = next.assetId ?? next.metadata?.assetId;
     if (!(next.archivePath || next.mediaUrl)) return false;
     reportTelemetry({
-      event: reason === "error" ? "playback.skip_failed" : nextIndex === 0 ? "playback.loop" : "playback.advance",
+      event: nextIndex === 0 ? "playback.loop" : "playback.advance",
       guideId: next.guideId ?? null,
       channelId: next.channelId ?? null,
       programId: next.id ?? null,
@@ -300,17 +305,38 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
    *  cannot start (offline), retry slowly instead of stopping. One transition per playback instance. */
   const advance = useCallback(async (reason: "ended" | "error") => {
     const instance = nowPlaying;
-    if (!instance || advancingForRef.current === instance) return;
+    if (!instance || latestRef.current !== instance || advancingForRef.current === instance) return;
     advancingForRef.current = instance;
     const stale = () => latestRef.current !== instance;
-    if (reason === "error") failedRef.current.add(targetKey(instance));
+    if (reason === "error") {
+      failedRef.current.add(targetKey(instance));
+      const mediaPath = instance.archivePath ?? instance.src ?? null;
+      const proxyFailure = failureContextRef.current;
+      reportTelemetry({
+        event: "playback.skip_failed",
+        guideId: instance.guideId ?? null,
+        channelId: instance.channelId ?? null,
+        programId: instance.programId ?? null,
+        titleId: titleIdOf(instance.channelId, instance.title),
+        sourceId: instance.sourceId ?? null,
+        assetId: instance.assetId ?? null,
+        archiveIdentifier: archiveIdentifierFromPath(mediaPath),
+        mediaPath,
+        proxyRequestId: proxyFailure?.proxyRequestId ?? null,
+        httpStatus: proxyFailure?.upstreamStatus ?? null,
+        reason: proxyFailure?.errorCode ?? null,
+      });
+      failureContextRef.current = null;
+    }
     const inFallback = fallbackKeyRef.current !== null && fallbackKeyRef.current === targetKey(instance);
     if (!inFallback && await nextInList(instance, reason, stale).catch(() => false)) return;
     if (stale()) return;
     if (await continueElsewhere(instance, stale).catch(() => false)) return;
     if (stale()) return;
     reportTelemetry({ event: "playback.continuity_exhausted", guideId: instance.guideId ?? null, channelId: instance.channelId ?? null, programId: instance.programId ?? null,
-      titleId: titleIdOf(instance.channelId, instance.title), sourceId: null, assetId: null, mediaPath: instance.archivePath ?? instance.src ?? null });
+      titleId: titleIdOf(instance.channelId, instance.title), sourceId: instance.sourceId ?? null, assetId: instance.assetId ?? null,
+      archiveIdentifier: archiveIdentifierFromPath(instance.archivePath ?? instance.src), mediaPath: instance.archivePath ?? instance.src ?? null,
+      proxyRequestId: failureContextRef.current?.proxyRequestId ?? null });
     // Visible, honest, and not final: try again shortly (cleared when something else starts playing).
     retryTimerRef.current = window.setTimeout(() => {
       if (latestRef.current !== instance) return;
@@ -334,16 +360,58 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     path: nowPlaying.archivePath ?? nowPlaying.src,
   }) : null, [nowPlaying]);
 
-  const onError = useCallback((err: MediaError | null) => {
+  const onError = useCallback((err: MediaError | null, proxyFailure?: ProxyErrorBody | null) => {
     console.error("[AJN PLAYBACK] error", meta, err);
-    failuresRef.current += 1;
-    // Skip a broken item so the channel keeps playing, but stop after a run of
-    // failures instead of hammering the source.
-    // Every item advances on failure (not only channel items); after a long run of failures, keep going slowly.
     if (!nowPlaying) return;
-    const delay = failuresRef.current > MAX_CONSECUTIVE_FAILURES ? SLOW_RETRY_MS : SKIP_AFTER_ERROR_MS;
+    failureContextRef.current = proxyFailure ?? null;
+    failuresRef.current += 1;
+    if (shouldStopAfterConsecutiveFailures(failuresRef.current)) {
+      if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current);
+      skipTimerRef.current = null;
+      const failedMedia = playerWrapRef.current?.querySelector("audio, video") as HTMLMediaElement | null;
+      failedMedia?.pause();
+      stoppedInstanceRef.current = nowPlaying;
+      setPlaybackStopped(true);
+      reportTelemetry({
+        event: "playback.stopped_after_failures",
+        guideId: nowPlaying.guideId ?? null,
+        channelId: nowPlaying.channelId ?? null,
+        programId: nowPlaying.programId ?? null,
+        titleId: titleIdOf(nowPlaying.channelId, nowPlaying.title),
+        sourceId: nowPlaying.sourceId ?? null,
+        assetId: nowPlaying.assetId ?? null,
+        archiveIdentifier: archiveIdentifierFromPath(nowPlaying.archivePath ?? nowPlaying.src),
+        mediaPath: nowPlaying.archivePath ?? nowPlaying.src ?? null,
+        proxyRequestId: failureContextRef.current?.proxyRequestId ?? null,
+        reason: `consecutive_failures_${MAX_CONSECUTIVE_PLAYBACK_FAILURES}`,
+      });
+      return;
+    }
+    const delay = SKIP_AFTER_ERROR_MS;
     skipTimerRef.current = window.setTimeout(() => void advance("error"), delay);
   }, [advance, meta, nowPlaying]);
+
+  useEffect(() => {
+    if (!playbackStopped || stoppedInstanceRef.current === nowPlaying) return;
+    failuresRef.current = 0;
+    failureContextRef.current = null;
+    failedRef.current.clear();
+    advancingForRef.current = null;
+    stoppedInstanceRef.current = null;
+    setPlaybackStopped(false);
+  }, [nowPlaying, playbackStopped]);
+
+  const retryCurrent = useCallback(() => {
+    failuresRef.current = 0;
+    failureContextRef.current = null;
+    stoppedInstanceRef.current = null;
+    failedRef.current.clear();
+    advancingForRef.current = null;
+    if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current);
+    skipTimerRef.current = null;
+    setPlaybackStopped(false);
+    setRetryNonce((n) => n + 1);
+  }, []);
 
   if (!nowPlaying) {
     return (
@@ -379,7 +447,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       <div ref={playerWrapRef}>
       <Fragment key={retryNonce}>
       <MinimalPlayer
-        onRetry={() => { failuresRef.current = 0; setRetryNonce((n) => n + 1); }}
+        onRetry={retryCurrent}
         onBackToGuide={() => onNavigate?.("tv-guide")}
         src={nowPlaying.src}
         title={nowPlaying.title}
@@ -389,7 +457,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         resolveNext={resolveNext}
         onPrev={nowPlaying.channelId ? () => void goPrev() : undefined}
         onNext={() => void advance("ended")}
-        onPlayEvent={() => { failuresRef.current = 0; failedRef.current.clear(); console.log("[AJN PLAYBACK] play", meta); }}
+        onPlayEvent={() => { failuresRef.current = 0; failureContextRef.current = null; stoppedInstanceRef.current = null; advancingForRef.current = null; setPlaybackStopped(false); failedRef.current.clear(); console.log("[AJN PLAYBACK] play", meta); }}
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={onError}
         autoplayBlockedLabel={nowPlaying.channelId === "rush-vod" ? "Next hour ready — tap Play" : undefined}
@@ -400,6 +468,14 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       />
       </Fragment>
       </div>
+      {playbackStopped && (
+        <div role="alert" data-testid="playback-stopped-after-failures" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
+          <p className="font-semibold">Playback stopped after {MAX_CONSECUTIVE_PLAYBACK_FAILURES} consecutive failures.</p>
+          <button type="button" onClick={retryCurrent} className="mt-3 rounded-md border border-amber-300/60 px-4 py-2 text-sm font-semibold hover:bg-amber-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200">
+            Retry this item
+          </button>
+        </div>
+      )}
       <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />
       <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />
       {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (

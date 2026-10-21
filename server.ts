@@ -32,6 +32,11 @@ import {
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
+import {
+  buildArchiveProxyFailureReply,
+  getRecentArchiveProxyFailure,
+  rememberArchiveProxyFailure,
+} from './server/archiveProxyFailureCache.js';
 import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
 import { registerFolderArtRoute } from './server/folderArt.js';
@@ -296,6 +301,16 @@ app.get('/api/archive/proxy', async (req,res)=>{
     return res.status(400).json({error:'Invalid path parameter',details:v.error,proxyRequestId});
   }
 
+  if (req.query.diagnostic === '1') {
+    res.setHeader('Cache-Control', 'no-store');
+    const recentFailure = getRecentArchiveProxyFailure(v.cleanPath);
+    if (!recentFailure) {
+      return res.status(404).json({ error: 'No recent Archive proxy failure', proxyRequestId });
+    }
+    res.setHeader('x-proxy-request-id', recentFailure.body.proxyRequestId);
+    return res.status(recentFailure.status).json(recentFailure.body);
+  }
+
   const isImage = /\.(jpe?g|png|webp|gif|svg|bmp|ico)$/i.test(v.cleanPath) || v.cleanPath.endsWith('/__ia_thumb.jpg');
   if (isImage) {
     const cachedImg = proxyImageCache.get(v.cleanPath);
@@ -364,10 +379,23 @@ app.get('/api/archive/proxy', async (req,res)=>{
       await mediaResponse?.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:upstream.status,stage:upstream.failure,attempts:upstream.attempts,path:v.cleanPath}));
-      const error=upstream.failure==='resolve'
+      const error=upstream.reason
+        ? 'Archive redirect rejected'
+        : upstream.failure==='resolve'
         ? 'Archive did not return a validated media response'
         : `Archive media returned HTTP ${upstream.status}`;
-      return res.status(502).json({error,upstreamStatus:upstream.status,attempts:upstream.attempts,proxyRequestId});
+      const reply = buildArchiveProxyFailureReply({
+        upstreamStatus: upstream.status,
+        attempts: upstream.attempts,
+        proxyRequestId,
+        errorCode: upstream.errorCode,
+        reason: upstream.reason,
+      });
+      if (!upstream.errorCode && error !== 'Archive media request failed') {
+        reply.body.error = error;
+      }
+      rememberArchiveProxyFailure(v.cleanPath, reply);
+      return res.status(reply.status).json(reply.body);
     }
 
     const contentType=mediaResponse.headers.get('content-type');
@@ -378,7 +406,16 @@ app.get('/api/archive/proxy', async (req,res)=>{
       await mediaResponse.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:mediaResponse.status,stage:'not_media',contentType,path:v.cleanPath}));
-      return res.status(502).json({error:'Archive returned a web page, not media (not yet published or unavailable)',upstreamStatus:mediaResponse.status,proxyRequestId});
+      const reply = buildArchiveProxyFailureReply({
+        upstreamStatus: mediaResponse.status,
+        attempts: upstream.attempts,
+        proxyRequestId,
+        errorCode: 'UPSTREAM_NON_MEDIA',
+        reason: 'Archive returned a web page, not media (not yet published or unavailable)',
+      });
+      reply.body.error = 'Archive returned a web page, not media (not yet published or unavailable)';
+      rememberArchiveProxyFailure(v.cleanPath, reply);
+      return res.status(reply.status).json(reply.body);
     }
     const contentLength=mediaResponse.headers.get('content-length');
     const contentRange=mediaResponse.headers.get('content-range');
@@ -470,11 +507,17 @@ app.get('/api/archive/proxy', async (req,res)=>{
     }
     stats.failedRequests++;
     console.error('[Archive Proxy Redirect Failure]',proxyRequestId,err?.message || String(err));
-    return res.status(502).json({
-      error:'Archive proxy redirect failure',
-      detail:err?.message || String(err),
-      proxyRequestId
+    const errorCode = typeof err?.code === 'string' ? err.code : undefined;
+    const reply = buildArchiveProxyFailureReply({
+      upstreamStatus: 0,
+      attempts: 0,
+      proxyRequestId,
+      errorCode,
+      reason: err?.message || String(err),
     });
+    reply.body.error = 'Archive proxy redirect failure';
+    rememberArchiveProxyFailure(v.cleanPath, reply);
+    return res.status(reply.status).json(reply.body);
   }
 });
 // AJN recorded files (archive.alexjoneslive.com) send no CORS headers, so the
