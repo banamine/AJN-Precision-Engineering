@@ -47,6 +47,7 @@ try {
   await page.waitForFunction(() => Boolean(window.__newsCubeHarness));
   await page.waitForFunction(() => window.__newsCubeHarness.getStats().fetchCount >= 1);
   await page.waitForSelector('[data-testid="face-label"]');
+  assert.equal(await page.$eval('[data-testid="news-cube-page"]', (node) => getComputedStyle(node).overflowWrap), 'anywhere', 'long headline tokens can wrap without widening the page');
   await page.click('#nav-link-vault');
   await page.waitForSelector('[role="menuitem"]');
   assert.equal(await page.$$eval('[role="menuitem"]', (items) => items.some((item) => item.textContent.includes('NEWS CUBE'))), true, 'Vault includes the NEWS CUBE destination');

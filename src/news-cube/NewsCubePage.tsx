@@ -305,7 +305,7 @@ export default function NewsCubePage({
   const dropped = data.snapshot?.dropped;
 
   return (
-    <section className="w-full space-y-5" aria-labelledby="news-cube-title" data-testid="news-cube-page">
+    <section className="w-full space-y-5" style={{ overflowWrap: 'anywhere' }} aria-labelledby="news-cube-title" data-testid="news-cube-page">
       <header className="flex flex-col gap-4 border-b border-neutral-800 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sky-300">

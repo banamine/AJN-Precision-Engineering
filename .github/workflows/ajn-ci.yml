@@ -155,6 +155,8 @@ jobs:
         run: npm run test:news-cube-adapter
       - name: News Cube read-time retention regression
         run: npm run test:news-cube-retention
+      - name: News Cube long-token renderer regression
+        run: npm run test:news-cube-renderer
       - name: News Cube playback bridge regression
         run: npm run test:news-cube-bridge
       - name: News Cube browser regression (synthetic fixture, local only)

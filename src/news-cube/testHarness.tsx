@@ -63,7 +63,7 @@ function mount() {
       <NewsCubePage
         fetcher={fetcher}
         digestUrl="/synthetic-digest"
-        refreshMs={120}
+        refreshMs={1000}
         now={() => testNow}
         rendererFactory={rendererFactory}
         playbackBridge={playbackBridge}

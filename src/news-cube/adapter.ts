@@ -36,27 +36,66 @@ export interface CubeAdapterResult {
 const MAX_TITLE = 300;
 const MAX_SUMMARY = 900;
 const TRACKING_PARAM = /^(utm_[a-z0-9_]+|fbclid|gclid|dclid|mc_cid|mc_eid|ref_src|igshid)$/i;
+const HTML_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', mdash: '—', ndash: '–',
+  hellip: '…', copy: '©', reg: '®', trade: '™', bull: '•', middot: '·',
+  euro: '€', pound: '£', yen: '¥', deg: '°', laquo: '«', raquo: '»',
+};
+
+function stripMarkup(value: string): string {
+  return value
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, ' ')
+    .replace(/<\s*script\b[^>]*>[\s\S]*?(?:<\s*\/\s*script\s*>|$)/gi, ' ')
+    .replace(/<\s*style\b[^>]*>[\s\S]*?(?:<\s*\/\s*style\s*>|$)/gi, ' ')
+    // Match complete tags and a tag truncated at end-of-input.
+    .replace(/<\s*\/?\s*[a-z][^>]*(?:>|$)/gi, ' ');
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z][a-z0-9]+);/gi, (whole, entity: string) => {
+    if (entity[0] === '#') {
+      const code = entity[1].toLowerCase() === 'x'
+        ? Number.parseInt(entity.slice(2), 16)
+        : Number.parseInt(entity.slice(1), 10);
+      return Number.isInteger(code) && code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff)
+        ? String.fromCodePoint(code)
+        : whole;
+    }
+    return HTML_ENTITIES[entity.toLowerCase()] ?? whole;
+  });
+}
 
 function cleanText(value: unknown, max: number): string {
   if (typeof value !== 'string') return '';
-  const text = value
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (whole, entity: string) => {
-      if (entity[0] === '#') {
-        const code = entity[1].toLowerCase() === 'x'
-          ? Number.parseInt(entity.slice(2), 16)
-          : Number.parseInt(entity.slice(1), 10);
-        return Number.isInteger(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : whole;
-      }
-      return ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' } as Record<string, string>)[entity.toLowerCase()] ?? whole;
-    })
-    .replace(/<[^>]*>/g, ' ')
+  const text = decodeHtmlEntities(stripMarkup(value))
     .replace(/\s+/g, ' ')
     .trim()
     .normalize('NFC');
   return text.slice(0, max);
+}
+
+function summaryComparisonKey(value: string): string {
+  return value.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+}
+
+function cleanSummary(value: unknown, title: string, publisherName: string): string {
+  let summary = cleanText(value, MAX_SUMMARY)
+    .replace(/(?:^|\s+)(?:it\s+)?appeared\s+first\s+on\b[\s\S]*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!summary || /^(?:(?:https?:\/\/)?(?:www\.)?[\p{L}\d-]+(?:\.[\p{L}\d-]+)+(?:[/?#]\S*)?)$/iu.test(summary)) return '';
+
+  const summaryKey = summaryComparisonKey(summary);
+  const titleKey = summaryComparisonKey(title);
+  const publisherKey = summaryComparisonKey(publisherName);
+  if (summaryKey && (
+    summaryKey === titleKey
+    || summaryKey === publisherKey
+    || (titleKey && publisherKey && (summaryKey === titleKey + publisherKey || summaryKey === publisherKey + titleKey))
+  )) return '';
+
+  return summary.slice(0, MAX_SUMMARY);
 }
 
 function safeHttpUrl(value: unknown): URL | null {
@@ -158,7 +197,7 @@ export function toCubeArticles(raw: unknown, now: number = Date.now()): CubeAdap
       article: {
         id,
         title,
-        summary: cleanText(item.excerpt ?? item.summary, MAX_SUMMARY),
+        summary: cleanSummary(item.excerpt || item.summary, title, publisherName),
         publisherName,
         publisherId,
         publishedAt: new Date(publishedMs).toISOString(),

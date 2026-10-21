@@ -13,6 +13,8 @@ The current feed contains headlines and links only; the adapter never sets
 - Override: `VITE_NEWS_DIGEST_URL`
 - A visible tab revalidates every 10 minutes with `cache: no-store`. Polling pauses
   while the tab is hidden. Retry is user initiated after a failed request.
+- The 10-minute interval is a refresh cadence, not a client/server storage cache;
+  News Cube keeps no feed snapshot beyond the current page's in-memory state.
 - A failed refresh leaves the last good in-memory snapshot on screen.
 - If new records arrive while the user is rotating, dragging, or reading a detail
   card, the current allocation stays fixed. “New stories available” applies the
@@ -31,11 +33,20 @@ fallback pattern, deduplicates by ID and then normalized URL, parses the RFC-822
 future skew. Missing or invalid dates and out-of-window dates are excluded and
 counted. `images.unsplash.com` is treated as no article image.
 
+Summaries are plain text only. The adapter strips complete and cut-off HTML tags,
+decodes supported named and numeric entities, removes the “appeared first on”
+footer, and returns an empty summary when cleaned text is only a bare URL or a
+repeat of the title and publisher. This covers Google News link snippets and
+truncated WordPress footer markup; no source string is rendered as HTML.
+
 The current adapter does not use `category` as a topic. Publisher filtering is
 limited to `feedId`/publisher identity. Newest-first items fill six faces with
 six slots each (36 total); unused slots are empty, not generated stories.
 
 ## Cube and accessibility
+
+All News Cube page text inherits `overflow-wrap: anywhere`; panel-canvas drawing
+also breaks unspaced long tokens to fit each card.
 
 The route is lazy-loaded, and Three.js is pinned to `0.180.0`; it is in the News
 Cube route chunk rather than the main entry chunk. One visible WebGL canvas is

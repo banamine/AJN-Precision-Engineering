@@ -10,6 +10,7 @@ assert.equal(result.articles.length, 8);
 assert.equal(result.dropped.duplicate, 6, 'stories are a subset of rss_feeds_articles and deduplicate by id');
 assert.equal(result.articles[0].title.startsWith('Synthetic test headline:'), true);
 assert.equal(result.articles[0].imageUrl, null, 'Unsplash stock images are not shown');
+assert.equal(result.articles[0].summary, '', 'raw Google News title/source repetition is shown as title only');
 assert.ok(result.articles.every((article) => !('category' in article)), 'source categories are not promoted to topics');
 assert.equal(result.articles[0].publishedAt, new Date(now - 3_600_000).toISOString());
 
@@ -61,4 +62,76 @@ assert.equal(varied.dropped.invalid, 2);
 assert.equal(varied.articles.some((article) => article.title === 'Future skew inside tolerance'), true);
 assert.equal(varied.articles.some((article) => article.title === 'Future skew outside tolerance'), false);
 
-console.log('News Cube adapter: PASS (8 fixture items, 33 allocation, 36 cap, dates, duplicate, fallback and URL cases)');
+const htmlSummaries = toCubeArticles({ rss_feeds_articles: [
+  {
+    id: 'google-news-html',
+    headline: 'Transit board approves new route',
+    url: 'https://publisher.invalid/google-news',
+    feedName: 'Reuters',
+    excerpt: '<a href="https://news.google.com/rss/articles/very-long-tracking-token">Transit board approves new route</a>&nbsp;<font>Reuters</font>',
+    published: new Date(now).toUTCString(),
+  },
+  {
+    id: 'wordpress-footer',
+    headline: 'Council publishes budget summary',
+    url: 'https://publisher.invalid/wordpress',
+    feedName: 'Local Desk',
+    summary: 'The council approved a revised budget after public review. It appeared first on <a href="https://publisher.invalid/">Local Desk</a>',
+    published: new Date(now).toUTCString(),
+  },
+  {
+    id: 'cut-off-anchor',
+    headline: 'Long summary truncation',
+    url: 'https://publisher.invalid/truncated',
+    summary: 'Useful context remains readable <a href="https://news.google.com/rss/articles/cut-off',
+    published: new Date(now).toUTCString(),
+  },
+  {
+    id: 'entity-summary',
+    headline: 'Energy plan & funding',
+    url: 'https://publisher.invalid/entities',
+    summary: 'R&D &amp; energy&nbsp;funding &#8217;year',
+    published: new Date(now).toUTCString(),
+  },
+  {
+    id: 'title-repeat',
+    headline: 'Repeated article title',
+    url: 'https://publisher.invalid/title-repeat',
+    summary: 'Repeated article title',
+    published: new Date(now).toUTCString(),
+  },
+  {
+    id: 'publisher-repeat',
+    headline: 'Publisher-only summary',
+    url: 'https://publisher.invalid/publisher-repeat',
+    feedName: 'Reuters',
+    summary: 'Reuters',
+    published: new Date(now).toUTCString(),
+  },
+  {
+    id: 'title-publisher-repeat',
+    headline: 'Market opens higher',
+    url: 'https://publisher.invalid/title-publisher-repeat',
+    feedName: 'Reuters',
+    summary: '<a>Market opens higher</a> &nbsp; Reuters',
+    published: new Date(now).toUTCString(),
+  },
+  {
+    id: 'bare-url-summary',
+    headline: 'URL only excerpt',
+    url: 'https://publisher.invalid/bare-url',
+    summary: 'publisher.invalid/a/very/long/story?utm_source=feed',
+    published: new Date(now).toUTCString(),
+  },
+] }, now);
+const summaryById = new Map(htmlSummaries.articles.map((article) => [article.id, article.summary]));
+assert.equal(summaryById.get('google-news-html'), '', 'Google News anchor title plus publisher is a duplicate-only summary');
+assert.equal(summaryById.get('wordpress-footer'), 'The council approved a revised budget after public review.');
+assert.equal(summaryById.get('cut-off-anchor'), 'Useful context remains readable', 'an incomplete trailing tag is stripped');
+assert.equal(summaryById.get('entity-summary'), 'R&D & energy funding ’year', 'HTML entities decode without HTML rendering');
+assert.equal(summaryById.get('title-repeat'), '');
+assert.equal(summaryById.get('publisher-repeat'), '');
+assert.equal(summaryById.get('title-publisher-repeat'), '');
+assert.equal(summaryById.get('bare-url-summary'), '');
+
+console.log('News Cube adapter: PASS (real-shaped fixture, 33 allocation, 36 cap, dates, duplicate, fallback, URL and raw-HTML summary cases)');

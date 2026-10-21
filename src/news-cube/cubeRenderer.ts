@@ -31,18 +31,30 @@ const FACE_NORMALS = [
   new THREE.Vector3(0, 0, -1),
 ];
 
-function wrapText(ctx: CanvasRenderingContext2D, value: string, x: number, y: number, width: number, lineHeight: number, maxLines: number): void {
+export function wrapText(ctx: CanvasRenderingContext2D, value: string, x: number, y: number, width: number, lineHeight: number, maxLines: number): void {
   const words = value.split(/\s+/).filter(Boolean);
   let line = '';
   let lines = 0;
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (line && ctx.measureText(next).width > width) {
-      ctx.fillText(line, x, y + lines * lineHeight, width);
-      lines += 1;
-      line = word;
-      if (lines >= maxLines) break;
-    } else line = next;
+  outer: for (const word of words) {
+    const pieces: string[] = [];
+    let piece = '';
+    for (const character of Array.from(word)) {
+      if (piece && ctx.measureText(piece + character).width > width) {
+        pieces.push(piece);
+        piece = character;
+      } else piece += character;
+    }
+    if (piece) pieces.push(piece);
+
+    for (const part of pieces) {
+      const next = line ? `${line} ${part}` : part;
+      if (line && ctx.measureText(next).width > width) {
+        ctx.fillText(line, x, y + lines * lineHeight, width);
+        lines += 1;
+        line = part;
+        if (lines >= maxLines) break outer;
+      } else line = next;
+    }
   }
   if (lines < maxLines && line) ctx.fillText(line, x, y + lines * lineHeight, width);
 }
@@ -93,13 +105,13 @@ function drawFaceCanvas(
     }
     ctx.fillStyle = '#93c5fd';
     ctx.font = '500 15px system-ui, sans-serif';
-    ctx.fillText(article.publisherName, x + 12, textTop, cardWidth - 24);
+    wrapText(ctx, article.publisherName, x + 12, textTop, cardWidth - 24, 18, 2);
     ctx.fillStyle = '#f8fafc';
     ctx.font = '600 19px system-ui, sans-serif';
-    wrapText(ctx, article.title, x + 12, textTop + 24, cardWidth - 24, 23, 3);
+    wrapText(ctx, article.title, x + 12, textTop + 42, cardWidth - 24, 23, 3);
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '400 15px system-ui, sans-serif';
-    wrapText(ctx, article.summary, x + 12, textTop + 98, cardWidth - 24, 18, 3);
+    wrapText(ctx, article.summary, x + 12, textTop + 116, cardWidth - 24, 18, 3);
   }
 }
 
