@@ -411,6 +411,11 @@ async function fetchFromAlternateNode(
 const REDIRECT_TTL_MS = 10 * 60_000;
 const redirectCache = new Map<string, { url: string; expires: number }>();
 
+/** Drop a cached storage-node URL (used when a body stalls so the next request re-resolves). */
+export function forgetArchiveRedirect(upstreamUrl: string): void {
+  redirectCache.delete(upstreamUrl);
+}
+
 export async function fetchArchiveMediaWithRetry(
   upstreamUrl: string,
   opts: ArchiveFetchOptions,

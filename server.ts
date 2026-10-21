@@ -31,7 +31,7 @@ import {
  addChannelSource,getAllPlaylists,getPlaylistById,syncPlaylist,getScheduleForGuide,getNewsVersion
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
-import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
+import { fetchArchiveMediaWithRetry, forgetArchiveRedirect } from './server/archiveFetch.js';
 import {
   buildArchiveProxyFailureReply,
   getRecentArchiveProxyFailure,
@@ -482,7 +482,21 @@ app.get('/api/archive/proxy', async (req,res)=>{
       res.once('close',()=>{ if(!body.destroyed){ body.destroy(); } });
       // One line per slice in the Cloud Run logs: where the time goes (Archive headers vs first byte vs body speed).
       let firstByteAt=0,sent=0; const headersMs=Date.now()-upstreamT0;
-      body.on('data',(c:Buffer)=>{ if(!firstByteAt)firstByteAt=Date.now(); sent+=c.length; });
+      // Body idle watchdog: Archive headers arrived but no bytes follow (stalled storage node). Without this the
+      // request hangs until the browser gives up (the 17 s requests in the trace). Fail explicitly, forget the
+      // cached node, and let the player's next request resolve a healthy replica.
+      const BODY_IDLE_MS=Number(process.env.ARCHIVE_PROXY_BODY_IDLE_MS)||12_000;
+      let idleTimer:NodeJS.Timeout|null=null;
+      const armIdle=()=>{ if(idleTimer)clearTimeout(idleTimer); idleTimer=setTimeout(()=>{
+        stats.failedRequests++;
+        forgetArchiveRedirect(upstreamUrl);
+        console.error('[Archive Proxy Body Stall]',JSON.stringify({proxyRequestId,range:upstreamHeaders.Range,path:v.cleanPath.slice(-70),idleMs:BODY_IDLE_MS,bytesSent:sent}));
+        upstreamAbort.abort(); body.destroy(); res.destroy();
+      },BODY_IDLE_MS); };
+      const clearIdle=()=>{ if(idleTimer){clearTimeout(idleTimer);idleTimer=null;} };
+      body.once('end',clearIdle); body.once('error',clearIdle); res.once('close',clearIdle);
+      armIdle();
+      body.on('data',(c:Buffer)=>{ if(!firstByteAt)firstByteAt=Date.now(); sent+=c.length; armIdle(); });
       body.once('end',()=>{ const t=Date.now(),bodyMs=t-(firstByteAt||t);
         console.log('[archive-proxy-slice]',JSON.stringify({id:proxyRequestId,range:upstreamHeaders.Range,path:v.cleanPath.slice(-70),status:mediaResponse.status,headersMs,firstByteMs:firstByteAt?firstByteAt-upstreamT0:null,bodyMs,bytes:sent,kBps:bodyMs>0?Math.round(sent/1024/(bodyMs/1000)):null})); });
       return body.pipe(res);
