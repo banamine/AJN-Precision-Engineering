@@ -151,6 +151,14 @@ jobs:
         run: npm run test:ajn-radio-catalog
       - name: Daily News Digest regression (parse, freshness, in-memory store)
         run: npm run test:news-digest
+      - name: News Cube adapter regression
+        run: npm run test:news-cube-adapter
+      - name: News Cube read-time retention regression
+        run: npm run test:news-cube-retention
+      - name: News Cube playback bridge regression
+        run: npm run test:news-cube-bridge
+      - name: News Cube browser regression (synthetic fixture, local only)
+        run: npm run test:news-cube-browser
       - name: Audio/Video sync rules (twin lookup, start offset, shared position, drift)
         run: npm run test:av-sync
       - name: AJN Media RSS contract regression (mocked)
