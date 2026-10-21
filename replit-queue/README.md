@@ -8,7 +8,7 @@ BASE = owner export ZIP (the newest one the owner attaches; sha256 002749be...93
 ## Base rule (overrides every older job file)
 The older job files (queue/03..09, runbook/) were written against a branch chain (feat/library-allmychildren -> feat/buffer-gauge-readahead -> ...). IGNORE the branch chain. Source of truth is Google AI Studio (Builder), not GitHub main. For every job:
 1. BASE = the newest owner export ZIP attached by the owner (ajn-precision-engineering.zip) + overlay https://raw.githubusercontent.com/banamine/AJN-Precision-Engineering/overlay/p2-plus-captions-2026-10-20/overlays/AJN_DROPIN_P2_PLUS_CAPTIONS_2026-10-19.zip (SHA-256 f9121711f49d684eb8d8354d95584c2471a8248f5fc8676fa172bafbbfccd70c) extracted on top. Phase 1 and Phase 2 are already in; do not redo them.
-2. Work in a temp copy. Never edit uploaded ZIPs. No push, no merge, no deploy. Deliver a ZIP of only the new/changed files with UPLOAD_ORDER.txt, ROLLBACK.txt and sha256s.
+2. Work in a temp copy. Never edit uploaded ZIPs. Push only to replit/out-2026-10-20 (see queue/00_RUN_ORDER_MASTER.txt OUT-BRANCH RULES, once OUT BRANCH LIVE); no merge, no deploy. Deliver a ZIP of only the new/changed files with UPLOAD_ORDER.txt, ROLLBACK.txt and sha256s.
 3. Do not change: ASR/caption behaviour, the visualizer, the proxy (server/proxyRange.ts, archiveFetch), read-ahead, HLS, watchdogs, the Classic TV schedule/manifest. Ignore the ~56 TS2307 errors inside full-files-for-export-baseline/.
 4. First report line = SHA-256 of the export and the overlay. If the overlay hash differs: STOP.
 5. Follow LEAN MODE V3 (below) in every job.
@@ -70,3 +70,5 @@ Paste one line to Replit: "Read replit-queue/README.md from the repo branch repl
 - 2026-10-20 (Claude): owner authorised a chained run. See queue/00_RUN_ORDER_MASTER.txt (J1 03b2 -> J2 LIVE-NTD -> J3 CH109 -> J4 G6; check stops C1-C8; cumulative ZIP at the end). Claude reviews the ZIPs afterwards.
 
 - 2026-10-20 QUEUE ADDITIONS: 12 LIVE-EXTRA (Rumble Overcomers + Uplynk feed + link check, after J2) and 13 RUMBLE_WALL (iframe main route + pinned HLS for RT News 24/7 and Alex Jones Live; owner option A) are placed SECOND-LAST; 11 ONLINE_VIEWERS stays last. Not part of the J1-J4 run.
+
+- 2026-10-20 17:50 OUT BRANCH (owner option A): Replit may push gate results ONLY to replit/out-2026-10-20 (append-only). Setup steps: OUT_BRANCH_SETUP.md. Until the owner says OUT BRANCH LIVE, delivery stays 'attach ZIP + REPORT.md in chat'.

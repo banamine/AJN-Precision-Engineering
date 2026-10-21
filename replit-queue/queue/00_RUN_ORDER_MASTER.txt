@@ -22,6 +22,15 @@ CHECK STOPS (a job is "passed" only if ALL are true; otherwise STOP the whole ru
 After each passed job: attach that job's ZIP + REPORT.md to the chat, print one line "GATE <name> PASSED | zip | size | sha256", and continue.
 AFTER J4 PASSES: build ONE cumulative drop-in AJN_CUMULATIVE_J1_J4_2026-10-20.zip = complete files of every file changed by J1..J4 relative to the Builder overlay base (latest version of each file), + UPLOAD_ORDER.txt (include "delete" lines), ROLLBACK.txt, SHA256SUMS.txt, REVIEW/ (all reports, the stacked-base hashes, kit ledger). Verify it by extracting export + Builder overlay + cumulative ZIP into a clean tree and re-running build + smoke + kit --changed. Attach it and its REPORT.md.
 
-HARD LIMITS (unchanged): no git push, no merge, no deploy, no scheduled/automatic runs, no changes to package.json/lockfile unless a job file says so, no Archive terms/rights decisions, no activation of held items. Replit cannot message the owner on its own: attach files in chat and stop.
+HARD LIMITS (UPDATED 2026-10-20 17:50, owner option A): git push is allowed ONLY to branch replit/out-2026-10-20 (see OUT-BRANCH RULES below). Still no merge, no push to any other branch (never main, never replit/queue-2026-10-20), no deploy, no scheduled/automatic runs, no changes to package.json/lockfile unless a job file says so, no Archive terms/rights decisions, no activation of held items. Replit cannot message the owner on its own: attach files in chat and stop.
 IF ANYTHING IS AMBIGUOUS OR BLOCKED: stop at that gate, write what you tried and the exact question, attach what exists, do not guess.
 Final line when finished or stopped: RUN J1-J4 DONE|STOPPED AT <job/check> | zips: <names sizes sha256> | verdicts | NOT VERIFIED | owner decisions needed.
+
+OUT-BRANCH RULES (effective once the owner confirms the token + branch protection are set; until Claude/owner say "OUT BRANCH LIVE", keep attaching ZIPs in chat and do NOT push)
+ 1. Push only to replit/out-2026-10-20. Append-only: no --force, no branch/file deletion, no rewriting history. Never touch main or replit/queue-2026-10-20. Read the queue branch only.
+ 2. Push after EVERY gate (J1, J2, J3, J4, cumulative), not just at the end. Folder per gate: out/<gate>/ (e.g. out/J2/) containing: the ZIP, REPORT.md, SHA256SUMS.txt, and a snapshot/ folder of ONLY the changed files at repo paths (for diffing).
+ 3. Never push node_modules, dist, .env, tokens, logs with credentials, or files >50 MB. The repo is PUBLIC: nothing secret, no private endpoint lists.
+ 4. Commit message: "J<n> <gate> <PASS|STOPPED at C#> <zip sha256 first 12>". After pushing print the commit SHA and the raw URL of the ZIP.
+ 5. Also push a work snapshot when a gate STOPS (so a lost workspace cannot lose the tree again): out/<gate>-STOPPED/.
+ 6. Use the owner's token from the Replit secret named GITHUB_TOKEN_OUT (fine-grained, this repo only, contents write). Never print or log it. If a push is rejected, stop and report; do not retry on another branch.
+ 7. Merging, Builder uploads and deploys stay with the owner. Claude reviews the pushed gate and reads it straight from GitHub.
