@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import type { Program, ScheduleChannel, PlayProgramCallback } from "../types";
 import type { GridBlock, GridItem } from "./groupProgramsForGrid";
 import { windowItems } from "./groupProgramsForGrid";
+import { LazyThumb } from "../components/LazyThumb";
 
 export function fmtClock(hour: number): string {
   const total = Math.round(Math.max(0, Math.min(24, hour)) * 60);
@@ -27,9 +28,15 @@ export function BlockCell({ channel, block, nowHour, pxPerHour, onOpen }: {
   const live = block.liveProgramId !== null;
   const span = block.endHour - block.startHour;
   const frac = live ? Math.min(1, Math.max(0, (nowHour - block.startHour) / span)) : 0;
+  const widthPx = Math.max(span * pxPerHour - 4, 20);
+  const roomy = widthPx >= 120;   // thumbnail + two text lines fit
+  const tiny = widthPx < 90;      // only the track count fits
+  const art = block.items[0]?.program;
+  const tip = `${blockLabel(channel, block, live)}`;
   return (
     <button
       type="button"
+      title={tip}
       data-block-live-program-id={block.liveProgramId ?? ""}
       data-live-program-id={block.liveProgramId ?? undefined}
       data-start-hour={block.startHour}
@@ -37,20 +44,31 @@ export function BlockCell({ channel, block, nowHour, pxPerHour, onOpen }: {
       data-block-id={block.id}
       aria-label={blockLabel(channel, block, live)}
       onClick={(e) => onOpen(block, e.currentTarget)}
-      className={`group absolute isolate top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs cursor-pointer transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-950 ${
+      className={`group absolute isolate top-2 flex h-[calc(100%-1rem)] items-center gap-2 overflow-hidden rounded-lg px-2.5 text-left text-xs cursor-pointer transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-950 ${
         live ? "border border-amber-500/50 bg-amber-500/15 text-amber-100 shadow-md shadow-amber-500/5"
              : "border border-neutral-800 bg-neutral-900/80 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-800"}`}
-      style={{ left: block.startHour * pxPerHour, width: Math.max(span * pxPerHour - 4, 20) }}
+      style={{ left: block.startHour * pxPerHour, width: widthPx }}
     >
-      {live && (
-        <span className="mb-0.5 inline-flex w-fit items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse motion-reduce:animate-none" />On Air Now
-        </span>
+      {/* Thumbnail loads only when this block is near the viewport (LazyThumb), so off-screen blocks never touch the network. */}
+      {roomy && art && (
+        <LazyThumb title={channel.name} className="h-9 w-9"
+          input={{ path: art.archivePath ?? art.mediaUrl ?? null, guideId: channel.guideId, channelId: channel.id, category: channel.group ?? null, mediaType: channel.mediaType, name: channel.name }} />
       )}
-      <span className="truncate font-semibold text-neutral-100">
-        {block.continuesFrom && "… "}{collection(channel)} · tracks {block.first}-{block.last} of {block.total}{block.continuesInto && " …"}
+      <span className="flex min-w-0 flex-1 flex-col justify-center">
+        {live && !tiny && (
+          <span className="mb-0.5 inline-flex w-fit items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse motion-reduce:animate-none" />On Air Now
+          </span>
+        )}
+        {!tiny && (
+          <span className="truncate font-semibold text-neutral-100">
+            {block.continuesFrom && "… "}{collection(channel)}{block.continuesInto && " …"}
+          </span>
+        )}
+        <span className={`truncate text-[10px] ${tiny ? "text-center font-semibold text-neutral-200" : "text-neutral-400"}`}>
+          {tiny ? block.trackCount : `${block.trackCount} tracks · ${Math.round(block.minutes)} min`}
+        </span>
       </span>
-      <span className="truncate text-[10px] text-neutral-400">{block.trackCount} tracks · {Math.round(block.minutes)} min</span>
       {live && (
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-amber-950/60">
           <span className="block h-full w-full origin-left bg-amber-400" style={{ transform: `scaleX(${frac})` }} />
