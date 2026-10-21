@@ -119,6 +119,10 @@ jobs:
         run: npm run test:rush
       - name: Audio channels regression
         run: npm run test:audio-channels
+      - name: EPG music grouping regression
+        run: npm run test:group-programs
+      - name: Music lane tag regression
+        run: npm run test:music-lane-tag
       - name: HLS playlist proxy regression
         run: npm run test:hls-proxy
       - name: Bounded fetch (redirect hops, timeouts, size caps)
