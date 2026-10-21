@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent } from 'react';
 import { Box, ChevronLeft, ChevronRight, List, RotateCw, X } from 'lucide-react';
 import { useArchiveStatus } from '../hooks/useArchiveStatus';
-import { allocateFaces, filterByPublisher, type CubeArticle } from './adapter';
+import { allocateFaces, balanceBySource, filterByPublisher, type CubeArticle } from './adapter';
 import { createThreeCubeRenderer, type CubeRendererFactory, type CubeRendererPort } from './cubeRenderer';
 import { createPlaybackBridge, type CubeArchiveState } from './playbackBridge';
 import { isDigestStale, useNewsCubeData } from './useNewsCubeData';
@@ -95,7 +95,10 @@ export default function NewsCubePage({
     () => filterByPublisher(data.snapshot?.articles ?? [], publisherFilter || null),
     [data.snapshot?.articles, publisherFilter],
   );
-  const faces = useMemo(() => allocateFaces(filteredArticles), [filteredArticles]);
+  const faces = useMemo(
+    () => allocateFaces(publisherFilter ? filteredArticles : balanceBySource(filteredArticles)),
+    [filteredArticles, publisherFilter],
+  );
   const currentFace = faces[activeFace] ?? faces[4];
   const activeArticles = currentFace?.articles ?? [];
 
