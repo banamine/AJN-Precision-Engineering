@@ -82,7 +82,10 @@ export function rememberArchiveProxyFailureUnlessOutage(
   state: string,
   now = Date.now(),
 ): boolean {
-  if (state === 'down' || state === 'unreachable_from_here') return false;
+  const itemSpecific = [400, 403, 404, 410, 422].includes(reply.body.upstreamStatus)
+    || reply.body.errorCode === 'UNPLAYABLE_ARCHIVE_MEMBER'
+    || reply.body.reason === 'UNPLAYABLE_ARCHIVE_MEMBER';
+  if (state === 'down' || state === 'unreachable_from_here' || itemSpecific) return false;
   rememberArchiveProxyFailure(path, reply, now);
   return true;
 }

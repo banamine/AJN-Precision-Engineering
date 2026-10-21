@@ -506,7 +506,7 @@ export async function fetchArchiveMediaWithRetry(
         status: 0,
         attempts: attempt,
         failure: 'resolve',
-        errorCode: upstreamCode ?? (/fetch failed/i.test(message) ? 'FETCH_FAILED' : undefined),
+        errorCode: upstreamCode,
         errorMessage: message,
       };
       // A circuit-open result means this host must not be retried during cooldown.

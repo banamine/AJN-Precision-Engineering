@@ -34,7 +34,7 @@ import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry } from './server/archiveFetch.js';
 import { createArchiveHealth } from './server/archiveHealth.js';
 import { startArchiveHealthProber } from './server/archiveHealthProbe.js';
-import { recordArchiveHealthOutcome } from './server/archiveHealthRecorder.js';
+import { createLogicalArchiveHealthRecorder, recordArchiveHealthOutcome } from './server/archiveHealthRecorder.js';
 import { registerArchiveHealthRoutes } from './server/archiveHealthRoutes.js';
 import {
   buildArchiveProxyFailureReply,
@@ -304,11 +304,17 @@ app.get('/api/archive/proxy', async (req,res)=>{
 
   const rawPath=String(req.query.path || '');
   if(unplayableReason(rawPath)){
+    recordArchiveHealthOutcome(archiveHealth, {
+      path: rawPath,
+      status: 422,
+      errorCode: 'UNPLAYABLE_ARCHIVE_MEMBER',
+    });
     return res.status(422).json({error:'Not streamable: file inside a compressed archive',reason:'UNPLAYABLE_ARCHIVE_MEMBER',proxyRequestId});
   }
   const v=validateArchivePath(rawPath);
   if(!v.valid || !v.cleanPath){
     stats.failedRequests++;
+    recordArchiveHealthOutcome(archiveHealth, { path: rawPath, status: 400 });
     return res.status(400).json({error:'Invalid path parameter',details:v.error,proxyRequestId});
   }
 
@@ -339,13 +345,14 @@ app.get('/api/archive/proxy', async (req,res)=>{
     }
   }
 
-  let healthRecorded = false;
-  const recordHealth = (input: { status: number; errorCode?: string; errorMessage?: string; policyFailure?: boolean }) => {
-    if (healthRecorded) return archiveHealth.getStatus();
-    recordArchiveHealthOutcome(archiveHealth, { ...input, path: v.cleanPath });
-    healthRecorded = true;
-    return archiveHealth.getStatus();
-  };
+  const recordHealth = createLogicalArchiveHealthRecorder(archiveHealth, v.cleanPath);
+  const recordHealthOutcome = (input: {
+    status: number;
+    errorCode?: string;
+    errorMessage?: string;
+    errorReason?: string;
+    policyFailure?: boolean;
+  }) => recordHealth(input);
 
   try{
     const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
@@ -380,7 +387,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
     const mediaResponse=upstream.response;
 
     if(!mediaResponse || upstream.failure){
-      recordHealth({
+      recordHealthOutcome({
         status: upstream.status,
         errorCode: upstream.errorCode,
         errorMessage: upstream.errorMessage,
@@ -428,7 +435,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
     // (still 200/206). Passing that on makes the browser report a demuxer error;
     // report it as what it is instead.
     if(!isImage && /text\/html/i.test(contentType||'')){
-      recordHealth({ status: mediaResponse.status, policyFailure: true });
+      recordHealthOutcome({ status: mediaResponse.status, policyFailure: true });
       await mediaResponse.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:mediaResponse.status,stage:'not_media',contentType,path:v.cleanPath}));
@@ -443,7 +450,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
       rememberArchiveProxyFailureUnlessOutage(v.cleanPath, reply, archiveHealth.getStatus().state);
       return res.status(reply.status).json(reply.body);
     }
-    recordHealth({ status: mediaResponse.status });
+    recordHealthOutcome({ status: mediaResponse.status });
     const contentLength=mediaResponse.headers.get('content-length');
     const contentRange=mediaResponse.headers.get('content-range');
     const acceptRanges=mediaResponse.headers.get('accept-ranges');
@@ -517,10 +524,11 @@ app.get('/api/archive/proxy', async (req,res)=>{
     return res.end();
   }catch(err:any){
     if(err?.name==='AbortError'||res.headersSent) return;
-    recordHealth({
+    recordHealthOutcome({
       status: 0,
       errorCode: typeof err?.code === 'string' ? err.code : undefined,
       errorMessage: err instanceof Error ? err.message : String(err),
+      errorReason: typeof err?.reason === 'string' ? err.reason : undefined,
     });
     if (isImage) {
       try {
