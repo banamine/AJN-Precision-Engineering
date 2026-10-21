@@ -200,6 +200,8 @@ jobs:
           echo "AJN server failed to become healthy"
           cat /tmp/ajn-server.log
           exit 1
+      - name: Archive availability preflight (warn-only)
+        run: npm run preflight:archive
       - name: AJN radio resource smoke
         run: |
           set -euo pipefail
