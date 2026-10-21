@@ -83,6 +83,14 @@ jobs:
         run: npm run test:ajn-audio-canonical
       - name: Archive proxy retry regression
         run: npm run test:archive-retry
+      - name: Archive outage state machine (injected clock)
+        run: npm run test:archive-health
+      - name: Archive outage server and cache integration (fake fetch)
+        run: npm run test:archive-health-server
+      - name: Archive outage UI and visibility polling
+        run: npm run test:archive-health-ui
+      - name: Archive outage playback policy
+        run: npm run test:archive-health-playback
       - name: Archive exact-URL regression
         run: npm run test:archive-url-exact
       - name: Movies manifest resolve regression
