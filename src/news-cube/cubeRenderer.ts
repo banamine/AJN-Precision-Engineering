@@ -119,7 +119,7 @@ export function createThreeCubeRenderer(canvas: HTMLCanvasElement): CubeRenderer
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#090d14');
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-  camera.position.set(0, 0, 4.6);
+  camera.position.set(0, 0, 6.0); // face half-height 1.2 must fit: (6.0-1.2)*tan(17deg)=1.47
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
