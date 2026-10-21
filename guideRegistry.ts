@@ -473,6 +473,10 @@ type AudioTask={id:string;name:string;group:string;mins:number;maxSlots:number;l
 let audioProgress:Map<string,Program[]>|null=null;
 let audioProgressNow:Date|null=null;
 const LOADING_MSG='loading shows from Archive — refresh in a minute';
+/** Explicit registry-level tag: whole-item Archive channels in the "Music" group are music-lane, so the guide groups their tracks. */
+export function tagMusicLane(programs:Program[]):Program[]{
+  return programs.map(p=>p.metadata?.lane==='music'?p:{...p,metadata:{...(p.metadata??{}),lane:'music'}});
+}
 function audioTasks(guideId:string,now:Date):AudioTask[]{
   const itemSrcs=archiveAudioChannelsJson as ArchiveAudioChannelSource[];
   return [
@@ -496,7 +500,7 @@ function assembleAudio(tasks:AudioTask[],progress:Map<string,Program[]>,now:Date
     if(programs.length&&t.loopDay){
       // Whole-item channel: its tracks cycle across the entire day. The full day is kept in audioLoops (the guide asks for a
       // window of it, see getAudioLoopRows); everything else still gets the first maxSlots rows, exactly as before.
-      const full=layoutMusicDailySchedule(programs,now,t.mins);
+      const full=layoutMusicDailySchedule(t.group==='Music'?tagMusicLane(programs):programs,now,t.mins);
       loops.set(t.id,full);
       return{...base,programs:full.slice(0,t.maxSlots),sourceStatus:'ok'};
     }

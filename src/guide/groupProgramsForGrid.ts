@@ -4,6 +4,15 @@ export const MIN_CELL_PX = 64;
 export const COMFORT_CELL_PX = 96;
 export const NARROW_FRACTION = 0.2;
 export const MAX_CELLS = 120;
+/** Each grouped block should be at least this wide, so thumbnails and titles have room. */
+export const BLOCK_MIN_PX = 150;
+const BUCKET_STEPS = [1, 2, 3, 4, 6];
+
+/** Smallest whole-hour bucket (1,2,3,4,6; all divide 24) whose block is >= BLOCK_MIN_PX wide at this zoom. */
+export function bucketHoursFor(pxPerHour: number): number {
+  if (!Number.isFinite(pxPerHour) || pxPerHour <= 0) return 1;
+  return BUCKET_STEPS.find((h) => h * pxPerHour >= BLOCK_MIN_PX) ?? BUCKET_STEPS[BUCKET_STEPS.length - 1];
+}
 
 export interface GridItem {
   program: Program;
@@ -89,29 +98,31 @@ export function groupProgramsForGrid(channel: ScheduleChannel, pxPerHour: number
   if (narrow / raw.length <= NARROW_FRACTION) return { mode: "programs", items: raw, cells: [], liveItem: live };
 
   const total = channel.programs.length;
+  const bh = bucketHoursFor(pxPerHour);
+  const bucketOf = (h: number) => Math.min(24 - bh, Math.max(0, Math.floor(h / bh) * bh));
   const items = raw.map((i) => ({ ...i }));
   const buckets = new Map<number, GridItem[]>();
   for (const it of items) {
-    const b = Math.min(23, Math.max(0, Math.floor(it.sHour)));
-    it.continuesInto = it.eHour > b + 1 + 1e-9;
+    const b = bucketOf(it.sHour);
+    it.continuesInto = it.eHour > b + bh + 1e-9;
     it.continuesFrom = it.sHour < 0;
     const arr = buckets.get(b); if (arr) arr.push(it); else buckets.set(b, [it]);
   }
-  // continuesFrom on a block: previous bucket's spilling track reaches into it.
+  // continuesFrom on a block: a track that started in an earlier bucket reaches into it.
   const cells: GridBlock[] = [];
   const keys = [...buckets.keys()].sort((a, b) => a - b);
-  const spill = (b: number) => items.some((i) => Math.floor(i.sHour) < b && i.eHour > b + 1e-9 && i.sHour < b);
+  const spill = (b: number) => items.some((i) => i.sHour < b && i.eHour > b + 1e-9);
   for (const b of keys) {
     const bi = buckets.get(b)!;
-    const blk = makeBlock(`${channel.id}-h${b}`, b, b + 1, bi, total, nowHour, live);
+    const blk = makeBlock(`${channel.id}-h${b}`, b, b + bh, bi, total, nowHour, live);
     if (spill(b)) blk.continuesFrom = true;
     cells.push(blk);
   }
-  // A live track continuing from an earlier bucket still marks the current bucket.
+  // The live track always marks the bucket that contains "now", even when it started in an earlier bucket.
   if (live && nowHour !== undefined) {
-    const nb = Math.min(23, Math.floor(nowHour));
+    const nb = bucketOf(nowHour);
     if (!cells.some((c) => c.startHour === nb)) {
-      cells.push(makeBlock(`${channel.id}-h${nb}`, nb, nb + 1, [], total, nowHour, live));
+      cells.push(makeBlock(`${channel.id}-h${nb}`, nb, nb + bh, [], total, nowHour, live));
       cells.sort((a, b) => a.startHour - b.startHour);
       const c = cells.find((x) => x.startHour === nb)!; c.continuesFrom = true;
     }

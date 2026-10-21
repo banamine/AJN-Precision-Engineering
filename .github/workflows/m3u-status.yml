@@ -38,6 +38,10 @@ jobs:
           for folder in "Classic TV" "Movies" "TV" "Mixed" "Music"; do
             encoded_folder="${folder// /%20}"
             mkdir -p "organizer-m3u/${folder}"
+            # wget exits 8 when any single file answers with an HTTP error (archive.org sometimes returns 500 for a
+            # file). Under `set -e` that used to abort the whole step on the first folder, so the remaining folders were
+            # never fetched and the count check below never ran. Retry 5xx, and let the strict count check decide.
+            rc=0
             wget \
               --recursive \
               --no-parent \
@@ -45,10 +49,18 @@ jobs:
               --cut-dirs=3 \
               --accept='*.m3u,*.m3u8' \
               --timeout=30 \
-              --tries=3 \
-              --waitretry=2 \
+              --tries=4 \
+              --waitretry=5 \
+              --retry-on-http-error=500,502,503,504 \
               --directory-prefix=organizer-m3u \
-              "${ORGANIZER_BASE}/${encoded_folder}/"
+              "${ORGANIZER_BASE}/${encoded_folder}/" || rc=$?
+            if [ "${rc}" -ne 0 ] && [ "${rc}" -ne 8 ]; then
+              echo "::error::wget failed for ${folder} with exit code ${rc}"
+              exit "${rc}"
+            fi
+            if [ "${rc}" -eq 8 ]; then
+              echo "::warning::wget reported HTTP errors for ${folder}; the file-count check below decides whether that is fatal"
+            fi
           done
           count="$(find organizer-m3u -type f \( -iname '*.m3u' -o -iname '*.m3u8' \) | wc -l)"
           expected_total="${ORGANIZER_EXPECTED_MIN:-271}"
