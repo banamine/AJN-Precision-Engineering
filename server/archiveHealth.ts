@@ -44,6 +44,33 @@ export interface ArchiveHealth {
 
 type Event = { ts: number; itemKey: string | null; kind: ArchiveHealthEventKind };
 
+const NETWORK_FAILURE_CODES = new Set([
+  'UND_ERR_CONNECT_TIMEOUT',
+  'ETIMEDOUT',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'ECONNREFUSED',
+  'AJN_UPSTREAM_HEADER_TIMEOUT',
+  'AJN_UPSTREAM_CIRCUIT_OPEN',
+  'FETCH_FAILED',
+]);
+
+export function classifyArchiveHealthOutcome(input: {
+  status: number;
+  errorCode?: string;
+  errorMessage?: string;
+  policyFailure?: boolean;
+}): ArchiveHealthEventKind {
+  if (input.status >= 200 && input.status < 300 && !input.policyFailure) return 'ok';
+  if (input.policyFailure) return 'other';
+  if ((input.errorCode && NETWORK_FAILURE_CODES.has(input.errorCode))
+    || /fetch failed/i.test(input.errorMessage ?? '')) return 'network';
+  if ([500, 502, 503, 504].includes(input.status)) return 'server5xx';
+  if ([400, 403, 404, 410, 422].includes(input.status)) return 'definite';
+  return 'other';
+}
+
 export function createArchiveHealth(
   config: Partial<ArchiveHealthConfig> = {},
   deps: { now?: () => number } = {},

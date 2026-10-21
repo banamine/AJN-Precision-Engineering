@@ -345,6 +345,8 @@ export interface ArchiveFetchResult {
   reason?: string;
   /** Stable upstream error code for telemetry and truthful HTTP status mapping. */
   errorCode?: string;
+  /** Kept in memory for classifying site health; never returned as user-visible raw upstream text. */
+  errorMessage?: string;
 }
 
 export interface ArchiveFetchOptions {
@@ -498,7 +500,15 @@ export async function fetchArchiveMediaWithRetry(
         if (!opts.fetchImpl) redirectCache.set(upstreamUrl, { url: alternate.url, expires: Date.now() + REDIRECT_TTL_MS });
         return { response: alternate.response, status: alternate.response.status, attempts: attempt };
       }
-      last = { response: null, status: 0, attempts: attempt, failure: 'resolve', errorCode: upstreamCode };
+      const message = networkError instanceof Error ? networkError.message : String(networkError);
+      last = {
+        response: null,
+        status: 0,
+        attempts: attempt,
+        failure: 'resolve',
+        errorCode: upstreamCode ?? (/fetch failed/i.test(message) ? 'FETCH_FAILED' : undefined),
+        errorMessage: message,
+      };
       // A circuit-open result means this host must not be retried during cooldown.
       // We already tried an alternate replica when the failed host was not archive.org.
       if (upstreamCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') {

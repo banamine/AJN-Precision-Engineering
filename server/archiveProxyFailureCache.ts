@@ -75,6 +75,18 @@ export function rememberArchiveProxyFailure(
   prune(now);
 }
 
+/** Outage failures describe the site/network, not a permanently bad media item. */
+export function rememberArchiveProxyFailureUnlessOutage(
+  path: string,
+  reply: ArchiveProxyFailureReply,
+  state: string,
+  now = Date.now(),
+): boolean {
+  if (state === 'down' || state === 'unreachable_from_here') return false;
+  rememberArchiveProxyFailure(path, reply, now);
+  return true;
+}
+
 export function getRecentArchiveProxyFailure(
   path: string,
   now = Date.now(),
