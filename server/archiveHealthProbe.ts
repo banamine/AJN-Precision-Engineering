@@ -1,4 +1,5 @@
 import type { ArchiveHealth } from './archiveHealth.js';
+import { anyPublicHost, safeFetch } from './safeFetch.js';
 
 export type ArchiveHealthFetch = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -19,37 +20,27 @@ async function requestOk(
   method: 'HEAD' | 'GET',
   timeoutMs: number,
 ): Promise<boolean> {
-  const controller = new AbortController();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      controller.abort();
-      reject(new Error('archive health probe timed out'));
-    }, timeoutMs);
-  });
   try {
-    const response = await Promise.race([
-      fetchImpl(url, {
-        method,
-        signal: controller.signal,
-        headers: { 'User-Agent': 'AJN-Archive-Health-Probe/1.0', Accept: '*/*' },
-        redirect: 'error',
-      }),
-      timeout,
-    ]);
-    await response.body?.cancel().catch(() => {});
-    return response.ok;
+    const host = new URL(url).hostname;
+    const methodFetch: ArchiveHealthFetch = (input, init) => fetchImpl(input, { ...init, method });
+    const { res } = await safeFetch(url, {
+      allow: host === 'archive.org' ? (candidate) => candidate === 'archive.org' : anyPublicHost,
+      timeoutMs,
+      fetchImpl: methodFetch,
+      headers: { 'User-Agent': 'AJN-Archive-Health-Probe/1.0', Accept: '*/*' },
+      maxRedirects: 3,
+    });
+    await res.body?.cancel().catch(() => {});
+    return res.ok;
   } catch {
     return false;
-  } finally {
-    if (timer) clearTimeout(timer);
   }
 }
 
 /** Polls only while non-ok. Native fetch is passed by production startup; tests inject their own fetch and clock. */
 export function startArchiveHealthProber(deps: ArchiveHealthProbeDeps): { stop(): void } {
   const now = deps.now ?? Date.now;
-  const intervalMs = deps.intervalMs ?? 5_000;
+  const intervalMs = deps.intervalMs ?? 60_000;
   const timeoutMs = deps.timeoutMs ?? 8_000;
   const setIntervalImpl = deps.setIntervalImpl ?? setInterval;
   const clearIntervalImpl = deps.clearIntervalImpl ?? clearInterval;
