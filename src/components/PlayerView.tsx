@@ -14,8 +14,10 @@ import { buildRadioCatalog } from "../utils/ajnRadioCatalog";
 import { pickLatestFullShows, type FeedItemLike } from "../utils/latestFullShows";
 import { CaptionPanel } from "../news/captions/CaptionPanel";
 import type { ProxyErrorBody } from "../utils/archiveFailure";
-import { MAX_CONSECUTIVE_PLAYBACK_FAILURES, shouldStopAfterConsecutiveFailures } from "../utils/playbackFailurePolicy";
+import { MAX_CONSECUTIVE_PLAYBACK_FAILURES, shouldHoldForArchiveOutage, shouldStopAfterConsecutiveFailures } from "../utils/playbackFailurePolicy";
 import { archiveIdentifierFromPath } from "../utils/thumbnail";
+import { classifyArchiveFailure } from "../utils/archiveFailure";
+import { useArchiveStatus } from "../hooks/useArchiveStatus";
 
 /** Readable, stable id for a show title: "<channelId>/<title-slug>". Used in logs
  *  and telemetry so a failing playback can be found by name. */
@@ -62,7 +64,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   const playerWrapRef = useRef<HTMLDivElement | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
   const [playbackStopped, setPlaybackStopped] = useState(false);
+  const [archivePausedForOutage, setArchivePausedForOutage] = useState(false);
   const skipTimerRef = useRef<number | null>(null);
+  const { state: archiveState, refresh: refreshArchiveStatus } = useArchiveStatus();
 
   // 24/7 continuity: when a program ends (or fails), play the next program on the
   // same channel, wrapping to the first one. If the current program can't be
@@ -360,9 +364,22 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     path: nowPlaying.archivePath ?? nowPlaying.src,
   }) : null, [nowPlaying]);
 
-  const onError = useCallback((err: MediaError | null, proxyFailure?: ProxyErrorBody | null) => {
+  const onError = useCallback(async (err: MediaError | null, proxyFailure?: ProxyErrorBody | null) => {
     console.error("[AJN PLAYBACK] error", meta, err);
     if (!nowPlaying) return;
+    const mediaPath = nowPlaying.archivePath ?? nowPlaying.src ?? '';
+    const isArchiveMedia = archiveIdentifierFromPath(mediaPath) !== null;
+    const itemSpecificFailure = Boolean(proxyFailure && classifyArchiveFailure(502, proxyFailure) === 'definite');
+    if (isArchiveMedia && !itemSpecificFailure) {
+      const latestStatus = await refreshArchiveStatus();
+      if (shouldHoldForArchiveOutage(latestStatus.state, true, itemSpecificFailure)) {
+        if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current);
+        skipTimerRef.current = null;
+        playerWrapRef.current?.querySelector<HTMLMediaElement>("audio, video")?.pause();
+        setArchivePausedForOutage(true);
+        return;
+      }
+    }
     failureContextRef.current = proxyFailure ?? null;
     failuresRef.current += 1;
     if (shouldStopAfterConsecutiveFailures(failuresRef.current)) {
@@ -389,7 +406,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     }
     const delay = SKIP_AFTER_ERROR_MS;
     skipTimerRef.current = window.setTimeout(() => void advance("error"), delay);
-  }, [advance, meta, nowPlaying]);
+  }, [advance, meta, nowPlaying, refreshArchiveStatus]);
 
   useEffect(() => {
     if (!playbackStopped || stoppedInstanceRef.current === nowPlaying) return;
@@ -401,6 +418,10 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     setPlaybackStopped(false);
   }, [nowPlaying, playbackStopped]);
 
+  useEffect(() => {
+    setArchivePausedForOutage(false);
+  }, [nowPlaying]);
+
   const retryCurrent = useCallback(() => {
     failuresRef.current = 0;
     failureContextRef.current = null;
@@ -410,8 +431,16 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current);
     skipTimerRef.current = null;
     setPlaybackStopped(false);
+    setArchivePausedForOutage(false);
     setRetryNonce((n) => n + 1);
   }, []);
+
+  useEffect(() => {
+    if (!archivePausedForOutage || archiveState !== 'ok') return;
+    // The failed media request was held as an outage, not recorded as a dead item.
+    // Remounting the same source restarts the normal player pipeline automatically.
+    retryCurrent();
+  }, [archivePausedForOutage, archiveState, retryCurrent]);
 
   if (!nowPlaying) {
     return (
@@ -431,6 +460,11 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
 
   return (
     <div className="space-y-4">
+      {archivePausedForOutage && (
+        <div role="alert" data-testid="archive-playback-paused" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
+          <p className="font-semibold">Archive is offline. Playback is paused and will resume automatically when Archive is reachable again.</p>
+        </div>
+      )}
       <FullShowStatus />
       {onToggleFavorite && (
         <div className="flex items-center justify-between gap-3">

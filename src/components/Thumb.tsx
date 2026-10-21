@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
-import { initialsOf, thumbCandidates, archiveIdentifierFromPath, type ThumbInput } from '../utils/thumbnail';
+import { initialsOf, thumbCandidates, archiveIdentifierFromPath, isArchiveHostedThumbUrl, type ThumbInput } from '../utils/thumbnail';
 import { getCaptured, markMissing, THUMB_EVENT } from '../utils/thumbStore';
+import { useArchiveStatus } from '../hooks/useArchiveStatus';
 
 interface ThumbProps { input: ThumbInput; title?: string; className?: string }
 
 /** Image with an ordered fallback chain (see utils/thumbnail.ts). data-thumb-source names what is actually showing:
  *  episode-frame | item-image | captured | backup | initials. */
 export function Thumb({ input, title, className = '' }: ThumbProps) {
+  const archiveStatus = useArchiveStatus();
+  const pauseArchiveImages = archiveStatus.state === 'down' || archiveStatus.state === 'unreachable_from_here';
   const id = input.identifier ?? archiveIdentifierFromPath(input.path);
   const [tick, setTick] = useState(0);
   const [idx, setIdx] = useState(0);
   useEffect(() => { const on = (e: Event) => { if ((e as CustomEvent).detail?.key === id) setTick((n) => n + 1); }; window.addEventListener(THUMB_EVENT, on); return () => window.removeEventListener(THUMB_EVENT, on); }, [id]);
-  const candidates = useMemo(() => thumbCandidates(input, getCaptured(id)), [input.identifier, input.path, input.frameFile, input.guideId, input.category, input.mediaType, input.channelId, input.name, id, tick]);
+  const candidates = useMemo(() => {
+    const all = thumbCandidates(input, getCaptured(id));
+    return pauseArchiveImages ? all.filter((candidate) => !isArchiveHostedThumbUrl(candidate.url)) : all;
+  }, [input.identifier, input.path, input.frameFile, input.guideId, input.category, input.mediaType, input.channelId, input.name, id, tick, pauseArchiveImages]);
   const sig = candidates.map((c) => c.url).join('|');
   useEffect(() => { setIdx(0); }, [sig]);
   const current = candidates[idx];

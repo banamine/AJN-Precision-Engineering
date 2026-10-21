@@ -14,6 +14,8 @@ import {
 import { Destination, NowPlayingMedia } from '../types';
 import { SuggestInput } from './SuggestInput';
 import type { SuggestCandidate } from '../utils/suggest';
+import { useArchiveStatus } from '../hooks/useArchiveStatus';
+import { ArchiveOutageBanner } from './ArchiveOutageBanner';
 
 interface NavigationProps {
   currentDestination: Destination;
@@ -70,6 +72,7 @@ export function Navigation({
   onSearch,
   suggestions = [],
 }: NavigationProps) {
+  const archiveStatus = useArchiveStatus();
   const [vaultOpen, setVaultOpen] = useState(false);
   const vaultRef = useRef<HTMLDivElement>(null);
   const closeVault = React.useCallback(() => setVaultOpen(false), []);
@@ -285,6 +288,7 @@ export function Navigation({
 
           </div>
         </div>
+        <ArchiveOutageBanner state={archiveStatus.state} />
       </header>
 
       {/* ── Mobile Bottom Fixed Tab Bar ────────────────────────────────────────── */}
