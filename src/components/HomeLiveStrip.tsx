@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Play } from 'lucide-react';
 import { ChannelLogo } from './ChannelLogo';
 import { LazyThumb } from './LazyThumb';
-import { getCachedSchedule } from '../guide/scheduleCache';
+import { getCachedLightSchedule, getCachedSchedule } from '../guide/scheduleCache';
 import { loadSchedule } from '../guide/loadSchedule';
 import { buildLiveRows, liveCategories, rowsForCategory, LIVE_ALL, type GuideChannels, type LiveStripRow } from '../guide/liveStrip';
 import { tuneIn } from '../guide/liveTune';
@@ -12,6 +12,7 @@ import type { Destination, MediaType, PlayProgramCallback, ScheduleChannel } fro
 
 const TV_GUIDE = 'cable-tv';
 const AUDIO_GUIDE = 'audio-podcasts'; // ~20 MB: loaded only when the viewer asks for it (or it is already in the cache)
+const cachedAudioSchedule = () => getCachedLightSchedule(AUDIO_GUIDE) ?? getCachedSchedule(AUDIO_GUIDE);
 const ROWS_SHOWN = 8;
 const MAX_CHIPS = 14;
 const CAT_KEY = 'ajn.home.liveCat.v1';
@@ -29,7 +30,7 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
   const [category, setCategory] = useState<string>(readCat);
   const [nowHour, setNowHour] = useState(hourNow);
   const [attempt, setAttempt] = useState(0);
-  const [audioWanted, setAudioWanted] = useState(() => !!getCachedSchedule(AUDIO_GUIDE));
+  const [audioWanted, setAudioWanted] = useState(() => !!cachedAudioSchedule());
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
 
@@ -37,7 +38,7 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
     let alive = true;
     setError(null); setAudioError(null);
     const wanted = audioWanted ? [TV_GUIDE, AUDIO_GUIDE] : [TV_GUIDE];
-    if (audioWanted && !getCachedSchedule(AUDIO_GUIDE)) setAudioLoading(true);
+    if (audioWanted && !cachedAudioSchedule()) setAudioLoading(true);
     Promise.allSettled(wanted.map((g) => loadSchedule(g))).then((results) => {
       if (!alive) return;
       setAudioLoading(false);
