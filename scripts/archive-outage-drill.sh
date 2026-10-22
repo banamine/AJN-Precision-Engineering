@@ -60,7 +60,7 @@ wait_for "probe reaches the control URL" control ok 200
 
 cp "$HOSTS_BAK" /etc/hosts
 echo "access restored; waiting for recovery"
-wait_for "recovers after access is restored" state ok 480
+wait_for "recovers after access is restored" state ok 240
 
 echo "--- last health log lines ---"; grep '"state"' "$LOG" | tail -3 | cut -c1-240
 [ "$FAIL" = "0" ] && echo "ARCHIVE OUTAGE DRILL: PASS" || echo "ARCHIVE OUTAGE DRILL: FAIL"

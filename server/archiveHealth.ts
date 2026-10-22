@@ -23,7 +23,7 @@ export const ARCHIVE_HEALTH_DEFAULTS: Readonly<ArchiveHealthConfig> = Object.fre
   degradedMinSamples: 6,
   degradedSuccessRatio: 0.5,
   probeIntervalMs: 60_000,
-  maxProbeIntervalMs: 300_000,
+  maxProbeIntervalMs: 60_000, // no backoff while down: one cheap HEAD + control per minute, so recovery is seen within ~2 probes
   probeTimeoutMs: 8_000,
 });
 

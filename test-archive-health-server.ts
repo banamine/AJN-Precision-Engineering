@@ -145,6 +145,47 @@ assert.equal(probeLines.filter((line) => line.itemKey === 'control-probe').lengt
 prober.stop();
 
 {
+  // Regression: probes were running at 2x the intended spacing. lastProbeAt is stamped after the request
+  // finishes, so a timer firing exactly one interval after the previous tick landed just before the next
+  // probe was due and was skipped.
+  let jitterClock = 1_000_000;
+  const jitterHealth = createArchiveHealth({}, { now: () => jitterClock, log: () => {} });
+  for (const key of ['j-a', 'j-b', 'j-c', 'j-d', 'j-e']) jitterHealth.record({ ts: jitterClock, itemKey: key, kind: 'network' });
+  assert.equal(jitterHealth.getStatus().state, 'down');
+  let jitterTick: (() => void | Promise<void>) | undefined;
+  let tickPeriod = 0;
+  const probeTimes: number[] = [];
+  const jitterProbe = startArchiveHealthProber({
+    health: jitterHealth,
+    now: () => jitterClock,
+    controlUrl: 'https://control.example/generate_204',
+    setIntervalImpl: ((callback: () => void, ms: number) => {
+      jitterTick = callback;
+      tickPeriod = ms;
+      return { unref() {} } as unknown as ReturnType<typeof setInterval>;
+    }) as typeof setInterval,
+    clearIntervalImpl: (() => {}) as typeof clearInterval,
+    fetchImpl: (async (input) => {
+      const url = String(input);
+      if (url === 'https://archive.org/') probeTimes.push(jitterClock);
+      jitterClock += 700; // the request takes time, so the probe is stamped after it finishes
+      return new Response(null, { status: url === 'https://archive.org/' ? 200 : 204 });
+    }) as typeof fetch,
+  });
+  assert.ok(tickPeriod > 0 && tickPeriod <= 5_000, 'prober ticks frequently and lets shouldProbe decide');
+  for (let elapsed = 0; elapsed < 200_000; elapsed += tickPeriod) {
+    jitterClock += tickPeriod;
+    await jitterTick?.();
+    if (jitterHealth.getStatus().state === 'ok') break;
+  }
+  assert.equal(jitterHealth.getStatus().state, 'ok', 'recovers after two successful probes');
+  assert.ok(probeTimes.length === 2, `exactly two probes were needed, saw ${probeTimes.length}`);
+  assert.ok(probeTimes[1] - probeTimes[0] < 70_000, `second probe ${probeTimes[1] - probeTimes[0]} ms after the first (was ~120000 before the fix)`);
+  jitterProbe.stop();
+  console.log('PASS probes keep the configured 60-second spacing despite request time');
+}
+
+{
   let blockedClock = 500_000;
   const blockedControlHealth = createArchiveHealth({}, { now: () => blockedClock, log: () => {} });
   for (const key of ['block-a', 'block-b', 'block-c', 'block-d', 'block-e']) {

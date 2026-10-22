@@ -115,7 +115,11 @@ export function startArchiveHealthProber(deps: ArchiveHealthProbeDeps): { stop()
       running = false;
     }
   };
-  const timer = setIntervalImpl(async () => { await tick(); }, intervalMs);
+  // Tick often and let shouldProbe() decide when a probe is due. Ticking exactly every probe
+  // interval made each tick land a moment before the due time (lastProbeAt is stamped after the
+  // request finishes), so every other tick was skipped and probes ran at twice the intended spacing.
+  const tickMs = Math.min(intervalMs, 5_000);
+  const timer = setIntervalImpl(async () => { await tick(); }, tickMs);
   (timer as unknown as { unref?: () => void }).unref?.();
   return { stop: () => clearIntervalImpl(timer) };
 }
