@@ -1,3 +1,4 @@
+import { bufferGaugeMetadata } from "../utils/bufferGauge";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PlayCircle, Heart } from "lucide-react";
 import { RUSH_PROGRAM, resolveRushNext, upNextLabel, type RushNext } from "../utils/rushNext";
@@ -286,7 +287,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       reportTelemetry({ event: "playback.segment", guideId: cur.guideId ?? null, channelId: cur.channelId ?? null,
         programId: cur.id ?? null, titleId: titleIdOf(cur.channelId, cur.title), sourceId: cur.sourceId ?? null, assetId: cur.assetId ?? null, mediaPath: seg.archivePath ?? seg.mediaUrl ?? null });
       onSelectProgram(seg.archivePath || seg.mediaUrl, cur.title, cur.description, cur.mediaType,
-        cur.channelId, cur.guideId, cur.id, cur.sourceId ?? cur.metadata?.sourceId, cur.assetId ?? cur.metadata?.assetId);
+        cur.channelId, cur.guideId, cur.id, cur.sourceId ?? cur.metadata?.sourceId, cur.assetId ?? cur.metadata?.assetId, undefined, bufferGaugeMetadata(cur.metadata));
       return true;
     }
     const { next, nextIndex } = pick;
@@ -304,7 +305,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       mediaPath: (next.archivePath || next.mediaUrl) ?? null,
     });
     onSelectProgram(next.archivePath || next.mediaUrl, next.title, next.description, next.mediaType,
-      next.channelId, next.guideId, next.id, sourceId, assetId);
+      next.channelId, next.guideId, next.id, sourceId, assetId, undefined, bufferGaugeMetadata(next.metadata));
     return true;
   }, [onSelectProgram, playTarget, rushPlanFor, schedulePrograms]);
 

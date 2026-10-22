@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { LaneImage } from './LaneImage';
 
 /** Only same-site paths and https images are drawn: never http (mixed content) or other schemes. */
 export function safeLogoUrl(url: string | undefined | null): string | null {
@@ -17,7 +18,7 @@ export function ChannelLogo({ logo, name, fallback }: { logo?: string | null; na
   if (!src || failed) return <>{fallback}</>;
   return (
     <span data-testid="channel-logo" className="flex h-6 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-white/90 px-0.5">
-      <img src={src} alt={`${name} logo`} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)}
+      <LaneImage src={src} alt={`${name} logo`} referrerPolicy="no-referrer" onError={() => setFailed(true)}
         className="max-h-full max-w-full object-contain" />
     </span>
   );

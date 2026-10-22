@@ -3,6 +3,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, Play, Shuffle, X } from 'lucide-react';
 import { HomeLiveStrip } from './HomeLiveStrip';
+import { LaneImage } from './LaneImage';
 import { useClassicUpcoming } from '../hooks/useClassicUpcoming';
 import { useDiscoverPool } from '../hooks/useDiscoverPool';
 import { useTodaysDigest } from '../hooks/useTodaysDigest';
@@ -94,7 +95,7 @@ function DiscoverRow({ onPlayProgram, dismissed, onDismiss, onClearDismissed, on
               <Scroller label="Discover" testId="discover-list">
                 {picks.map((d) => (
                   <div role="listitem" key={d.key} data-testid="discover-card" className="group relative h-[140px] w-[220px] shrink-0 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900">
-                    {d.thumb && <img src={d.thumb} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-70 transition duration-300 group-hover:scale-105 group-hover:opacity-90" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+                    {d.thumb && <LaneImage src={d.thumb} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70 transition duration-300 group-hover:scale-105 group-hover:opacity-90" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                     <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
                     <button type="button" onClick={() => play(d)} aria-label={`Play ${d.title}, ${d.categoryLabel}${d.durSeconds ? `, ${fmtDur(d.durSeconds)}` : ''}`}
                       className="absolute inset-0 flex cursor-pointer flex-col justify-end p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-400">
@@ -218,7 +219,7 @@ function DigestRow({ onPlayProgram, dismissed, onDismiss, onClearDismissed, excl
               <Scroller label="Today's Digest" testId="digest-list">
                 {cards.map((c) => (
                   <div role="listitem" key={c.key} data-testid="digest-card" data-tier={c.tier} className="group relative h-[140px] w-[220px] shrink-0 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900">
-                    {c.thumb && <img src={c.thumb} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-70 transition duration-300 group-hover:scale-105 group-hover:opacity-90" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                    {c.thumb && <LaneImage src={c.thumb} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70 transition duration-300 group-hover:scale-105 group-hover:opacity-90" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                     <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
                     <button type="button" onClick={() => play(c)} aria-label={`Play ${c.title}, ${c.showLabel}${c.tier === 'new' && c.publishedMs ? `, new, ${ageLabel(c.publishedMs, now)}` : ''}, ${c.mediaType}`}
                       className="absolute inset-0 flex cursor-pointer flex-col justify-end p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-400">

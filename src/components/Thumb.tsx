@@ -2,31 +2,36 @@ import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { initialsOf, thumbCandidates, archiveIdentifierFromPath, isArchiveHostedThumbUrl, type ThumbInput } from '../utils/thumbnail';
 import { getCaptured, markMissing, THUMB_EVENT } from '../utils/thumbStore';
 import { useArchiveStatus } from '../hooks/useArchiveStatus';
+import { LaneImage } from './LaneImage';
 
-interface ThumbProps { input: ThumbInput; title?: string; className?: string }
+interface ThumbProps { input: ThumbInput; title?: string; className?: string; showUnavailableLabel?: boolean }
 
 /** Image with an ordered fallback chain (see utils/thumbnail.ts). data-thumb-source names what is actually showing:
  *  episode-frame | item-image | captured | backup | initials. */
-export function Thumb({ input, title, className = '' }: ThumbProps) {
+export function Thumb({ input, title, className = '', showUnavailableLabel = false }: ThumbProps) {
   const archiveStatus = useArchiveStatus();
   const pauseArchiveImages = archiveStatus.state === 'down' || archiveStatus.state === 'unreachable_from_here';
   const id = input.identifier ?? archiveIdentifierFromPath(input.path);
   const [tick, setTick] = useState(0);
   const [idx, setIdx] = useState(0);
+  const [failed, setFailed] = useState(false);
   useEffect(() => { const on = (e: Event) => { if ((e as CustomEvent).detail?.key === id) setTick((n) => n + 1); }; window.addEventListener(THUMB_EVENT, on); return () => window.removeEventListener(THUMB_EVENT, on); }, [id]);
   const candidates = useMemo(() => {
     const all = thumbCandidates(input, getCaptured(id));
     return pauseArchiveImages ? all.filter((candidate) => !isArchiveHostedThumbUrl(candidate.url)) : all;
   }, [input.identifier, input.path, input.frameFile, input.guideId, input.category, input.mediaType, input.channelId, input.name, id, tick, pauseArchiveImages]);
   const sig = candidates.map((c) => c.url).join('|');
-  useEffect(() => { setIdx(0); }, [sig]);
+  useEffect(() => { setIdx(0); setFailed(false); }, [sig]);
   const current = candidates[idx];
   const onError = () => {
     if (current && (current.source === 'episode-frame' || current.source === 'item-image')) {
       // Archive has no usable image for this item: allow a real playback frame to be captured for it.
       if (candidates.slice(idx + 1).every((c) => c.source !== 'item-image')) markMissing(id);
     }
-    setIdx((n) => n + 1);
+    setIdx((n) => {
+      if (n + 1 >= candidates.length) setFailed(true);
+      return n + 1;
+    });
   };
   // Archive's default cover for an audio item with no art is a thin 180x45 waveform strip: when a genre picture follows, use that.
   const onLoad = (e: SyntheticEvent<HTMLImageElement>) => {
@@ -37,7 +42,10 @@ export function Thumb({ input, title, className = '' }: ThumbProps) {
     return <img src={input.placeholder} alt={title ?? ''} loading="lazy" decoding="async" data-thumb-source="placeholder" className={`object-cover bg-neutral-800 ${className}`} />;
   }
   if (!current) {
-    return <div role="img" aria-label={title ?? 'No thumbnail'} data-thumb-source="initials" className={`flex items-center justify-center bg-neutral-800 text-neutral-300 font-semibold ${className}`}>{initialsOf(title)}</div>;
+    return <div role="img" aria-label={failed && showUnavailableLabel ? `Thumbnail unavailable: ${title ?? 'untitled'}` : title ?? 'No thumbnail'} data-thumb-source="initials" className={`relative flex items-center justify-center bg-neutral-800 text-neutral-300 font-semibold ${className}`}>
+      {initialsOf(title)}
+      {failed && showUnavailableLabel && <span className="absolute bottom-2 left-2 rounded bg-neutral-950/90 px-2 py-1 text-[11px] font-medium text-neutral-200">Thumbnail unavailable</span>}
+    </div>;
   }
-  return <img key={current.url} src={current.url} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" data-thumb-source={current.source} onError={onError} onLoad={onLoad} className={`object-cover bg-neutral-800 ${className}`} />;
+  return <LaneImage key={current.url} src={current.url} alt="" referrerPolicy="no-referrer" data-thumb-source={current.source} onError={onError} onLoad={onLoad} className={`object-cover bg-neutral-800 ${className}`} />;
 }

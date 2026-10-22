@@ -1,3 +1,5 @@
+import { LaneImage } from "./LaneImage";
+import { bufferGaugeMetadata } from "../utils/bufferGauge";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Clock, Headphones, ListChecks, Play, RefreshCw, Tv } from "lucide-react";
 import type { Destination, Guide, MediaType, PlayProgramCallback, ScheduleChannel } from "../types";
@@ -40,7 +42,7 @@ function Thumb({ entry, channel, className }: { entry: TodayEntry; channel: Sche
   const [failed, setFailed] = useState(false);
   const isAudio = (entry.program.mediaType || channel.mediaType) === "audio";
   if (url && !failed) {
-    return <img src={url} alt="" loading="lazy" onError={() => setFailed(true)} className={`${className} object-cover`} />;
+    return <LaneImage key={url} src={url} alt="" onError={() => setFailed(true)} className={`${className} object-cover`} />;
   }
   return (
     <div aria-hidden="true" className={`${className} flex items-center justify-center bg-neutral-800 text-neutral-500`}>
@@ -126,9 +128,9 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
     const assetId = p.assetId ?? (p.metadata?.assetId as string | undefined);
     if (joinNow) {
       const t = tuneIn(p, entry.sHour, entry.eHour, nowHour);
-      onSelectProgram(t.path, p.title, tc.channel.name, media, tc.channel.id, p.guideId, p.id, sourceId, assetId, t.startAtSeconds);
+      onSelectProgram(t.path, p.title, tc.channel.name, media, tc.channel.id, p.guideId, p.id, sourceId, assetId, t.startAtSeconds, bufferGaugeMetadata(p.metadata));
     } else {
-      onSelectProgram(p.archivePath || p.mediaUrl, p.title, tc.channel.name, media, tc.channel.id, p.guideId, p.id, sourceId, assetId);
+      onSelectProgram(p.archivePath || p.mediaUrl, p.title, tc.channel.name, media, tc.channel.id, p.guideId, p.id, sourceId, assetId, undefined, bufferGaugeMetadata(p.metadata));
     }
   };
 

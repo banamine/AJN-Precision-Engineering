@@ -1,3 +1,5 @@
+import type { BufferGaugeMetadata } from "./utils/bufferGauge";
+
 export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'news-cube' | 'radio' | 'today' | 'history' | 'dev';
 
 export type MediaType = 'video' | 'audio';
@@ -136,6 +138,8 @@ export interface NowPlayingMedia {
   archivePath?: string;
   thumbnailUrl?: string;
   duration?: string;
+  /** Ephemeral size/runtime inputs for the player gauge; not copied into the saved-play history record. */
+  bufferMetadata?: BufferGaugeMetadata;
   isLive?: boolean;
   /** One-shot start offset (seconds) applied when this item loads: used by the audio/video switch. Never persisted. */
   startAtSeconds?: number;
@@ -212,5 +216,6 @@ export type PlayProgramCallback = (
   programId?: string,
   sourceId?: string,
   assetId?: string,
-  startAtSeconds?: number
+  startAtSeconds?: number,
+  bufferMetadata?: BufferGaugeMetadata
 ) => void;
