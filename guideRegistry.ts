@@ -7,6 +7,7 @@ import { tryResolveArchiveMediaCandidates } from './channels';
 import { archiveNewsContract, NEWS_NETWORKS, type ArchiveNewsInput } from './server/sources/archiveNews';
 import { runSources } from './server/sources/runner';
 import { buildRushChannel, buildOtrChannel, buildArchiveItemChannel, type ArchiveAudioChannelSource } from './server/audioChannels';
+import { getInfowarsDiagnostics, INFOWARS_CHANNEL_ID } from './server/infowarsRadio';
 import archiveAudioChannelsJson from './src/data/archiveAudioChannels.json';
 import { getPodcastChannels } from './server/podcasts';
 import { getLiveRadioChannels } from './server/liveRadio';
@@ -25,6 +26,7 @@ import { buildOldBritishTvChannels, OLD_BRITISH_TV_GUIDE_ID, type OldBritishTvMa
 import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './src/services/producers/moviesClassicsProducer';
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
+import { buildAllMyChildrenChannel, isAllMyChildrenChannel } from './collections/allmychildren-channel';
 
 export const GUIDES: Guide[] = [
   { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
@@ -305,6 +307,7 @@ import { liveTvContract, LIVE_REFRESH_MS, resetLiveTvLastGoodForTests } from './
 import { healthOf, runHealthCheck, pendingRechecks, liveHealthStats } from './server/liveHealth';
 import { getPlutoEpg, plutoIdOf, setPlutoEpgFetchForTests, type EpgSlot } from './server/sources/plutoEpg';
 import { getLiveNewsChannels } from './server/liveNewsChannels';
+import { mergeLiveTvNews } from './server/liveNewsMerge';
 import { currentLiveNews, ensureLiveNewsRefresh, liveNewsSummary } from './server/liveNewsRefresh';
 import { getFoxClipsChannels } from './server/foxClips';
 import { currentFoxClips, ensureFoxClipsRefresh, foxClipsSummary } from './server/foxClipsRefresh';
@@ -479,10 +482,12 @@ export function tagMusicLane(programs:Program[]):Program[]{
 }
 function audioTasks(guideId:string,now:Date):AudioTask[]{
   const itemSrcs=archiveAudioChannelsJson as ArchiveAudioChannelSource[];
+  const itemTasks=itemSrcs.map(x=>({id:x.id,name:x.name,group:x.group,mins:30,maxSlots:x.maxSlots??120,loopDay:true,build:()=>buildArchiveItemChannel(guideId,x,now)}));
   return [
     {id:'rush-on-this-day',name:'Rush Limbaugh — On This Day',group:'Talk Radio',mins:36,maxSlots:120,loopDay:false,build:()=>buildRushChannel(guideId,now)},
     {id:'old-time-radio',name:'Old-Time Radio',group:'Old-Time Radio',mins:30,maxSlots:120,loopDay:false,build:()=>buildOtrChannel(guideId,now)},
-    ...itemSrcs.map(x=>({id:x.id,name:x.name,group:x.group,mins:30,maxSlots:x.maxSlots??120,loopDay:true,build:()=>buildArchiveItemChannel(guideId,x)})),
+    ...itemTasks.filter(x=>x.id===INFOWARS_CHANNEL_ID),
+    ...itemTasks.filter(x=>x.id!==INFOWARS_CHANNEL_ID),
   ];
 }
 /** Turn whatever has resolved into channels. Pending ones are explicit "loading" rows; failed ones are explicit upstream_error rows. */
@@ -491,7 +496,8 @@ function assembleAudio(tasks:AudioTask[],progress:Map<string,Program[]>,now:Date
   const loops=new Map<string,Program[]>();
   const data=tasks.map((t):ScheduleChannel=>{
     const programs=progress.get(t.id);
-    const base={id:t.id,guideId:'audio-podcasts',name:t.name,mediaType:'audio' as MediaType,group:t.group};
+    const diagnostics=t.id===INFOWARS_CHANNEL_ID?getInfowarsDiagnostics():undefined;
+    const base={id:t.id,guideId:'audio-podcasts',name:t.name,mediaType:'audio' as MediaType,group:t.group,...(diagnostics?{diagnostics}:{})};
     if(programs===undefined){
       incomplete=true;
       const last=prev?.find(c=>c.id===t.id&&c.programs.length);
@@ -502,12 +508,14 @@ function assembleAudio(tasks:AudioTask[],progress:Map<string,Program[]>,now:Date
       // window of it, see getAudioLoopRows); everything else still gets the first maxSlots rows, exactly as before.
       const full=layoutMusicDailySchedule(t.group==='Music'?tagMusicLane(programs):programs,now,t.mins);
       loops.set(t.id,full);
-      return{...base,programs:full.slice(0,t.maxSlots),sourceStatus:'ok'};
+      const partial=Boolean(diagnostics&&(diagnostics.skippedCount>0||diagnostics.scheduleSeconds<diagnostics.windowSeconds));
+      if(partial)incomplete=true;
+      return{...base,programs:full.slice(0,t.maxSlots),sourceStatus:partial?'partial':'ok',...(diagnostics?.error?{sourceError:diagnostics.error}:{})};
     }
     if(programs.length)return{...base,programs:layoutDailySchedule(programs,t.mins,now,t.maxSlots),sourceStatus:'ok'};
     incomplete=true;
     const last=prev?.find(c=>c.id===t.id&&c.programs.length);
-    return last??{...base,programs:[],sourceStatus:'upstream_error',sourceError:'Archive did not answer; retrying shortly'};
+    return last??{...base,programs:[],sourceStatus:'upstream_error',sourceError:diagnostics?.error??'Archive did not answer; retrying shortly'};
   });
   return{data,incomplete,loops};
 }
@@ -750,7 +758,7 @@ export function layoutMusicDailySchedule(programs:Program[],now=new Date(),fallb
 function toProxy(u?:string){return u&&u.startsWith('/download/')?`/api/archive/proxy?path=${encodeURIComponent(u)}`:u;}
 /** Every program leaves the server with a playable URL: raw Archive paths go
  *  through the proxy (archivePath keeps the exact path for tracing). */
-function normalizeChannels(chs:ScheduleChannel[]):ScheduleChannel[]{
+export function normalizeChannels(chs:ScheduleChannel[]):ScheduleChannel[]{
   return chs.map(ch=>{
     const rejected=[...(ch.rejected??[])];
     const programs:Program[]=[];
@@ -853,11 +861,27 @@ export function layoutArchiveItemGuide(
  *  uploader / Random / Star Wars movie channels (movies-classics-vault). Real Archive runtimes; deterministic daily rotation. */
 interface ExtraChannelsManifest{schema:string;channels:{guideId:string;id:string;name:string;group:string;rows:{id:string;identifier:string;file:string;title:string;bytes:number;durationSeconds:number;thumb:string|null}[]}[]}
 const extraBase=new Map<string,Program[]>();
+const AMC_EPISODES_CHANNEL_ID='ajn-allmychildren-episodes';
+/** Full, unrotated All My Children channels. The Library must index every episode/extra, not just the day's grid slice. */
+let amcLibraryCache:ScheduleChannel[]|null=null;
+export async function getAllMyChildrenLibraryChannels():Promise<ScheduleChannel[]>{
+  if(amcLibraryCache)return amcLibraryCache;
+  const mod:any=await import('./src/data/extraChannelsManifest.json');
+  const manifest=(mod.default??mod) as ExtraChannelsManifest;
+  if(manifest.schema!=='ajn.extraChannelsManifest.v1')throw new Error('Unexpected extra channels manifest schema');
+  amcLibraryCache=manifest.channels.filter(c=>isAllMyChildrenChannel(c)&&c.rows.length>0).map(c=>buildAllMyChildrenChannel(c));
+  return amcLibraryCache;
+}
 async function getExtraChannels(guideId:string,now:Date):Promise<ScheduleChannel[]>{
   const mod:any=await import('./src/data/extraChannelsManifest.json');
   const manifest=(mod.default??mod) as ExtraChannelsManifest;
   if(manifest.schema!=='ajn.extraChannelsManifest.v1')throw new Error('Unexpected extra channels manifest schema');
   return manifest.channels.filter(c=>c.guideId===guideId&&c.rows.length>0).map(c=>{
+    if(isAllMyChildrenChannel(c)){
+      const built=buildAllMyChildrenChannel(c);
+      /* Episodes get a rotating daily grid (air-date order, continues each day). Extras stay date-only (Library-only). */
+      return c.id===AMC_EPISODES_CHANNEL_ID?{...built,programs:layoutRotatingDailySchedule(built.programs,45,now)}:built;
+    }
     let base=extraBase.get(c.id);
     if(!base){base=c.rows.map(r=>showSourceProgram({...r,channelId:c.id,channelName:c.name,series:c.name},guideId));extraBase.set(c.id,base);}
     return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs:layoutRotatingDailySchedule(base,100,now),sourceStatus:'snapshot' as const};
@@ -874,7 +898,12 @@ async function getScheduleForGuideRaw(guideId='cable-tv',movieNow?:Date):Promise
     ensureLiveNewsRefresh();ensureFoxClipsRefresh();
     // Then group "FOX Clips" (Police Chase): on-demand FOX clips, neither Archive nor live.
     const taken=new Set(archive.map(c=>c.id));
-    return [...archive,...getLiveNewsChannels(guideId,movieNow??new Date(),currentLiveNews(),archive.map(c=>c.name)),...getFoxClipsChannels(guideId,movieNow??new Date(),currentFoxClips()).filter(c=>!taken.has(c.id))];
+    // Live News = curated live news + the Live TV guide's "News" channels, one list, identical stream URLs listed once.
+    const archiveNames=archive.map(c=>c.name);
+    const curatedLive=getLiveNewsChannels(guideId,movieNow??new Date(),currentLiveNews(),archiveNames);
+    const liveTvNews=await getLiveTvChannels('live-tv').catch(e=>{console.warn('[AJN] Live News merge: Live TV list unavailable:',e?.message);return[] as ScheduleChannel[];});
+    const liveNewsAll=mergeLiveTvNews(guideId,curatedLive,liveTvNews,archiveNames);
+    return [...archive,...liveNewsAll,...getFoxClipsChannels(guideId,movieNow??new Date(),currentFoxClips()).filter(c=>!taken.has(c.id))];
   }
   if(guideId==='live-tv') return getLiveTvChannels(guideId);
   if(guideId==='classic-tv'){

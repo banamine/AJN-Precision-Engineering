@@ -11,6 +11,7 @@ import { parseM3uEntries } from './classicM3u';
 import { slug } from './archiveLinks';
 import type { RejectedItem, SourceContract, SourceResult } from './contract';
 import { safeFetch, readTextCapped, anyPublicHost, SOURCE_LIST_MAX_BYTES } from '../safeFetch';
+import pinnedConfig from '../data/liveTvPinned.json' with { type: 'json' };
 
 /** Last list that downloaded and parsed, per source URL (process lifetime). */
 const lastGoodList = new Map<string, string>();
@@ -26,6 +27,15 @@ export const LIVE_REFRESH_MS = 6 * 3600_000;
 
 export interface LiveTvInput { guideId: string; sources?: string[]; fetchImpl?: typeof fetch }
 export interface LiveChannel { id: string; name: string; group: string; logo?: string; program: Program }
+type LiveTvEntry = ReturnType<typeof parseM3uEntries>[number] & { stableId?: string; pinned?: boolean };
+type PinnedChannel = { id: string; name: string; url: string; group: string; logo?: string; tvgId?: string };
+type GroupOverride = { tvgIdPrefix: string; group: string };
+type UpstreamOverride = { titlePrefix: string; id: string; displayName?: string };
+const pinnedChannels = (pinnedConfig as { channels: PinnedChannel[] }).channels;
+const groupOverrides = (pinnedConfig as { groupOverrides: GroupOverride[] }).groupOverrides;
+const upstreamOverrides = (pinnedConfig as { upstreamOverrides: UpstreamOverride[] }).upstreamOverrides;
+const pinnedByUrl = new Map(pinnedChannels.map((channel) => [channel.url, channel]));
+const PINNED_SOURCE = 'pinned:server/data/liveTvPinned.json';
 
 /** Xtream-Codes style panel URL: host:port/user/pass/streamId (credentials in the path). */
 const PANEL_RESTREAM = /^https?:\/\/[^/]+:\d+\/[^/]+\/[^/]+\/\d+(\.\w+)?$/i;
@@ -55,6 +65,51 @@ export const liveTvContract: SourceContract<LiveTvInput> = {
     const seenId = new Set<string>();
     const day = Date.UTC(ctx.now.getUTCFullYear(), ctx.now.getUTCMonth(), ctx.now.getUTCDate());
 
+    const appendEntry = (entry: LiveTvEntry, source: string) => {
+      const name = entry.title.trim();
+      const pinnedMatch = pinnedByUrl.get(entry.url);
+      const upstreamOverride = !entry.pinned && entry.tvgId?.startsWith('NTDTV')
+        ? upstreamOverrides.find((row) => entry.title.startsWith(row.titlePrefix))
+        : undefined;
+      const displayName = upstreamOverride?.displayName ?? name;
+      const groupOverride = groupOverrides.find((row) => !!entry.tvgId?.startsWith(row.tvgIdPrefix));
+      const group = groupOverride?.group ?? ((entry.groupTitle || 'Undefined').split(';')[0].trim() || 'Undefined');
+      if (!name) return;
+      if (ADULT_GROUP.test(entry.groupTitle ?? '')) { rejected.push({ id: name, reason: 'adult group' }); return; }
+      const bad = checkLiveUrl(entry.url);
+      if (bad) { rejected.push({ id: name, reason: bad }); return; }
+      if (seenUrl.has(entry.url)) return;
+      seenUrl.add(entry.url);
+
+      // Pinned URLs supply stable canonical IDs even when the upstream row wins dedupe.
+      // Other existing NTD rows get explicit name overrides before the legacy fallback.
+      let channelId = entry.stableId || pinnedMatch?.id || upstreamOverride?.id || `live-${slug(entry.tvgId || displayName)}`;
+      if (seenId.has(channelId)) {
+        let n = 2;
+        while (seenId.has(`${channelId}-${n}`)) n++;
+        channelId = `${channelId}-${n}`;
+      }
+      seenId.add(channelId);
+      const programId = normalizeProgramIdentity({ externalId: `${channelId}|live`, channelId, title: displayName, startTime: new Date(day).toISOString() });
+      programs.push({
+        id: programId,
+        guideId: input.guideId,
+        channelId,
+        title: displayName,
+        description: `Live · ${group}`,
+        startTime: 0, endTime: 24, startHour: 0, endHour: 24,
+        startTimeUtc: new Date(day).toISOString(),
+        endTimeUtc: new Date(day + 86_400_000).toISOString(),
+        mediaType: 'video',
+        mediaUrl: entry.url,
+        assetId: normalizeAssetIdentity({ externalId: entry.url, programId, mediaUrl: entry.url }),
+        sourceId: normalizeSourceIdentity({ channelId, url: source, protocol: 'm3u' }),
+        sourceClass: 'm3u_live',
+        isArchivedSource: false,
+        metadata: { externalId: entry.url, group, logo: entry.tvgLogo, tvgId: entry.tvgId, live: true, source },
+      } as Program);
+    };
+
     for (const source of sources) {
       let text: string;
       try {
@@ -72,39 +127,21 @@ export const liveTvContract: SourceContract<LiveTvInput> = {
         text = kept;
       }
 
-      for (const entry of parseM3uEntries(text)) {
-        const name = entry.title.trim();
-        const group = (entry.groupTitle || 'Undefined').split(';')[0].trim() || 'Undefined';
-        if (!name) continue;
-        if (ADULT_GROUP.test(entry.groupTitle ?? '')) { rejected.push({ id: name, reason: 'adult group' }); continue; }
-        const bad = checkLiveUrl(entry.url);
-        if (bad) { rejected.push({ id: name, reason: bad }); continue; }
-        if (seenUrl.has(entry.url)) continue;
-        seenUrl.add(entry.url);
+      for (const entry of parseM3uEntries(text)) appendEntry(entry, source);
+    }
 
-        // Two lists can use the same tvg-id/name; keep each row's id unique.
-        let channelId = `live-${slug(entry.tvgId || name)}`;
-        for (let n = 2; seenId.has(channelId); n++) channelId = `live-${slug(entry.tvgId || name)}-${n}`;
-        seenId.add(channelId);
-        const programId = normalizeProgramIdentity({ externalId: `${channelId}|live`, channelId, title: name, startTime: new Date(day).toISOString() });
-        programs.push({
-          id: programId,
-          guideId: input.guideId,
-          channelId,
-          title: name,
-          description: `Live · ${group}`,
-          startTime: 0, endTime: 24, startHour: 0, endHour: 24,
-          startTimeUtc: new Date(day).toISOString(),
-          endTimeUtc: new Date(day + 86_400_000).toISOString(),
-          mediaType: 'video',
-          mediaUrl: entry.url,
-          assetId: normalizeAssetIdentity({ externalId: entry.url, programId, mediaUrl: entry.url }),
-          sourceId: normalizeSourceIdentity({ channelId, url: source, protocol: 'm3u' }),
-          sourceClass: 'm3u_live',
-          isArchivedSource: false,
-          metadata: { externalId: entry.url, group, logo: entry.tvgLogo, tvgId: entry.tvgId, live: true, source },
-        } as Program);
-      }
+    // Process the supplement last: upstream owns an identical URL; pinned rows fill gaps.
+    for (const channel of pinnedChannels) {
+      appendEntry({
+        title: channel.name,
+        url: channel.url,
+        duration: -1,
+        groupTitle: channel.group,
+        tvgId: channel.tvgId,
+        tvgLogo: channel.logo,
+        stableId: channel.id,
+        pinned: true,
+      }, PINNED_SOURCE);
     }
 
     const base = { sourceClass: 'live_tv' as const, fetchedAt: ctx.now.toISOString(), programs, rejected };

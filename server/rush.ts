@@ -69,10 +69,23 @@ const track = (id: string, f: CacheEntry['files'][number]): RushTrack => {
 export function filesFromMetadata(meta: any): CacheEntry['files'] {
   const mp3 = (meta?.files ?? []).filter((f: any) => /\.mp3$/i.test(f.name) && String(f.private) !== 'true');
   const originals = mp3.filter((f: any) => f.source === 'original');
-  return (originals.length ? originals : mp3)
+  const chosenMp3 = (originals.length ? originals : mp3)
     .map((f: any) => ({ file: String(f.name), durationSeconds: seconds(f.length), size: f.size ? Number(f.size) : undefined, format: f.format }))
     .filter((f: any) => f.durationSeconds > 0)
     .sort((a: any, b: any) => a.file.localeCompare(b.file, undefined, { numeric: true }));
+  // Preserve the historical MP3 selection exactly. M4A/AAC are fallbacks only
+  // when an item has no admissible, positive-duration MP3.
+  if (chosenMp3.length) return chosenMp3;
+  for (const extension of ['m4a', 'aac']) {
+    const candidates = (meta?.files ?? []).filter((f: any) => new RegExp(`\\.${extension}$`, 'i').test(String(f.name ?? '')) && !/^true$/i.test(String(f.private ?? '')));
+    const preferred = candidates.filter((f: any) => f.source === 'original');
+    const playable = (preferred.length ? preferred : candidates)
+      .map((f: any) => ({ file: String(f.name), durationSeconds: seconds(f.length), size: f.size ? Number(f.size) : undefined, format: f.format }))
+      .filter((f: any) => f.durationSeconds > 0)
+      .sort((a: any, b: any) => a.file.localeCompare(b.file, undefined, { numeric: true }));
+    if (playable.length) return playable;
+  }
+  return [];
 }
 
 /** Packaged snapshot of every whole-item audio channel's tracks (src/data/audioItemSnapshot.json, built by tools/build-audio-snapshot.ts).

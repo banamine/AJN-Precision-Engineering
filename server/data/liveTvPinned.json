@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "groupOverrides": [
+    {
+      "tvgIdPrefix": "NTDTV",
+      "group": "News"
+    }
+  ],
+  "upstreamOverrides": [
+    {
+      "titlePrefix": "NTD TV West (720p)",
+      "id": "live-ntdtv-west-hdla"
+    },
+    {
+      "titlePrefix": "NTD TV English",
+      "id": "live-ntdtv-english-rakuten",
+      "displayName": "NTD TV English (Rakuten)"
+    }
+  ],
+  "channels": [
+    {
+      "id": "live-ntdtv-east",
+      "name": "NTD TV (1080p)",
+      "url": "https://ntd02.akamaized.net/HD-NY/index.m3u8",
+      "group": "News",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/NTD_Logo_with_symbol.svg/960px-NTD_Logo_with_symbol.svg.png",
+      "tvgId": "NTDTVEast"
+    },
+    {
+      "id": "live-ntdtv-asia-pacific",
+      "name": "NTD TV Asia-Pacific",
+      "url": "https://live.ntdtv.com/aplive200/playlist.m3u8",
+      "group": "News",
+      "logo": "https://i.imgur.com/iyFXcDy.png",
+      "tvgId": "NTDTVAsiaPacific"
+    },
+    {
+      "id": "live-ntdtv-canada",
+      "name": "NTD TV Canada",
+      "url": "https://live.ntdtv.com/mllive860/playlist.m3u8",
+      "group": "News",
+      "logo": "https://i.imgur.com/iyFXcDy.png",
+      "tvgId": "NTDTVCanada"
+    },
+    {
+      "id": "live-ntdtv-canada-west",
+      "name": "NTD TV Canada West",
+      "url": "https://live.ntdtv.com/cwlive220/playlist.m3u8",
+      "group": "News",
+      "logo": "https://i.imgur.com/iyFXcDy.png",
+      "tvgId": "NTDTVCanadaWest"
+    },
+    {
+      "id": "live-ntdtv-china",
+      "name": "NTD TV China",
+      "url": "https://live.ntdtv.com/cnlive900/playlist.m3u8",
+      "group": "News",
+      "logo": "https://i.imgur.com/OpWTWdh.png",
+      "tvgId": "NTDTVChina"
+    },
+    {
+      "id": "live-ntdtv-english-1080",
+      "name": "NTD TV English (1080p)",
+      "url": "https://amg17596-amg17596c1-ntdtv-worldwide-3276.playouts.now.amagi.tv/playlist/amg17596-newtangdynastytelevision-ntdtv-ntdtvworldwide/playlist.m3u8",
+      "group": "News",
+      "logo": "https://i.imgur.com/26uv1ww.png",
+      "tvgId": "NTDTVEnglish1080"
+    },
+    {
+      "id": "live-ntdtv-english-720",
+      "name": "NTD TV English (720p)",
+      "url": "https://ntd02.akamaized.net/NTDA/index.m3u8",
+      "group": "News",
+      "logo": "https://i.imgur.com/26uv1ww.png",
+      "tvgId": "NTDTVEnglish720"
+    },
+    {
+      "id": "live-ntdtv-english-uk",
+      "name": "NTD TV English UK (1080p)",
+      "url": "https://ntd02.akamaized.net/NTD-UK/index.m3u8",
+      "group": "News",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/NTD_Logo_with_symbol.svg/960px-NTD_Logo_with_symbol.svg.png",
+      "tvgId": "NTDTVEnglishUK"
+    },
+    {
+      "id": "live-ntdtv-west",
+      "name": "NTD TV West",
+      "url": "https://live.ntdtv.com/uwlive990/playlist.m3u8",
+      "group": "News",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/NTD_Logo_with_symbol.svg/960px-NTD_Logo_with_symbol.svg.png",
+      "tvgId": "NTDTVWest"
+    }
+  ]
+}
