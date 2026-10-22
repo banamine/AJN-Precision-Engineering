@@ -95,6 +95,8 @@ try {
   const initial = await page.evaluate(() => window.__thumbnailLaneStats());
   assert.deepEqual(initial, { active: 4, queued: 36, limit: 4 });
   assert.equal(await page.$eval('[data-loaded="false"]', (element) => element.getAttribute('data-testid')), 'lazy-thumb', 'offscreen LazyThumb is not activated');
+  // The page counts a slot as active before the request interceptor in this process has seen it: wait for it, then assert.
+  for (let i = 0; i < 100 && imageStarts.length < 4; i++) await new Promise((resolve) => setTimeout(resolve, 20));
   assert.equal(imageStarts.length, 4, 'only four images are requested while 40 channel logos are admitted');
 
   const mediaResult = await page.evaluate(async () => {
