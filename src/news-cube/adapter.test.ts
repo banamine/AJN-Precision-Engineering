@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { allocateFaces, toCubeArticles } from './adapter';
+import { allocateFaces, balanceBySource, CUBE_SOURCE_CAP, toCubeArticles } from './adapter';
 import { syntheticDigestFixture } from './syntheticDigestFixture.test';
 
 const now = Date.parse('2026-10-21T18:00:00.000Z');
@@ -133,5 +133,17 @@ assert.equal(summaryById.get('title-repeat'), '');
 assert.equal(summaryById.get('publisher-repeat'), '');
 assert.equal(summaryById.get('title-publisher-repeat'), '');
 assert.equal(summaryById.get('bare-url-summary'), '');
+
+const mk = (publisherId: string, n: number) => ({ id: `${publisherId}-${n}`, title: 't', summary: '', publisherName: publisherId, publisherId, publishedAt: '2026-10-21T00:00:00.000Z', canonicalUrl: `https://x.invalid/${publisherId}/${n}`, imageUrl: null });
+const heavy = [...Array.from({ length: 20 }, (_, n) => mk('loud', n)), ...['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'].flatMap((p) => [mk(p, 0), mk(p, 1), mk(p, 2), mk(p, 3)])];
+const balanced = balanceBySource(heavy);
+const perPublisher = new Map<string, number>();
+for (const article of balanced) perPublisher.set(article.publisherId, (perPublisher.get(article.publisherId) ?? 0) + 1);
+assert.equal(balanced.length, 36, 'cube still fills 36 slots');
+assert.ok(Math.max(...perPublisher.values()) <= CUBE_SOURCE_CAP, 'no publisher above the cap when enough publishers exist');
+assert.equal(perPublisher.size, 9, '36 slots at cap 4 hold 9 publishers: the loud feed no longer takes 20');
+assert.deepEqual(balanced.map((a) => a.id), heavy.filter((a) => balanced.includes(a)).map((a) => a.id), 'newest-first order kept');
+assert.equal(balanceBySource(Array.from({ length: 12 }, (_, n) => mk('only', n))).length, 12, 'single publisher is topped up, not truncated to the cap');
+assert.deepEqual(balanceBySource([]), []);
 
 console.log('News Cube adapter: PASS (real-shaped fixture, 33 allocation, 36 cap, dates, duplicate, fallback, URL and raw-HTML summary cases)');

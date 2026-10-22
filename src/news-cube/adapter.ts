@@ -211,6 +211,31 @@ export function toCubeArticles(raw: unknown, now: number = Date.now()): CubeAdap
   return { articles: accepted.map(({ article }) => article), dropped };
 }
 
+export const CUBE_SOURCE_CAP = 4;
+
+/**
+ * Spread the cube across publishers: keep newest-first order, but take at most `cap` articles per
+ * publisher until the 36 slots are full. A high-frequency feed can no longer fill whole faces.
+ * Articles left out are used only to top up the cube when too few publishers exist to fill 36
+ * slots, so the cube is never emptier than it was. Not applied when the user filters to one publisher.
+ */
+export function balanceBySource(articles: readonly CubeArticle[], cap: number = CUBE_SOURCE_CAP, slots: number = 36): CubeArticle[] {
+  const taken = new Set<number>();
+  const counts = new Map<string, number>();
+  const picked: number[] = [];
+  for (let i = 0; i < articles.length && picked.length < slots; i += 1) {
+    const used = counts.get(articles[i].publisherId) ?? 0;
+    if (used >= cap) continue;
+    counts.set(articles[i].publisherId, used + 1);
+    taken.add(i);
+    picked.push(i);
+  }
+  for (let i = 0; i < articles.length && picked.length < slots; i += 1) {
+    if (!taken.has(i)) { taken.add(i); picked.push(i); }
+  }
+  return picked.sort((a, b) => a - b).map((i) => articles[i]);
+}
+
 export function allocateFaces(articles: readonly CubeArticle[]): CubeFaceAllocation[] {
   const slots: (CubeArticle | null)[] = Array.from({ length: 36 }, (_, index) => articles[index] ?? null);
   return Array.from({ length: 6 }, (_, faceIndex) => ({
