@@ -1,3 +1,4 @@
+import { bufferGaugeMetadata } from '../utils/bufferGauge';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Play } from 'lucide-react';
 import { ChannelLogo } from './ChannelLogo';
@@ -72,7 +73,7 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
     const p = r.program;
     const t = tuneIn(p, r.sHour, r.eHour, nowHour);
     const mt: MediaType = p.mediaType || r.channel.mediaType || (r.guideId === AUDIO_GUIDE ? 'audio' : 'video');
-    onPlayProgram(t.path, p.title, r.channel.name, mt, r.channel.id, p.guideId ?? r.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds);
+    onPlayProgram(t.path, p.title, r.channel.name, mt, r.channel.id, p.guideId ?? r.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds, bufferGaugeMetadata(p.metadata));
   };
 
   const openInGuide = () => {

@@ -1,3 +1,4 @@
+import { bufferGaugeMetadata } from '../utils/bufferGauge';
 import { SuggestInput } from './SuggestInput';
 import React, { useState, useEffect, useCallback, FormEvent } from 'react';
 import {
@@ -277,7 +278,7 @@ const [query, setQuery] = useState<string>('');
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-xs font-medium text-neutral-300">Channel Built Successfully</h4>
                 <button
-                  onClick={() => built && builtAssets[0] && onPlayProgram(builtAssets[0].archivePath || builtAssets[0].mediaUrl, builtAssets[0].title, built.name, "video", built.channelId, built.guideId, builtAssets[0].id)}
+                  onClick={() => built && builtAssets[0] && onPlayProgram(builtAssets[0].archivePath || builtAssets[0].mediaUrl, builtAssets[0].title, built.name, "video", built.channelId, built.guideId, builtAssets[0].id, undefined, undefined, undefined, bufferGaugeMetadata(builtAssets[0].metadata))}
                   className="rounded bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-500 transition"
                 >
                   Tune In Now

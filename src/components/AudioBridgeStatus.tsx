@@ -1,16 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { Activity, ShieldCheck, Volume2 } from 'lucide-react';
+import { Activity, Copy, ShieldCheck, Volume2 } from 'lucide-react';
 
 interface AudioBridgeStatusProps {
   analyser?: AnalyserNode | null;
+  bufferLine?: string;
+  onCopyBufferLog?: () => Promise<boolean>;
 }
 
 const BAR_COUNT = 120;
 
-export function AudioBridgeStatus({ analyser = null }: AudioBridgeStatusProps) {
+export function AudioBridgeStatus({ analyser = null, bufferLine = "Buffer: idle", onCopyBufferLog }: AudioBridgeStatusProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [signalActive, setSignalActive] = useState(false);
+  const [copyLabel, setCopyLabel] = useState('Copy buffer log');
+
+  const copyBufferLog = async () => {
+    setCopyLabel(onCopyBufferLog && await onCopyBufferLog() ? 'Copied' : 'Copy failed');
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -105,6 +112,19 @@ export function AudioBridgeStatus({ analyser = null }: AudioBridgeStatusProps) {
           <Activity className="h-3.5 w-3.5" />
           {analyser ? (signalActive ? 'Analyzer Active' : 'Analyzer Ready') : 'Analyzer Unavailable'}
         </span>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/80 px-3 py-2.5">
+        <div role="status" data-testid="buffer-gauge-line" className="flex min-w-0 items-center gap-2 text-sm text-neutral-200">
+          <Activity className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
+          <span className="truncate">{bufferLine}</span>
+        </div>
+        {onCopyBufferLog && (
+          <button type="button" data-testid="copy-buffer-log" onClick={() => void copyBufferLog()}
+            className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-md border border-neutral-700 px-3 text-xs font-medium text-neutral-200 hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400">
+            <Copy className="h-3.5 w-3.5" aria-hidden="true" />{copyLabel}
+          </button>
+        )}
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">

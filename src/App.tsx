@@ -181,7 +181,7 @@ export default function App() {
 
   const stayOnPageRef = useRef(false);
   const handlePlayProgram = useCallback<PlayProgramCallback>((
-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds
+    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds, bufferMetadata
   ) => {
     const rawReference = String(archivePath ?? '').trim();
     if (!rawReference) {
@@ -222,7 +222,7 @@ export default function App() {
     setHistory((h) => recordPlay(h, id, nextRecentlyPlayed, Date.now(), nextRecentlyPlayed.progressSeconds));
 
     // startAtSeconds is a one-shot instruction for this play only: it is not stored in recently played.
-    setNowPlaying({ ...nextRecentlyPlayed, ...(typeof startAtSeconds === 'number' && Number.isFinite(startAtSeconds) && startAtSeconds > 0 ? { startAtSeconds } : {}) });
+    setNowPlaying({ ...nextRecentlyPlayed, ...(bufferMetadata ? { bufferMetadata } : {}), ...(typeof startAtSeconds === 'number' && Number.isFinite(startAtSeconds) && startAtSeconds > 0 ? { startAtSeconds } : {}) });
     // Auto-advance (next clip/program) keeps the viewer where they are.
     if (stayOnPageRef.current) { stayOnPageRef.current = false; return; }
     setDestination('player');
@@ -245,9 +245,9 @@ export default function App() {
   }, [handlePlayProgram]);
 
   const handleEpgSelect: PlayProgramCallback = useCallback((
-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds
+    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds, bufferMetadata
   ) => {
-    handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds);
+    handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds, bufferMetadata);
   }, [handlePlayProgram]);
 
   const updateRecentlyPlayedProgress = useCallback((itemId: string, positionSeconds: number) => {

@@ -1,3 +1,4 @@
+import { bufferGaugeMetadata } from "./utils/bufferGauge";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback, useDeferredValue } from "react";
 import { ScheduleChannel, Program, MediaType, PlayProgramCallback } from "./types";
 import { Tv, Radio, Disc3, Sparkles, Play, ChevronLeft, ChevronRight, Search, X, CircleAlert } from "lucide-react";
@@ -119,10 +120,10 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
         const assetId = program.assetId ?? program.metadata?.assetId;
         if (isLive && tune) {
           const t = tuneIn(program, tune.sHour, tune.eHour, tune.nowHour());
-          onSelectProgram?.(t.path, program.title, channel.name, mediaType, channel.id, program.guideId, program.id, sourceId, assetId, t.startAtSeconds);
+          onSelectProgram?.(t.path, program.title, channel.name, mediaType, channel.id, program.guideId, program.id, sourceId, assetId, t.startAtSeconds, bufferGaugeMetadata(program.metadata));
           return;
         }
-        onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id, sourceId, assetId, undefined);
+        onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id, sourceId, assetId, undefined, bufferGaugeMetadata(program.metadata));
       }}
       onFocus={(event) => { if (aired) onAiredTimeVisibilityChange?.(event.currentTarget, aired.label); }}
       onMouseEnter={(event) => { if (aired) onAiredTimeVisibilityChange?.(event.currentTarget, aired.label); }}
@@ -649,7 +650,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
     const now = currentHourFraction();
     const t = tuneIn(item.program, item.sHour, item.eHour, now);
     const p = item.program;
-    onSelectProgram?.(t.path, p.title, channel.name, mediaTypeFor(p, channel, guideId), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds);
+    onSelectProgram?.(t.path, p.title, channel.name, mediaTypeFor(p, channel, guideId), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds, bufferGaugeMetadata(p.metadata));
   }, [ensureChannelRows, onSelectProgram, guideId]);
 
   if (fetchError && !cachedGuideChannels(guideId)) {

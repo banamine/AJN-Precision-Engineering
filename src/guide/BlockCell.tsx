@@ -1,3 +1,4 @@
+import { bufferGaugeMetadata } from "../utils/bufferGauge";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Play, X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -127,7 +128,7 @@ export function TrackDrawer({ channel, block, guideId, nowHour, opener, onClose,
   const slice = useMemo(() => items.slice(start, end), [items, start, end]);
 
   const play = (p: Program) => {
-    onSelectProgram?.(p.archivePath || p.mediaUrl, p.title, channel.name, p.mediaType || channel.mediaType || (guideId === "audio-podcasts" ? "audio" : "video"), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId);
+    onSelectProgram?.(p.archivePath || p.mediaUrl, p.title, channel.name, p.mediaType || channel.mediaType || (guideId === "audio-podcasts" ? "audio" : "video"), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, undefined, bufferGaugeMetadata(p.metadata));
     onClose();
   };
   const onKey = (e: ReactKeyboardEvent) => {
