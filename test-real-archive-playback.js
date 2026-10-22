@@ -135,6 +135,14 @@ try {
       break;
     }
     console.warn(`[CNN clip] ${id} clip did not load: ${result.message ?? result.event}`);
+    // Evidence: the browser only says "Format error". Ask the proxy what it actually answered for this clip.
+    try {
+      const probe = await fetch(new URL(buildArchiveProxyUrl(clipPath), BASE_URL), { headers: { Range: 'bytes=0-0' }, signal: AbortSignal.timeout(15_000) });
+      const body = (await probe.text()).slice(0, 300).replace(/\s+/g, ' ');
+      console.warn(`[CNN clip diagnostic] ${id} proxy HTTP ${probe.status} content-type=${probe.headers.get('content-type')} request-id=${probe.headers.get('x-proxy-request-id')} retry-after=${probe.headers.get('retry-after')} body=${body}`);
+    } catch (error) {
+      console.warn(`[CNN clip diagnostic] ${id} proxy probe failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   assert.ok(cnnPlaybackPassed, `No current-window CNN Newsroom Live clip (0-${CLIP_SECONDS}s) reached loadedmetadata through the proxy (${cnnCandidates.length} candidates tried)`);
   const classic = await buildHoneymoonersEpg();
