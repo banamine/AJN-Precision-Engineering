@@ -1,0 +1,225 @@
+import assert from 'node:assert/strict';
+import express from 'express';
+import { createArchiveHealth, type ArchiveHealthLogEntry } from './server/archiveHealth.ts';
+import { startArchiveHealthProber } from './server/archiveHealthProbe.ts';
+import { registerArchiveHealthRoutes } from './server/archiveHealthRoutes.ts';
+import { fetchArchiveMediaWithRetry, resetArchiveFetchStateForTests } from './server/archiveFetch.ts';
+import { createLogicalArchiveHealthRecorder, recordArchiveHealthOutcome } from './server/archiveHealthRecorder.ts';
+import {
+  buildArchiveProxyFailureReply,
+  clearArchiveProxyFailureCacheForTests,
+  getRecentArchiveProxyFailure,
+  rememberArchiveProxyFailureUnlessOutage,
+} from './server/archiveProxyFailureCache.ts';
+
+let clock = 200_000;
+const health = createArchiveHealth({}, { now: () => clock, log: () => {} });
+for (let i = 0; i < 3; i++) health.record({ ts: clock, itemKey: `fixture-${i}`, kind: 'network' });
+assert.equal(health.getStatus().state, 'degraded');
+
+{
+  const retryLines: ArchiveHealthLogEntry[] = [];
+  const retryHealth = createArchiveHealth({}, { now: () => clock, log: (line) => retryLines.push(line) });
+  let physicalCalls = 0;
+  resetArchiveFetchStateForTests();
+  const fakeFetch = (async () => {
+    physicalCalls += 1;
+    return new Response('synthetic failure', { status: 503 });
+  }) as typeof fetch;
+  for (let i = 0; i < 3; i++) {
+    const path = `/download/retry-fixture-${i}/file.mp3`;
+    const result = await fetchArchiveMediaWithRetry(`https://archive.org${path}`, {
+      headers: { Range: 'bytes=0-0', 'User-Agent': 'test' },
+      fetchImpl: fakeFetch,
+      sleep: async () => {},
+    });
+    assert.equal(result.status, 503);
+    assert.equal(result.attempts, 3);
+    recordArchiveHealthOutcome(retryHealth, { path, status: result.status, ts: clock });
+  }
+  assert.equal(physicalCalls, 9, 'three retries per item remain one logical health sample per item');
+  assert.deepEqual(retryHealth.getStatus().recent, { failures: 3, successes: 0, distinctItems: 3 });
+  assert.equal(retryHealth.getStatus().state, 'degraded');
+  assert.equal(retryLines.length, 3, 'each exhausted logical request is recorded once, not once per retry');
+  console.log('PASS fake 503 fetch: 9 physical attempts → 3 logical site-health samples');
+}
+
+{
+  const retrySuccessLines: ArchiveHealthLogEntry[] = [];
+  const retryHealth = createArchiveHealth({}, { now: () => clock, log: (line) => retrySuccessLines.push(line) });
+  const statuses = [503, 503, 200, 206];
+  let physicalCalls = 0;
+  resetArchiveFetchStateForTests();
+  const fakeFetch = (async () => {
+    physicalCalls++;
+    const status = statuses.shift() ?? 500;
+    return new Response(null, { status });
+  }) as typeof fetch;
+  const path = '/download/retry-success-fixture/file.mp4';
+  const result = await fetchArchiveMediaWithRetry(`https://archive.org${path}`, {
+    headers: { Range: 'bytes=0-1', 'User-Agent': 'test' },
+    fetchImpl: fakeFetch,
+    sleep: async () => {},
+    log: () => {},
+  });
+  assert.equal(result.status, 206);
+  assert.equal(result.attempts, 3);
+  recordArchiveHealthOutcome(retryHealth, { path, status: result.status, ts: clock });
+  assert.equal(physicalCalls, 4, 'two failed retries, one successful resolver request, one media request');
+  assert.equal(retryHealth.getStatus().recent.successes, 1);
+  assert.equal(retryHealth.getStatus().recent.failures, 0);
+  assert.equal(retrySuccessLines.length, 1);
+  assert.equal(retrySuccessLines[0].kind, 'ok');
+  console.log('PASS two failed physical attempts then success → one logical ok sample');
+}
+
+{
+  const singleFlightLines: ArchiveHealthLogEntry[] = [];
+  const singleFlightHealth = createArchiveHealth({}, { now: () => clock, log: (line) => singleFlightLines.push(line) });
+  const recordOnce = createLogicalArchiveHealthRecorder(singleFlightHealth, '/services/search/v1/scrape?q=secret');
+  recordOnce({ ts: clock, status: 200 });
+  recordOnce({ ts: clock, status: 200 });
+  assert.equal(singleFlightLines.length, 1, 'a coalesced logical request is recorded only once');
+  assert.equal(singleFlightLines[0].path, '/services/search/v1/scrape');
+  assert.equal(singleFlightHealth.getStatus().recent.successes, 1);
+  console.log('PASS coalesced logical request creates one health outcome');
+}
+
+{
+  const keys: Array<string> = [];
+  const classHealth = createArchiveHealth({}, { now: () => clock, log: (line) => keys.push(line.itemKey) });
+  for (const path of [
+    '/services/search/v1/scrape?q=one',
+    '/advancedsearch.php?q=two',
+    '/metadata?identifier=missing',
+    '/metadata/',
+    '/services/collection-rss.php?collection=tvnews',
+  ]) {
+    recordArchiveHealthOutcome(classHealth, { path, status: 503, ts: clock });
+  }
+  assert.deepEqual(keys, ['search', 'search', 'metadata', 'metadata', 'home']);
+  assert.equal(classHealth.getStatus().state, 'down', 'the three request classes count as three distinct keys');
+  assert.deepEqual(classHealth.getStatus().recent, { failures: 5, successes: 0, distinctItems: 3 });
+  console.log('PASS requests without item identifiers use stable search/metadata/home keys');
+}
+
+let intervalCallback: (() => void | Promise<void>) | null = null;
+const probeCalls: Array<{ url: string; method: string }> = [];
+const probeLines: ArchiveHealthLogEntry[] = [];
+const probeHealth = createArchiveHealth({}, { now: () => clock, log: (line) => probeLines.push(line) });
+for (let i = 0; i < 5; i++) {
+  probeHealth.record({ ts: clock, itemKey: `probe-fixture-${i}`, kind: 'network', errorCode: 'ECONNRESET' });
+}
+const prober = startArchiveHealthProber({
+  health: probeHealth,
+  now: () => clock,
+  controlUrl: 'https://control.example/generate_204',
+  intervalMs: 1,
+  timeoutMs: 50,
+  setIntervalImpl: ((callback: () => void) => {
+    intervalCallback = callback;
+    return { unref() {} } as unknown as ReturnType<typeof setInterval>;
+  }) as typeof setInterval,
+  clearIntervalImpl: (() => {}) as typeof clearInterval,
+  fetchImpl: (async (input, init) => {
+    const url = String(input);
+    const method = String(init?.method ?? 'GET');
+    probeCalls.push({ url, method });
+    return new Response(null, { status: url === 'https://archive.org/' ? 200 : 204 });
+  }) as typeof fetch,
+});
+
+clock += 60_000;
+await intervalCallback?.();
+assert.deepEqual(probeCalls, [
+  { url: 'https://archive.org/', method: 'HEAD' },
+  { url: 'https://control.example/generate_204', method: 'GET' },
+]);
+assert.equal(probeHealth.getStatus().state, 'down', 'one successful Archive probe does not recover an outage');
+clock += 60_000;
+await intervalCallback?.();
+assert.equal(probeHealth.getStatus().state, 'ok', 'second successful Archive outcome recovers after degraded window');
+assert.equal(probeHealth.getStatus().recent.failures, 0, 'probe evaluation prunes failures older than the sliding window');
+assert.equal(probeLines.filter((line) => line.itemKey === 'archive-probe').length, 2);
+assert.equal(probeLines.filter((line) => line.itemKey === 'control-probe').length, 2);
+prober.stop();
+
+{
+  let blockedClock = 500_000;
+  const blockedControlHealth = createArchiveHealth({}, { now: () => blockedClock, log: () => {} });
+  for (const key of ['block-a', 'block-b', 'block-c', 'block-d', 'block-e']) {
+    blockedControlHealth.record({ ts: blockedClock, itemKey: key, kind: 'network' });
+  }
+  let fakeArchiveCalls = 0;
+  let blockedTick: (() => void | Promise<void>) | undefined;
+  const blockedProbe = startArchiveHealthProber({
+    health: blockedControlHealth,
+    now: () => blockedClock,
+    controlUrl: 'https://archive.org/should-not-be-a-control-host',
+    intervalMs: 1,
+    fetchImpl: (async () => {
+      fakeArchiveCalls += 1;
+      return new Response('synthetic server error', { status: 503 });
+    }) as typeof fetch,
+    setIntervalImpl: ((callback: () => void) => {
+      blockedTick = callback;
+      return {} as ReturnType<typeof setInterval>;
+    }) as typeof setInterval,
+    clearIntervalImpl: (() => {}) as typeof clearInterval,
+  });
+  blockedClock += 60_000;
+  assert.ok(blockedTick);
+  await blockedTick();
+  assert.equal(fakeArchiveCalls, 1, 'the mock catches the only Archive URL; blocked control URL is never fetched');
+  assert.equal(blockedControlHealth.getStatus().control, 'unknown');
+  assert.equal(blockedControlHealth.getStatus().state, 'down');
+  blockedProbe.stop();
+  console.log('PASS blocked control URL is not fetched or misreported as unreachable');
+}
+
+const app = express();
+const routeHealth = createArchiveHealth({}, { now: () => clock });
+registerArchiveHealthRoutes(app, routeHealth, () => ({
+  status: 'ok', service: 'test-proxy', uptime: 10, timestamp: 'fixture-time',
+  stats: { totalRequests: 1 },
+}));
+const server = app.listen(0, '127.0.0.1');
+try {
+  await new Promise<void>((resolve) => server.once('listening', resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  const base = `http://127.0.0.1:${address.port}`;
+  const status = await fetch(`${base}/api/archive/status`);
+  assert.equal(status.status, 200);
+  assert.equal(status.headers.get('cache-control'), 'no-store');
+  const statusJson = await status.json() as Record<string, any>;
+  assert.deepEqual(Object.keys(statusJson).sort(), [
+    'control', 'lastFailureAt', 'lastSuccessAt', 'nextProbeAt', 'recent', 'since', 'state',
+  ]);
+  const healthResponse = await fetch(`${base}/api/health`);
+  const healthJson = await healthResponse.json() as Record<string, any>;
+  assert.deepEqual(Object.keys(healthJson).sort(), ['archive', 'service', 'stats', 'status', 'timestamp', 'uptime']);
+  assert.equal(healthJson.archive, 'ok');
+  assert.equal(healthJson.status, 'ok');
+  assert.equal(healthJson.stats.totalRequests, 1);
+  console.log('PASS local status endpoints: no-store shape and additive health key');
+} finally {
+  await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+}
+
+clearArchiveProxyFailureCacheForTests();
+const reply = buildArchiveProxyFailureReply({ upstreamStatus: 0, attempts: 3, proxyRequestId: 'fixture', errorCode: 'ETIMEDOUT' });
+assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/a/a.mp3', reply, 'down'), false);
+assert.equal(getRecentArchiveProxyFailure('/download/a/a.mp3'), null);
+assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/b/b.mp3', reply, 'unreachable_from_here'), false);
+assert.equal(getRecentArchiveProxyFailure('/download/b/b.mp3'), null);
+assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/c/c.mp3', reply, 'degraded'), true);
+assert.deepEqual(getRecentArchiveProxyFailure('/download/c/c.mp3'), reply);
+const definiteReply = buildArchiveProxyFailureReply({ upstreamStatus: 403, attempts: 1, proxyRequestId: 'definite-fixture' });
+assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/private/private.mp3', definiteReply, 'ok'), false);
+assert.equal(getRecentArchiveProxyFailure('/download/private/private.mp3'), null);
+const unplayableReply = buildArchiveProxyFailureReply({ upstreamStatus: 422, attempts: 0, proxyRequestId: 'member-fixture', errorCode: 'UNPLAYABLE_ARCHIVE_MEMBER' });
+assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/item/file.zip/item.mp3', unplayableReply, 'ok'), false);
+assert.equal(getRecentArchiveProxyFailure('/download/item/file.zip/item.mp3'), null);
+console.log('PASS outage-period failures are excluded from item failure cache; degraded failures remain diagnostic');
+console.log('PASS injected probe: 2 probe rounds, 4 fake requests, 0 real Archive requests');

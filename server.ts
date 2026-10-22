@@ -32,6 +32,15 @@ import {
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry, forgetArchiveRedirect } from './server/archiveFetch.js';
+import { createArchiveHealth } from './server/archiveHealth.js';
+import { startArchiveHealthProber } from './server/archiveHealthProbe.js';
+import { createLogicalArchiveHealthRecorder, recordArchiveHealthOutcome } from './server/archiveHealthRecorder.js';
+import { registerArchiveHealthRoutes } from './server/archiveHealthRoutes.js';
+import {
+  buildArchiveProxyFailureReply,
+  getRecentArchiveProxyFailure,
+  rememberArchiveProxyFailureUnlessOutage,
+} from './server/archiveProxyFailureCache.js';
 import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
 import { registerFolderArtRoute } from './server/folderArt.js';
@@ -45,7 +54,14 @@ app.use(watchdogRouter);
 interface ProxyStats{totalRequests:number;successfulRequests:number;retriedRequests:number;failedRequests:number;cacheHits:number;lastUpstreamLatencyMs:number;activeStreams:number}
 const stats:ProxyStats={totalRequests:0,successfulRequests:0,retriedRequests:0,failedRequests:0,cacheHits:0,lastUpstreamLatencyMs:0,activeStreams:0};
 
-app.get('/api/health',(_req,res)=>res.json({status:'ok',service:'ajn-precision-engineering-proxy',uptime:process.uptime(),timestamp:new Date().toISOString(),stats}));
+const archiveHealth = createArchiveHealth();
+registerArchiveHealthRoutes(app, archiveHealth, () => ({
+  status:'ok',
+  service:'ajn-precision-engineering-proxy',
+  uptime:process.uptime(),
+  timestamp:new Date().toISOString(),
+  stats,
+}));
 app.post('/api/health',(req,res)=>{console.log('[CLIENT ERROR]',req.body);res.json({received:true});});
 registerSyncPlaceholder(app); // placeholder cloud-sync endpoint (stores nothing)
 app.get('/api/guides',(_req,res)=>{const guides=getAllGuides();res.json({guides,total:guides.length});});
@@ -288,12 +304,28 @@ app.get('/api/archive/proxy', async (req,res)=>{
 
   const rawPath=String(req.query.path || '');
   if(unplayableReason(rawPath)){
+    recordArchiveHealthOutcome(archiveHealth, {
+      path: rawPath,
+      status: 422,
+      errorCode: 'UNPLAYABLE_ARCHIVE_MEMBER',
+    });
     return res.status(422).json({error:'Not streamable: file inside a compressed archive',reason:'UNPLAYABLE_ARCHIVE_MEMBER',proxyRequestId});
   }
   const v=validateArchivePath(rawPath);
   if(!v.valid || !v.cleanPath){
     stats.failedRequests++;
+    recordArchiveHealthOutcome(archiveHealth, { path: rawPath, status: 400 });
     return res.status(400).json({error:'Invalid path parameter',details:v.error,proxyRequestId});
+  }
+
+  if (req.query.diagnostic === '1') {
+    res.setHeader('Cache-Control', 'no-store');
+    const recentFailure = getRecentArchiveProxyFailure(v.cleanPath);
+    if (!recentFailure) {
+      return res.status(404).json({ error: 'No recent Archive proxy failure', proxyRequestId });
+    }
+    res.setHeader('x-proxy-request-id', recentFailure.body.proxyRequestId);
+    return res.status(recentFailure.status).json(recentFailure.body);
   }
 
   const isImage = /\.(jpe?g|png|webp|gif|svg|bmp|ico)$/i.test(v.cleanPath) || v.cleanPath.endsWith('/__ia_thumb.jpg');
@@ -312,6 +344,15 @@ app.get('/api/archive/proxy', async (req,res)=>{
       return res.status(200).end(cachedImg.buffer);
     }
   }
+
+  const recordHealth = createLogicalArchiveHealthRecorder(archiveHealth, v.cleanPath);
+  const recordHealthOutcome = (input: {
+    status: number;
+    errorCode?: string;
+    errorMessage?: string;
+    errorReason?: string;
+    policyFailure?: boolean;
+  }) => recordHealth(input);
 
   try{
     const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
@@ -346,6 +387,12 @@ app.get('/api/archive/proxy', async (req,res)=>{
     const mediaResponse=upstream.response;
 
     if(!mediaResponse || upstream.failure){
+      recordHealthOutcome({
+        status: upstream.status,
+        errorCode: upstream.errorCode,
+        errorMessage: upstream.errorMessage,
+        policyFailure: Boolean(upstream.reason),
+      });
       if (isImage) {
         try {
           const fallbackPath = path.resolve('public/thumbs/classic-archive.jpg');
@@ -364,10 +411,23 @@ app.get('/api/archive/proxy', async (req,res)=>{
       await mediaResponse?.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:upstream.status,stage:upstream.failure,attempts:upstream.attempts,path:v.cleanPath}));
-      const error=upstream.failure==='resolve'
+      const error=upstream.reason
+        ? 'Archive redirect rejected'
+        : upstream.failure==='resolve'
         ? 'Archive did not return a validated media response'
         : `Archive media returned HTTP ${upstream.status}`;
-      return res.status(502).json({error,upstreamStatus:upstream.status,attempts:upstream.attempts,proxyRequestId});
+      const reply = buildArchiveProxyFailureReply({
+        upstreamStatus: upstream.status,
+        attempts: upstream.attempts,
+        proxyRequestId,
+        errorCode: upstream.errorCode,
+        reason: upstream.reason,
+      });
+      if (!upstream.errorCode && error !== 'Archive media request failed') {
+        reply.body.error = error;
+      }
+      rememberArchiveProxyFailureUnlessOutage(v.cleanPath, reply, archiveHealth.getStatus().state);
+      return res.status(reply.status).json(reply.body);
     }
 
     const contentType=mediaResponse.headers.get('content-type');
@@ -375,11 +435,22 @@ app.get('/api/archive/proxy', async (req,res)=>{
     // (still 200/206). Passing that on makes the browser report a demuxer error;
     // report it as what it is instead.
     if(!isImage && /text\/html/i.test(contentType||'')){
+      recordHealthOutcome({ status: mediaResponse.status, policyFailure: true });
       await mediaResponse.body?.cancel().catch(()=>{});
       stats.failedRequests++;
       console.error('[Archive Proxy Upstream Failure]',JSON.stringify({proxyRequestId,upstreamStatus:mediaResponse.status,stage:'not_media',contentType,path:v.cleanPath}));
-      return res.status(502).json({error:'Archive returned a web page, not media (not yet published or unavailable)',upstreamStatus:mediaResponse.status,proxyRequestId});
+      const reply = buildArchiveProxyFailureReply({
+        upstreamStatus: mediaResponse.status,
+        attempts: upstream.attempts,
+        proxyRequestId,
+        errorCode: 'UPSTREAM_NON_MEDIA',
+        reason: 'Archive returned a web page, not media (not yet published or unavailable)',
+      });
+      reply.body.error = 'Archive returned a web page, not media (not yet published or unavailable)';
+      rememberArchiveProxyFailureUnlessOutage(v.cleanPath, reply, archiveHealth.getStatus().state);
+      return res.status(reply.status).json(reply.body);
     }
+    recordHealthOutcome({ status: mediaResponse.status });
     const contentLength=mediaResponse.headers.get('content-length');
     const contentRange=mediaResponse.headers.get('content-range');
     const acceptRanges=mediaResponse.headers.get('accept-ranges');
@@ -467,6 +538,12 @@ app.get('/api/archive/proxy', async (req,res)=>{
     return res.end();
   }catch(err:any){
     if(err?.name==='AbortError'||res.headersSent) return;
+    recordHealthOutcome({
+      status: 0,
+      errorCode: typeof err?.code === 'string' ? err.code : undefined,
+      errorMessage: err instanceof Error ? err.message : String(err),
+      errorReason: typeof err?.reason === 'string' ? err.reason : undefined,
+    });
     if (isImage) {
       try {
         const fallbackPath = path.resolve('public/thumbs/classic-archive.jpg');
@@ -484,11 +561,17 @@ app.get('/api/archive/proxy', async (req,res)=>{
     }
     stats.failedRequests++;
     console.error('[Archive Proxy Redirect Failure]',proxyRequestId,err?.message || String(err));
-    return res.status(502).json({
-      error:'Archive proxy redirect failure',
-      detail:err?.message || String(err),
-      proxyRequestId
+    const errorCode = typeof err?.code === 'string' ? err.code : undefined;
+    const reply = buildArchiveProxyFailureReply({
+      upstreamStatus: 0,
+      attempts: 0,
+      proxyRequestId,
+      errorCode,
+      reason: err?.message || String(err),
     });
+    reply.body.error = 'Archive proxy redirect failure';
+    rememberArchiveProxyFailureUnlessOutage(v.cleanPath, reply, archiveHealth.getStatus().state);
+    return res.status(reply.status).json(reply.body);
   }
 });
 // AJN recorded files (archive.alexjoneslive.com) send no CORS headers, so the
@@ -544,7 +627,7 @@ app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.origi
 
 async function startServer(){
  if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
- app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));
+ app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); if(process.env.NODE_ENV!=='test'){startArchiveHealthProber({health:archiveHealth,fetchImpl:fetch,controlUrl:process.env.AJN_CONTROL_PROBE_URL}); for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));}
   // Warm the guides one at a time (Archive rate-limits bursts) so the first
   // viewer gets a filled grid instead of waiting on every source.
   if(process.env.NODE_ENV!=='test'&&process.env.LIBRARY_BACKGROUND!=='off'){void loadLibrarySnapshot().then(()=>startLibraryBackground());}

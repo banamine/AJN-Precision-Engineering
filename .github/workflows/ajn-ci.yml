@@ -83,6 +83,14 @@ jobs:
         run: npm run test:ajn-audio-canonical
       - name: Archive proxy retry regression
         run: npm run test:archive-retry
+      - name: Archive outage state machine (injected clock)
+        run: npm run test:archive-health
+      - name: Archive outage server and cache integration (fake fetch)
+        run: npm run test:archive-health-server
+      - name: Archive outage UI and visibility polling
+        run: npm run test:archive-health-ui
+      - name: Archive outage playback policy
+        run: npm run test:archive-health-playback
       - name: Archive exact-URL regression
         run: npm run test:archive-url-exact
       - name: Movies manifest resolve regression
@@ -147,6 +155,16 @@ jobs:
         run: npm run test:ajn-radio-catalog
       - name: Daily News Digest regression (parse, freshness, in-memory store)
         run: npm run test:news-digest
+      - name: News Cube adapter regression
+        run: npm run test:news-cube-adapter
+      - name: News Cube read-time retention regression
+        run: npm run test:news-cube-retention
+      - name: News Cube long-token renderer regression
+        run: npm run test:news-cube-renderer
+      - name: News Cube playback bridge regression
+        run: npm run test:news-cube-bridge
+      - name: News Cube browser regression (synthetic fixture, local only)
+        run: npm run test:news-cube-browser
       - name: Audio/Video sync rules (twin lookup, start offset, shared position, drift)
         run: npm run test:av-sync
       - name: AJN Media RSS contract regression (mocked)
@@ -196,6 +214,8 @@ jobs:
           echo "AJN server failed to become healthy"
           cat /tmp/ajn-server.log
           exit 1
+      - name: Archive availability preflight (warn-only)
+        run: npm run preflight:archive
       - name: AJN radio resource smoke
         run: |
           set -euo pipefail

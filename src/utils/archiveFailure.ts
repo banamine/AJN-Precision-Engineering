@@ -2,15 +2,34 @@
  * The proxy already retried 3 times before it answered (attempts), so when Archive itself is overloaded
  * (HTTP 500/502/504 from its storage node, or no answer at all after those attempts) more automatic retries
  * only add load and make the person wait minutes. Say so plainly instead. */
-export interface ProxyErrorBody { error?: string; reason?: string; upstreamStatus?: number; attempts?: number; proxyRequestId?: string }
+export interface ProxyErrorBody {
+  error?: string;
+  reason?: string;
+  upstreamStatus?: number;
+  attempts?: number;
+  proxyRequestId?: string;
+  errorCode?: string;
+}
 export type ArchiveFailure = 'definite' | 'overloaded' | 'transient';
 
 export function classifyArchiveFailure(httpStatus: number, body: ProxyErrorBody): ArchiveFailure {
   const up = body.upstreamStatus ?? 0;
   if (body.reason === 'UNPLAYABLE_ARCHIVE_MEMBER' || [403, 404, 410].includes(up) || httpStatus === 400 || httpStatus === 422) return 'definite';
-  if ([500, 502, 504].includes(up)) return 'overloaded';
+  if ([500, 502, 504].includes(up) || httpStatus === 504 || body.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') return 'overloaded';
   if (up === 0 && httpStatus >= 500 && (body.attempts ?? 0) >= 3) return 'overloaded';
   return 'transient';
+}
+
+/** Return a same-origin, metadata-only lookup URL; never repeat the failed media request. */
+export function archiveFailureDiagnosticUrl(source: string): string | null {
+  try {
+    const url = new URL(source, 'https://ajn.invalid');
+    if (url.pathname !== '/api/archive/proxy' || !url.searchParams.has('path')) return null;
+    url.searchParams.set('diagnostic', '1');
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return null;
+  }
 }
 
 export function overloadedMessage(body: ProxyErrorBody): string {

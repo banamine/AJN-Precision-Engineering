@@ -10,10 +10,13 @@ import {
   History as HistoryIcon,
   ChevronDown,
   X,
+  Box,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia } from '../types';
 import { SuggestInput } from './SuggestInput';
 import type { SuggestCandidate } from '../utils/suggest';
+import { useArchiveStatus } from '../hooks/useArchiveStatus';
+import { ArchiveOutageBanner } from './ArchiveOutageBanner';
 
 interface NavigationProps {
   currentDestination: Destination;
@@ -50,7 +53,11 @@ const DESKTOP_PRIMARY: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[3],
   PRIMARY_DESTINATIONS[5],
 ];
-const VAULT_ITEMS: NavItemConfig[] = [PRIMARY_DESTINATIONS[4], PRIMARY_DESTINATIONS[6]];
+const VAULT_ITEMS: NavItemConfig[] = [
+  PRIMARY_DESTINATIONS[4],
+  PRIMARY_DESTINATIONS[6],
+  { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
+];
 
 function useDismiss(open: boolean, close: () => void, ref: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
@@ -70,6 +77,7 @@ export function Navigation({
   onSearch,
   suggestions = [],
 }: NavigationProps) {
+  const archiveStatus = useArchiveStatus();
   const [vaultOpen, setVaultOpen] = useState(false);
   const vaultRef = useRef<HTMLDivElement>(null);
   const closeVault = React.useCallback(() => setVaultOpen(false), []);
@@ -285,6 +293,7 @@ export function Navigation({
 
           </div>
         </div>
+        <ArchiveOutageBanner state={archiveStatus.state} />
       </header>
 
       {/* ── Mobile Bottom Fixed Tab Bar ────────────────────────────────────────── */}

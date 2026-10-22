@@ -9,7 +9,7 @@ import { reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
 import { PlayerChrome } from "./components/PlayerChrome";
 import { WaitingNotes } from "./components/WaitingNotes";
-import { classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
+import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
 import { useAudioNormalization } from "./use-audio-normalization";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
@@ -30,7 +30,7 @@ interface MinimalPlayerProps {
   /** Text for the button shown when the browser refuses to start playback on its own. */
   autoplayBlockedLabel?: string;
   onPauseEvent?: () => void;
-  onErrorEvent?: (err: MediaError | null) => void;
+  onErrorEvent?: (err: MediaError | null, proxyFailure?: ProxyErrorBody | null) => void;
   onProgressEvent?: (positionSeconds: number) => void;
   /** Audio only: what plays after this item (already a playable URL), or null. Called once, near the end of the track. */
   resolveNext?: () => Promise<{ src: string; mediaType: string; programId?: string } | null>;
@@ -143,6 +143,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     titleId: `${nowPlaying?.channelId || 'none'}/${String(nowPlaying?.title ?? title ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'untitled'}`,
     assetId: nowPlaying?.assetId ?? null,
     mediaPath: nowPlaying?.archivePath ?? activeSrc ?? null,
+    archiveIdentifier: archiveIdentifierFromPath(nowPlaying?.archivePath ?? activeSrc) ?? null,
   }), [nowPlaying, activeSrc, title]);
 
   const readResumePosition = useCallback(() => {
@@ -484,23 +485,32 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       const failedSrc0 = media.currentSrc || activeSrc;
       let definite = false;
       let overloaded: ProxyErrorBody | null = null;
-      if (failedSrc0 && failedSrc0.includes("/api/archive/proxy")) {
+      let proxyFailure: ProxyErrorBody | null = null;
+      const diagnosticUrl = failedSrc0 ? archiveFailureDiagnosticUrl(failedSrc0) : null;
+      if (diagnosticUrl) {
         try {
-          const r = await fetch(failedSrc0, { headers: { Range: "bytes=0-0" } });
-          if (!r.ok) {
-            const b = (await r.json().catch(() => ({}))) as ProxyErrorBody;
-            const kind = classifyArchiveFailure(r.status, b);
-            definite = kind === "definite";
-            if (kind === "overloaded") overloaded = b;
-          }
+          const r = await fetch(diagnosticUrl, { cache: "no-store", headers: { Accept: "application/json" } });
+          const body = (await r.json().catch(() => ({}))) as ProxyErrorBody;
+          if (r.status !== 404) proxyFailure = body;
+          const kind = classifyArchiveFailure(r.status, body);
+          definite = kind === "definite";
+          if (kind === "overloaded") overloaded = body;
         } catch { /* proxy unreachable: treat as transient */ }
       }
       if (overloaded) {
         // The proxy already tried Archive 3 times. Retrying again only piles on; say what is happening, once.
         if (mediaRef.current !== media) return;
         setStatusText(`Unavailable — ${overloadedMessage(overloaded)}. Skipping…`);
-        reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), httpStatus: overloaded.upstreamStatus ?? 0, reason: "archive_overloaded", proxyRequestId: overloaded.proxyRequestId ?? null });
-        fx().onErrorEvent?.(err);
+        reportTelemetry({
+          event: "media.error", ...eventMeta(), mediaErrorCode: err?.code ?? null,
+          mediaErrorMessage: err?.message ?? null, readyState: media.readyState, networkState: media.networkState,
+          proxyRequestId: overloaded.proxyRequestId ?? null,
+        });
+        reportTelemetry({
+          event: "media.unavailable", ...fx().eventMeta(), httpStatus: overloaded.upstreamStatus ?? 0,
+          reason: overloaded.errorCode ?? "archive_overloaded", proxyRequestId: overloaded.proxyRequestId ?? null,
+        });
+        fx().onErrorEvent?.(err, proxyFailure);
         return;
       }
       // A CORS-mode load of a verified podcast failed (a tracker hop dropped its CORS headers): play the same file
@@ -535,24 +545,22 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       // No silent switch to direct archive.org: that bypassed proxy validation,
       // retries and telemetry, and a cross-origin source silences the audio chain.
       // A failure is shown as a failure.
-      setStatusText(`Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`);
-      // The browser only reports "code 4"; ask the proxy why (403 restricted,
-      // 404/503 removed, not media) so the failure names its real cause.
-      const failedSrc = failedSrc0;
-      if (failedSrc && failedSrc.includes("/api/archive/proxy")) {
-        fetch(failedSrc, { headers: { Range: "bytes=0-0" } })
-          .then(async (r) => {
-            if (r.ok) return;
-            const body = await r.json().catch(() => ({} as any));
-            const why = body.reason === "UNPLAYABLE_ARCHIVE_MEMBER" ? "file is inside a compressed archive (not streamable)"
-              : body.upstreamStatus === 429 ? "Archive is rate-limiting (429), try again shortly"
-              : body.upstreamStatus === 403 ? "restricted by Archive (403)"
-              : body.upstreamStatus === 404 || body.upstreamStatus === 503 ? `not available on Archive (${body.upstreamStatus})`
-              : body.error || `HTTP ${r.status}`;
-            setStatusText(`Unavailable — ${why}. Skipping…`);
-            reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), httpStatus: body.upstreamStatus ?? r.status, proxyRequestId: body.proxyRequestId ?? null });
-          })
-          .catch(() => {});
+      const unavailableReason = proxyFailure?.reason === "UNPLAYABLE_ARCHIVE_MEMBER"
+        ? "file is inside a compressed archive (not streamable)"
+        : proxyFailure?.upstreamStatus === 429 ? "Archive is rate-limiting (429), try again shortly"
+        : proxyFailure?.upstreamStatus === 403 ? "restricted by Archive (403)"
+        : proxyFailure?.upstreamStatus === 404 ? "not available on Archive (404)"
+        : proxyFailure?.error ?? null;
+      if (proxyFailure) {
+        setStatusText(`Unavailable — ${unavailableReason ?? "Archive could not provide this media"}.`);
+        reportTelemetry({
+          event: "media.unavailable", ...fx().eventMeta(),
+          httpStatus: proxyFailure.upstreamStatus ?? 0,
+          reason: proxyFailure.errorCode ?? "archive_proxy_failure",
+          proxyRequestId: proxyFailure.proxyRequestId ?? null,
+        });
+      } else {
+        setStatusText(`Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`);
       }
       reportTelemetry({
         event: "media.error",
@@ -561,8 +569,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         mediaErrorMessage: err?.message ?? null,
         readyState: media.readyState,
         networkState: media.networkState,
+        proxyRequestId: proxyFailure?.proxyRequestId ?? null,
       });
-      fx().onErrorEvent?.(err);
+      fx().onErrorEvent?.(err, proxyFailure);
     };
 
     // Mute toggled outside this player (Radio dock, headset): keep this player's state and the next track's muted flag in line.

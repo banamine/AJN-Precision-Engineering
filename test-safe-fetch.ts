@@ -27,6 +27,16 @@ assert.equal(ok.finalUrl.toString(), 'https://b.example/final');
 assert.equal(await ok.res.text(), '#EXTM3U\n');
 
 const reason = async (p: Promise<unknown>) => { try { await p; return 'none'; } catch (e) { return e instanceof SafeFetchError ? e.reason : 'other:' + (e as Error).message; } };
+const socketError = Object.assign(new Error('socket reset'), { code: 'ECONNRESET' });
+const codedNetwork = (async () => { throw socketError; }) as unknown as typeof fetch;
+try {
+  await safeFetch('https://a.example/network', { allow: only, fetchImpl: codedNetwork });
+  assert.fail('expected the network failure to propagate');
+} catch (error) {
+  assert.ok(error instanceof SafeFetchError);
+  assert.equal(error.reason, 'network');
+  assert.equal((error.cause as { code?: string }).code, 'ECONNRESET', 'safe fetch retains the real runtime code as its cause');
+}
 seen.length = 0;
 assert.equal(await reason(safeFetch('https://a.example/evil', { allow: anyPublicHost, fetchImpl: net })), 'redirect_blocked');
 assert.ok(!seen.some((s) => s.includes('169.254')), 'private redirect target never requested');

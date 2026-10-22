@@ -28,6 +28,18 @@ const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 export const ARCHIVE_IMG_BASE = 'https://archive.org/services/img/';
 const DOWNLOAD_BASE = 'https://archive.org/download/';
 
+/** True for direct Archive hosts and this app's Archive-proxy routes. */
+export function isArchiveHostedThumbUrl(ref: string): boolean {
+  try {
+    const url = new URL(ref, 'https://ajn.invalid');
+    return url.pathname === '/api/archive/proxy'
+      || url.hostname === 'archive.org'
+      || url.hostname.endsWith('.archive.org');
+  } catch {
+    return false;
+  }
+}
+
 /** Pull the Archive identifier out of the reference formats this app uses. Returns null (never a guess) when there is none. */
 export function archiveIdentifierFromPath(ref?: string | null): string | null {
   if (!ref) return null;

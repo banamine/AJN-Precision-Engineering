@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback, RefObject } from "react";
+import { audioPlaybackHeartbeatState } from "./utils/audioBridgeHeartbeat";
 
 const TARGET_DBFS = -18;
 const SAMPLE_DURATION_S = 3;
@@ -23,10 +24,37 @@ export interface AudioNormalizationReturn {
 interface AudioRuntime {
   ctx: AudioContext; gainNode: GainNode; masterVolumeNode: GainNode; compressorNode: DynamicsCompressorNode;
   preAnalyser: AnalyserNode; diagnosticsAnalyser: AnalyserNode; sourceNode: MediaElementAudioSourceNode | null;
-  connectedElement: HTMLMediaElement | null; listener: (() => void) | null; bridgeReady: boolean; diagnosticsReady: boolean; lastCrossOrigin: string | null;
+  connectedElement: HTMLMediaElement | null; listener: (() => void) | null;
+  mediaErrorListener: (() => void) | null; mediaPlayingListener: (() => void) | null;
+  bridgeReady: boolean; diagnosticsReady: boolean; lastCrossOrigin: string | null;
 }
 let audioRuntime: AudioRuntime | null = null;
 function getAudioContextImpl(): typeof AudioContext | null { return window.AudioContext ?? window.webkitAudioContext ?? null; }
+function safeMediaSource(media: HTMLMediaElement): string | null {
+  const source = media.currentSrc || media.src;
+  if (!source) return null;
+  try {
+    const url = new URL(source, window.location.href);
+    return `${url.host}${url.pathname}`;
+  } catch {
+    return null;
+  }
+}
+function postAudioHeartbeat(event: string, runtime: AudioRuntime, media: HTMLMediaElement, extra: Record<string, unknown> = {}): void {
+  fetch("/api/watchdog/heartbeat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event,
+      ctxState: runtime.ctx.state,
+      crossOrigin: media.crossOrigin || "none",
+      src: safeMediaSource(media),
+      ...audioPlaybackHeartbeatState(media),
+      ...extra,
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
+}
 function createAudioRuntime(): AudioRuntime | null {
   if (audioRuntime) return audioRuntime;
   try {
@@ -35,7 +63,11 @@ function createAudioRuntime(): AudioRuntime | null {
     const diagnosticsAnalyser = ctx.createAnalyser(); diagnosticsAnalyser.fftSize = 256; const masterVolumeNode = ctx.createGain(); masterVolumeNode.gain.value = 1;
     const compressor = ctx.createDynamicsCompressor(); compressor.threshold.value = -18; compressor.knee.value = 6; compressor.ratio.value = 4; compressor.attack.value = 0.003; compressor.release.value = 0.25;
     preAnalyser.connect(gainNode); preAnalyser.connect(diagnosticsAnalyser); gainNode.connect(masterVolumeNode); masterVolumeNode.connect(compressor); compressor.connect(ctx.destination);
-    const runtime: AudioRuntime = { ctx, gainNode, masterVolumeNode, compressorNode: compressor, preAnalyser, diagnosticsAnalyser, sourceNode: null, connectedElement: null, listener: null, bridgeReady: false, diagnosticsReady: false, lastCrossOrigin: null };
+    const runtime: AudioRuntime = {
+      ctx, gainNode, masterVolumeNode, compressorNode: compressor, preAnalyser, diagnosticsAnalyser,
+      sourceNode: null, connectedElement: null, listener: null, mediaErrorListener: null,
+      mediaPlayingListener: null, bridgeReady: false, diagnosticsReady: false, lastCrossOrigin: null,
+    };
     const onStateChange = () => { if (runtime.ctx.state === "closed") return; if (runtime.ctx.state === "running" && runtime.connectedElement && !runtime.sourceNode) connectMediaElementToRuntime(runtime.connectedElement); };
     runtime.listener = onStateChange; ctx.addEventListener("statechange", onStateChange); audioRuntime = runtime; return runtime;
   } catch { return null; }
@@ -48,6 +80,14 @@ function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | n
   // Clear the singleton bridge before the CORS/native-fallback decision so diagnostics
   // cannot remain attached to stale audio after a player switch.
   if (runtime.connectedElement !== media) {
+    if (runtime.connectedElement && runtime.mediaErrorListener) {
+      runtime.connectedElement.removeEventListener("error", runtime.mediaErrorListener);
+    }
+    if (runtime.connectedElement && runtime.mediaPlayingListener) {
+      runtime.connectedElement.removeEventListener("playing", runtime.mediaPlayingListener);
+    }
+    runtime.mediaErrorListener = null;
+    runtime.mediaPlayingListener = null;
     if (runtime.sourceNode) { try { runtime.sourceNode.disconnect(); } catch {} runtime.sourceNode = null; }
     runtime.connectedElement = null; runtime.bridgeReady = false; runtime.diagnosticsReady = false;
   }
@@ -63,7 +103,7 @@ function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | n
   runtime.lastCrossOrigin = crossoriginAttr || media.crossOrigin || null;
   if (!hasCORSAttr) {
     runtime.connectedElement = media; runtime.bridgeReady = false; runtime.diagnosticsReady = false;
-    if (media instanceof HTMLAudioElement) fetch("/api/watchdog/heartbeat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "AUDIO_NATIVE_FALLBACK", ctxState: runtime.ctx.state, crossOrigin: crossoriginAttr ?? "none", src: media.src?.slice(0, 120), ts: Date.now() }) }).catch(() => {});
+    if (media instanceof HTMLAudioElement) postAudioHeartbeat("AUDIO_NATIVE_FALLBACK", runtime, media);
     return runtime;
   }
   try {
@@ -75,10 +115,14 @@ function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | n
       try { source.connect(runtime.ctx.destination); } catch {}
     }
     runtime.sourceNode = source; runtime.connectedElement = media; runtime.bridgeReady = true; runtime.diagnosticsReady = true;
-    fetch("/api/watchdog/heartbeat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "AUDIO_BRIDGE_OK", ctxState: runtime.ctx.state, crossOrigin: media.crossOrigin, src: media.src?.slice(0, 120), ts: Date.now() }) }).catch(() => {});
+    runtime.mediaErrorListener = () => postAudioHeartbeat("AUDIO_BRIDGE_MEDIA_ERROR", runtime, media);
+    runtime.mediaPlayingListener = () => postAudioHeartbeat("AUDIO_BRIDGE_MEDIA_PLAYING", runtime, media);
+    media.addEventListener("error", runtime.mediaErrorListener);
+    media.addEventListener("playing", runtime.mediaPlayingListener);
+    postAudioHeartbeat("AUDIO_BRIDGE_CONNECTED", runtime, media);
   } catch (e) {
     const msg = (e as Error)?.message ?? String(e); console.warn("[audio-norm] createMediaElementSource failed:", msg); runtime.connectedElement = media; runtime.bridgeReady = false; runtime.diagnosticsReady = false;
-    fetch("/api/watchdog/heartbeat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "AUDIO_BRIDGE_FAILED", error: msg, ctxState: runtime.ctx.state, crossOrigin: media.crossOrigin, src: media.src?.slice(0, 120), ts: Date.now() }) }).catch(() => {});
+    postAudioHeartbeat("AUDIO_BRIDGE_FAILED", runtime, media, { error: msg });
   }
   return runtime;
 }

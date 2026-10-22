@@ -1,6 +1,12 @@
 // Unit regression: Archive proxy retries transient upstream errors only.
 import assert from 'node:assert/strict';
-import { fetchArchiveMediaWithRetry, type FetchImpl } from './server/archiveFetch.ts';
+import {
+  archiveHostCircuitBreaker,
+  fetchArchiveMediaWithRetry,
+  NODE_HEADER_TIMEOUT_MS,
+  resetArchiveFetchStateForTests,
+  type FetchImpl,
+} from './server/archiveFetch.ts';
 
 const DOWNLOAD = 'https://archive.org/download/nova-wonders/file.mp4';
 const NODE = 'https://dn721905.ca.archive.org/0/items/nova-wonders/file.mp4';
@@ -64,6 +70,22 @@ const headers = { 'User-Agent': 'test', Accept: '*/*', Range: 'bytes=0-10' };
   assert.equal(result.attempts, 1);
   assert.equal(result.failure, 'media');
   console.log('PASS 403 → no retry');
+}
+
+// Unsafe Archive redirects are rejected once as a policy failure, with no alternate lookup.
+{
+  let calls = 0;
+  const impl = (async () => {
+    calls++;
+    return new Response(null, { status: 302, headers: { location: 'https://outside.example/file.mp4' } });
+  }) as FetchImpl;
+  const result = await fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, sleep: noSleep, log });
+  assert.equal(calls, 1, 'rejected redirect must not try alternates or retry');
+  assert.equal(result.status, 502);
+  assert.equal(result.attempts, 1);
+  assert.equal(result.failure, 'resolve');
+  assert.equal(result.reason, 'Archive redirect rejected: outside.example');
+  console.log('PASS unsafe 302 redirect → 502 policy failure, 1 request, 0 retries');
 }
 
 // 3. Persistent 500 → gives up after 3 attempts, still reports failure.
@@ -174,6 +196,126 @@ const headers = { 'User-Agent': 'test', Accept: '*/*', Range: 'bytes=0-10' };
   }) as FetchImpl;
   await assert.rejects(fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, sleep: noSleep, log, signal: controller.signal }));
   console.log('PASS client abort → not retried on alternates');
+}
+
+// 10. A duplicate concurrent request shares only the 1-byte redirect probe, not the media body.
+{
+  resetArchiveFetchStateForTests();
+  const calls: { url: string; range: string | null }[] = [];
+  const impl = (async (input: any, init?: any) => {
+    const url = String(input);
+    const range = new Headers(init?.headers).get('range');
+    calls.push({ url, range });
+    if (url.startsWith('https://archive.org/download/')) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return new Response(null, { status: 302, headers: { location: NODE } });
+    }
+    return new Response('media-bytes', { status: 206, headers: { 'content-type': 'audio/mpeg' } });
+  }) as FetchImpl;
+  const results = await Promise.all([
+    fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, attempts: 1, sleep: noSleep, log }),
+    fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, attempts: 1, sleep: noSleep, log }),
+  ]);
+  assert.ok(results.every((result) => result.status === 206));
+  assert.equal(
+    calls.filter((call) => call.range === 'bytes=0-0' && call.url.startsWith('https://archive.org/download/')).length,
+    1,
+    'one shared initial redirect request',
+  );
+  assert.equal(
+    calls.filter((call) => call.range === 'bytes=0-0' && call.url.startsWith('https://dn721905.ca.archive.org/')).length,
+    1,
+    'one shared storage-node probe after redirect',
+  );
+  assert.equal(calls.filter((call) => call.range === 'bytes=0-10').length, 2, 'each caller gets its own media response');
+  console.log('PASS duplicate requests → one resolution probe, two independent media responses');
+}
+
+// 11. Three connect timeouts open a per-host circuit; the next request fails without another fetch.
+{
+  resetArchiveFetchStateForTests();
+  let calls = 0;
+  const impl = (async () => {
+    calls += 1;
+    const cause = Object.assign(new Error('connect timeout'), { code: 'UND_ERR_CONNECT_TIMEOUT' });
+    const error = new TypeError('fetch failed') as TypeError & { cause?: unknown };
+    error.cause = cause;
+    throw error;
+  }) as FetchImpl;
+  const result = await fetchArchiveMediaWithRetry(DOWNLOAD, {
+    headers, fetchImpl: impl, attempts: 3, sleep: noSleep, log,
+  });
+  assert.equal(result.attempts, 3);
+  assert.equal(result.errorCode, 'UND_ERR_CONNECT_TIMEOUT');
+  assert.equal(calls, 3);
+  assert.equal(archiveHostCircuitBreaker.canRequest('archive.org'), false);
+  const opened = await fetchArchiveMediaWithRetry(DOWNLOAD, {
+    headers, fetchImpl: impl, attempts: 3, sleep: noSleep, log,
+  });
+  assert.equal(opened.errorCode, 'AJN_UPSTREAM_CIRCUIT_OPEN');
+  assert.equal(opened.attempts, 0);
+  assert.equal(calls, 3, 'open circuit performs no new upstream request');
+  assert.ok(NODE_HEADER_TIMEOUT_MS <= 8_000);
+  console.log('PASS three connect timeouts → host circuit opens; next request makes 0 fetches');
+}
+
+// 12. An open storage-node circuit is bypassed through another public replica.
+{
+  resetArchiveFetchStateForTests();
+  const failedReplica = 'dn721905.ca.archive.org';
+  const healthyReplica = 'dn721906.ca.archive.org';
+  for (let i = 0; i < 3; i++) archiveHostCircuitBreaker.recordTimeout(failedReplica);
+  const calls: string[] = [];
+  const impl = (async (input: any) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.startsWith('https://archive.org/download/')) {
+      return new Response(null, { status: 302, headers: { location: NODE } });
+    }
+    if (url.startsWith('https://archive.org/metadata/')) {
+      return new Response(JSON.stringify({
+        dir: '/0/items/nova-wonders',
+        server: failedReplica,
+        d1: healthyReplica,
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (url.startsWith(`https://${healthyReplica}/`)) {
+      return new Response('media-bytes', { status: 206, headers: { 'content-type': 'audio/mpeg' } });
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  }) as FetchImpl;
+  const result = await fetchArchiveMediaWithRetry(DOWNLOAD, { headers, fetchImpl: impl, attempts: 3, sleep: noSleep, log });
+  assert.equal(result.status, 206);
+  assert.equal(calls.filter((url) => url.startsWith(`https://${failedReplica}/`)).length, 0);
+  assert.equal(calls.filter((url) => url.startsWith('https://archive.org/metadata/')).length, 1);
+  assert.equal(calls.filter((url) => url.startsWith(`https://${healthyReplica}/`)).length, 1);
+  console.log('PASS open storage-node circuit → one metadata lookup, healthy replica served');
+}
+
+// 13. Client disconnect remains wired after headers so the streamed media fetch aborts.
+{
+  resetArchiveFetchStateForTests();
+  const parent = new AbortController();
+  let mediaSignal: AbortSignal | undefined;
+  const impl = (async (input: any, init?: any) => {
+    const url = String(input);
+    const range = new Headers(init?.headers).get('range');
+    if (url.startsWith('https://archive.org/download/')) {
+      return new Response(null, { status: 302, headers: { location: NODE } });
+    }
+    if (range === 'bytes=0-0') return new Response(null, { status: 206 });
+    mediaSignal = init?.signal;
+    return new Response('streamed media', { status: 206, headers: { 'content-type': 'audio/mpeg' } });
+  }) as FetchImpl;
+  const result = await fetchArchiveMediaWithRetry(DOWNLOAD, {
+    headers, fetchImpl: impl, attempts: 1, sleep: noSleep, log, signal: parent.signal,
+  });
+  assert.equal(result.status, 206);
+  assert.ok(mediaSignal);
+  assert.equal(mediaSignal!.aborted, false);
+  parent.abort();
+  assert.equal(mediaSignal!.aborted, true, 'disconnect after headers still aborts the upstream stream');
+  console.log('PASS client abort after headers → streamed upstream request signal aborts');
 }
 
 console.log('archive retry regression: all passed');

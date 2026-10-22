@@ -9,7 +9,11 @@ export type HostCheck = (host: string) => boolean;
 export const MAX_REDIRECTS = 5;
 
 export class SafeFetchError extends Error {
-  constructor(message: string, readonly reason: 'blocked' | 'redirect_blocked' | 'too_many_redirects' | 'too_large' | 'timeout' | 'network') { super(message); }
+  constructor(
+    message: string,
+    readonly reason: 'blocked' | 'redirect_blocked' | 'too_many_redirects' | 'too_large' | 'timeout' | 'network',
+    options?: ErrorOptions,
+  ) { super(message, options); }
 }
 
 /** Hosts that must never be fetched even when a list would allow them. */
@@ -52,8 +56,10 @@ export async function safeFetch(url: string | URL, opts: SafeFetchOptions): Prom
     let res: Response;
     try { res = await f(current, { headers: opts.headers, redirect: 'manual', signal }); }
     catch (e: any) {
-      if (timeout.aborted) throw new SafeFetchError(`timed out after ${opts.timeoutMs ?? 10_000} ms`, 'timeout');
-      throw e?.name === 'AbortError' ? e : new SafeFetchError(String(e?.message ?? e), 'network');
+      if (timeout.aborted) {
+        throw new SafeFetchError(`timed out after ${opts.timeoutMs ?? 10_000} ms`, 'timeout', { cause: e });
+      }
+      throw e?.name === 'AbortError' ? e : new SafeFetchError(String(e?.message ?? e), 'network', { cause: e });
     }
     const loc = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;
     if (!loc) return { res, finalUrl: current };
