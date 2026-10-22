@@ -33,7 +33,19 @@ if (existsSync('Dockerfile')) {
   for (const s of manifest.dockerfileMustContain) if (!d.includes(s)) fail(`Dockerfile no longer contains "${s}"`);
 }
 
-// 5. deletions vs base
+// 5. no builder-environment hostnames in lockfiles or tracked configs (e.g. Replit's package-firewall.replit.internal
+// made `npm ci` fail in CI with ENOTFOUND). Docs and this guard itself are exempt.
+const ENV_HOST = /[a-z0-9.-]*\.replit\.internal\b/i;
+const exempt = (f) => /\.(md|txt)$/i.test(f) || f === 'scripts/integrity-guard.mjs';
+for (const f of tracked) {
+  if (exempt(f) || !/(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|\.npmrc|Dockerfile)$/.test(f)) continue;
+  try {
+    const hit = readFileSync(f, 'utf8').match(ENV_HOST);
+    if (hit) fail(`${f} contains a builder-environment host (${hit[0]}); regenerate it against registry.npmjs.org`);
+  } catch { /* unreadable or deleted: other checks cover it */ }
+}
+
+// 6. deletions vs base
 if (argBase && !/^0+$/.test(argBase)) {
   try {
     const deleted = git('diff', '--name-only', '--diff-filter=D', `${argBase}`, 'HEAD').split('\n').filter(Boolean);
