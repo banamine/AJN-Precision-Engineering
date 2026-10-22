@@ -88,6 +88,7 @@
     "test:playable-admission": "tsx test-playable-admission.ts",
     "test:rumble": "tsx src/rumble/logic.test.ts",
     "test:honeymooners": "tsx test-honeymooners-order.ts",
+    "test:classic-radio": "tsx test-classic-radio-theatre.ts",
     "test:series": "tsx test-series.ts",
     "test:thumbnail": "tsx test-thumbnail.ts",
     "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx"
