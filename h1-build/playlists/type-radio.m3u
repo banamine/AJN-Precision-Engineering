@@ -1,0 +1,10 @@
+#EXTM3U
+# archive-embed entries are archive.org/embed pages: use an iframe-aware player.
+#EXTINF:-1 tvg-id="ajn-ia-gta-sas-oundt" tvg-name="Gta Sas Oundt" group-title="Old-Time/Radio archives" ajn-type="radio" ajn-status="provisional",Gta Sas Oundt
+https://archive.org/embed/gta-sas-oundt
+#EXTINF:-1 tvg-id="ajn-ia-jfks19610427" tvg-name="Jfks19610427" group-title="Old-Time/Radio archives" ajn-type="radio" ajn-status="provisional",Jfks19610427
+https://archive.org/embed/jfks19610427
+#EXTINF:-1 tvg-id="ajn-ia-paul-harvey-a-christmas-story-the-man-and-the-birds.ia" tvg-name="Paul Harvey ~ A Christmas Story The Man And The Birds" group-title="Unsorted - review" ajn-type="radio" ajn-status="provisional",Paul Harvey ~ A Christmas Story The Man And The Birds
+https://archive.org/embed/paul-harvey-a-christmas-story-the-man-and-the-birds.ia
+#EXTINF:-1 tvg-id="ajn-ia-mdrp_20191213" tvg-name="The Miles Davis Radio Project" group-title="Unsorted - review" ajn-type="radio" ajn-status="ready",The Miles Davis Radio Project
+https://archive.org/embed/mdrp_20191213

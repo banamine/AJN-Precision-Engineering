@@ -1,0 +1,4 @@
+# Archive /metadata responses are a build input, not committed
+meta/
+metadata-fill/meta/
+__pycache__/

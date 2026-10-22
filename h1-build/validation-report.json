@@ -1,0 +1,48 @@
+{
+ "generated": "2026-10-21",
+ "problems": [],
+ "counts": {
+  "items": 15557,
+  "active": 1173,
+  "deferred": 14384,
+  "byStatus": {
+   "deferred_owner_decision": 14384,
+   "provisional": 927,
+   "ready": 246
+  },
+  "byContentType": {
+   "unclassified": 690,
+   "movie": 193,
+   "episode": 178,
+   "music": 81,
+   "documentary": 21,
+   "news-talk": 6,
+   "radio": 4
+  },
+  "byTypeKey": {
+   "archive-embed:video": 950,
+   "archive-embed:unknown": 202,
+   "direct-file:video": 11,
+   "archive-embed:audio": 10
+  }
+ },
+ "checks": [
+  "unique ids",
+  "unique active playback urls",
+  "required fields",
+  "identifier charset",
+  "no active item with unresolved defer reasons"
+ ],
+ "typeConfirmation": {
+  "archive-embed:audio": false,
+  "archive-embed:unknown": false,
+  "archive-embed:video": false,
+  "direct-file:video": false
+ },
+ "notVerified": [
+  "playback of any item",
+  "restriction/loan/dark state (restrictionState=unchecked)",
+  "rights/licensing",
+  "file-level metadata for embed items (needs /metadata)"
+ ]
+}

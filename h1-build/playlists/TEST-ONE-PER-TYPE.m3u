@@ -1,0 +1,10 @@
+#EXTM3U
+# archive-embed entries are archive.org/embed pages: use an iframe-aware player.
+#EXTINF:-1 tvg-id="ajn-ia-u2-orpheum-theatre-boston-1981-wbcn" tvg-name="U2 '81 Orpheum Theatre Boston October Tour bcn" group-title="Unsorted - review" ajn-type="unclassified" ajn-status="ready",U2 '81 Orpheum Theatre Boston October Tour bcn
+https://archive.org/embed/u2-orpheum-theatre-boston-1981-wbcn
+#EXTINF:-1 tvg-id="ajn-ia-001-nypd-blue" tvg-name="001 NYPD Blue" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",001 NYPD Blue
+https://archive.org/embed/001-nypd-blue
+#EXTINF:-1 tvg-id="ajn-ia-mary59_gmx_414" tvg-name="414" group-title="Unsorted - review" ajn-type="unclassified" ajn-status="ready",414
+https://archive.org/embed/mary59_gmx_414
+#EXTINF:5544 tvg-id="ajn-ia-04-for-as-long-as-the-waters-flow_202606--e03" tvg-name="Centennial (1978) (580p) - 03 - The Wagon and the Elephant" group-title="Classic TV" ajn-type="episode" ajn-status="provisional",Centennial (1978) (580p) - 03 - The Wagon and the Elephant
+https://archive.org/download/04-for-as-long-as-the-waters-flow_202606/03%20-%20The%20Wagon%20and%20the%20Elephant.mp4
