@@ -89,6 +89,8 @@ jobs:
         run: npm run test:channels-2
       - name: Light guide schedules and caches
         run: npm run test:light-guides
+      - name: Guide UI (light rows, aired time; synthetic fixtures, local only)
+        run: npm run test:guide-ui
       - name: Archive outage state machine (injected clock)
         run: npm run test:archive-health
       - name: Archive outage server and cache integration (fake fetch)
