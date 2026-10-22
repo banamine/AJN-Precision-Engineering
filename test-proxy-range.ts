@@ -2,9 +2,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { proxySliceRange, PROXY_SLICE_BYTES as S } from './server/proxyRange.ts';
 import { buildArchiveProxyUrl } from './src/utils/archivePlayback.ts';
+import { archiveProxyContentType } from './server/archiveMediaTypes.ts';
 
 assert.equal(S, 8 * 1024 * 1024, 'proxy slice cap must be 8 MiB');
 assert.ok(S <= 32 * 1024 * 1024, 'proxy slice cap must never exceed 32 MiB');
+assert.equal(archiveProxyContentType('/download/id/file.m4a', 'application/octet-stream'), 'audio/mp4');
+assert.equal(archiveProxyContentType('/download/id/file.aac', 'application/octet-stream'), 'audio/aac');
+assert.equal(archiveProxyContentType('/download/id/file.mp3', 'application/octet-stream'), 'application/octet-stream');
+assert.equal(archiveProxyContentType('/download/id/file.m4a', 'audio/m4a'), 'audio/m4a', 'do not override a real upstream type');
 
 assert.deepEqual(proxySliceRange('bytes=0-'), { start: 0, end: S - 1 });
 assert.deepEqual(proxySliceRange(undefined), { start: 0, end: S - 1 });
@@ -51,8 +56,8 @@ assert.ok(
   'Archive proxy client-disconnect abort source text missing',
 );
 assert.ok(
-  serverSource.includes("upstreamHeaders.Range=`bytes=${slice.start}-${slice.end}`"),
-  'Archive proxy bounded upstream Range source text missing',
+  /upstreamHeaders\.Range\s*=\s*`bytes=\$\{(?:slice|mediaSlice)\.start\}-\$\{(?:slice|mediaSlice)\.end\}`/.test(serverSource),
+  'Archive proxy bounded upstream Range assignment missing',
 );
 
 console.log('proxy hardening contract source guards: structural source checks passed; not behavior tests');

@@ -35,7 +35,7 @@
     "test:rt-documentary": "tsx test-rt-documentary.ts",
     "test:classic-tv-canonical": "tsx test-classic-tv-canonical.js",
     "test:real-archive-playback": "tsx test-real-archive-playback.js",
-    "test:archive-retry": "tsx test-archive-retry.ts",
+    "test:archive-retry": "tsx test-archive-retry.ts && tsx test-archive-media-types.ts",
     "test:archive-url-exact": "tsx test-archive-url-exact.ts",
     "test:movies-manifest-resolve": "tsx test-movies-manifest-resolve.ts",
     "test:program-store-bounded": "tsx test-program-store-bounded.ts",

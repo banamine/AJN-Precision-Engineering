@@ -35,6 +35,9 @@ import {
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry, forgetArchiveRedirect } from './server/archiveFetch.js';
+import { archiveProxyContentType } from './server/archiveMediaTypes';
+import { buildArchiveRateLimitHttpResponse } from './server/archiveCooldown.js';
+import { isReadAheadMediaPath, readAheadMaxBytesFromEnv, SliceReadAhead } from './server/sliceReadAhead.js';
 import { createArchiveHealth } from './server/archiveHealth.js';
 import { startArchiveHealthProber } from './server/archiveHealthProbe.js';
 import { createLogicalArchiveHealthRecorder, recordArchiveHealthOutcome } from './server/archiveHealthRecorder.js';
@@ -57,6 +60,13 @@ app.use(watchdogRouter);
 
 interface ProxyStats{totalRequests:number;successfulRequests:number;retriedRequests:number;failedRequests:number;cacheHits:number;lastUpstreamLatencyMs:number;activeStreams:number}
 const stats:ProxyStats={totalRequests:0,successfulRequests:0,retriedRequests:0,failedRequests:0,cacheHits:0,lastUpstreamLatencyMs:0,activeStreams:0};
+const sliceReadAhead=new SliceReadAhead({
+  maxTotalBytes:readAheadMaxBytesFromEnv(process.env.READAHEAD_MAX_MB),
+  isPathAllowed:(cleanPath)=>{
+    const checked=validateArchivePath(cleanPath);
+    return checked.valid&&checked.cleanPath===cleanPath;
+  },
+});
 
 const archiveHealth = createArchiveHealth();
 registerArchiveHealthRoutes(app, archiveHealth, () => ({
@@ -64,7 +74,7 @@ registerArchiveHealthRoutes(app, archiveHealth, () => ({
   service:'ajn-precision-engineering-proxy',
   uptime:process.uptime(),
   timestamp:new Date().toISOString(),
-  stats,
+  stats:{...stats,...sliceReadAhead.stats},
 }));
 app.post('/api/health',(req,res)=>{console.log('[CLIENT ERROR]',req.body);res.json({received:true});});
 registerSyncPlaceholder(app); // placeholder cloud-sync endpoint (stores nothing)
@@ -433,9 +443,13 @@ app.get('/api/archive/proxy', async (req,res)=>{
     policyFailure?: boolean;
   }) => recordHealth(input);
 
+  const isReadAheadCandidate=!isImage&&isReadAheadMediaPath(v.cleanPath);
   try{
     const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
     const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Media-Console/ArchiveProxy','Accept': isImage ? 'image/*,*/*' : '*/*'};
+    let mediaSlice:{start:number;end:number}|null=null;
+    let readaheadKind:'hit'|'miss'|'off'='off';
+    let readaheadWaitMs=0;
     // Cloud Run rejects any HTTP/1 response larger than 32 MiB with an empty 500.
     // Browsers open media with "Range: bytes=0-" (or no Range), which asked for the
     // whole 500 MB file and died there, reported by the video element as
@@ -447,8 +461,52 @@ app.get('/api/archive/proxy', async (req,res)=>{
         upstreamHeaders.Range = `bytes=${slice.start}-${slice.end}`;
       }
     } else {
-      const slice=proxySliceRange(req.headers.range);
-      upstreamHeaders.Range=`bytes=${slice.start}-${slice.end}`;
+      mediaSlice=proxySliceRange(req.headers.range);
+      upstreamHeaders.Range=`bytes=${mediaSlice.start}-${mediaSlice.end}`;
+      if(isReadAheadCandidate){
+        const lookupStartedAt=Date.now();
+        const cached=sliceReadAhead.lookup(v.cleanPath,mediaSlice.start,mediaSlice.end);
+        readaheadWaitMs=Date.now()-lookupStartedAt;
+        readaheadKind=cached.kind;
+        if(cached.kind==='hit'&&cached.entry){
+          const entry=cached.entry;
+          const hitStartedAt=Date.now();
+          if(entry.contentType)res.setHeader('Content-Type',entry.contentType);
+          res.setHeader('Content-Length',entry.body.length);
+          res.setHeader('Content-Range',`bytes ${entry.rangeStart}-${entry.rangeEnd}/${entry.totalBytes}`);
+          res.setHeader('Accept-Ranges',entry.acceptRanges);
+          if(entry.etag)res.setHeader('ETag',entry.etag);
+          if(entry.lastModified)res.setHeader('Last-Modified',entry.lastModified);
+          res.setHeader('Cache-Control',entry.cacheControl);
+          res.setHeader('X-AJN-Archive-Proxy','memory-readahead-slice');
+          res.setHeader('X-AJN-Readahead','hit');
+          res.setHeader('Server-Timing',`readahead;desc="hit";dur=${readaheadWaitMs}`);
+          stats.successfulRequests++;
+          const nextTask=sliceReadAhead.prefetchNext({
+            cleanPath:v.cleanPath,
+            currentStart:entry.rangeStart,
+            currentEnd:entry.rangeEnd,
+            totalBytes:entry.totalBytes,
+            headers:upstreamHeaders,
+            responseIsOpen:()=>!res.destroyed&&!res.writableEnded,
+          });
+          if(nextTask)res.once('close',()=>{if(!res.writableFinished)nextTask.onParentResponseClosed();});
+          console.log('[archive-proxy-slice]',JSON.stringify({
+            id:proxyRequestId,
+            range:upstreamHeaders.Range,
+            path:v.cleanPath.split('?')[0].slice(-70),
+            status:206,
+            headersMs:Date.now()-hitStartedAt,
+            firstByteMs:0,
+            bodyMs:0,
+            bytes:entry.body.length,
+            kBps:null,
+            readahead:'hit',
+            readaheadWaitMs,
+          }));
+          return res.status(206).end(entry.body);
+        }
+      }
     }
 
     const upstreamAbort=new AbortController();
@@ -462,8 +520,17 @@ app.get('/api/archive/proxy', async (req,res)=>{
     });
     if(upstream.attempts>1) stats.retriedRequests++;
     // Evidence for stall investigations: how long Archive took to answer this slice and how many attempts it needed.
-    res.setHeader('Server-Timing',`upstream;dur=${Date.now()-upstreamT0}, attempts;desc="${upstream.attempts}"`);
+    res.setHeader('Server-Timing',`upstream;dur=${Date.now()-upstreamT0}, attempts;desc="${upstream.attempts}"${isReadAheadCandidate?`, readahead;desc="${readaheadKind}";dur=${readaheadWaitMs}`:''}`);
+    if(isReadAheadCandidate)res.setHeader('X-AJN-Readahead',readaheadKind);
     const mediaResponse=upstream.response;
+
+    if(upstream.rateLimit){
+      recordHealthOutcome({ status: upstream.status });
+      stats.failedRequests++;
+      const rateLimitResponse=buildArchiveRateLimitHttpResponse(upstream.rateLimit,upstream.attempts,proxyRequestId);
+      res.setHeader('Retry-After',rateLimitResponse.retryAfterHeader);
+      return res.status(rateLimitResponse.status).json(rateLimitResponse.body);
+    }
 
     if(!mediaResponse || upstream.failure){
       recordHealthOutcome({
@@ -509,7 +576,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
       return res.status(reply.status).json(reply.body);
     }
 
-    const contentType=mediaResponse.headers.get('content-type');
+    const contentType=archiveProxyContentType(v.cleanPath,mediaResponse.headers.get('content-type'));
     // Archive answers not-yet-published or unavailable media with an HTML page
     // (still 200/206). Passing that on makes the browser report a demuxer error;
     // report it as what it is instead.
@@ -583,10 +650,30 @@ app.get('/api/archive/proxy', async (req,res)=>{
     }
 
     if(mediaResponse.body){
+      let prefetchTask:null|ReturnType<SliceReadAhead['prefetchNext']>=null;
+      const rangeMatch=/^bytes (\d+)-(\d+)\/(\d+)$/.exec(contentRange||'');
+      if(isReadAheadCandidate&&mediaResponse.status===206&&mediaSlice&&rangeMatch){
+        const rangeStart=Number(rangeMatch[1]);
+        const rangeEnd=Number(rangeMatch[2]);
+        const totalBytes=Number(rangeMatch[3]);
+        if(rangeStart===mediaSlice.start&&rangeEnd===mediaSlice.end&&Number.isSafeInteger(totalBytes)){
+          prefetchTask=sliceReadAhead.prefetchNext({
+            cleanPath:v.cleanPath,
+            currentStart:rangeStart,
+            currentEnd:rangeEnd,
+            totalBytes,
+            headers:upstreamHeaders,
+            responseIsOpen:()=>!res.destroyed&&!res.writableEnded,
+          });
+        }
+      }
+      if(prefetchTask)res.once('close',()=>{if(!res.writableFinished)prefetchTask?.onParentResponseClosed();});
       stats.activeStreams++;
       const body=Readable.fromWeb(mediaResponse.body as any);
-      const done=()=>{ stats.activeStreams=Math.max(0,stats.activeStreams-1); };
+      let streamCounted=true;
+      const done=()=>{if(!streamCounted)return;streamCounted=false;stats.activeStreams=Math.max(0,stats.activeStreams-1);};
       body.once('end',done);
+      body.once('close',done);
       body.once('error',(streamErr)=>{
         done();
         if(!upstreamAbort.signal.aborted) console.error('[Archive Proxy Stream Error]',proxyRequestId,streamErr?.message);
