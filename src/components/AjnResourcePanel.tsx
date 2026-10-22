@@ -6,6 +6,7 @@ import { useAjnFeeds } from '../hooks/useAjnFeeds';
 import { labelAjnItem } from '../utils/ajnLabels';
 import { ShowArt } from './ShowArt';
 import { ajnArtFor } from '../utils/ajnArt';
+import { ClassicRadioTheatreShelf } from './ClassicRadioTheatreShelf';
 
 interface Props {
   onPlayProgram: PlayProgramCallback;
@@ -114,6 +115,7 @@ export function AjnResourcePanel({ onPlayProgram, className = '' }: Props) {
 
       <Group title="Video" icon={Tv} items={video} total={video.length} onPlayProgram={onPlayProgram} />
       <Group title="Audio" icon={Headphones} items={audio} total={audio.length} onPlayProgram={onPlayProgram} />
+      <ClassicRadioTheatreShelf onPlayProgram={onPlayProgram} />
 
       {catalog && (
         <div className="flex items-center justify-between gap-3 font-mono text-[10px] text-neutral-600">

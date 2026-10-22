@@ -103,6 +103,7 @@ app.get('/api/home/now',async(_req,res)=>{
   res.set('Cache-Control','no-store').json({generatedAt:new Date(nowMs).toISOString(),items,pending,failed,nextChangeAt:ends.length?new Date(Math.min(...ends)).toISOString():null});
 });
 import { createClassicUpcoming } from './server/classicUpcoming';
+import { CLASSIC_RADIO_PAGE_MAX, ClassicRadioUpstreamError, classicRadioService, getClassicRadioGenres } from './server/classicRadioTheatre.js';
 const classicUpcoming=createClassicUpcoming({getChannels:async()=>{try{const s=await Promise.race([guideSnapshot('classic-tv'),new Promise<null>(r=>setTimeout(()=>r(null),3500))]);return s?s.channels:null}catch{return null}},now:()=>Date.now()});
 app.get('/api/home/classic-48h',async(req,res)=>{const r=await classicUpcoming.handle(req.query.tz);res.status(r.status).set('Cache-Control','private, max-age=60').json(r.body);});
 const originOf=(req:any)=>`${(req.headers['x-forwarded-proto']||req.protocol||'https').toString().split(',')[0]}://${req.get('host')}`;
@@ -207,6 +208,33 @@ app.get('/api/schedule',async(req,res)=>{
 app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const y=Number(req.query.year);const items=y?all.filter(e=>e.year===y):all;res.set('Cache-Control','public, max-age=3600');res.json({total:items.length,items});});
 app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});
 app.get('/api/rush/episode/:date',async(req,res)=>{const eps=await rushEpisodesOn(req.params.date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${req.params.date}`});try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({date:req.params.date,episodes,stats:rushStats});}catch(e:any){res.status(e.status??502).json({error:e.message,stats:rushStats});}});
+app.get('/api/classic-radio/shows',(_req,res)=>{
+  const groups=getClassicRadioGenres();
+  res.set('Cache-Control','no-store').json({schemaVersion:1,genres:groups,totalShows:groups.reduce((n,g)=>n+g.shows.length,0)});
+});
+app.get('/api/classic-radio/search',async(req,res)=>{
+  const show=String(req.query.show??'').trim();
+  if(!show)return res.status(400).json({error:'show_required'});
+  const q=String(req.query.q??'').trim();
+  if(q.length>120)return res.status(400).json({error:'query_too_long',maxLength:120});
+  const genre=String(req.query.genre??'').trim();
+  const pageRaw=req.query.page===undefined?1:Number(req.query.page);
+  const limitRaw=req.query.limit===undefined?1:Number(req.query.limit);
+  if(!Number.isInteger(pageRaw)||pageRaw<1)return res.status(400).json({error:'invalid_page'});
+  if(!Number.isInteger(limitRaw)||limitRaw<1||limitRaw>CLASSIC_RADIO_PAGE_MAX)return res.status(400).json({error:'invalid_limit',max:CLASSIC_RADIO_PAGE_MAX});
+  try{
+    const result=await classicRadioService.search({show,q,genre:genre||undefined,page:pageRaw,limit:limitRaw});
+    return res.set('Cache-Control','no-store').json(result);
+  }catch(e:any){
+    if(e instanceof RangeError&&e.message==='unknown_show')return res.status(404).json({error:'unknown_show',show});
+    if(e instanceof RangeError&&e.message==='show_genre_mismatch')return res.status(400).json({error:'show_genre_mismatch',show,genre});
+    if(e instanceof ClassicRadioUpstreamError){
+      const status=e.upstreamStatus===429||e.upstreamStatus===503?503:502;
+      return res.status(status).json({error:'archive_search_failed',reason:e.message,upstreamStatus:e.upstreamStatus??null,retryAfter:e.retryAfter??null});
+    }
+    return res.status(502).json({error:'archive_search_failed',reason:e instanceof Error?e.message:'unknown upstream failure'});
+  }
+});
 app.get('/api/news/version',async(_req,res)=>{res.set('Cache-Control','no-store');res.json(await getNewsVersion());});
 // Daily News Digest (GitHub Pages JSON, in memory). Headlines and links only; never media. 503 only when no digest was ever loaded.
 app.get('/api/digest',async(_req,res)=>{const st=await getDigestState();res.set('Cache-Control','no-store');if(!st.digest)return res.status(503).json({status:st.status,error:st.error??'digest not loaded yet'});return res.json(st);});

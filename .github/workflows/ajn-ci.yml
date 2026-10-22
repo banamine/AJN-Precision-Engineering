@@ -83,6 +83,8 @@ jobs:
         run: npm run test:ajn-audio-canonical
       - name: Archive proxy retry regression
         run: npm run test:archive-retry
+      - name: Classic Radio Theatre (fixture-only)
+        run: npm run test:classic-radio
       - name: Archive outage state machine (injected clock)
         run: npm run test:archive-health
       - name: Archive outage server and cache integration (fake fetch)

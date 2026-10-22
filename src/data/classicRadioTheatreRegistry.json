@@ -1,0 +1,429 @@
+{
+  "schemaVersion": 1,
+  "id": "classic-radio-theatre",
+  "displayName": "Classic Radio Theatre",
+  "scope": "Audio catalogue only; no Classic TV schedule entries and no new Library category.",
+  "eraSeed": {
+    "label": "1930s–1960s",
+    "verified": false,
+    "source": "owner-provided seed; verify per show before display"
+  },
+  "aliasNormalization": {
+    "unicode": "NFKC",
+    "case": "case-insensitive",
+    "punctuation": "fold to spaces",
+    "leadingArticle": "match with or without a leading “The”",
+    "theatreTheater": "preserve both spelling variants as aliases"
+  },
+  "genreTags": {
+    "audioCategory": "audio",
+    "tags": [
+      "classic-radio-theatre",
+      "genre:drama",
+      "genre:mystery-suspense",
+      "genre:sci-fi",
+      "genre:true-crime"
+    ],
+    "status": "proposed only; reconcile with G10 tag vocabulary before implementation; do not create LibraryCategory"
+  },
+  "dedupeRule": {
+    "canonicalIdentity": "Archive item identifier; never replace it with a display title",
+    "candidateEpisodeKey": [
+      "showId",
+      "normalized episode title",
+      "explicit full episode date"
+    ],
+    "mergeOnlyIf": [
+      "same canonical identifier",
+      "or verified identical file checksum/content fingerprint"
+    ],
+    "retainOtherCreatorsAsAlternateVersions": true,
+    "missingDate": "do not infer or collapse; display as separate candidates"
+  },
+  "preferredArchiveSources": {
+    "defaultCollection": "oldtimeradio",
+    "secondaryCollections": [
+      "the-suspense-project",
+      "lumedwards"
+    ],
+    "broadCollectionNotDefault": {
+      "id": "radioprograms",
+      "reason": "5,083,002 items in the G17 whole-collection count; broad, not a focused OTR seed"
+    }
+  },
+  "shows": [
+    {
+      "id": "campbell",
+      "measured": true,
+      "displayName": "The Campbell Playhouse",
+      "aliases": [
+        "The Campbell Playhouse",
+        "Campbell Playhouse"
+      ],
+      "genre": "drama",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "old time radio researchers group",
+          "boxcars711 old time radio"
+        ],
+        "evidence": "B1 creator facets; collection is provisional"
+      }
+    },
+    {
+      "id": "mercury",
+      "measured": true,
+      "displayName": "The Mercury Theatre on the Air",
+      "aliases": [
+        "The Mercury Theatre on the Air",
+        "Mercury Theatre on the Air",
+        "The Mercury Theater on the Air",
+        "Mercury Theater on the Air"
+      ],
+      "genre": "drama",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "boxcars711 old time radio",
+          "orson welles",
+          "relic radio"
+        ],
+        "evidence": "B1 creator facets; collection is provisional"
+      }
+    },
+    {
+      "id": "cavalcade",
+      "measured": true,
+      "displayName": "Cavalcade of America",
+      "aliases": [
+        "Cavalcade of America"
+      ],
+      "genre": "drama",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "mpdmedia",
+          "old time radio researchers group",
+          "the suspense project"
+        ],
+        "evidence": "B1 creator facets; collection is provisional"
+      }
+    },
+    {
+      "id": "lux",
+      "measured": true,
+      "displayName": "Lux Radio Theatre",
+      "aliases": [
+        "Lux Radio Theatre",
+        "Lux Radio Theater",
+        "Lux Theatre",
+        "Lux Theater"
+      ],
+      "genre": "drama",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio",
+          "radioprograms",
+          "lumedwards"
+        ],
+        "creatorCandidates": [
+          "old time radio researchers group",
+          "the suspense project",
+          "those old radio shows"
+        ],
+        "evidence": "Owner-provided earlier facets; not the same query as G17 alias-OR run"
+      }
+    },
+    {
+      "id": "shadow",
+      "measured": true,
+      "displayName": "The Shadow",
+      "aliases": [
+        "The Shadow",
+        "Shadow"
+      ],
+      "genre": "mystery-suspense",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [],
+        "evidence": "B1 text query was broad; do not trust creator ranking"
+      }
+    },
+    {
+      "id": "suspense",
+      "measured": true,
+      "displayName": "Suspense",
+      "aliases": [
+        "Suspense"
+      ],
+      "genre": "mystery-suspense",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "the-suspense-project",
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "the suspense project",
+          "boxcars711 old time radio",
+          "relic radio"
+        ],
+        "evidence": "B1 creator facet and B2 collection count"
+      }
+    },
+    {
+      "id": "inner-sanctum",
+      "measured": true,
+      "displayName": "Inner Sanctum Mysteries",
+      "aliases": [
+        "Inner Sanctum Mysteries",
+        "Inner Sanctum"
+      ],
+      "genre": "mystery-suspense",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio",
+          "the-suspense-project"
+        ],
+        "creatorCandidates": [
+          "boxcars711 old time radio",
+          "the suspense project"
+        ],
+        "evidence": "B1 creator facet; title-like facet omitted"
+      }
+    },
+    {
+      "id": "whistler",
+      "measured": true,
+      "displayName": "The Whistler",
+      "aliases": [
+        "The Whistler",
+        "Whistler"
+      ],
+      "genre": "mystery-suspense",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "the-suspense-project",
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "the suspense project",
+          "the whistler project",
+          "boxcars711 old time radio"
+        ],
+        "evidence": "B1 creator facets; B2 collection count"
+      }
+    },
+    {
+      "id": "johnny-dollar",
+      "measured": false,
+      "displayName": "Yours Truly, Johnny Dollar",
+      "aliases": [
+        "Yours Truly, Johnny Dollar",
+        "Johnny Dollar",
+        "Yours Truly Johnny Dollar"
+      ],
+      "genre": "mystery-suspense",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "old time radio researchers group"
+        ],
+        "evidence": "B3 one-item metadata sample only; B1 not queried"
+      }
+    },
+    {
+      "id": "dimension-x",
+      "measured": true,
+      "displayName": "Dimension X",
+      "aliases": [
+        "Dimension X"
+      ],
+      "genre": "sci-fi",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "boxcars711 old time radio",
+          "relic radio",
+          "relic radio sci-fi"
+        ],
+        "evidence": "B1 creator facets"
+      }
+    },
+    {
+      "id": "x-minus-one",
+      "measured": true,
+      "displayName": "X Minus One",
+      "aliases": [
+        "X Minus One",
+        "X Minus 1"
+      ],
+      "genre": "sci-fi",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "relic radio",
+          "relic radio sci-fi",
+          "boxcars711 old time radio"
+        ],
+        "evidence": "B1 creator facets"
+      }
+    },
+    {
+      "id": "buck-rogers",
+      "measured": false,
+      "displayName": "Buck Rogers in the 25th Century",
+      "aliases": [
+        "Buck Rogers in the 25th Century",
+        "Buck Rogers"
+      ],
+      "genre": "sci-fi",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [],
+        "evidence": "B1 not queried; source provisional"
+      }
+    },
+    {
+      "id": "cbs-radio-workshop",
+      "measured": false,
+      "displayName": "The CBS Radio Workshop",
+      "aliases": [
+        "The CBS Radio Workshop",
+        "CBS Radio Workshop",
+        "Radio Workshop"
+      ],
+      "genre": "sci-fi",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [],
+        "evidence": "B3 item sample had no creator; B1 not queried"
+      }
+    },
+    {
+      "id": "gang-busters",
+      "measured": false,
+      "displayName": "Gang Busters",
+      "aliases": [
+        "Gang Busters",
+        "Gangbusters"
+      ],
+      "genre": "true-crime",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [],
+        "evidence": "B1 not queried; source provisional"
+      }
+    },
+    {
+      "id": "fbi-in-peace-and-war",
+      "measured": false,
+      "displayName": "The FBI in Peace and War",
+      "aliases": [
+        "The FBI in Peace and War",
+        "FBI in Peace and War"
+      ],
+      "genre": "true-crime",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [],
+        "evidence": "B1 not queried; source provisional"
+      }
+    },
+    {
+      "id": "dragnet",
+      "measured": true,
+      "displayName": "Dragnet",
+      "aliases": [
+        "Dragnet"
+      ],
+      "genre": "true-crime",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "boxcars711 old time radio",
+          "old time radio researchers group",
+          "relic radio"
+        ],
+        "evidence": "B1 creator facets"
+      }
+    },
+    {
+      "id": "black-museum",
+      "measured": false,
+      "displayName": "The Black Museum",
+      "aliases": [
+        "The Black Museum",
+        "Black Museum"
+      ],
+      "genre": "true-crime",
+      "era": "1930s–1960s",
+      "eraVerified": false,
+      "preferredArchiveSource": {
+        "collectionIds": [
+          "lumedwards",
+          "oldtimeradio"
+        ],
+        "creatorCandidates": [
+          "old time radio researchers group"
+        ],
+        "evidence": "B3 one-item metadata sample; B1 not queried; provisional"
+      }
+    }
+  ]
+}
