@@ -257,7 +257,7 @@ jobs:
         env:
           AJN_TEST_URL: http://localhost:8080
       - name: Real Archive playback gates
-        run: npm run test:real-archive-playback
+        run: node scripts/run-live-archive-gate.mjs npm run test:real-archive-playback
         env:
           AJN_TEST_URL: http://localhost:8080
       - name: Visual regression screenshots
