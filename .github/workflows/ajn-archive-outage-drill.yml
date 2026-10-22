@@ -1,0 +1,46 @@
+name: AJN Archive Outage Drill
+
+# Manual, plus a run whenever the drill itself changes. Runs the real server with archive.org blackholed on the runner and checks
+# ok -> down -> recovery end to end (about 7 minutes). It never contacts archive.org
+# while the outage is simulated. The fast simulated tests already run in AJN Application CI.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/archive-outage-drill.sh'
+      - '.github/workflows/ajn-archive-outage-drill.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    name: Archive outage drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build server
+        run: npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs
+
+      - name: Run outage drill (needs root for the hosts file)
+        run: sudo -E env "PATH=$PATH" scripts/archive-outage-drill.sh
+
+      - name: Upload server log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: archive-outage-drill-log
+          path: /tmp/archive-outage-drill.log
+          if-no-files-found: ignore
