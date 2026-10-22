@@ -12,6 +12,8 @@ Makes NO network requests.
                   out of the main file until the app is confirmed to accept it.
 * Files the system is unsure about (container mismatch, unknown size/duration) are NOT dropped: they are listed under
   report.deferredFiles with status deferred_owner_decision.
+* Items whose metadata says is_dark are excluded (report.darkItems) and never become rows.
+* Private file entries are never rows (deferred as private_file).
 * Items without a metadata file cannot become rows (rows need file, bytes, duration): report.needsMetadata.
 """
 import argparse, json, os, sys
@@ -37,13 +39,24 @@ import re
 DERIV_SUFFIX = re.compile(r"(\.ia|_\d+kb|_vbr)$", re.I)     # Archive derivative naming: name.ia.mp4, name_64kb.mp3 (assumed; verify on real metadata)
 PREFER = {"h.264": 0, "mpeg4": 1, "vbr mp3": 0, "mp3": 1}
 
+def _stem(name, strip_ia):
+    base = os.path.splitext(name)[0]
+    return DERIV_SUFFIX.sub("", base) if strip_ia else re.sub(r"(_\d+kb|_vbr)$", "", base, flags=re.I)
+
 def pick_files(files, allow_mismatch=False):
-    """-> (chosen {'video'|'audio': [(name,size,sec)]}, skipped [(name,reason)], deferred [(name,reason)])"""
+    """-> (chosen {'video'|'audio': [(name,size,sec)]}, skipped [(name,reason)], deferred [(name,reason)])
+
+    Private file entries (private == "true") are never turned into rows: they are listed as deferred (private_file).
+    Archive's ".ia" derivative marker is stripped from a stem only when another public file of the same kind has the
+    stripped stem. A standalone source=original "Title.1948.ia.mp4" keeps ".ia" so it is not merged with a different file.
+    """
     best, skipped, deferred = {}, [], []
+    cands = []
     for f in files:
         name = f.get("name", ""); fmt = f.get("format") or ""
         kind, problem = file_kind(name, fmt)
         if kind == "other": continue
+        if str(f.get("private", "")).lower() == "true": deferred.append((name, "private_file")); continue
         if problem and not allow_mismatch: deferred.append((name, problem)); continue
         sec = parse_length(f.get("length"))
         if sec is None: deferred.append((name, "duration_unknown")); continue
@@ -51,7 +64,13 @@ def pick_files(files, allow_mismatch=False):
         except (TypeError, ValueError): size = 0
         if size <= 0: deferred.append((name, "size_unknown")); continue
         if sec < MIN_SECONDS: skipped.append((name, "under_30_seconds")); continue
-        stem = DERIV_SUFFIX.sub("", os.path.splitext(name)[0])
+        cands.append((kind, f, name, fmt, size, sec))
+    plain = {(kind, _stem(name, False)) for kind, f, name, fmt, size, sec in cands if not re.search(r"\.ia$", os.path.splitext(name)[0], re.I)}
+    for kind, f, name, fmt, size, sec in cands:
+        base = os.path.splitext(name)[0]
+        norm = _stem(name, True)
+        strip_ia = bool(re.search(r"\.ia$", base, re.I)) and (kind, norm) in plain
+        stem = norm if strip_ia or not re.search(r"\.ia$", base, re.I) else _stem(name, False)
         rank = (PREFER.get(fmt.lower(), 5), 0 if f.get("source") == "original" else 1)
         key = (kind, stem)
         if key not in best or rank < best[key][0]: best[key] = (rank, name, size, sec)
@@ -69,7 +88,7 @@ def main():
     have_ids = {r["identifier"] for c in base["channels"] for r in c["rows"]}
     have_ch = {c["id"] for c in base["channels"]}
     rep = {"converted": [], "needsMetadata": [], "alreadyInManifest": [], "unknownCategory": [], "noPlayableRows": [],
-           "deferredOwnerDecisionItems": 0, "skippedFiles": {}, "deferredFiles": {}}
+           "darkItems": [], "deferredOwnerDecisionItems": 0, "skippedFiles": {}, "deferredFiles": {}}
     for it in h1:
         if it["status"] == DEFER: rep["deferredOwnerDecisionItems"] += 1; continue
         if it["playback"]["type"] != "archive-embed": continue           # direct-file entries were added by patch_centennial.py
@@ -78,7 +97,9 @@ def main():
         if cat not in VIDEO_TARGET: rep["unknownCategory"].append({"identifier": ident, "category": cat, "status": DEFER}); continue
         p = os.path.join(a.meta_dir, ident + ".json")
         if not os.path.isfile(p): rep["needsMetadata"].append(ident); continue
-        meta = json.load(open(p)); chosen, skipped, deferred = pick_files(meta.get("files", []), a.allow_mismatch)
+        meta = json.load(open(p))
+        if meta.get("is_dark"): rep["darkItems"].append(ident); continue          # taken down by the Archive: never a row
+        chosen, skipped, deferred = pick_files(meta.get("files", []), a.allow_mismatch)
         if skipped: rep["skippedFiles"][ident] = skipped
         if deferred: rep["deferredFiles"][ident] = [{"file": n, "reason": r, "status": DEFER} for n, r in deferred]
         if not chosen["video"] and not chosen["audio"]: rep["noPlayableRows"].append(ident); continue

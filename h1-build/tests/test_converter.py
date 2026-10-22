@@ -15,6 +15,35 @@ class Converter(unittest.TestCase):
         self.assertFalse(hasattr(extra_channels_lib, "category_excluded"))
         self.assertFalse(hasattr(extra_channels_lib, "EXCLUDED_CATEGORY_RE"))
 
+    def test_private_files_dark_items_and_ia_naming(self):
+        from build_extra_channels import pick_files
+        # private playable entries are deferred, never rows; non-private siblings still convert
+        files = [dict(f("a.mp4", "h.264", "original", "600", 1e8), private="true"), f("b.mp4", "h.264", "original", "600", 1e8)]
+        chosen, _, deferred = pick_files(files)
+        self.assertEqual([x[0] for x in chosen["video"]], ["b.mp4"])
+        self.assertEqual(deferred, [("a.mp4", "private_file")])
+        # real public filename from identifier 001-thats-my-boy: a standalone original ".ia.mp4" keeps ".ia" in its stem key,
+        # so it is not merged with a different file that happens to share the stripped stem
+        real = "Abbott and Costello Meet Frankenstein.1948.ia.mp4"
+        chosen, _, _ = pick_files([f(real, "h.264", "original", "5000", 9e8), f("Abbott and Costello Meet Frankenstein.1948.mp4", "h.264", "derivative", "5000", 2e8)])
+        self.assertEqual(len(chosen["video"]), 1)                                                   # same stem -> one row (sibling exists)
+        chosen, _, _ = pick_files([f(real, "h.264", "original", "5000", 9e8)])
+        self.assertEqual([x[0] for x in chosen["video"]], [real])                                   # standalone original is kept as is
+        chosen, _, _ = pick_files([f("x_64kb.mp3", "64Kbps MP3", "derivative", "300", 1e6), f("x.mp3", "VBR MP3", "original", "300", 5e6)])
+        self.assertEqual([x[0] for x in chosen["audio"]], ["x.mp3"])                                # bitrate suffix grouping unchanged
+        # dark item: metadata has is_dark and no files -> reported dark, no channel
+        d = tempfile.mkdtemp(); os.makedirs(d + "/meta")
+        json.dump({"is_dark": True, "d1": "x", "dir": "/1/items/dark-1"}, open(d + "/meta/dark-1.json", "w"))
+        json.dump({"files": [f("ok.mp4", "h.264", "original", "600", 1e8)]}, open(d + "/meta/ok-1.json", "w"))
+        json.dump({"items": [item("dark-1", "Dark", "Music"), item("ok-1", "Ok", "Music")]}, open(d + "/h1.json", "w"))
+        json.dump({"schema": "ajn.extraChannelsManifest.v1", "channels": []}, open(d + "/base.json", "w"))
+        r = subprocess.run([sys.executable, "-I", T + "/build_extra_channels.py", "--h1", d + "/h1.json", "--meta-dir", d + "/meta",
+                            "--base", d + "/base.json", "--out", d + "/out.json", "--sidecar-out", d + "/side.json", "--report", d + "/rep.json"],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        rep, out = json.load(open(d + "/rep.json")), json.load(open(d + "/out.json"))
+        self.assertEqual(rep["darkItems"], ["dark-1"]); self.assertEqual([c["id"] for c in out["channels"]], ["h1-ok-1"])
+
     def test_end_to_end(self):
         d = tempfile.mkdtemp(); os.makedirs(d + "/meta")
         base = {"schema": "ajn.extraChannelsManifest.v1", "channels": [
