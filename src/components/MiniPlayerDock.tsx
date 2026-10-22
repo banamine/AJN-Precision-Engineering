@@ -2,6 +2,8 @@ import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX } from 'lucide-r
 import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
 import { AvSyncControls } from './AvSyncControls';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
+import { useStationTheme } from '../utils/stationArt';
+import { StationIcon } from './StationBanner';
 
 interface MiniPlayerDockProps {
   nowPlaying: NowPlayingMedia;
@@ -22,6 +24,7 @@ export function MiniPlayerDock({
   // The real player stays mounted (hidden) in #persistent-player; the dock drives it through the shared hook.
   const { paused, muted, toggle: togglePlay, toggleMute } = usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
   const isAudio = nowPlaying.mediaType === 'audio';
+  const theme = useStationTheme(nowPlaying.channelId, nowPlaying.title); // live radio: the station's logo and colours
   return (
     <aside
       id="persistent-mini-player"
@@ -36,7 +39,7 @@ export function MiniPlayerDock({
         title="Click to open full player"
         className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/30 transition hover:scale-105 active:scale-95 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
       >
-        {isAudio ? <Radio className="h-5 w-5" /> : <Tv className="h-5 w-5" />}
+        {theme ? <StationIcon theme={theme} size={44} className="!rounded-lg" /> : isAudio ? <Radio className="h-5 w-5" /> : <Tv className="h-5 w-5" />}
         <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>

@@ -2,6 +2,8 @@ import { useRadioFavorites, toggleRadioFavorite } from '../utils/radioFavorites'
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import type { PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
+import { getStationTheme } from '../utils/radioAccents';
+import { rememberStationArt } from '../utils/stationArt';
 
 export interface LiveRadioItem {
   id: string;
@@ -77,7 +79,7 @@ function StationArt({ s, size, broken, onBroken }: { s: LiveRadioItem; size: num
     );
   }
   return (
-    <div aria-hidden="true" style={{ ...style, background: tileColor(s.id) }}
+    <div aria-hidden="true" style={{ ...style, background: getStationTheme(s.id, s.name).themeColor, border: `1px solid ${getStationTheme(s.id, s.name).borderTint}`, color: getStationTheme(s.id, s.name).color }}
       className="flex shrink-0 items-center justify-center rounded-lg text-sm font-bold text-neutral-100">{initialsOf(s.name)}</div>
   );
 }
@@ -151,6 +153,7 @@ export function LiveRadioDirectory({ onPlay, onTuned, compact = false, wide = fa
       })
       .then((json) => {
         facets.current = { countries: json.countries, genres: json.genres, vizTotal: json.vizTotal ?? 0 };
+        rememberStationArt(json.items);
         setData(json);
         setError(null);
         setLoading(false);
@@ -268,9 +271,11 @@ export function LiveRadioDirectory({ onPlay, onTuned, compact = false, wide = fa
               const where = [s.city, s.region].filter(Boolean).join(', ') || COUNTRY_NAMES[s.country];
               const localTime = localTimeLabel(s.timeZone, now);
               const isSel = (activeId ?? selected?.id) === s.id;
+              const theme = getStationTheme(s.id, s.name, s.logo);
               return (
                 <li key={s.id} data-station-id={s.id}
-                  className={`relative flex flex-col items-center gap-1 rounded-lg border p-2 text-center ${isSel ? 'border-amber-400/70 bg-amber-500/10' : 'border-neutral-800 bg-neutral-900/50 hover:bg-neutral-900'}`}>
+                  style={{ borderColor: isSel ? theme.color : theme.borderTint.replace(/B3$|80$/, '40'), background: isSel ? theme.bgTint : undefined }}
+                  className={`relative flex flex-col items-center gap-1 rounded-lg border p-2 text-center ${isSel ? '' : 'bg-neutral-900/50 hover:bg-neutral-900'}`}>
                   <button type="button" disabled={hls} onClick={() => play(s)}
                     aria-label={hls ? `${s.name}: HLS streams are not supported yet` : `Play ${s.name}${s.number ? `, station ${s.number}` : ''}`}
                     title={hls ? 'HLS streams are not supported yet' : `Play ${s.name} — ${where}`}

@@ -7,6 +7,9 @@ import { RADIO_DOCK_EVENT, type RadioDockAction } from '../utils/radioDock';
 import { readRecentStations, recordRecentStation, type RecentStation } from '../utils/radioRecent';
 import { LiveRadioDirectory, type LiveRadioItem } from './LiveRadioDirectory';
 import { RadioPresetsBar } from './RadioPresetsBar';
+import { RadioStationGroup } from './RadioStationGroup';
+import { useStationTheme } from '../utils/stationArt';
+import { stationGradient } from '../utils/radioAccents';
 
 interface RadioDockProps {
   nowPlaying: NowPlayingMedia | null;
@@ -86,6 +89,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
   const station = isStation(nowPlaying) ? nowPlaying : null;
   const media = usePersistentMedia('audio', station ? `${station.src}|audio` : undefined, Boolean(station));
   const live = Boolean(station) && media.attached && !media.paused;
+  const theme = useStationTheme(station?.channelId, station?.title); // the playing station's colours, or null
   const art = station && tuned && tuned.id === station.channelId ? tuned : null;
   const nowLogo = art?.logo ?? (station && presetTuned && presetTuned.id === station.channelId ? presetTuned.logo : undefined);
 
@@ -210,9 +214,10 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
       )}
 
       <aside id="radio-dock-panel" data-testid="radio-dock-panel" aria-label="Live radio player" hidden={!open}
+        style={theme ? { borderColor: theme.borderTint } : undefined}
         className={`${open ? 'flex' : 'hidden'} fixed z-[55] flex-col overflow-hidden border border-red-700/70 bg-neutral-950/97 shadow-2xl shadow-black/70 backdrop-blur-md ${
           full ? 'inset-0 z-[60] max-h-none rounded-none' : 'inset-x-0 bottom-14 max-h-[80vh] rounded-t-2xl sm:bottom-16 md:inset-x-auto md:bottom-6 md:right-6 md:w-[27rem] md:rounded-2xl'}`}>
-        <div className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-700 px-3 py-2 text-white">
+        <div style={theme ? { background: `linear-gradient(90deg, ${theme.accentColor}, ${theme.themeColor})` } : undefined} className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-700 px-3 py-2 text-white">
           <Radio className="h-4 w-4 shrink-0" aria-hidden="true" />
           <div className="mr-auto min-w-0">
             <p className="text-sm font-extrabold uppercase leading-tight tracking-wider">Radio</p>
@@ -264,6 +269,8 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
 
         <RadioPresetsBar station={station} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
           onPresetTuned={(id, logo) => setPresetTuned({ id, logo })} />
+
+        <RadioStationGroup onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
           {everOpened && <LiveRadioDirectory compact wide={full} onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />}

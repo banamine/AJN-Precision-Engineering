@@ -5,6 +5,8 @@ import {
   RADIO_PRESET_SLOTS, clearRadioPreset, saveRadioPreset, useRadioPresets,
   type RadioPreset, type RadioPresetInput, type RadioPresetMap, type RadioPresetSlot,
 } from '../utils/radioPresets';
+import { getStationTheme } from '../utils/radioAccents';
+import { getStationArt } from '../utils/stationArt';
 
 const HOLD_MS = 500;
 const HOLD_SLOP_PX = 10;
@@ -31,10 +33,8 @@ function initialsOf(name: string): string {
   const first = letters[0] ?? '?';
   return (first.length >= 2 ? first.slice(0, 2) : first + (letters[1]?.[0] ?? '')).toUpperCase();
 }
-function tileColor(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i += 1) h = (h * 31 + id.charCodeAt(i)) % 360;
-  return `hsl(${h} 28% 22%)`;
+function tileColor(id: string, name?: string): string {
+  return getStationTheme(id, name).color;
 }
 
 /** Five hardware-style presets: tap to tune, press and hold (half a second) to save the station that is playing. */
@@ -151,6 +151,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned }: 
           const p = presets[slot];
           const active = Boolean(p && playing && p.channelId === playing.channelId);
           const isHolding = holding === slot;
+          const theme = p ? getStationTheme(p.channelId, p.title, p.logo ?? getStationArt(p.channelId)) : null;
           const base = 'relative flex min-h-[64px] min-w-0 select-none flex-col items-stretch gap-0.5 overflow-hidden rounded-lg px-1.5 py-1 text-left transition-transform active:scale-95 motion-reduce:transition-none cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400';
           const tone = !p
             ? 'border border-dashed border-neutral-700/60 bg-neutral-900/40 text-neutral-400 hover:border-neutral-500 hover:bg-neutral-900'
@@ -160,12 +161,14 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned }: 
           const label = p
             ? `Preset ${slot}: ${p.title}${p.number ? `, station ${p.number}` : ''}${active ? (live ? ', playing now' : ', current station') : ''}. Tap to tune. Press and hold, or Shift+Enter, to replace it with the playing station.`
             : `Preset ${slot}, empty. Press and hold, or Shift+Enter, to save the playing station here.`;
-          const showLogo = Boolean(p?.logo) && !broken.has(p?.channelId ?? '');
+          const logoSrc = p ? (p.logo ?? getStationArt(p.channelId)) : undefined;
+          const showLogo = Boolean(logoSrc) && !broken.has(p?.channelId ?? '');
           return (
             <button key={slot} type="button" data-testid={`radio-preset-${slot}`} data-filled={p ? 'true' : 'false'} aria-label={label} aria-current={active ? 'true' : undefined} title={label}
               onPointerDown={onPointerDown(slot)} onPointerMove={onPointerMove} onPointerUp={cancelHold} onPointerCancel={cancelHold} onPointerLeave={cancelHold}
               onClick={onClick(slot)} onKeyDown={onKeyDown(slot)}
               onContextMenu={(e) => { e.preventDefault(); cancelHold(); fired.current = null; setMenu(slot); }}
+              style={theme && !active ? { borderColor: `${theme.color}50` } : undefined}
               className={`${base} ${tone}`}>
               {isHolding && (
                 <span aria-hidden="true" data-testid="radio-preset-hold" className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-orange-400"
@@ -173,6 +176,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned }: 
               )}
               <span className="relative flex items-center justify-between gap-1">
                 <span className="font-mono text-xs font-bold text-orange-400">{slot}</span>
+                {theme && <span className="text-[10px]" title={theme.label}>{theme.iconEmoji}</span>}
                 {p?.number ? <span className="font-mono text-[10px] text-neutral-400">#{p.number}</span> : null}
                 {active && live && <span aria-hidden="true" data-testid="radio-preset-live" className="ajn-live-dot h-2 w-2 shrink-0 rounded-full bg-emerald-400 animate-pulse" />}
               </span>
@@ -180,10 +184,10 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned }: 
                 <>
                   <span className="relative flex flex-1 items-center justify-center">
                     {showLogo ? (
-                      <img src={p.logo} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false}
+                      <img src={logoSrc} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false}
                         className="h-7 w-7 rounded bg-neutral-900 object-contain" onError={() => setBroken((prev) => new Set(prev).add(p.channelId))} />
                     ) : (
-                      <span aria-hidden="true" style={{ background: tileColor(p.channelId) }} className="flex h-7 w-7 items-center justify-center rounded text-[11px] font-bold text-neutral-100">{initialsOf(p.title)}</span>
+                      <span aria-hidden="true" style={{ background: theme ? theme.color : tileColor(p.channelId), boxShadow: theme ? `0 0 8px ${theme.color}45` : undefined }} className="flex h-7 w-7 items-center justify-center rounded text-[11px] font-bold text-neutral-100">{initialsOf(p.title)}</span>
                     )}
                   </span>
                   <span className="relative block truncate text-[11px] font-semibold leading-tight">{p.title}</span>
