@@ -2,6 +2,9 @@ import { buildDiscoveryChannel, DISCOVERY_GUIDE_ID } from './server/discoveryCha
 import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, getLibrarySeries, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
 import { pickOnNow, type HomeNowItem } from './server/homeNow';
+import { buildClassicLightSchedule } from './server/classicLightSchedule';
+import { buildAudioLightSchedule } from './server/audioLightSchedule';
+import { searchClassicProgramTitles } from './server/classicScheduleSearch';
 import { localHourAt } from './server/scheduleWindow';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { liveTvHealthSummary, getAudioLoopRows } from './guideRegistry';
@@ -170,9 +173,22 @@ function cachedSchedule(guideId:string,movieNow?:Date){
   p.catch(()=>{if(scheduleCache.get(guideId)?.p===p)scheduleCache.delete(guideId);});
   return p;
 }
+app.get('/api/schedule/search',async(req,res)=>{
+  res.set('Cache-Control','no-store');
+  if(req.query.guide!=='classic-tv')return res.status(400).json({error:'title search is available only for classic-tv'});
+  const query=req.query.q;
+  if(typeof query!=='string'||query.length>120)return res.status(400).json({error:'q must be a string of at most 120 characters'});
+  try{
+   const channels=await cachedSchedule('classic-tv');
+   return res.json({guideId:'classic-tv',matches:searchClassicProgramTitles(channels,query)});
+  }catch{
+   return res.status(500).json({error:'Classic TV title search unavailable'});
+  }
+});
 app.get('/api/schedule',async(req,res)=>{
  res.set('Cache-Control','no-store');
  const guideId=(req.query.guide as string)||'cable-tv';
+  if(req.query.light==='1'&&guideId!=='classic-tv'&&guideId!=='audio-podcasts')return res.status(400).json({error:'light mode is available only for classic-tv or audio-podcasts'});
  // Date injection is a Movies-only test hook, never a production clock override.
  let movieNow:Date|undefined;
  if(process.env.NODE_ENV==='test'&&(guideId==='movies-classics-vault'||guideId==='old-british-tv')&&req.query.now!==undefined){
@@ -189,7 +205,40 @@ app.get('/api/schedule',async(req,res)=>{
   // The Classic guide is ~15 MB of JSON; Cloud Run does not compress, so gzip here (browsers always send Accept-Encoding: gzip).
   // Optional ?channel=<id>: only that channel (the player needs just its own list to pick the next program; the whole guide can be tens of MB).
   const only=typeof req.query.channel==='string'&&req.query.channel?req.query.channel:null;
-  let all=await cachedSchedule(guideId,movieNow);
+   let all=await cachedSchedule(guideId,movieNow);
+    if(req.query.light==='1'&&guideId==='audio-podcasts'){
+     try{
+      const localHour=localHourAt(Date.now(),req.query.tz);
+      if(localHour===null)throw new RangeError('tz must be Date#getTimezoneOffset() in minutes');
+      if(process.env.AJN_AUDIO_LIGHT!=='0'){
+       const localChannels=all.map(c=>{const rows=getAudioLoopRows(c.id,localHour);return rows?{...c,programs:rows}:c;});
+       const lightChannels=buildAudioLightSchedule(localChannels,localHour);
+       const channels=only?lightChannels.filter(c=>c.id===only):lightChannels;
+       const body=JSON.stringify({guideId,light:true,channels,generatedAt:new Date().toISOString(),source:'archive.org-live'});
+       const rawBytes=Buffer.byteLength(body);
+        if(rawBytes>=8*1024*1024)return res.status(500).json({error:'Audio light schedule exceeds its 8 MiB raw budget',rawBytes});
+       res.set('Vary','Accept-Encoding').set('X-AJN-Light-Raw-Bytes',String(rawBytes)).type('application/json');
+       if(/\bgzip\b/i.test(String(req.headers['accept-encoding']??'')))return res.set('Content-Encoding','gzip').send(await gzipAsync(body,{level:5}));
+       return res.send(body);
+      }
+     }catch(e){
+      return res.status(400).json({error:e instanceof Error?e.message:'invalid light schedule request'});
+     }
+    }
+    if(req.query.light==='1'&&guideId==='classic-tv'){
+    try{
+     const light=buildClassicLightSchedule(all,Date.now(),req.query.tz);
+     const channels=only?light.channels.filter(c=>c.id===only):light.channels;
+     const body=JSON.stringify({...light,channels});
+     const rawBytes=Buffer.byteLength(body);
+     if(rawBytes>2*1024*1024)return res.status(500).json({error:'Classic TV light schedule exceeds its 2 MiB raw budget',rawBytes});
+     res.set('Vary','Accept-Encoding').set('X-AJN-Light-Raw-Bytes',String(rawBytes)).type('application/json');
+     if(/\bgzip\b/i.test(String(req.headers['accept-encoding']??'')))return res.set('Content-Encoding','gzip').send(await gzipAsync(body,{level:5}));
+     return res.send(body);
+    }catch(e){
+     return res.status(400).json({error:e instanceof Error?e.message:'invalid light schedule request'});
+    }
+   }
   // Audio guide: ?tz=<Date#getTimezoneOffset()> asks for the looped music channels' rows around the viewer's local hour (full-day loop, bounded).
   // Without it the response is unchanged (first rows only), which is what the budget test, exports and other callers see.
   const lh=guideId==='audio-podcasts'?localHourAt(Date.now(),req.query.tz):null;

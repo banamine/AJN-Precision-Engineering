@@ -85,6 +85,8 @@ jobs:
         run: npm run test:archive-retry
       - name: Classic Radio Theatre (fixture-only)
         run: npm run test:classic-radio
+      - name: Light guide schedules and caches
+        run: npm run test:light-guides
       - name: Archive outage state machine (injected clock)
         run: npm run test:archive-health
       - name: Archive outage server and cache integration (fake fetch)

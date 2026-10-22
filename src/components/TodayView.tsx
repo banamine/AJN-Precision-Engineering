@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Clock, Headphones, ListChecks, Play, RefreshCw, Tv } from "lucide-react";
 import type { Destination, Guide, MediaType, PlayProgramCallback, ScheduleChannel } from "../types";
-import { getCachedSchedule, isStale, setCachedSchedule } from "../guide/scheduleCache";
+import { clearScheduleCache, getCachedLightSchedule, getCachedSchedule, isStale, setCachedLightSchedule, setCachedSchedule, shouldDisplayCachedSchedule } from "../guide/scheduleCache";
 import { buildToday, formatHour, thumbnailOf, type TodayChannel, type TodayEntry } from "../guide/todayList";
 import { tuneIn, mediaTypeFor } from "../guide/liveTune";
 import { ChannelLogo } from "./ChannelLogo";
@@ -83,18 +83,25 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
     reqRef.current?.abort();
     const c = new AbortController();
     reqRef.current = c;
-    const cached = getCachedSchedule(id);
-    if (cached) { setChannels(cached.channels); setLoading(false); setError(null); } else { setChannels(null); setLoading(true); setError(null); }
+    const cached = id === "audio-podcasts"
+      ? getCachedLightSchedule(id) ?? getCachedSchedule(id)
+      : getCachedSchedule(id);
+    if (shouldDisplayCachedSchedule(id, cached)) { setChannels(cached!.channels); setLoading(false); setError(null); } else { setChannels(null); setLoading(true); setError(null); }
     if (cached && !force && !isStale(cached)) return;
     setSlow(false);
     const slowTimer = window.setTimeout(() => { if (!c.signal.aborted) setSlow(true); }, SLOW_LOAD_MS);
     try {
-      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(id)}`, { signal: c.signal });
+      const audioLight = id === "audio-podcasts" ? `&light=1&tz=${new Date().getTimezoneOffset()}` : "";
+      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(id)}${audioLight}`, { signal: c.signal });
       if (!res.ok) throw new Error(`Schedule request failed: HTTP ${res.status}`);
       const data = await res.json();
       if (!Array.isArray(data.channels) || data.channels.length === 0) throw new Error("This guide returned no channels");
       if (c.signal.aborted) return;
-      setCachedSchedule(id, data.channels);
+      if (id === "audio-podcasts" && data.light === true) setCachedLightSchedule(id, data.channels);
+      else {
+        if (id === "audio-podcasts") clearScheduleCache(id);
+        setCachedSchedule(id, data.channels);
+      }
       setChannels(data.channels);
       setError(null);
     } catch (e) {
