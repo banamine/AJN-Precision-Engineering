@@ -1,3 +1,4 @@
+import { scheduleResumePromptFade } from "./utils/resumePromptFade";
 import { clampStart } from "./utils/avSync";
 import { attachPlayTimeline } from "./utils/playTimeline";
 import { createProgressWatchdog } from "./utils/progressWatchdog";
@@ -58,6 +59,8 @@ const START_WATCHDOG_MS = WAIT_BUDGET_MS; // "Loading…" with no metadata after
 const RECOVERED_AFTER_SECONDS = 20; // playing this far past a failure resets the retry budget
 // Audio gapless-ish handoff: this close to the end the next track is fetched into a hidden element.
 const PRELOAD_LEAD_SEC = 45;
+const RESUME_PROMPT_VISIBLE_MS = 10_000; // Resume / Start Over prompt stays this long when untouched, then fades
+const RESUME_PROMPT_FADE_MS = 600;
 const RESUME_PREFIX = "ajn-playback-position:";
 
 function bufferedEndAt(media: HTMLMediaElement): number {
@@ -103,6 +106,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [activeSrc, setActiveSrc] = useState(() => bridgeSrc(src));
   const [resumePosition, setResumePosition] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [resumePromptFading, setResumePromptFading] = useState(false);
 
   const isVideo = mediaType === "video";
   const radioBriefingOn = isLiveRadioPlayback(mediaType, nowPlaying);
@@ -919,7 +923,38 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     const media = mediaRef.current;
     clearResumePosition();
     if (media) media.currentTime = 0;
+    setShowResumePrompt(false);
   };
+
+  // The Resume / Start Over prompt fades out on its own after RESUME_PROMPT_VISIBLE_MS if the viewer has not touched
+  // the player (press, key, touch, focus, or hovering the prompt). Playback keeps going from where it is; the saved
+  // position is left alone, so the prompt can come back next time.
+  useEffect(() => {
+    setResumePromptFading(false);
+    if (!showResumePrompt) return;
+    const root = containerRef.current;
+    let stopTimer: (() => void) | null = null;
+    const cancel = () => {
+      stopTimer?.();
+      stopTimer = null;
+      setResumePromptFading(false);
+      root?.removeEventListener("pointerdown", cancel, true);
+      root?.removeEventListener("keydown", cancel, true);
+      root?.removeEventListener("touchstart", cancel, true);
+      root?.removeEventListener("focusin", cancel, true);
+    };
+    root?.addEventListener("pointerdown", cancel, true);
+    root?.addEventListener("keydown", cancel, true);
+    root?.addEventListener("touchstart", cancel, true);
+    root?.addEventListener("focusin", cancel, true);
+    stopTimer = scheduleResumePromptFade({
+      visibleMs: RESUME_PROMPT_VISIBLE_MS,
+      fadeMs: RESUME_PROMPT_FADE_MS,
+      onFade: () => setResumePromptFading(true),
+      onHide: () => { setShowResumePrompt(false); setResumePromptFading(false); },
+    });
+    return cancel;
+  }, [showResumePrompt]);
 
   const setVolumeLevel = (v: number) => {
     const media = mediaRef.current;
@@ -1089,7 +1124,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         </button>
       )}
       {showResumePrompt && resumePosition !== null && (
-        <div className="absolute left-3 right-3 top-2 z-30 sm:top-3 flex items-center justify-between gap-3 rounded-lg bg-black/85 p-3 text-white shadow-lg">
+        <div data-testid="resume-prompt" data-fading={resumePromptFading ? "true" : "false"}
+          className={`absolute left-3 right-3 top-2 z-30 sm:top-3 flex items-center justify-between gap-3 rounded-lg bg-black/85 p-3 text-white shadow-lg transition-opacity duration-[600ms] motion-reduce:transition-none ${resumePromptFading ? "pointer-events-none opacity-0" : "opacity-100"}`}>
           <span className="text-sm">Resume from {Math.floor(resumePosition / 60)}:{String(Math.floor(resumePosition % 60)).padStart(2, "0")}?</span>
           <div className="flex gap-2">
             <button onClick={resume} className="rounded bg-white px-3 py-1 text-xs font-medium text-black">Resume</button>

@@ -93,6 +93,8 @@ jobs:
         run: npm run test:guide-ui
       - name: Video prefetch and thumbnail lane (synthetic, local only)
         run: npm run test:player-lane
+      - name: Resume prompt fade timing
+        run: npm run test:resume-prompt
       - name: Radio UI, captions and ASR
         run: npm run test:radio-ui
       - name: Archive outage state machine (injected clock)
