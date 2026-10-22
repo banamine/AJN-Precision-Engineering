@@ -134,4 +134,4 @@ jobs:
       - name: Production browser playback gate
         env:
           AJN_TEST_URL: ${{ env.SERVICE_URL }}
-        run: npm run test:real-archive-playback
+        run: node scripts/run-live-archive-gate.mjs npm run test:real-archive-playback
