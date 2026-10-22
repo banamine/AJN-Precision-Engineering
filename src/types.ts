@@ -1,3 +1,5 @@
+import type { BufferGaugeMetadata } from "./utils/bufferGauge";
+
 export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'radio' | 'today' | 'history' | 'dev';
 
 export type MediaType = 'video' | 'audio';
@@ -97,6 +99,29 @@ export interface ScheduleChannel {
   /** Why items were left out, e.g. "restricted: all MP4 files are private". */
   rejected?: Array<{ id: string; reason: string }>;
   sourceError?: string;
+  /** Structured source health details; only populated by channels that expose measurable selection diagnostics. */
+  diagnostics?: {
+    candidateCount?: number;
+    candidateListStatus?: string;
+    seedIndex?: number | null;
+    metadataRequests?: number;
+    resolvedItems?: number;
+    skippedCount?: number;
+    skippedByReason?: Record<string, number>;
+    scheduleSeconds?: number;
+    windowSeconds?: number;
+    error?: string;
+  };
+  /** Present on the Classic TV light response; title-only search data, never a replacement for program rows. */
+  titles?: string[];
+  /** Total number of rows in the full channel schedule. */
+  programCount?: number;
+  /** True when more titles/rows exist beyond the light window. */
+  moreTitles?: boolean;
+  /** Optional playlist label carried into the Classic TV light response. */
+  playlistName?: string;
+  /** False marks the 3-row light window; true marks a fully loaded channel. */
+  programsComplete?: boolean;
 }
 
 export interface NowPlayingMedia {
@@ -113,6 +138,8 @@ export interface NowPlayingMedia {
   archivePath?: string;
   thumbnailUrl?: string;
   duration?: string;
+  /** Ephemeral size/runtime inputs for the player gauge; not copied into the saved-play history record. */
+  bufferMetadata?: BufferGaugeMetadata;
   isLive?: boolean;
   /** One-shot start offset (seconds) applied when this item loads: used by the audio/video switch. Never persisted. */
   startAtSeconds?: number;
@@ -129,7 +156,7 @@ export interface RecentlyPlayedItem extends NowPlayingMedia {
 export interface LibraryItem {
   id: string;
   title: string;
-  category: 'news' | 'classics' | 'science' | 'audio' | 'documentary';
+  category: 'news' | 'classics' | 'science' | 'audio' | 'documentary' | 'soaps';
   description: string;
   archivePath: string;
   duration: string;
@@ -189,5 +216,6 @@ export type PlayProgramCallback = (
   programId?: string,
   sourceId?: string,
   assetId?: string,
-  startAtSeconds?: number
+  startAtSeconds?: number,
+  bufferMetadata?: BufferGaugeMetadata
 ) => void;

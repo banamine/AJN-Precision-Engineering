@@ -5,6 +5,8 @@ import type { AjnFeedItem } from '../services/ajnFeeds';
 import { useAjnFeeds } from '../hooks/useAjnFeeds';
 import { labelAjnItem } from '../utils/ajnLabels';
 import { ShowArt } from './ShowArt';
+import { ajnArtFor } from '../utils/ajnArt';
+import { ClassicRadioTheatreShelf } from './ClassicRadioTheatreShelf';
 
 interface Props {
   onPlayProgram: PlayProgramCallback;
@@ -33,7 +35,7 @@ function ResourceCard({ item, onPlayProgram }: { key?: string; item: AjnFeedItem
         aria-label={`Play ${title}${detail ? `, ${detail}` : ''}`}
         className="group flex w-full items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-2.5 text-left transition hover:border-sky-500/40 hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
       >
-        <ShowArt label={title} mediaType={item.mediaType} src={item.thumbnailUrl} className="h-14 w-14 shrink-0 rounded-lg" iconOnly />
+        <ShowArt label={title} mediaType={item.mediaType} src={item.thumbnailUrl || ajnArtFor({ feedId: item.feedId, show: label?.show ?? item.title, mediaType: item.mediaType })} className="h-14 w-24 shrink-0 rounded-lg" iconOnly />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-neutral-100">{title}</span>
           <span className="block truncate text-xs text-neutral-400">{detail || ' '}</span>
@@ -113,6 +115,7 @@ export function AjnResourcePanel({ onPlayProgram, className = '' }: Props) {
 
       <Group title="Video" icon={Tv} items={video} total={video.length} onPlayProgram={onPlayProgram} />
       <Group title="Audio" icon={Headphones} items={audio} total={audio.length} onPlayProgram={onPlayProgram} />
+      <ClassicRadioTheatreShelf onPlayProgram={onPlayProgram} />
 
       {catalog && (
         <div className="flex items-center justify-between gap-3 font-mono text-[10px] text-neutral-600">

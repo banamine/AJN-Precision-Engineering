@@ -1,0 +1,14 @@
+K1 - Live News merge (Cable TV "Live News" = curated Live News + Live TV "News" channels, identical stream URLs listed once)
+
+Upload these 4 files at the same paths (Google Builder, replace):
+  guideRegistry.ts
+  server/liveNewsMerge.ts            (NEW)
+  test-live-news-channels.ts
+  test-live-news-merge.ts            (NEW)
+
+Base: your ajn-precision-engineering.zip export of 2026-10-20 (contains J2). guideRegistry.ts is a full file from that export.
+After publishing, check (PowerShell):
+  $j = Invoke-RestMethod "https://ajn-precision-engineering.ai.studio/api/schedule?guide=cable-tv"
+  ($j | Where-Object { $_.group -eq 'Live News' }).Count
+Expect roughly 125-135 (25 curated + the Live TV News channels that are online); the count moves with the upstream lists and the offline checks.
+Rollback: restore guideRegistry.ts and test-live-news-channels.ts from your previous export; delete the two NEW files.

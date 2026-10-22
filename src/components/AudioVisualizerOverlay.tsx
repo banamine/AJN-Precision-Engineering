@@ -49,10 +49,10 @@ export function useAnalyzerState(analyser: AnalyserNode | null | undefined, isPl
 
 interface OverlayProps {
   analyser: AnalyserNode | null | undefined;
-  /** Player is playing AND the user has the visualizer switched on. */
+  /** Player is playing and visualization is enabled; briefing mode pins it on. */
   enabled: boolean;
-  /** Video: subdued strip along the bottom edge. Audio: full ambient fill. */
-  mode: "video" | "audio";
+  /** Video: subdued strip; audio: ambient fill; Live Radio briefing: reserved bottom strip. */
+  mode: "video" | "audio" | "audio-briefing";
 }
 
 /**
@@ -128,7 +128,11 @@ export function AudioVisualizerOverlay({ analyser, enabled, mode }: OverlayProps
       aria-hidden="true"
       className={`pointer-events-none absolute inset-x-0 w-full ${
         // video: a strip that sits ABOVE the floating transport; audio: fills its own stage, behind the album art (z-1 < art z-2 < controls z-10)
-        mode === "video" ? "bottom-[6.5rem] z-10 h-10 sm:bottom-[4.5rem]" : "inset-0 z-[1] h-full"
+        mode === "video"
+          ? "bottom-[6.5rem] z-10 h-10 sm:bottom-[4.5rem]"
+          : mode === "audio-briefing"
+            ? "bottom-0 z-[4] h-10"
+            : "inset-0 z-[1] h-full"
       }`}
     />
   );

@@ -13,7 +13,7 @@ import { selectPlayableFile, type LibraryAvailability, type DurationSource } fro
 import { matchesQuery, scoreMatch } from '../src/search/normalize';
 import { archiveApiFetch } from './archiveLimiter';
 import { safeFetch } from './safeFetch';
-import { groupLibraryResults, findLibrarySeries, type LibrarySeries } from './library/series';
+import { groupLibraryResults, findLibrarySeries, type LibrarySeries, type SeriesFile } from './library/series';
 export { groupLibraryResults, findLibrarySeries };
 export type { LibrarySeries };
 
@@ -36,6 +36,7 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
   { id: 'audiobooks', label: 'Audiobooks', mediaType: 'audio', query: 'collection:librivoxaudio AND mediatype:audio' },
   { id: 'rush', label: 'Rush Limbaugh', mediaType: 'audio', guide: { guideId: 'audio-podcasts', channels: (c) => c.id === 'rush-on-this-day' } },
   { id: 'classic-tv-channels', label: 'Classic TV Channels', mediaType: 'video', guide: { guideId: 'classic-tv', channels: () => true } },
+  { id: 'soaps', label: 'Soap Operas', mediaType: 'video', guide: { guideId: 'classic-tv', channels: (c) => c.id === 'ajn-allmychildren-episodes' || c.id === 'ajn-allmychildren-extras' } },
   { id: 'movie-vault', label: 'Movies Classics', mediaType: 'video', guide: { guideId: 'movies-classics-vault', channels: () => true } },
 ];
 export const ITEMS_PER_SEARCH = 150;
@@ -49,6 +50,9 @@ export interface IndexRecord {
   availability: LibraryAvailability; foundBy: string; why: string; indexedAt: string;
   // guide items only: how to play them through the guide's own ids
   channelId?: string; guideId?: string; programId?: string; sourceId?: string; assetId?: string;
+  seriesEligible?: boolean; seriesKey?: string; seriesTitle?: string; seriesEpisodeTitle?: string;
+  airDate?: string; episodeNumber?: number; kindBadge?: string; sourceFile?: string;
+  searchTerms?: string[]; parts?: SeriesFile[]; alternates?: SeriesFile[];
 }
 export interface LibrarySnapshot { schemaVersion: 1; generatedAt: string; items: IndexRecord[] }
 
@@ -91,17 +95,50 @@ export function recordsFromGuide(cat: LibraryCategory, channels: ScheduleChannel
       const mt = (p.metadata ?? {}) as any;
       const path = p.archivePath || p.mediaUrl;
       const id = baseId(p.id);
-      if (!path || mt.live || seen.has(id)) continue;
+      if (!path || mt.live || mt.externalClip || seen.has(id)) continue;
       seen.add(id);
       const secs = Number(mt.durationSeconds) || (p.endTimeUtc && p.startTimeUtc ? (Date.parse(p.endTimeUtc) - Date.parse(p.startTimeUtc)) / 1000 : 0);
-      const year = yearOf(mt.year) ?? yearOf(mt.airedUtc) ?? yearOf(mt.date) ?? yearOf(/(\d{4}-\d{2}-\d{2})/.exec(p.id)?.[1]);
+      const airDate = typeof mt.airDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(mt.airDate) ? mt.airDate : undefined;
+      const year = yearOf(mt.year) ?? yearOf(airDate) ?? yearOf(mt.airedUtc) ?? yearOf(mt.date) ?? yearOf(/(\d{4}-\d{2}-\d{2})/.exec(p.id)?.[1]);
+      const seriesFiles = (value: unknown): SeriesFile[] | undefined => {
+        if (!Array.isArray(value)) return undefined;
+        const files = value.filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')
+          .filter((v) => typeof v.identifier === 'string' && typeof v.file === 'string' && typeof (v.archivePath ?? v.path) === 'string')
+          .map((v) => ({
+            id: String(v.id ?? ''),
+            identifier: String(v.identifier),
+            file: String(v.file),
+            path: String(v.archivePath ?? v.path),
+            durationSeconds: Math.max(0, Number(v.durationSeconds) || 0),
+            bytes: Math.max(0, Number(v.bytes) || 0),
+            ...(v.part && typeof v.part === 'object' ? { part: v.part as SeriesFile['part'] } : {}),
+          }));
+        return files;
+      };
+      const parts = seriesFiles(mt.segments);
+      const alternates = seriesFiles(mt.alternates);
+      const searchTerms = Array.isArray(mt.searchTerms)
+        ? mt.searchTerms.filter((term: unknown): term is string => typeof term === 'string' && term.length > 0)
+        : undefined;
       out.push({
-        id, identifier: String(mt.identifier ?? ''), title: p.title, description: clean(p.description) ?? ch.name,
+        id, identifier: String(mt.identifier ?? mt.archiveIdentifier ?? ''), title: p.title, description: clean(p.description) ?? ch.name,
         categoryIds: [cat.id], mediaType: p.mediaType === 'audio' ? 'audio' : 'video', year, decade: year ? Math.floor(year / 10) * 10 : undefined,
         path, file: String(mt.file ?? ''), format: String(mt.format ?? ''), dur: Math.round(secs) || 0,
         durSrc: mt.durationSource === 'default' ? 'default' : 'metadata', durEst: !!mt.durationEstimated,
         availability: 'unverified', foundBy: `${cat.id}: guide ${cat.guide!.guideId}/${ch.id}`, why: 'playing in the guide', indexedAt: now.toISOString(),
         channelId: ch.id, guideId: cat.guide!.guideId, programId: id, sourceId: p.sourceId, assetId: p.assetId,
+        ...(mt.seriesEligible === true ? { seriesEligible: true } : {}),
+        ...(typeof mt.seriesKey === 'string' ? { seriesKey: mt.seriesKey } : {}),
+        ...(typeof mt.seriesTitle === 'string' ? { seriesTitle: mt.seriesTitle } : {}),
+        ...(typeof mt.seriesEpisodeTitle === 'string' ? { seriesEpisodeTitle: mt.seriesEpisodeTitle } : {}),
+        ...(typeof mt.subtitle === 'string' ? { subtitle: mt.subtitle } : {}),
+        ...(airDate ? { airDate } : {}),
+        ...(Number.isInteger(Number(mt.episodeNumber)) ? { episodeNumber: Number(mt.episodeNumber) } : {}),
+        ...(typeof mt.kindBadge === 'string' ? { kindBadge: mt.kindBadge } : {}),
+        ...(typeof mt.sourceFile === 'string' ? { sourceFile: mt.sourceFile } : {}),
+        ...(searchTerms ? { searchTerms } : {}),
+        ...(parts ? { parts } : {}),
+        ...(alternates ? { alternates } : {}),
       });
     }
   }
@@ -138,6 +175,17 @@ export function setGuideRecords(categoryId: string, records: IndexRecord[]) {
 function availability(r: IndexRecord): LibraryAvailability { return probe.get(r.id)?.status ?? r.availability; }
 function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat()]); }
 const visible = (r: IndexRecord) => { const a = availability(r); return a !== 'unavailable' && a !== 'unsupported' && !!r.path; };
+function librarySearchFields(r: {
+  title?: string; episodeTitle?: string; description?: string; identifier?: string; sourceFile?: string;
+  searchTerms?: string[]; parts?: SeriesFile[]; alternates?: SeriesFile[];
+}): string[] {
+  return [
+    r.title ?? '', r.episodeTitle ?? '', r.description ?? '', r.identifier ?? '', r.sourceFile ?? '',
+    ...(r.searchTerms ?? []),
+    ...(r.parts ?? []).map((file) => file.file),
+    ...(r.alternates ?? []).map((file) => file.file),
+  ];
+}
 
 export interface ItemsQuery { ids?: string[]; category?: string; decade?: number | null; q?: string; mediaType?: string; page?: number; limit?: number }
 export function queryLibrary(qy: ItemsQuery) {
@@ -149,7 +197,7 @@ export function queryLibrary(qy: ItemsQuery) {
   if (qy.category) rows = rows.filter((r) => r.categoryIds.includes(qy.category!));
   if (qy.decade !== undefined && qy.decade !== null) rows = rows.filter((r) => (qy.decade === 0 ? r.decade === undefined : r.decade === qy.decade));
   if (qy.mediaType === 'video' || qy.mediaType === 'audio') rows = rows.filter((r) => r.mediaType === qy.mediaType);
-  if (qy.q?.trim()) rows = rows.filter((r) => matchesQuery([r.title, r.description ?? '', r.identifier], qy.q!));
+  if (qy.q?.trim()) rows = rows.filter((r) => matchesQuery(librarySearchFields(r), qy.q!));
   const text = String(qy.q ?? '').trim();
   const grouped0 = groupLibraryResults(rows);
   const best = (r: any): number => r.type === 'series'
@@ -160,12 +208,18 @@ export function queryLibrary(qy: ItemsQuery) {
   return { snapshotAt, page, limit, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / limit)),
     rawCount: rows.length, uniqueCount: rows.length, groupCount: grouped.filter((r) => r.type === 'series').length,
     items: grouped.slice((page - 1) * limit, page * limit).map((r) => r.type === 'series'
-      ? { ...r, episodes: r.episodes.map((e) => ({ ...e, availability: availability(e as unknown as IndexRecord), playbackMode: 'vod' as const })) }
+      ? { ...r, episodes: r.groupingMethod === 'air-date-episode' ? [] : r.episodes.map((e) => ({ ...e, availability: availability(e as unknown as IndexRecord), playbackMode: 'vod' as const })) }
       : { ...r, availability: availability(r as unknown as IndexRecord), playbackMode: 'vod' as const }) };
 }
 
-export function getLibrarySeries(groupKey: string): LibrarySeries | null {
-  return findLibrarySeries(allRecords().filter(visible), groupKey);
+export function getLibrarySeries(groupKey: string, options: { year?: number; q?: string } = {}): LibrarySeries | null {
+  const series = findLibrarySeries(allRecords().filter(visible), groupKey);
+  if (!series || series.groupingMethod !== 'air-date-episode') return series;
+  if (options.year === undefined) return { ...series, episodes: [] };
+  const filtered = series.episodes.filter((episode) =>
+    (options.year === undefined || episode.year === options.year)
+    && (!options.q?.trim() || matchesQuery(librarySearchFields(episode), options.q)));
+  return { ...series, episodes: filtered, episodeCount: filtered.length };
 }
 
 export function libraryHeatmap() {

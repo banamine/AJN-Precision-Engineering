@@ -32,6 +32,8 @@ interface PlayerChromeProps {
   onVolume: (v: number) => void;
   onToggleFullscreen: () => void;
   visualizerOn: boolean;
+  /** Live Radio briefing reserves a visible visualizer strip, so the toggle is intentionally locked on. */
+  visualizerLockedOn?: boolean;
   onToggleVisualizer: () => void;
   analyzerState: AnalyzerState;
   diagnosticsOpen: boolean;
@@ -146,6 +148,10 @@ export function PlayerChrome(p: PlayerChromeProps) {
   const btn = "flex h-8 w-8 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-neutral-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400";
   const fade = p.isVideo ? `transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}` : "";
   const hasMeta = Boolean(p.title || p.channelName);
+  const visualizerPressed = Boolean(p.visualizerOn || p.visualizerLockedOn);
+  const visualizerLabel = p.visualizerLockedOn
+    ? "Visualizer stays on while the Daily Briefing is displayed"
+    : p.visualizerOn ? "Hide visualizer" : "Show visualizer";
 
   const transport = (
     <div
@@ -223,11 +229,12 @@ export function PlayerChrome(p: PlayerChromeProps) {
       </button>
       <button
         type="button"
-        className={`${btn} ${p.visualizerOn ? "bg-sky-500/20 text-sky-300" : ""}`}
+        disabled={p.visualizerLockedOn}
+        className={`${btn} ${visualizerPressed ? "bg-sky-500/20 text-sky-300" : ""} ${p.visualizerLockedOn ? "cursor-not-allowed opacity-80" : ""}`}
         onClick={p.onToggleVisualizer}
-        aria-pressed={p.visualizerOn}
-        aria-label={p.visualizerOn ? "Hide visualizer" : "Show visualizer"}
-        title="Visualizer"
+        aria-pressed={visualizerPressed}
+        aria-label={visualizerLabel}
+        title={visualizerLabel}
       >
         <AudioLines className="h-4 w-4 sm:h-5 sm:w-5" />
       </button>
@@ -257,7 +264,9 @@ export function PlayerChrome(p: PlayerChromeProps) {
         className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
         {/* left: thumbnail + title/artist */}
         <div className="flex min-w-0 items-center gap-3">
-          {p.thumbnailUrl && <img src={p.thumbnailUrl} alt="" data-testid="audio-bar-thumb" className="h-11 w-11 shrink-0 rounded-md object-cover ring-1 ring-white/10" />}
+          {p.thumbnailUrl
+            ? <img src={p.thumbnailUrl} alt="" data-testid="audio-bar-thumb" className="h-11 w-11 shrink-0 rounded-md object-cover ring-1 ring-white/10" />
+            : <div aria-hidden="true" data-testid="audio-bar-placeholder" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-neutral-800 text-sm font-bold text-neutral-300 ring-1 ring-white/10">{(p.title || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() || "♪"}</div>}
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold text-neutral-100" data-testid="audio-bar-title">{p.title || "Untitled"}</div>
             <div className="truncate text-[11px] text-neutral-400">
@@ -308,8 +317,8 @@ export function PlayerChrome(p: PlayerChromeProps) {
             <span className="hidden whitespace-nowrap lg:inline">{PILL[p.analyzerState].label}</span>
             <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform lg:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />
           </button>
-          <button type="button" className={`${btn} ${p.visualizerOn ? "bg-sky-500/20 text-sky-300" : ""}`} onClick={p.onToggleVisualizer} aria-pressed={p.visualizerOn}
-            aria-label={p.visualizerOn ? "Hide visualizer" : "Show visualizer"} title="Visualizer"><AudioLines className="h-4 w-4 sm:h-5 sm:w-5" /></button>
+          <button type="button" disabled={p.visualizerLockedOn} className={`${btn} ${visualizerPressed ? "bg-sky-500/20 text-sky-300" : ""} ${p.visualizerLockedOn ? "cursor-not-allowed opacity-80" : ""}`} onClick={p.onToggleVisualizer} aria-pressed={visualizerPressed}
+            aria-label={visualizerLabel} title={visualizerLabel}><AudioLines className="h-4 w-4 sm:h-5 sm:w-5" /></button>
         </div>
       </div>
       {/* seek row: elapsed — bar — total */}

@@ -1,0 +1,388 @@
+#EXTM3U
+# archive-embed entries are archive.org/embed pages: use an iframe-aware player.
+#EXTINF:-1 tvg-id="ajn-ia-01-alec-guinness" tvg-name="01 Alec Guinness" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Alec Guinness
+https://archive.org/embed/01-alec-guinness
+#EXTINF:-1 tvg-id="ajn-ia-01-blake-edwards" tvg-name="01 Blake Edwards" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Blake Edwards
+https://archive.org/embed/01-blake-edwards
+#EXTINF:-1 tvg-id="ajn-ia-01-charles-bronson" tvg-name="01 Charles Bronson" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Charles Bronson
+https://archive.org/embed/01-charles-bronson
+#EXTINF:-1 tvg-id="ajn-ia-01-charlton-heston-ten-commandments-original-soundtack" tvg-name="01 Charlton Heston Ten Commandments Original Soundtack" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Charlton Heston Ten Commandments Original Soundtack
+https://archive.org/embed/01-charlton-heston-ten-commandments-original-soundtack
+#EXTINF:-1 tvg-id="ajn-ia-01-clint-walker" tvg-name="01 Clint Walker" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Clint Walker
+https://archive.org/embed/01-clint-walker
+#EXTINF:-1 tvg-id="ajn-ia-01-howard-hawks" tvg-name="01 Howard Hawks" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Howard Hawks
+https://archive.org/embed/01-howard-hawks
+#EXTINF:-1 tvg-id="ajn-ia-01-john-ford" tvg-name="01 John Ford" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 John Ford
+https://archive.org/embed/01-john-ford
+#EXTINF:-1 tvg-id="ajn-ia-01-justine-waddell" tvg-name="01 Justine Waddell" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Justine Waddell
+https://archive.org/embed/01-justine-waddell
+#EXTINF:-1 tvg-id="ajn-ia-01-stewart-granger-scaramouche-1952-original-soundtrack-composed-performed-by-victor-young" tvg-name="01 Stewart Granger Scaramouche 1952 Original Soundtrack Composed Performed By Victor Young" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Stewart Granger Scaramouche 1952 Original Soundtrack Composed Performed By Victor Young
+https://archive.org/embed/01-stewart-granger-scaramouche-1952-original-soundtrack-composed-performed-by-victor-young
+#EXTINF:-1 tvg-id="ajn-ia-01-tyrone-power" tvg-name="01 Tyrone Power" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",01 Tyrone Power
+https://archive.org/embed/01-tyrone-power
+#EXTINF:-1 tvg-id="ajn-ia-mrbrownxmas" tvg-name="A Charlie Brown Christmas" group-title="Movies Classics" ajn-type="movie" ajn-status="ready",A Charlie Brown Christmas
+https://archive.org/embed/mrbrownxmas
+#EXTINF:-1 tvg-id="ajn-ia-back-to-the-future_202501" tvg-name="Back To The Future" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Back To The Future
+https://archive.org/embed/back-to-the-future_202501
+#EXTINF:-1 tvg-id="ajn-ia-beyond-the-reef" tvg-name="Beyond The Reef" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Beyond The Reef
+https://archive.org/embed/beyond-the-reef
+#EXTINF:-1 tvg-id="ajn-ia-box-2_202502" tvg-name="BOX # 2" group-title="Movies Classics" ajn-type="movie" ajn-status="ready",BOX # 2
+https://archive.org/embed/box-2_202502
+#EXTINF:-1 tvg-id="ajn-ia-box-3" tvg-name="BOX #3" group-title="Movies Classics" ajn-type="movie" ajn-status="ready",BOX #3
+https://archive.org/embed/box-3
+#EXTINF:-1 tvg-id="ajn-ia-dogma_HD" tvg-name="Dogma HD" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Dogma HD
+https://archive.org/embed/dogma_HD
+#EXTINF:-1 tvg-id="ajn-ia-files-assorted_202311" tvg-name="Files Assorted" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Files Assorted
+https://archive.org/embed/files-assorted_202311
+#EXTINF:-1 tvg-id="ajn-ia-files-assorted-4" tvg-name="Files Assorted 4" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Files Assorted 4
+https://archive.org/embed/files-assorted-4
+#EXTINF:-1 tvg-id="ajn-ia-filmography-rainer-werner-fassbinder" tvg-name="Filmography Rainer Werner Fassbinder" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Filmography Rainer Werner Fassbinder
+https://archive.org/embed/filmography-rainer-werner-fassbinder
+#EXTINF:-1 tvg-id="ajn-ia-filmography-stanley-kubrick" tvg-name="Filmography Stanley Kubrick" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Filmography Stanley Kubrick
+https://archive.org/embed/filmography-stanley-kubrick
+#EXTINF:-1 tvg-id="ajn-ia-first-men-in-the-moon_202501" tvg-name="First Men In The Moon" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",First Men In The Moon
+https://archive.org/embed/first-men-in-the-moon_202501
+#EXTINF:-1 tvg-id="ajn-ia-for-the-boys-1991" tvg-name="For The Boys 1991" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",For The Boys 1991
+https://archive.org/embed/for-the-boys-1991
+#EXTINF:-1 tvg-id="ajn-ia-Gods_Gun" tvg-name="Gods Gun" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Gods Gun
+https://archive.org/embed/Gods_Gun
+#EXTINF:-1 tvg-id="ajn-ia-moto_20210127" tvg-name="Moto" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Moto
+https://archive.org/embed/moto_20210127
+#EXTINF:-1 tvg-id="ajn-ia-seven-men-from-now_202509" tvg-name="Seven Men From Now" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Seven Men From Now
+https://archive.org/embed/seven-men-from-now_202509
+#EXTINF:-1 tvg-id="ajn-ia-shane-1953-original-trailer-placeholder" tvg-name="Shane 1953 Original Trailer Placeholder" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Shane 1953 Original Trailer Placeholder
+https://archive.org/embed/shane-1953-original-trailer-placeholder
+#EXTINF:-1 tvg-id="ajn-ia-summer-magic.-1963" tvg-name="Summer Magic 1963" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Summer Magic 1963
+https://archive.org/embed/summer-magic.-1963
+#EXTINF:-1 tvg-id="ajn-ia-tbyool435345435110" tvg-name="The Best Years of Our Lives" group-title="Movies Classics" ajn-type="movie" ajn-status="ready",The Best Years of Our Lives
+https://archive.org/embed/tbyool435345435110
+#EXTINF:-1 tvg-id="ajn-ia-the-court-martial-of-billy-mitchell-otto-preminger-1955" tvg-name="The Court Martial Of Billy Mitchell ( Otto Preminger, 1955)" group-title="Movies Classics" ajn-type="movie" ajn-status="ready",The Court Martial Of Billy Mitchell ( Otto Preminger, 1955)
+https://archive.org/embed/the-court-martial-of-billy-mitchell-otto-preminger-1955
+#EXTINF:-1 tvg-id="ajn-ia-the-odyssey-1997-part-1-of-2-mkv" tvg-name="The Odyssey - 1997 - Part 1 of 2 - MKV" group-title="Movies Classics" ajn-type="movie" ajn-status="ready",The Odyssey - 1997 - Part 1 of 2 - MKV
+https://archive.org/embed/the-odyssey-1997-part-1-of-2-mkv
+#EXTINF:-1 tvg-id="ajn-ia-the-smiling-lieutenant-1931-lubitsch" tvg-name="The Smiling Lieutenant 1931 Lubitsch" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",The Smiling Lieutenant 1931 Lubitsch
+https://archive.org/embed/the-smiling-lieutenant-1931-lubitsch
+#EXTINF:-1 tvg-id="ajn-ia-TheSongOfBernadette1943" tvg-name="The Song of Bernadette" group-title="Movies Classics" ajn-type="movie" ajn-status="ready",The Song of Bernadette
+https://archive.org/embed/TheSongOfBernadette1943
+#EXTINF:-1 tvg-id="ajn-ia-the-thomas-crown-affair" tvg-name="The Thomas Crown Affair" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",The Thomas Crown Affair
+https://archive.org/embed/the-thomas-crown-affair
+#EXTINF:-1 tvg-id="ajn-ia-topaze-1933-720p_202402" tvg-name="Topaze 1933 720p" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Topaze 1933 720p
+https://archive.org/embed/topaze-1933-720p_202402
+#EXTINF:-1 tvg-id="ajn-ia-Wilderpeople" tvg-name="Wilderpeople" group-title="Movies Classics" ajn-type="movie" ajn-status="provisional",Wilderpeople
+https://archive.org/embed/Wilderpeople
+#EXTINF:-1 tvg-id="ajn-ia-wuthering-heights-1939-merle-oberon-laurence-olivier-david-niven" tvg-name="Wuthering Heights (1939) Merle Oberon, Laurence Olivier, David Niven in HD" group-title="Movies Classics" ajn-type="movie" ajn-status="ready",Wuthering Heights (1939) Merle Oberon, Laurence Olivier, David Niven in HD
+https://archive.org/embed/wuthering-heights-1939-merle-oberon-laurence-olivier-david-niven
+#EXTINF:-1 tvg-id="ajn-ia-1978-convoy" tvg-name="(1978) CONVOY FULL MOVIE" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",(1978) CONVOY FULL MOVIE
+https://archive.org/embed/1978-convoy
+#EXTINF:-1 tvg-id="ajn-ia-12.-angry.-men.-1957.720p.-brrip.x-264.-yify_202204" tvg-name="12 Angry. Men 1957 [Doze Homens e uma Sentença]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",12 Angry. Men 1957 [Doze Homens e uma Sentença]
+https://archive.org/embed/12.-angry.-men.-1957.720p.-brrip.x-264.-yify_202204
+#EXTINF:-1 tvg-id="ajn-ia-13.-ghosts.-1960.1080p" tvg-name="13 Ghosts (1960)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",13 Ghosts (1960)
+https://archive.org/embed/13.-ghosts.-1960.1080p
+#EXTINF:-1 tvg-id="ajn-ia-8-mm.-1999.1080p.-blu-ray.x-264-yts.-am" tvg-name="8 MM 1999 1080p Blu Ray x 264 [ YTS AM]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",8 MM 1999 1080p Blu Ray x 264 [ YTS AM]
+https://archive.org/embed/8-mm.-1999.1080p.-blu-ray.x-264-yts.-am
+#EXTINF:-1 tvg-id="ajn-ia-poltergeist.-ii.-the.-other.-side.-1986.1080p.-blu-ray.x-264.-yify" tvg-name="865" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",865
+https://archive.org/embed/poltergeist.-ii.-the.-other.-side.-1986.1080p.-blu-ray.x-264.-yify
+#EXTINF:-1 tvg-id="ajn-ia-ablueprintformurder1953" tvg-name="A Blueprint For Murder (1953) Joseph Cotten, Jean Peters, Gary Merrill" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",A Blueprint For Murder (1953) Joseph Cotten, Jean Peters, Gary Merrill
+https://archive.org/embed/ablueprintformurder1953
+#EXTINF:-1 tvg-id="ajn-ia-a-fistful-of-dollars-1964_202210" tvg-name="A FISTFUL OF DOLLARS (1964)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",A FISTFUL OF DOLLARS (1964)
+https://archive.org/embed/a-fistful-of-dollars-1964_202210
+#EXTINF:-1 tvg-id="ajn-ia-aceventurapetdetective_fullseries" tvg-name="Ace Ventura: Pet Detective - Full Series (720p)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Ace Ventura: Pet Detective - Full Series (720p)
+https://archive.org/embed/aceventurapetdetective_fullseries
+#EXTINF:-1 tvg-id="ajn-ia-adventures-of-buckaroo-banzai-across-the-8th-dimension-1984" tvg-name="Adventures of Buckaroo Banzai Across the 8th Dimension (1984)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Adventures of Buckaroo Banzai Across the 8th Dimension (1984)
+https://archive.org/embed/adventures-of-buckaroo-banzai-across-the-8th-dimension-1984
+#EXTINF:-1 tvg-id="ajn-ia-aladdin-and-his-wonderful-lamp-1939" tvg-name="Aladdin and His Wonderful Lamp (1939)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Aladdin and His Wonderful Lamp (1939)
+https://archive.org/embed/aladdin-and-his-wonderful-lamp-1939
+#EXTINF:-1 tvg-id="ajn-ia-nemesis.-1992.1080p.-blu-ray.-ddp-2.0.x-265.10bit-galaxy-rg-265" tvg-name="Albert Pyun: The Complete Filmography" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Albert Pyun: The Complete Filmography
+https://archive.org/embed/nemesis.-1992.1080p.-blu-ray.-ddp-2.0.x-265.10bit-galaxy-rg-265
+#EXTINF:-1 tvg-id="ajn-ia-all.-that.-jazz.-1979.-criterion.-1080p.-blu-ray.-hevc.-eac-3-sartre" tvg-name="All That Jazz (1979)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",All That Jazz (1979)
+https://archive.org/embed/all.-that.-jazz.-1979.-criterion.-1080p.-blu-ray.-hevc.-eac-3-sartre
+#EXTINF:-1 tvg-id="ajn-ia-Amadeus1984" tvg-name="Amadeus (1984)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Amadeus (1984)
+https://archive.org/embed/Amadeus1984
+#EXTINF:-1 tvg-id="ajn-ia-Amby_and_Dexter" tvg-name="Amby & Dexter (1997)" group-title="Unsorted - review" ajn-type="movie" ajn-status="ready",Amby & Dexter (1997)
+https://archive.org/embed/Amby_and_Dexter
+#EXTINF:-1 tvg-id="ajn-ia-an-american-christmas-carol-1979" tvg-name="An American Christmas Carol (1979)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",An American Christmas Carol (1979)
+https://archive.org/embed/an-american-christmas-carol-1979
+#EXTINF:-1 tvg-id="ajn-ia-mantan-1" tvg-name="Any Which Way You Can (1980)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Any Which Way You Can (1980)
+https://archive.org/embed/mantan-1
+#EXTINF:-1 tvg-id="ajn-ia-apollo.13.1995.15th.anniversary.bluray.1080p.bluray.x264.anoxmous" tvg-name="Apollo 13 The 15th Anniversary" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Apollo 13 The 15th Anniversary
+https://archive.org/embed/apollo.13.1995.15th.anniversary.bluray.1080p.bluray.x264.anoxmous
+#EXTINF:-1 tvg-id="ajn-ia-austin-powers-in-goldmember-720p" tvg-name="Austin Powers In Goldmember" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Austin Powers In Goldmember
+https://archive.org/embed/austin-powers-in-goldmember-720p
+#EXTINF:-1 tvg-id="ajn-ia-B.C._The_First_Thanksgiving_1973" tvg-name="B.C. The First Thanksgiving (1973)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",B.C. The First Thanksgiving (1973)
+https://archive.org/embed/B.C._The_First_Thanksgiving_1973
+#EXTINF:-1 tvg-id="ajn-ia-bad-company-western-1972-jeff-bridges.-barry-brown-jim-davis" tvg-name="Bad Company (1972)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Bad Company (1972)
+https://archive.org/embed/bad-company-western-1972-jeff-bridges.-barry-brown-jim-davis
+#EXTINF:-1 tvg-id="ajn-ia-BBC_Sherlock2010" tvg-name="BBC Sherlock (2010)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",BBC Sherlock (2010)
+https://archive.org/embed/BBC_Sherlock2010
+#EXTINF:-1 tvg-id="ajn-ia-rec-20231224091210" tvg-name="Beau Brummel (1924)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Beau Brummel (1924)
+https://archive.org/embed/rec-20231224091210
+#EXTINF:-1 tvg-id="ajn-ia-bite.-the.-bullet.-1975.1080p.-blu-ray.x-264.-aac-5.1-yts.-mx" tvg-name="Bite the Bullet (1975)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Bite the Bullet (1975)
+https://archive.org/embed/bite.-the.-bullet.-1975.1080p.-blu-ray.x-264.-aac-5.1-yts.-mx
+#EXTINF:-1 tvg-id="ajn-ia-boulevard-2014-with-robin-williams" tvg-name="Boulevard (2014) with Robin Williams" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Boulevard (2014) with Robin Williams
+https://archive.org/embed/boulevard-2014-with-robin-williams
+#EXTINF:-1 tvg-id="ajn-ia-bound-1996" tvg-name="Bound (1996)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Bound (1996)
+https://archive.org/embed/bound-1996
+#EXTINF:-1 tvg-id="ajn-ia-breakfast-at-tiffanys_202501" tvg-name="BREAKFAST AT TIFFANY'S (1961)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",BREAKFAST AT TIFFANY'S (1961)
+https://archive.org/embed/breakfast-at-tiffanys_202501
+#EXTINF:-1 tvg-id="ajn-ia-bride.of.-re-animator.-1990.-unrated.-arrow.-1080p.-blu-ray.x-265" tvg-name="Bride of Re-Animator (1990) UNRATED Blu-Ray" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Bride of Re-Animator (1990) UNRATED Blu-Ray
+https://archive.org/embed/bride.of.-re-animator.-1990.-unrated.-arrow.-1080p.-blu-ray.x-265
+#EXTINF:-1 tvg-id="ajn-ia-butch.-cassidy.-and.-the.-sundance.-kid.-1969.1080p.-blu-ray.x-264-yts.-am" tvg-name="Butch Cassidy and the Sundance Kid (1969)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Butch Cassidy and the Sundance Kid (1969)
+https://archive.org/embed/butch.-cassidy.-and.-the.-sundance.-kid.-1969.1080p.-blu-ray.x-264-yts.-am
+#EXTINF:-1 tvg-id="ajn-ia-caddyshack.1980.1080p.brrip.x264.yify___65af351121b4c" tvg-name="Caddyshack 1980 1080p" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Caddyshack 1980 1080p
+https://archive.org/embed/caddyshack.1980.1080p.brrip.x264.yify___65af351121b4c
+#EXTINF:-1 tvg-id="ajn-ia-Captain.Sindbad.1963.DVDRip" tvg-name="Captain Sindbad (1963)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Captain Sindbad (1963)
+https://archive.org/embed/Captain.Sindbad.1963.DVDRip
+#EXTINF:-1 tvg-id="ajn-ia-Carry.on.Screaming.1966" tvg-name="Carry on Screaming (1966)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Carry on Screaming (1966)
+https://archive.org/embed/Carry.on.Screaming.1966
+#EXTINF:-1 tvg-id="ajn-ia-Popcornarchive-carveHerNameWithPride1958" tvg-name="Carve Her Name With Pride (1958)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Carve Her Name With Pride (1958)
+https://archive.org/embed/Popcornarchive-carveHerNameWithPride1958
+#EXTINF:-1 tvg-id="ajn-ia-citizen-kane-hd-720p-1" tvg-name="Citizen Kane HD 720p ( 1)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Citizen Kane HD 720p ( 1)
+https://archive.org/embed/citizen-kane-hd-720p-1
+#EXTINF:-1 tvg-id="ajn-ia-y-2-mate.is-penny-serenade-comedy-romance-fyjuban-1s-1g-480p-1646270780022" tvg-name="Classic Movies" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Classic Movies
+https://archive.org/embed/y-2-mate.is-penny-serenade-comedy-romance-fyjuban-1s-1g-480p-1646270780022
+#EXTINF:-1 tvg-id="ajn-ia-Coherence.2013.1080p.BluRay.x264.YIFY" tvg-name="Coherence 2013 1080p Blu Ray x 264 YIFY" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Coherence 2013 1080p Blu Ray x 264 YIFY
+https://archive.org/embed/Coherence.2013.1080p.BluRay.x264.YIFY
+#EXTINF:-1 tvg-id="ajn-ia-countess-dracula-1971_202406" tvg-name="Countess Dracula (1971)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Countess Dracula (1971)
+https://archive.org/embed/countess-dracula-1971_202406
+#EXTINF:-1 tvg-id="ajn-ia-crisscross1949_202003" tvg-name="Criss Cross (1949) Burt Lancaster, Yvonne De Carlo, Dan Duryea" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Criss Cross (1949) Burt Lancaster, Yvonne De Carlo, Dan Duryea
+https://archive.org/embed/crisscross1949_202003
+#EXTINF:-1 tvg-id="ajn-ia-cry-vengeance-1954" tvg-name="Cry Vengeance (1954) Mark Stevens, Martha Hyer" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Cry Vengeance (1954) Mark Stevens, Martha Hyer
+https://archive.org/embed/cry-vengeance-1954
+#EXTINF:-1 tvg-id="ajn-ia-dangerous-crossing-1953" tvg-name="Dangerous Crossing (1953) Directed by Joseph M. Newman, Starring Jeanne Crain, Michael Rennie" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Dangerous Crossing (1953) Directed by Joseph M. Newman, Starring Jeanne Crain, Michael Rennie
+https://archive.org/embed/dangerous-crossing-1953
+#EXTINF:-1 tvg-id="ajn-ia-daryl-1985" tvg-name="DARYL (1985)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",DARYL (1985)
+https://archive.org/embed/daryl-1985
+#EXTINF:-1 tvg-id="ajn-ia-PublicDomainAnsaFilmandBeaverChampionAttactionsDavidandGoliath1960" tvg-name="David and Goliath (1960)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",David and Goliath (1960)
+https://archive.org/embed/PublicDomainAnsaFilmandBeaverChampionAttactionsDavidandGoliath1960
+#EXTINF:-1 tvg-id="ajn-ia-lawrence.of.-arabia.-1962.1080p.-remastered.-blu-ray.-hevc.-eac-3-sartre" tvg-name="David Lean: The Complete Filmography" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",David Lean: The Complete Filmography
+https://archive.org/embed/lawrence.of.-arabia.-1962.1080p.-remastered.-blu-ray.-hevc.-eac-3-sartre
+#EXTINF:-1 tvg-id="ajn-ia-dead-poets-society-1989-1080p-blu-ray-x-264-aac-ozlem_202402" tvg-name="Dead Poets Society 1989 1080p Blu Ray X 264 AAC Ozlem" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Dead Poets Society 1989 1080p Blu Ray X 264 AAC Ozlem
+https://archive.org/embed/dead-poets-society-1989-1080p-blu-ray-x-264-aac-ozlem_202402
+#EXTINF:-1 tvg-id="ajn-ia-deadpool.2.2018.1080p.unratedduallatcinecalidad.to_202002" tvg-name="Deadpool 2 2018 1080p unrated Dual Lat" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Deadpool 2 2018 1080p unrated Dual Lat
+https://archive.org/embed/deadpool.2.2018.1080p.unratedduallatcinecalidad.to_202002
+#EXTINF:-1 tvg-id="ajn-ia-dirty-little-billy-1972-dvdrip-x-264-hj" tvg-name="Dirty Little Billy (1972)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Dirty Little Billy (1972)
+https://archive.org/embed/dirty-little-billy-1972-dvdrip-x-264-hj
+#EXTINF:-1 tvg-id="ajn-ia-pacto-de-sangue_1944" tvg-name="Double Indemnity - Pacto De Sangue (1944)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Double Indemnity - Pacto De Sangue (1944)
+https://archive.org/embed/pacto-de-sangue_1944
+#EXTINF:-1 tvg-id="ajn-ia-dr-goldfoot-and-the-bikini-machine_202205" tvg-name="Dr Goldfoot and the Bikini Machine (1965) : Vincent Price movie" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Dr Goldfoot and the Bikini Machine (1965) : Vincent Price movie
+https://archive.org/embed/dr-goldfoot-and-the-bikini-machine_202205
+#EXTINF:-1 tvg-id="ajn-ia-dracula-prince-of-darkness-1966_202406" tvg-name="Dracula: Prince of Darkness (1966)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Dracula: Prince of Darkness (1966)
+https://archive.org/embed/dracula-prince-of-darkness-1966_202406
+#EXTINF:-1 tvg-id="ajn-ia-dredd-blu-ray" tvg-name="Dredd Blu-Ray (2013)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Dredd Blu-Ray (2013)
+https://archive.org/embed/dredd-blu-ray
+#EXTINF:-1 tvg-id="ajn-ia-duck.-soup.-1933.1080p.-blu-ray.-h-264.-aac-rarbg" tvg-name="Duck Soup (1933)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Duck Soup (1933)
+https://archive.org/embed/duck.-soup.-1933.1080p.-blu-ray.-h-264.-aac-rarbg
+#EXTINF:-1 tvg-id="ajn-ia-dumbo-1941-720p-legenda-embutida" tvg-name="Dumbo (1941) [720p] [Legenda Embutida]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Dumbo (1941) [720p] [Legenda Embutida]
+https://archive.org/embed/dumbo-1941-720p-legenda-embutida
+#EXTINF:-1 tvg-id="ajn-ia-east-of-sumatra-1953-budd-boetticher-jeff-chandler" tvg-name="East Of Sumatra (1953)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",East Of Sumatra (1953)
+https://archive.org/embed/east-of-sumatra-1953-budd-boetticher-jeff-chandler
+#EXTINF:-1 tvg-id="ajn-ia-rec-20231224125329" tvg-name="ETERNAL LOVE (1929)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",ETERNAL LOVE (1929)
+https://archive.org/embed/rec-20231224125329
+#EXTINF:-1 tvg-id="ajn-ia-evildead-ii-1987" tvg-name="EVILDEAD II (1987)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",EVILDEAD II (1987)
+https://archive.org/embed/evildead-ii-1987
+#EXTINF:-1 tvg-id="ajn-ia-FearAndDesire1953" tvg-name="Fear And Desire (1953)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Fear And Desire (1953)
+https://archive.org/embed/FearAndDesire1953
+#EXTINF:-1 tvg-id="ajn-ia-firemonstersagainstthesonofhercules1962" tvg-name="Fire Monsters Against The Son Of Hercules (1962)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Fire Monsters Against The Son Of Hercules (1962)
+https://archive.org/embed/firemonstersagainstthesonofhercules1962
+#EXTINF:-1 tvg-id="ajn-ia-footsteps-in-the-fog-1955" tvg-name="Footsteps In The Fog (1955) Stewart Granger, Jean Simmons" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Footsteps In The Fog (1955) Stewart Granger, Jean Simmons
+https://archive.org/embed/footsteps-in-the-fog-1955
+#EXTINF:-1 tvg-id="ajn-ia-gargoyles_202311" tvg-name="Gargoyles (1972)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Gargoyles (1972)
+https://archive.org/embed/gargoyles_202311
+#EXTINF:-1 tvg-id="ajn-ia-geralds-game" tvg-name="Gerald's Game (2017)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Gerald's Game (2017)
+https://archive.org/embed/geralds-game
+#EXTINF:-1 tvg-id="ajn-ia-Glass.2019.1080p.WEBRip.x264YTS.AM" tvg-name="Glass 2019 1080p WEBRip x 264 [ YTS AM]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Glass 2019 1080p WEBRip x 264 [ YTS AM]
+https://archive.org/embed/Glass.2019.1080p.WEBRip.x264YTS.AM
+#EXTINF:-1 tvg-id="ajn-ia-goodfellas.-1990.1080p.-blu-ray.x-264-yts.-am" tvg-name="Goodfellas" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Goodfellas
+https://archive.org/embed/goodfellas.-1990.1080p.-blu-ray.x-264-yts.-am
+#EXTINF:-1 tvg-id="ajn-ia-gunfight-at-the-o.-k.-corral-1957-remastered-1080p-blu-ray-hevc-x-265-5.1-bone" tvg-name="Gunfight at the O.K. Corral (1957)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Gunfight at the O.K. Corral (1957)
+https://archive.org/embed/gunfight-at-the-o.-k.-corral-1957-remastered-1080p-blu-ray-hevc-x-265-5.1-bone
+#EXTINF:-1 tvg-id="ajn-ia-hacksaw.-ridge.-2016.1080p.-blu-ray.x-264-yts.-ag" tvg-name="Hacksaw Ridge 2016 1080p Blu Ray x 264 [ YTS AG]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Hacksaw Ridge 2016 1080p Blu Ray x 264 [ YTS AG]
+https://archive.org/embed/hacksaw.-ridge.-2016.1080p.-blu-ray.x-264-yts.-ag
+#EXTINF:-1 tvg-id="ajn-ia-harakiri.-1962.1080p.-blu-ray.x-264" tvg-name="Harakiri / Masaki Kobayashi (1962)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Harakiri / Masaki Kobayashi (1962)
+https://archive.org/embed/harakiri.-1962.1080p.-blu-ray.x-264
+#EXTINF:-1 tvg-id="ajn-ia-Hawk-1966-Full-Series" tvg-name="Hawk (1966) - Full Series" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Hawk (1966) - Full Series
+https://archive.org/embed/Hawk-1966-Full-Series
+#EXTINF:-1 tvg-id="ajn-ia-it.-happened.-one.-night.-1934.1080p.-blu-ray.x-264.-yify" tvg-name="It Happened One Night (1934)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",It Happened One Night (1934)
+https://archive.org/embed/it.-happened.-one.-night.-1934.1080p.-blu-ray.x-264.-yify
+#EXTINF:-1 tvg-id="ajn-ia-jesus-of-nazareth-full-movie-1977" tvg-name="Jesus Of Nazareth (1977)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Jesus Of Nazareth (1977)
+https://archive.org/embed/jesus-of-nazareth-full-movie-1977
+#EXTINF:-1 tvg-id="ajn-ia-joe-kidd-1972" tvg-name="Joe Kidd (1972)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Joe Kidd (1972)
+https://archive.org/embed/joe-kidd-1972
+#EXTINF:-1 tvg-id="ajn-ia-killerskiss1955_201908" tvg-name="Killer's Kiss (1955)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Killer's Kiss (1955)
+https://archive.org/embed/killerskiss1955_201908
+#EXTINF:-1 tvg-id="ajn-ia-king-of-chinatown-1939" tvg-name="King Of Chinatown (1939)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",King Of Chinatown (1939)
+https://archive.org/embed/king-of-chinatown-1939
+#EXTINF:-1 tvg-id="ajn-ia-krull.-1983.1080p.-blu-ray.x-264.-yify_202408" tvg-name="Krull 1983 1080p Blu Ray x 264 YIFY" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Krull 1983 1080p Blu Ray x 264 YIFY
+https://archive.org/embed/krull.-1983.1080p.-blu-ray.x-264.-yify_202408
+#EXTINF:-1 tvg-id="ajn-ia-rec-20231123065037" tvg-name="Lady of The Night (1925)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Lady of The Night (1925)
+https://archive.org/embed/rec-20231123065037
+#EXTINF:-1 tvg-id="ajn-ia-loveatfirstbite1979" tvg-name="Love At First Bite (FULL MOVIE) (1979)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Love At First Bite (FULL MOVIE) (1979)
+https://archive.org/embed/loveatfirstbite1979
+#EXTINF:-1 tvg-id="ajn-ia-baabul-a.-fathers.-affection.-for.-his.-daughter.-2006.720p.-webrip.x-264.-aac-yts.-mx" tvg-name="M0vie N!ght" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",M0vie N!ght
+https://archive.org/embed/baabul-a.-fathers.-affection.-for.-his.-daughter.-2006.720p.-webrip.x-264.-aac-yts.-mx
+#EXTINF:-1 tvg-id="ajn-ia-andaaz.-2003.720p.-webrip.x-264.-aac-yts.-mx" tvg-name="M0vie N!ght #2" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",M0vie N!ght #2
+https://archive.org/embed/andaaz.-2003.720p.-webrip.x-264.-aac-yts.-mx
+#EXTINF:-1 tvg-id="ajn-ia-tyler.-perrys.-good.-deeds.-2012.-dvdrip.x-264-no-rbi-t" tvg-name="M0vie N!ght #7" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",M0vie N!ght #7
+https://archive.org/embed/tyler.-perrys.-good.-deeds.-2012.-dvdrip.x-264-no-rbi-t
+#EXTINF:-1 tvg-id="ajn-ia-mad.-max.-1979.1080p.-blu-ray.x-265-rarbg" tvg-name="Mad Max(1979) BD RIP" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Mad Max(1979) BD RIP
+https://archive.org/embed/mad.-max.-1979.1080p.-blu-ray.x-265-rarbg
+#EXTINF:-1 tvg-id="ajn-ia-MaximumOverdrive19863gp" tvg-name="Maximum Overdrive (1986) 3GP" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Maximum Overdrive (1986) 3GP
+https://archive.org/embed/MaximumOverdrive19863gp
+#EXTINF:-1 tvg-id="ajn-ia-Minikillers-1969-Diana-Rigg_202009" tvg-name="Minikillers (1969) Diana Rigg" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Minikillers (1969) Diana Rigg
+https://archive.org/embed/Minikillers-1969-Diana-Rigg_202009
+#EXTINF:-1 tvg-id="ajn-ia-Monty.Python.And.The.Holy.Grail.1975.720p.BluRay.x264YTS.AM" tvg-name="Monty Python And The Holy Grail 1975 720p Blu Ray x 264 [ YTS AM]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Monty Python And The Holy Grail 1975 720p Blu Ray x 264 [ YTS AM]
+https://archive.org/embed/Monty.Python.And.The.Holy.Grail.1975.720p.BluRay.x264YTS.AM
+#EXTINF:-1 tvg-id="ajn-ia-alive-2020-720p" tvg-name="Movies" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Movies
+https://archive.org/embed/alive-2020-720p
+#EXTINF:-1 tvg-id="ajn-ia-northbynorthwest_202101" tvg-name="North By Northwest 1959 720p" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",North By Northwest 1959 720p
+https://archive.org/embed/northbynorthwest_202101
+#EXTINF:-1 tvg-id="ajn-ia-nosrefatu.-2024.720p.-web-dl.x-264.-esub-vegamovies.is" tvg-name="Nosrefatu 2024 720p WEB DL x 264 ESub Vegamovies is" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Nosrefatu 2024 720p WEB DL x 264 ESub Vegamovies is
+https://archive.org/embed/nosrefatu.-2024.720p.-web-dl.x-264.-esub-vegamovies.is
+#EXTINF:-1 tvg-id="ajn-ia-Popcornarchive-oneFlewOverTheCuckoosNest1975_flc90" tvg-name="One Flew Over The Cuckoo's Nest (1975)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",One Flew Over The Cuckoo's Nest (1975)
+https://archive.org/embed/Popcornarchive-oneFlewOverTheCuckoosNest1975_flc90
+#EXTINF:-1 tvg-id="ajn-ia-outside-the-law-1956" tvg-name="Outside The Law (1956)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Outside The Law (1956)
+https://archive.org/embed/outside-the-law-1956
+#EXTINF:-1 tvg-id="ajn-ia-paint-your-wagon-western-comedy-1969-lee-marvin-clint-eastwood-jean-seberg" tvg-name="Paint Your Wagon (1969)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Paint Your Wagon (1969)
+https://archive.org/embed/paint-your-wagon-western-comedy-1969-lee-marvin-clint-eastwood-jean-seberg
+#EXTINF:-1 tvg-id="ajn-ia-pathsofglory1957_201908" tvg-name="Paths Of Glory (1957)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Paths Of Glory (1957)
+https://archive.org/embed/pathsofglory1957_201908
+#EXTINF:-1 tvg-id="ajn-ia-Popcornarchive-paul2011" tvg-name="Paul (2011)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Paul (2011)
+https://archive.org/embed/Popcornarchive-paul2011
+#EXTINF:-1 tvg-id="ajn-ia-Pawn.Sacrifice.2014.720p.BluRay.x264" tvg-name="Pawn Sacrifice 2014 720p BluRay x264" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Pawn Sacrifice 2014 720p BluRay x264
+https://archive.org/embed/Pawn.Sacrifice.2014.720p.BluRay.x264
+#EXTINF:-1 tvg-id="ajn-ia-phantasm-ii-1988-1080p" tvg-name="Phantasm II (1988) [1080p]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Phantasm II (1988) [1080p]
+https://archive.org/embed/phantasm-ii-1988-1080p
+#EXTINF:-1 tvg-id="ajn-ia-pitfall1948_202001" tvg-name="Pitfall (1948) Dick Powell, Lizabeth Scott, Raymond Burr, Jane Wyatt - Film Noir" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Pitfall (1948) Dick Powell, Lizabeth Scott, Raymond Burr, Jane Wyatt - Film Noir
+https://archive.org/embed/pitfall1948_202001
+#EXTINF:-1 tvg-id="ajn-ia-PoliceSquad" tvg-name="Police Squad!(1982)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Police Squad!(1982)
+https://archive.org/embed/PoliceSquad
+#EXTINF:-1 tvg-id="ajn-ia-untitled-9_202109" tvg-name="Poltergeist II The Other Side (1986)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Poltergeist II The Other Side (1986)
+https://archive.org/embed/untitled-9_202109
+#EXTINF:-1 tvg-id="ajn-ia-peeping-tom-1960-720p-blu-ray-dd-2.0-x-264-bbw_202406" tvg-name="Powell and Pressburger: The Complete Filmography" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Powell and Pressburger: The Complete Filmography
+https://archive.org/embed/peeping-tom-1960-720p-blu-ray-dd-2.0-x-264-bbw_202406
+#EXTINF:-1 tvg-id="ajn-ia-puppet-master-1dc" tvg-name="Puppet Master 1 (1989) - Unrated Director's Cut" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Puppet Master 1 (1989) - Unrated Director's Cut
+https://archive.org/embed/puppet-master-1dc
+#EXTINF:-1 tvg-id="ajn-ia-puss-in-boots-1999" tvg-name="Puss in Boots (1999)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Puss in Boots (1999)
+https://archive.org/embed/puss-in-boots-1999
+#EXTINF:-1 tvg-id="ajn-ia-q.-the.-winged.-serpent.-1982" tvg-name="Q - The Winged Serpent (1982)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Q - The Winged Serpent (1982)
+https://archive.org/embed/q.-the.-winged.-serpent.-1982
+#EXTINF:-1 tvg-id="ajn-ia-re-animator-1-2-3-horror-trilogy-1985-2003-eng-subs-1080p-h264-mp4" tvg-name="Re-Animator 1, 2, 3 - Horror Trilogy 1985-2003 Eng Subs 1080p [H264-mp4]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Re-Animator 1, 2, 3 - Horror Trilogy 1985-2003 Eng Subs 1080p [H264-mp4]
+https://archive.org/embed/re-animator-1-2-3-horror-trilogy-1985-2003-eng-subs-1080p-h264-mp4
+#EXTINF:-1 tvg-id="ajn-ia-red-heat" tvg-name="Red Heat (1988) full movie English" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Red Heat (1988) full movie English
+https://archive.org/embed/red-heat
+#EXTINF:-1 tvg-id="ajn-ia-robin-and-the-seven-hoods" tvg-name="Robin and the 7 Hoods (1964)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Robin and the 7 Hoods (1964)
+https://archive.org/embed/robin-and-the-seven-hoods
+#EXTINF:-1 tvg-id="ajn-ia-robin-williams-stand-up-comedy-special-full-show-robin-williams-comedian-ever-hd-1080p" tvg-name="Robin Williams Megapack" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Robin Williams Megapack
+https://archive.org/embed/robin-williams-stand-up-comedy-special-full-show-robin-williams-comedian-ever-hd-1080p
+#EXTINF:-1 tvg-id="ajn-ia-robots.-2005.720p.-br-rip.x-264.-yify" tvg-name="Robots (2005)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Robots (2005)
+https://archive.org/embed/robots.-2005.720p.-br-rip.x-264.-yify
+#EXTINF:-1 tvg-id="ajn-ia-sabrina-1954" tvg-name="Sabrina (1954)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Sabrina (1954)
+https://archive.org/embed/sabrina-1954
+#EXTINF:-1 tvg-id="ajn-ia-saddle-the-wind-western-1958-robert-taylor-julie-london-john-cassavetes" tvg-name="Saddle the Wind (1958)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Saddle the Wind (1958)
+https://archive.org/embed/saddle-the-wind-western-1958-robert-taylor-julie-london-john-cassavetes
+#EXTINF:-1 tvg-id="ajn-ia-santa-claus-conquers-the-martians-1964" tvg-name="Santa Claus Conquers The Martians 1080p HD" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Santa Claus Conquers The Martians 1080p HD
+https://archive.org/embed/santa-claus-conquers-the-martians-1964
+#EXTINF:-1 tvg-id="ajn-ia-a.-fistful.of.-dollars.-1964.-remastered.-1080p.-blu-ray.-h-264.-aac-rarbg" tvg-name="Sergio Leone: The Complete Filmography" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Sergio Leone: The Complete Filmography
+https://archive.org/embed/a.-fistful.of.-dollars.-1964.-remastered.-1080p.-blu-ray.-h-264.-aac-rarbg
+#EXTINF:-1 tvg-id="ajn-ia-she-gods-of-shark-reef-1958" tvg-name="She Gods Of Shark Reef (1958)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",She Gods Of Shark Reef (1958)
+https://archive.org/embed/she-gods-of-shark-reef-1958
+#EXTINF:-1 tvg-id="ajn-ia-shock1946" tvg-name="Shock (1946) Vincent Price, Lynn Bari, Frank Latimore" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Shock (1946) Vincent Price, Lynn Bari, Frank Latimore
+https://archive.org/embed/shock1946
+#EXTINF:-1 tvg-id="ajn-ia-short.circuit.1986.2160p" tvg-name="Short Circuit (1986) [4K Upscale]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Short Circuit (1986) [4K Upscale]
+https://archive.org/embed/short.circuit.1986.2160p
+#EXTINF:-1 tvg-id="ajn-ia-slave-of-the-cannibal-god-1978" tvg-name="Slave of the Cannibal God (1978)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Slave of the Cannibal God (1978)
+https://archive.org/embed/slave-of-the-cannibal-god-1978
+#EXTINF:-1 tvg-id="ajn-ia-303748221688_202503" tvg-name="Something Wicked This Way Comes (1983)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Something Wicked This Way Comes (1983)
+https://archive.org/embed/303748221688_202503
+#EXTINF:-1 tvg-id="ajn-ia-SonOfFlubber1963" tvg-name="Son of Flubber (1963)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Son of Flubber (1963)
+https://archive.org/embed/SonOfFlubber1963
+#EXTINF:-1 tvg-id="ajn-ia-strangers-on-a-train-720p" tvg-name="Strangers On A Train 720p" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Strangers On A Train 720p
+https://archive.org/embed/strangers-on-a-train-720p
+#EXTINF:-1 tvg-id="ajn-ia-PhantasmagoriaTheater-Tarantula1955871" tvg-name="Tarantula (1955)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Tarantula (1955)
+https://archive.org/embed/PhantasmagoriaTheater-Tarantula1955871
+#EXTINF:-1 tvg-id="ajn-ia-TeenagersFromOuterSpace1959" tvg-name="Teenagers From Outer Space (1959)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Teenagers From Outer Space (1959)
+https://archive.org/embed/TeenagersFromOuterSpace1959
+#EXTINF:-1 tvg-id="ajn-ia-terror.-in.-a.-texas.-town.-1958.1080p.-blu-ray.x-264.-aac-yts.-mx" tvg-name="Terror in a Texas Town (1958)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Terror in a Texas Town (1958)
+https://archive.org/embed/terror.-in.-a.-texas.-town.-1958.1080p.-blu-ray.x-264.-aac-yts.-mx
+#EXTINF:-1 tvg-id="ajn-ia-the.-ballad.of.-buster.-scruggs.-2018.1080p" tvg-name="The Ballad of Buster Scruggs (2018)1080p" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Ballad of Buster Scruggs (2018)1080p
+https://archive.org/embed/the.-ballad.of.-buster.-scruggs.-2018.1080p
+#EXTINF:-1 tvg-id="ajn-ia-the-boogie-man-will-get-you-1942" tvg-name="The Boogie Man Will Get You (1942)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Boogie Man Will Get You (1942)
+https://archive.org/embed/the-boogie-man-will-get-you-1942
+#EXTINF:-1 tvg-id="ajn-ia-The_Brother_from_Another_Planet_1984" tvg-name="The Brother from Another Planet (1984)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Brother from Another Planet (1984)
+https://archive.org/embed/The_Brother_from_Another_Planet_1984
+#EXTINF:-1 tvg-id="ajn-ia-the-chase-pnm" tvg-name="The Chase (1946) [P&M] 1080p Blu-ray (1.6GB)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Chase (1946) [P&M] 1080p Blu-ray (1.6GB)
+https://archive.org/embed/the-chase-pnm
+#EXTINF:-1 tvg-id="ajn-ia-the-comedy-of-terrors-1964" tvg-name="The Comedy Of Terrors (1963)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Comedy Of Terrors (1963)
+https://archive.org/embed/the-comedy-of-terrors-1964
+#EXTINF:-1 tvg-id="ajn-ia-the-curse-of-the-werewolf-1961" tvg-name="The Curse of the Werewolf (1961)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Curse of the Werewolf (1961)
+https://archive.org/embed/the-curse-of-the-werewolf-1961
+#EXTINF:-1 tvg-id="ajn-ia-sherekilebi-the-eccentrics" tvg-name="The Eccentrics [Sherekilebi] (1974)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Eccentrics [Sherekilebi] (1974)
+https://archive.org/embed/sherekilebi-the-eccentrics
+#EXTINF:-1 tvg-id="ajn-ia-the-extra-girl" tvg-name="The Extra Girl (1923)" group-title="Unsorted - review" ajn-type="movie" ajn-status="ready",The Extra Girl (1923)
+https://archive.org/embed/the-extra-girl
+#EXTINF:-1 tvg-id="ajn-ia-TheGhostAndMrs.Muir1947_201903" tvg-name="The Ghost And Mrs. Muir (1947)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Ghost And Mrs. Muir (1947)
+https://archive.org/embed/TheGhostAndMrs.Muir1947_201903
+#EXTINF:-1 tvg-id="ajn-ia-the-great-escape-1963-full-hd-1080p" tvg-name="The Great Escape 1963 Full HD 1080p" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Great Escape 1963 Full HD 1080p
+https://archive.org/embed/the-great-escape-1963-full-hd-1080p
+#EXTINF:-1 tvg-id="ajn-ia-TheHitchHiker1953_201901" tvg-name="The Hitch Hiker (1953)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Hitch Hiker (1953)
+https://archive.org/embed/TheHitchHiker1953_201901
+#EXTINF:-1 tvg-id="ajn-ia-TheHorrorOfItAll1964" tvg-name="The Horror Of It All (1964)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Horror Of It All (1964)
+https://archive.org/embed/TheHorrorOfItAll1964
+#EXTINF:-1 tvg-id="ajn-ia-AteneaFilmsPublicDomainTheInvincibleGladiator" tvg-name="The Invincible Gladiator (1962)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Invincible Gladiator (1962)
+https://archive.org/embed/AteneaFilmsPublicDomainTheInvincibleGladiator
+#EXTINF:-1 tvg-id="ajn-ia-thekilling1956" tvg-name="The Killing (1956)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Killing (1956)
+https://archive.org/embed/thekilling1956
+#EXTINF:-1 tvg-id="ajn-ia-caprona-duology-1974-77" tvg-name="The Land That Time Forgot (1974) & The People That Time Forgot (1977) Caprona Duology" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Land That Time Forgot (1974) & The People That Time Forgot (1977) Caprona Duology
+https://archive.org/embed/caprona-duology-1974-77
+#EXTINF:-1 tvg-id="ajn-ia-the-lawless-1950-1080p" tvg-name="The Lawless (1950) (1080p) Macdonald Carey, Gail Russell, Johnny Sands" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Lawless (1950) (1080p) Macdonald Carey, Gail Russell, Johnny Sands
+https://archive.org/embed/the-lawless-1950-1080p
+#EXTINF:-1 tvg-id="ajn-ia-y-2-mate.is-little-shop-of-horrors-1960-1xg-p-9n-lk-plg-1080p-1629598400266" tvg-name="The Little Shop Of Horrors ( 1960)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Little Shop Of Horrors ( 1960)
+https://archive.org/embed/y-2-mate.is-little-shop-of-horrors-1960-1xg-p-9n-lk-plg-1080p-1629598400266
+#EXTINF:-1 tvg-id="ajn-ia-TheManWithACloakFletcherMarkle1951" tvg-name="The Man With A Cloak (1951)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Man With A Cloak (1951)
+https://archive.org/embed/TheManWithACloakFletcherMarkle1951
+#EXTINF:-1 tvg-id="ajn-ia-the-mask-720p" tvg-name="The Mask" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Mask
+https://archive.org/embed/the-mask-720p
+#EXTINF:-1 tvg-id="ajn-ia-the.-monster.-squad.-1987.1080p.-blu-ray.x-264-yts.-ag" tvg-name="The Monster Squad (1987) HD" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Monster Squad (1987) HD
+https://archive.org/embed/the.-monster.-squad.-1987.1080p.-blu-ray.x-264-yts.-ag
+#EXTINF:-1 tvg-id="ajn-ia-01-nav-24093220" tvg-name="The Navigator (1924)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Navigator (1924)
+https://archive.org/embed/01-nav-24093220
+#EXTINF:-1 tvg-id="ajn-ia-the-night-holds-terror-1955" tvg-name="The Night Holds Terror (1955) Vince Edwards, John Cassavetes, Jack Kelly, Hildy Parks" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Night Holds Terror (1955) Vince Edwards, John Cassavetes, Jack Kelly, Hildy Parks
+https://archive.org/embed/the-night-holds-terror-1955
+#EXTINF:-1 tvg-id="ajn-ia-the-night-they-saved-christmas" tvg-name="The Night They Saved Christmas (1984)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Night They Saved Christmas (1984)
+https://archive.org/embed/the-night-they-saved-christmas
+#EXTINF:-1 tvg-id="ajn-ia-the-outlaw-josey-wales" tvg-name="The Outlaw Josey Wales (1976)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Outlaw Josey Wales (1976)
+https://archive.org/embed/the-outlaw-josey-wales
+#EXTINF:-1 tvg-id="ajn-ia-the-rivers-edge-1957" tvg-name="The River's Edge (1957) Ray Milland, Anthony Quinn & Debra Paget" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The River's Edge (1957) Ray Milland, Anthony Quinn & Debra Paget
+https://archive.org/embed/the-rivers-edge-1957
+#EXTINF:-1 tvg-id="ajn-ia-TheSeaWolf1993DVDRip.XviD" tvg-name="The Sea Wolf (1993)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Sea Wolf (1993)
+https://archive.org/embed/TheSeaWolf1993DVDRip.XviD
+#EXTINF:-1 tvg-id="ajn-ia-the-stepford-wives-1975_202204" tvg-name="The Stepford Wives (1975)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Stepford Wives (1975)
+https://archive.org/embed/the-stepford-wives-1975_202204
+#EXTINF:-1 tvg-id="ajn-ia-the-thing-from-another-world-1951_202406" tvg-name="The Thing from Another World (1951)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Thing from Another World (1951)
+https://archive.org/embed/the-thing-from-another-world-1951_202406
+#EXTINF:-1 tvg-id="ajn-ia-the.-towering.-inferno.-1974" tvg-name="The Towering Inferno (1974) 720P" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Towering Inferno (1974) 720P
+https://archive.org/embed/the.-towering.-inferno.-1974
+#EXTINF:-1 tvg-id="ajn-ia-the-vampire-lovers-1970_202406" tvg-name="The Vampire Lovers (1970)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Vampire Lovers (1970)
+https://archive.org/embed/the-vampire-lovers-1970_202406
+#EXTINF:-1 tvg-id="ajn-ia-Popcornarchive-theWarOfTheWorlds1953" tvg-name="The War of the Worlds (1953)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The War of the Worlds (1953)
+https://archive.org/embed/Popcornarchive-theWarOfTheWorlds1953
+#EXTINF:-1 tvg-id="ajn-ia-the-wasp-woman-1959_202103" tvg-name="The Wasp Woman (1959)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Wasp Woman (1959)
+https://archive.org/embed/the-wasp-woman-1959_202103
+#EXTINF:-1 tvg-id="ajn-ia-the-weird-adventures-of-mutt-jeff-and-bugoff-1973" tvg-name="The Weird Adventures Of Mutt & Jeff And Bugoff (1973)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Weird Adventures Of Mutt & Jeff And Bugoff (1973)
+https://archive.org/embed/the-weird-adventures-of-mutt-jeff-and-bugoff-1973
+#EXTINF:-1 tvg-id="ajn-ia-the-wolf-man-1941_202406" tvg-name="The Wolf Man (1941)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Wolf Man (1941)
+https://archive.org/embed/the-wolf-man-1941_202406
+#EXTINF:-1 tvg-id="ajn-ia-the.-wonderful.-country.-1959.1080p.-blu-ray.x-264.-aac-yts.-mx" tvg-name="The Wonderful Country (1959)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",The Wonderful Country (1959)
+https://archive.org/embed/the.-wonderful.-country.-1959.1080p.-blu-ray.x-264.-aac-yts.-mx
+#EXTINF:-1 tvg-id="ajn-ia-TightRopeTricks1933" tvg-name="Tight Rope Tricks (1933)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Tight Rope Tricks (1933)
+https://archive.org/embed/TightRopeTricks1933
+#EXTINF:-1 tvg-id="ajn-ia-toward-the-unknown-1956-" tvg-name="Toward The Unknown (1956)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Toward The Unknown (1956)
+https://archive.org/embed/toward-the-unknown-1956-
+#EXTINF:-1 tvg-id="ajn-ia-true-lies-1994-d-theater" tvg-name="True Lies (1994) [D-Theater] HD Rip" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",True Lies (1994) [D-Theater] HD Rip
+https://archive.org/embed/true-lies-1994-d-theater
+#EXTINF:-1 tvg-id="ajn-ia-VampireOverLondon1952" tvg-name="Vampire Over London (1952)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Vampire Over London (1952)
+https://archive.org/embed/VampireOverLondon1952
+#EXTINF:-1 tvg-id="ajn-ia-walker.1987.internal.bdrip.x264-manic_202407" tvg-name="Walker (1987)" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Walker (1987)
+https://archive.org/embed/walker.1987.internal.bdrip.x264-manic_202407
+#EXTINF:-1 tvg-id="ajn-ia-wicked-2024-2160p-4k-legendado" tvg-name="Wicked (2024) [2160p] [4k] [Legendado]" group-title="Unsorted - review" ajn-type="movie" ajn-status="provisional",Wicked (2024) [2160p] [4k] [Legendado]
+https://archive.org/embed/wicked-2024-2160p-4k-legendado

@@ -1,0 +1,73 @@
+AJN Prompt D — final files compared with origin/main 68bd8d55a4a6bc0f41bc27a290700cb20b6c8248
+Each included file is at its repository-relative path.
+
+Included files:
+OVERLAY_README.txt — Documents the owner-supplied overlay used to assemble the requested base.
+collections/series-config-list4.ts — Adds series configuration for the owner overlay’s classic-TV channels.
+collections/series-parse.ts — Parses additional series configuration without changing canonical identities.
+docs/classic-lazy-prefetch-lanes/REPORT.md — Records measurements, implementation, verification, risks and rollback for Prompt D.
+guideRegistry.ts — Registers the Classic TV light-schedule route and guide metadata.
+server.ts — Wires light schedule/search endpoints and Archive cooldown response behavior.
+server/archiveCooldown.ts — Parses and shares bounded per-host Retry-After cooldowns.
+server/archiveFetch.ts — Integrates host cooldowns with Archive retry and proxy response handling.
+server/archiveLimiter.ts — Makes API dispatch observe the shared Archive cooldown.
+server/classicLightSchedule.ts — Builds the bounded light Classic schedule and title-search data.
+server/classicScheduleSearch.ts — Provides on-demand Classic TV title search from the server-side index.
+server/podcasts.ts — Applies the podcast freshness/selection adjustment from the owner overlay.
+src/EpgGuide.tsx — Adds incremental guide loading, channel-row loading/retry, aired-time labels and lane-controlled thumbnails.
+src/MinimalPlayer.tsx — Adds guarded next-item video prefetch to the authoritative player lifecycle.
+src/components/ChannelLogo.tsx — Routes channel-logo images through the shared bounded image lane.
+src/components/HomeBroadcastHub.tsx — Routes Home Broadcast Hub card thumbnails through the shared lane.
+src/components/HomeLiveStrip.tsx — Removes the noncanonical final show-art fallback from the live strip.
+src/components/LaneImage.tsx — Controls image source admission and releases shared thumbnail-lane slots.
+src/components/PlayerView.tsx — Connects player state and next-item selection to the prefetch controller.
+src/components/PoliceChaseReel.tsx — Uses the shared queue for reel preview thumbnails.
+src/components/Thumb.tsx — Uses lane admission for shared thumbnails and neutral failure presentation.
+src/components/TodayView.tsx — Uses the shared image lane for Today view artwork.
+src/components/WaitingNotes.tsx — Displays the owner overlay’s waiting-note metadata.
+src/data/extraChannelsManifest.json — Adds the owner-provided Classic TV channel entries.
+src/data/podcastSources.json — Updates podcast source freshness metadata.
+src/data/seriesManifests.json — Adds the owner-supplied series manifest and channel/program metadata.
+src/data/waitingNotes.json — Updates the waiting-note data used by the player UI.
+src/guide/channelIndex.ts — Provides the sorted/searchable channel index used by the guide.
+src/guide/channelSchedulePool.ts — Limits and cancels on-demand channel schedule requests.
+src/guide/loadSchedule.ts — Loads the light guide schedule and defers full channel rows.
+src/guide/scheduleCache.ts — Caches schedules and per-channel fetch state in session memory.
+src/index.css — Adds incremental guide, aired-time overlay and thumbnail-lane styling.
+src/telemetry.ts — Adds privacy-bounded video-prefetch outcome telemetry fields.
+src/types.ts — Defines the light-guide and prefetch metadata types.
+src/utils/thumbnail.ts — Keeps the canonical Archive image candidate sequence without a fallback substitution.
+src/utils/thumbnailLane.ts — Implements the shared FIFO four-slot thumbnail request lane.
+src/utils/videoPrefetch.ts — Implements gated, cancellable low-priority next-video byte-range prefetch.
+src/utils/waitingNotes.ts — Normalizes waiting-note metadata for display.
+test-archive-item-guide.tsx — Uses in-memory fixtures and asserts fixture-derived counts with zero Archive requests.
+test-archive-retry.ts — Covers Archive redirect policy, retry behavior and shared Retry-After cooldowns.
+test-boot-warmers.ts — Covers the boot-warmers startup gate from the earlier review round.
+test-channel-schedule-pool.ts — Tests bounded schedule-fetch concurrency and queued abort behavior.
+test-classic-light-guide-fixture.ts — Provides synthetic guide data for the headless light-guide test.
+test-classic-light-guide.html — Hosts the synthetic guide browser test without external requests.
+test-classic-light-guide.mjs — Runs phone/desktop guide, load-more, tune, retry and request-count checks.
+test-classic-light-guide.tsx — Mounts the synthetic guide fixture for the browser test.
+test-classic-light-schedule.ts — Tests light-schedule shape, title index, validation and response budget.
+test-epg-aired-time.tsx — Tests valid, missing and malformed aired times plus the focus overlay.
+test-extra-channels.ts — Validates owner-provided extra-channel data and identities.
+test-infobattalion-lists.ts — Checks TV, movie and audio list membership under an injected network stub.
+test-load-schedule.ts — Covers schedule loading and channel-specific data behavior.
+test-music-schedule-budget.mjs — Checks compressed/raw schedule budgets, music membership and XML track counts.
+test-podcasts.ts — Covers podcast source freshness behavior.
+test-series.ts — Covers series manifest parsing and identity preservation.
+test-thumbnail-lane-entry.tsx — Mounts synthetic images and media requests for the lane browser regression test.
+test-thumbnail-lane.html — Hosts the local-only thumbnail lane browser test.
+test-thumbnail-lane.mjs — Measures concurrency, offscreen requests, media independence and failure tiles.
+test-video-prefetch-local.mjs — Measures prefetch against a local synthetic proxy only.
+test-video-prefetch.ts — Tests prefetch gates, ranges, cancellation, no-retry and telemetry behavior.
+test-waiting-notes.ts — Checks waiting-note normalization and displayed metadata.
+tools/add-boris1971-genre-channels.py — Adds owner-specified Boris1971 genre-channel entries to source data.
+
+Test/preview only — excluded from this ZIP:
+scripts/render-epg-aired-badge-screenshots.tsx — screenshot/preview helper; retained in the combined patch.
+test-epg-aired-preview.html — screenshot/preview helper; retained in the combined patch.
+test-epg-aired-preview.tsx — screenshot/preview helper; retained in the combined patch.
+test-epg-aired-preview-logo.svg — screenshot/preview helper; retained in the combined patch.
+
+No package-lock or audit changes are included.

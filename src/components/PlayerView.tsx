@@ -12,6 +12,11 @@ import { GUIDE_FALLBACK_ORDER, fullShowTargets, nextInLoop, pickAnotherItem, rad
 import { loadAjnFeeds } from "../services/ajnFeeds";
 import { buildRadioCatalog } from "../utils/ajnRadioCatalog";
 import { pickLatestFullShows, type FeedItemLike } from "../utils/latestFullShows";
+import { CaptionPanel } from "../news/captions/CaptionPanel";
+import { RadioCaptionPanel } from "../news/captions/RadioCaptionPanel";
+import { bufferGaugeMetadata } from "../utils/bufferGauge";
+import { useStationTheme } from "../utils/stationArt";
+import { StationBanner } from "./StationBanner";
 
 /** Readable, stable id for a show title: "<channelId>/<title-slug>". Used in logs
  *  and telemetry so a failing playback can be found by name. */
@@ -54,6 +59,7 @@ const SLOW_RETRY_MS = 30_000;
 
 export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite }: any) {
   const failuresRef = useRef(0);
+  const playerWrapRef = useRef<HTMLDivElement | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
   const skipTimerRef = useRef<number | null>(null);
 
@@ -135,7 +141,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       prev.sourceId ?? prev.metadata?.sourceId, prev.assetId ?? prev.metadata?.assetId);
   }, [onSelectProgram, schedulePrograms]);
   /** The playable URL + media type of what follows, or null (Rush, unknown, lookup failed). */
-  const resolveNext = useCallback(async (): Promise<{ src: string; mediaType: string; programId?: string } | null> => {
+  const resolveNext = useCallback(async (): Promise<{ src: string; mediaType: string; programId?: string; guideId?: string; channelId?: string } | null> => {
     const instance = latestRef.current;
     if (instance && isQueuePart(instance.programId)) { const n = peekNextPart(); return n ? { src: toPlayableSrc(n.src), mediaType: n.mediaType } : null; }
     if (!instance || (instance.channelId === "rush-vod" && RUSH_PROGRAM.test(String(instance.programId ?? "")))) return null;
@@ -145,9 +151,16 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       const pick = pickNext(instance, programs);
       if (!pick) return null;
       const item = pick.kind === "segment" ? pick.seg : pick.next;
+       const parent = pick.kind === "segment" ? pick.cur : pick.next;
       const ref = String(item.archivePath || item.mediaUrl || "").trim();
       if (!ref) return null;
-      return { src: toPlayableSrc(ref), mediaType: String((pick.kind === "segment" ? pick.cur : pick.next).mediaType ?? ""), programId: String((item as { id?: string }).id ?? "") || undefined };
+       return {
+         src: toPlayableSrc(ref),
+         mediaType: String(parent.mediaType ?? ""),
+         programId: String(item.id ?? "") || undefined,
+         guideId: String(parent.guideId ?? instance.guideId ?? "") || undefined,
+         channelId: String(parent.channelId ?? instance.channelId ?? "") || undefined,
+       };
     } catch { return null; }
   }, [schedulePrograms]);
 
@@ -272,7 +285,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       reportTelemetry({ event: reason === "error" ? "playback.skip_failed" : "playback.segment", guideId: cur.guideId ?? null, channelId: cur.channelId ?? null,
         programId: cur.id ?? null, titleId: titleIdOf(cur.channelId, cur.title), sourceId: cur.sourceId ?? null, assetId: cur.assetId ?? null, mediaPath: seg.archivePath ?? seg.mediaUrl ?? null });
       onSelectProgram(seg.archivePath || seg.mediaUrl, cur.title, cur.description, cur.mediaType,
-        cur.channelId, cur.guideId, cur.id, cur.sourceId ?? cur.metadata?.sourceId, cur.assetId ?? cur.metadata?.assetId);
+        cur.channelId, cur.guideId, cur.id, cur.sourceId ?? cur.metadata?.sourceId, cur.assetId ?? cur.metadata?.assetId, undefined, bufferGaugeMetadata(cur.metadata));
       return true;
     }
     const { next, nextIndex } = pick;
@@ -290,7 +303,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       mediaPath: (next.archivePath || next.mediaUrl) ?? null,
     });
     onSelectProgram(next.archivePath || next.mediaUrl, next.title, next.description, next.mediaType,
-      next.channelId, next.guideId, next.id, sourceId, assetId);
+      next.channelId, next.guideId, next.id, sourceId, assetId, undefined, bufferGaugeMetadata(next.metadata));
     return true;
   }, [onSelectProgram, playTarget, rushPlanFor, schedulePrograms]);
 
@@ -322,6 +335,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   useEffect(() => { syncShowQueue(nowPlaying?.programId); }, [nowPlaying?.programId]);
   useEffect(() => () => { if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current); if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current); }, [nowPlaying]);
 
+  const stationTheme = useStationTheme(nowPlaying?.channelId, nowPlaying?.title); // live radio: logo + station colours (null for everything else)
   const meta = useMemo(() => nowPlaying ? ({
     titleId: titleIdOf(nowPlaying.channelId, nowPlaying.title),
     guideId: nowPlaying.guideId ?? "unknown",
@@ -362,6 +376,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   return (
     <div className="space-y-4">
       <FullShowStatus />
+      {stationTheme && <StationBanner theme={stationTheme} title={nowPlaying.title} subtitle={nowPlaying.subtitle} />}
       {onToggleFavorite && (
         <div className="flex items-center justify-between gap-3">
           <span className="min-w-0 truncate text-sm font-semibold text-neutral-100" data-testid="player-title">{nowPlaying.title}</span>
@@ -374,6 +389,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
           </button>
         </div>
       )}
+      <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>
       <Fragment key={retryNonce}>
       <MinimalPlayer
         onRetry={() => { failuresRef.current = 0; setRetryNonce((n) => n + 1); }}
@@ -396,6 +412,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         }}
       />
       </Fragment>
+      </div>
+      <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />
+      {nowPlaying.channelId === "archive-infowars-radio" && <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />}
       <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />
       {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (
         <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">

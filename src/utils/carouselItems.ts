@@ -1,3 +1,4 @@
+import { ajnArtFor } from './ajnArt';
 import type { HomeNowItem } from '../../server/homeNow';
 import type { AjnFeedItem } from '../services/ajnFeeds';
 import type { MediaType } from '../types';
@@ -45,7 +46,7 @@ export function ajnCards(items: AjnFeedItem[]): CarouselCard[] {
       title: label ? `${label.show} · ${label.detail}` : i.title,
       source: FEED_NAMES[i.feedId] ?? i.feedId,
       meta: label ? label.dateLabel : '',
-      mediaType: i.mediaType, thumb: i.thumbnailUrl, artLabel: label?.show ?? i.title,
+      mediaType: i.mediaType, thumb: i.thumbnailUrl || ajnArtFor({ feedId: i.feedId, show: label?.show ?? i.title, mediaType: i.mediaType }), artLabel: label?.show ?? i.title,
       path: i.url!, subtitle: i.feedId, programId: i.id, guideId: `ajn-${i.feedId}`,
     };
   });

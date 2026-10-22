@@ -9,7 +9,7 @@ export const LIBRARY_SOURCES: Array<{ guideId: string; category: (ch: ScheduleCh
   { guideId: 'cable-tv', category: () => 'news' },
   { guideId: 'science-documentaries', category: (ch) => (ch.id === 'nasa-missions' || ch.id === 'nova-wonders' ? 'science' : 'documentary') },
   { guideId: 'movies-classics-vault', category: () => 'classics' },
-  { guideId: 'classic-tv', category: () => 'classics' },
+  { guideId: 'classic-tv', category: (ch) => ch.group === 'Soap Operas' ? 'soaps' : 'classics' },
   { guideId: 'old-british-tv', category: () => 'classics' },
   { guideId: 'audio-podcasts', category: (ch) => (ch.mediaType === 'audio' ? 'audio' : null) },
 ];
@@ -30,12 +30,14 @@ export function libraryFromChannels(groups: Array<{ guideId: string; channels: S
   for (const g of groups) for (const ch of g.channels) {
     const cat = g.category(ch);
     if (!cat) continue;
+      const channelLimit = cat === 'soaps' ? 1500 : PER_CHANNEL;
+      const categoryLimit = cat === 'soaps' ? 1500 : PER_CATEGORY;
     let n = 0;
     for (const p of ch.programs ?? []) {
-      if (n >= PER_CHANNEL || (perCat.get(cat) ?? 0) >= PER_CATEGORY) break;
+      if (n >= channelLimit || (perCat.get(cat) ?? 0) >= categoryLimit) break;
       const media = p.archivePath || p.mediaUrl;
       const m = (p.metadata ?? {}) as any;
-      if (!media || m.live) continue;
+      if (!media || m.live || m.externalClip) continue;
       const id = baseProgramId(p.id);
       if (seen.has(id)) continue;
       seen.add(id); n++; perCat.set(cat, (perCat.get(cat) ?? 0) + 1);

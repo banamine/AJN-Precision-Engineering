@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import type { Program, ScheduleChannel, PlayProgramCallback } from "../types";
 import type { GridBlock, GridItem } from "./groupProgramsForGrid";
 import { windowItems } from "./groupProgramsForGrid";
+import { bufferGaugeMetadata } from "../utils/bufferGauge";
 
 export function fmtClock(hour: number): string {
   const total = Math.round(Math.max(0, Math.min(24, hour)) * 60);
@@ -109,7 +110,7 @@ export function TrackDrawer({ channel, block, guideId, nowHour, opener, onClose,
   const slice = useMemo(() => items.slice(start, end), [items, start, end]);
 
   const play = (p: Program) => {
-    onSelectProgram?.(p.archivePath || p.mediaUrl, p.title, channel.name, p.mediaType || channel.mediaType || (guideId === "audio-podcasts" ? "audio" : "video"), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId);
+    onSelectProgram?.(p.archivePath || p.mediaUrl, p.title, channel.name, p.mediaType || channel.mediaType || (guideId === "audio-podcasts" ? "audio" : "video"), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, undefined, bufferGaugeMetadata(p.metadata));
     onClose();
   };
   const onKey = (e: ReactKeyboardEvent) => {

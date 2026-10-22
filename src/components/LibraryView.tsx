@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FolderArchive, Search, Play, FileVideo, FileAudio, Clock, Star, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { FolderArchive, Search, Play, FileVideo, FileAudio, Clock, Star, ChevronLeft, ChevronRight, ChevronDown, Tv } from 'lucide-react';
 import type { PlayProgramCallback } from '../types';
 import { loadFavorites, saveFavorites } from '../utils/favoritesStore';
 import { Thumb } from './Thumb';
@@ -10,10 +10,17 @@ type Item = {
   type: 'item'; id: string; identifier: string; title: string; description?: string; categoryIds: string[]; mediaType: 'video' | 'audio';
   year?: number; decade?: number; path: string; format: string; dur: number; durSrc: string; durEst: boolean;
   availability: string; channelId?: string; guideId?: string; programId?: string; sourceId?: string; assetId?: string;
+   kindBadge?: string; sourceFile?: string; airDate?: string; episodeNumber?: number; subtitle?: string;
+  parts?: SeriesFile[]; alternates?: SeriesFile[];
 };
+type SeriesFile = { id: string; identifier: string; file: string; path: string; durationSeconds: number; bytes: number; part?: { number: number; total: number; variant?: 'a' | 'b' } | null };
+type SeriesEpisode = Item & { episodeTitle: string; season?: number; episode?: number; airDate?: string; episodeNumber?: number };
 type Series = {
   type: 'series'; id: string; groupKey: string; title: string; categoryIds: string[]; mediaType: 'video' | 'audio';
-  episodeCount: number; episodes: Array<Item & { episodeTitle: string; season?: number; episode?: number }>;
+  episodeCount: number; episodes: SeriesEpisode[];
+  groupingMethod?: 'separator-title' | 'air-date-episode';
+  years?: Array<{ year: number; count: number }>;
+  poster?: { identifier: string; path: string };
 };
 type LibraryResult = Item | Series;
 type HeatCat = { categoryId: string; label: string; mediaType: string; total: number; decades: Array<{ decade: number; count: number }> };
@@ -109,7 +116,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
           <button key={c.categoryId} type="button" id={`lib-cat-btn-${c.categoryId}`} disabled={c.total === 0}
             onClick={() => { setCategory(c.categoryId); setDecade(null); setShowFavorites(false); }}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-40 ${category === c.categoryId && !showFavorites ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
-            {c.label} ({c.total})
+            {c.categoryId === 'soaps' && <Tv className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />}{c.label} ({c.total})
           </button>
         ))}
         <button type="button" id="lib-favorites-btn" aria-pressed={showFavorites} onClick={() => setShowFavorites((v) => !v)}
@@ -157,7 +164,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
               return (
                 <div key={item.id} className="group flex flex-col rounded-xl border border-neutral-800 bg-neutral-900/50 p-4 transition hover:border-neutral-700 hover:bg-neutral-900">
                   <button type="button" onClick={() => toggleSeries(item.id)} aria-expanded={open} className="w-full text-left">
-                    <Thumb className="mb-3 aspect-video w-full rounded-lg text-lg" title={item.title} input={{ identifier: item.episodes[0]?.identifier, path: item.episodes[0]?.path, category: item.categoryIds[0], mediaType: item.mediaType }} />
+                      <Thumb className="mb-3 aspect-video w-full rounded-lg text-lg" title={item.title} showUnavailableLabel={item.categoryIds.includes('soaps')} input={{ identifier: item.poster?.identifier ?? item.episodes[0]?.identifier, path: item.poster?.path ?? item.episodes[0]?.path, category: item.categoryIds[0], mediaType: item.mediaType }} />
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{isAudio ? 'Audio' : 'Series'}</span>
                       <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
@@ -165,7 +172,9 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                     <h2 className="mt-2 text-sm font-semibold text-neutral-100 line-clamp-2">{item.title}</h2>
                     <p className="mt-1 text-xs text-emerald-400">Episodes: {item.episodeCount}</p>
                   </button>
-                  {open && <div className="mt-3 space-y-2 border-t border-neutral-800 pt-3">
+                  {open && (item.groupingMethod === 'air-date-episode' ? (
+                    <AllMyChildrenSeries groupKey={item.groupKey} years={item.years ?? []} query={debounced} play={play} />
+                  ) : <div className="mt-3 space-y-2 border-t border-neutral-800 pt-3">
                     {item.episodes.map((ep) => (
                       <div key={ep.identifier} className="flex items-center justify-between gap-3 rounded-lg bg-neutral-950/60 p-2.5">
                         <div className="min-w-0">
@@ -177,7 +186,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                         </button>
                       </div>
                     ))}
-                  </div>}
+                  </div>)}
                 </div>
               );
             }
@@ -186,9 +195,9 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
             return (
               <div key={item.id} className="group flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-4 transition hover:border-neutral-700 hover:bg-neutral-900">
                 <div className="space-y-2">
-                  <Thumb className="mb-1 aspect-video w-full rounded-lg text-lg" title={item.title} input={{ identifier: item.identifier, path: item.path, category: item.categoryIds[0], mediaType: item.mediaType, channelId: item.channelId, guideId: item.guideId }} />
+                  <Thumb className="mb-1 aspect-video w-full rounded-lg text-lg" title={item.title} showUnavailableLabel={item.categoryIds.includes('soaps')} input={{ identifier: item.identifier, path: item.path, category: item.categoryIds[0], mediaType: item.mediaType, channelId: item.channelId, guideId: item.guideId }} />
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{isAudio ? 'Audio' : 'Video'}{item.format && item.format !== 'none' ? ` · ${item.format}` : ''}</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{item.categoryIds.includes('soaps') ? <Tv className="h-3.5 w-3.5" /> : isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{item.kindBadge ?? (isAudio ? 'Audio' : 'Video')}{item.format && item.format !== 'none' ? ` · ${item.format}` : ''}</span>
                     <span className="flex items-center gap-1">
                       <span className="rounded bg-neutral-800 px-2 py-0.5 font-mono text-[10px] text-neutral-300">{item.year ?? 'Archive'}</span>
                       <button type="button" id={`favorite-lib-item-${item.id}`} aria-pressed={fav} aria-label={fav ? `Remove ${item.title} from favorites` : `Add ${item.title} to favorites`} onClick={() => toggleFavorite(item.id)} className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-amber-400">
@@ -198,6 +207,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                   </div>
                   <h2 className="text-sm font-semibold text-neutral-100 line-clamp-2">{item.title}</h2>
                   {item.description && <p className="text-xs text-neutral-400 line-clamp-3 leading-relaxed">{item.description}</p>}
+                  {item.sourceFile && <p className="break-all font-mono text-[10px] text-neutral-500" title={item.sourceFile}>Source file: {item.sourceFile}</p>}
                 </div>
                 <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-xs text-neutral-500" title={item.durEst ? 'Estimated length' : undefined}><Clock className="h-3.5 w-3.5" aria-hidden="true" />{fmtDur(item.dur, item.durEst) || '—'}{item.availability === 'verified' ? ' · checked' : ''}</span>
@@ -218,6 +228,106 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
       ) : null}
 
       {data && data.totalPages > 1 && <div className="flex justify-center"><Pager page={data.page} total={data.totalPages} onPage={setPage} /></div>}
+    </div>
+  );
+}
+
+function AllMyChildrenSeries({
+  groupKey, years, query, play,
+}: {
+  groupKey: string;
+  years: Array<{ year: number; count: number }>;
+  query: string;
+  play: (item: Item) => void;
+}) {
+  const [year, setYear] = useState<number | null>(null);
+  const [episodes, setEpisodes] = useState<SeriesEpisode[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    if (year === null) { setEpisodes(null); setError(null); return; }
+    const controller = new AbortController();
+    const params = new URLSearchParams({ year: String(year) });
+    if (query) params.set('q', query);
+    setLoading(true); setError(null);
+    fetch(`/api/library/series/${encodeURIComponent(groupKey)}?${params}`, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
+      .then((result) => { setEpisodes(result.episodes ?? []); setLoading(false); })
+      .catch((reason) => {
+        if (reason.name !== 'AbortError') { setError(reason?.message ?? 'request failed'); setEpisodes(null); setLoading(false); }
+      });
+    return () => controller.abort();
+  }, [groupKey, year, query, retry]);
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-neutral-800 pt-3" data-testid="allmychildren-series-detail">
+      <div>
+        <p className="mb-2 text-xs font-medium text-neutral-300">Episodes by air-date year</p>
+        <div className="flex flex-wrap gap-1.5">
+          {years.map((entry) => (
+            <button key={entry.year} type="button" aria-pressed={year === entry.year}
+              onClick={() => setYear((current) => current === entry.year ? null : entry.year)}
+              className={`rounded-lg border px-2.5 py-1.5 text-xs ${year === entry.year ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-neutral-700 bg-neutral-950/60 text-neutral-300 hover:border-neutral-500'}`}>
+              {entry.year} <span className="text-neutral-500">({entry.count})</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      {year !== null && (
+        <div data-testid="amc-episode-list" aria-live="polite" className="max-h-[30rem] space-y-2 overflow-y-auto pr-1">
+          {loading && <p className="text-xs text-neutral-400">Loading {year} episodes…</p>}
+          {error && <div role="alert" className="rounded-lg border border-red-900/60 bg-red-950/30 p-3 text-xs text-red-200">
+            Could not load {year} episodes ({error}). <button type="button" onClick={() => setRetry((value) => value + 1)} className="ml-1 underline">Try again</button>
+          </div>}
+          {!loading && !error && episodes?.length === 0 && <p className="text-xs text-neutral-400">No matching episodes in {year}.</p>}
+          {episodes?.map((episode) => {
+            const parts = episode.parts ?? [];
+            const hasOrderedParts = episode.kindBadge === 'Part' && parts.length > 1;
+            const playFirst = () => play({ ...episode, path: parts[0]?.path ?? episode.path });
+            return (
+              <article key={episode.id} className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-2.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-neutral-100">{episode.episodeTitle}</div>
+                    <div className="mt-0.5 text-[11px] text-neutral-400">
+                      {episode.airDate ?? episode.year} · Ep {episode.episodeNumber ?? episode.episode ?? '—'} · {episode.kindBadge ?? 'Episode'}
+                    </div>
+                    {episode.subtitle && <div className="mt-1 line-clamp-2 text-[11px] text-neutral-500">{episode.subtitle}</div>}
+                  </div>
+                  <button type="button" onClick={playFirst} aria-label={`${hasOrderedParts ? 'Play all parts in order' : 'Play'}: ${episode.episodeTitle}`}
+                    className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
+                    <Play className="h-3 w-3 fill-current" aria-hidden="true" />{hasOrderedParts ? 'Play all in order' : 'Play'}
+                  </button>
+                </div>
+                {parts.length > 0 && (parts.length > 1 || episode.kindBadge === 'Part') && (
+                  <div className="mt-2 space-y-1 border-t border-neutral-800 pt-2" aria-label="Episode parts">
+                    {parts.map((part, index) => {
+                      const label = part.part
+                        ? `Part ${part.part.number} of ${part.part.total}${part.part.variant ? ` (${part.part.variant.toUpperCase()})` : ''}`
+                        : `Part ${index + 1} of ${parts.length}`;
+                      return <div key={`${part.identifier}/${part.file}`} className="flex items-center justify-between gap-2 text-[10px] text-neutral-400">
+                        <span className="min-w-0 break-all"><strong className="font-medium text-neutral-300">{label}</strong> · {part.file} · {fmtDur(part.durationSeconds, false)}</span>
+                        <button type="button" onClick={() => play({ ...episode, path: part.path, title: `${episode.episodeTitle} · ${label}` })}
+                          className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-neutral-200 hover:border-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
+                          Play part
+                        </button>
+                      </div>;
+                    })}
+                  </div>
+                )}
+                {(episode.alternates?.length ?? 0) > 0 && (
+                  <details className="mt-2 border-t border-neutral-800 pt-2 text-[10px] text-neutral-400">
+                    <summary className="cursor-pointer">Alternate source files ({episode.alternates!.length})</summary>
+                    <ul className="mt-1 space-y-1">{episode.alternates!.map((file) => <li key={`${file.identifier}/${file.file}`} className="break-all">{file.file}</li>)}</ul>
+                  </details>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

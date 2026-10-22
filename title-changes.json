@@ -1,0 +1,750 @@
+{
+ "count": 149,
+ "changes": [
+  {
+   "id": "ajn-ia-001-nypd-blue",
+   "before": "001 Nypd Blue",
+   "after": "001 NYPD Blue"
+  },
+  {
+   "id": "ajn-ia-01-s-1.-e-1-destination-tucson-1",
+   "before": "01 S 1 E 1 Destination Tucson 1",
+   "after": "01 S01E01 Destination Tucson 1"
+  },
+  {
+   "id": "ajn-ia-01-wacky-tv-contintued",
+   "before": "01 Wacky Tv Contintued",
+   "after": "01 Wacky TV Contintued"
+  },
+  {
+   "id": "ajn-ia-1-sixty-feet-below-s-1.-e-1",
+   "before": "1 Sixty Feet Below S 1 E 1",
+   "after": "1 Sixty Feet Below S01E01"
+  },
+  {
+   "id": "ajn-ia-aldo-nova-ball-and-chain-mtv-2",
+   "before": "Aldo Nova Ball And Chain Mtv 2",
+   "after": "Aldo Nova Ball And Chain MTV 2"
+  },
+  {
+   "id": "ajn-ia-amazing-stories-1985-s-01",
+   "before": "Amazing Stories 1985 S 01",
+   "after": "Amazing Stories 1985 S01"
+  },
+  {
+   "id": "ajn-ia-bbc-red-dwarf",
+   "before": "Bbc Red Dwarf",
+   "after": "BBC Red Dwarf"
+  },
+  {
+   "id": "ajn-ia-BobbyEllery",
+   "before": "BobbyEllery",
+   "after": "Bobby Ellery"
+  },
+  {
+   "id": "ajn-ia-BobbyGallery",
+   "before": "BobbyGallery",
+   "after": "Bobby Gallery"
+  },
+  {
+   "id": "ajn-ia-breaking.-bad.-s-01-e-01.-pilot.-1080p.-h-264.-blu-ray",
+   "before": "Breaking Bad S 01 E 01 Pilot 1080p H 264 Blu Ray",
+   "after": "Breaking Bad S01E01 Pilot 1080p H 264 Blu Ray"
+  },
+  {
+   "id": "ajn-ia-ColdWarInSoviet1-BrezhnevMeetsEuropeanLeaders",
+   "before": "ColdWarInSoviet1 BrezhnevMeetsEuropeanLeaders",
+   "after": "Cold War In Soviet1 Brezhnev Meets European Leaders"
+  },
+  {
+   "id": "ajn-ia-do-they-know-its-christmas-1984-vhs-1080p-60",
+   "before": "Do They Know Its Christmas 1984 Vhs 1080p 60",
+   "after": "Do They Know Its Christmas 1984 VHS 1080p 60"
+  },
+  {
+   "id": "ajn-ia-EnemyAtTheDoorSeason1",
+   "before": "EnemyAtTheDoorSeason1",
+   "after": "Enemy At The Door Season1"
+  },
+  {
+   "id": "ajn-ia-EnemyAtTheDoorSeason2",
+   "before": "EnemyAtTheDoorSeason2",
+   "after": "Enemy At The Door Season2"
+  },
+  {
+   "id": "ajn-ia-ghost-squad-s-01e-03-hong-kong-story",
+   "before": "Ghost Squad S 01e 03 Hong Kong Story",
+   "after": "Ghost Squad S01E03 Hong Kong Story"
+  },
+  {
+   "id": "ajn-ia-hatfields-mc-coys-s-01-e-02-part-2",
+   "before": "Hatfields Mc Coys S 01 E 02 Part 2",
+   "after": "Hatfields Mc Coys S01E02 Part 2"
+  },
+  {
+   "id": "ajn-ia-HawaiianHeat",
+   "before": "HawaiianHeat",
+   "after": "Hawaiian Heat"
+  },
+  {
+   "id": "ajn-ia-HowTheGrinchStoleChristmas1966",
+   "before": "HowTheGrinchStoleChristmas1966",
+   "after": "How The Grinch Stole Christmas1966"
+  },
+  {
+   "id": "ajn-ia-iron-maiden-rock-in-rio-2019-full-show-hd",
+   "before": "Iron Maiden Rock In Rio 2019 Full Show Hd",
+   "after": "Iron Maiden Rock In Rio 2019 Full Show HD"
+  },
+  {
+   "id": "ajn-ia-judas-priest-battle-cry-live-dvd-rip",
+   "before": "Judas Priest Battle Cry Live Dvd Rip",
+   "after": "Judas Priest Battle Cry Live DVD Rip"
+  },
+  {
+   "id": "ajn-ia-NewhartSeries",
+   "before": "NewhartSeries",
+   "after": "Newhart Series"
+  },
+  {
+   "id": "ajn-ia-s-01-e-01-x-02-x-03-saga-of-the-worlds",
+   "before": "S 01 E 01 X 02 X 03 Saga Of The Worlds",
+   "after": "S01E01 X 02 X 03 Saga Of The Worlds"
+  },
+  {
+   "id": "ajn-ia-s-01-e-04-the-night-of-sudden-death-color",
+   "before": "S 01 E 04 The Night Of Sudden Death Color",
+   "after": "S01E04 The Night Of Sudden Death Color"
+  },
+  {
+   "id": "ajn-ia-s-01-e-29-indian-fever_202509",
+   "before": "S 01 E 29 Indian Fever",
+   "after": "S01E29 Indian Fever"
+  },
+  {
+   "id": "ajn-ia-s-01-e-32-crossroads",
+   "before": "S 01 E 32 Crossroads",
+   "after": "S01E32 Crossroads"
+  },
+  {
+   "id": "ajn-ia-s-01.-e-02-the-outlaw",
+   "before": "S 01 E 02 The Outlaw",
+   "after": "S01E02 The Outlaw"
+  },
+  {
+   "id": "ajn-ia-s-02-e-16-the-attacker_202309",
+   "before": "N.Y.P.D (1967) - Full Series",
+   "after": "N.Y.P. D (1967) - Full Series"
+  },
+  {
+   "id": "ajn-ia-s-02.-e-05-duel-at-florence",
+   "before": "S 02 E 05 Duel At Florence",
+   "after": "S02E05 Duel At Florence"
+  },
+  {
+   "id": "ajn-ia-s-03-e-02-episode-in-laredo",
+   "before": "S 03 E 02 Episode In Laredo",
+   "after": "S03E02 Episode In Laredo"
+  },
+  {
+   "id": "ajn-ia-s-04-e-01-the-fatalist",
+   "before": "S 04 E 01 The Fatalist",
+   "after": "S04E01 The Fatalist"
+  },
+  {
+   "id": "ajn-ia-s-05-e-02-education-of-sarah-jane",
+   "before": "S 05 E 02 Education Of Sarah Jane",
+   "after": "S05E02 Education Of Sarah Jane"
+  },
+  {
+   "id": "ajn-ia-s-06-e-01-genesis",
+   "before": "S 06 E 01 Genesis",
+   "after": "S06E01 Genesis"
+  },
+  {
+   "id": "ajn-ia-SeinfeldComplete",
+   "before": "SeinfeldComplete",
+   "after": "Seinfeld Complete"
+  },
+  {
+   "id": "ajn-ia-the-incredible-hulk-vhs_volumes",
+   "before": "The Incredible Hulk Vhs Volumes",
+   "after": "The Incredible Hulk VHS Volumes"
+  },
+  {
+   "id": "ajn-ia-TheWho-LiveAtTheIsleOfWightFestival-Film-1970",
+   "before": "TheWho LiveAtTheIsleOfWightFestival Film 1970",
+   "after": "The Who Live At The Isle Of Wight Festival Film 1970"
+  },
+  {
+   "id": "ajn-ia-tom-jones-hammersmith-odeon-london-1991-bbc",
+   "before": "Tom Jones Hammersmith Odeon London 1991 Bbc",
+   "after": "Tom Jones Hammersmith Odeon London 1991 BBC"
+  },
+  {
+   "id": "ajn-ia-2_Daredevil",
+   "before": "2_Daredevil",
+   "after": "2 Daredevil"
+  },
+  {
+   "id": "ajn-ia-2Brandis0zPressClub1stOct2014Small",
+   "before": "George Brandis Aus.Press Club-1stOct2014",
+   "after": "George Brandis Aus Press Club-1stOct2014"
+  },
+  {
+   "id": "ajn-ia-7.3-d.-o.-a.-1949",
+   "before": "D. O. A. 1949",
+   "after": "D.O.A. 1949"
+  },
+  {
+   "id": "ajn-ia-8-mm.-1999.1080p.-blu-ray.x-264-yts.-am",
+   "before": "8 MM. 1999.1080p. Blu Ray.x 264 [ YTS. AM]",
+   "after": "8 MM 1999 1080p Blu Ray x 264 [ YTS AM]"
+  },
+  {
+   "id": "ajn-ia-9-2009_202408",
+   "before": "T__ B_RT_N",
+   "after": "T B RT N"
+  },
+  {
+   "id": "ajn-ia-a.-a.-vishnevsky-military-hospital-october-11th-2024",
+   "before": "A. A. Vishnevsky Military Hospital October 11th 2024",
+   "after": "A.A. Vishnevsky Military Hospital October 11th 2024"
+  },
+  {
+   "id": "ajn-ia-AFPSORRY...NOTChannel7",
+   "before": "AFP SORRY... NOT Channel 7",
+   "after": "AFP SORRY NOT Channel 7"
+  },
+  {
+   "id": "ajn-ia-andaaz.-2003.720p.-webrip.x-264.-aac-yts.-mx",
+   "before": "m0vie n!ght #2",
+   "after": "M0vie N!ght #2"
+  },
+  {
+   "id": "ajn-ia-angels_20180913",
+   "before": "angels",
+   "after": "Angels"
+  },
+  {
+   "id": "ajn-ia-artillery-strike-on-ru",
+   "before": "Uk Artillery Strike On Ru",
+   "after": "UK Artillery Strike On Ru"
+  },
+  {
+   "id": "ajn-ia-auntiemame1958rosalindrussell.avi",
+   "before": "Auntie Mame ( 1958) Rosalind Russell .avi",
+   "after": "Auntie Mame ( 1958) Rosalind Russell"
+  },
+  {
+   "id": "ajn-ia-baabul-a.-fathers.-affection.-for.-his.-daughter.-2006.720p.-webrip.x-264.-aac-yts.-mx",
+   "before": "m0vie n!ght",
+   "after": "M0vie N!ght"
+  },
+  {
+   "id": "ajn-ia-battlestar.-galactica.-s-1.-e-1",
+   "before": "Battlestar. Galactica. S 1. E 1",
+   "after": "Battlestar Galactica S 1 E 1"
+  },
+  {
+   "id": "ajn-ia-bcsheriff",
+   "before": "bcsheriff",
+   "after": "Bcsheriff"
+  },
+  {
+   "id": "ajn-ia-BdyadSl1947",
+   "before": "8-18-14",
+   "after": "8 18 14"
+  },
+  {
+   "id": "ajn-ia-blonde-in-a-white-car",
+   "before": "Blonde in a White Car (1959, Toi... le venin) French Film Noir",
+   "after": "Blonde in a White Car (1959, Toi le venin) French Film Noir"
+  },
+  {
+   "id": "ajn-ia-boy-and-his-train",
+   "before": "boy-and-his-train",
+   "after": "Boy and His Train"
+  },
+  {
+   "id": "ajn-ia-buffalo_201503",
+   "before": "buffalo person",
+   "after": "Buffalo Person"
+  },
+  {
+   "id": "ajn-ia-caddyshack.1980.1080p.brrip.x264.yify___65af351121b4c",
+   "before": "caddyshack.1980.1080p.",
+   "after": "Caddyshack 1980 1080p"
+  },
+  {
+   "id": "ajn-ia-citizen-kane-hd-720p-1",
+   "before": "Citizen Kane Hd 720p ( 1)",
+   "after": "Citizen Kane HD 720p ( 1)"
+  },
+  {
+   "id": "ajn-ia-Coherence.2013.1080p.BluRay.x264.YIFY",
+   "before": "Coherence. 2013.1080p. Blu Ray.x 264. YIFY",
+   "after": "Coherence 2013 1080p Blu Ray x 264 YIFY"
+  },
+  {
+   "id": "ajn-ia-DanielP.GordonRIP2",
+   "before": "Daniel P. Gordon Jnr. RIP",
+   "after": "Daniel P Gordon Jnr RIP"
+  },
+  {
+   "id": "ajn-ia-dark.-passage-1947-x-264",
+   "before": "We Love Bogie.....",
+   "after": "We Love Bogie"
+  },
+  {
+   "id": "ajn-ia-deadpoetssociety_202101",
+   "before": "thedeadpoetssociety",
+   "after": "Thedeadpoetssociety"
+  },
+  {
+   "id": "ajn-ia-deadpool.2.2018.1080p.unratedduallatcinecalidad.to_202002",
+   "before": "Deadpool. 2.2018.1080p.unrated Dual Lat",
+   "after": "Deadpool 2 2018 1080p unrated Dual Lat"
+  },
+  {
+   "id": "ajn-ia-Deadpool2016_201612",
+   "before": "Fam.Dead",
+   "after": "Fam Dead"
+  },
+  {
+   "id": "ajn-ia-deep-learning-deep-fake",
+   "before": "deep-learning-deep-fake",
+   "after": "Deep Learning Deep Fake"
+  },
+  {
+   "id": "ajn-ia-dismissed",
+   "before": "dismissed",
+   "after": "Dismissed"
+  },
+  {
+   "id": "ajn-ia-dronevision",
+   "before": "captured drone vision",
+   "after": "Captured Drone Vision"
+  },
+  {
+   "id": "ajn-ia-e.l.-c.i.d.",
+   "before": "E.l. C.i.d.",
+   "after": "E.l.C.i.d."
+  },
+  {
+   "id": "ajn-ia-g.h.o.s.t.....-r.i.d.e.r.-.....-2007",
+   "before": "G.h.o.s.t..... R.i.d.e.r. ..... 2007",
+   "after": "G.h.o.s.t. R.i.d.e.r. 2007"
+  },
+  {
+   "id": "ajn-ia-gbox-mov5",
+   "before": "mov5",
+   "after": "Mov5"
+  },
+  {
+   "id": "ajn-ia-gbox-mov6",
+   "before": "mov6",
+   "after": "Mov6"
+  },
+  {
+   "id": "ajn-ia-get.-out.-2017-mdt",
+   "before": "Get. Out. 2017 MDT",
+   "after": "Get Out 2017 MDT"
+  },
+  {
+   "id": "ajn-ia-Glass.2019.1080p.WEBRip.x264YTS.AM",
+   "before": "Glass. 2019.1080p. WEBRip.x 264 [ YTS. AM]",
+   "after": "Glass 2019 1080p WEBRip x 264 [ YTS AM]"
+  },
+  {
+   "id": "ajn-ia-gr33nm1l3",
+   "before": "gr33nm1l3",
+   "after": "Gr33nm1l3"
+  },
+  {
+   "id": "ajn-ia-groundhog-day_202508",
+   "before": "G.r.o.u.n.d.h.o.g.D.a.y",
+   "after": "G.r.o.u.n.d.h.o.g.D.a. y"
+  },
+  {
+   "id": "ajn-ia-hacksaw.-ridge.-2016.1080p.-blu-ray.x-264-yts.-ag",
+   "before": "Hacksaw. Ridge. 2016.1080p. Blu Ray.x 264 [ YTS. AG]",
+   "after": "Hacksaw Ridge 2016 1080p Blu Ray x 264 [ YTS AG]"
+  },
+  {
+   "id": "ajn-ia-highway-patrol-s-01-e-18",
+   "before": "Highway Patrol s 1",
+   "after": "Highway Patrol S01"
+  },
+  {
+   "id": "ajn-ia-highway-patrol-s-03",
+   "before": "Highway Patrol s 3",
+   "after": "Highway Patrol S03"
+  },
+  {
+   "id": "ajn-ia-homicide-s-02e-35-coincidence.ia",
+   "before": "Homicide (tv series) 1965",
+   "after": "Homicide (TV series) 1965"
+  },
+  {
+   "id": "ajn-ia-img_3552-1",
+   "before": "img_3552-1",
+   "after": "Img 3552-1"
+  },
+  {
+   "id": "ajn-ia-JacquiLambi15Sep14",
+   "before": "Sen.Jacqui Lambi 15 Sep 14",
+   "after": "Sen Jacqui Lambi 15 Sep 14"
+  },
+  {
+   "id": "ajn-ia-junglebook-1942",
+   "before": "junglebook-1942-hd",
+   "after": "Junglebook 1942 HD"
+  },
+  {
+   "id": "ajn-ia-kabhi-khushi-kabhie-gham-720-p-bdrip-x-rg",
+   "before": "m0vie n!ght #3",
+   "after": "M0vie N!ght #3"
+  },
+  {
+   "id": "ajn-ia-krull.-1983.1080p.-blu-ray.x-264.-yify_202408",
+   "before": "Krull. 1983.1080p. Blu Ray.x 264. YIFY",
+   "after": "Krull 1983 1080p Blu Ray x 264 YIFY"
+  },
+  {
+   "id": "ajn-ia-lt.-gen.-roger-l.-cloutier-jr",
+   "before": "Lt. Gen. Roger L. Cloutier Jr",
+   "after": "Lt Gen Roger L Cloutier Jr"
+  },
+  {
+   "id": "ajn-ia-mary59_gmx_310_20160817",
+   "before": "310-2",
+   "after": "310 2"
+  },
+  {
+   "id": "ajn-ia-minneap-pa-adress",
+   "before": "it's always like this - 2",
+   "after": "It's Always Like This - 2"
+  },
+  {
+   "id": "ajn-ia-Monty.Python.And.The.Holy.Grail.1975.720p.BluRay.x264YTS.AM",
+   "before": "Monty. Python. And. The. Holy. Grail. 1975.720p. Blu Ray.x 264 [ YTS. AM]",
+   "after": "Monty Python And The Holy Grail 1975 720p Blu Ray x 264 [ YTS AM]"
+  },
+  {
+   "id": "ajn-ia-mova2",
+   "before": "mova2",
+   "after": "Mova2"
+  },
+  {
+   "id": "ajn-ia-mova4",
+   "before": "mova4",
+   "after": "Mova4"
+  },
+  {
+   "id": "ajn-ia-movie.videobaran.rf",
+   "before": "movie.videobaran.rf",
+   "after": "Movie.videobaran.rf"
+  },
+  {
+   "id": "ajn-ia-movies_20220526",
+   "before": "movies",
+   "after": "Movies"
+  },
+  {
+   "id": "ajn-ia-n.-n.-burdenko-hospital-medal-ceremony-october-15th-2024",
+   "before": "N. N. Burdenko Hospital Medal Ceremony October 15th 2024",
+   "after": "N.N. Burdenko Hospital Medal Ceremony October 15th 2024"
+  },
+  {
+   "id": "ajn-ia-nosrefatu.-2024.720p.-web-dl.x-264.-esub-vegamovies.is",
+   "before": "Nosrefatu. 2024.720p. WEB DL.x 264. ESub Vegamovies.is",
+   "after": "Nosrefatu 2024 720p WEB DL x 264 ESub Vegamovies is"
+  },
+  {
+   "id": "ajn-ia-oil-water-Oct-3-21",
+   "before": "oil-water-replicator",
+   "after": "Oil Water Replicator"
+  },
+  {
+   "id": "ajn-ia-ok-ass-fire-movies",
+   "before": "moise",
+   "after": "Moise"
+  },
+  {
+   "id": "ajn-ia-p.-o.-w.-d.-e.-r.....-1995",
+   "before": "P. O. W. D. E. R..... 1995",
+   "after": "P.O.W.D.E.R. 1995"
+  },
+  {
+   "id": "ajn-ia-paul-harvey-a-christmas-story-the-man-and-the-birds.ia",
+   "before": "Paul Harvey ~ A Christmas Story The Man And The Birds.ia",
+   "after": "Paul Harvey ~ A Christmas Story The Man And The Birds"
+  },
+  {
+   "id": "ajn-ia-Pawn.Sacrifice.2014.720p.BluRay.x264",
+   "before": "Pawn.Sacrifice.2014.720p.BluRay.x264",
+   "after": "Pawn Sacrifice 2014 720p BluRay x264"
+  },
+  {
+   "id": "ajn-ia-peter.-gunn.-s-01",
+   "before": "Peter.Gunn s 1",
+   "after": "Peter Gunn S01"
+  },
+  {
+   "id": "ajn-ia-peter.-gunn.-s-02",
+   "before": "Peter Gunn s 2",
+   "after": "Peter Gunn S02"
+  },
+  {
+   "id": "ajn-ia-Poltergeist.2015.SCREENER.XviD.AC3EVO",
+   "before": "Poltergeist. 2015. SCREENER. Xvi D. AC 3 EVO",
+   "after": "Poltergeist 2015 SCREENER Xvi D AC 3 EVO"
+  },
+  {
+   "id": "ajn-ia-Postaldrone",
+   "before": "postaldrone#2",
+   "after": "Postaldrone#2"
+  },
+  {
+   "id": "ajn-ia-prisonbashing",
+   "before": "prisonbashing",
+   "after": "Prisonbashing"
+  },
+  {
+   "id": "ajn-ia-protocols-terror",
+   "before": "terror protocols",
+   "after": "Terror Protocols"
+  },
+  {
+   "id": "ajn-ia-r.e.d..-s.k.e.l.t.o.n.s.-...-p.-o.-a-1969",
+   "before": "R.e.d.. S.k.e.l.t.o.n.s. ... P. O. A 1969",
+   "after": "R.e.d. S.k.e.l.t.o.n.s. P.O. A 1969"
+  },
+  {
+   "id": "ajn-ia-raining_202012",
+   "before": "particle-flow",
+   "after": "Particle Flow"
+  },
+  {
+   "id": "ajn-ia-removaltool-2",
+   "before": "removaltool-2",
+   "after": "Removaltool 2"
+  },
+  {
+   "id": "ajn-ia-reverse-tank-scrape",
+   "before": "reverse-tank-scrape",
+   "after": "Reverse Tank Scrape"
+  },
+  {
+   "id": "ajn-ia-ripcord.-s-01-e-16",
+   "before": "Ripcord. s 1",
+   "after": "Ripcord. S01"
+  },
+  {
+   "id": "ajn-ia-rocky-and-bullwinkle-s-04-e-09",
+   "before": "Rocky And Bullwinkle S 04 E 09",
+   "after": "Rocky And Bullwinkle S04E09"
+  },
+  {
+   "id": "ajn-ia-romancing-the-stone-1984-directed-by-robert-zemeckis",
+   "before": "romancing-the-stone-1984-directed-by-robert-zemeckis-with-michael-douglas-kathleen-turner-danny-devito",
+   "after": "Romancing the Stone 1984 Directed by Robert Zemeckis with Michael Douglas Kathleen Turner Danny Devito"
+  },
+  {
+   "id": "ajn-ia-Rooksby",
+   "before": "S 01 E 01",
+   "after": "S01E01"
+  },
+  {
+   "id": "ajn-ia-ru-drone-v-uk-drone-october-2022",
+   "before": "Ru Drone V Uk Drone October 2022",
+   "after": "Ru Drone V UK Drone October 2022"
+  },
+  {
+   "id": "ajn-ia-sever-group-6th-guards-combined-arms-army-september-28th-2026",
+   "before": "Sever Group 6th Guards Combined Arms Army  September 28th 2026",
+   "after": "Sever Group 6th Guards Combined Arms Army September 28th 2026"
+  },
+  {
+   "id": "ajn-ia-sf-theatre-s-01-e-16-stones-began-to-move",
+   "before": "Science Fiction Theatre s 1",
+   "after": "Science Fiction Theatre S01"
+  },
+  {
+   "id": "ajn-ia-sf-theatre-s-02-e-33-facsimile",
+   "before": "Science Fiction Theatre s 2",
+   "after": "Science Fiction Theatre S02"
+  },
+  {
+   "id": "ajn-ia-sherlock-holmes-1954-s-01-e-09-the-case-of-harry-crocker",
+   "before": "Sherlock Holmes 1954 S 01 E 09 The Case Of Harry Crocker",
+   "after": "Sherlock Holmes 1954 S01E09 The Case Of Harry Crocker"
+  },
+  {
+   "id": "ajn-ia-sig-tanker-uk-water-drone-attack",
+   "before": "Sig Tanker Uk Water Drone Attack",
+   "after": "Sig Tanker UK Water Drone Attack"
+  },
+  {
+   "id": "ajn-ia-slugs_201503",
+   "before": "slugs - in the whitehouse",
+   "after": "Slugs - in the Whitehouse"
+  },
+  {
+   "id": "ajn-ia-smollfppt",
+   "before": "movie set 01",
+   "after": "Movie Set 01"
+  },
+  {
+   "id": "ajn-ia-sweetie",
+   "before": "sweetie",
+   "after": "Sweetie"
+  },
+  {
+   "id": "ajn-ia-t.-h.-e.-cat-s-01-e-01",
+   "before": "T. H. E. Cat",
+   "after": "T.H.E. Cat"
+  },
+  {
+   "id": "ajn-ia-the-little-things-re-",
+   "before": "the-little-things",
+   "after": "The Little Things"
+  },
+  {
+   "id": "ajn-ia-the-virginian-s-01-e-01-the-executioners",
+   "before": "The Virginian S 01 E 01 The Executioners",
+   "after": "The Virginian S01E01 The Executioners"
+  },
+  {
+   "id": "ajn-ia-the.avengers.1965.s04e09.the.hour.that.never.was",
+   "before": "The. Avengers. 1965. S 04 E 09. The. Hour. That. Never. Was",
+   "after": "The Avengers 1965 S04E09 The Hour That Never Was"
+  },
+  {
+   "id": "ajn-ia-the.avengers.1966.s04e15.room.without.a.view",
+   "before": "The. Avengers. 1966. S 04 E 15. Room. Without.a. View",
+   "after": "The Avengers 1966 S04E15 Room Without a View"
+  },
+  {
+   "id": "ajn-ia-the.avengers.1966.s04e22.what.the.butler.saw",
+   "before": "The. Avengers. 1966. S 04 E 22. What.the. Butler. Saw",
+   "after": "The Avengers 1966 S04E22 What the Butler Saw"
+  },
+  {
+   "id": "ajn-ia-the.avengers.s05e12.the.superlative.seven",
+   "before": "The. Avengers. S 05 E 12. The. Superlative. Seven",
+   "after": "The Avengers S05E12 The Superlative Seven"
+  },
+  {
+   "id": "ajn-ia-The.Day.The.Earth.Stood.Still1951",
+   "before": "The. Day. The. Earth. Stood. Still[ 1951]",
+   "after": "The Day The Earth Stood Still[ 1951]"
+  },
+  {
+   "id": "ajn-ia-The_Bible_In_The_Beginning",
+   "before": "The Bible: In the Beginning...",
+   "after": "The Bible: In the Beginning"
+  },
+  {
+   "id": "ajn-ia-theavengers.s04e05.castle.death",
+   "before": "The Avengers. S 04e 05. Castle. De'ath",
+   "after": "The Avengers S04E05 Castle De'ath"
+  },
+  {
+   "id": "ajn-ia-theavengerss04e03.the.cybernauts",
+   "before": "The Avengers S 04e 03. The. Cybernauts",
+   "after": "The Avengers S04E03 The Cybernauts"
+  },
+  {
+   "id": "ajn-ia-TheAvengersS4E7",
+   "before": "\"The Avengers\" - The Murder Market (S4E7)",
+   "after": "\"The Avengers\" - The Murder Market (S04E07)"
+  },
+  {
+   "id": "ajn-ia-TheMoreISeeOfMan...",
+   "before": "The More I See Of Man...",
+   "after": "The More I See Of Man"
+  },
+  {
+   "id": "ajn-ia-THX-1138_Original_Cut.mkv",
+   "before": "THX 1138 Original Cut.mkv",
+   "after": "THX 1138 Original Cut"
+  },
+  {
+   "id": "ajn-ia-timemeddler_yahoo",
+   "before": "no longer in print",
+   "after": "No Longer in Print"
+  },
+  {
+   "id": "ajn-ia-traffic-criket",
+   "before": "urban noises",
+   "after": "Urban Noises"
+  },
+  {
+   "id": "ajn-ia-tt0057603",
+   "before": "tt0057603",
+   "after": "Tt0057603"
+  },
+  {
+   "id": "ajn-ia-Twentyfifth-reich-leavesearth",
+   "before": "twentyfifth-reich-leaves=earth",
+   "after": "Twentyfifth Reich Leaves=earth"
+  },
+  {
+   "id": "ajn-ia-tyler.-perrys.-good.-deeds.-2012.-dvdrip.x-264-no-rbi-t",
+   "before": "m0vie n!ght #7",
+   "after": "M0vie N!ght #7"
+  },
+  {
+   "id": "ajn-ia-typed-folklore",
+   "before": "typed-folklore",
+   "after": "Typed Folklore"
+  },
+  {
+   "id": "ajn-ia-uk-pow-may-29-2023",
+   "before": "Uk POW May 29 2023",
+   "after": "UK POW May 29 2023"
+  },
+  {
+   "id": "ajn-ia-uk-tank-v-russian-truck",
+   "before": "Uk Tank V Russian Truck",
+   "after": "UK Tank V Russian Truck"
+  },
+  {
+   "id": "ajn-ia-UntitledProject1SD480p",
+   "before": "2017- in no particular order",
+   "after": "2017- in No Particular Order"
+  },
+  {
+   "id": "ajn-ia-v7b5nhtriljl6532_my10minutemail_Xmen",
+   "before": "xmen",
+   "after": "Xmen"
+  },
+  {
+   "id": "ajn-ia-watlow",
+   "before": "watlow",
+   "after": "Watlow"
+  },
+  {
+   "id": "ajn-ia-watlow_201503",
+   "before": "watlow",
+   "after": "Watlow"
+  },
+  {
+   "id": "ajn-ia-wikileaks10",
+   "before": "wikileaks10",
+   "after": "Wikileaks10"
+  },
+  {
+   "id": "ajn-ia-xxdutyxx_20170614",
+   "before": "xxdutyxx",
+   "after": "Xxdutyxx"
+  },
+  {
+   "id": "ajn-ia-xxdutyxx_20170823_1349",
+   "before": "xxdutyxx",
+   "after": "Xxdutyxx"
+  }
+ ]
+}

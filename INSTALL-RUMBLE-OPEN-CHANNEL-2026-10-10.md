@@ -1,4 +1,0 @@
-# Drop-in 2026-10-10: Rumble wall "Open channel on Rumble" + "Paste & Go"
-Replace src/components/RumbleNewsWall.tsx. Nothing else changes (baseline, routes, tests untouched).
-Flow per panel: pick channel in the dropdown -> "Open channel on Rumble ↗" (new tab, rel=noopener, only https://rumble.com/c|user/<name> from the channel list) -> copy the newest video's link -> back in the app press "Paste & Go" (reads the clipboard after your click, then runs the normal lookup + load). If the browser refuses clipboard access the status line says to press Ctrl+V and Go.
-No scraping, no automation of Rumble. Verified: tsc clean, src/rumble/logic.test.ts all PASS, server render shows the link (e.g. https://rumble.com/c/RTNews, target=_blank, noopener) and the button in all 4 panels. NOT verified: real clipboard prompt and Rumble playback in a browser.

@@ -71,7 +71,9 @@ export function thumbCandidates(i: ThumbInput, captured?: string | null): ThumbC
   if (id && !(music && NO_ART.has(id))) out.push({ url: archiveItemImageUrl(id), source: 'item-image' });
   if (music) out.push({ url: genreArtUrl(genreForName(i.name)), source: 'genre' });
   if (captured && captured.startsWith('data:image/jpeg;base64,')) out.push({ url: captured, source: 'captured' });
-  out.push({ url: backupThumb(i), source: 'backup' });
+  // Soap/archive rows have no licensed or otherwise trustworthy generic art.
+  // If the real item image is missing, let <Thumb> show its title/initials tile.
+  if (String(i.category ?? '').toLowerCase() !== 'soaps') out.push({ url: backupThumb(i), source: 'backup' });
   return out.filter((c, n, a) => a.findIndex((x) => x.url === c.url) === n);
 }
 

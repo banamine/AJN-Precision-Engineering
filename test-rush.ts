@@ -1,7 +1,18 @@
 // Offline regression: Rush JIT resolver — cache miss hits Archive once, then cache.
 import assert from 'node:assert/strict';
 process.env.RUSH_CACHE_FILE = '/tmp/ajn-test-rush-cache.json';
-const { resolveRushItem, setRushFetchForTests, rushStats } = await import('./server/rush.ts');
+const { resolveRushItem, setRushFetchForTests, rushStats, filesFromMetadata } = await import('./server/rush.ts');
+assert.deepEqual(filesFromMetadata({ files: [
+  { name: 'prefer.mp3', source: 'original', length: '100', format: 'MP3' },
+  { name: 'fallback.m4a', source: 'original', length: '100', format: 'M4A' },
+] }).map((f) => f.file), ['prefer.mp3'], 'MP3 stays ahead of M4A');
+assert.deepEqual(filesFromMetadata({ files: [
+  { name: 'fallback.aac', source: 'original', length: '100', format: 'AAC' },
+  { name: 'preferred.m4a', source: 'original', length: '100', format: 'M4A' },
+] }).map((f) => f.file), ['preferred.m4a'], 'M4A is preferred over AAC');
+assert.deepEqual(filesFromMetadata({ files: [{ name: 'zero.m4a', source: 'original', length: '0' }] }), [], 'zero duration is not playable');
+assert.deepEqual(filesFromMetadata({ files: [{ name: 'private.aac', source: 'original', length: '100', private: 'true' }] }), [], 'private audio is not playable');
+assert.deepEqual(filesFromMetadata({ files: [{ name: 'private.m4a', source: 'original', length: '100', private: 'TRUE' }] }), [], 'case-insensitive private flag is rejected on fallback formats');
 let calls = 0;
 setRushFetchForTests((async () => { calls++; return new Response(JSON.stringify({ files: [
   { name: 'hour-2.mp3', source: 'original', length: '3510.2', format: 'VBR MP3' },

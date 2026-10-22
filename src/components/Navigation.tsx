@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Home,
-  Tv,
+  CalendarDays,
   PlayCircle,
-  FolderArchive,
+  Library,
+  Vault,
   Search,
   Radio,
+  RadioTower,
   Newspaper,
   History as HistoryIcon,
   ChevronDown,
@@ -30,17 +32,19 @@ interface NavItemConfig {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   description: string;
+  /** Tint of the icon while the item is not selected (each destination reads differently at a glance). */
+  accent: string;
 }
 
 const PRIMARY_DESTINATIONS: NavItemConfig[] = [
-  { id: 'home', label: 'Home', icon: Home, description: 'Live broadcast & featured feeds' },
-  { id: 'tv-guide', label: 'TV Guide', icon: Tv, description: '24-hour program schedule grid' },
-  { id: 'player', label: 'Player', icon: PlayCircle, description: 'Active broadcast monitor' },
-  { id: 'news', label: 'News', icon: Newspaper, description: 'Live Rumble news wall' },
-  { id: 'radio', label: 'AJN Radio', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
-  { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played' },
-  { id: 'library', label: 'Library', icon: FolderArchive, description: 'Curated archives & vaults' },
-  { id: 'search', label: 'Search', icon: Search, description: 'Archive.org TV News search' },
+  { id: 'home', label: 'Home', icon: Home, description: 'Live broadcast & featured feeds', accent: 'text-sky-300' },
+  { id: 'tv-guide', label: 'TV Guide', icon: CalendarDays, description: '24-hour program schedule grid', accent: 'text-violet-300' },
+  { id: 'player', label: 'Player', icon: PlayCircle, description: 'Active broadcast monitor', accent: 'text-emerald-300' },
+  { id: 'news', label: 'News', icon: Newspaper, description: 'Live Rumble news wall', accent: 'text-amber-300' },
+  { id: 'radio', label: 'AJN Radio', icon: RadioTower, description: 'AJN Radio & Exclusive episodes', accent: 'text-orange-300' },
+  { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played', accent: 'text-teal-300' },
+  { id: 'library', label: 'Library', icon: Library, description: 'Curated archives & vaults', accent: 'text-indigo-300' },
+  { id: 'search', label: 'Search', icon: Search, description: 'Archive.org TV News search', accent: 'text-rose-300' },
 ];
 
 const DESKTOP_PRIMARY: NavItemConfig[] = [
@@ -165,7 +169,7 @@ export function Navigation({
                 >
                   <Icon
                     className={`h-4 w-4 transition-transform group-hover:scale-105 ${
-                      isActive ? 'text-sky-400' : 'text-neutral-400'
+                      isActive ? 'text-sky-400' : item.accent
                     }`}
                   />
                   <span>{item.label}</span>
@@ -197,7 +201,7 @@ export function Navigation({
                     : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
                 }`}
               >
-                <FolderArchive className={`h-4 w-4 ${vaultActive ? 'text-sky-400' : 'text-neutral-400'}`} />
+                <Vault className={`h-4 w-4 ${vaultActive ? 'text-sky-400' : 'text-yellow-300'}`} />
                 <span>Vault</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${vaultOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -217,7 +221,7 @@ export function Navigation({
                           currentDestination === item.id ? 'text-sky-400' : 'text-neutral-200'
                         }`}
                       >
-                        <Icon className="h-4 w-4 text-neutral-400" />
+                        <Icon className={`h-4 w-4 ${item.accent}`} />
                         <span className="flex flex-col"><span className="font-medium">{item.label}</span><span className="text-[10px] text-neutral-500">{item.description}</span></span>
                       </button>
                     );
@@ -312,7 +316,7 @@ export function Navigation({
               }`}
             >
               <div className="relative flex items-center justify-center">
-                <Icon className={`h-[18px] w-[18px] sm:h-5 sm:w-5 transition-transform ${isActive ? 'text-sky-400 scale-105' : 'text-neutral-400'}`} />
+                <Icon className={`h-[18px] w-[18px] sm:h-5 sm:w-5 transition-transform ${isActive ? 'text-sky-400 scale-105' : item.accent}`} />
                 {hasBadge && (
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

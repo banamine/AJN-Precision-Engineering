@@ -3,7 +3,13 @@ import { Heart, Play, Tv, Radio, Sparkles, Clock, ArrowRight, Archive, Headphone
 import { useLatestFullShows } from '../hooks/useLatestFullShows';
 import { useHomeNow } from '../hooks/useHomeNow';
 import { RecentCarousel } from './RecentCarousel';
+import { HomeBroadcastHub } from './HomeBroadcastHub';
+import { loadSchedule } from '../guide/loadSchedule';
+import { LiveRadioBand } from './LiveRadioBand';
+import { AjnResourcePanel } from './AjnResourcePanel';
+import { ajnArtFor } from '../utils/ajnArt';
 import { HERO_POOL, PROGRAM_POOL, type ProgramTile } from '../data/homeFeatures';
+import { requestChannelFocus } from '../guide/focusRequest';
 import { localDateKey, msUntilLocalMidnight, pickForDay } from '../utils/dayRotation';
 import { saveLastView } from '../nav/lastView';
 import type { FavoriteMedia } from '../utils/mediaFavorites';
@@ -85,6 +91,9 @@ function FullShowShortcuts({ onPlayProgram, className = '', testId }: { onPlayPr
 
 interface DailyFrame { image: string; show: string; hour: number; source: string; timestamp: number }
 
+/** Set to true once the hub is tested: hides the old On Now grid and RecentCarousel, which repeat what the hub shows. Default keeps them for rollback. */
+const HUB_REPLACES_LEGACY_ROWS = true;
+
 export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed, onResumeRecentlyPlayed, favorites = [], onPlayFavorite }: HomeViewProps) {
   // "Today on AJN": curated stills published by tools/daily-frames. No manifest (or an invalid one) = section hidden, nothing faked.
   const [daily, setDaily] = useState<{ date: string; items: DailyFrame[] } | null>(null);
@@ -111,11 +120,17 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
   useEffect(() => { setHeroImage(archiveThumb(hero.archivePath) ?? hero.image); }, [hero]);
   // One shared "airing now per genre" read for the program tiles and the carousel.
   const now = useHomeNow();
-  const tiles = useMemo(() => pickForDay(PROGRAM_POOL, (t) => t.id, dateKey, 3, 'tiles'), [dateKey]);
+  // Pinned tiles always show (they take a slot); the remaining slots rotate daily.
+  const tiles = useMemo(() => {
+    const pinned = PROGRAM_POOL.filter((t) => t.pinned);
+    const rest = PROGRAM_POOL.filter((t) => !t.pinned);
+    return [...pickForDay(rest, (t) => t.id, dateKey, Math.max(0, 3 - pinned.length), 'tiles'), ...pinned];
+  }, [dateKey]);
   const tileImage = (t: ProgramTile) => t.image ?? now.items.find((i) => i.guideId === t.guideId)?.thumb;
   const openTile = (t: ProgramTile) => {
     if (t.guideId && t.dest === 'tv-guide') {
       saveLastView({ guideId: t.guideId });
+      if (t.focusChannelId) requestChannelFocus(t.guideId, t.focusChannelId);
       window.dispatchEvent(new CustomEvent('ajn:select-guide', { detail: { guideId: t.guideId } }));
     }
     onNavigate(t.dest);
@@ -124,12 +139,10 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      fetch('/api/schedule?guide=cable-tv').then((res) => (res.ok ? res.json() : null)),
-      fetch('/api/schedule?guide=audio-podcasts').then((res) => (res.ok ? res.json() : null)),
-    ]).then(([tvData, audioData]) => {
+    // Cable TV only (2 MB): the 19 MB audio schedule is not needed for four preview cards. Shared cache + one request at a time.
+    loadSchedule('cable-tv').then((tvChannels) => {
       if (!mounted) return;
-      const allChannels = [...(tvData?.channels || []), ...(audioData?.channels || [])];
+      const allChannels = tvChannels as any[];
       const nowHour = new Date().getHours() + new Date().getMinutes() / 60;
       setLiveChannels(allChannels.slice(0, 8).map((ch: any) => {
         const matchingProg = ch.programs?.find((p: any) => nowHour >= (p.startHour ?? p.startTime ?? 0) && nowHour < (p.endHour ?? p.endTime ?? 24)) || ch.programs?.[0];
@@ -142,7 +155,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           archivePath: matchingProg?.archivePath || matchingProg?.mediaUrl || '',
           mediaType: ch.mediaType || (matchingProg?.archivePath?.toLowerCase().endsWith('.mp3') ? 'audio' : 'video'),
           isLive: true,
-          logo: typeof ch.logo === 'string' && ch.logo.startsWith('/') ? ch.logo : undefined,
+          logo: typeof ch.logo === 'string' && ch.logo.startsWith('/') ? ch.logo : (/alex jones|war room/i.test(String(ch.name)) ? ajnArtFor({ show: String(ch.name), mediaType: ch.mediaType, live: true }) : undefined),
         };
       }).filter((channel: LiveChannelPreview) => channel.archivePath).slice(0, 4));
     }).catch(() => {});
@@ -240,6 +253,9 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
         </div>
       </section>
 
+      <LiveRadioBand />
+      <HomeBroadcastHub onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
+
       <section aria-labelledby="collections-heading" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -283,6 +299,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
             </section>
           )}
 
+          {!HUB_REPLACES_LEGACY_ROWS && (<>
           <section aria-labelledby="live-stations-heading" className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -304,6 +321,9 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           </section>
 
           <RecentCarousel now={now} onPlayProgram={onPlayProgram} onNavigate={onNavigate} playing={!!nowPlaying} />
+          </>)}
+
+          <AjnResourcePanel onPlayProgram={onPlayProgram} />
         </div>
 
         <aside className="min-w-0 space-y-10">

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Clock, Headphones, ListChecks, Play, RefreshCw, Tv } from "lucide-react";
 import type { Destination, Guide, MediaType, PlayProgramCallback, ScheduleChannel } from "../types";
-import { getCachedSchedule, isStale, setCachedSchedule } from "../guide/scheduleCache";
+import { clearScheduleCache, getCachedLightSchedule, getCachedSchedule, isStale, setCachedLightSchedule, setCachedSchedule, shouldDisplayCachedSchedule } from "../guide/scheduleCache";
 import { buildToday, formatHour, thumbnailOf, type TodayChannel, type TodayEntry } from "../guide/todayList";
 import { tuneIn, mediaTypeFor } from "../guide/liveTune";
 import { ChannelLogo } from "./ChannelLogo";
+import { LaneImage } from "./LaneImage";
+import { bufferGaugeMetadata } from "../utils/bufferGauge";
 
 const AJN_RESOURCE_GUIDE_ID = "ajn-archive-special-feeds";
 const FALLBACK_GUIDES: Guide[] = [
@@ -40,7 +42,7 @@ function Thumb({ entry, channel, className }: { entry: TodayEntry; channel: Sche
   const [failed, setFailed] = useState(false);
   const isAudio = (entry.program.mediaType || channel.mediaType) === "audio";
   if (url && !failed) {
-    return <img src={url} alt="" loading="lazy" onError={() => setFailed(true)} className={`${className} object-cover`} />;
+    return <LaneImage key={url} src={url} alt="" onError={() => setFailed(true)} className={`${className} object-cover`} />;
   }
   return (
     <div aria-hidden="true" className={`${className} flex items-center justify-center bg-neutral-800 text-neutral-500`}>
@@ -83,18 +85,25 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
     reqRef.current?.abort();
     const c = new AbortController();
     reqRef.current = c;
-    const cached = getCachedSchedule(id);
-    if (cached) { setChannels(cached.channels); setLoading(false); setError(null); } else { setChannels(null); setLoading(true); setError(null); }
+    const cached = id === "audio-podcasts"
+      ? getCachedLightSchedule(id) ?? getCachedSchedule(id)
+      : getCachedSchedule(id);
+    if (shouldDisplayCachedSchedule(id, cached)) { setChannels(cached!.channels); setLoading(false); setError(null); } else { setChannels(null); setLoading(true); setError(null); }
     if (cached && !force && !isStale(cached)) return;
     setSlow(false);
     const slowTimer = window.setTimeout(() => { if (!c.signal.aborted) setSlow(true); }, SLOW_LOAD_MS);
     try {
-      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(id)}`, { signal: c.signal });
+      const audioLight = id === "audio-podcasts" ? `&light=1&tz=${new Date().getTimezoneOffset()}` : "";
+      const res = await fetch(`/api/schedule?guide=${encodeURIComponent(id)}${audioLight}`, { signal: c.signal });
       if (!res.ok) throw new Error(`Schedule request failed: HTTP ${res.status}`);
       const data = await res.json();
       if (!Array.isArray(data.channels) || data.channels.length === 0) throw new Error("This guide returned no channels");
       if (c.signal.aborted) return;
-      setCachedSchedule(id, data.channels);
+      if (id === "audio-podcasts" && data.light === true) setCachedLightSchedule(id, data.channels);
+      else {
+        if (id === "audio-podcasts") clearScheduleCache(id);
+        setCachedSchedule(id, data.channels);
+      }
       setChannels(data.channels);
       setError(null);
     } catch (e) {
@@ -119,9 +128,9 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
     const assetId = p.assetId ?? (p.metadata?.assetId as string | undefined);
     if (joinNow) {
       const t = tuneIn(p, entry.sHour, entry.eHour, nowHour);
-      onSelectProgram(t.path, p.title, tc.channel.name, media, tc.channel.id, p.guideId, p.id, sourceId, assetId, t.startAtSeconds);
+      onSelectProgram(t.path, p.title, tc.channel.name, media, tc.channel.id, p.guideId, p.id, sourceId, assetId, t.startAtSeconds, bufferGaugeMetadata(p.metadata));
     } else {
-      onSelectProgram(p.archivePath || p.mediaUrl, p.title, tc.channel.name, media, tc.channel.id, p.guideId, p.id, sourceId, assetId);
+      onSelectProgram(p.archivePath || p.mediaUrl, p.title, tc.channel.name, media, tc.channel.id, p.guideId, p.id, sourceId, assetId, undefined, bufferGaugeMetadata(p.metadata));
     }
   };
 

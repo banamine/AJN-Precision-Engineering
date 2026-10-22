@@ -20,6 +20,10 @@ export interface ProgramTile {
   image?: string;
   /** Guide to open on the TV Guide, and whose on-now cover to borrow when there is no artwork. */
   guideId?: string;
+  /** Open the guide and land on this channel (by stable channel id, never by station number: numbers are alphabetical positions and shift). */
+  focusChannelId?: string;
+  /** Always shown (takes one of the three tile slots) instead of joining the daily rotation. */
+  pinned?: boolean;
 }
 
 export const PROGRAM_POOL: ProgramTile[] = [
@@ -29,5 +33,6 @@ export const PROGRAM_POOL: ProgramTile[] = [
   { id: 'documentaries', title: 'Documentaries', description: 'Science and history documentaries from verified Archive manifests.', badge: 'DOCUMENTARIES', accent: 'text-emerald-300', dest: 'tv-guide', guideId: 'science-documentaries' },
   { id: 'movies', title: 'Movies & Cinema', description: 'Classic cinema in the 24-hour movie guide.', badge: 'CINEMA', accent: 'text-orange-300', dest: 'tv-guide', guideId: 'movies-classics-vault' },
   { id: 'audio', title: 'Radio & Music', description: 'Talk radio, music collections, podcasts and old-time radio.', badge: 'AUDIO', accent: 'text-cyan-300', dest: 'radio', guideId: 'audio-podcasts' },
+  { id: 'classic-ajn-archive-1', title: 'AJN archive 1', description: 'Classic TV on the broadcast grid: open the guide right at this channel.', badge: 'CLASSIC TV · CHANNEL', accent: 'text-amber-400', dest: 'tv-guide', guideId: 'classic-tv', focusChannelId: 'classic-ajn-archive-1', pinned: true, image: '/Classic%20Archive.png' },
   { id: 'british', title: 'Old British TV', description: 'British dramas, comedies and children’s television.', badge: 'BRITISH TV', accent: 'text-violet-300', dest: 'tv-guide', guideId: 'old-british-tv' },
 ];

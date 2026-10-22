@@ -1,0 +1,14 @@
+K3 - station logos + colours everywhere, themed player, distinct nav icons. Files at their REAL paths (no wrapping folder); replace/add each:
+  src/utils/radioAccents.ts          central channel config (id, name, icon, accentColor, themeColor) + getStationTheme + stationGradient  (REPLACE)
+  src/components/LiveRadioDirectory.tsx   radio list: remembers logos, accent border per station            (REPLACE)
+  src/components/RadioStationGroup.tsx    group dropdown: real logo + accent                              (REPLACE)
+  src/components/RadioPresetsBar.tsx      presets: real logo + accent                                     (REPLACE)
+  src/components/RadioDock.tsx            panel border + header in the playing station's colours          (REPLACE)
+  src/components/MiniPlayerDock.tsx       mini player shows station logo + accent                         (REPLACE)
+  src/components/PlayerView.tsx           full player: station banner (logo, gradient, accent border)     (REPLACE)
+  src/utils/stationArt.ts            (NEW to Builder if missing: logo registry)
+  src/components/StationBanner.tsx   (NEW to Builder if missing: player banner)
+  src/components/Navigation.tsx           distinct Lucide icon + tint per destination                      (REPLACE)
+  test-radio-accents.ts, test-station-banner-render.tsx            (NEW)
+Base: your ajn-precision-engineering_2.zip export (includes K1, K2, Builder's StationBanner.tsx / stationArt.ts, which are NOT changed here).
+Rollback: restore the 8 replaced files from your previous export; delete the 2 new tests.

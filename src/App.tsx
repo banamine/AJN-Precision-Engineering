@@ -3,7 +3,6 @@ import { NewsReadyNotice } from './components/NewsReadyNotice';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
-import { AjnResourcePanel } from './components/AjnResourcePanel';
 import { TvGuideView } from './components/TvGuideView';
 import { TodayView } from './components/TodayView';
 import { PlayerView } from './components/PlayerView';
@@ -13,6 +12,7 @@ import { NewsTabs as RumbleNewsWall } from './components/NewsTabs';
 import { RadioView } from './components/RadioView';
 import { DevModeView } from './components/DevModeView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
+import { RadioDock } from './components/RadioDock';
 import { SyncedVideoPip } from './components/SyncedVideoPip';
 import { useAvSyncRecorder } from './hooks/useAvSync';
 import { toPlayableSrc } from './utils/playableSrc';
@@ -20,6 +20,7 @@ import { bridgeSrc } from './utils/mediaRoute';
 import { HistoryView } from './components/HistoryView';
 import { HistoryEntry, loadHistory, saveHistory, recordPlay, updateHistoryProgress, removeHistoryEntry } from './utils/historyStore';
 import { FavoriteMedia, loadMediaFavorites, saveMediaFavorites, toggleFavorite, isFavorite as isMediaFavorite } from './utils/mediaFavorites';
+import { useRadioFavorites, toggleRadioFavorite } from './utils/radioFavorites';
 import { useCloudSync } from './hooks/useCloudSync';
 import { buildSuggestCandidates, addRecentSearch, loadRecentSearches, saveRecentSearches } from './utils/suggest';
 import { loadLastView, saveLastView, VALID_DESTINATIONS } from './nav/lastView';
@@ -30,9 +31,14 @@ const RESTORE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 /** The last audio item, ready but NOT playing, so a phone/Bluetooth Play press or one tap continues it after the app was
  *  closed or killed (e.g. the car was switched off). Null when there is none or it is older than a day. */
+/** Live radio has no timeline: a saved "seconds listened" must never be used as a seek position. */
+const isLiveRadioItem = (m: { channelId?: string; programId?: string; isLive?: boolean }): boolean =>
+  Boolean(m.isLive) || String(m.channelId ?? '').startsWith('radio:') || String(m.programId ?? '').includes(':live:');
+
 function restoreLastAudio(): NowPlayingMedia | null {
   const last = readRecentlyPlayed().find((i) => i.mediaType === 'audio' && Date.now() - i.updatedAt < RESTORE_MAX_AGE_MS);
   if (!last) return null;
+  if (isLiveRadioItem(last)) return { ...last, startAtSeconds: undefined, restoredPaused: true };
   let at = last.progressSeconds;
   try {
     const saved = Number.parseFloat(window.localStorage.getItem(`ajn-playback-position:${last.programId ?? bridgeSrc(last.src)}`) ?? '');
@@ -171,7 +177,7 @@ export default function App() {
 
   const stayOnPageRef = useRef(false);
   const handlePlayProgram = useCallback<PlayProgramCallback>((
-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds
+    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds, bufferMetadata
   ) => {
     const rawReference = String(archivePath ?? '').trim();
     if (!rawReference) {
@@ -212,7 +218,11 @@ export default function App() {
     setHistory((h) => recordPlay(h, id, nextRecentlyPlayed, Date.now(), nextRecentlyPlayed.progressSeconds));
 
     // startAtSeconds is a one-shot instruction for this play only: it is not stored in recently played.
-    setNowPlaying({ ...nextRecentlyPlayed, ...(typeof startAtSeconds === 'number' && Number.isFinite(startAtSeconds) && startAtSeconds > 0 ? { startAtSeconds } : {}) });
+    setNowPlaying({
+      ...nextRecentlyPlayed,
+      ...(bufferMetadata ? { bufferMetadata } : {}),
+      ...(typeof startAtSeconds === 'number' && Number.isFinite(startAtSeconds) && startAtSeconds > 0 ? { startAtSeconds } : {}),
+    });
     // Auto-advance (next clip/program) keeps the viewer where they are.
     if (stayOnPageRef.current) { stayOnPageRef.current = false; return; }
     setDestination('player');
@@ -225,9 +235,9 @@ export default function App() {
   }, [handlePlayProgram]);
 
   const handleEpgSelect: PlayProgramCallback = useCallback((
-    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds
+    archivePath, title, subtitle, mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds, bufferMetadata
   ) => {
-    handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds);
+    handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds, bufferMetadata);
   }, [handlePlayProgram]);
 
   const updateRecentlyPlayedProgress = useCallback((itemId: string, positionSeconds: number) => {
@@ -247,7 +257,7 @@ export default function App() {
   /** Replay a History / Favorites row: same item, resuming where it left off (live items start live). */
   const playSaved = useCallback((entry: NowPlayingMedia & { id: string; progressSeconds?: number }) => {
     const { id, progressSeconds, ...media } = entry as any;
-    const at = typeof progressSeconds === 'number' && progressSeconds >= 5 && !media.isLive ? progressSeconds : undefined;
+    const at = typeof progressSeconds === 'number' && progressSeconds >= 5 && !isLiveRadioItem(media) ? progressSeconds : undefined;
     const item: RecentlyPlayedItem = { ...media, id, progressSeconds: progressSeconds ?? 0, updatedAt: Date.now() };
     delete (item as any).savedAt; delete (item as any).playedAt; delete (item as any).plays;
     setNowPlaying({ ...item, ...(at ? { startAtSeconds: at } : {}) });
@@ -257,8 +267,13 @@ export default function App() {
     if (typeof window !== 'undefined') window.location.hash = '#player';
   }, []);
   const nowPlayingId = nowPlaying ? mediaIdentity(nowPlaying) : null;
+  const radioFavs = useRadioFavorites();
+  const radioStationId = nowPlaying?.channelId && nowPlaying.channelId.startsWith('radio:') ? nowPlaying.channelId : null;
+  const nowPlayingIsFavorite = radioStationId ? radioFavs.has(radioStationId) : (nowPlayingId ? isMediaFavorite(favorites, nowPlayingId) : false);
   const toggleNowPlayingFavorite = useCallback(() => {
     if (!nowPlaying) return;
+    // Radio stations live in the one radio favorites list (same as the Radio directory hearts).
+    if (nowPlaying.channelId && nowPlaying.channelId.startsWith('radio:')) { toggleRadioFavorite(nowPlaying.channelId); return; }
     const id = mediaIdentity(nowPlaying);
     setFavorites((list) => { const r = toggleFavorite(list, id, nowPlaying, Date.now()); if (!r.added && isMediaFavorite(list, id)) sync.noteFavoriteRemoved(id); return r.list; });
   }, [nowPlaying, sync]);
@@ -280,7 +295,6 @@ export default function App() {
               favorites={favorites}
               onPlayFavorite={playSaved}
             />
-            <AjnResourcePanel onPlayProgram={handlePlayProgram} className="mt-14" />
           </div>
         )}
         {hasVisitedTvGuide && (
@@ -296,11 +310,11 @@ export default function App() {
             hidden={destination !== 'player'}
             className={`w-full ${destination === 'player' ? 'view-fade-in' : ''}`}
           >
-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingId ? isMediaFavorite(favorites, nowPlayingId) : false} onToggleFavorite={toggleNowPlayingFavorite} />
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
           </div>
         ) : destination === 'player' && (
           <div key="view-player" className="view-fade-in w-full">
-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingId ? isMediaFavorite(favorites, nowPlayingId) : false} onToggleFavorite={toggleNowPlayingFavorite} />
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
           </div>
         )}
         {destination === 'today' && (
@@ -347,6 +361,7 @@ export default function App() {
         )}
       </main>
       <NewsReadyNotice onPlay={handlePlayProgram} />
+      <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={Boolean(nowPlaying) && destination !== 'player'} />
       <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
       {nowPlaying && destination !== 'player' && (
         <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />

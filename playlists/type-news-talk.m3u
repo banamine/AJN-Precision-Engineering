@@ -1,0 +1,14 @@
+#EXTM3U
+# archive-embed entries are archive.org/embed pages: use an iframe-aware player.
+#EXTINF:-1 tvg-id="ajn-ia-youtube-HnxSB-hct5g" tvg-name="CATHERINE AUSTIN FITTS - STAR WARS & OFFWORLD SECRECY DANGER! - DARK JOURNALIST" group-title="News/Talk archives" ajn-type="news-talk" ajn-status="ready",CATHERINE AUSTIN FITTS - STAR WARS & OFFWORLD SECRECY DANGER! - DARK JOURNALIST
+https://archive.org/embed/youtube-HnxSB-hct5g
+#EXTINF:-1 tvg-id="ajn-ia-data-set-1_20251220" tvg-name="Data Set 1" group-title="News/Talk archives" ajn-type="news-talk" ajn-status="provisional",Data Set 1
+https://archive.org/embed/data-set-1_20251220
+#EXTINF:-1 tvg-id="ajn-ia-hunter-biden-laptop-files" tvg-name="Hunter Biden Laptop Files" group-title="News/Talk archives" ajn-type="news-talk" ajn-status="provisional",Hunter Biden Laptop Files
+https://archive.org/embed/hunter-biden-laptop-files
+#EXTINF:-1 tvg-id="ajn-ia-constitutional-lawyer-lays-out-trumps-battle-plan-to-prosecute-the-biden-admin" tvg-name="Infowars Archive" group-title="News/Talk archives" ajn-type="news-talk" ajn-status="ready",Infowars Archive
+https://archive.org/embed/constitutional-lawyer-lays-out-trumps-battle-plan-to-prosecute-the-biden-admin
+#EXTINF:-1 tvg-id="ajn-ia-infowars-nightly-news-hd_20200927" tvg-name="Infowars Nightly News (HD) Part 1 of 2" group-title="News/Talk archives" ajn-type="news-talk" ajn-status="ready",Infowars Nightly News (HD) Part 1 of 2
+https://archive.org/embed/infowars-nightly-news-hd_20200927
+#EXTINF:-1 tvg-id="ajn-ia-08-2_20210120" tvg-name="Infowars Nightly News (HD) Part 2 of 2" group-title="News/Talk archives" ajn-type="news-talk" ajn-status="ready",Infowars Nightly News (HD) Part 2 of 2
+https://archive.org/embed/08-2_20210120

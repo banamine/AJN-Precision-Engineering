@@ -5,11 +5,27 @@
 // archive.org/download so Archive can redirect to a healthy replica.
 // Permanent statuses (403 restricted, 404, 410) are returned immediately.
 
+import {
+  ARCHIVE_MAX_RETRY_AFTER_HOP_MS,
+  ARCHIVE_MAX_RETRY_AFTER_TOTAL_MS,
+  ArchiveCooldownStore,
+  parseRetryAfter,
+  retryAfterSeconds,
+  sharedArchiveCooldownStore,
+} from './archiveCooldown';
+
 export type FetchImpl = typeof fetch;
 
 export const RETRYABLE_UPSTREAM_STATUSES = new Set([429, 500, 502, 503, 504]);
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const USER_AGENT = 'AJN-Media-Console/ArchiveProxy';
+
+export class ArchiveRedirectRejectedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ArchiveRedirectRejectedError';
+  }
+}
 
 export function isAllowedArchiveHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
@@ -18,10 +34,10 @@ export function isAllowedArchiveHost(hostname: string): boolean {
 
 export function validateArchiveRedirect(target: URL): void {
   if (target.protocol !== 'https:') {
-    throw new Error('Archive redirect rejected: HTTPS is required');
+    throw new ArchiveRedirectRejectedError('Archive redirect rejected: HTTPS is required');
   }
   if (!isAllowedArchiveHost(target.hostname)) {
-    throw new Error(`Archive redirect rejected: ${target.hostname}`);
+    throw new ArchiveRedirectRejectedError(`Archive redirect rejected: ${target.hostname}`);
   }
 }
 
@@ -102,6 +118,10 @@ export interface ResolveResult {
   url: string | null;
   /** Last upstream HTTP status seen while resolving. */
   status: number;
+  /** Retry-After from a non-redirect response, if present. */
+  retryAfter?: string | null;
+  /** Host that returned the non-redirect response. */
+  host?: string;
 }
 
 /**
@@ -139,17 +159,29 @@ export async function resolveArchiveMediaRedirect(
     if (response.status >= 200 && response.status < 300) {
       return { url: currentUrl.toString(), status: response.status };
     }
-    if (!REDIRECT_STATUSES.has(response.status)) return { url: null, status: response.status };
+    if (!REDIRECT_STATUSES.has(response.status)) {
+      return {
+        url: null,
+        status: response.status,
+        retryAfter: response.headers.get('retry-after'),
+        host: currentUrl.hostname,
+      };
+    }
 
     const location = response.headers.get('location');
     if (!location) return { url: null, status: response.status };
 
-    const nextUrl = new URL(location, currentUrl);
+    let nextUrl: URL;
+    try {
+      nextUrl = new URL(location, currentUrl);
+    } catch {
+      throw new ArchiveRedirectRejectedError('Archive redirect rejected: invalid Location URL');
+    }
     validateArchiveRedirect(nextUrl);
     currentUrl = nextUrl;
   }
 
-  throw new Error('Archive redirect chain exceeded limit');
+  throw new ArchiveRedirectRejectedError('Archive redirect rejected: redirect chain exceeded limit');
 }
 
 export interface ArchiveFetchResult {
@@ -160,7 +192,11 @@ export interface ArchiveFetchResult {
   /** Number of resolve+fetch attempts made. */
   attempts: number;
   /** Human-readable failure stage when response is not 2xx. */
-  failure?: 'resolve' | 'media';
+  failure?: 'resolve' | 'media' | 'rate-limit';
+  /** Non-retryable URL-policy rejection returned to the proxy for an explicit error. */
+  reason?: string;
+  /** Rate limit exceeded the retry wait budget or there were no attempts left. */
+  rateLimit?: { status: 429 | 503; retryAfterSeconds: number };
 }
 
 export interface ArchiveFetchOptions {
@@ -173,10 +209,32 @@ export interface ArchiveFetchOptions {
   /** Max wait for response headers per upstream request (default 6 s). */
   headerTimeoutMs?: number;
   log?: (message: string, detail: Record<string, unknown>) => void;
-  sleep?: (ms: number) => Promise<void>;
+  sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
+  /** Injectable only for deterministic tests; production uses one shared host store. */
+  cooldownStore?: ArchiveCooldownStore;
+  now?: () => number;
 }
 
-const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const defaultSleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
+  if (signal?.aborted) {
+    const error = new Error('The operation was aborted during retry backoff');
+    error.name = 'AbortError';
+    reject(error);
+    return;
+  }
+  const timer = setTimeout(() => {
+    signal?.removeEventListener('abort', onAbort);
+    resolve();
+  }, ms);
+  const onAbort = () => {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
+    const error = new Error('The operation was aborted during retry backoff');
+    error.name = 'AbortError';
+    reject(error);
+  };
+  signal?.addEventListener('abort', onAbort, { once: true });
+});
 
 async function fetchFromAlternateNode(
   upstreamUrl: string,
@@ -235,9 +293,12 @@ export async function fetchArchiveMediaWithRetry(
   const attempts = Math.max(1, opts.attempts ?? 3);
   const baseDelayMs = opts.baseDelayMs ?? 400;
   const sleep = opts.sleep ?? defaultSleep;
+  const cooldowns = opts.cooldownStore ?? sharedArchiveCooldownStore;
+  const now = opts.now ?? (() => Date.now());
   const log = opts.log ?? ((message, detail) => console.log(message, JSON.stringify(detail)));
 
   let last: ArchiveFetchResult = { response: null, status: 0, attempts: 0 };
+  let retryWaitTotalMs = 0;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     if (opts.signal?.aborted) break;
@@ -251,6 +312,7 @@ export async function fetchArchiveMediaWithRetry(
     let failure: ArchiveFetchResult['failure'];
     let failedHost: string | null = null;
     let networkError: unknown = null;
+    let retryAfterHeader: string | null = null;
 
     try {
       const resolved = cached && cached.expires > Date.now() && attempt === 1
@@ -272,13 +334,27 @@ export async function fetchArchiveMediaWithRetry(
           opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
         );
         status = response.status;
-        if (status < 200 || status >= 300) failure = 'media';
+        if (status < 200 || status >= 300) {
+          failure = 'media';
+          retryAfterHeader = response.headers.get('retry-after');
+        }
       } else {
         failure = 'resolve';
+        retryAfterHeader = resolved.retryAfter ?? null;
+        failedHost = resolved.host ?? 'archive.org';
       }
     } catch (error) {
       // Client disconnect: let the caller handle the abort as before.
       if (opts.signal?.aborted) throw error;
+      if (error instanceof ArchiveRedirectRejectedError) {
+        return {
+          response: null,
+          status: 502,
+          attempts: attempt,
+          failure: 'resolve',
+          reason: error.message,
+        };
+      }
       networkError = error;
       failedHost = (error as { archiveHost?: string }).archiveHost ?? failedHost;
       failure = 'resolve';
@@ -323,9 +399,44 @@ export async function fetchArchiveMediaWithRetry(
     redirectCache.delete(upstreamUrl);
 
     const retryable = RETRYABLE_UPSTREAM_STATUSES.has(status);
-    if (!retryable || attempt === attempts || opts.signal?.aborted) return last;
+    if (!retryable || opts.signal?.aborted) return last;
 
     await response?.body?.cancel().catch(() => {});
+    const requestedWaitMs = parseRetryAfter(retryAfterHeader, now());
+    if (requestedWaitMs !== null) {
+      const cooldownHost = failedHost ?? 'archive.org';
+      cooldowns.extend(cooldownHost, requestedWaitMs);
+      const sharedWaitMs = cooldowns.remainingMs(cooldownHost);
+      if (sharedWaitMs > ARCHIVE_MAX_RETRY_AFTER_HOP_MS
+        || retryWaitTotalMs + sharedWaitMs > ARCHIVE_MAX_RETRY_AFTER_TOTAL_MS
+        || attempt === attempts) {
+        return {
+          response: null,
+          status,
+          attempts: attempt,
+          failure: 'rate-limit',
+          rateLimit: { status: status === 429 ? 429 : 503, retryAfterSeconds: retryAfterSeconds(sharedWaitMs) },
+        };
+      }
+      retryWaitTotalMs += sharedWaitMs;
+      log('[archive-proxy] upstream Retry-After cooldown', {
+        requestId: opts.requestId ?? null,
+        upstreamStatus: status,
+        host: cooldownHost,
+        delayMs: sharedWaitMs,
+        attempt,
+        maxAttempts: attempts,
+      });
+      await cooldowns.wait(cooldownHost, opts.signal);
+      if (opts.signal?.aborted) {
+        const error = new Error('The operation was aborted during Archive Retry-After wait');
+        error.name = 'AbortError';
+        throw error;
+      }
+      continue;
+    }
+
+    if (attempt === attempts) return last;
     const delayMs = baseDelayMs * 2 ** (attempt - 1);
     log('[archive-proxy] transient upstream retry', {
       requestId: opts.requestId ?? null,
@@ -336,7 +447,7 @@ export async function fetchArchiveMediaWithRetry(
       delayMs,
       url: upstreamUrl,
     });
-    await sleep(delayMs);
+    await sleep(delayMs, opts.signal);
   }
 
   return last;

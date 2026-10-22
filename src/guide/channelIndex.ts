@@ -50,16 +50,20 @@ export interface SearchIndexEntry { station: number; hay: string; titles: string
 export type SearchIndex = Map<string, SearchIndexEntry>;
 
 /** One folded haystack per channel (name, group, station number, and every program title), built once per schedule load. */
-export function buildSearchIndex(list: readonly NumberedChannel[]): SearchIndex {
+export function buildSearchIndex(
+  list: readonly NumberedChannel[],
+  titlesByChannel?: ReadonlyMap<string, readonly string[]>,
+): SearchIndex {
   const idx: SearchIndex = new Map();
   for (const { channel, station } of list) {
     const titles: string[] = [];
     const seen = new Set<string>();
-    for (const p of channel.programs ?? []) {
-      const t = fold(p.title);
-      if (t && !seen.has(t)) { seen.add(t); titles.push(t); }
+    const sourceTitles = titlesByChannel?.get(channel.id) ?? channel.titles ?? (channel.programs ?? []).map((program) => program.title);
+    for (const title of sourceTitles) {
+      const t = fold(title);
+      if (t && !seen.has(t)) { seen.add(t); titles.push(title.trim()); }
     }
-    idx.set(channel.id, { station, hay: `${fold(channel.name)} ${fold(channel.group ?? '')} ${station} ${titles.join(' | ')}`, titles });
+    idx.set(channel.id, { station, hay: `${fold(channel.name)} ${fold(channel.group ?? '')} ${station} ${titles.map(fold).join(' | ')}`, titles });
   }
   return idx;
 }
@@ -67,19 +71,20 @@ export function buildSearchIndex(list: readonly NumberedChannel[]): SearchIndex 
 export interface FilterResult { rows: NumberedChannel[]; /** channel id -> first program title that matched (when the match was a show, not the channel) */ matchedShow: Map<string, string> }
 
 /** Every whitespace-separated term must match (AND). A bare number also matches the station number exactly ("12"). */
-export function filterChannels(list: readonly NumberedChannel[], index: SearchIndex, query: string, category: string): FilterResult {
+export function filterChannels(list: readonly NumberedChannel[], index: SearchIndex, query: string, category: string, onlyIf?: (c: ScheduleChannel) => boolean): FilterResult {
   const terms = fold(query).split(' ').filter(Boolean);
   const matchedShow = new Map<string, string>();
   const rows = list.filter(({ channel, station }) => {
     if (category !== ALL_CATEGORIES && categoryOf(channel).id !== category) return false;
+    if (onlyIf && !onlyIf(channel)) return false;
     if (!terms.length) return true;
     const e = index.get(channel.id);
     if (!e) return false;
     if (!terms.every((t) => e.hay.includes(t))) return false;
     const nameHay = `${fold(channel.name)} ${fold(channel.group ?? '')} ${station}`;
     if (!terms.every((t) => nameHay.includes(t))) {
-      const hit = (channel.programs ?? []).find((p) => { const ft = fold(p.title); return terms.every((t) => ft.includes(t)); });
-      if (hit) matchedShow.set(channel.id, hit.title);
+      const hit = e.titles.find((title) => { const ft = fold(title); return terms.every((t) => ft.includes(t)); });
+      if (hit) matchedShow.set(channel.id, hit);
     }
     return true;
   });

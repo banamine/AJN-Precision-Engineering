@@ -7,6 +7,7 @@
 import type { Program } from '../src/types';
 import { archiveApiFetch } from './archiveLimiter';
 import { getRushIndex, resolveRushItem as resolveAudioItem, type RushIndexEntry, type RushTrack } from './rush';
+import { buildInfowarsRadioChannel, INFOWARS_CHANNEL_ID } from './infowarsRadio';
 
 const RUSH_EPISODES = 8;
 const OTR_ITEMS = 10;
@@ -107,7 +108,8 @@ export async function buildOtrChannel(guideId: string, now = new Date(), fetchIm
  * A failed resolve returns [] so the caller shows an explicit upstream_error row, never a stand-in. */
 /** maxSlots caps the programs listed per day for large items (default 120 in guideRegistry). */
 export interface ArchiveAudioChannelSource { id: string; name: string; group: string; itemId: string; source?: string; verifiedAt?: string; maxSlots?: number; }
-export async function buildArchiveItemChannel(guideId: string, src: ArchiveAudioChannelSource): Promise<Program[]> {
+export async function buildArchiveItemChannel(guideId: string, src: ArchiveAudioChannelSource, now = new Date()): Promise<Program[]> {
+  if (src.id === INFOWARS_CHANNEL_ID) return buildInfowarsRadioChannel(guideId, now);
   const r = await resolveAudioItem(src.itemId);
   return r.tracks.map((t, i) => {
     const name = t.file.split('/').pop()!.replace(/\.mp3$/i, '').replace(/[_]+/g, ' ').trim();

@@ -1,6 +1,7 @@
 {
   "_note": "Audio & Podcasts guide: channel id -> category chip (group). Applied last, so it wins over the source's own group. Station numbers are unaffected (they are alphabetical by name).",
   "overrides": {
+    "archive-infowars-radio": "Talk Radio",
     "nwt-audio-alex-jones-depopulation": "Talk Radio",
     "nwt-audio-alexjonesradioshow-march12010": "Talk Radio",
     "nwt-audio-alexjonesradioshow-september172009": "Talk Radio",

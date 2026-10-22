@@ -1,0 +1,44 @@
+#EXTM3U
+# archive-embed entries are archive.org/embed pages: use an iframe-aware player.
+#EXTINF:-1 tvg-id="ajn-ia-blue-planet-ii" tvg-name="(Repaired) Blue Planet II ★ Complete BBC Series with Subtitles and MKV" group-title="Documentaries" ajn-type="documentary" ajn-status="ready",(Repaired) Blue Planet II ★ Complete BBC Series with Subtitles and MKV
+https://archive.org/embed/blue-planet-ii
+#EXTINF:-1 tvg-id="ajn-ia-22-amazing-animals-animal-families_202507" tvg-name="22 Amazing Animals Animal Families" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",22 Amazing Animals Animal Families
+https://archive.org/embed/22-amazing-animals-animal-families_202507
+#EXTINF:-1 tvg-id="ajn-ia-5-secretariat-sports-century." tvg-name="5 Secretariat Sports Century" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",5 Secretariat Sports Century
+https://archive.org/embed/5-secretariat-sports-century.
+#EXTINF:-1 tvg-id="ajn-ia-amazing-animals-armored-animals-1_202506" tvg-name="Amazing Animals Armored Animals 1" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Amazing Animals Armored Animals 1
+https://archive.org/embed/amazing-animals-armored-animals-1_202506
+#EXTINF:-1 tvg-id="ajn-ia-bush-pilot-canadian-myth" tvg-name="Bush Pilot Canadian Myth" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Bush Pilot Canadian Myth
+https://archive.org/embed/bush-pilot-canadian-myth
+#EXTINF:-1 tvg-id="ajn-ia-ColdWarInSoviet1-BrezhnevMeetsEuropeanLeaders" tvg-name="Cold War In Soviet1 Brezhnev Meets European Leaders" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Cold War In Soviet1 Brezhnev Meets European Leaders
+https://archive.org/embed/ColdWarInSoviet1-BrezhnevMeetsEuropeanLeaders
+#EXTINF:-1 tvg-id="ajn-ia-evel-knievel-happy-birthday-america" tvg-name="Evel Knievel Happy Birthday America" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Evel Knievel Happy Birthday America
+https://archive.org/embed/evel-knievel-happy-birthday-america
+#EXTINF:-1 tvg-id="ajn-ia-Forbidden_Planet" tvg-name="Forbidden Planet" group-title="Documentaries" ajn-type="documentary" ajn-status="ready",Forbidden Planet
+https://archive.org/embed/Forbidden_Planet
+#EXTINF:-1 tvg-id="ajn-ia-videoplayback-2_20260820" tvg-name="Marine Corps Boot Camp is Stupid & Spiritually Depraved | PART ONE" group-title="Documentaries" ajn-type="documentary" ajn-status="ready",Marine Corps Boot Camp is Stupid & Spiritually Depraved | PART ONE
+https://archive.org/embed/videoplayback-2_20260820
+#EXTINF:-1 tvg-id="ajn-ia-nova-wonders" tvg-name="Nova Wonders" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Nova Wonders
+https://archive.org/embed/nova-wonders
+#EXTINF:-1 tvg-id="ajn-ia-rush-revere-and-the-american-revolution-by-rush-limbaugh" tvg-name="Rush Revere And The American Revolution By Rush Limbaugh" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Rush Revere And The American Revolution By Rush Limbaugh
+https://archive.org/embed/rush-revere-and-the-american-revolution-by-rush-limbaugh
+#EXTINF:-1 tvg-id="ajn-ia-russia-hoax-by-gregg-jarrett" tvg-name="Russia Hoax By Gregg Jarrett" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Russia Hoax By Gregg Jarrett
+https://archive.org/embed/russia-hoax-by-gregg-jarrett
+#EXTINF:-1 tvg-id="ajn-ia-TheMemphisBelleAStoryofaFlyingFortress" tvg-name="The Memphis Belle: A Story of a Flying Fortress" group-title="Documentaries" ajn-type="documentary" ajn-status="ready",The Memphis Belle: A Story of a Flying Fortress
+https://archive.org/embed/TheMemphisBelleAStoryofaFlyingFortress
+#EXTINF:-1 tvg-id="ajn-ia-the-rise-and-fall-of-an-empire-1of-6-caesar" tvg-name="The Rise And Fall Of An Empire 1of 6 Caesar" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",The Rise And Fall Of An Empire 1of 6 Caesar
+https://archive.org/embed/the-rise-and-fall-of-an-empire-1of-6-caesar
+#EXTINF:-1 tvg-id="ajn-ia-the-world-at-war-1973" tvg-name="The World At War 1973" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",The World At War 1973
+https://archive.org/embed/the-world-at-war-1973
+#EXTINF:-1 tvg-id="ajn-ia-volcanoes" tvg-name="Volcanoes" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Volcanoes
+https://archive.org/embed/volcanoes
+#EXTINF:-1 tvg-id="ajn-ia-Waterwalker" tvg-name="Waterwalker" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Waterwalker
+https://archive.org/embed/Waterwalker
+#EXTINF:-1 tvg-id="ajn-ia-youtube-g6FTkj6OEWA" tvg-name="Youtube g6FTkj6OEWA" group-title="Documentaries" ajn-type="documentary" ajn-status="provisional",Youtube g6FTkj6OEWA
+https://archive.org/embed/youtube-g6FTkj6OEWA
+#EXTINF:-1 tvg-id="ajn-ia-mutant-chronicles" tvg-name="Drive-in and B Movie Sci-Fi" group-title="Unsorted - review" ajn-type="documentary" ajn-status="provisional",Drive-in and B Movie Sci-Fi
+https://archive.org/embed/mutant-chronicles
+#EXTINF:-1 tvg-id="ajn-ia-irish-history-documentaries" tvg-name="Irish History Documentaries" group-title="Unsorted - review" ajn-type="documentary" ajn-status="provisional",Irish History Documentaries
+https://archive.org/embed/irish-history-documentaries
+#EXTINF:-1 tvg-id="ajn-ia-duck-academy" tvg-name="Nature • Documentary Films" group-title="Unsorted - review" ajn-type="documentary" ajn-status="provisional",Nature • Documentary Films
+https://archive.org/embed/duck-academy

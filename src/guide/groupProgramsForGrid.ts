@@ -84,7 +84,7 @@ function makeBlock(id: string, startHour: number, endHour: number, items: GridIt
 export function groupProgramsForGrid(channel: ScheduleChannel, pxPerHour: number, nowHour?: number, nowMs?: number): GroupResult {
   const raw = windowItems(channel, nowMs);
   const live = nowHour === undefined ? null : raw.find((i) => nowHour >= i.sHour && nowHour < i.eHour) ?? null;
-  if (!isMusicChannel(channel) || raw.length === 0) return { mode: "programs", items: raw, cells: [], liveItem: live };
+  if (!isMusicChannel(channel) || channel.programsComplete === false || raw.length === 0) return { mode: "programs", items: raw, cells: [], liveItem: live };
   const narrow = raw.filter((i) => (i.eHour - i.sHour) * pxPerHour < MIN_CELL_PX).length;
   if (narrow / raw.length <= NARROW_FRACTION) return { mode: "programs", items: raw, cells: [], liveItem: live };
 

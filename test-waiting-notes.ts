@@ -9,8 +9,8 @@ assert.ok(D.themes.length >= 6 && D.themes.flatMap((t) => t.lines).length >= 60 
 assert.equal(new Set(all).size, all.length, 'no duplicate notes');
 for (const l of all) { assert.ok(l.length <= 96, `too long (${l.length}): ${l}`); assert.ok(!/\b(ready|fixed|connected|success|done|playing now)\b/i.test(l.replace(/the show is ready|when the show is ready/i, '')), `claims success: ${l}`); }
 for (const t of D.themes) assert.ok(t.emoji && t.id && t.label && t.lines.length >= 5, t.id);
-const shorts = Object.values(D.acronyms).flat().map((a) => a.short); assert.equal(new Set(shorts).size, shorts.length, 'unique acronyms');
-for (const a of Object.values(D.acronyms).flat()) assert.match(a.short, /^[A-Z](\.[A-Z])*\.?$/, a.short);
+const shorts = Object.values(D.acronyms).flat().map((a) => `${a.short}|${a.long}`); assert.equal(new Set(shorts).size, shorts.length, 'unique acronyms');
+for (const a of Object.values(D.acronyms).flat()) assert.match(a.short, /^(4 )?[A-Z](\.[A-Z])*\.?$/, a.short);
 for (const k of ['loading', 'seeking', 'buffering', 'stalled']) assert.ok(D.kinds[k], k);
 assert.ok(D.settings.showAfterMs >= 1000 && D.settings.retryAfterMs > D.settings.slowAfterMs);
 
@@ -30,4 +30,10 @@ assert.ok(a.some((n) => n.kind === 'quote') && !a.some((n) => n.kind === 'slow')
 assert.ok(run(5, 40, 20000).some((n) => n.kind === 'slow'), 'slow notes appear after slowAfterMs');
 const themesSeen = new Set(run(11, 30).map((n) => n.theme)); assert.ok(themesSeen.size >= 5, 'themes are mixed');
 const d = createDeck(D, mulberry32(1)); const acr = Array.from({ length: 12 }, () => d.acronym('seeking').short); for (let i = 1; i < acr.length; i++) assert.notEqual(acr[i], acr[i - 1]);
+// 4. Archive waits: only the Archive-themed pool, all 15 phrases get used, never the same one twice in a row, settings present
+assert.equal(D.acronyms.archive.length, 15); assert.ok((D.settings.archiveRotateMs ?? 0) >= 3000);
+const da = createDeck(D, mulberry32(9)); const archSeen = Array.from({ length: 60 }, () => da.acronym('archive'));
+assert.equal(new Set(archSeen.map((x) => x.short)).size, 15, 'every Archive phrase appears'); for (let i = 1; i < archSeen.length; i++) assert.notEqual(archSeen[i].short, archSeen[i - 1].short);
+const archShorts = new Set(D.acronyms.archive.map((x) => x.short)); assert.ok(archSeen.every((x) => archShorts.has(x.short)), 'archive mode never borrows generic acronyms');
+assert.ok(archSeen.some((x) => x.short === '4 S.E.C.O.N.D.S.'));
 console.log('waiting notes: all passed');

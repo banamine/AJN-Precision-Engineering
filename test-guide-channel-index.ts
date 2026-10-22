@@ -48,3 +48,13 @@ let t = performance.now(); const bi = buildSearchIndex(nb); const build = perfor
 t = performance.now(); const r = filterChannels(nb, bi, 'show 77-12', ALL_CATEGORIES); const search = performance.now() - t;
 assert.ok(r.rows.length >= 1 && build < 1500 && search < 100, `index ${build.toFixed(0)}ms search ${search.toFixed(0)}ms`);
 console.log(`[guide-channel-index] PASS — sort, station numbers, categories, search; 1500x130 index ${build.toFixed(0)} ms, search ${search.toFixed(1)} ms`);
+
+// 6. "On now" predicate narrows the list and combines with category + query; station numbers stay put.
+{
+  const only = (ids: string[]) => (c: ScheduleChannel) => ids.includes(c.id);
+  const r1 = filterChannels(numbered, index, '', ALL_CATEGORIES, only(['b', 'c2']));
+  assert.deepEqual(r1.rows.map((r) => [r.channel.id, r.station]), [['b', 2], ['c2', 3]]);
+  assert.deepEqual(filterChannels(numbered, index, '', 'news', only(['b', 'c2'])).rows.map((r) => r.channel.id), ['c2'], 'category + on-now');
+  assert.deepEqual(filterChannels(numbered, index, 'hoss', ALL_CATEGORIES, only(['c2'])).rows, [], 'query + on-now');
+  assert.equal(filterChannels(numbered, index, '', ALL_CATEGORIES, undefined).rows.length, 7, 'no predicate = no narrowing');
+}

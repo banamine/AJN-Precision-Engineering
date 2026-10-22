@@ -614,5 +614,14 @@
   "source": "https://archive.org/details/take-it-from-here_202605",
   "verifiedAt": "2026-10-10",
   "maxSlots": 48
+  },
+  {
+   "id": "archive-infowars-radio",
+   "name": "INFOWARS Archive RADIO",
+   "group": "Talk Radio",
+   "itemId": "Radio-The-Alex-Jones-Radio-Show",
+   "source": "https://archive.org/details/Radio-The-Alex-Jones-Radio-Show",
+   "verifiedAt": "2026-10-20",
+   "maxSlots": 120
  }
 ]

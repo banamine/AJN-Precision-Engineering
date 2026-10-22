@@ -1,9 +1,12 @@
 import { clampStart } from "./utils/avSync";
+import { attachPlayTimeline } from "./utils/playTimeline";
+import { createProgressWatchdog } from "./utils/progressWatchdog";
+import { bufferGaugeMetadata, createBufferGauge, type BufferGaugeSnapshot } from "./utils/bufferGauge";
 import { playerKeyAction, seekDelta } from "./utils/playerKeys";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { bridgeSrc, corsModeFor, NO_METER_MARK, RESOLVED_MARK, podcastAllowsMeter } from "./utils/mediaRoute";
+import { bridgeSrc, corsModeFor, NO_METER_MARK, RESOLVED_MARK, podcastAllowsMeter, liveRadioAllowsMeter } from "./utils/mediaRoute";
 import Hls from "hls.js";
-import { reportTelemetry } from "./telemetry";
+import { getBufferSamples, reportBufferSample, reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
 import { PlayerChrome } from "./components/PlayerChrome";
 import { WaitingNotes } from "./components/WaitingNotes";
@@ -15,6 +18,9 @@ import { useFolderArt } from "./utils/useFolderArt";
 import { usePersistentFlag } from "./utils/persistentFlag";
 import { useFrameCapture } from "./utils/useFrameCapture";
 import { archiveIdentifierFromPath } from "./utils/thumbnail";
+import { isLiveRadioPlayback } from "./utils/isLiveRadioPlayback";
+import { RadioBriefingPlayerOverlay } from "./components/RadioBriefingPlayerOverlay";
+import { attachArchiveVideoPrefetch, type VideoPrefetchTarget } from "./utils/videoPrefetch";
 
 interface MinimalPlayerProps {
   src: string;
@@ -29,7 +35,7 @@ interface MinimalPlayerProps {
   onErrorEvent?: (err: MediaError | null) => void;
   onProgressEvent?: (positionSeconds: number) => void;
   /** Audio only: what plays after this item (already a playable URL), or null. Called once, near the end of the track. */
-  resolveNext?: () => Promise<{ src: string; mediaType: string; programId?: string } | null>;
+  resolveNext?: () => Promise<VideoPrefetchTarget | null>;
   /** Audio bar skip buttons; omitted (button disabled) when there is no neighbour to go to. */
   onPrev?: () => void;
   onNext?: () => void;
@@ -46,11 +52,36 @@ const RESUME_SAVE_INTERVAL_MS = 5000;
 // Relaxed buffering: a slow or briefly failing Archive slice is retried in place
 // (same position) before the item is declared failed and the channel skips ahead.
 const RECOVER_DELAYS_MS = [1000, 3000, 6000];
-const STALL_WATCHDOG_MS = 45_000; // "Buffering…" longer than this triggers a reconnect, not a skip
+const STALL_WATCHDOG_MS = 20_000; // "Buffering…" longer than this triggers a reconnect, not a skip
+const WAIT_BUDGET_MS = 108_000; // Archive can take a long time to first byte: the wait counter and the start watchdog both run to 108 s
+const START_WATCHDOG_MS = WAIT_BUDGET_MS; // "Loading…" with no metadata after this is retried (same budget), then reported as failed
 const RECOVERED_AFTER_SECONDS = 20; // playing this far past a failure resets the retry budget
 // Audio gapless-ish handoff: this close to the end the next track is fetched into a hidden element.
 const PRELOAD_LEAD_SEC = 45;
 const RESUME_PREFIX = "ajn-playback-position:";
+
+function bufferedEndAt(media: HTMLMediaElement): number {
+  const currentTime = media.currentTime;
+  try {
+    for (let index = 0; index < media.buffered.length; index += 1) {
+      const start = media.buffered.start(index);
+      const end = media.buffered.end(index);
+      if (currentTime >= start - 0.25 && currentTime <= end + 0.25) return end;
+    }
+  } catch { /* The browser can clear TimeRanges during a source swap. */ }
+  return 0;
+}
+
+function bufferClockNowMs(): number {
+  return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
+function bufferLine(snapshot: BufferGaugeSnapshot, active: boolean): string {
+  if (!active || snapshot.health === "idle") return "Buffer: idle";
+  const fillRate = snapshot.fillRateRatio === null ? "fill pending" : `${snapshot.fillRateRatio.toFixed(1)}x`;
+  const base = `Buffer ${Math.round(snapshot.aheadSeconds)} s ahead · ${snapshot.health} ${fillRate} · ${snapshot.underrunCount} underruns`;
+  return snapshot.kbps === null ? base : `${base} · needs ~${(snapshot.kbps / 1000).toFixed(1)} Mbit/s`;
+}
 
 // Session-wide sound choice: once the user unmutes, every later program
 // (including scheduler auto-advance, which remounts this player) stays unmuted
@@ -74,9 +105,23 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const isVideo = mediaType === "video";
+  const radioBriefingOn = isLiveRadioPlayback(mediaType, nowPlaying);
   // Optional: save a real frame for items Archive has no image for (see utils/thumbStore.ts). No effect otherwise.
   useFrameCapture(mediaRef, archiveIdentifierFromPath(nowPlaying?.archivePath ?? activeSrc), isVideo);
   const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "") || (activeSrc ?? "").startsWith("/api/hls/");
+  const bufferItemKey = nowPlaying?.programId ?? nowPlaying?.assetId ?? nowPlaying?.sourceId ?? nowPlaying?.archivePath ?? src;
+  const initialBufferMetadata = bufferGaugeMetadata(nowPlaying?.bufferMetadata);
+  const bufferGaugeRef = useRef(createBufferGauge({ ...(initialBufferMetadata ?? {}), now: bufferClockNowMs }));
+  const [bufferGaugeSnapshot, setBufferGaugeSnapshot] = useState<BufferGaugeSnapshot>(() => bufferGaugeRef.current.snapshot());
+  const waitingForDataRef = useRef(false);
+  const hasStartedPlaybackRef = useRef(false);
+  useEffect(() => {
+    const metadata = bufferGaugeMetadata(nowPlaying?.bufferMetadata);
+    bufferGaugeRef.current = createBufferGauge({ now: bufferClockNowMs, ...(metadata ?? {}) });
+    waitingForDataRef.current = false;
+    hasStartedPlaybackRef.current = false;
+    setBufferGaugeSnapshot(bufferGaugeRef.current.snapshot());
+  }, [bufferItemKey, nowPlaying?.bufferMetadata?.bytes, nowPlaying?.bufferMetadata?.durationSeconds]);
   const hlsRef = useRef<Hls | null>(null);
   // Only request CORS for our own origin (the Archive proxy). Hosts such as
   // archive.alexjoneslive.com send no CORS headers, so crossOrigin={corsMode}
@@ -201,7 +246,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       el = new Audio();
       const cors = corsModeFor(activeSrc, false, nowPlayingRef.current?.programId);
       if (cors) el.crossOrigin = cors; // before src: decides whether Web Audio may read the file
-      el.preload = "metadata";
+      // The item restored at launch waits for the user: fetch nothing (a proxied metadata read can pull up to an 8 MiB slice)
+      // until Play is pressed. Every normal play starts immediately, so it keeps "metadata".
+      el.preload = nowPlayingRef.current?.restoredPaused && !restoreHandledRef.current ? "none" : "metadata";
       el.src = activeSrc;
     }
     // A session restored at launch waits for the user (tap / car Play); everything else starts by itself.
@@ -212,6 +259,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     el.setAttribute("data-testid", "audio-element");
     host.replaceChildren(el);
     mediaRef.current = el;
+    attachPlayTimeline(el, { restored: Boolean(nowPlayingRef.current?.restoredPaused && !restoreHandledRef.current), src: activeSrc, startAtSeconds: nowPlayingRef.current?.startAtSeconds });
   }, [isVideo, activeSrc, disposePreload]);
   // Leaving the player: release the playing element and any warm one.
   useEffect(() => () => {
@@ -254,6 +302,23 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   }, [isVideo, isHls, activeSrc, resolveNext, disposePreload]);
 
   useEffect(() => {
+    if (!isVideo || isHls || !resolveNext) return;
+    const media = mediaRef.current;
+    if (!media) return;
+    return attachArchiveVideoPrefetch({
+      media,
+      currentSrc: activeSrc,
+      currentMediaType: mediaType,
+      currentGuideId: nowPlaying?.guideId,
+      currentChannelId: nowPlaying?.channelId,
+      currentProgramId: nowPlaying?.programId,
+      isHls,
+      resolveNext,
+      onTelemetry: (event) => reportTelemetry(event),
+    });
+  }, [activeSrc, isHls, isVideo, mediaType, nowPlaying?.channelId, nowPlaying?.guideId, nowPlaying?.programId, resolveNext]);
+
+  useEffect(() => {
     setActiveSrc(bridgeSrc(src));
     setStatusText("Loading…");
     setIsPlaying(false);
@@ -281,7 +346,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       if (!isHls && activeSrc && !media.getAttribute("src")) {
         media.src = activeSrc;
       }
-      media.load();
+      // An explicit load() fetches even with preload="none": the deferred (restored) item already has its src and starts on Play.
+      if (media.preload !== "none") media.load();
     }
 
     const attemptAutoplay = async () => {
@@ -324,6 +390,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     };
 
     const onLoadedMetadata = () => {
+      clearStart();
       // Live streams have no fixed duration: never offer a resume position.
       const instance = nowPlayingRef.current;
       let switched = false;
@@ -334,7 +401,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         startAtConsumedRef.current = instance;
       } else if (instance && startAtConsumedRef.current !== instance) {
         startAtConsumedRef.current = instance;
-        const startAt = clampStart(instance.startAtSeconds, media.duration);
+        const liveItem = String(instance.programId ?? "").includes(":live:") || String(instance.channelId ?? "").startsWith("radio:");
+        const startAt = liveItem ? null : clampStart(instance.startAtSeconds, media.duration);
         if (startAt !== null) {
           try { media.currentTime = startAt; switched = true; } catch { /* element not seekable yet: fall through to normal start */ }
         }
@@ -348,13 +416,15 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       void attemptAutoplay();
     };
     const onCanPlay = () => {
+      waitingForDataRef.current = false;
+      clearStart();
       if (media.paused) {
         setStatusText("Ready to play");
         void attemptAutoplay();
       }
     };
-    const onPlay = (...a: []) => fx().reportPlaying(...a);
-    const onPlaying = (...a: []) => { clearStall(); fx().reportPlaying(...a); };
+    const onPlay = (...a: []) => { waitingForDataRef.current = false; if (media.readyState < 1) armStart(); fx().reportPlaying(...a); };
+    const onPlaying = (...a: []) => { waitingForDataRef.current = false; hasStartedPlaybackRef.current = true; clearStall(); clearStart(); fx().reportPlaying(...a); };
     const onTimeUpdate = () => {
       if (!media.paused) {
         onProgressOk();
@@ -366,6 +436,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     let retries = 0;
     let retryTimer: number | null = null;
     let stallTimer: number | null = null;
+    let startTimer: number | null = null;
+    const clearStart = () => { if (startTimer !== null) { window.clearTimeout(startTimer); startTimer = null; } };
     let pendingSeek: number | null = null;
     let lastRetryPos = 0;
     const clearStall = () => { if (stallTimer !== null) { window.clearTimeout(stallTimer); stallTimer = null; } };
@@ -398,15 +470,37 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         retryTimer = null;
         if (mediaRef.current !== media) return;
         media.load(); // same src: the proxy returns a fresh slice (new node if needed)
+        if (media.readyState < 1) armStart();
       }, delay);
       return true;
     };
+    // A source that never produces metadata (upstream hung, proxy slice never answered) used to leave "Loading…" for ever.
+    const armStart = () => {
+      if (isHls) return;
+      clearStart();
+      startTimer = window.setTimeout(() => {
+        startTimer = null;
+        if (mediaRef.current !== media || media.readyState >= 1) return;
+        if (!scheduleRecover("start-timeout")) {
+          setStatusText("Failed to load — the source did not respond (timed out)");
+          reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), reason: "start_timeout", waitedSeconds: Math.round(WAIT_BUDGET_MS / 1000) });
+        }
+      }, START_WATCHDOG_MS);
+    };
     const onWaiting = () => {
+      waitingForDataRef.current = true;
       setStatusText("Buffering…");
-      clearStall();
+      // Do NOT restart a pending timer on every 'waiting' event: repeated events would keep pushing it back and it could never fire.
+      if (stallTimer !== null) return;
       stallTimer = window.setTimeout(() => {
         stallTimer = null;
-        if (!media.paused && media.readyState < 3) scheduleRecover("stall-watchdog");
+        if (media.readyState < 1) return; // first byte still pending: the 108 s start watchdog owns this wait
+        if (media.paused || media.readyState >= 3 && media.currentTime > 0 && !media.seeking && media.networkState !== 2) return;
+        if (!scheduleRecover("stall-watchdog")) {
+          // Out of retries: say so (it used to stay on "Buffering…" for ever).
+          setStatusText("Failed to load — the source stopped responding");
+          reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), reason: "stall_watchdog_exhausted" });
+        }
       }, STALL_WATCHDOG_MS);
     };
     const onProgressOk = () => {
@@ -425,15 +519,19 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       if (!media.paused && media.readyState < 3) scheduleRecover("offline");
     };
     // A seek into a part that is not buffered is a normal wait (Archive can take several seconds to the first byte), not a stall.
-    const onSeeking = () => setStatusText("Seeking…");
-    const onStalled = () => setStatusText(media.seeking ? "Seeking…" : "Network stalled…");
+    const onSeeking = () => { waitingForDataRef.current = false; setStatusText("Seeking…"); };
+    const onStalled = () => { waitingForDataRef.current = true; setStatusText(media.seeking ? "Seeking…" : "Network stalled…"); };
     const onPause = () => {
+      waitingForDataRef.current = false;
+      hasStartedPlaybackRef.current = false;
       setIsPlaying(false);
       fx().saveResumePosition(media);
       reportTelemetry({ event: "playback.paused", ...eventMeta() });
       fx().onPauseEvent?.();
     };
     const onEnded = () => {
+      waitingForDataRef.current = false;
+      hasStartedPlaybackRef.current = false;
       handoffUntilRef.current = Date.now() + 4000;
       setIsPlaying(false);
       playingReportedRef.current = false;
@@ -442,8 +540,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       window.setTimeout(() => fx().onProgramEnded?.(), 0);
     };
     const onError = async () => {
+      waitingForDataRef.current = false;
+      hasStartedPlaybackRef.current = false;
       const err = media.error;
-      clearStall();
+      clearStall(); clearStart();
       // Transient failures (dropped slice, 5xx from the proxy, network blip) are retried
       // in place first. Definite failures (restricted, removed, not streamable) skip at once.
       const failedSrc0 = media.currentSrc || activeSrc;
@@ -470,7 +570,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       }
       // A CORS-mode load of a verified podcast failed (a tracker hop dropped its CORS headers): play the same file
       // natively once. The signal meter then shows its honest "no signal" state; nothing is faked.
-      if (err?.code === 4 && media.crossOrigin && activeSrc && !activeSrc.includes(NO_METER_MARK) && podcastAllowsMeter(nowPlayingRef.current?.programId)) {
+      if (err?.code === 4 && media.crossOrigin && activeSrc && !activeSrc.includes(NO_METER_MARK) && (podcastAllowsMeter(nowPlayingRef.current?.programId) || liveRadioAllowsMeter(nowPlayingRef.current?.programId))) {
         reportTelemetry({ event: "playback.cors_fallback", ...eventMeta() });
         setStatusText("Loading… (signal meter unavailable for this file)");
         setActiveSrc(`${activeSrc}${NO_METER_MARK}`);
@@ -530,6 +630,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       fx().onErrorEvent?.(err);
     };
 
+    // Mute toggled outside this player (Radio dock, headset): keep this player's state and the next track's muted flag in line.
+    const onVolumeChange = () => { if (media.muted !== isMutedRef.current) { isMutedRef.current = media.muted; sessionUnmuted = !media.muted; setIsMuted(media.muted); } };
+    media.addEventListener("volumechange", onVolumeChange);
     media.addEventListener("loadedmetadata", onLoadedMetadata);
     media.addEventListener("canplay", onCanPlay);
     media.addEventListener("play", onPlay);
@@ -549,6 +652,53 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     document.addEventListener("visibilitychange", saveOnHidden);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    // Event-independent stall check: a pending request with no error raises no event, so the timers above never arm.
+    // Live radio waits 8 s (a stream that has not produced audio by then is not coming), everything else 20 s.
+    const liveRadio = String(nowPlayingRef.current?.programId ?? "").includes(":live:");
+    const progressWd = isHls ? null : createProgressWatchdog({
+      stallMs: liveRadio ? 8_000 : 20_000,
+      sample: () => ({ wantsPlay: !media.paused && !media.ended, readyState: media.readyState, currentTime: media.currentTime || 0, bufferedEnd: media.buffered.length ? media.buffered.end(media.buffered.length - 1) : 0 }),
+      onStall: () => {
+        if (mediaRef.current !== media) return;
+        if (media.readyState < 1 && !liveRadio) return; // no metadata yet: the start watchdog (108 s) decides, not this 20 s check
+        reportTelemetry({ event: "playback.stall_detected", ...fx().eventMeta(), reason: "progress-watchdog", readyState: media.readyState, networkState: media.networkState });
+        if (!scheduleRecover("progress-watchdog")) {
+          setStatusText("Failed to load — the source stopped responding");
+          reportTelemetry({ event: "media.unavailable", ...fx().eventMeta(), reason: "progress_watchdog_exhausted" });
+        }
+      },
+    });
+    const sampleBufferGauge = () => {
+      const currentTime = media.currentTime;
+      if (!hasStartedPlaybackRef.current || !Number.isFinite(currentTime) || currentTime < 0) return;
+      const snapshot = bufferGaugeRef.current.push({
+        t: bufferClockNowMs(),
+        currentTime,
+        bufferedEnd: bufferedEndAt(media),
+        readyState: media.readyState,
+        paused: media.paused || media.ended,
+        waiting: waitingForDataRef.current,
+      });
+      setBufferGaugeSnapshot(snapshot);
+      const item = nowPlayingRef.current;
+      reportBufferSample({
+        currentTime,
+        playing: !media.paused && !media.ended,
+        snapshot,
+        programId: item?.programId ?? null,
+        mediaPath: item?.archivePath ?? media.currentSrc ?? activeSrc ?? null,
+      });
+    };
+    const progressTimer = progressWd ? window.setInterval(() => {
+      progressWd.tick();
+      sampleBufferGauge();
+    }, 1000) : null;
+    const deferred = !isVideo && media.preload === "none";
+    if (deferred) {
+      // Nothing was requested on purpose: say so instead of leaving "Loading…", and do not time it out.
+      setStatusText("Ready — tap Play to resume");
+      setAutoplayBlocked(true);
+    } else if (!(adopted && media.readyState >= 1)) armStart();
     // Metadata of an adopted element arrived before these listeners existed: run the same start path now.
     if (adopted && media.readyState >= 1) {
       reportTelemetry({ event: "playback.preload_swap", ...fx().eventMeta(), readyState: media.readyState });
@@ -556,10 +706,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     }
 
     return () => {
+      if (progressTimer !== null) window.clearInterval(progressTimer);
       if (retryTimer !== null) window.clearTimeout(retryTimer);
       clearStall();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
+      media.removeEventListener("volumechange", onVolumeChange);
+      clearStart();
       media.removeEventListener("loadedmetadata", onLoadedMetadata);
       media.removeEventListener("canplay", onCanPlay);
       media.removeEventListener("play", onPlay);
@@ -640,6 +793,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // start-muted default, or the car would resume in silence.
   const unmuteForResume = () => {
     const m = mediaRef.current;
+    if (m && m.preload === "none") m.preload = "auto"; // the user asked to play: from here the file may load
     if (!m || !nowPlayingRef.current?.restoredPaused || restoreHandledRef.current) return;
     m.muted = false; sessionUnmuted = true; setIsMuted(false);
   };
@@ -837,10 +991,22 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     return () => window.removeEventListener("keydown", onKey);
   }, [isVideo]);
 
+  const copyBufferLog = useCallback(async () => {
+    try {
+      if (!navigator.clipboard?.writeText) return false;
+      await navigator.clipboard.writeText(JSON.stringify(getBufferSamples(), null, 2));
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+  const bufferStatusLine = bufferLine(bufferGaugeSnapshot, isVideo && isPlaying && !isHls);
+
   return (
     <div>
-    {/* containerRef wraps only the picture + its overlays, so the floating HUD/transport sit on the video and fullscreen shows just the player.
-        Audio is laid out in zones, never stacked: stage (z0 backdrop, z1 visualizer, z2 album art) above a solid control bar (z10). */}
+    {/* containerRef wraps the media stage and overlays so fullscreen shows only the player.
+        Audio keeps one media element in audioHostRef. Normal stage: backdrop, visualizer, art.
+        Live Radio briefing stage: text panel above a reserved visualizer band; transport stays below. */}
     <div ref={containerRef} className={`relative ${isVideo ? "aspect-video w-full overflow-hidden bg-black" : "flex w-full flex-col overflow-hidden rounded-xl bg-neutral-950"}`}>
       {isVideo ? (
         <video
@@ -858,11 +1024,24 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           className="h-full w-full"
         />
       ) : (
-        <div data-testid="audio-stage" className="relative isolate flex aspect-video max-h-[60vh] min-h-44 w-full items-center justify-center overflow-hidden px-4 py-4">
-          {artUrl && (
+        <div data-testid="audio-stage" className={`relative isolate flex ${radioBriefingOn ? "h-96 sm:h-auto sm:aspect-video" : "aspect-video"} max-h-[60vh] min-h-44 w-full items-center justify-center overflow-hidden px-4 py-4`}>
+          {artUrl && !radioBriefingOn && (
             <img src={artUrl} alt="" aria-hidden="true" data-testid="audio-backdrop" className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-25 blur-md" />
           )}
-          <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="audio" />
+          {radioBriefingOn && (
+            <div
+              role="img"
+              data-testid="radio-visualizer-band"
+              aria-label={analyzerState === "unavailable" ? "Visualizer unavailable for this station; radio audio continues" : "Audio visualizer"}
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-10 border-t border-sky-300/20 bg-neutral-950/90"
+            />
+          )}
+          <AudioVisualizerOverlay
+            analyser={analyserNode}
+            enabled={isPlaying && (radioBriefingOn || visualizerOn)}
+            mode={radioBriefingOn ? "audio-briefing" : "audio"}
+          />
+          {radioBriefingOn && <RadioBriefingPlayerOverlay stationId={nowPlaying?.channelId} />}
           {isPlaying && (
             <div data-testid="on-air-badge" className="pointer-events-none absolute left-3 top-3 z-[3] flex items-center gap-2 rounded bg-black/60 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
               <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
@@ -872,12 +1051,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
               </span>
             </div>
           )}
-          {artUrl && (
+          {artUrl && !radioBriefingOn && (
             <div data-testid="audio-art" className="pointer-events-none relative z-[2] aspect-square h-32 max-h-[70%] overflow-hidden rounded-full shadow-2xl ring-2 ring-sky-300/40 sm:h-52">
               <img src={artUrl} alt="" className="h-full w-full object-cover" />
             </div>
           )}
-          {sideArt.map((img, i) => (
+          {!radioBriefingOn && sideArt.map((img, i) => (
             <div key={img.url} data-testid="audio-side-art" className={`pointer-events-none absolute top-1/2 z-[2] hidden h-20 w-20 -translate-y-1/2 overflow-hidden rounded-full shadow-xl ring-2 ring-white/20 md:block lg:h-24 lg:w-24 ${i === 0 ? "left-[8%]" : "right-[8%]"}`}>
               <img src={img.url} alt="" className="h-full w-full object-cover" />
             </div>
@@ -886,7 +1065,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         </div>
       )}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
-      <WaitingNotes status={statusText} onRetry={onRetry} />
+      <WaitingNotes status={statusText} onRetry={onRetry} archive={typeof src === "string" && src.includes("/api/archive/proxy")} />
       {/^(Failed to load|Unavailable)/.test(statusText) && (onRetry || onBackToGuide) && (
         <div role="alert" data-testid="playback-recovery" className="absolute inset-x-3 bottom-14 z-30 flex flex-wrap items-center gap-2 rounded-lg bg-black/85 p-3 text-xs text-white shadow-lg sm:bottom-16">
           <span className="min-w-0 flex-1 basis-40">{statusText}</span>
@@ -927,11 +1106,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onVolume={setVolumeLevel}
         onToggleFullscreen={toggleFullscreen}
         visualizerOn={visualizerOn}
+        visualizerLockedOn={radioBriefingOn}
         onToggleVisualizer={() => setVisualizerOn((v) => !v)}
         analyzerState={analyzerState}
         diagnosticsOpen={diagnosticsOpen}
         onToggleDiagnostics={() => setDiagnosticsOpen((v) => !v)}
-        thumbnailUrl={artUrl}
+        thumbnailUrl={radioBriefingOn ? undefined : artUrl}
         onPrev={onPrev}
         onNext={onNext}
         repeatOne={repeatOne}
@@ -940,7 +1120,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     </div>
       {diagnosticsOpen && (
         <div id="audio-bridge-drawer" className="mt-3">
-          <AudioBridgeStatus analyser={analyserNode} />
+          <AudioBridgeStatus analyser={analyserNode} bufferLine={bufferStatusLine} onCopyBufferLog={copyBufferLog} />
         </div>
       )}
     </div>
