@@ -85,6 +85,8 @@ jobs:
         run: npm run test:archive-retry
       - name: Classic Radio Theatre (fixture-only)
         run: npm run test:classic-radio
+      - name: Live news merge, Infowars radio, All My Children (offline fixtures)
+        run: npm run test:channels-2
       - name: Light guide schedules and caches
         run: npm run test:light-guides
       - name: Archive outage state machine (injected clock)
