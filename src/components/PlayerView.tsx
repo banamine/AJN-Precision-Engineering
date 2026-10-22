@@ -18,6 +18,9 @@ import { MAX_CONSECUTIVE_PLAYBACK_FAILURES, shouldHoldForArchiveOutage, shouldSt
 import { archiveIdentifierFromPath } from "../utils/thumbnail";
 import { classifyArchiveFailure } from "../utils/archiveFailure";
 import { useArchiveStatus } from "../hooks/useArchiveStatus";
+import { RadioCaptionPanel } from "../news/captions/RadioCaptionPanel";
+import { useStationTheme } from "../utils/stationArt";
+import { StationBanner } from "./StationBanner";
 
 /** Readable, stable id for a show title: "<channelId>/<title-slug>". Used in logs
  *  and telemetry so a failing playback can be found by name. */
@@ -364,6 +367,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     path: nowPlaying.archivePath ?? nowPlaying.src,
   }) : null, [nowPlaying]);
 
+  const stationTheme = useStationTheme(nowPlaying?.channelId, nowPlaying?.title); // live radio: logo + station colours (null for everything else)
   const onError = useCallback(async (err: MediaError | null, proxyFailure?: ProxyErrorBody | null) => {
     console.error("[AJN PLAYBACK] error", meta, err);
     if (!nowPlaying) return;
@@ -466,6 +470,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         </div>
       )}
       <FullShowStatus />
+      {stationTheme && <StationBanner theme={stationTheme} title={nowPlaying.title} subtitle={nowPlaying.subtitle} />}
       {onToggleFavorite && (
         <div className="flex items-center justify-between gap-3">
           <span className="min-w-0 truncate text-sm font-semibold text-neutral-100" data-testid="player-title">{nowPlaying.title}</span>
@@ -478,7 +483,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
           </button>
         </div>
       )}
-      <div ref={playerWrapRef}>
+      <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>
       <Fragment key={retryNonce}>
       <MinimalPlayer
         onRetry={retryCurrent}
@@ -511,6 +516,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         </div>
       )}
       <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />
+      {nowPlaying.channelId === "archive-infowars-radio" && <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />}
       <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />
       {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (
         <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">
