@@ -196,4 +196,11 @@ const probe = (ok: boolean, path: string): ArchiveProbeOutcome => ({
   console.log('PASS each observed outcome logs the required JSON fields and excludes query data');
 }
 
+{
+  const fresh = createArchiveHealth({}, { now: () => 1_000, log: () => {} });
+  assert.equal(fresh.getStatus().state, 'unknown', 'no data yet must not report ok');
+  fresh.record({ ts: 1_001, itemKey: 'first', kind: 'ok', httpStatus: 206 });
+  assert.equal(fresh.getStatus().state, 'ok', 'first counted success reports ok');
+}
+
 console.log('Archive health state machine tests: PASS');

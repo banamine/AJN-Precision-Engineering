@@ -13,7 +13,7 @@ import {
   FileText,
   Sparkles,
 } from 'lucide-react';
-import { TVNewsItem } from '../../channels';
+import type { TVNewsItem } from '../../channels';
 import { PlayProgramCallback } from '../types';
 
 interface SearchViewProps {
@@ -81,16 +81,24 @@ const [query, setQuery] = useState<string>('');
   const [total, setTotal] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const [lastQuery, setLastQuery] = useState<string>('');
 
+  const searchSeqRef = React.useRef(0);
+  const searchAbortRef = React.useRef<AbortController | null>(null);
   const executeSearch = useCallback(
     async (searchTerm: string, network: string) => {
+      const seq = ++searchSeqRef.current;
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
       setLoading(true);
       setError(null);
       setHasSearched(true);
       try {
         const url = `/api/search?network=${encodeURIComponent(network)}&q=${encodeURIComponent(searchTerm)}&rows=24`;
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: controller.signal });
         const data = await res.json();
+        if (seq !== searchSeqRef.current) return;
         if (!res.ok) {
           if (res.status === 502 && data?.status === 'upstream_error') {
             throw new Error(data.error || 'Archive search is temporarily unavailable. Please retry.');
@@ -99,12 +107,14 @@ const [query, setQuery] = useState<string>('');
         }
         setItems(Array.isArray(data.items) ? data.items : []);
         setTotal(data.total || 0);
+        setLastQuery(searchTerm);
       } catch (err: any) {
+        if (seq !== searchSeqRef.current || err?.name === 'AbortError') return;
         setError(err.message || 'An error occurred while querying the archive');
         setItems([]);
         setTotal(0);
       } finally {
-        setLoading(false);
+        if (seq === searchSeqRef.current) setLoading(false);
       }
     },
     []
@@ -118,7 +128,8 @@ const [query, setQuery] = useState<string>('');
     // The header search effect below owns the first load when a query was submitted.
     if (first && externalQuery && externalQuery.n > 0) return;
     executeSearch('', selectedNetwork);
-  }, [executeSearch, selectedNetwork]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [executeSearch]);
 
   // A search typed into the header runs here, replacing the mount-time empty search.
   useEffect(() => {
@@ -188,7 +199,6 @@ const [query, setQuery] = useState<string>('');
             <button
               type="submit"
               id="execute-search-btn"
-              disabled={loading}
               className="flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-purple-600/20 transition hover:bg-purple-500 active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
@@ -223,7 +233,7 @@ const [query, setQuery] = useState<string>('');
       </div>
 
       {/* ── Search Status & Results Count ─────────────────────────────────── */}
-      {hasSearched && !loading && (
+      {hasSearched && !loading && !error && (
         <div className="flex items-center justify-between text-xs text-neutral-400 px-1">
           <span>
             Found <strong className="text-neutral-200">{total}</strong> broadcast results in{' '}
@@ -231,7 +241,7 @@ const [query, setQuery] = useState<string>('');
               {NETWORKS.find((n) => n.id === selectedNetwork)?.name}
             </strong>
           </span>
-          {query && <span>Query: &ldquo;{query}&rdquo;</span>}
+          {lastQuery && <span>Query: &ldquo;{lastQuery}&rdquo;</span>}
         </div>
       )}
 

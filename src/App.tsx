@@ -125,6 +125,10 @@ export default function App() {
   const [initialView] = useState(getInitialView);
   const [destination, setDestination] = useState<Destination>(initialView.destination);
   const [hasVisitedTvGuide, setHasVisitedTvGuide] = useState(initialView.destination === 'tv-guide');
+  // New page = start at the top. The TV Guide restores its own saved scroll position, so leave it alone.
+  useEffect(() => {
+    if (destination !== 'tv-guide') window.scrollTo(0, 0);
+  }, [destination]);
   const [nowPlaying, setNowPlaying] = useState<NowPlayingMedia | null>(() => restoreLastAudio());
   const [externalSearch, setExternalSearch] = useState<{ q: string; n: number }>({ q: '', n: 0 });
   const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedItem[]>(() => readRecentlyPlayed());
