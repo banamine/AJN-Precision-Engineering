@@ -1,6 +1,5 @@
 import { bufferGaugeMetadata } from '../utils/bufferGauge';
-import { SuggestInput } from './SuggestInput';
-import React, { useState, useEffect, useCallback, FormEvent } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, FormEvent } from 'react';
 import {
   Search,
   Tv,
@@ -13,15 +12,19 @@ import {
   FileText,
   Sparkles,
 } from 'lucide-react';
-import { TVNewsItem } from '../../channels';
+import type { TVNewsItem } from '../../channels';
 import { PlayProgramCallback } from '../types';
+import { highlightParts, nextActiveIndex, SUGGEST_MIN_CHARS, suggest, type SuggestCandidate } from '../utils/suggest';
+import { buildEmptySearchSuggestionGroups } from '../utils/searchSuggestions';
+import { searchScrollBehavior, shouldScrollResults } from '../utils/searchScroll';
 
 interface SearchViewProps {
   onPlayProgram: PlayProgramCallback;
   /** Query submitted from the header search; `n` changes on every submit so repeats re-run. */
   externalQuery?: { q: string; n: number };
-  suggestions?: import('../utils/suggest').SuggestCandidate[];
+  suggestions?: SuggestCandidate[];
   onRecordSearch?: (q: string) => void;
+  onClearRecentSearches?: () => void;
 }
 
 const NETWORKS = [
@@ -41,7 +44,9 @@ const SUGGESTIONS = [
   'Technology',
 ];
 
-export function SearchView({ onPlayProgram, externalQuery, suggestions = [], onRecordSearch }: SearchViewProps) {
+const SUGGESTION_KIND_LABEL: Record<string, string> = { recent: 'Recent', history: 'Watched', favorite: 'Favorite', topic: 'Topic' };
+
+export function SearchView({ onPlayProgram, externalQuery, suggestions = [], onRecordSearch, onClearRecentSearches }: SearchViewProps) {
     const [buildStatus, setBuildStatus] = useState<string>('');
   const [builtAssets, setBuiltAssets] = useState<any[]>([]);
 
@@ -81,16 +86,39 @@ const [query, setQuery] = useState<string>('');
   const [total, setTotal] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const [lastQuery, setLastQuery] = useState<string>('');
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
+  const searchSeqRef = React.useRef(0);
+  const searchAbortRef = React.useRef<AbortController | null>(null);
+  const pendingAutoScrollSeqRef = React.useRef<number | null>(null);
+  const searchRegionRef = React.useRef<HTMLElement | null>(null);
+  const searchHeadingRef = React.useRef<HTMLHeadingElement | null>(null);
+  const suggestionUid = React.useId();
+  const suggestionListId = `${suggestionUid}-list`;
+  const emptySuggestionGroups = useMemo(() => buildEmptySearchSuggestionGroups(suggestions), [suggestions]);
+  const typedSuggestions = useMemo(() => suggest(query, suggestions), [query, suggestions]);
+  const isEmptyQuery = query.trim().length === 0;
+  const emptySuggestionItems = [...emptySuggestionGroups.recent, ...emptySuggestionGroups.topics];
+  const visibleSuggestionItems = isEmptyQuery ? emptySuggestionItems : typedSuggestions;
+  const showSuggestions = suggestionsOpen && visibleSuggestionItems.length > 0;
 
   const executeSearch = useCallback(
-    async (searchTerm: string, network: string) => {
+    async (searchTerm: string, network: string, userInitiated = false) => {
+      const seq = ++searchSeqRef.current;
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
+      pendingAutoScrollSeqRef.current = userInitiated ? seq : null;
       setLoading(true);
       setError(null);
       setHasSearched(true);
       try {
         const url = `/api/search?network=${encodeURIComponent(network)}&q=${encodeURIComponent(searchTerm)}&rows=24`;
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: controller.signal });
         const data = await res.json();
+        if (seq !== searchSeqRef.current) return;
         if (!res.ok) {
           if (res.status === 502 && data?.status === 'upstream_error') {
             throw new Error(data.error || 'Archive search is temporarily unavailable. Please retry.');
@@ -99,12 +127,14 @@ const [query, setQuery] = useState<string>('');
         }
         setItems(Array.isArray(data.items) ? data.items : []);
         setTotal(data.total || 0);
+        setLastQuery(searchTerm);
       } catch (err: any) {
+        if (seq !== searchSeqRef.current || err?.name === 'AbortError') return;
         setError(err.message || 'An error occurred while querying the archive');
         setItems([]);
         setTotal(0);
       } finally {
-        setLoading(false);
+        if (seq === searchSeqRef.current) setLoading(false);
       }
     },
     []
@@ -118,21 +148,86 @@ const [query, setQuery] = useState<string>('');
     // The header search effect below owns the first load when a query was submitted.
     if (first && externalQuery && externalQuery.n > 0) return;
     executeSearch('', selectedNetwork);
-  }, [executeSearch, selectedNetwork]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [executeSearch]);
 
   // A search typed into the header runs here, replacing the mount-time empty search.
   useEffect(() => {
     if (!externalQuery || externalQuery.n === 0) return;
     setQuery(externalQuery.q);
-    executeSearch(externalQuery.q, selectedNetwork);
+    executeSearch(externalQuery.q, selectedNetwork, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalQuery?.n]);
+
+  // Scroll only after the current user-initiated request has rendered its final state.
+  useEffect(() => {
+    const seq = pendingAutoScrollSeqRef.current;
+    if (seq === null || loading || seq !== searchSeqRef.current || !hasSearched) return;
+    const region = searchRegionRef.current;
+    if (!region) {
+      pendingAutoScrollSeqRef.current = null;
+      return;
+    }
+
+    const stickyHeaderHeight = document.getElementById('canonical-app-header')?.getBoundingClientRect().height ?? 0;
+    region.style.scrollMarginTop = `${Math.ceil(Math.max(0, stickyHeaderHeight) + 8)}px`;
+    const resultsTop = region.getBoundingClientRect().top;
+    if (shouldScrollResults(resultsTop, window.innerHeight, stickyHeaderHeight)) {
+      region.scrollIntoView({
+        block: 'start',
+        behavior: searchScrollBehavior(window.matchMedia('(prefers-reduced-motion: reduce)').matches),
+      });
+    }
+    searchHeadingRef.current?.focus({ preventScroll: true });
+    pendingAutoScrollSeqRef.current = null;
+  }, [loading, error, items, total, lastQuery, hasSearched]);
+
+  useEffect(() => {
+    if (!showSuggestions || activeSuggestionIndex < 0) return;
+    const option = document.getElementById(`${suggestionUid}-option-${activeSuggestionIndex}`);
+    const box = document.querySelector<HTMLElement>('[data-testid="search-suggest-dropdown"]');
+    if (!option || !box) return;
+    if (option.offsetTop < box.scrollTop) box.scrollTop = option.offsetTop;
+    else if (option.offsetTop + option.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = option.offsetTop + option.offsetHeight - box.clientHeight;
+  }, [activeSuggestionIndex, showSuggestions, suggestionUid]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onRecordSearch?.(query);
-    executeSearch(query, selectedNetwork);
+    setSuggestionsOpen(false);
+    executeSearch(query, selectedNetwork, true);
   };
+
+  const pickSuggestion = (text: string) => {
+    setQuery(text);
+    setSuggestionsOpen(false);
+    setActiveSuggestionIndex(-1);
+    onRecordSearch?.(text);
+    executeSearch(text, selectedNetwork, true);
+  };
+
+  const renderSuggestionOption = (item: SuggestCandidate, index: number, emphasize: boolean) => (
+    <div
+      key={`${item.text}-${index}`}
+      id={`${suggestionUid}-option-${index}`}
+      role="option"
+      aria-selected={index === activeSuggestionIndex}
+      data-testid="search-suggest-option"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => pickSuggestion(item.text)}
+      onMouseEnter={() => setActiveSuggestionIndex(index)}
+      className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm ${index === activeSuggestionIndex ? 'bg-sky-500/20 text-white' : 'text-neutral-200'}`}
+    >
+      <span className="min-w-0 truncate">
+        {emphasize
+          ? highlightParts(item.text, query).map((part, partIndex) => part.match
+            ? <mark key={partIndex} className="rounded-sm bg-transparent font-bold text-sky-300 underline decoration-sky-400/60 underline-offset-2">{part.text}</mark>
+            : <span key={partIndex}>{part.text}</span>)
+          : item.text}
+      </span>
+      {item.kind && <span className="shrink-0 text-[10px] uppercase tracking-wider text-neutral-500">{SUGGESTION_KIND_LABEL[item.kind]}</span>}
+    </div>
+  );
 
   return (
     <div className="space-y-8 pb-16">
@@ -156,16 +251,104 @@ const [query, setQuery] = useState<string>('');
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-3 h-4 w-4 text-neutral-400" />
-            <SuggestInput
+            <input
               id="tvnews-search-input"
+              type="text"
+              role="combobox"
+              aria-label="Search broadcast topics"
+              aria-autocomplete="list"
+              aria-expanded={showSuggestions}
+              aria-controls={suggestionListId}
+              aria-activedescendant={showSuggestions && activeSuggestionIndex >= 0 ? `${suggestionUid}-option-${activeSuggestionIndex}` : undefined}
+              autoComplete="off"
               value={query}
-              onChange={setQuery}
-              onPick={(text) => { onRecordSearch?.(text); executeSearch(text, selectedNetwork); }}
-              candidates={suggestions}
               placeholder="Search broadcast topics, speakers, or events..."
-              ariaLabel="Search broadcast topics"
               className="w-full rounded-xl border border-neutral-700 bg-neutral-950 pl-10 pr-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              onChange={(event) => {
+                const nextQuery = event.target.value;
+                setQuery(nextQuery);
+                setActiveSuggestionIndex(-1);
+                setSuggestionsOpen(nextQuery.trim().length === 0
+                  ? emptySuggestionItems.length > 0
+                  : nextQuery.trim().length >= SUGGEST_MIN_CHARS);
+              }}
+              onFocus={() => {
+                setSuggestionsOpen(isEmptyQuery
+                  ? emptySuggestionItems.length > 0
+                  : query.trim().length >= SUGGEST_MIN_CHARS);
+              }}
+              onBlur={() => {
+                setSuggestionsOpen(false);
+                setActiveSuggestionIndex(-1);
+              }}
+              onKeyDown={(event) => {
+                if (showSuggestions) {
+                  const next = nextActiveIndex(event.key, activeSuggestionIndex, visibleSuggestionItems.length);
+                  if (next !== null) {
+                    event.preventDefault();
+                    setActiveSuggestionIndex(next);
+                    return;
+                  }
+                  if (event.key === 'Enter' && activeSuggestionIndex >= 0) {
+                    event.preventDefault();
+                    pickSuggestion(visibleSuggestionItems[activeSuggestionIndex].text);
+                    return;
+                  }
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSuggestionsOpen(false);
+                    setActiveSuggestionIndex(-1);
+                    return;
+                  }
+                } else if (event.key === 'ArrowDown' && visibleSuggestionItems.length > 0) {
+                  event.preventDefault();
+                  setSuggestionsOpen(true);
+                  setActiveSuggestionIndex(0);
+                }
+              }}
             />
+            {showSuggestions && (
+              <div
+                data-testid="search-suggest-dropdown"
+                className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-xl border border-neutral-700 bg-neutral-950/98 p-1 shadow-xl backdrop-blur-md"
+              >
+                {isEmptyQuery && emptySuggestionGroups.recent.length > 0 && (
+                  <div className="flex items-center justify-end px-2 py-1">
+                    <button
+                      type="button"
+                      data-testid="clear-recent-searches"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        onClearRecentSearches?.();
+                        setActiveSuggestionIndex(-1);
+                      }}
+                      className="rounded px-2 py-1 text-[11px] text-neutral-400 hover:text-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                    >
+                      Clear recent searches
+                    </button>
+                  </div>
+                )}
+                <div id={suggestionListId} role="listbox" aria-label="Search suggestions">
+                  {isEmptyQuery ? (
+                    <>
+                      {emptySuggestionGroups.recent.length > 0 && (
+                        <div role="group" aria-label="Recent">
+                          <h3 className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Recent</h3>
+                          {emptySuggestionGroups.recent.map((item, index) => renderSuggestionOption(item, index, false))}
+                        </div>
+                      )}
+                      {emptySuggestionGroups.topics.length > 0 && (
+                        <div role="group" aria-label="Topics">
+                          <h3 className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Topics</h3>
+                          {emptySuggestionGroups.topics.map((item, index) => renderSuggestionOption(item, emptySuggestionGroups.recent.length + index, false))}
+                        </div>
+                      )}
+                    </>
+                  ) : typedSuggestions.map((item, index) => renderSuggestionOption(item, index, true))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2">
@@ -174,7 +357,7 @@ const [query, setQuery] = useState<string>('');
               value={selectedNetwork}
               onChange={(e) => {
                 setSelectedNetwork(e.target.value);
-                executeSearch(query, e.target.value);
+                executeSearch(query, e.target.value, true);
               }}
               className="rounded-xl border border-neutral-700 bg-neutral-950 px-3.5 py-2.5 text-xs font-medium text-neutral-200 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
             >
@@ -188,7 +371,6 @@ const [query, setQuery] = useState<string>('');
             <button
               type="submit"
               id="execute-search-btn"
-              disabled={loading}
               className="flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-purple-600/20 transition hover:bg-purple-500 active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
@@ -212,7 +394,8 @@ const [query, setQuery] = useState<string>('');
               type="button"
               onClick={() => {
                 setQuery(s);
-                executeSearch(s, selectedNetwork);
+                onRecordSearch?.(s);
+                executeSearch(s, selectedNetwork, true);
               }}
               className="rounded-md border border-neutral-800 bg-neutral-950/80 px-2.5 py-1 text-[11px] text-neutral-400 transition hover:border-purple-500/50 hover:text-purple-300 cursor-pointer"
             >
@@ -222,16 +405,15 @@ const [query, setQuery] = useState<string>('');
         </div>
       </div>
 
+      <section ref={searchRegionRef} data-testid="search-results-region" className="space-y-4">
       {/* ── Search Status & Results Count ─────────────────────────────────── */}
       {hasSearched && !loading && (
         <div className="flex items-center justify-between text-xs text-neutral-400 px-1">
-          <span>
-            Found <strong className="text-neutral-200">{total}</strong> broadcast results in{' '}
-            <strong className="text-purple-300">
-              {NETWORKS.find((n) => n.id === selectedNetwork)?.name}
-            </strong>
-          </span>
-          {query && <span>Query: &ldquo;{query}&rdquo;</span>}
+          <h2 ref={searchHeadingRef} tabIndex={-1} data-testid="search-results-heading" className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400">
+            {error ? 'Search results unavailable.' : <>Found <strong className="text-neutral-200">{total}</strong> broadcast results in{' '}
+              <strong className="text-purple-300">{NETWORKS.find((n) => n.id === selectedNetwork)?.name}</strong></>}
+          </h2>
+          {!error && lastQuery && <span>Query: &ldquo;{lastQuery}&rdquo;</span>}
         </div>
       )}
 
@@ -244,7 +426,7 @@ const [query, setQuery] = useState<string>('');
           </div>
           <button
             type="button"
-            onClick={() => executeSearch(query, selectedNetwork)}
+            onClick={() => executeSearch(query, selectedNetwork, true)}
             className="rounded bg-rose-900/40 px-2.5 py-1 text-xs text-rose-200 hover:bg-rose-900/60"
           >
             Retry
@@ -372,6 +554,7 @@ const [query, setQuery] = useState<string>('');
           </div>
         )
       )}
+      </section>
     </div>
   );
 }

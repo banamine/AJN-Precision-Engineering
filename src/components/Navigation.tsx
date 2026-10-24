@@ -330,7 +330,7 @@ export function Navigation({
                 )}
               </div>
               <span className="text-[10px] sm:text-[11px] leading-tight tracking-tight truncate max-w-full px-0.5 font-medium">
-                {item.label}
+                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Radio' : item.label}
               </span>
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 sm:w-8 rounded-full bg-sky-400" />
