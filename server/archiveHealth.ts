@@ -113,7 +113,7 @@ export function createArchiveHealth(
 ): ArchiveHealth {
   const cfg = { ...ARCHIVE_HEALTH_DEFAULTS, ...config };
   const now = deps.now ?? Date.now;
-  const log = deps.log ?? ((entry: ArchiveHealthLogEntry) => console.log(JSON.stringify(entry)));
+  const log = deps.log ?? ((entry: ArchiveHealthLogEntry) => console.log(JSON.stringify(entry, (key, value) => (key === 'errorCode' && value === null ? undefined : value))));
   const events: CountedEvent[] = [];
   let state: ArchiveHealthState = 'ok';
   let since = now();
