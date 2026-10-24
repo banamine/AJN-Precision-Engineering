@@ -240,7 +240,9 @@ try {
   const healthResponse = await fetch(`${base}/api/health`);
   const healthJson = await healthResponse.json() as Record<string, any>;
   assert.deepEqual(Object.keys(healthJson).sort(), ['archive', 'service', 'stats', 'status', 'timestamp', 'uptime']);
-  assert.equal(healthJson.archive, 'ok');
+  // fresh health with no counted success/failure reports 'unknown', not a fabricated 'ok'
+  assert.equal(healthJson.archive, 'unknown');
+  assert.equal(statusJson.state, 'unknown');
   assert.equal(healthJson.status, 'ok');
   assert.equal(healthJson.stats.totalRequests, 1);
   console.log('PASS local status endpoints: no-store shape and additive health key');
