@@ -61,7 +61,7 @@ The final probe exited **0** and wrote `BEFORE.json` and `BEFORE.md`. It sampled
 
 ## Stop decision and remaining verification
 
-The job requires stopping when neither A nor B is confirmed. Therefore no Phase 2 runtime fix, `AFTER` run, recovery unit suite, or five-minute desktop/phone follow-up was run. No PR merge, deployment, or main-branch change was made.
+The job requires stopping when neither A nor B is confirmed. Therefore no Phase 2 runtime fix, `AFTER` run, recovery unit suite, or five-minute desktop/phone follow-up was run. Draft review PR: https://github.com/banamine/AJN-Precision-Engineering/pull/127 (`fix/live-hls-recovery` → `base/aistudio-2026-10-25b`). It is evidence-only and unmerged; there was no deployment or main-branch change.
 
 Not verified: why S3 has two time discontinuities; whether the same behavior occurs on another Pluto channel or device; the five-minute phone and desktop runs. Start Over was not available in this channel’s UI.
 
