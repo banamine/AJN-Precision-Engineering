@@ -444,7 +444,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     let retryTimer: number | null = null;
     let stallTimer: number | null = null;
     let startTimer: number | null = null;
+    let slowRetried = false;
+    let slowTimer: number | null = null;
     const clearStart = () => { if (startTimer !== null) { window.clearTimeout(startTimer); startTimer = null; } };
+    const clearSlow = () => { if (slowTimer !== null) { window.clearTimeout(slowTimer); slowTimer = null; } };
     let pendingSeek: number | null = null;
     let lastRetryPos = 0;
     const clearStall = () => { if (stallTimer !== null) { window.clearTimeout(stallTimer); stallTimer = null; } };
@@ -514,6 +517,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       recordArchivePlaybackProgress(activeSrc, media.currentTime);
       clearStall();
       if (retries > 0 && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) retries = 0;
+      if (slowRetried && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) slowRetried = false;
     };
     const onOnline = () => {
       if (!waitingOnline || mediaRef.current !== media) return;
@@ -551,12 +555,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       waitingForDataRef.current = false;
       hasStartedPlaybackRef.current = false;
       const err = media.error;
-      clearStall(); clearStart();
+      clearStall(); clearStart(); clearSlow();
       // Transient failures (dropped slice, 5xx from the proxy, network blip) are retried
       // in place first. Definite failures (restricted, removed, not streamable) skip at once.
       const failedSrc0 = media.currentSrc || activeSrc;
       let definite = false;
       let overloaded: ProxyErrorBody | null = null;
+      let slow: ProxyErrorBody | null = null;
       let proxyFailure: ProxyErrorBody | null = null;
       const diagnosticUrl = failedSrc0 ? archiveFailureDiagnosticUrl(failedSrc0) : null;
       if (diagnosticUrl) {
@@ -567,7 +572,42 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           const kind = classifyArchiveFailure(r.status, body);
           definite = kind === "definite";
           if (kind === "overloaded") overloaded = body;
+          if (kind === "slow") slow = body;
         } catch { /* proxy unreachable: treat as transient */ }
+      }
+      if (slow) {
+        if (!slowRetried) {
+          slowRetried = true;
+          if (mediaRef.current !== media) return;
+          setStatusText("Archive storage server is slow to respond…");
+          reportTelemetry({
+            event: "playback.slow_wait", ...eventMeta(),
+            reason: slow.errorCode ?? "archive_slow",
+            proxyRequestId: slow.proxyRequestId ?? null,
+          });
+          lastRetryPos = media.currentTime || lastRetryPos || 0;
+          pendingSeek = lastRetryPos > 1 ? lastRetryPos : null;
+          slowTimer = window.setTimeout(() => {
+            slowTimer = null;
+            if (mediaRef.current !== media) return;
+            media.load();
+            if (media.readyState < 1) armStart();
+          }, 25_000);
+          return;
+        }
+        if (mediaRef.current !== media) return;
+        setStatusText("Unavailable — this Archive storage server isn't responding. Skipping…");
+        reportTelemetry({
+          event: "media.error", ...eventMeta(), mediaErrorCode: err?.code ?? null,
+          mediaErrorMessage: err?.message ?? null, readyState: media.readyState, networkState: media.networkState,
+          proxyRequestId: slow.proxyRequestId ?? null,
+        });
+        reportTelemetry({
+          event: "media.unavailable", ...fx().eventMeta(), httpStatus: slow.upstreamStatus ?? 0,
+          reason: slow.errorCode ?? "archive_slow_storage", proxyRequestId: slow.proxyRequestId ?? null,
+        });
+        fx().onErrorEvent?.(err, proxyFailure);
+        return;
       }
       if (overloaded) {
         // The proxy already tried Archive 3 times. Retrying again only piles on; say what is happening, once.
@@ -724,6 +764,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     return () => {
       if (progressTimer !== null) window.clearInterval(progressTimer);
       if (retryTimer !== null) window.clearTimeout(retryTimer);
+      clearSlow();
       clearStall();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);

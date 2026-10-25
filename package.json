@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "vite build && node tools/checks/production-demo-guard.cjs && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build:demo": "node tools/build-demo.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
@@ -98,7 +99,9 @@
     "test:light-guides": "tsx test-classic-light-schedule.ts && tsx test-audio-light-schedule.ts && tsx test-audio-light-client.ts && tsx test-channel-schedule-pool.ts && tsx test-load-schedule.ts && tsx src/guide/scheduleCache.test.ts",
     "test:series": "tsx test-series.ts",
     "test:thumbnail": "tsx test-thumbnail.ts",
-    "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx"
+    "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx",
+    "test:bannedvideo": "tsx src/bannedvideo/bannedvideo.test.ts && tsx test-bannedvideo-integration.ts",
+    "test:bannedvideo-demo": "node tools/checks/demo-check.cjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

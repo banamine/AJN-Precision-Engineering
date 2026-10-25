@@ -40,7 +40,7 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
   { id: 'home', label: 'Home', icon: Home, description: 'Live broadcast & featured feeds' },
   { id: 'tv-guide', label: 'TV Guide', icon: Tv, description: '24-hour program schedule grid' },
   { id: 'player', label: 'Player', icon: PlayCircle, description: 'Active broadcast monitor' },
-  { id: 'news', label: 'News', icon: Newspaper, description: 'Live Rumble news wall' },
+  { id: 'news', label: 'News', icon: Newspaper, description: 'Rumble, YouTube & Banned Video walls' },
   { id: 'radio', label: 'AJN Radio', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
   { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played' },
   { id: 'library', label: 'Library', icon: FolderArchive, description: 'Curated archives & vaults' },
