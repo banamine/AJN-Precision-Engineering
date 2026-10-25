@@ -22,8 +22,8 @@ export const ARCHIVE_HEALTH_DEFAULTS: Readonly<ArchiveHealthConfig> = Object.fre
   degradedFailureCount: 3,
   degradedMinSamples: 6,
   degradedSuccessRatio: 0.5,
-  probeIntervalMs: 60_000,
-  maxProbeIntervalMs: 60_000, // no backoff while down: one cheap HEAD + control per minute, so recovery is seen within ~2 probes
+  probeIntervalMs: 20_000,
+  maxProbeIntervalMs: 20_000,
   probeTimeoutMs: 8_000,
 });
 
@@ -50,11 +50,21 @@ export interface ArchiveProbeOutcome {
 }
 
 export interface ArchiveHealthStatus {
-  state: ArchiveHealthState;
+  /** 'unknown' = no counted Archive success or failure has been observed yet. */
+  state: ArchiveHealthState | 'unknown';
   since: number;
+  lastTransitionReason: string | null;
+  lastTransitionAt: number | null;
   lastSuccessAt: number | null;
   lastFailureAt: number | null;
   recent: { failures: number; successes: number; distinctItems: number };
+  lastCountedEvents: Array<{
+    ts: number;
+    kind: 'ok' | 'network' | 'server5xx';
+    errorCode: string | null;
+    httpStatus: number | null;
+    path: string;
+  }>;
   nextProbeAt: number | null;
   control: 'ok' | 'failed' | 'unknown';
 }
@@ -85,7 +95,6 @@ const NETWORK_FAILURE_CODES = new Set([
   'EAI_AGAIN',
   'ECONNREFUSED',
   'AJN_UPSTREAM_HEADER_TIMEOUT',
-  'AJN_UPSTREAM_CIRCUIT_OPEN',
 ]);
 
 export function classifyArchiveHealthOutcome(input: {
@@ -95,6 +104,7 @@ export function classifyArchiveHealthOutcome(input: {
   policyFailure?: boolean;
   errorReason?: string;
 }): ArchiveHealthEventKind {
+  if (input.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') return 'other';
   if (input.errorCode === 'UNPLAYABLE_ARCHIVE_MEMBER'
     || [400, 403, 404, 410, 422].includes(input.status ?? -1)) return 'definite';
   if (input.status !== null && input.status >= 200 && input.status < 300 && !input.policyFailure) return 'ok';
@@ -102,7 +112,7 @@ export function classifyArchiveHealthOutcome(input: {
   if ((input.errorCode && NETWORK_FAILURE_CODES.has(input.errorCode))
     || ['network', 'timeout'].includes(input.errorReason ?? '')
     || /fetch failed|timed?\s*out|network error/i.test(input.errorMessage ?? '')) return 'network';
-  if ([500, 502, 503, 504].includes(input.status ?? -1)) return 'server5xx';
+  if (input.status !== null && input.status >= 500 && input.status < 600) return 'server5xx';
   return 'other';
 }
 
@@ -112,24 +122,38 @@ export function createArchiveHealth(
 ): ArchiveHealth {
   const cfg = { ...ARCHIVE_HEALTH_DEFAULTS, ...config };
   const now = deps.now ?? Date.now;
-  const log = deps.log ?? ((entry: ArchiveHealthLogEntry) => console.log(JSON.stringify(entry)));
+  const log = deps.log ?? ((entry: ArchiveHealthLogEntry) => console.log(JSON.stringify(entry, (key, value) => (key === 'errorCode' && value === null ? undefined : value))));
   const events: CountedEvent[] = [];
   let state: ArchiveHealthState = 'ok';
   let since = now();
   let lastSuccessAt: number | null = null;
   let lastFailureAt: number | null = null;
+  let lastTransitionReason: string | null = null;
+  let lastTransitionAt: number | null = null;
   let lastProbeAt: number | null = null;
   let probeIntervalMs = cfg.probeIntervalMs;
   let consecutiveSuccesses = 0;
   let control: ArchiveHealthStatus['control'] = 'unknown';
   let degradedSince: number | null = null;
+  const lastCountedEvents: ArchiveHealthStatus['lastCountedEvents'] = [];
 
   const transition = (next: ArchiveHealthState, at: number, reason: string): string | undefined => {
     if (state === next) return undefined;
     state = next;
     since = at;
     degradedSince = next === 'degraded' ? at : null;
+    lastTransitionReason = reason;
+    lastTransitionAt = at;
     return reason;
+  };
+
+  const safePath = (value: string | undefined): string => {
+    if (!value) return '/';
+    try {
+      return new URL(value, 'http://ajn.invalid').pathname || '/';
+    } catch {
+      return value.split(/[?#]/, 1)[0] || '/';
+    }
   };
 
   const prune = (at: number) => {
@@ -210,10 +234,19 @@ export function createArchiveHealth(
     kind: ArchiveHealthEventKind;
     httpStatus: number | null;
     errorCode: string | null;
+    path: string;
   }) => {
     const counted = event.kind === 'ok' || failureKind(event.kind);
     if (counted) {
       events.push({ ts: event.ts, itemKey: event.itemKey, kind: event.kind as CountedEvent['kind'] });
+      lastCountedEvents.push({
+        ts: event.ts,
+        kind: event.kind as 'ok' | 'network' | 'server5xx',
+        errorCode: event.errorCode,
+        httpStatus: event.httpStatus,
+        path: safePath(event.path),
+      });
+      if (lastCountedEvents.length > 5) lastCountedEvents.shift();
       if (event.kind === 'ok') {
         lastSuccessAt = event.ts;
         consecutiveSuccesses += 1;
@@ -222,10 +255,6 @@ export function createArchiveHealth(
         lastFailureAt = event.ts;
         consecutiveSuccesses = 0;
       }
-    } else if (event.kind !== 'ok') {
-      // A non-success outcome does not affect outage thresholds, but it breaks a
-      // recovery streak because the Archive request sequence was not consecutive.
-      consecutiveSuccesses = 0;
     }
     return counted;
   };
@@ -241,6 +270,7 @@ export function createArchiveHealth(
         kind,
         httpStatus: event.httpStatus ?? null,
         errorCode: event.errorCode ?? null,
+        path: safePath(event.path),
       });
       const transitionReason = counted ? evaluate(event.ts, failureKind(kind)) : undefined;
       emit({
@@ -250,7 +280,7 @@ export function createArchiveHealth(
         httpStatus: event.httpStatus ?? null,
         errorCode: event.errorCode ?? null,
         counted,
-        path: (event.path ?? '/').split(/[?#]/, 1)[0] || '/',
+        path: safePath(event.path),
         ...(transitionReason ? { transitionReason } : {}),
       });
     },
@@ -258,12 +288,16 @@ export function createArchiveHealth(
       lastProbeAt = event.ts;
       prune(event.ts);
       control = event.control.ok === null ? 'unknown' : event.control.ok ? 'ok' : 'failed';
-      const archiveKind = classifyArchiveHealthOutcome({
-        status: event.archive.httpStatus,
-        errorCode: event.archive.errorCode ?? undefined,
-        errorMessage: event.archive.errorMessage,
-        errorReason: event.archive.errorReason,
-      });
+      const archiveKind = event.archive.httpStatus !== null
+        && event.archive.httpStatus >= 200
+        && event.archive.httpStatus < 400
+        ? 'ok'
+        : classifyArchiveHealthOutcome({
+          status: event.archive.httpStatus,
+          errorCode: event.archive.errorCode ?? undefined,
+          errorMessage: event.archive.errorMessage,
+          errorReason: event.archive.errorReason,
+        });
       const controlKind = classifyArchiveHealthOutcome({
         status: event.control.httpStatus,
         errorCode: event.control.errorCode ?? undefined,
@@ -276,6 +310,7 @@ export function createArchiveHealth(
         kind: archiveKind,
         httpStatus: event.archive.httpStatus,
         errorCode: event.archive.errorCode ?? null,
+        path: safePath(event.archive.path),
       });
       const archiveFailed = archiveCounted && failureKind(archiveKind);
       const transitionReason = evaluate(event.ts, archiveFailed);
@@ -291,7 +326,7 @@ export function createArchiveHealth(
         httpStatus: event.archive.httpStatus,
         errorCode: event.archive.errorCode ?? null,
         counted: archiveCounted,
-        path: event.archive.path.split(/[?#]/, 1)[0] || '/',
+        path: safePath(event.archive.path),
         ...(transitionReason ? { transitionReason } : {}),
       });
       emit({
@@ -301,7 +336,7 @@ export function createArchiveHealth(
         httpStatus: event.control.httpStatus,
         errorCode: event.control.errorCode ?? null,
         counted: false,
-        path: event.control.path.split(/[?#]/, 1)[0] || '/',
+        path: safePath(event.control.path),
       });
     },
     getStatus() {
@@ -311,12 +346,16 @@ export function createArchiveHealth(
       const failures = recent.filter((event) => failureKind(event.kind));
       const successes = recent.filter((event) => event.kind === 'ok');
       const distinctItems = new Set(failures.map((event) => event.itemKey)).size;
+      const noEvidence = state === 'ok' && lastSuccessAt === null && lastFailureAt === null;
       return {
-        state,
+        state: noEvidence ? 'unknown' : state,
         since,
+        lastTransitionReason,
+        lastTransitionAt,
         lastSuccessAt,
         lastFailureAt,
         recent: { failures: failures.length, successes: successes.length, distinctItems },
+        lastCountedEvents: lastCountedEvents.map((event) => ({ ...event })),
         nextProbeAt: nextProbeAt(),
         control,
       };

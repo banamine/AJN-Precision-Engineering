@@ -5,6 +5,8 @@ export interface ArchiveProxyFailureBody {
   proxyRequestId: string;
   errorCode?: string;
   reason?: string;
+  /** Circuit open only: seconds until the storage host may be asked again. */
+  retryAfterSeconds?: number;
 }
 
 export interface ArchiveProxyFailureReply {
@@ -26,6 +28,7 @@ export function buildArchiveProxyFailureReply(input: {
   proxyRequestId: string;
   errorCode?: string;
   reason?: string;
+  retryAfterMs?: number;
 }): ArchiveProxyFailureReply {
   const timedOut = input.errorCode === 'UND_ERR_CONNECT_TIMEOUT'
     || input.errorCode === 'AJN_UPSTREAM_HEADER_TIMEOUT';
@@ -44,6 +47,7 @@ export function buildArchiveProxyFailureReply(input: {
       proxyRequestId: input.proxyRequestId,
       ...(input.errorCode ? { errorCode: input.errorCode } : {}),
       ...(input.reason ? { reason: input.reason } : {}),
+      ...(circuitOpen && input.retryAfterMs && input.retryAfterMs > 0 ? { retryAfterSeconds: Math.ceil(input.retryAfterMs / 1000) } : {}),
     },
   };
 }

@@ -129,17 +129,17 @@ const prober = startArchiveHealthProber({
   }) as typeof fetch,
 });
 
-clock += 60_000;
+clock += 20_000;
 await intervalCallback?.();
 assert.deepEqual(probeCalls, [
   { url: 'https://archive.org/', method: 'HEAD' },
   { url: 'https://control.example/generate_204', method: 'GET' },
 ]);
 assert.equal(probeHealth.getStatus().state, 'down', 'one successful Archive probe does not recover an outage');
-clock += 60_000;
+clock += 20_000;
 await intervalCallback?.();
 assert.equal(probeHealth.getStatus().state, 'ok', 'second successful Archive outcome recovers after degraded window');
-assert.equal(probeHealth.getStatus().recent.failures, 0, 'probe evaluation prunes failures older than the sliding window');
+assert.equal(probeHealth.getStatus().recent.failures, 5, 'the 60-second failure window is unchanged; recovery comes from two successes');
 assert.equal(probeLines.filter((line) => line.itemKey === 'archive-probe').length, 2);
 assert.equal(probeLines.filter((line) => line.itemKey === 'control-probe').length, 2);
 prober.stop();
@@ -173,16 +173,58 @@ prober.stop();
     }) as typeof fetch,
   });
   assert.ok(tickPeriod > 0 && tickPeriod <= 5_000, 'prober ticks frequently and lets shouldProbe decide');
-  for (let elapsed = 0; elapsed < 200_000; elapsed += tickPeriod) {
+  for (let elapsed = 0; elapsed < 100_000; elapsed += tickPeriod) {
     jitterClock += tickPeriod;
     await jitterTick?.();
     if (jitterHealth.getStatus().state === 'ok') break;
   }
   assert.equal(jitterHealth.getStatus().state, 'ok', 'recovers after two successful probes');
   assert.ok(probeTimes.length === 2, `exactly two probes were needed, saw ${probeTimes.length}`);
-  assert.ok(probeTimes[1] - probeTimes[0] < 70_000, `second probe ${probeTimes[1] - probeTimes[0]} ms after the first (was ~120000 before the fix)`);
+  assert.ok(probeTimes[1] - probeTimes[0] >= 20_000, `second probe ${probeTimes[1] - probeTimes[0]} ms after the first (must respect the 20-second interval)`);
+  assert.ok(probeTimes[1] - probeTimes[0] < 25_000, `second probe ${probeTimes[1] - probeTimes[0]} ms after the first (must recover within two probe intervals)`);
   jitterProbe.stop();
-  console.log('PASS probes keep the configured 60-second spacing despite request time');
+  console.log('PASS probes keep the configured 20-second spacing despite request time');
+}
+
+{
+  let redirectClock = 700_000;
+  const redirectHealth = createArchiveHealth({}, { now: () => redirectClock, log: () => {} });
+  for (const key of ['redirect-a', 'redirect-b', 'redirect-c', 'redirect-d', 'redirect-e']) {
+    redirectHealth.record({ ts: redirectClock, itemKey: key, kind: 'network', errorCode: 'ETIMEDOUT' });
+  }
+  assert.equal(redirectHealth.getStatus().state, 'down');
+  let redirectTick: (() => void | Promise<void>) | undefined;
+  const archiveRequests: RequestInit[] = [];
+  const redirectProbe = startArchiveHealthProber({
+    health: redirectHealth,
+    now: () => redirectClock,
+    controlUrl: 'https://control.example/generate_204',
+    setIntervalImpl: ((callback: () => void) => {
+      redirectTick = callback;
+      return { unref() {} } as unknown as ReturnType<typeof setInterval>;
+    }) as typeof setInterval,
+    clearIntervalImpl: (() => {}) as typeof clearInterval,
+    fetchImpl: (async (input, init) => {
+      if (String(input) === 'https://archive.org/') {
+        archiveRequests.push(init ?? {});
+        return new Response(null, { status: 301, headers: { location: 'https://www.archive.org/' } });
+      }
+      return new Response(null, { status: 204 });
+    }) as typeof fetch,
+  });
+  redirectClock += 20_000;
+  await redirectTick?.();
+  assert.equal(redirectHealth.getStatus().state, 'down', 'one 301 response is only one recovery success');
+  redirectClock += 20_000;
+  await redirectTick?.();
+  assert.equal(redirectHealth.getStatus().state, 'ok', 'two Archive 301 responses recover within two 20-second intervals');
+  assert.equal(archiveRequests.length, 2, 'no redirect target was fetched');
+  assert.equal(archiveRequests.every((init) => init.method === 'HEAD' && init.redirect === 'manual'), true);
+  assert.deepEqual(redirectHealth.getStatus().lastCountedEvents.slice(-2).map((event) => [event.kind, event.httpStatus]), [
+    ['ok', 301], ['ok', 301],
+  ]);
+  redirectProbe.stop();
+  console.log('PASS Archive HEAD 301 is reachable; two responses recover within 40 seconds without following Location');
 }
 
 {
@@ -208,7 +250,7 @@ prober.stop();
     }) as typeof setInterval,
     clearIntervalImpl: (() => {}) as typeof clearInterval,
   });
-  blockedClock += 60_000;
+blockedClock += 20_000;
   assert.ok(blockedTick);
   await blockedTick();
   assert.equal(fakeArchiveCalls, 1, 'the mock catches the only Archive URL; blocked control URL is never fetched');
@@ -235,12 +277,14 @@ try {
   assert.equal(status.headers.get('cache-control'), 'no-store');
   const statusJson = await status.json() as Record<string, any>;
   assert.deepEqual(Object.keys(statusJson).sort(), [
-    'control', 'lastFailureAt', 'lastSuccessAt', 'nextProbeAt', 'recent', 'since', 'state',
+    'control', 'lastCountedEvents', 'lastFailureAt', 'lastSuccessAt', 'lastTransitionAt',
+    'lastTransitionReason', 'nextProbeAt', 'recent', 'since', 'state',
   ]);
+  assert.deepEqual(statusJson.lastCountedEvents, []);
   const healthResponse = await fetch(`${base}/api/health`);
   const healthJson = await healthResponse.json() as Record<string, any>;
   assert.deepEqual(Object.keys(healthJson).sort(), ['archive', 'service', 'stats', 'status', 'timestamp', 'uptime']);
-  assert.equal(healthJson.archive, 'ok');
+  assert.equal(healthJson.archive, 'unknown', 'fresh server with no Archive evidence reports unknown, not ok');
   assert.equal(healthJson.status, 'ok');
   assert.equal(healthJson.stats.totalRequests, 1);
   console.log('PASS local status endpoints: no-store shape and additive health key');

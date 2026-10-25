@@ -1,0 +1,18 @@
+# J2 release upload order
+
+Repo files (apply in this order; repo-relative path | bytes | SHA-256):
+1. server/data/liveTvPinned.json | 2996 | 8b86cbf0172de7e32e5a0ec560ba41ec3761d625f98d816f929d75be85ba6769
+2. server/sources/liveTv.ts | 7948 | 22ba627603926de2d692cf8fb7fdf96abcc6c5b1057860d2e6340a820c99604e
+3. testFixtures/liveTvPinned.ts | 1475 | 2249867f47e2f2054a675d5f30a6403bf6cb05ed0183fbe83cbd5de6eb7a5461
+4. test-live-tv.ts | 12376 | 7bd88427fa0f7677344056b55984ac66b1baa26ff4ed1f8901fe50204495bfff
+5. test-live-tv-api-server.ts | 487 | 38465b1123f57d97b5a5f1d83f26291f886984e73ac775454043d682fc1e743b
+6. test-live-health.ts | 3480 | bcf09c24fcd2b15a55994789e4d2f6c389c3062fc2eacebeb7ccf25358aeabe2
+7. tools/ajn-verify/run.mjs | 16986 | 1e72f29ac57a27b0609c7c6777def5d0e8bdd5983c5d0d004c11e8e6f74146ba
+8. tools/ajn-verify/registry.json | 675335 | 2cf8c6c38641023969e8c03fb8e77454036147bd0b95b7f4c7f7e14dc8e2e394
+9. tools/ajn-verify/self-test.mjs | 9362 | f38a46caadc093ca60c8bc255563a3df1870deae2aeb663eff595a3800850b98
+
+Package support files (not repo runtime files):
+- REVIEW/REPORT.md | 9743 | d51b0303451de4344ef2332ea884df9e2d80cd323027f45b6dff33e8e53ab763
+- ROLLBACK.txt | 602 | 64c492b38de3a474dacfd0203a111a2417a8775a5b311972c61be628f7c3b350
+- SHA256SUMS.txt | 990 | eee9ca615b2eab9946223bfa62e65ae9d38803e547db1dbf7e723a156e6577c0
+- UPLOAD_ORDER.txt is the index itself; its SHA-256 is intentionally not self-listed.

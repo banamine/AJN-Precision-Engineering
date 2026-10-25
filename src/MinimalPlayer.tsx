@@ -22,6 +22,8 @@ import { archiveIdentifierFromPath } from "./utils/thumbnail";
 import { isLiveRadioPlayback } from "./utils/isLiveRadioPlayback";
 import { RadioBriefingPlayerOverlay } from "./components/RadioBriefingPlayerOverlay";
 import { attachArchiveVideoPrefetch, type VideoPrefetchTarget } from "./utils/videoPrefetch";
+import { recordArchivePlaybackProgress } from "./utils/archivePlaybackEvidence";
+import { archiveSubtitleUrl } from "./utils/archiveSubtitles";
 
 interface MinimalPlayerProps {
   src: string;
@@ -509,6 +511,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       }, STALL_WATCHDOG_MS);
     };
     const onProgressOk = () => {
+      recordArchivePlaybackProgress(activeSrc, media.currentTime);
       clearStall();
       if (retries > 0 && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) retries = 0;
     };
@@ -1066,7 +1069,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           playsInline
           preload="metadata"
           className="h-full w-full"
-        />
+        >
+          {/* English subtitles (if the Archive item has an English .srt). Off until the viewer turns them on. */}
+          {archiveSubtitleUrl(activeSrc) && (
+            <track kind="subtitles" srcLang="en" label="English" src={archiveSubtitleUrl(activeSrc) ?? undefined} data-ajn-subtitles="en" />
+          )}
+        </video>
       ) : (
         <div data-testid="audio-stage" className={`relative isolate flex ${radioBriefingOn ? "h-96 sm:h-auto sm:aspect-video" : "aspect-video"} max-h-[60vh] min-h-44 w-full items-center justify-center overflow-hidden px-4 py-4`}>
           {artUrl && !radioBriefingOn && (

@@ -1,0 +1,4 @@
+96a7bed3d8823e7f  src/data/extraChannelsManifest.json
+e3b0c44298fc1c14  tools/add-boris1971-genre-channels.py
+67267136c1880f07  test-extra-channels.ts
+af365d998ca66fb9  test-infobattalion-lists.ts

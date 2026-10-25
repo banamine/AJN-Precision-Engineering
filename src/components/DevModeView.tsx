@@ -24,11 +24,19 @@ function readStoredRecentlyPlayed(): RecentlyPlayedItem[] {
   try { const v = JSON.parse(window.localStorage.getItem(RECENTLY_PLAYED_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
 }
 
-/** Wipes every localStorage entry for this site (recently played, history, favorites, recent searches, resume positions, settings).
+/** Removes this app's localStorage entries (every key starting with "ajn": recently played, history, favorites, recent searches, resume positions, settings). Other keys on the same origin are kept.
  *  Returns how many entries were removed, or null if storage is unavailable. */
-export function clearAppData(storage: Pick<Storage, 'length' | 'clear'> | null = typeof window !== 'undefined' ? safeStorage() : null): number | null {
+export function clearAppData(storage: Pick<Storage, 'length' | 'key' | 'removeItem'> | null = typeof window !== 'undefined' ? safeStorage() : null): number | null {
   if (!storage) return null;
-  try { const n = storage.length; storage.clear(); return n; } catch { return null; }
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < storage.length; i++) {
+      const k = storage.key(i);
+      if (k && /^ajn/i.test(k)) keys.push(k);
+    }
+    keys.forEach((k) => storage.removeItem(k));
+    return keys.length;
+  } catch { return null; }
 }
 function safeStorage(): Storage | null { try { return window.localStorage; } catch { return null; } }
 

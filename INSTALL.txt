@@ -1,0 +1,10 @@
+GOOGLE BUILDER DROP-IN: Search suggestions + "History cleared" banner + auto-scroll to results (2026-10-23)
+Replace these 5 files at the same paths. Do NOT change anything else. Do NOT add dependencies.
+  src/App.tsx
+  src/components/SearchView.tsx
+  src/components/HistoryView.tsx
+  src/utils/searchScroll.ts        (NEW)
+  src/utils/searchSuggestions.ts   (NEW)
+Base: AI Studio revision that already contains edits 3-6 (stale-search guard, lastQuery, Guide/Radio tab labels).
+Then Publish and tell Claude. (Playwright test, unit tests, package.json are intentionally NOT included; they live on GitHub.)
+After publish, check: #search empty box focus shows Recent/Topics; search scrolls to results; #history Clear -> banner.

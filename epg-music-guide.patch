@@ -1,0 +1,267 @@
+diff --git a/guideRegistry.ts b/guideRegistry.ts
+index 6aea952..afbb852 100644
+--- a/guideRegistry.ts
++++ b/guideRegistry.ts
+@@ -473,6 +473,10 @@ type AudioTask={id:string;name:string;group:string;mins:number;maxSlots:number;l
+ let audioProgress:Map<string,Program[]>|null=null;
+ let audioProgressNow:Date|null=null;
+ const LOADING_MSG='loading shows from Archive — refresh in a minute';
++/** Explicit registry-level tag: whole-item Archive channels in the "Music" group are music-lane, so the guide groups their tracks. */
++export function tagMusicLane(programs:Program[]):Program[]{
++  return programs.map(p=>p.metadata?.lane==='music'?p:{...p,metadata:{...(p.metadata??{}),lane:'music'}});
++}
+ function audioTasks(guideId:string,now:Date):AudioTask[]{
+   const itemSrcs=archiveAudioChannelsJson as ArchiveAudioChannelSource[];
+   return [
+@@ -496,7 +500,7 @@ function assembleAudio(tasks:AudioTask[],progress:Map<string,Program[]>,now:Date
+     if(programs.length&&t.loopDay){
+       // Whole-item channel: its tracks cycle across the entire day. The full day is kept in audioLoops (the guide asks for a
+       // window of it, see getAudioLoopRows); everything else still gets the first maxSlots rows, exactly as before.
+-      const full=layoutMusicDailySchedule(programs,now,t.mins);
++      const full=layoutMusicDailySchedule(t.group==='Music'?tagMusicLane(programs):programs,now,t.mins);
+       loops.set(t.id,full);
+       return{...base,programs:full.slice(0,t.maxSlots),sourceStatus:'ok'};
+     }
+diff --git a/src/EpgGuide.tsx b/src/EpgGuide.tsx
+index 526a20a..031411b 100644
+--- a/src/EpgGuide.tsx
++++ b/src/EpgGuide.tsx
+@@ -19,6 +19,8 @@ import { loadFilterPrefs, saveFilterPrefs } from "./guide/filterPrefs";
+ const DEFAULT_VIEW_WIDTH_PX = 960; // used until the real width is measured (and in server-side tests)
+ const CHANNEL_COLUMN_WIDTH_PX = 272;
+ const ROW_HEIGHT_PX = 68;
++/** Audio stations get more vertical room so station numbers, thumbnails and track blocks do not touch. */
++export const AUDIO_ROW_HEIGHT_PX = 84;
+ 
+ function hourLabel(hour: number): string {
+   const h = Math.floor(hour) % 24;
+@@ -132,6 +134,7 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left,
+ }
+ 
+ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active = true }: EpgGuideProps) {
++  const rowH = guideId === 'audio-podcasts' ? AUDIO_ROW_HEIGHT_PX : ROW_HEIGHT_PX;
+   const [nowHour, setNowHour] = useState(currentHourFraction());
+   const [channels, setChannels] = useState<ScheduleChannel[] | null>(() => getCachedSchedule(guideId)?.channels ?? null);
+   const [fetchError, setFetchError] = useState<string | null>(null);
+@@ -231,7 +234,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
+   const PAGE_ROWS = 40;
+   // Include the rows needed for a saved vertical position before restoring it.
+   const [visibleCount, setVisibleCount] = useState(() =>
+-    Math.max(PAGE_ROWS, Math.ceil((savedView?.scrollY ?? 0) / ROW_HEIGHT_PX) + PAGE_ROWS));
++    Math.max(PAGE_ROWS, Math.ceil((savedView?.scrollY ?? 0) / rowH) + PAGE_ROWS));
+   const sentinelRef = useRef<HTMLDivElement>(null);
+   const previousGuideId = useRef(guideId);
+   useEffect(() => {
+@@ -503,7 +506,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
+                 data-highlight={channel.highlight}
+                 data-channel-id={channel.id}
+                 className={`flex flex-col justify-center border-b border-neutral-800 px-3.5 ${flashId === channel.id ? 'bg-amber-500/15 ring-2 ring-inset ring-amber-400/70 ' : ''}${channel.highlight === 'must-listen' ? 'border-l-4 border-l-fuchsia-400 bg-gradient-to-r from-fuchsia-500/20 via-fuchsia-500/5 to-transparent' : ''}`}
+-                style={{ height: ROW_HEIGHT_PX }}
++                style={{ height: rowH }}
+               >
+                 <div className="flex min-w-0 items-center gap-2">
+                   <span data-testid="station-number" title={`Station ${stationOf.get(channel.id)}`} className="w-8 shrink-0 text-right font-mono text-[11px] font-semibold tabular-nums text-neutral-400">{stationLabel(stationOf.get(channel.id) ?? 0)}</span>
+@@ -575,7 +578,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
+                 <div
+                   key={channel.id}
+                   className="relative border-b border-neutral-800/80"
+-                  style={{ height: ROW_HEIGHT_PX }}
++                  style={{ height: rowH }}
+                   {...(g ? {
+                     role: 'group',
+                     'aria-label': `${channel.name}, ${g.mode === 'programs' ? g.items.length : g.cells.length} ${g.mode === 'programs' ? 'tracks' : g.mode === 'radio' ? 'daily block' : 'hourly blocks'}`,
+@@ -627,7 +630,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
+                 <div
+                   className="pointer-events-none absolute top-0 z-20 w-px bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
+                   data-now-hour={nowHour}
+-                  style={{ left: win.startHour * pxPerHour + nowLeftPx, height: 44 + visible.length * ROW_HEIGHT_PX }}
++                  style={{ left: win.startHour * pxPerHour + nowLeftPx, height: 44 + visible.length * rowH }}
+                 >
+                   <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-red-400/40" />
+                 </div>
+diff --git a/src/guide/BlockCell.tsx b/src/guide/BlockCell.tsx
+index 5d65e7e..8b13bb4 100644
+--- a/src/guide/BlockCell.tsx
++++ b/src/guide/BlockCell.tsx
+@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
+ import type { Program, ScheduleChannel, PlayProgramCallback } from "../types";
+ import type { GridBlock, GridItem } from "./groupProgramsForGrid";
+ import { windowItems } from "./groupProgramsForGrid";
++import { LazyThumb } from "../components/LazyThumb";
+ 
+ export function fmtClock(hour: number): string {
+   const total = Math.round(Math.max(0, Math.min(24, hour)) * 60);
+@@ -27,9 +28,15 @@ export function BlockCell({ channel, block, nowHour, pxPerHour, onOpen }: {
+   const live = block.liveProgramId !== null;
+   const span = block.endHour - block.startHour;
+   const frac = live ? Math.min(1, Math.max(0, (nowHour - block.startHour) / span)) : 0;
++  const widthPx = Math.max(span * pxPerHour - 4, 20);
++  const roomy = widthPx >= 120;   // thumbnail + two text lines fit
++  const tiny = widthPx < 90;      // only the track count fits
++  const art = block.items[0]?.program;
++  const tip = `${blockLabel(channel, block, live)}`;
+   return (
+     <button
+       type="button"
++      title={tip}
+       data-block-live-program-id={block.liveProgramId ?? ""}
+       data-live-program-id={block.liveProgramId ?? undefined}
+       data-start-hour={block.startHour}
+@@ -37,20 +44,31 @@ export function BlockCell({ channel, block, nowHour, pxPerHour, onOpen }: {
+       data-block-id={block.id}
+       aria-label={blockLabel(channel, block, live)}
+       onClick={(e) => onOpen(block, e.currentTarget)}
+-      className={`group absolute isolate top-1.5 flex h-[calc(100%-0.75rem)] flex-col justify-center overflow-hidden rounded-lg px-3 text-left text-xs cursor-pointer transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-950 ${
++      className={`group absolute isolate top-2 flex h-[calc(100%-1rem)] items-center gap-2 overflow-hidden rounded-lg px-2.5 text-left text-xs cursor-pointer transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-950 ${
+         live ? "border border-amber-500/50 bg-amber-500/15 text-amber-100 shadow-md shadow-amber-500/5"
+              : "border border-neutral-800 bg-neutral-900/80 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-800"}`}
+-      style={{ left: block.startHour * pxPerHour, width: Math.max(span * pxPerHour - 4, 20) }}
++      style={{ left: block.startHour * pxPerHour, width: widthPx }}
+     >
+-      {live && (
+-        <span className="mb-0.5 inline-flex w-fit items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse motion-reduce:animate-none" />On Air Now
+-        </span>
++      {/* Thumbnail loads only when this block is near the viewport (LazyThumb), so off-screen blocks never touch the network. */}
++      {roomy && art && (
++        <LazyThumb title={channel.name} className="h-9 w-9"
++          input={{ path: art.archivePath ?? art.mediaUrl ?? null, guideId: channel.guideId, channelId: channel.id, category: channel.group ?? null, mediaType: channel.mediaType, name: channel.name }} />
+       )}
+-      <span className="truncate font-semibold text-neutral-100">
+-        {block.continuesFrom && "… "}{collection(channel)} · tracks {block.first}-{block.last} of {block.total}{block.continuesInto && " …"}
++      <span className="flex min-w-0 flex-1 flex-col justify-center">
++        {live && !tiny && (
++          <span className="mb-0.5 inline-flex w-fit items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
++            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse motion-reduce:animate-none" />On Air Now
++          </span>
++        )}
++        {!tiny && (
++          <span className="truncate font-semibold text-neutral-100">
++            {block.continuesFrom && "… "}{collection(channel)}{block.continuesInto && " …"}
++          </span>
++        )}
++        <span className={`truncate text-[10px] ${tiny ? "text-center font-semibold text-neutral-200" : "text-neutral-400"}`}>
++          {tiny ? block.trackCount : `${block.trackCount} tracks · ${Math.round(block.minutes)} min`}
++        </span>
+       </span>
+-      <span className="truncate text-[10px] text-neutral-400">{block.trackCount} tracks · {Math.round(block.minutes)} min</span>
+       {live && (
+         <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-amber-950/60">
+           <span className="block h-full w-full origin-left bg-amber-400" style={{ transform: `scaleX(${frac})` }} />
+diff --git a/src/guide/groupProgramsForGrid.ts b/src/guide/groupProgramsForGrid.ts
+index 4f7cff3..bf042aa 100644
+--- a/src/guide/groupProgramsForGrid.ts
++++ b/src/guide/groupProgramsForGrid.ts
+@@ -4,6 +4,15 @@ export const MIN_CELL_PX = 64;
+ export const COMFORT_CELL_PX = 96;
+ export const NARROW_FRACTION = 0.2;
+ export const MAX_CELLS = 120;
++/** Each grouped block should be at least this wide, so thumbnails and titles have room. */
++export const BLOCK_MIN_PX = 150;
++const BUCKET_STEPS = [1, 2, 3, 4, 6];
++
++/** Smallest whole-hour bucket (1,2,3,4,6; all divide 24) whose block is >= BLOCK_MIN_PX wide at this zoom. */
++export function bucketHoursFor(pxPerHour: number): number {
++  if (!Number.isFinite(pxPerHour) || pxPerHour <= 0) return 1;
++  return BUCKET_STEPS.find((h) => h * pxPerHour >= BLOCK_MIN_PX) ?? BUCKET_STEPS[BUCKET_STEPS.length - 1];
++}
+ 
+ export interface GridItem {
+   program: Program;
+@@ -89,29 +98,31 @@ export function groupProgramsForGrid(channel: ScheduleChannel, pxPerHour: number
+   if (narrow / raw.length <= NARROW_FRACTION) return { mode: "programs", items: raw, cells: [], liveItem: live };
+ 
+   const total = channel.programs.length;
++  const bh = bucketHoursFor(pxPerHour);
++  const bucketOf = (h: number) => Math.min(24 - bh, Math.max(0, Math.floor(h / bh) * bh));
+   const items = raw.map((i) => ({ ...i }));
+   const buckets = new Map<number, GridItem[]>();
+   for (const it of items) {
+-    const b = Math.min(23, Math.max(0, Math.floor(it.sHour)));
+-    it.continuesInto = it.eHour > b + 1 + 1e-9;
++    const b = bucketOf(it.sHour);
++    it.continuesInto = it.eHour > b + bh + 1e-9;
+     it.continuesFrom = it.sHour < 0;
+     const arr = buckets.get(b); if (arr) arr.push(it); else buckets.set(b, [it]);
+   }
+-  // continuesFrom on a block: previous bucket's spilling track reaches into it.
++  // continuesFrom on a block: a track that started in an earlier bucket reaches into it.
+   const cells: GridBlock[] = [];
+   const keys = [...buckets.keys()].sort((a, b) => a - b);
+-  const spill = (b: number) => items.some((i) => Math.floor(i.sHour) < b && i.eHour > b + 1e-9 && i.sHour < b);
++  const spill = (b: number) => items.some((i) => i.sHour < b && i.eHour > b + 1e-9);
+   for (const b of keys) {
+     const bi = buckets.get(b)!;
+-    const blk = makeBlock(`${channel.id}-h${b}`, b, b + 1, bi, total, nowHour, live);
++    const blk = makeBlock(`${channel.id}-h${b}`, b, b + bh, bi, total, nowHour, live);
+     if (spill(b)) blk.continuesFrom = true;
+     cells.push(blk);
+   }
+-  // A live track continuing from an earlier bucket still marks the current bucket.
++  // The live track always marks the bucket that contains "now", even when it started in an earlier bucket.
+   if (live && nowHour !== undefined) {
+-    const nb = Math.min(23, Math.floor(nowHour));
++    const nb = bucketOf(nowHour);
+     if (!cells.some((c) => c.startHour === nb)) {
+-      cells.push(makeBlock(`${channel.id}-h${nb}`, nb, nb + 1, [], total, nowHour, live));
++      cells.push(makeBlock(`${channel.id}-h${nb}`, nb, nb + bh, [], total, nowHour, live));
+       cells.sort((a, b) => a.startHour - b.startHour);
+       const c = cells.find((x) => x.startHour === nb)!; c.continuesFrom = true;
+     }
+diff --git a/test-group-programs-for-grid.ts b/test-group-programs-for-grid.ts
+index 78160fa..287430f 100644
+--- a/test-group-programs-for-grid.ts
++++ b/test-group-programs-for-grid.ts
+@@ -1,5 +1,5 @@
+ import assert from "node:assert/strict";
+-import { groupProgramsForGrid, MIN_CELL_PX, COMFORT_CELL_PX } from "./src/guide/groupProgramsForGrid";
++import { groupProgramsForGrid, bucketHoursFor, MIN_CELL_PX, COMFORT_CELL_PX } from "./src/guide/groupProgramsForGrid";
+ import type { ScheduleChannel, Program } from "./src/types";
+ 
+ function prog(i: number, s: number, e: number, lane?: string): Program {
+@@ -59,4 +59,21 @@ export function runGroupingTests(): void {
+     "20% is not more than 20%");
+ }
+ 
+-if (process.argv[1]?.endsWith("test-group-programs-for-grid.ts")) { runGroupingTests(); console.log("grouping tests passed"); }
++if (process.argv[1]?.endsWith("test-group-programs-for-grid.ts")) { runGroupingTests(); console.log("grouping tests passed"); 
++  // Zoom-based buckets: wider spans of time per block when zoomed out.
++  assert.equal(bucketHoursFor(160), 1); assert.equal(bucketHoursFor(120), 2); assert.equal(bucketHoursFor(60), 3);
++  assert.equal(bucketHoursFor(40), 4); assert.equal(bucketHoursFor(10), 6); assert.equal(bucketHoursFor(0), 1);
++  const dense = Array.from({ length: 480 }, (_, i) => prog(i, i * 0.05, (i + 1) * 0.05, "music"));
++  const z = groupProgramsForGrid(chan(dense), 60, 10.4); // 60px/h -> 3h buckets
++  assert.equal(z.mode, "blocks");
++  assert.ok(z.cells.every((c) => c.endHour - c.startHour === 3 && c.startHour % 3 === 0));
++  assert.equal(z.cells.flatMap((c) => c.items).length, dense.filter((p) => p.startHour! < 24).length, "every track assigned once");
++  const liveZ = z.cells.filter((c) => c.liveProgramId);
++  assert.equal(liveZ.length, 1); assert.equal(liveZ[0].startHour, 9, "live track marks the 3h bucket containing now");
++  // A track straddling a bucket boundary still marks the bucket that contains now.
++  const strad = [prog(0, 0, 2.5, "music"), ...Array.from({ length: 80 }, (_, i) => prog(i + 1, 2.5 + i * 0.05, 2.55 + i * 0.05, "music"))];
++  const rs = groupProgramsForGrid(chan(strad), 60, 3.2); // live = p0? no: 3.2 is in a short track; check p0 case below
++  assert.equal(rs.cells.filter((c) => c.liveProgramId).length, 1);
++  const rs2 = groupProgramsForGrid(chan(strad), 60, 2.9); // inside the 2.5..3.0 region, bucket 0..3
++  assert.equal(rs2.cells.find((c) => c.liveProgramId)!.startHour, 0);
++}
+diff --git a/test-music-lane-tag.ts b/test-music-lane-tag.ts
+new file mode 100644
+index 0000000..1c4e025
+--- /dev/null
++++ b/test-music-lane-tag.ts
+@@ -0,0 +1,17 @@
++import assert from "node:assert/strict";
++import { tagMusicLane } from "./guideRegistry";
++import { groupProgramsForGrid } from "./src/guide/groupProgramsForGrid";
++import type { Program, ScheduleChannel } from "./src/types";
++
++const mk = (i: number, meta: Record<string, unknown> = {}): Program => ({ id: `p${i}`, guideId: "audio-podcasts", channelId: "c", title: `T${i}`,
++  startTime: i * 0.05, endTime: (i + 1) * 0.05, startHour: i * 0.05, endHour: (i + 1) * 0.05, mediaType: "audio", mediaUrl: `u${i}`, metadata: meta });
++const raw = Array.from({ length: 200 }, (_, i) => mk(i));
++const before = JSON.stringify(raw);
++const tagged = tagMusicLane(raw);
++assert.equal(JSON.stringify(raw), before, "input not mutated");
++assert.ok(tagged.every((p) => p.metadata?.lane === "music"));
++assert.equal(tagMusicLane([mk(1, { lane: "music", x: 1 })])[0].metadata?.x, 1, "existing metadata kept");
++const ch = (programs: Program[]): ScheduleChannel => ({ id: "item-x", guideId: "audio-podcasts", name: "X", mediaType: "audio", programs });
++assert.equal(groupProgramsForGrid(ch(raw), 160, 1).mode, "programs", "untagged dense channel is NOT grouped (the bug)");
++assert.equal(groupProgramsForGrid(ch(tagged), 160, 1).mode, "blocks", "tagged channel is grouped");
++console.log("music lane tag: ok");

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Play, Trash2, X, History as HistoryIcon, Heart } from 'lucide-react';
 import type { HistoryEntry } from '../utils/historyStore';
 import { filterHistory, groupByDay } from '../utils/historyStore';
@@ -22,10 +22,42 @@ export function HistoryView({ entries, onPlay, onRemove, onClear, isFavorite, sy
   const [q, setQ] = useState('');
   const [type, setType] = useState<'all' | 'audio' | 'video'>('all');
   const [confirmClear, setConfirmClear] = useState(false);
+  const [clearedCount, setClearedCount] = useState<number | null>(null);
   const filtered = useMemo(() => filterHistory(entries, q, type), [entries, q, type]);
   const groups = useMemo(() => groupByDay(filtered, Date.now()), [filtered]);
+  useEffect(() => {
+    if (clearedCount === null) return;
+    const timer = window.setTimeout(() => setClearedCount(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [clearedCount]);
+
+  const clearHistory = () => {
+    const removed = entries.length;
+    if (removed > 0) setClearedCount(removed);
+    setConfirmClear(false);
+    onClear();
+  };
+
   return (
     <div className="space-y-5" data-testid="history-view">
+      {clearedCount !== null && clearedCount > 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="history-cleared"
+          className="flex items-center justify-between gap-3 rounded-xl border border-emerald-800/60 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-200 motion-reduce:transition-none"
+        >
+          <span>History cleared ({clearedCount} items removed).</span>
+          <button
+            type="button"
+            aria-label="Dismiss history cleared message"
+            onClick={() => setClearedCount(null)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-emerald-200 hover:bg-emerald-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-neutral-800 pb-4">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-50"><HistoryIcon className="h-6 w-6 text-sky-400" aria-hidden="true" /> History</h1>
@@ -34,7 +66,7 @@ export function HistoryView({ entries, onPlay, onRemove, onClear, isFavorite, sy
         {entries.length > 0 && (confirmClear ? (
           <div className="flex items-center gap-2 text-xs">
             <span className="text-neutral-300">Clear all history?</span>
-            <button type="button" data-testid="history-clear-confirm" onClick={() => { onClear(); setConfirmClear(false); }} className="rounded-lg bg-red-500 px-3 py-1.5 font-semibold text-white hover:bg-red-400">Yes, clear</button>
+            <button type="button" data-testid="history-clear-confirm" onClick={clearHistory} className="rounded-lg bg-red-500 px-3 py-1.5 font-semibold text-white hover:bg-red-400">Yes, clear</button>
             <button type="button" onClick={() => setConfirmClear(false)} className="rounded-lg border border-neutral-700 px-3 py-1.5 text-neutral-200 hover:bg-neutral-800">Cancel</button>
           </div>
         ) : (
@@ -56,7 +88,7 @@ export function HistoryView({ entries, onPlay, onRemove, onClear, isFavorite, sy
       )}
 
       {entries.length === 0 ? (
-        <div data-testid="history-empty" className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/40 p-8 text-center text-sm text-neutral-500">Nothing played yet. Anything you start from the Guide, Library, Radio or Search shows up here.</div>
+        <div data-testid="history-empty" className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/40 p-8 text-center text-sm text-neutral-500">No history yet. Anything you start from the Guide, Library, Radio or Search shows up here.</div>
       ) : filtered.length === 0 ? (
         <div data-testid="history-no-match" className="rounded-xl border border-dashed border-neutral-800 p-6 text-center text-sm text-neutral-500">No history matches.</div>
       ) : groups.map((g) => (

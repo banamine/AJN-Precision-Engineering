@@ -11,7 +11,7 @@ function timeLabel(iso: string | null): string {
 }
 
 export function NewsTicker({ news }: { news: DigestView }) {
-  const items = news.data?.digest.top ?? [];
+  const items = (news.data?.digest.top ?? []).slice(0, 5);
   if (!items.length) return null;
   const row = (suffix: string) => items.map(item => (
     <a key={`${item.id}${suffix}`} className="ajr-ticker-item" tabIndex={suffix ? -1 : undefined} href={item.url} target="_blank" rel="noopener noreferrer"><b>{item.source}</b>{item.title}</a>
@@ -40,7 +40,7 @@ function renderStory(item: DigestItem) {
 export function DailyBriefing({ news }: { news: DigestView }) {
   const [source, setSource] = useState<string | null>(null);
   const digest = news.data?.digest ?? null;
-  const items = useMemo(() => !digest ? [] : source ? digest.bySource.find(group => group.source === source)?.items ?? [] : digest.top, [digest, source]);
+  const items = useMemo(() => !digest ? [] : source ? digest.bySource.find(group => group.source === source)?.items ?? [] : (digest.top.length > 5 ? digest.top.slice(5) : digest.top), [digest, source]);
   const notice = digest ? digestNotice(digest.updatedAt, Date.now(), news.data?.status === 'error' ? news.data.error : null) : null;
   return (
     <section className="ajr-section ajr-news" id="ajr-news" aria-label="Daily briefing">

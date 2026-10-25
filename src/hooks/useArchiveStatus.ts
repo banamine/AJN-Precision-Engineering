@@ -2,9 +2,16 @@ import { useSyncExternalStore } from 'react';
 import type { ArchiveHealthState } from '../../server/archiveHealth';
 
 export type ClientArchiveState = ArchiveHealthState | 'unknown';
+/**
+ * checking    = no reply yet since the app opened
+ * live        = `state` is the server's latest answer
+ * unavailable = the last status request itself failed (state is then 'unknown')
+ */
+export type ClientArchivePhase = 'checking' | 'live' | 'unavailable';
 export interface ClientArchiveStatus {
   state: ClientArchiveState;
   since: number | null;
+  phase: ClientArchivePhase;
 }
 
 export interface ArchiveStatusPollerDeps {
@@ -23,21 +30,21 @@ export interface ArchiveStatusPoller {
 }
 
 const isArchiveState = (value: unknown): value is ArchiveHealthState =>
-  value === 'ok' || value === 'degraded' || value === 'down' || value === 'unreachable_from_here';
+  value === 'ok' || value === 'degraded' || value === 'down' || value === 'unreachable_from_here' || value === 'unknown';
 
 export function createArchiveStatusPoller(deps: ArchiveStatusPollerDeps): ArchiveStatusPoller {
   const subscribers = new Set<() => void>();
   const setIntervalImpl = deps.setIntervalImpl ?? setInterval;
   const clearIntervalImpl = deps.clearIntervalImpl ?? clearInterval;
   const intervalMs = deps.intervalMs ?? 30_000;
-  let snapshot: ClientArchiveStatus = { state: 'unknown', since: null };
+  let snapshot: ClientArchiveStatus = { state: 'unknown', since: null, phase: 'checking' };
   let timer: ReturnType<typeof setInterval> | null = null;
   let removeVisibilityListener: (() => void) | null = null;
   let controller: AbortController | null = null;
   let requestId = 0;
 
   const publish = (next: ClientArchiveStatus) => {
-    if (snapshot.state === next.state && snapshot.since === next.since) return;
+    if (snapshot.state === next.state && snapshot.since === next.since && snapshot.phase === next.phase) return;
     snapshot = next;
     for (const listener of subscribers) listener();
   };
@@ -60,9 +67,10 @@ export function createArchiveStatusPoller(deps: ArchiveStatusPollerDeps): Archiv
       publish({
         state: isArchiveState(data.state) ? data.state : 'unknown',
         since: Number.isFinite(data.since) ? Number(data.since) : null,
+        phase: 'live',
       });
     } catch {
-      if (id === requestId && !currentController.signal.aborted) publish({ state: 'unknown', since: null });
+      if (id === requestId && !currentController.signal.aborted) publish({ state: 'unknown', since: null, phase: 'unavailable' });
     } finally {
       if (controller === currentController) controller = null;
     }

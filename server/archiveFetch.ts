@@ -61,6 +61,12 @@ export class ArchiveHostCircuitBreaker {
     return { failures, opened };
   }
 
+  /** Milliseconds until an open circuit for this host allows requests again (0 when closed). */
+  remainingMs(host: string, now = Date.now()): number {
+    const state = this.states.get(host.toLowerCase());
+    return state && state.openUntil > now ? state.openUntil - now : 0;
+  }
+
   recordSuccess(host: string): void {
     this.states.delete(host.toLowerCase());
   }
@@ -369,6 +375,8 @@ export interface ArchiveFetchResult {
   errorMessage?: string;
   /** Rate limit exceeded the retry wait budget or there were no attempts left. */
   rateLimit?: { status: 429 | 503; retryAfterSeconds: number };
+  /** Circuit open: how long until this storage host may be asked again. */
+  retryAfterMs?: number;
 }
 
 export interface ArchiveFetchOptions {
@@ -570,7 +578,9 @@ export async function fetchArchiveMediaWithRetry(
       // A circuit-open result means this host must not be retried during cooldown.
       // We already tried an alternate replica when the failed host was not archive.org.
       if (upstreamCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') {
-        return { ...last, attempts: Math.max(0, attempt - 1) };
+        const openHost = (networkError as { host?: string }).host ?? failedHost ?? 'archive.org';
+        const retryAfterMs = archiveHostCircuitBreaker.remainingMs(openHost) || archiveHostCircuitBreaker.cooldownMs;
+        return { ...last, attempts: Math.max(0, attempt - 1), retryAfterMs };
       }
       if (attempt < attempts && !opts.signal?.aborted) {
         const delayMs = baseDelayMs * 2 ** (attempt - 1);
