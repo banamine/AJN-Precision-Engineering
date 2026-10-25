@@ -66,8 +66,24 @@ function aistudioMediaPlugin(): Plugin {
 
 export default defineConfig(() => {
   const hmrEnabled = process.env.DISABLE_HMR !== 'true';
+  const demoBuild = process.env.VITE_AJN_DEMO === '1';
   return {
-    plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      aistudioMediaPlugin(),
+      ...(demoBuild ? [{
+        name: 'ajn-demo-remove-external-fonts',
+        enforce: 'pre' as const,
+        transformIndexHtml(html: string) {
+          return html.replace(/<link[^>]+rel=["']apple-touch-icon["'][^>]*>\s*/i, '');
+        },
+        transform(code: string, id: string) {
+          if (!id.includes('/src/radio.css')) return null;
+          return code.replace(/@import\s+url\(['"]https:\/\/fonts\.googleapis\.com\/[^'"]+['"]\)\s*;\s*/g, '');
+        },
+      } as Plugin] : []),
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

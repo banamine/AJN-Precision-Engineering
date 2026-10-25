@@ -3,8 +3,14 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+const root = document.getElementById('root')!;
+
+if (import.meta.env.VITE_AJN_DEMO === '1') {
+  void import('./demo/demo-entry').then(({ mountDemo }) => mountDemo(root));
+} else {
+  createRoot(root).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}

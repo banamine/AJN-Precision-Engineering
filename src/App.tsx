@@ -49,9 +49,15 @@ function restoreLastAudio(): NowPlayingMedia | null {
   return { ...last, startAtSeconds: at > 5 ? at : undefined, restoredPaused: true };
 }
 
+/** /bannedvideo (no hash) opens News; NewsTabs selects the BANNED VIDEO tab. */
+function isBannedVideoPath(): boolean {
+  return typeof window !== 'undefined' && /\/bannedvideo\/?$/i.test(window.location.pathname);
+}
+
 function getDestinationFromHash(): Destination {
   if (typeof window === 'undefined') return 'home';
   const hash = window.location.hash.replace('#', '').toLowerCase();
+  if (!hash && isBannedVideoPath()) return 'news';
   switch (hash) {
     case 'tv-guide':
     case 'guide':
@@ -63,7 +69,8 @@ function getDestinationFromHash(): Destination {
     case 'search': return 'search';
     case 'today': return 'today';
     case 'history': return 'history';
-    case 'news': return 'news';
+    case 'news':
+    case 'bannedvideo': return 'news';
     case 'news-cube': return 'news-cube';
     case 'radio':
     case 'ajn-radio': return 'radio';
@@ -75,7 +82,7 @@ function getDestinationFromHash(): Destination {
 }
 
 function getInitialView(): { destination: Destination; fromStorage: boolean } {
-  if (typeof window === 'undefined' || window.location.hash) {
+  if (typeof window === 'undefined' || window.location.hash || isBannedVideoPath()) {
     return { destination: getDestinationFromHash(), fromStorage: false };
   }
   const saved = loadLastView(VALID_DESTINATIONS);
