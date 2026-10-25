@@ -822,6 +822,44 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       levelLoadingTimeOut: 7000, levelLoadingMaxRetry: 1, levelLoadingRetryDelay: 500,
       startFragPrefetch: true,
     });
+    const hlsProbeWindow = window as Window & {
+      __ajnHlsProbeEnabled?: boolean;
+      __ajnHlsInstance?: Hls;
+      __ajnHlsEvents?: Array<Record<string, unknown>>;
+    };
+    const exposeHlsProbe = import.meta.env.DEV && hlsProbeWindow.__ajnHlsProbeEnabled === true;
+    if (exposeHlsProbe) {
+      hlsProbeWindow.__ajnHlsInstance = hls;
+      hlsProbeWindow.__ajnHlsEvents = [];
+      const recordHlsEvent = (event: string, data: unknown) => {
+        const row = data && typeof data === "object" ? data as Record<string, unknown> : {};
+        const response = row.response && typeof row.response === "object" ? row.response as Record<string, unknown> : {};
+        const primitive = (value: unknown): string | number | boolean | null => {
+          if (typeof value === "string" || typeof value === "boolean") return value;
+          if (typeof value === "number" && Number.isFinite(value)) return value;
+          return null;
+        };
+        const entry = {
+          at: Date.now(),
+          event,
+          type: primitive(row.type),
+          details: primitive(row.details),
+          fatal: primitive(row.fatal),
+          status: primitive(response.code),
+          // HLS.js may place a circular loader/fragment object in `reason`.
+          // The probe only needs scalar event metadata for serializable reports.
+          level: primitive(row.level),
+        };
+        const events = hlsProbeWindow.__ajnHlsEvents ?? [];
+        events.push(entry);
+        if (events.length > 2000) events.splice(0, events.length - 2000);
+        hlsProbeWindow.__ajnHlsEvents = events;
+      };
+      hls.on(Hls.Events.ERROR, (_event, data) => recordHlsEvent("ERROR", data));
+      hls.on(Hls.Events.MANIFEST_LOADED, (_event, data) => recordHlsEvent("MANIFEST_LOADED", data));
+      hls.on(Hls.Events.LEVEL_LOADED, (_event, data) => recordHlsEvent("LEVEL_LOADED", data));
+      hls.on(Hls.Events.BUFFER_RESET, (data) => recordHlsEvent("BUFFER_RESET", data));
+    }
     hlsRef.current = hls;
     let recoveries = 0;
     hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -836,6 +874,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     hls.loadSource(activeSrc);
     hls.attachMedia(media);
     return () => {
+      if (hlsProbeWindow.__ajnHlsInstance === hls) delete hlsProbeWindow.__ajnHlsInstance;
       hls.stopLoad();
       hls.detachMedia();
       hls.destroy();
