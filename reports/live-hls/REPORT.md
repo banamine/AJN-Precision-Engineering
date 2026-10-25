@@ -63,6 +63,8 @@ The final probe exited **0** and wrote `BEFORE.json` and `BEFORE.md`. It sampled
 
 The job requires stopping when neither A nor B is confirmed. Therefore no Phase 2 runtime fix, `AFTER` run, recovery unit suite, or five-minute desktop/phone follow-up was run. Draft review PR: https://github.com/banamine/AJN-Precision-Engineering/pull/127 (`fix/live-hls-recovery` → `base/aistudio-2026-10-25b`). It is evidence-only and unmerged; there was no deployment or main-branch change.
 
+The PR's only GitHub check, `AJN integrity guard`, failed (run `40235953357`, job `121297455389`). The annotation reported exit code 1. Re-running the guard against this AI Studio export tree produced the exact reason: `missing required file: Dockerfile`. The export/base does not contain Dockerfile, while its inherited integrity manifest requires it. I did not add Dockerfile or modify the base because this gate is evidence-only and the ZIP is specifically for the AI Studio export. This CI blocker needs an owner decision; it is not evidence that either HLS suspect is confirmed.
+
 Not verified: why S3 has two time discontinuities; whether the same behavior occurs on another Pluto channel or device; the five-minute phone and desktop runs. Start Over was not available in this channel’s UI.
 
 ## Build outline for owner review
