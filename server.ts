@@ -52,6 +52,7 @@ import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
 import { registerFolderArtRoute } from './server/folderArt.js';
 import { registerCaptionRoutes } from './server/captions/routes.js';
+import { registerAffiliateListingRoute } from './server/routes/affiliateListing.js';
 import { registerAudioAsrRoutes } from './server/audioAsrRoutes';
 import { registerNowPlayingRoute } from './server/radioNowPlayingRoute.js';
 import { registerSyncPlaceholder } from './server/routes/syncPlaceholder.js';
@@ -367,6 +368,7 @@ const IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 registerFolderArtRoute(app);
 registerCaptionRoutes(app);
+registerAffiliateListingRoute(app);
 registerAudioAsrRoutes(app);
 registerNowPlayingRoute(app);
 app.get('/api/live-radio/status', (_req, res) => {
