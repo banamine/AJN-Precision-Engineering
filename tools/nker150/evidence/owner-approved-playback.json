@@ -1,0 +1,152 @@
+{
+  "runAt": "2026-10-26T09:45:50.896Z",
+  "sampledFrom": "PROXY_VERIFIED",
+  "selectedIdentifiers": [
+    "03-2_20201231",
+    "the-alex-jones-show-april-2015-hd",
+    "the-alex-jones-show-january-2016-hd",
+    "the-alex-jones-show-may-2015-hd",
+    "the-alex-jones-show-september-2021-hd"
+  ],
+  "results": [
+    {
+      "identifier": "03-2_20201231",
+      "title": "The Alex Jones Show March 2019 (HD)",
+      "result": "FAIL",
+      "failureBoundary": "decode-or-start",
+      "reason": "No decoded, actively playing video frame appeared",
+      "httpStatus": null,
+      "ownerApprovalLabel": true,
+      "archiveDetailsLink": true,
+      "showLabel": true,
+      "creatorLabel": true
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2015-hd",
+      "title": "The Alex Jones Show April 2015 (HD)",
+      "result": "PASS",
+      "httpStatus": 206,
+      "ownerApprovalLabel": true,
+      "archiveDetailsLink": true,
+      "showLabel": true,
+      "creatorLabel": true
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2016-hd",
+      "title": "The Alex Jones Show January 2016 (HD)",
+      "result": "FAIL",
+      "failureBoundary": "playback-progress",
+      "reason": "Playback did not advance reliably (0.445s; paused=false)",
+      "httpStatus": 206,
+      "ownerApprovalLabel": true,
+      "archiveDetailsLink": true,
+      "showLabel": true,
+      "creatorLabel": true
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "title": "The Alex Jones Show May 2015 (HD)",
+      "result": "PASS",
+      "httpStatus": 206,
+      "ownerApprovalLabel": true,
+      "archiveDetailsLink": true,
+      "showLabel": true,
+      "creatorLabel": true,
+      "currentSrc": "/api/archive/proxy",
+      "width": 1280,
+      "height": 720,
+      "advancedSeconds": 1.444
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "title": "The Alex Jones Show September 2021 (HD)",
+      "result": "PASS",
+      "httpStatus": 206,
+      "ownerApprovalLabel": true,
+      "archiveDetailsLink": true,
+      "showLabel": true,
+      "creatorLabel": true,
+      "currentSrc": "/api/archive/proxy",
+      "width": 1280,
+      "height": 720,
+      "advancedSeconds": 1.509
+    }
+  ],
+  "firstFailure": {
+    "identifier": "03-2_20201231",
+    "title": "The Alex Jones Show March 2019 (HD)",
+    "result": "FAIL",
+    "failureBoundary": "decode-or-start",
+    "reason": "No decoded, actively playing video frame appeared",
+    "httpStatus": null,
+    "ownerApprovalLabel": true,
+    "archiveDetailsLink": true,
+    "showLabel": true,
+    "creatorLabel": true
+  },
+  "blockedExternalHosts": [
+    "fonts.googleapis.com",
+    "archive.org"
+  ],
+  "blockedExternalRequests": [
+    {
+      "identifier": "",
+      "url": "fonts.googleapis.com/css2"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-april-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-august-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-december-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-february-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-july-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-june-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-april-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-august-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-december-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-february-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-july-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-june-2014-hd"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "url": "archive.org/services/img/the-alex-jones-show-september-2021-hd"
+    }
+  ],
+  "blockedThumbnailRequests": [],
+  "failedProxyRequests": [],
+  "pageErrors": []
+}

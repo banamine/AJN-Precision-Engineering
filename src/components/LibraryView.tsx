@@ -219,8 +219,11 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                   {item.originalCreator && <p className="text-xs text-neutral-400">Creator: {item.originalCreator}</p>}
                   {item.rightsStatus && <p className="text-[11px] text-amber-200">Rights metadata: {item.rightsStatus}; not a rights determination.</p>}
                   {item.rightsReview === 'PENDING_REVIEW' && <p className="text-[11px] text-amber-200">Rights review pending; withheld from the standard collection.</p>}
+                  {item.rightsReview === 'OWNER_APPROVED' && <p className="text-[11px] text-emerald-200">Owner-approved for this collection.</p>}
                   {item.rightsReview === 'ALLOWLIST_PATTERN' && <p className="text-[11px] text-emerald-200">License URL matches the configured allowlist pattern; not legal clearance.</p>}
                   {item.technicalStatus === 'NOT_TESTED' && <p className="text-[11px] text-amber-200">Playability check pending</p>}
+                  {item.technicalStatus === 'PROXY_VERIFIED' && <p className="text-[11px] text-amber-200">Bounded Archive range verified; full playback not yet checked.</p>}
+                  {item.archiveDetailsUrl && <a href={item.archiveDetailsUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-[11px] text-sky-300 hover:underline">Archive details</a>}
                 </div>
                 <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-xs text-neutral-500" title={item.durEst ? 'Estimated length' : undefined}><Clock className="h-3.5 w-3.5" aria-hidden="true" />{fmtDur(item.dur, item.durEst) || '—'}{item.availability === 'verified' ? ' · checked' : ''}</span>

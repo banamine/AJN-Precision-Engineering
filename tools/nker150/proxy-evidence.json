@@ -1,0 +1,899 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "identifier": "01_20200728_20200728_1511",
+      "status": "PLAYABLE_VERIFIED",
+      "auditedAt": "2026-10-26T09:23:33.387Z",
+      "httpStatus": null,
+      "attempts": 0,
+      "reason": "existing browser playback evidence retained; no request made"
+    },
+    {
+      "identifier": "04-2_20201231",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:23:41.786Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5747937990",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "20190523thualexhd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:23:46.166Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5745262935",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "20190610monalexhd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:23:50.748Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2862435737",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "20190715monalexhd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:23:55.197Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5740258996",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "20200203monalexhd_202003",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:23:59.760Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2870614473",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "20200316-mon-alex-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:04.383Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2866243801",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "20200430-thu-alex-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:08.876Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5736399071",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "20200529-fri-alex-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:13.783Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5793283681",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "aj-show-sept-2020",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:17.837Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5757307228",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-7-20",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:22.493Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5766295470",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-8-20",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:26.661Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2127794621",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-december-2020",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:31.796Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5784798151",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-january-2020",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:36.027Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5803259230",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-november-2020",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:40.562Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2871167628",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-show",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:45.091Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5742048747",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-show-6-20",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:49.618Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5767614376",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-show-january-2020",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:54.073Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5760670693",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "alex-jones-show-oct-2020",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:24:58.709Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5760670693",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "infowars_202103",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:03.366Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5752314538",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "movies-the-alex-jones-show-april-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:07.408Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5713757623",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:11.939Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4287013852",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:21.389Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2897204867",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:26.308Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2891207848",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:30.059Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5016268865",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:34.953Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2873672039",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:39.438Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5713439557",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:43.952Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5786762247",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:48.547Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5734470790",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2021-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:53.229Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2860617562",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:25:58.522Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4282977278",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:03.124Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5714681702",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:07.544Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5713007619",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:11.821Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5753964655",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:16.704Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2866578785",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2021-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:21.958Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5740806086",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:27.575Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/3020086775",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:35.651Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2857078692",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:40.084Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5721545642",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:44.599Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5824013537",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:26:56.580Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5749290066",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2022-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:01.236Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5762646589",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:05.653Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4287870263",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:14.915Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2852278349",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:22.841Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5762850243",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2022-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:26.278Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2879928336",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:31.053Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4259374999",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:35.624Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4414597911",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:40.487Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5712845500",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:44.579Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2904790850",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:49.480Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2858160343",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2021-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:27:54.146Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5749496116",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:00.882Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4288130665",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:06.772Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4279385073",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:10.281Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5713182895",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:14.751Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5786353955",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:19.287Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5753010664",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2021-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:23.851Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5760961683",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:28.375Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2829294805",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:32.900Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2814193391",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:37.434Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5715776897",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:41.948Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5791423908",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:46.138Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5756555468",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:28:51.015Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4440026241",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:07.273Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2852237531",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:11.672Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5819172692",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:20.529Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5724067201",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2021-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:24.951Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5759086127",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:29.471Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4423877527",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:34.353Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2852018877",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:38.195Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5712726480",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:42.720Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5746209674",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2021-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:47.594Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5737987294",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-novermber-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:52.098Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5749564715",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:29:57.624Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4278500301",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:02.113Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5711004536",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:08.244Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2852158268",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:11.682Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2900410931",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:16.199Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5771299304",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2021-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:21.095Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5751014076",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2014-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:25.238Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/4773115392",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2015-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:29.869Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5716516873",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2016-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:34.390Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5711647255",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2017-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:39.026Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/5757029428",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2018-hd",
+      "status": "PROXY_VERIFIED",
+      "auditedAt": "2026-10-26T09:30:46.623Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "contentRange": "bytes 0-1023/2871000142",
+      "attempts": 1,
+      "reason": "bounded Archive proxy range verified; browser playback not yet confirmed"
+    },
+    {
+      "identifier": "03-2_20201231",
+      "status": "FAILED",
+      "auditedAt": "2026-10-26T09:35:57.132Z",
+      "httpStatus": null,
+      "attempts": 1,
+      "reason": "No decoded, actively playing video frame appeared",
+      "failureBoundary": "decode-or-start"
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2015-hd",
+      "status": "PLAYABLE_VERIFIED",
+      "auditedAt": "2026-10-26T09:41:42.744Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "attempts": 1,
+      "reason": "real-browser playback advanced with decoded video dimensions"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2016-hd",
+      "status": "FAILED",
+      "auditedAt": "2026-10-26T09:41:56.273Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "attempts": 1,
+      "reason": "Playback did not advance reliably (0.445s; paused=false)",
+      "failureBoundary": "playback-progress"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "status": "PLAYABLE_VERIFIED",
+      "auditedAt": "2026-10-26T09:45:24.314Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "attempts": 1,
+      "reason": "real-browser playback advanced with decoded video dimensions"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "status": "PLAYABLE_VERIFIED",
+      "auditedAt": "2026-10-26T09:45:50.678Z",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "attempts": 1,
+      "reason": "real-browser playback advanced with decoded video dimensions"
+    }
+  ]
+}
