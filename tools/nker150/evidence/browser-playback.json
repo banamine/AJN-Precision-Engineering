@@ -1,0 +1,91 @@
+{
+  "firstItem": {
+    "identifier": "01_20200728_20200728_1511",
+    "title": "The Alex Jones Show January 2019 (HD)",
+    "currentSrcPath": "/api/archive/proxy",
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "audioDecodedBytesAtStart": 22117,
+    "audioDecodedBytesAtEnd": 89020,
+    "currentTimeAdvancedSeconds": 2.578,
+    "pauseWorks": true
+  },
+  "switchedTo": {
+    "id": "ia-The_Haunted_Castle_1896",
+    "identifier": "The_Haunted_Castle_1896",
+    "title": "The Haunted Castle"
+  },
+  "switchState": {
+    "activeMediaCount": 1,
+    "elements": [
+      {
+        "kind": "video",
+        "paused": false,
+        "ended": false,
+        "readyState": 4,
+        "networkState": 2,
+        "currentSrc": "http://127.0.0.1:3110/api/archive/proxy?path=%2Fdownload%2FThe_Haunted_Castle_1896%2FThe_Haunted_Castle_1896_512kb.mp4",
+        "videoWidth": 320,
+        "videoHeight": 240,
+        "audioDecodedBytes": 0,
+        "errorCode": null
+      }
+    ]
+  },
+  "activeMediaCountAfterSwitch": 1,
+  "firstSliceSaved": true,
+  "blockedExternalHostCount": 2,
+  "blockedExternalHosts": [
+    "fonts.googleapis.com",
+    "archive.org"
+  ],
+  "localRequestFailures": [
+    "GET /api/archive/status: net::ERR_ABORTED",
+    "GET /api/home/now: net::ERR_ABORTED",
+    "GET /api/ajn/resources/Alex: net::ERR_ABORTED",
+    "GET /api/ajn/resources/WarRoom: net::ERR_ABORTED",
+    "GET /api/ajn/resources/Alex: net::ERR_ABORTED",
+    "GET /api/ajn/resources/WarRoom: net::ERR_ABORTED",
+    "GET /api/ajn/resources/Alex: net::ERR_ABORTED",
+    "GET /api/ajn/resources/WarRoom: net::ERR_ABORTED",
+    "GET /api/ajn/resources/SundayLive: net::ERR_ABORTED",
+    "GET /api/ajn/resources/AJNHourlyVideo: net::ERR_ABORTED",
+    "GET /api/ajn/resources/AJNHourlyAudio: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/home/classic-48h: net::ERR_ABORTED",
+    "GET /api/ajn/resources: net::ERR_ABORTED",
+    "GET /api/live-radio/stations: net::ERR_ABORTED",
+    "GET /api/home/now: net::ERR_ABORTED",
+    "GET /api/ajn/resources/Alex: net::ERR_ABORTED",
+    "GET /api/ajn/resources/WarRoom: net::ERR_ABORTED",
+    "GET /api/ajn/resources/Alex: net::ERR_ABORTED",
+    "GET /api/ajn/resources/WarRoom: net::ERR_ABORTED",
+    "GET /api/ajn/resources/Alex: net::ERR_ABORTED",
+    "GET /api/ajn/resources/WarRoom: net::ERR_ABORTED",
+    "GET /api/ajn/resources/SundayLive: net::ERR_ABORTED",
+    "GET /api/ajn/resources/AJNHourlyVideo: net::ERR_ABORTED",
+    "GET /api/ajn/resources/AJNHourlyAudio: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/home/classic-48h: net::ERR_ABORTED",
+    "GET /api/ajn/resources: net::ERR_ABORTED",
+    "GET /api/library/heatmap: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/library/heatmap: net::ERR_ABORTED",
+    "GET /api/library/items: net::ERR_ABORTED",
+    "GET /api/archive/proxy: net::ERR_ABORTED"
+  ],
+  "failedArchiveProxyRequests": [],
+  "expectedAbortedArchiveProxyRequests": [
+    "GET /api/archive/proxy: net::ERR_ABORTED"
+  ],
+  "screenshots": [
+    "tools/nker150/evidence/01-library-playing.png",
+    "tools/nker150/evidence/02-library-switched.png"
+  ]
+}

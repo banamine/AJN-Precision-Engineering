@@ -35,6 +35,7 @@ import {
 } from './guideRegistry';
 import watchdogRouter from './server/routes/watchdog.js';
 import { fetchArchiveMediaWithRetry, forgetArchiveRedirect } from './server/archiveFetch.js';
+import type { ArchivePhysicalRequestEvent } from './server/archiveLimiter.js';
 import { archiveProxyContentType } from './server/archiveMediaTypes';
 import { buildArchiveRateLimitHttpResponse } from './server/archiveCooldown.js';
 import { isReadAheadMediaPath, readAheadMaxBytesFromEnv, SliceReadAhead } from './server/sliceReadAhead.js';
@@ -129,10 +130,10 @@ async function refreshLibraryGuideCategories(){
   }
 }
 let libraryGuideAt=0;
-async function libraryReady(){await loadLibrarySnapshot();if(Date.now()-libraryGuideAt>EXPORT_TTL_MS){libraryGuideAt=Date.now();const p=refreshLibraryGuideCategories();if(libraryIndexStats.guideItems===0)await p;else void p.catch((e:any)=>console.warn('[Library refresh]',e?.message));}}
+async function libraryReady(){await loadLibrarySnapshot();if(process.env.NODE_ENV==='test'&&process.env.AJN_NKER150_AUDIT_MODE==='1')return;if(Date.now()-libraryGuideAt>EXPORT_TTL_MS){libraryGuideAt=Date.now();const p=refreshLibraryGuideCategories();if(libraryIndexStats.guideItems===0)await p;else void p.catch((e:any)=>console.warn('[Library refresh]',e?.message));}}
 app.get('/api/library/items',async(req,res)=>{
   try{await libraryReady();const d=req.query.decade;
-    res.set('Cache-Control','no-store').json(queryLibrary({ids:req.query.ids?String(req.query.ids).split(',').filter(Boolean).slice(0,500):undefined,category:(req.query.category as string)||undefined,decade:d===undefined||d===''?null:Number(d),q:req.query.q as string,mediaType:req.query.mediaType as string,page:Number(req.query.page)||1,limit:Number(req.query.limit)||24}));
+    res.set('Cache-Control','no-store').json(queryLibrary({ids:req.query.ids?String(req.query.ids).split(',').filter(Boolean).slice(0,500):undefined,category:(req.query.category as string)||undefined,decade:d===undefined||d===''?null:Number(d),q:req.query.q as string,mediaType:req.query.mediaType as string,showId:req.query.showId as string,page:Number(req.query.page)||1,limit:Number(req.query.limit)||24}));
   }catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,items:[]});}
 });
 app.get('/api/library/series/:key',async(req,res)=>{
@@ -446,7 +447,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
   const isReadAheadCandidate=!isImage&&isReadAheadMediaPath(v.cleanPath);
   try{
     const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
-    const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Media-Console/ArchiveProxy','Accept': isImage ? 'image/*,*/*' : '*/*'};
+    const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Precision-Engineering/ArchiveProxy','Accept': isImage ? 'image/*,*/*' : '*/*'};
     let mediaSlice:{start:number;end:number}|null=null;
     let readaheadKind:'hit'|'miss'|'off'='off';
     let readaheadWaitMs=0;
@@ -513,11 +514,20 @@ app.get('/api/archive/proxy', async (req,res)=>{
     res.on('close',()=>{ if(!res.writableFinished) upstreamAbort.abort(); });
 
     const upstreamT0=Date.now();
+    const auditLedgerEnabled=process.env.AJN_NKER150_AUDIT_LEDGER==='1';
+    const physicalArchiveRequests:ArchivePhysicalRequestEvent[]=[];
     const upstream=await fetchArchiveMediaWithRetry(upstreamUrl,{
       headers:upstreamHeaders,
       signal:upstreamAbort.signal,
       requestId:proxyRequestId,
+      physicalContext:auditLedgerEnabled?{
+        requestId:proxyRequestId,
+        onPhysicalRequest:(event)=>physicalArchiveRequests.push(event),
+      }:undefined,
     });
+    if(auditLedgerEnabled){
+      res.setHeader('X-AJN-Archive-Physical',Buffer.from(JSON.stringify(physicalArchiveRequests)).toString('base64url'));
+    }
     if(upstream.attempts>1) stats.retriedRequests++;
     // Evidence for stall investigations: how long Archive took to answer this slice and how many attempts it needed.
     res.setHeader('Server-Timing',`upstream;dur=${Date.now()-upstreamT0}, attempts;desc="${upstream.attempts}"${isReadAheadCandidate?`, readahead;desc="${readaheadKind}";dur=${readaheadWaitMs}`:''}`);
