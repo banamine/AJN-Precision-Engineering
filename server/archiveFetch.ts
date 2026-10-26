@@ -13,6 +13,10 @@ import {
   retryAfterSeconds,
   sharedArchiveCooldownStore,
 } from './archiveCooldown';
+import {
+  archiveApiFetchWithContext,
+  type ArchivePhysicalRequestContext,
+} from './archiveLimiter';
 
 export type FetchImpl = typeof fetch;
 
@@ -104,6 +108,7 @@ function timedFetch(
   init: RequestInit,
   parent: AbortSignal | undefined,
   ms: number,
+  physicalContext?: ArchivePhysicalRequestContext,
 ): Promise<Response> {
   const host = new URL(url).hostname.toLowerCase();
   if (!archiveHostCircuitBreaker.canRequest(host)) {
@@ -119,7 +124,11 @@ function timedFetch(
     timedOut = true;
     controller.abort();
   }, ms);
-  return fetchImpl(url, { ...init, signal: controller.signal })
+  const requestInit = { ...init, signal: controller.signal };
+  const request = physicalContext
+    ? archiveApiFetchWithContext(url, requestInit, physicalContext, fetchImpl)
+    : fetchImpl(url, requestInit);
+  return request
     .then((response) => {
       headersReceived = true;
       archiveHostCircuitBreaker.recordSuccess(host);
@@ -172,7 +181,7 @@ const metadataCache = new Map<string, { dir: string; hosts: string[]; expires: n
 export async function lookupAlternateNodes(
   id: string,
   skipHost: string | null,
-  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; timeoutMs?: number } = {},
+  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; timeoutMs?: number; physicalContext?: ArchivePhysicalRequestContext } = {},
 ): Promise<{ dir: string; hosts: string[] } | null> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const cached = opts.fetchImpl ? undefined : metadataCache.get(id);
@@ -185,6 +194,7 @@ export async function lookupAlternateNodes(
         { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } },
         opts.signal,
         opts.timeoutMs ?? METADATA_TIMEOUT_MS,
+        opts.physicalContext,
       );
       if (!response.ok) return null;
       const meta = await response.json() as { dir?: unknown; server?: unknown; d1?: unknown; d2?: unknown; workable_servers?: unknown };
@@ -224,7 +234,7 @@ export interface ResolveResult {
  */
 export async function resolveArchiveMediaRedirect(
   initialUrl: string,
-  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; maxRedirects?: number; timeoutMs?: number } = {},
+  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; maxRedirects?: number; timeoutMs?: number; physicalContext?: ArchivePhysicalRequestContext } = {},
 ): Promise<ResolveResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const maxRedirects = opts.maxRedirects ?? 5;
@@ -243,6 +253,7 @@ export async function resolveArchiveMediaRedirect(
         { method: 'GET', redirect: 'manual', headers: { 'User-Agent': USER_AGENT, Accept: '*/*', Range: 'bytes=0-0' } },
         opts.signal,
         opts.timeoutMs ?? NODE_HEADER_TIMEOUT_MS,
+        opts.physicalContext,
       );
     } catch (error) {
       (error as { archiveHost?: string }).archiveHost = currentUrl.hostname;
@@ -312,9 +323,12 @@ function waitForCaller<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T>
 /** Coalesce only the bounded 1-byte redirect probe; each client receives its own streamed media response. */
 async function resolveArchiveMediaRedirectSingleFlight(
   initialUrl: string,
-  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; maxRedirects?: number; timeoutMs?: number } = {},
+  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; maxRedirects?: number; timeoutMs?: number; physicalContext?: ArchivePhysicalRequestContext } = {},
 ): Promise<ResolveResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
+  if (opts.physicalContext) {
+    return resolveArchiveMediaRedirect(initialUrl, { ...opts, fetchImpl });
+  }
   let flights = resolveFlightsByFetch.get(fetchImpl);
   if (!flights) {
     flights = new Map();
@@ -385,6 +399,7 @@ export interface ArchiveFetchOptions {
   /** Injectable only for deterministic tests; production uses one shared host store. */
   cooldownStore?: ArchiveCooldownStore;
   now?: () => number;
+  physicalContext?: ArchivePhysicalRequestContext;
 }
 
 const defaultSleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
@@ -414,10 +429,16 @@ async function fetchFromAlternateNode(
   opts: ArchiveFetchOptions,
   fetchImpl: FetchImpl,
   log: (message: string, detail: Record<string, unknown>) => void,
+  physicalContext?: ArchivePhysicalRequestContext,
 ): Promise<{ response: Response; url: string } | null> {
   const parts = archiveIdentifierAndRest(upstreamUrl);
   if (!parts) return null;
-  const nodes = await lookupAlternateNodes(parts.id, failedHost, { fetchImpl: opts.fetchImpl, signal: opts.signal, timeoutMs: opts.headerTimeoutMs });
+  const nodes = await lookupAlternateNodes(parts.id, failedHost, {
+    fetchImpl,
+    signal: opts.signal,
+    timeoutMs: opts.headerTimeoutMs,
+    physicalContext: physicalContext ? { ...physicalContext, stage: 'alternate-metadata' } : undefined,
+  });
   if (!nodes) return null;
 
   for (const host of nodes.hosts.slice(0, MAX_ALTERNATE_NODES)) {
@@ -431,6 +452,7 @@ async function fetchFromAlternateNode(
         { method: 'GET', redirect: 'manual', headers: opts.headers },
         opts.signal,
         opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
+        physicalContext ? { ...physicalContext, stage: 'alternate' } : undefined,
       );
       if (response.status >= 200 && response.status < 300) {
         log('[archive-proxy] primary node unreachable, served from alternate node', {
@@ -467,6 +489,8 @@ export async function fetchArchiveMediaWithRetry(
   opts: ArchiveFetchOptions,
 ): Promise<ArchiveFetchResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
+  const auditPacing = process.env.AJN_NKER150_AUDIT_LEDGER === '1'
+    || typeof opts.physicalContext?.onPhysicalRequest === 'function';
   const attempts = Math.max(1, opts.attempts ?? 3);
   const baseDelayMs = opts.baseDelayMs ?? 400;
   const sleep = opts.sleep ?? defaultSleep;
@@ -479,6 +503,13 @@ export async function fetchArchiveMediaWithRetry(
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     if (opts.signal?.aborted) break;
+    const physicalContext = (stage: string): ArchivePhysicalRequestContext | undefined => auditPacing ? ({
+      ...opts.physicalContext,
+      requestId: opts.requestId ?? opts.physicalContext?.requestId,
+      attempt,
+      maxAttempts: attempts,
+      stage,
+    }) : undefined;
 
     // Every audio/video slice used to re-resolve Archive's redirect first (an extra
     // full round trip per 8 MiB slice, ~1 s). Reuse the resolved node URL for a
@@ -496,6 +527,7 @@ export async function fetchArchiveMediaWithRetry(
         ? { url: cached.url, status: 200 }
         : await resolveArchiveMediaRedirectSingleFlight(upstreamUrl, {
           fetchImpl, signal: opts.signal, timeoutMs: opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
+          physicalContext: physicalContext('resolve'),
         });
       if (!opts.fetchImpl && resolved.url && !(cached && cached.expires > Date.now())) {
         if (redirectCache.size > 500) redirectCache.clear();
@@ -511,6 +543,7 @@ export async function fetchArchiveMediaWithRetry(
           { method: 'GET', redirect: 'manual', headers: opts.headers },
           opts.signal,
           opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
+          physicalContext('media'),
         );
         status = response.status;
         if (status < 200 || status >= 300) {
@@ -553,7 +586,7 @@ export async function fetchArchiveMediaWithRetry(
       // when archive.org itself cannot establish the initial connection.
       const alternate = primaryArchiveTimedOut
         ? null
-        : await fetchFromAlternateNode(upstreamUrl, failedHost, opts, fetchImpl, log);
+        : await fetchFromAlternateNode(upstreamUrl, failedHost, opts, fetchImpl, log, physicalContext('alternate'));
       if (alternate) {
         if (!opts.fetchImpl) redirectCache.set(upstreamUrl, { url: alternate.url, expires: Date.now() + REDIRECT_TTL_MS });
         return { response: alternate.response, status: alternate.response.status, attempts: attempt };

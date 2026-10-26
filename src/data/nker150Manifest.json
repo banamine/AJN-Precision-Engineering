@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "ia-01_20200728_20200728_1511",
+      "identifier": "01_20200728_20200728_1511",
+      "title": "The Alex Jones Show January 2019 (HD)",
+      "description": "Internet Archive source item; playback status verified in the AJN player.",
+      "categoryIds": [
+        "nker150-special"
+      ],
+      "mediaType": "video",
+      "year": 2019,
+      "decade": 2010,
+      "path": "/download/01_20200728_20200728_1511/20190101_Tue_Alex-HD.mp4",
+      "file": "20190101_Tue_Alex-HD.mp4",
+      "format": "MPEG4",
+      "dur": 14340,
+      "durSrc": "metadata",
+      "durEst": false,
+      "availability": "verified",
+      "foundBy": "nker150 cached metadata",
+      "why": "real-browser playback verified",
+      "indexedAt": "2026-10-25",
+      "originalCreator": "Infowars",
+      "itemSizeBytes": null,
+      "fileSizeBytes": 5739858625,
+      "licenseUrl": "http://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "rightsStatus": "LISTED",
+      "rightsReview": "PENDING_REVIEW",
+      "archiveDetailsUrl": "https://archive.org/details/01_20200728_20200728_1511",
+      "showId": "alex-jones-show",
+      "showLabel": "Alex Jones Show archives",
+      "technicalStatus": "PLAYABLE_VERIFIED"
+    }
+  ]
+}

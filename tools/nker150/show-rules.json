@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "alex-jones-show",
+      "label": "Alex Jones Show archives",
+      "any": [
+        { "field": "identifier", "regex": "^infowars_\\d{6}" },
+        { "field": "identifier", "regex": "^alex-jones-[a-z]+-\\d{4}" },
+        { "field": "any", "phrase": "alex jones show" }
+      ]
+    },
+    {
+      "id": "david-knight",
+      "label": "David Knight Show",
+      "any": [
+        { "field": "identifier", "regex": "knight" },
+        { "field": "any", "phrase": "david knight" }
+      ]
+    },
+    {
+      "id": "infowars-nightly-news",
+      "label": "Infowars Nightly News",
+      "any": [{ "field": "any", "phrase": "nightly news" }]
+    },
+    {
+      "id": "ajn-war-room",
+      "label": "AJN War Room",
+      "all": [
+        { "field": "any", "phrase": "war room" },
+        { "field": "any", "oneOf": ["harrison", "infowars", "ajn"] }
+      ],
+      "none": [{ "field": "any", "oneOf": ["bannon", "rav"] }]
+    },
+    {
+      "id": "elections-debates",
+      "label": "Elections & Debates",
+      "any": [
+        { "field": "any", "oneOf": ["election", "debate", "town hall", "countdown"] }
+      ]
+    },
+    {
+      "id": "january-6",
+      "label": "January 6",
+      "any": [
+        { "field": "identifier", "regex": "january-6|jan-6" },
+        { "field": "any", "oneOf": ["jan 6", "january 6", "capitol"] }
+      ]
+    },
+    {
+      "id": "9-11",
+      "label": "9/11",
+      "any": [
+        { "field": "identifier", "regex": "9.?11|loose.?change" },
+        { "field": "any", "oneOf": ["9/11", "9 11", "911", "loose change"] }
+      ]
+    },
+    {
+      "id": "interviews",
+      "label": "Interviews / Related creator archives",
+      "any": [
+        { "field": "identifier", "regex": "^jre-" },
+        { "field": "any", "oneOf": ["rogan", "interview"] }
+      ]
+    },
+    {
+      "id": "documentaries",
+      "label": "Documentaries",
+      "fallback": true
+    }
+  ]
+}
