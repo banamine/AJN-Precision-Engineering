@@ -50,7 +50,8 @@ export interface ArchiveProbeOutcome {
 }
 
 export interface ArchiveHealthStatus {
-  state: ArchiveHealthState;
+  /** 'unknown' = no counted Archive success or failure has been observed yet. */
+  state: ArchiveHealthState | 'unknown';
   since: number;
   lastSuccessAt: number | null;
   lastFailureAt: number | null;
@@ -112,7 +113,7 @@ export function createArchiveHealth(
 ): ArchiveHealth {
   const cfg = { ...ARCHIVE_HEALTH_DEFAULTS, ...config };
   const now = deps.now ?? Date.now;
-  const log = deps.log ?? ((entry: ArchiveHealthLogEntry) => console.log(JSON.stringify(entry)));
+  const log = deps.log ?? ((entry: ArchiveHealthLogEntry) => console.log(JSON.stringify(entry, (key, value) => (key === 'errorCode' && value === null ? undefined : value))));
   const events: CountedEvent[] = [];
   let state: ArchiveHealthState = 'ok';
   let since = now();
@@ -311,8 +312,9 @@ export function createArchiveHealth(
       const failures = recent.filter((event) => failureKind(event.kind));
       const successes = recent.filter((event) => event.kind === 'ok');
       const distinctItems = new Set(failures.map((event) => event.itemKey)).size;
+      const noEvidence = state === 'ok' && lastSuccessAt === null && lastFailureAt === null;
       return {
-        state,
+        state: noEvidence ? 'unknown' : state,
         since,
         lastSuccessAt,
         lastFailureAt,

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "evidenceSource": "headless Chromium against the local AJN app; non-local browser requests blocked",
+  "items": [
+    {
+      "identifier": "01_20200728_20200728_1511",
+      "status": "VERIFIED",
+      "route": "Library > nker150 Special Collection > Alex Jones Show archives",
+      "playerTitle": "The Alex Jones Show January 2019 (HD)",
+      "transport": "same-origin /api/archive/proxy",
+      "httpStatus": 206,
+      "contentType": "video/mp4",
+      "boundedResponseBytes": 8388608,
+      "rightsStatus": "LISTED",
+      "rightsReview": "PENDING_REVIEW",
+      "withheldFromStandardLibrary": true,
+      "videoRendered": true,
+      "currentTimeAdvancedByAtLeastSeconds": 0.5,
+      "videoDimensions": "1280x720",
+      "currentTimeAdvancedSeconds": 2.578,
+      "audioDecodedBytes": {
+        "atStart": 22117,
+        "afterPlayback": 89020
+      },
+      "pauseControlPassed": true,
+      "serverPlaybackState": "AUDIO_BRIDGE_MEDIA_PLAYING; readyState 4; mediaErrorCode null",
+      "screenshot": "tools/nker150/evidence/01-library-playing.png",
+      "notes": "An earlier harness assertion measured the new item before playback could start. After changing the test to wait for a playing or error state, the switch was verified; its evidence is recorded separately below."
+    }
+  ],
+  "switchProbe": {
+    "status": "VERIFIED",
+    "identifier": "The_Haunted_Castle_1896",
+    "title": "The Haunted Castle",
+    "activeMediaCount": 1,
+    "paused": false,
+    "readyState": 4,
+    "videoDimensions": "320x240",
+    "mediaErrorCode": null,
+    "screenshot": "tools/nker150/evidence/02-library-switched.png",
+    "expectedAbortedOldProxyRequests": 1,
+    "unexpectedArchiveProxyFailures": 0
+  }
+}

@@ -10,6 +10,8 @@ type Item = {
   type: 'item'; id: string; identifier: string; title: string; description?: string; categoryIds: string[]; mediaType: 'video' | 'audio';
   year?: number; decade?: number; path: string; format: string; dur: number; durSrc: string; durEst: boolean;
   availability: string; channelId?: string; guideId?: string; programId?: string; sourceId?: string; assetId?: string;
+  originalCreator?: string; itemSizeBytes?: number | null; fileSizeBytes?: number | null; licenseUrl?: string | null;
+  rightsStatus?: 'LISTED' | 'UNKNOWN'; rightsReview?: string; archiveDetailsUrl?: string; showId?: string; showLabel?: string; technicalStatus?: string;
 };
 type Series = {
   type: 'series'; id: string; groupKey: string; title: string; categoryIds: string[]; mediaType: 'video' | 'audio';
@@ -17,6 +19,7 @@ type Series = {
 };
 type LibraryResult = Item | Series;
 type HeatCat = { categoryId: string; label: string; mediaType: string; total: number; decades: Array<{ decade: number; count: number }> };
+type ShowOption = { id: string; label: string };
 type Page = { page: number; totalPages: number; totalItems: number; rawCount?: number; uniqueCount?: number; groupCount?: number; items: LibraryResult[] };
 
 const PAGE_SIZE = 24;
@@ -26,9 +29,11 @@ const decadeLabel = (d: number) => (d === 0 ? 'Undated' : `${d}s`);
 /** Library: categories and decade counts come from the server index; items arrive one page at a time. */
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [heat, setHeat] = useState<HeatCat[] | null>(null);
+  const [nker150Shows, setNker150Shows] = useState<ShowOption[]>([]);
   const [heatError, setHeatError] = useState<string | null>(null);
   // Opened from a shortcut (e.g. Home's "Apollo Mission Archive"): start on that category once.
   const [category, setCategory] = useState<string>(() => { try { const c = sessionStorage.getItem('ajn.library.open') ?? ''; sessionStorage.removeItem('ajn.library.open'); return c; } catch { return ''; } });
+  const [showId, setShowId] = useState('');
   const [decade, setDecade] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -43,13 +48,13 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
 
   useEffect(() => { saveFavorites(favoriteIds); }, [favoriteIds]);
   useEffect(() => { const t = setTimeout(() => setDebounced(query.trim()), 300); return () => clearTimeout(t); }, [query]);
-  useEffect(() => { setPage(1); }, [category, decade, debounced, showFavorites]);
+  useEffect(() => { setPage(1); }, [category, showId, decade, debounced, showFavorites]);
 
   useEffect(() => {
     const ctrl = new AbortController();
     fetch('/api/library/heatmap', { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d) => setHeat(d.categories))
+      .then((d) => { setHeat(d.categories); setNker150Shows(d.nker150Shows ?? []); })
       .catch((e) => { if (e.name !== 'AbortError') setHeatError(e.message); });
     return () => ctrl.abort();
   }, []);
@@ -60,6 +65,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
     if (showFavorites) p.set('ids', [...favoriteIds].join(','));
     else {
       if (category) p.set('category', category);
+      if (showId && category === 'nker150-special') p.set('showId', showId);
       if (decade !== null) p.set('decade', String(decade));
       if (debounced) p.set('q', debounced);
     }
@@ -71,7 +77,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
       .catch((e) => { if (e.name !== 'AbortError') { setData(null); setLoadError(e?.message || 'request failed'); setLoading(false); } });
     return () => ctrl.abort();
     // favorites only matter for the Favorites view
-  }, [page, category, decade, debounced, showFavorites, showFavorites ? favoriteIds : null, retryTick]);
+  }, [page, category, showId, decade, debounced, showFavorites, showFavorites ? favoriteIds : null, retryTick]);
 
   const cat = useMemo(() => heat?.find((c) => c.categoryId === category) ?? null, [heat, category]);
   const allTotal = useMemo(() => heat ? heat.reduce((n, c) => n + c.total, 0) : 0, [heat]);
@@ -101,13 +107,13 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
       {heatError && <p role="alert" className="text-xs text-red-400">Library index unavailable ({heatError}).</p>}
 
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" id="lib-cat-btn-all" onClick={() => { setCategory(''); setDecade(null); setShowFavorites(false); }}
+        <button type="button" id="lib-cat-btn-all" onClick={() => { setCategory(''); setShowId(''); setDecade(null); setShowFavorites(false); }}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium ${!category && !showFavorites ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
           All {heat ? `(${allTotal})` : ''}
         </button>
         {heat?.map((c) => (
           <button key={c.categoryId} type="button" id={`lib-cat-btn-${c.categoryId}`} disabled={c.total === 0}
-            onClick={() => { setCategory(c.categoryId); setDecade(null); setShowFavorites(false); }}
+            onClick={() => { setCategory(c.categoryId); setShowId(''); setDecade(null); setShowFavorites(false); }}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-40 ${category === c.categoryId && !showFavorites ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
             {c.label} ({c.total})
           </button>
@@ -117,6 +123,17 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
           <Star className={`h-3.5 w-3.5 ${showFavorites ? 'fill-current' : ''}`} aria-hidden="true" /> Favorites ({favoriteIds.size})
         </button>
       </div>
+
+      {category === 'nker150-special' && nker150Shows.length > 0 && (
+        <label className="flex max-w-sm flex-col gap-1 text-xs text-neutral-400">
+          Show
+          <select value={showId} onChange={(e) => setShowId(e.target.value)} aria-label="Filter nker150 collection by show"
+            className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-neutral-100 focus:border-emerald-500 focus:outline-none">
+            <option value="">All verified shows</option>
+            {nker150Shows.map((show) => <option key={show.id} value={show.id}>{show.label}</option>)}
+          </select>
+        </label>
+      )}
 
       {cat && !showFavorites && cat.decades.length > 0 && (
         <div className="space-y-1.5" data-testid="decade-strip">
@@ -198,6 +215,12 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                   </div>
                   <h2 className="text-sm font-semibold text-neutral-100 line-clamp-2">{item.title}</h2>
                   {item.description && <p className="text-xs text-neutral-400 line-clamp-3 leading-relaxed">{item.description}</p>}
+                  {item.showLabel && <p className="text-xs text-emerald-300">Show: {item.showLabel}</p>}
+                  {item.originalCreator && <p className="text-xs text-neutral-400">Creator: {item.originalCreator}</p>}
+                  {item.rightsStatus && <p className="text-[11px] text-amber-200">Rights metadata: {item.rightsStatus}; not a rights determination.</p>}
+                  {item.rightsReview === 'PENDING_REVIEW' && <p className="text-[11px] text-amber-200">Rights review pending; withheld from the standard collection.</p>}
+                  {item.rightsReview === 'ALLOWLIST_PATTERN' && <p className="text-[11px] text-emerald-200">License URL matches the configured allowlist pattern; not legal clearance.</p>}
+                  {item.technicalStatus === 'NOT_TESTED' && <p className="text-[11px] text-amber-200">Playability check pending</p>}
                 </div>
                 <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-xs text-neutral-500" title={item.durEst ? 'Estimated length' : undefined}><Clock className="h-3.5 w-3.5" aria-hidden="true" />{fmtDur(item.dur, item.durEst) || '—'}{item.availability === 'verified' ? ' · checked' : ''}</span>
@@ -213,7 +236,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-10 text-center space-y-2">
           <FolderArchive className="mx-auto h-8 w-8 text-neutral-600" aria-hidden="true" />
           <h3 className="text-sm font-medium text-neutral-300">{showFavorites ? 'No favorites yet' : 'Nothing matches'}</h3>
-          <button type="button" onClick={() => { setCategory(''); setDecade(null); setQuery(''); setShowFavorites(false); }} className="mt-2 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700">Clear filters</button>
+          <button type="button" onClick={() => { setCategory(''); setShowId(''); setDecade(null); setQuery(''); setShowFavorites(false); }} className="mt-2 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700">Clear filters</button>
         </div>
       ) : null}
 

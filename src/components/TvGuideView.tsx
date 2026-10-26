@@ -50,20 +50,23 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true }: TvGu
     const savedGuideId = loadLastView(VALID_DESTINATIONS)?.guideId;
     return savedGuideId ? savedGuideId : 'cable-tv';
   });
+  const [guideListStatus, setGuideListStatus] = useState<'loading' | 'server' | 'builtin'>('loading');
 
   useEffect(() => {
     const controller = new AbortController();
     fetch('/api/guides', { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!data || !Array.isArray(data.guides)) return;
+        if (!data || !Array.isArray(data.guides)) { setGuideListStatus('builtin'); return; }
         const serverGuides = data.guides as Guide[];
         const nextGuides = [...serverGuides.filter((guide) => guide.id !== AJN_RESOURCE_GUIDE.id), AJN_RESOURCE_GUIDE];
         setGuides(nextGuides);
+        setGuideListStatus('server');
         setSelectedGuideId((current) => (nextGuides.some((guide) => guide.id === current) ? current : 'cable-tv'));
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
+        setGuideListStatus('builtin');
       });
     return () => controller.abort();
   }, []);
@@ -106,7 +109,7 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true }: TvGu
             </button>
           )}
           <div className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs ${currentGuide.type === 'audio' ? 'border-amber-500/30 bg-amber-950/40 text-amber-300' : 'border-sky-500/30 bg-sky-950/40 text-sky-300'}`}>
-            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" /><span className="font-mono font-medium">Schedule Running</span>
+            <span className={`h-2 w-2 rounded-full ${guideListStatus === 'server' ? 'bg-emerald-500' : guideListStatus === 'builtin' ? 'bg-amber-500' : 'bg-neutral-500'}`} /><span className="font-mono font-medium">{guideListStatus === 'server' ? 'Guide list: live' : guideListStatus === 'builtin' ? 'Guide list: built-in (server unavailable)' : 'Loading guide list...'}</span>
           </div>
         </div>
       </div>
@@ -144,10 +147,9 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true }: TvGu
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4"><div className="flex items-center gap-2 text-xs font-semibold text-neutral-200"><span className={`h-2.5 w-2.5 rounded-full ${currentGuide.type === 'audio' ? 'bg-amber-400' : 'bg-sky-400'}`} /><span>On Air Now (Active)</span></div><p className="mt-1.5 text-xs text-neutral-400">AJN resource entries are live source data when this guide is selected; other guides retain the canonical EPG grid.</p></div>
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4"><div className="flex items-center gap-2 text-xs font-semibold text-neutral-200"><span className="h-2.5 w-2.5 rounded-full bg-neutral-700" /><span>Upcoming / Archive</span></div><p className="mt-1.5 text-xs text-neutral-400">Archive entries remain available on demand through the existing playback pipeline.</p></div>
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4"><div className="flex items-center gap-2 text-xs font-semibold text-neutral-200"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /><span>Source</span></div><p className="mt-1.5 text-xs text-neutral-400">Authoritative source: rss.alexjones.media</p></div>
       </div>
     </div>
   );

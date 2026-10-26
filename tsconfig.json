@@ -32,6 +32,11 @@
     "dist",
     "AJN-Precision-Engineering",
     "app",
-    "tools/checks/firestore-emulator-check.ts"
+    "tools/checks/firestore-emulator-check.ts",
+    "AJN_DROPIN_P2_PLUS_CAPTIONS",
+    "AJN_K1_LIVE_NEWS_MERGE",
+    "AJN_FIX_CAPTIONS_TYPES",
+    "files",
+    "full-files-for-export-baseline"
   ]
 }

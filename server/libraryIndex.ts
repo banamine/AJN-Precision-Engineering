@@ -14,6 +14,8 @@ import { matchesQuery, scoreMatch } from '../src/search/normalize';
 import { archiveApiFetch } from './archiveLimiter';
 import { safeFetch } from './safeFetch';
 import { groupLibraryResults, findLibrarySeries, type LibrarySeries } from './library/series';
+import nker150Manifest from '../src/data/nker150Manifest.json';
+import { shouldExposeNker150Record } from './nker150Rights';
 export { groupLibraryResults, findLibrarySeries };
 export type { LibrarySeries };
 
@@ -37,6 +39,7 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
   { id: 'rush', label: 'Rush Limbaugh', mediaType: 'audio', guide: { guideId: 'audio-podcasts', channels: (c) => c.id === 'rush-on-this-day' } },
   { id: 'classic-tv-channels', label: 'Classic TV Channels', mediaType: 'video', guide: { guideId: 'classic-tv', channels: () => true } },
   { id: 'movie-vault', label: 'Movies Classics', mediaType: 'video', guide: { guideId: 'movies-classics-vault', channels: () => true } },
+  { id: 'nker150-special', label: 'nker150 Special Collection', mediaType: 'video' },
 ];
 export const ITEMS_PER_SEARCH = 150;
 
@@ -47,6 +50,9 @@ export interface IndexRecord {
   path: string; file: string; format: string;
   dur: number; durSrc: DurationSource | 'clip' | 'metadata'; durEst: boolean;
   availability: LibraryAvailability; foundBy: string; why: string; indexedAt: string;
+  originalCreator?: string; itemSizeBytes?: number | null; fileSizeBytes?: number | null;
+  licenseUrl?: string | null; rightsStatus?: 'LISTED' | 'UNKNOWN'; rightsReview?: string; archiveDetailsUrl?: string;
+  showId?: string; showLabel?: string; technicalStatus?: string;
   // guide items only: how to play them through the guide's own ids
   channelId?: string; guideId?: string; programId?: string; sourceId?: string; assetId?: string;
 }
@@ -136,10 +142,18 @@ export function setGuideRecords(categoryId: string, records: IndexRecord[]) {
 }
 
 function availability(r: IndexRecord): LibraryAvailability { return probe.get(r.id)?.status ?? r.availability; }
-function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat()]); }
+function nker150Records(): IndexRecord[] {
+  const rows = (nker150Manifest as unknown as { items: IndexRecord[] }).items ?? [];
+  const auditMode = process.env.AJN_NKER150_AUDIT_MODE === '1';
+  return rows.filter((item) => shouldExposeNker150Record(item, auditMode)).map((item) => ({
+    ...item,
+    availability: 'verified',
+  }));
+}
+function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records()]); }
 const visible = (r: IndexRecord) => { const a = availability(r); return a !== 'unavailable' && a !== 'unsupported' && !!r.path; };
 
-export interface ItemsQuery { ids?: string[]; category?: string; decade?: number | null; q?: string; mediaType?: string; page?: number; limit?: number }
+export interface ItemsQuery { ids?: string[]; category?: string; decade?: number | null; q?: string; mediaType?: string; showId?: string; page?: number; limit?: number }
 export function queryLibrary(qy: ItemsQuery) {
   const limit = Math.max(1, Math.min(Number(qy.limit) || 24, 48));
   const page = Math.max(1, Number(qy.page) || 1);
@@ -149,6 +163,7 @@ export function queryLibrary(qy: ItemsQuery) {
   if (qy.category) rows = rows.filter((r) => r.categoryIds.includes(qy.category!));
   if (qy.decade !== undefined && qy.decade !== null) rows = rows.filter((r) => (qy.decade === 0 ? r.decade === undefined : r.decade === qy.decade));
   if (qy.mediaType === 'video' || qy.mediaType === 'audio') rows = rows.filter((r) => r.mediaType === qy.mediaType);
+  if (qy.showId) rows = rows.filter((r) => r.showId === qy.showId);
   if (qy.q?.trim()) rows = rows.filter((r) => matchesQuery([r.title, r.description ?? '', r.identifier], qy.q!));
   const text = String(qy.q ?? '').trim();
   const grouped0 = groupLibraryResults(rows);
@@ -179,6 +194,9 @@ export function libraryHeatmap() {
       return { categoryId: c.id, label: c.label, mediaType: c.mediaType, total: inCat.length,
         decades: [...byDecade].map(([decade, count]) => ({ decade, count })).sort((a, b) => (a.decade || 99999) - (b.decade || 99999)) };
     }),
+    nker150Shows: [...new Map(rows
+      .filter((r) => r.categoryIds.includes('nker150-special') && r.showId && r.showLabel)
+      .map((r) => [r.showId!, { id: r.showId!, label: r.showLabel! }])).values()],
   };
 }
 
