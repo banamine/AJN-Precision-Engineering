@@ -1,0 +1,635 @@
+{
+  "schemaVersion": 1,
+  "approvals": [
+    {
+      "identifier": "01_20200728_20200728_1511",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "03-2_20201231",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "04-2_20201231",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "20190523thualexhd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "20190610monalexhd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "20190715monalexhd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "20200203monalexhd_202003",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "20200316-mon-alex-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "20200430-thu-alex-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "20200529-fri-alex-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "aj-show-sept-2020",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-7-20",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-8-20",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-december-2020",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-january-2020",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-november-2020",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-show",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-show-6-20",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-show-january-2020",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "alex-jones-show-oct-2020",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "infowars_202103",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "movies-the-alex-jones-show-april-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-april-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-august-2021-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-december-2021-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-february-2022-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-january-2022-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-july-2021-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-june-2021-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-march-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-may-2021-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-november-2021-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-novermber-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-october-2021-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2014-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2015-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2016-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2017-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2018-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    },
+    {
+      "identifier": "the-alex-jones-show-september-2021-hd",
+      "approvedBy": "owner",
+      "approvedAt": "2026-10-26",
+      "scope": "display+playback",
+      "note": "Owner hand-approval: Alex Jones Show archives group"
+    }
+  ]
+}

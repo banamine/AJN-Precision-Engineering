@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { appendPhysicalEvents, decodePhysicalEvents } from './ledger';
+import { runOwnerApprovedBrowserPlayback } from './browser-playback-owner';
 
 const identifier = '01_20200728_20200728_1511';
 const itemId = `ia-${identifier}`;
@@ -260,7 +261,10 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+const run = process.env.AJN_NKER150_OWNER_APPROVAL_BATCH === '1'
+  ? runOwnerApprovedBrowserPlayback()
+  : main();
+run.catch((error) => {
   console.error(`browser playback verification failed: ${(error as Error).stack ?? String(error)}`);
   process.exitCode = 1;
 });
