@@ -1,0 +1,27 @@
+{
+  "name": "AJN Precision Engineering - Full Fixed Drop-In",
+  "baseline": "ajn-precision-engineering (1).zip",
+  "scope": [
+    "Keep the complete uploaded project tree intact.",
+    "Separate the AudioBridge/visualizer from video playback.",
+    "Prevent the audio normalization singleton from attaching to video media elements.",
+    "Remove Math.random() from telemetry event ID generation.",
+    "Add a static regression test for the player/telemetry boundary."
+  ],
+  "files_changed": [
+    "src/MinimalPlayer.tsx",
+    "src/telemetry.ts",
+    "package.json",
+    "test-player-separation.mjs"
+  ],
+  "verification": [
+    "Static regression test: npm run test:player-separation",
+    "TypeScript: npm run lint",
+    "Production build: npm run build",
+    "Browser: video opens in video pipeline without AudioBridge visualizer ownership",
+    "Browser: audio continues to use AudioBridge/diagnostics",
+    "Browser: recently played resume remains functional",
+    "Archive proxy range and existing News/Archive playback must be retested with real runtime evidence."
+  ],
+  "note": "This ZIP is a full drop-in of the supplied archive with the above surgical repairs. The supplied archive did not contain the PR #33 Local Media files, so LocalMediaPanel/localM3u/localMediaEpg were intentionally not fabricated into this drop-in."
+}

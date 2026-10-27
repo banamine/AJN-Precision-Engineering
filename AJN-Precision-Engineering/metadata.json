@@ -1,0 +1,6 @@
+{
+  "name": "AJN Precision Engineering",
+  "description": "AJN Precision Engineering broadcast station and media engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

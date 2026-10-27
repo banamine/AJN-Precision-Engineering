@@ -1,0 +1,10 @@
+{
+  "release_date": "2026-09-20",
+  "repository": "banamine/AJN-Precision-Engineering",
+  "branch": "codex/general-genre-expansion-skill",
+  "verified_commit": "5138782ba0c03ab0512684a10129623f9caebbc2",
+  "ci_run": 259,
+  "ci_result": "success",
+  "package_scope": "genre-expansion-finalization",
+  "note": "This package contains the files changed by the finalized genre-expansion work, not a byte-for-byte clone of the entire repository."
+}
