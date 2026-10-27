@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Loader2 } from "lucide-react";
 import type { PlayProgramCallback } from "../types";
-import { loadRushSettings, saveRushSettings } from "../utils/rushSettings";
+import { hasSeenRushPreludeToday, loadRushSettings, RUSH_PRELUDE_SEEN_EVENT, saveRushSettings } from "../utils/rushSettings";
 
-type IndexEntry = { id: string; date: string; year: number };
+type Role = "morning-update" | "full-show";
+type IndexEntry = { id: string; date: string; year: number; role: Role };
 type Track = { file: string; durationSeconds: number; archivePath: string; mediaUrl: string };
-type Episode = IndexEntry & { tracks: Track[] };
+type Episode = IndexEntry & {
+  kind: "video" | "audio";
+  tracks?: Track[];
+  unavailable?: { reason: string };
+};
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const FIRST_YEAR = 2005, LAST_YEAR = 2017;
@@ -21,6 +26,17 @@ export function RushEpisodePicker({ onPlay }: { onPlay: PlayProgramCallback }) {
   const [episodes, setEpisodes] = useState<Episode[] | null>(null);
   const [loadingEp, setLoadingEp] = useState(false);
   const [continueAcross, setContinueAcross] = useState(() => loadRushSettings().continueAcrossDates);
+  const [preludeSeenToday, setPreludeSeenToday] = useState(() => hasSeenRushPreludeToday());
+
+  useEffect(() => {
+    const refresh = () => setPreludeSeenToday(hasSeenRushPreludeToday());
+    globalThis.addEventListener?.(RUSH_PRELUDE_SEEN_EVENT, refresh);
+    globalThis.addEventListener?.("storage", refresh);
+    return () => {
+      globalThis.removeEventListener?.(RUSH_PRELUDE_SEEN_EVENT, refresh);
+      globalThis.removeEventListener?.("storage", refresh);
+    };
+  }, []);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -38,7 +54,15 @@ export function RushEpisodePicker({ onPlay }: { onPlay: PlayProgramCallback }) {
       const r = await fetch(`/api/rush/episode/${date}`);
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      setEpisodes(d.episodes);
+      const items = d.episodes as Episode[];
+      setEpisodes(items);
+      const morningUpdate = items.find((episode) => episode.role === "morning-update");
+      const full = items.find((episode) => episode.role === "full-show");
+      if (morningUpdate && !morningUpdate.unavailable && morningUpdate.tracks?.length && !hasSeenRushPreludeToday()) {
+        playPreludeOrHourOne(morningUpdate, full);
+      } else if (full?.tracks?.[0]) {
+        playHour(full, full.tracks[0], 1);
+      }
     } catch (e) { setError(`Could not load ${date}: ${e instanceof Error ? e.message : e}`); }
     finally { setLoadingEp(false); }
   };
@@ -48,6 +72,25 @@ export function RushEpisodePicker({ onPlay }: { onPlay: PlayProgramCallback }) {
     return { name, cells: Array.from({ length: days }, (_, i) => `${year}-${String(m + 1).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`) };
   }), [year]);
 
+  function playHour(ep: Episode, track: Track, hour: number) {
+    onPlay(track.archivePath, `Rush Limbaugh — ${ep.date} (Hour ${hour})`, "The Rush Limbaugh Show",
+      "audio", "rush-vod", "audio-podcasts", `rush-vod-${ep.date}-h${hour}`);
+  }
+
+  function playPreludeOrHourOne(prelude: Episode, fullShow?: Episode) {
+    if (hasSeenRushPreludeToday()) {
+      const firstHour = fullShow?.tracks?.[0];
+      if (fullShow && firstHour) playHour(fullShow, firstHour, 1);
+      return;
+    }
+    const track = prelude.tracks?.[0];
+    if (!track || prelude.unavailable) return;
+    onPlay(track.archivePath, `Rush Limbaugh — ${prelude.date} (Morning Update)`, "Rush Limbaugh Morning Update",
+      "video", "rush-vod", "audio-podcasts", `rush-vod-${prelude.date}-morning-update`);
+  }
+
+  const prelude = episodes?.find((episode) => episode.role === "morning-update");
+  const fullShow = episodes?.find((episode) => episode.role === "full-show");
   return (
     <section aria-labelledby="rush-picker-title" className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -92,18 +135,38 @@ export function RushEpisodePicker({ onPlay }: { onPlay: PlayProgramCallback }) {
       )}
 
       {loadingEp && <p className="flex items-center gap-2 text-xs text-neutral-400"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Loading {picked}…</p>}
-      {episodes?.map((ep) => (
-        <div key={ep.id} className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-neutral-200">{ep.date}</span>
-          {ep.tracks.map((t, h) => (
-            <button key={t.file} type="button"
-              onClick={() => onPlay(t.archivePath, `Rush Limbaugh — ${ep.date} (Hour ${h + 1})`, "The Rush Limbaugh Show", "audio", "rush-vod", "audio-podcasts", `rush-vod-${ep.date}-h${h + 1}`)}
-              className="rounded-md bg-amber-500 px-3 py-1 text-xs font-semibold text-neutral-950 hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
-              ▶ Hour {h + 1} · {fmtDur(t.durationSeconds)}
-            </button>
-          ))}
-        </div>
-      ))}
+      {episodes && picked && (
+        <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-950/60 p-3" aria-label={`Rush items for ${picked}`}>
+          <h3 className="text-xs font-semibold text-neutral-200">{picked}</h3>
+          {prelude && (
+            <div data-testid="rush-prelude-row" className="flex flex-wrap items-center gap-3 border-b border-neutral-800 pb-3">
+              <span className="text-xs font-semibold text-neutral-200">Morning Update</span>
+              {prelude.unavailable || !prelude.tracks?.length ? (
+                <span role="status" className="text-xs text-neutral-400">Morning Update unavailable</span>
+              ) : preludeSeenToday ? (
+                <span role="status" className="text-xs text-neutral-400">Morning Update already played today</span>
+              ) : (
+                <button type="button" data-testid="rush-play-prelude" onClick={() => playPreludeOrHourOne(prelude, fullShow)}
+                  className="min-h-11 rounded-md bg-amber-500 px-4 py-2 text-xs font-semibold text-neutral-950 hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+                  Play Morning Update
+                </button>
+              )}
+            </div>
+          )}
+          {fullShow?.tracks?.length ? (
+            <div data-testid="rush-full-show-row" className="flex flex-wrap items-center gap-2">
+              {fullShow.tracks.map((track, index) => (
+                <button key={track.file} type="button" onClick={() => playHour(fullShow, track, index + 1)}
+                  className="min-h-11 rounded-md bg-amber-500 px-4 py-2 text-xs font-semibold text-neutral-950 hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+                  ▶ Hour {index + 1} · {fmtDur(track.durationSeconds)}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-500">No full show hours are indexed for this date.</p>
+          )}
+        </section>
+      )}
     </section>
   );
 }

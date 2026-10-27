@@ -1,49 +1,110 @@
-/** Build src/data/rushIndex.json — the Rush master index (identifier + date only).
- *  Run: npm run rush:index            (default query below)
- *       npm run rush:index -- "<advancedsearch query>"
- *  Paged, deterministic, and it leaves the old file alone if nothing is found. */
-import { renameSync, writeFileSync } from 'node:fs';
+/** Build src/data/rushIndex.json from the reviewed Rush scrape.
+ *  Run from this repository: npm run rush:index -- ../generated-artifacts/rush_limbaugh_all_items.csv
+ *  The identifier suffix is authoritative; invalid calendar dates and undated IDs are excluded. */
+import { readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-const QUERY = process.argv[2] || 'identifier:rush-limbaugh-radio-show-*';
-const ROWS = 1000;
-const out = new URL('../src/data/rushIndex.json', import.meta.url);
+type Role = 'morning-update' | 'full-show';
+type Entry = { id: string; date: string; year: number; role: Role };
 
-type Doc = { identifier: string; date?: string };
-const docs: Doc[] = [];
-let invalid = 0;
-for (let page = 1; ; page++) {
-  const url = 'https://archive.org/advancedsearch.php'
-    + `?q=${encodeURIComponent(QUERY)}&fl[]=identifier&fl[]=date&rows=${ROWS}&page=${page}&output=json`;
-  let body: any = null;
-  for (let attempt = 1; attempt <= 3 && !body; attempt++) {
-    const r = await fetch(url, { headers: { 'User-Agent': 'AJN-Precision-Engineering/1.0 (rush index)' } });
-    if (r.ok) body = await r.json();
-    else { console.warn(`page ${page}: HTTP ${r.status} (attempt ${attempt})`); await new Promise((s) => setTimeout(s, 2000 * attempt)); }
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (char === '"') quoted = false;
+      else cell += char;
+    } else if (char === '"' && cell.length === 0) quoted = true;
+    else if (char === ',') { row.push(cell); cell = ''; }
+    else if (char === '\n') {
+      row.push(cell); cell = '';
+      if (row.some((value) => value.length > 0)) rows.push(row);
+      row = [];
+    } else if (char !== '\r') cell += char;
   }
-  if (!body) { console.error(`page ${page} failed — file left unchanged`); process.exit(1); }
-  const batch: Doc[] = body.response?.docs ?? [];
-  docs.push(...batch);
-  const total = body.response?.numFound ?? 0;
-  console.log(`page ${page}: ${batch.length} (${docs.length}/${total})`);
-  if (batch.length < ROWS || docs.length >= total) break;
-  await new Promise((s) => setTimeout(s, 500)); // be gentle with Archive
+  if (quoted) throw new Error('Rush CSV ended inside a quoted field');
+  if (cell.length || row.length) { row.push(cell); rows.push(row); }
+  return rows;
 }
 
-const seen = new Set<string>();
-const index = docs.flatMap((d) => {
-  const date = String(d.date ?? '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/)?.[0]
-    ?? d.identifier.match(/(\d{4})[-_]?(\d{2})[-_]?(\d{2})/)?.slice(1, 4).join('-');
-  if (!date || seen.has(d.identifier)) { invalid++; return []; }
-  seen.add(d.identifier);
-  return [{ id: d.identifier, date, year: Number(date.slice(0, 4)) }];
-}).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+function validDate(date: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const [year, month, day] = date.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year
+    && parsed.getUTCMonth() === month - 1
+    && parsed.getUTCDate() === day;
+}
 
-console.log(`Rush episodes discovered: ${docs.length}`);
-console.log(`Index records written:   ${index.length}`);
-console.log(`Invalid/duplicate:       ${invalid}`);
-if (!index.length) { console.error('nothing indexed — check the query; file left unchanged'); process.exit(1); }
+const inputPath = resolve(process.cwd(), process.argv[2] ?? '../generated-artifacts/rush_limbaugh_all_items.csv');
+const csvRows = parseCsv(readFileSync(inputPath, 'utf8'));
+const header = csvRows.shift();
+if (!header) throw new Error(`Rush CSV has no header: ${inputPath}`);
+const identifierColumn = header.indexOf('identifier');
+if (identifierColumn < 0) throw new Error('Rush CSV is missing the identifier column');
+
+const seen = new Set<string>();
+const entries: Entry[] = [];
+const sourceRoleCounts: Record<Role, number> = { 'morning-update': 0, 'full-show': 0 };
+let excludedUndated = 0;
+let excludedInvalidDate = 0;
+let duplicates = 0;
+const excludedUndatedIds: string[] = [];
+const excludedInvalidDateIds: string[] = [];
+
+for (const row of csvRows) {
+  const id = row[identifierColumn] ?? '';
+  const morningPrefix = 'rush-limbaugh-radio-show-morning-update-';
+  const fullPrefix = 'rush-limbaugh-radio-show-';
+  const role: Role | null = id.startsWith(morningPrefix)
+    ? 'morning-update'
+    : id.startsWith(fullPrefix) ? 'full-show' : null;
+  if (!role) {
+    if (id.startsWith('rush-limbaugh-radio-show')) { excludedUndated++; excludedUndatedIds.push(id); }
+    continue;
+  }
+  sourceRoleCounts[role]++;
+  if (seen.has(id)) { duplicates++; continue; }
+  seen.add(id);
+
+  const prefix = role === 'morning-update' ? morningPrefix : fullPrefix;
+  const date = id.slice(prefix.length);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { excludedUndated++; excludedUndatedIds.push(id); continue; }
+  if (!validDate(date)) { excludedInvalidDate++; excludedInvalidDateIds.push(id); continue; }
+  entries.push({ id, date, year: Number(date.slice(0, 4)), role });
+}
+
+const roleOrder: Record<Role, number> = { 'morning-update': 0, 'full-show': 1 };
+entries.sort((a, b) => a.date.localeCompare(b.date) || roleOrder[a.role] - roleOrder[b.role] || a.id.localeCompare(b.id));
+const rolesByDate = new Map<string, Set<Role>>();
+for (const entry of entries) {
+  const roles = rolesByDate.get(entry.date) ?? new Set<Role>();
+  roles.add(entry.role);
+  rolesByDate.set(entry.date, roles);
+}
+const indexedRoleCounts = {
+  'morning-update': entries.filter((entry) => entry.role === 'morning-update').length,
+  'full-show': entries.filter((entry) => entry.role === 'full-show').length,
+};
+const pairedDates = [...rolesByDate.values()].filter((roles) => roles.has('morning-update') && roles.has('full-show')).length;
+
+if (!entries.length) throw new Error('No valid Rush entries found; index left unchanged');
+const out = new URL('../src/data/rushIndex.json', import.meta.url);
 const tmp = new URL('../src/data/rushIndex.json.tmp', import.meta.url);
-writeFileSync(tmp, JSON.stringify(index));
+writeFileSync(tmp, `${JSON.stringify(entries)}\n`);
 renameSync(tmp, out);
+
+console.log(`Source role counts: Morning Update ${sourceRoleCounts['morning-update']}; Full Show ${sourceRoleCounts['full-show']}`);
+console.log(`Indexed role counts: Morning Update ${indexedRoleCounts['morning-update']}; Full Show ${indexedRoleCounts['full-show']}`);
+console.log(`Dates with both roles: ${pairedDates}`);
+console.log(`Excluded undated IDs: ${excludedUndated}`);
+console.log(`Excluded invalid calendar dates: ${excludedInvalidDate}`);
+if (excludedUndatedIds.length) console.log(`Undated IDs: ${excludedUndatedIds.join(', ')}`);
+if (excludedInvalidDateIds.length) console.log(`Invalid-date IDs: ${excludedInvalidDateIds.join(', ')}`);
+console.log(`Duplicate IDs skipped: ${duplicates}`);
+console.log(`Index records written: ${entries.length}`);
 console.log('wrote src/data/rushIndex.json');
-process.exit(0);

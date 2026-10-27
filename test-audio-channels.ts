@@ -11,10 +11,10 @@ assert.equal(dayDistance('1938-01-01', new Date('2026-12-31T00:00:00Z')), 1, 'wr
 assert.equal(dayDistance('1938', today), Infinity);
 
 const idx = [
-  { id: 'r-2005-09-26', date: '2005-09-26', year: 2005 },
-  { id: 'r-2010-09-27', date: '2010-09-27', year: 2010 },
-  { id: 'r-2012-03-01', date: '2012-03-01', year: 2012 },
-  { id: 'r-2016-09-26', date: '2016-09-26', year: 2016 },
+  { id: 'r-2005-09-26', date: '2005-09-26', year: 2005, role: 'full-show' as const },
+  { id: 'r-2010-09-27', date: '2010-09-27', year: 2010, role: 'full-show' as const },
+  { id: 'r-2012-03-01', date: '2012-03-01', year: 2012, role: 'full-show' as const },
+  { id: 'r-2016-09-26', date: '2016-09-26', year: 2016, role: 'full-show' as const },
 ];
 assert.deepEqual(pickRushEpisodes(idx, today, 3).map((e) => e.id), ['r-2005-09-26', 'r-2010-09-27', 'r-2016-09-26'], 'same day first, nearest fill, played in date order');
 

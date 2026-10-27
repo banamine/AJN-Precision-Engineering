@@ -36,6 +36,7 @@ interface MinimalPlayerProps {
   onProgramEnded?: () => void;
   nowPlaying?: NowPlayingMedia;
   onPlayEvent?: () => void;
+  onPlayingEvent?: () => void;
   /** Text for the button shown when the browser refuses to start playback on its own. */
   autoplayBlockedLabel?: string;
   onPauseEvent?: () => void;
@@ -104,7 +105,7 @@ function bufferLine(snapshot: BufferGaugeSnapshot, active: boolean): string {
 // until the app is closed or reloaded.
 let sessionUnmuted = false;
 
-export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite }: MinimalPlayerProps) {
+export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPlayingEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSavedPositionRef = useRef(0);
@@ -256,10 +257,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // One-shot start offset from the audio/video switch: applied once per play, on loadedmetadata.
   const nowPlayingRef = useRef(nowPlaying);
   nowPlayingRef.current = nowPlaying;
+  const restoredPlayStateRef = useRef({ src: activeSrc, restoredPaused: Boolean(nowPlaying?.restoredPaused) });
+  const playRef = useRef<() => Promise<void>>(async () => {});
   const startAtConsumedRef = useRef<unknown>(null);
 
-  const fnRef = useRef({ eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent });
-  fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent };
+  const fnRef = useRef({ eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPlayingEvent, onPauseEvent, onProgramEnded, onErrorEvent });
+  fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPlayingEvent, onPauseEvent, onProgramEnded, onErrorEvent };
 
   useLayoutEffect(() => {
     if (isVideo) return;
@@ -452,8 +455,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         void attemptAutoplay();
       }
     };
+    let firstNativePlaying = false;
     const onPlay = (...a: []) => { waitingForDataRef.current = false; if (media.readyState < 1) armStart(); fx().reportPlaying(...a); };
-    const onPlaying = (...a: []) => { waitingForDataRef.current = false; hasStartedPlaybackRef.current = true; clearStall(); clearStart(); fx().reportPlaying(...a); };
+    const onPlaying = (...a: []) => {
+      waitingForDataRef.current = false; hasStartedPlaybackRef.current = true; clearStall(); clearStart();
+      if (!firstNativePlaying) { firstNativePlaying = true; fx().onPlayingEvent?.(); }
+      fx().reportPlaying(...a);
+    };
     const onTimeUpdate = () => {
       if (!media.paused) {
         onProgressOk();
@@ -1009,6 +1017,17 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       });
     }
   };
+  playRef.current = play;
+  useEffect(() => {
+    const previous = restoredPlayStateRef.current;
+    const restoredPaused = Boolean(nowPlaying?.restoredPaused);
+    restoredPlayStateRef.current = { src: activeSrc, restoredPaused };
+    // Explicitly selecting the same item after reload is a play request, not a passive restore.
+    // Its source is unchanged, so the source-attachment effect alone would leave it paused.
+    if (previous.src === activeSrc && previous.restoredPaused && !restoredPaused) {
+      void playRef.current();
+    }
+  }, [activeSrc, nowPlaying?.restoredPaused]);
   const pause = () => mediaRef.current?.pause();
 
   const resume = async () => {

@@ -1,8 +1,8 @@
 import { bufferGaugeMetadata } from "../utils/bufferGauge";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PlayCircle, Heart } from "lucide-react";
-import { RUSH_PROGRAM, resolveRushNext, upNextLabel, type RushNext } from "../utils/rushNext";
-import { loadRushSettings, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
+import { RUSH_PRELUDE_PROGRAM, RUSH_PROGRAM, resolveRushNext, rushProgramDate, upNextLabel, type RushNext } from "../utils/rushNext";
+import { loadRushSettings, markRushPreludeSeenToday, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
 import MinimalPlayer from "../MinimalPlayer";
 import { toPlayableSrc } from "../utils/playableSrc";
 import { reportTelemetry } from "../telemetry";
@@ -131,7 +131,8 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   }, [continueAcross]);
   useEffect(() => {
     setUpNext(null);
-    if (!nowPlaying || nowPlaying.channelId !== "rush-vod" || !RUSH_PROGRAM.test(String(nowPlaying.programId ?? ""))) return;
+    if (!nowPlaying || nowPlaying.channelId !== "rush-vod"
+      || (!RUSH_PROGRAM.test(String(nowPlaying.programId ?? "")) && !RUSH_PRELUDE_PROGRAM.test(String(nowPlaying.programId ?? "")))) return;
     let live = true;
     void rushPlanFor(nowPlaying).then((n) => { if (live) setUpNext(n); });
     return () => { live = false; };
@@ -325,7 +326,8 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
 
     // Rush picked from the calendar: the next hour, then (if the preference is on)
     // the next available date. Same computation as the Up Next line.
-    if (instance.channelId === "rush-vod" && RUSH_PROGRAM.test(String(instance.programId ?? ""))) {
+    if (instance.channelId === "rush-vod"
+      && (RUSH_PROGRAM.test(String(instance.programId ?? "")) || RUSH_PRELUDE_PROGRAM.test(String(instance.programId ?? "")))) {
       const n = await rushPlanFor(instance);
       if (stale()) return true;
       const base = { guideId: instance.guideId ?? null, channelId: "rush-vod", programId: instance.programId ?? null,
@@ -336,7 +338,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         return false;
       }
       if (n.kind !== "next") { reportTelemetry({ ...base, event: `rush.auto_advance_${n.kind}`, mediaPath: null }); return false; }
-      reportTelemetry({ ...base, event: n.item.date === RUSH_PROGRAM.exec(instance.programId)![1] ? "rush.auto_advance" : "rush.auto_advance_next_date",
+      reportTelemetry({ ...base, event: n.item.date === rushProgramDate(String(instance.programId ?? "")) ? "rush.auto_advance" : "rush.auto_advance_next_date",
         mediaPath: n.item.archivePath, lookupDurationMs: rushPlanRef.current?.ms ?? null });
       onSelectProgram(n.item.archivePath, n.item.title, n.item.subtitle, "audio", "rush-vod", "audio-podcasts", n.item.programId);
       return true;
@@ -434,6 +436,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     assetId: nowPlaying.assetId ?? "unknown",
     path: nowPlaying.archivePath ?? nowPlaying.src,
   }) : null, [nowPlaying]);
+  const currentRushDate = nowPlaying?.channelId === "rush-vod"
+    ? rushProgramDate(String(nowPlaying.programId ?? ""))
+    : null;
   const retryPlayerMedia = useMemo(() => {
     if (!nowPlaying || !retryPosition || retryPosition.key !== targetKey(nowPlaying)) return nowPlaying;
     return { ...nowPlaying, startAtSeconds: retryPosition.seconds };
@@ -625,6 +630,11 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         onPrev={nowPlaying.channelId ? () => void goPrev() : undefined}
         onNext={() => void advance("ended")}
         onPlayEvent={() => { failuresRef.current = 0; failureContextRef.current = null; stoppedInstanceRef.current = null; advancingForRef.current = null; setPlaybackStopped(false); failedRef.current.clear(); console.log("[AJN PLAYBACK] play", meta); }}
+        onPlayingEvent={() => {
+          if (nowPlaying.channelId === "rush-vod" && RUSH_PRELUDE_PROGRAM.test(String(nowPlaying.programId ?? ""))) {
+            markRushPreludeSeenToday();
+          }
+        }}
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={onError}
         autoplayBlockedLabel={nowPlaying.channelId === "rush-vod" ? "Next hour ready — tap Play" : undefined}
@@ -635,6 +645,14 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       />
       </Fragment>
       </div>
+      {nowPlaying.channelId === "rush-vod" && RUSH_PRELUDE_PROGRAM.test(String(nowPlaying.programId ?? "")) && (
+        <div className="mt-3 flex justify-end">
+          <button type="button" data-testid="rush-skip-prelude" onClick={() => void advance("ended")}
+            className="min-h-11 rounded-md border border-amber-500/70 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-950/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+            Skip Morning Update
+          </button>
+        </div>
+      )}
       {playbackStopped && (
         <div role="alert" data-testid="playback-stopped-after-failures" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
           <p className="font-semibold">Playback stopped after {MAX_CONSECUTIVE_PLAYBACK_FAILURES} consecutive failures.</p>
@@ -650,9 +668,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       {!archiveMusicOn && <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />}
       {!archiveMusicOn && nowPlaying.channelId === "archive-infowars-radio" && <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />}
       {!archiveMusicOn && <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />}
-      {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (
+      {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, currentRushDate ?? undefined) && (
         <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">
-          {upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1])}
+          {upNextLabel(upNext, currentRushDate ?? undefined)}
         </p>
       )}
       {!archiveMusicOn && (import.meta as any).env?.DEV && (

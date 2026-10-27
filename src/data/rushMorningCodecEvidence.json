@@ -1,0 +1,23 @@
+{
+  "rush-limbaugh-radio-show-morning-update-2014-07-04": {
+    "file": "Rush Limbaugh - Jul 04 2014 - Morning Update.mp4",
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "verifiedOn": "2026-10-27",
+    "method": "ffprobe on a 2 MiB range through the Archive proxy"
+  },
+  "rush-limbaugh-radio-show-morning-update-2015-06-18": {
+    "file": "Rush Limbaugh - Jun 18 2015 - Morning Update.mp4",
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "verifiedOn": "2026-10-27",
+    "method": "ffprobe on a 2 MiB range through the Archive proxy"
+  },
+  "rush-limbaugh-radio-show-morning-update-2016-06-30": {
+    "file": "Rush Limbaugh - Jun 30 2016 - Morning Update.mp4",
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "verifiedOn": "2026-10-27",
+    "method": "ffprobe on a 2 MiB range through the Archive proxy"
+  }
+}

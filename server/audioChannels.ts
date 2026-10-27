@@ -42,7 +42,7 @@ function trackProgram(t: RushTrack, o: { guideId: string; channelId: string; tit
 
 /** Rush — On This Day: same month/day in every year, nearest dates as fill. */
 export function pickRushEpisodes(index: RushIndexEntry[], now: Date, n = RUSH_EPISODES): RushIndexEntry[] {
-  return [...index]
+  return index.filter((entry) => entry.role === 'full-show')
     .map((e) => ({ e, d: dayDistance(e.date, now) }))
     .sort((a, b) => a.d - b.d || a.e.date.localeCompare(b.e.date))
     .slice(0, n).map((x) => x.e)
