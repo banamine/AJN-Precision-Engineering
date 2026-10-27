@@ -324,11 +324,11 @@ export default function App() {
             hidden={destination !== 'player'}
             className={`w-full ${destination === 'player' ? 'view-fade-in' : ''}`}
           >
-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
           </div>
         ) : destination === 'player' && (
           <div key="view-player" className="view-fade-in w-full">
-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
           </div>
         )}
         {destination === 'today' && (

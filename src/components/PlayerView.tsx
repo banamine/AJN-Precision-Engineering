@@ -22,6 +22,8 @@ import { useArchiveStatus } from "../hooks/useArchiveStatus";
 import { RadioCaptionPanel } from "../news/captions/RadioCaptionPanel";
 import { useStationTheme } from "../utils/stationArt";
 import { StationBanner } from "./StationBanner";
+import { isArchiveMusicPlayback } from "../utils/isArchiveMusicPlayback";
+import type { Program, RecentlyPlayedItem } from "../types";
 
 /** Readable, stable id for a show title: "<channelId>/<title-slug>". Used in logs
  *  and telemetry so a failing playback can be found by name. */
@@ -61,7 +63,7 @@ const SKIP_AFTER_ERROR_MS = 1500;
 // After a long run of failures (offline?) keep trying, but slowly: playback is never left idle.
 const SLOW_RETRY_MS = 30_000;
 
-export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite }: any) {
+export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite, recentlyPlayed = [], onResumeRecentlyPlayed }: any) {
   const failuresRef = useRef(0);
   const failureContextRef = useRef<ProxyErrorBody | null>(null);
   const stoppedInstanceRef = useRef<unknown>(null);
@@ -71,6 +73,21 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   const [archivePausedForOutage, setArchivePausedForOutage] = useState(false);
   const skipTimerRef = useRef<number | null>(null);
   const { state: archiveState, refresh: refreshArchiveStatus } = useArchiveStatus();
+  const archiveMusicOn = isArchiveMusicPlayback(nowPlaying?.mediaType, nowPlaying?.channelId);
+  const archiveMusicRecentlyPlayed = useMemo(() => {
+    if (!archiveMusicOn) return [];
+    const current = nowPlaying;
+    return (Array.isArray(recentlyPlayed) ? recentlyPlayed as RecentlyPlayedItem[] : [])
+      .filter((item) => isArchiveMusicPlayback(item.mediaType, item.channelId))
+      .filter((item) =>
+        item.programId !== current?.programId &&
+        item.archivePath !== current?.archivePath &&
+        item.src !== current?.src,
+      )
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 6);
+  }, [archiveMusicOn, recentlyPlayed, nowPlaying]);
+  const [archiveMusicUpcoming, setArchiveMusicUpcoming] = useState<Program[]>([]);
 
   // 24/7 continuity: when a program ends (or fails), play the next program on the
   // same channel, wrapping to the first one. If the current program can't be
@@ -132,6 +149,46 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     scheduleRef.current = { instance, promise };
     return promise;
   }, []);
+  useEffect(() => {
+    if (!archiveMusicOn || !nowPlaying) {
+      setArchiveMusicUpcoming((current) => current.length ? [] : current);
+      return;
+    }
+    setArchiveMusicUpcoming([]);
+    let live = true;
+    void schedulePrograms(nowPlaying).then((programs: Program[]) => {
+      if (!live || latestRef.current !== nowPlaying) return;
+      const pick = pickNext(nowPlaying, programs);
+      if (!pick) {
+        setArchiveMusicUpcoming([]);
+        return;
+      }
+      if (pick.kind === "segment") {
+        setArchiveMusicUpcoming([pick.seg as Program]);
+        return;
+      }
+      const count = Math.min(6, programs.length);
+      setArchiveMusicUpcoming(Array.from({ length: count }, (_, offset) => programs[(pick.nextIndex + offset) % programs.length]));
+    }).catch(() => {
+      if (live) setArchiveMusicUpcoming([]);
+    });
+    return () => { live = false; };
+  }, [archiveMusicOn, nowPlaying, schedulePrograms]);
+
+  const resumeArchiveRecent = useCallback((item: RecentlyPlayedItem) => {
+    if (onResumeRecentlyPlayed) {
+      onResumeRecentlyPlayed(item);
+      return;
+    }
+    onSelectProgram(item.archivePath || item.src, item.title, item.subtitle, item.mediaType, item.channelId, item.guideId, item.programId, item.sourceId, item.assetId, item.progressSeconds);
+  }, [onResumeRecentlyPlayed, onSelectProgram]);
+
+  const selectArchiveUpcoming = useCallback((program: Program) => {
+    const ref = program.archivePath || program.mediaUrl;
+    if (!ref) return;
+    onSelectProgram(ref, program.title, program.description, program.mediaType, program.channelId, program.guideId, program.id,
+      program.sourceId ?? program.metadata?.sourceId, program.assetId ?? program.metadata?.assetId);
+  }, [onSelectProgram]);
   /** Previous program of the channel (wraps); Rush calendar items have no neighbour. */
   const goPrev = useCallback(async () => {
     const instance = latestRef.current;
@@ -470,9 +527,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
           <p className="font-semibold">Archive is offline. Playback is paused and will resume automatically when Archive is reachable again.</p>
         </div>
       )}
-      <FullShowStatus />
+      {!archiveMusicOn && <FullShowStatus />}
       {stationTheme && <StationBanner theme={stationTheme} title={nowPlaying.title} subtitle={nowPlaying.subtitle} />}
-      {onToggleFavorite && (
+      {!archiveMusicOn && onToggleFavorite && (
         <div className="flex items-center justify-between gap-3">
           <span className="min-w-0 truncate text-sm font-semibold text-neutral-100" data-testid="player-title">{nowPlaying.title}</span>
           <button type="button" data-testid="player-heart" aria-pressed={isFavorite} onClick={onToggleFavorite}
@@ -493,6 +550,13 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         title={nowPlaying.title}
         mediaType={nowPlaying.mediaType ?? "video"}
         nowPlaying={nowPlaying}
+        archiveMusicMode={archiveMusicOn}
+        archiveMusicRecentlyPlayed={archiveMusicRecentlyPlayed}
+        archiveMusicUpcoming={archiveMusicUpcoming}
+        onResumeRecentlyPlayed={resumeArchiveRecent}
+        onSelectUpcoming={selectArchiveUpcoming}
+        isFavorite={isFavorite}
+        onToggleFavorite={onToggleFavorite}
         onProgramEnded={() => void advance("ended")}
         resolveNext={resolveNext}
         onPrev={nowPlaying.channelId ? () => void goPrev() : undefined}
@@ -516,15 +580,15 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
           </button>
         </div>
       )}
-      <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />
-      {nowPlaying.channelId === "archive-infowars-radio" && <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />}
-      <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />
+      {!archiveMusicOn && <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />}
+      {!archiveMusicOn && nowPlaying.channelId === "archive-infowars-radio" && <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />}
+      {!archiveMusicOn && <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />}
       {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (
         <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">
           {upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1])}
         </p>
       )}
-      {(import.meta as any).env?.DEV && (
+      {!archiveMusicOn && (import.meta as any).env?.DEV && (
         <details aria-label="Developer playback diagnostics" className="rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-xs font-mono">
           <summary className="cursor-pointer text-neutral-400">Developer playback identity</summary>
           <pre className="mt-2 text-neutral-300">{JSON.stringify(meta, null, 2)}</pre>

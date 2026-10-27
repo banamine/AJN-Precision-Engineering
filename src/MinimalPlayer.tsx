@@ -4,17 +4,19 @@ import { attachPlayTimeline } from "./utils/playTimeline";
 import { createProgressWatchdog } from "./utils/progressWatchdog";
 import { bufferGaugeMetadata, createBufferGauge, type BufferGaugeSnapshot } from "./utils/bufferGauge";
 import { playerKeyAction, seekDelta } from "./utils/playerKeys";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { bridgeSrc, corsModeFor, NO_METER_MARK, RESOLVED_MARK, podcastAllowsMeter, liveRadioAllowsMeter } from "./utils/mediaRoute";
 import Hls from "hls.js";
 import { getBufferSamples, reportBufferSample, reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
+import type { Program, RecentlyPlayedItem } from "./types";
 import { PlayerChrome } from "./components/PlayerChrome";
 import { WaitingNotes } from "./components/WaitingNotes";
 import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
-import { useAudioNormalization } from "./use-audio-normalization";
+import { releaseMediaElementAudioSource, useAudioNormalization } from "./use-audio-normalization";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
+import { ArchiveMusicSpectrum } from "./components/ArchiveMusicSpectrum";
 import { useFolderArt } from "./utils/useFolderArt";
 import { usePersistentFlag } from "./utils/persistentFlag";
 import { useFrameCapture } from "./utils/useFrameCapture";
@@ -22,6 +24,8 @@ import { archiveIdentifierFromPath } from "./utils/thumbnail";
 import { isLiveRadioPlayback } from "./utils/isLiveRadioPlayback";
 import { RadioBriefingPlayerOverlay } from "./components/RadioBriefingPlayerOverlay";
 import { attachArchiveVideoPrefetch, type VideoPrefetchTarget } from "./utils/videoPrefetch";
+import { cleanArchiveMusicFilename } from "./utils/archiveMusicTitle";
+import { isArchiveMusicPlayback } from "./utils/isArchiveMusicPlayback";
 
 interface MinimalPlayerProps {
   src: string;
@@ -44,6 +48,13 @@ interface MinimalPlayerProps {
   onRetry?: () => void;
   /** Shown with a failure message: leave the stalled item and pick something else. */
   onBackToGuide?: () => void;
+  archiveMusicMode?: boolean;
+  archiveMusicRecentlyPlayed?: readonly RecentlyPlayedItem[];
+  archiveMusicUpcoming?: readonly Program[];
+  onResumeRecentlyPlayed?: (item: RecentlyPlayedItem) => void;
+  onSelectUpcoming?: (program: Program) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
 const TV_NEWS_SLICE_SEC = 300;
@@ -91,7 +102,7 @@ function bufferLine(snapshot: BufferGaugeSnapshot, active: boolean): string {
 // until the app is closed or reloaded.
 let sessionUnmuted = false;
 
-export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide }: MinimalPlayerProps) {
+export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSavedPositionRef = useRef(0);
@@ -110,6 +121,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
 
   const isVideo = mediaType === "video";
   const radioBriefingOn = isLiveRadioPlayback(mediaType, nowPlaying);
+  const archiveMusicOn = archiveMusicMode ?? isArchiveMusicPlayback(mediaType, nowPlaying?.channelId);
+  const archiveMusicModeRef = useRef(archiveMusicOn);
+  archiveMusicModeRef.current = archiveMusicOn;
   // Optional: save a real frame for items Archive has no image for (see utils/thumbStore.ts). No effect otherwise.
   useFrameCapture(mediaRef, archiveIdentifierFromPath(nowPlaying?.archivePath ?? activeSrc), isVideo);
   const isHls = /\.m3u8(\?|$)/i.test(activeSrc ?? "") || (activeSrc ?? "").startsWith("/api/hls/");
@@ -145,6 +159,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [repeatOne, setRepeatOne] = useState(false);
   const folderArt = useFolderArt(nowPlaying?.archivePath, mediaType !== "video");
   const artUrl = folderArt[0]?.url ?? nowPlaying?.thumbnailUrl;
+  const archiveTrack = useMemo(
+    () => cleanArchiveMusicFilename(nowPlaying?.archivePath ?? activeSrc),
+    [nowPlaying?.archivePath, activeSrc],
+  );
+  const archiveMusicTitle = archiveTrack.title || title || nowPlaying?.title || "Untitled";
+  const archiveMusicArtist = archiveTrack.artist || nowPlaying?.subtitle || "";
+  const archiveMusicRawFilename = archiveTrack.rawFilename || nowPlaying?.title || "";
   const sideArt = folderArt.slice(1, 3);
   const preloadRef = useRef<{ src: string; el: HTMLAudioElement } | null>(null);
   const adoptedRef = useRef(false);
@@ -271,6 +292,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     disposePreload();
     const el = mediaRef.current;
     if (el instanceof HTMLAudioElement) { el.pause(); el.removeAttribute("src"); el.load(); }
+    if (archiveMusicModeRef.current && el) releaseMediaElementAudioSource(el);
   }, [disposePreload]);
 
   // Near the end of an audio track, ask for the next one and start buffering it in a hidden element.
@@ -1068,43 +1090,69 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           className="h-full w-full"
         />
       ) : (
-        <div data-testid="audio-stage" className={`relative isolate flex ${radioBriefingOn ? "h-96 sm:h-auto sm:aspect-video" : "aspect-video"} max-h-[60vh] min-h-44 w-full items-center justify-center overflow-hidden px-4 py-4`}>
-          {artUrl && !radioBriefingOn && (
-            <img src={artUrl} alt="" aria-hidden="true" data-testid="audio-backdrop" className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-25 blur-md" />
+        <div
+          data-testid="audio-stage"
+          className={`relative isolate flex ${archiveMusicOn ? "min-h-[18rem] max-h-[60vh] w-full items-center justify-center overflow-hidden bg-slate-950 px-4 py-6 sm:min-h-[22rem] sm:px-8" : `${radioBriefingOn ? "h-96 sm:h-auto sm:aspect-video" : "aspect-video"} max-h-[60vh] min-h-44 w-full items-center justify-center overflow-hidden px-4 py-4`}`}
+        >
+          {archiveMusicOn ? (
+            <>
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0" style={{ background: "radial-gradient(ellipse at center, rgba(8, 145, 178, 0.2), rgba(2, 6, 23, 0.96) 72%)" }} />
+              <ArchiveMusicSpectrum analyser={analyserNode} isPlaying={isPlaying} analyzerState={analyzerState} />
+              <div className="relative z-[2] mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8">
+                <div data-testid="audio-art" className="flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900 shadow-[0_0_45px_rgba(34,211,238,0.24)] ring-2 ring-cyan-200/70 sm:h-52 sm:w-52">
+                  {artUrl
+                    ? <img src={artUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" />
+                    : <span aria-label="Archive music artwork unavailable" role="img" className="text-6xl text-cyan-200">♫</span>}
+                </div>
+                <div className="min-w-0 max-w-xl text-center sm:text-left">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Archive.org Music</p>
+                  <h1 data-testid="archive-music-title" title={archiveMusicRawFilename} className="break-words text-xl font-bold leading-tight text-white sm:text-3xl">
+                    {archiveMusicTitle}
+                  </h1>
+                  {archiveMusicArtist && <p data-testid="archive-music-artist" className="mt-2 text-base font-medium text-slate-200 sm:text-lg">{archiveMusicArtist}</p>}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {artUrl && !radioBriefingOn && (
+                <img src={artUrl} alt="" aria-hidden="true" data-testid="audio-backdrop" className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-25 blur-md" />
+              )}
+              {radioBriefingOn && (
+                <div
+                  role="img"
+                  data-testid="radio-visualizer-band"
+                  aria-label={analyzerState === "unavailable" ? "Visualizer unavailable for this station; radio audio continues" : "Audio visualizer"}
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-10 border-t border-sky-300/20 bg-neutral-950/90"
+                />
+              )}
+              <AudioVisualizerOverlay
+                analyser={analyserNode}
+                enabled={isPlaying && (radioBriefingOn || visualizerOn)}
+                mode={radioBriefingOn ? "audio-briefing" : "audio"}
+              />
+              {radioBriefingOn && <RadioBriefingPlayerOverlay stationId={nowPlaying?.channelId} />}
+              {isPlaying && (
+                <div data-testid="on-air-badge" className="pointer-events-none absolute left-3 top-3 z-[3] flex items-center gap-2 rounded bg-black/60 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
+                  <span>On air</span>
+                  <span data-testid="meter-state" className="font-medium normal-case tracking-normal text-white/60">
+                    {analyzerState === "unavailable" ? "no signal meter for this source" : analyzerState === "idle" ? "silence" : "live level"}
+                  </span>
+                </div>
+              )}
+              {artUrl && !radioBriefingOn && (
+                <div data-testid="audio-art" className="pointer-events-none relative z-[2] aspect-square h-32 max-h-[70%] overflow-hidden rounded-full shadow-2xl ring-2 ring-sky-300/40 sm:h-52">
+                  <img src={artUrl} alt="" className="h-full w-full object-cover" />
+                </div>
+              )}
+              {!radioBriefingOn && sideArt.map((img, i) => (
+                <div key={img.url} data-testid="audio-side-art" className={`pointer-events-none absolute top-1/2 z-[2] hidden h-20 w-20 -translate-y-1/2 overflow-hidden rounded-full shadow-xl ring-2 ring-white/20 md:block lg:h-24 lg:w-24 ${i === 0 ? "left-[8%]" : "right-[8%]"}`}>
+                  <img src={img.url} alt="" className="h-full w-full object-cover" />
+                </div>
+              ))}
+            </>
           )}
-          {radioBriefingOn && (
-            <div
-              role="img"
-              data-testid="radio-visualizer-band"
-              aria-label={analyzerState === "unavailable" ? "Visualizer unavailable for this station; radio audio continues" : "Audio visualizer"}
-              className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-10 border-t border-sky-300/20 bg-neutral-950/90"
-            />
-          )}
-          <AudioVisualizerOverlay
-            analyser={analyserNode}
-            enabled={isPlaying && (radioBriefingOn || visualizerOn)}
-            mode={radioBriefingOn ? "audio-briefing" : "audio"}
-          />
-          {radioBriefingOn && <RadioBriefingPlayerOverlay stationId={nowPlaying?.channelId} />}
-          {isPlaying && (
-            <div data-testid="on-air-badge" className="pointer-events-none absolute left-3 top-3 z-[3] flex items-center gap-2 rounded bg-black/60 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
-              <span>On air</span>
-              <span data-testid="meter-state" className="font-medium normal-case tracking-normal text-white/60">
-                {analyzerState === "unavailable" ? "no signal meter for this source" : analyzerState === "idle" ? "silence" : "live level"}
-              </span>
-            </div>
-          )}
-          {artUrl && !radioBriefingOn && (
-            <div data-testid="audio-art" className="pointer-events-none relative z-[2] aspect-square h-32 max-h-[70%] overflow-hidden rounded-full shadow-2xl ring-2 ring-sky-300/40 sm:h-52">
-              <img src={artUrl} alt="" className="h-full w-full object-cover" />
-            </div>
-          )}
-          {!radioBriefingOn && sideArt.map((img, i) => (
-            <div key={img.url} data-testid="audio-side-art" className={`pointer-events-none absolute top-1/2 z-[2] hidden h-20 w-20 -translate-y-1/2 overflow-hidden rounded-full shadow-xl ring-2 ring-white/20 md:block lg:h-24 lg:w-24 ${i === 0 ? "left-[8%]" : "right-[8%]"}`}>
-              <img src={img.url} alt="" className="h-full w-full object-cover" />
-            </div>
-          ))}
           <div ref={audioHostRef} data-testid="audio-host" className="absolute left-0 top-0 h-0 w-0 overflow-hidden" />
         </div>
       )}
@@ -1161,6 +1209,16 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onNext={onNext}
         repeatOne={repeatOne}
         onToggleRepeat={isVideo ? undefined : () => setRepeatOne((v) => !v)}
+        archiveMusicMode={archiveMusicOn}
+        archiveMusicTitle={archiveMusicTitle}
+        archiveMusicArtist={archiveMusicArtist}
+        archiveMusicRawFilename={archiveMusicRawFilename}
+        archiveMusicRecentlyPlayed={archiveMusicRecentlyPlayed}
+        archiveMusicUpcoming={archiveMusicUpcoming}
+        onResumeRecentlyPlayed={onResumeRecentlyPlayed}
+        onSelectUpcoming={onSelectUpcoming}
+        isFavorite={isFavorite}
+        onToggleFavorite={onToggleFavorite}
       />
     </div>
       {diagnosticsOpen && (

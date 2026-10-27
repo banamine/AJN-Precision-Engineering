@@ -1,9 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createScrubber } from "../utils/seekScrub";
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, PictureInPicture2, AudioLines, ChevronDown, SkipBack, SkipForward, Rewind, FastForward, Repeat1 } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, PictureInPicture2, AudioLines, ChevronDown, SkipBack, SkipForward, Rewind, FastForward, Repeat1, Heart } from "lucide-react";
 import type { AnalyzerState } from "./AudioVisualizerOverlay";
+import type { Program, RecentlyPlayedItem } from "../types";
+import { cleanArchiveMusicFilename } from "../utils/archiveMusicTitle";
 
 export const HUD_HIDE_MS = 2500;
+
+function archiveRowPresentation(item: {
+  title?: string;
+  subtitle?: string;
+  archivePath?: string;
+  src?: string;
+  mediaUrl?: string;
+}) {
+  const cleaned = cleanArchiveMusicFilename(item.archivePath || item.src || item.mediaUrl || item.title);
+  return {
+    title: cleaned.title || item.title || "Untitled",
+    artist: cleaned.artist || item.subtitle || "",
+    rawFilename: cleaned.rawFilename || item.title || "Untitled",
+  };
+}
 
 export function formatClock(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) sec = 0;
@@ -44,6 +61,16 @@ interface PlayerChromeProps {
   onNext?: () => void;
   repeatOne?: boolean;
   onToggleRepeat?: () => void;
+  archiveMusicMode?: boolean;
+  archiveMusicTitle?: string;
+  archiveMusicArtist?: string;
+  archiveMusicRawFilename?: string;
+  archiveMusicRecentlyPlayed?: readonly RecentlyPlayedItem[];
+  archiveMusicUpcoming?: readonly Program[];
+  onResumeRecentlyPlayed?: (item: RecentlyPlayedItem) => void;
+  onSelectUpcoming?: (program: Program) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
 const PILL: Record<AnalyzerState, { dot: string; text: string; label: string }> = {
@@ -336,6 +363,155 @@ export function PlayerChrome(p: PlayerChromeProps) {
     </div>
   );
 
+  const archiveMusicPanels = p.archiveMusicMode ? (
+    <div
+      data-testid="archive-music-panels"
+      className="grid grid-cols-1 gap-3 bg-slate-950 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,1.2fr)_minmax(0,1fr)]"
+    >
+      <section data-testid="archive-music-recently-played" aria-labelledby="archive-music-recent-heading" className="min-w-0 rounded-2xl border border-cyan-900/70 bg-slate-900/80 p-4 shadow-lg shadow-black/20">
+        <h2 id="archive-music-recent-heading" className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-100">Recently Played</h2>
+        {p.archiveMusicRecentlyPlayed?.length ? (
+          <ul className="space-y-1">
+            {p.archiveMusicRecentlyPlayed.slice(0, 6).map((item) => {
+              const row = archiveRowPresentation(item);
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    data-testid="archive-music-recent-item"
+                    title={row.rawFilename}
+                    aria-label={`Resume ${row.title}${row.artist ? ` by ${row.artist}` : ""}`}
+                    onClick={() => p.onResumeRecentlyPlayed?.(item)}
+                    className="flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-slate-100 transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  >
+                    <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-cyan-800 bg-slate-950 text-cyan-200">♪</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{row.title}</span>
+                      <span className="block truncate text-xs text-slate-300">{row.artist || "Archive.org"}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="py-3 text-sm text-slate-300">No recent Archive music.</p>
+        )}
+      </section>
+
+      <section data-testid="archive-music-now-playing" aria-labelledby="archive-music-now-heading" aria-label={`Now playing ${p.archiveMusicTitle || "Archive track"}${p.archiveMusicArtist ? ` by ${p.archiveMusicArtist}` : ""}`} title={p.archiveMusicRawFilename || undefined} className="min-w-0 rounded-2xl border border-cyan-500/50 bg-slate-900/90 p-4 shadow-[0_0_30px_rgba(34,211,238,0.08)]">
+        <h2 id="archive-music-now-heading" className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-100">Now Playing</h2>
+        <div data-testid="audio-controls" className="space-y-3">
+          <div className="flex min-h-11 items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center justify-center gap-2 sm:gap-3">
+              <button type="button" className={`${btn} !h-11 !w-11`} onClick={p.onPrev} disabled={!p.onPrev} aria-label="Previous track" title="Previous track">
+                <SkipBack className="h-5 w-5" />
+              </button>
+              <button type="button" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-cyan-300 text-slate-950 transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" onClick={p.onTogglePlay} aria-label={p.isPlaying ? "Pause" : "Play"} title={p.isPlaying ? "Pause" : "Play"}>
+                {p.isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+              </button>
+              <button type="button" className={`${btn} !h-11 !w-11`} onClick={p.onNext} disabled={!p.onNext} aria-label="Next track" title="Next track">
+                <SkipForward className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex min-h-11 shrink-0 items-center gap-1">
+              <button
+                type="button"
+                data-testid="mute-button"
+                aria-label={p.isMuted ? "Muted — click to unmute" : "Unmuted — click to mute"}
+                aria-pressed={p.isMuted}
+                onClick={p.onToggleMute}
+                className={`${btn} !h-11 !w-11 ${p.isMuted ? "bg-red-950/50 text-red-300" : "text-slate-100"}`}
+              >
+                {p.isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={p.isMuted ? 0 : p.volume}
+                onChange={(event) => p.onVolume(Number(event.target.value))}
+                aria-label="Volume"
+                className="h-11 w-16 cursor-pointer accent-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 sm:w-24"
+              />
+            </div>
+          </div>
+
+          <div className="flex min-h-10 items-center gap-2 font-mono text-xs tabular-nums text-slate-200">
+            <span data-testid="player-time" className="shrink-0">{clockLabel}</span>
+            <div className="relative h-11 min-w-0 flex-1">
+              <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-slate-700">
+                <div className="absolute inset-y-0 left-0 bg-slate-400/80" style={{ width: `${bufPct}%` }} />
+                <div className="absolute inset-y-0 left-0 rounded-full bg-cyan-300" style={{ width: `${pct}%` }} />
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1000}
+                step={1}
+                value={Math.round(pct * 10)}
+                onChange={seek}
+                disabled={noDuration}
+                aria-label="Seek"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
+              />
+            </div>
+          </div>
+
+          <div className="flex min-h-11 items-center justify-between gap-3 border-t border-slate-700/80 pt-2">
+            {p.onToggleFavorite && (
+              <button
+                type="button"
+                data-testid="player-heart"
+                aria-pressed={Boolean(p.isFavorite)}
+                aria-label={p.isFavorite ? "Remove current track from favorites" : "Add current track to favorites"}
+                title={p.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                onClick={p.onToggleFavorite}
+                className={`flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${p.isFavorite ? "text-rose-300" : "text-slate-100 hover:bg-slate-800"}`}
+              >
+                <Heart className={`h-4 w-4 ${p.isFavorite ? "fill-rose-400 text-rose-400" : ""}`} aria-hidden="true" />
+                {p.isFavorite ? "Favorited" : "Favorite"}
+              </button>
+            )}
+          </div>
+          <p data-testid="player-status" className="sr-only" aria-live="polite">{p.statusText}</p>
+        </div>
+      </section>
+
+      <section data-testid="archive-music-up-next" aria-labelledby="archive-music-up-next-heading" className="min-w-0 rounded-2xl border border-cyan-900/70 bg-slate-900/80 p-4 shadow-lg shadow-black/20">
+        <h2 id="archive-music-up-next-heading" className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-100">Up Next</h2>
+        {p.archiveMusicUpcoming?.length ? (
+          <ol className="space-y-1">
+            {p.archiveMusicUpcoming.slice(0, 6).map((program, index) => {
+              const row = archiveRowPresentation(program);
+              return (
+                <li key={`${program.id}-${index}`}>
+                  <button
+                    type="button"
+                    data-testid="archive-music-up-next-item"
+                    title={row.rawFilename}
+                    aria-label={`Play next: ${row.title}${row.artist ? ` by ${row.artist}` : ""}`}
+                    onClick={() => p.onSelectUpcoming?.(program)}
+                    className="flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-slate-100 transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  >
+                    <span aria-hidden="true" className="w-5 shrink-0 text-center font-mono text-xs text-cyan-200">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{row.title}</span>
+                      <span className="block truncate text-xs text-slate-300">{row.artist || "Archive.org"}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="py-3 text-sm text-slate-300">Upcoming tracks unavailable.</p>
+        )}
+      </section>
+    </div>
+  ) : null;
+
   return (
     <>
       {p.isVideo && (
@@ -354,7 +530,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
           </div>
         </div>
       )}
-      {p.isVideo ? transport : audioBar}
+      {p.isVideo ? transport : p.archiveMusicMode ? archiveMusicPanels : audioBar}
     </>
   );
 }
