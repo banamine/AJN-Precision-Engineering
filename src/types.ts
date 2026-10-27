@@ -89,6 +89,8 @@ export interface ScheduleChannel {
   guideId: string;
   name: string;
   mediaType: MediaType;
+  /** Keep in guide snapshots for Library ingestion, but exclude from schedules and exports. */
+  libraryOnly?: boolean;
   group?: string;
   logo?: string;
   /** 'must-listen' draws the row and its cells in the highlight colour. */

@@ -33,6 +33,7 @@
     "test:old-british-tv": "tsx test-old-british-tv.ts",
     "test:epg-tune-window": "tsx test-epg-tune-window.ts",
     "test:daily-rotation": "tsx test-daily-rotation.ts",
+    "test:amc-extras-library-only": "tsx test-amc-extras-library-only.ts",
     "test:rt-documentary": "tsx test-rt-documentary.ts",
     "test:classic-tv-canonical": "tsx test-classic-tv-canonical.js",
     "test:real-archive-playback": "tsx test-real-archive-playback.js",
