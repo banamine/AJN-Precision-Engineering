@@ -1,6 +1,8 @@
 import { buildDiscoveryChannel, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
+import { createLastGoodCache } from './server/lastGoodCache';
 import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, getLibrarySeries, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
 import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
+import type { ScheduleChannel } from './src/types';
 import { pickOnNow, type HomeNowItem } from './server/homeNow';
 import { buildClassicLightSchedule } from './server/classicLightSchedule';
 import { buildAudioLightSchedule } from './server/audioLightSchedule';
@@ -87,18 +89,25 @@ app.get('/api/channels/:channelId',(req,res)=>{const c=getChannelById(req.params
 app.get('/api/channels/:channelId/sources',(req,res)=>res.json({channelId:req.params.channelId,total:getChannelSources(req.params.channelId).length,sources:getChannelSources(req.params.channelId)}));
 app.post('/api/channels/:channelId/sources',(req,res)=>{const {url,protocol,priority,enabled,metadata}=req.body;if(!url||typeof url!=='string')return res.status(400).json({error:'Source URL is required'});res.status(201).json({message:'Channel source added successfully',source:addChannelSource(req.params.channelId,{url,protocol,priority,enabled,metadata})});});
 app.get('/api/live/health',(_req,res)=>{res.set('Cache-Control','no-store');res.json({...liveTvHealthSummary(),plutoEpg:plutoEpgStats});});
-// One cached snapshot per guide (10 min) feeds the Library and the M3U/XMLTV
+// One last-good snapshot per guide (10 min) feeds the Library and M3U/XMLTV
 // exports, so both files of a channel describe the same lineup.
 const EXPORT_TTL_MS=10*60_000;
-const exportSnaps=new Map<string,{at:number;p:Promise<ExportSnapshot>}>();
-function guideSnapshot(guideId:string):Promise<ExportSnapshot>{
-  const hit=exportSnaps.get(guideId);
-  if(hit&&Date.now()-hit.at<EXPORT_TTL_MS)return hit.p;
-  const p=getScheduleForGuide(guideId).then(channels=>({guideId,generatedAt:new Date().toISOString(),channels}));
-  exportSnaps.set(guideId,{at:Date.now(),p});
-  p.catch(()=>{if(exportSnaps.get(guideId)?.p===p)exportSnaps.delete(guideId);});
-  return p;
+function isValidScheduleChannels(channels: ScheduleChannel[]): boolean {
+  return Array.isArray(channels)
+    && channels.length > 0
+    && channels.some((channel) => Array.isArray(channel.programs) && channel.programs.length > 0)
+    && !channels.some((channel) => (channel.programs ?? []).some((program) => program.endTime <= program.startTime));
 }
+const exportSnaps=createLastGoodCache<ExportSnapshot>({
+  ttlMs:EXPORT_TTL_MS,
+  load:async(guideId)=>{
+    const channels=await getScheduleForGuide(guideId);
+    return {guideId,generatedAt:new Date().toISOString(),channels};
+  },
+  isValid:(snapshot)=>isValidScheduleChannels(snapshot.channels),
+  label:'Guide snapshot',
+});
+function guideSnapshot(guideId:string):Promise<ExportSnapshot>{return exportSnaps.get(guideId);}
 const EXPORT_GUIDES=['cable-tv','classic-tv','live-tv','audio-podcasts','movies-classics-vault','science-documentaries','old-british-tv'];
 // Home carousel: ONE airing program per genre guide, read from the cached guide snapshots (no extra Archive traffic).
 // A guide whose snapshot is not ready within 3.5 s is reported in "pending" instead of blocking the page or being faked.
@@ -125,13 +134,51 @@ app.get('/api/home/classic-48h',async(req,res)=>{const r=await classicUpcoming.h
 const originOf=(req:any)=>`${(req.headers['x-forwarded-proto']||req.protocol||'https').toString().split(',')[0]}://${req.get('host')}`;
 let libraryCache:{at:number;items:any[];generatedAt:string}|null=null;
 // Library index: packaged snapshot (search categories) + guide categories, paged.
-async function refreshLibraryGuideCategories(){
-  for(const c of LIBRARY_CATEGORIES.filter(c=>c.guide)){
-    try{setGuideRecords(c.id,recordsFromGuide(c,(await guideSnapshot(c.guide!.guideId)).channels));}catch(e:any){console.warn('[Library index]',c.id,e?.message);}
+async function refreshLibraryGuideCategories() {
+  for (const category of LIBRARY_CATEGORIES.filter((candidate) => candidate.guide)) {
+    try {
+      const records = recordsFromGuide(
+        category,
+        (await guideSnapshot(category.guide!.guideId)).channels,
+      );
+      if (records.length > 0) {
+        setGuideRecords(category.id, records);
+      } else {
+        console.warn(
+          '[Library index]',
+          category.id,
+          'guide refresh returned no items; keeping existing category records',
+        );
+      }
+    } catch (error: unknown) {
+      console.warn(
+        '[Library index]',
+        category.id,
+        'guide refresh rejected; keeping existing category records:',
+        error instanceof Error ? error.message : String(error),
+      );
+    }
   }
 }
 let libraryGuideAt=0;
-async function libraryReady(){await loadLibrarySnapshot();if(process.env.NODE_ENV==='test'&&process.env.AJN_NKER150_AUDIT_MODE==='1')return;if(Date.now()-libraryGuideAt>EXPORT_TTL_MS){libraryGuideAt=Date.now();const p=refreshLibraryGuideCategories();if(libraryIndexStats.guideItems===0)await p;else void p.catch((e:any)=>console.warn('[Library refresh]',e?.message));}}
+async function libraryReady() {
+  await loadLibrarySnapshot();
+  if (process.env.NODE_ENV === 'test' && process.env.AJN_NKER150_AUDIT_MODE === '1') return;
+  if (Date.now() - libraryGuideAt > EXPORT_TTL_MS) {
+    libraryGuideAt = Date.now();
+    const refresh = refreshLibraryGuideCategories();
+    if (libraryIndexStats.guideItems === 0) {
+      await refresh;
+      if (libraryIndexStats.guideItems === 0) {
+        console.warn('[Library index] guide refresh returned no items; keeping existing category records');
+      }
+    } else {
+      void refresh.catch((error: unknown) => {
+        console.warn('[Library refresh]', error instanceof Error ? error.message : String(error));
+      });
+    }
+  }
+}
 app.get('/api/library/items',async(req,res)=>{
   try{await libraryReady();const d=req.query.decade;
     res.set('Cache-Control','no-store').json(queryLibrary({ids:req.query.ids?String(req.query.ids).split(',').filter(Boolean).slice(0,500):undefined,category:(req.query.category as string)||undefined,decade:d===undefined||d===''?null:Number(d),q:req.query.q as string,mediaType:req.query.mediaType as string,showId:req.query.showId as string,page:Number(req.query.page)||1,limit:Number(req.query.limit)||24}));
@@ -173,18 +220,15 @@ app.get('/api/channels/:id/epg.xml',async(req,res)=>{const s=await findChannelGu
 app.get('/api/guides/:guide/playlist.m3u',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('audio/x-mpegurl').set('X-AJN-Generated-At',s.generatedAt).send(toM3u(s,null,originOf(req)));});
 app.get('/api/guides/:guide/epg.xml',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,null));});
 const SCHEDULE_TTL_MS=60_000;
-const SCHEDULE_LOADING_TTL_MS=4_000; // a guide that still has channels loading is re-asked quickly, so rows appear as they resolve
-const scheduleCache=new Map<string,{at:number;ttl:number;p:ReturnType<typeof getScheduleForGuide>}>();
+const scheduleCache=createLastGoodCache<ScheduleChannel[]>({
+  ttlMs:SCHEDULE_TTL_MS,
+  load:(guideId)=>getScheduleForGuide(guideId),
+  isValid:isValidScheduleChannels,
+  label:'Schedule snapshot',
+});
 function cachedSchedule(guideId:string,movieNow?:Date){
   if(process.env.NODE_ENV==='test'||movieNow)return getScheduleForGuide(guideId,movieNow);
-  const hit=scheduleCache.get(guideId);
-  if(hit&&Date.now()-hit.at<hit.ttl)return hit.p;
-  const p=getScheduleForGuide(guideId);
-  const entry={at:Date.now(),ttl:SCHEDULE_TTL_MS,p};
-  scheduleCache.set(guideId,entry);
-  p.then(ch=>{if(ch.some(c=>c.sourceStatus==='loading'))entry.ttl=SCHEDULE_LOADING_TTL_MS;}).catch(()=>{});
-  p.catch(()=>{if(scheduleCache.get(guideId)?.p===p)scheduleCache.delete(guideId);});
-  return p;
+  return scheduleCache.get(guideId);
 }
 app.get('/api/schedule/search',async(req,res)=>{
   res.set('Cache-Control','no-store');
