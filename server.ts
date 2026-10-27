@@ -24,7 +24,7 @@ const gzipAsync=promisify(gzipCb);
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { patchServer } from './server-patch.js';
-import { getRushIndex, rushEpisodesOn, resolveRushItem, rushStats, nextRushDate } from './server/rush';
+import { getRushIndex, rushEpisodesOn, resolveRushItem, resolveRushDay, rushStats, nextRushDate } from './server/rush';
 import { hlsProxyAllowed, rewritePlaylist } from './server/hlsPlaylistProxy';
 import express,{Request,Response} from 'express';
 import path from 'path';
@@ -327,7 +327,7 @@ app.get('/api/schedule',async(req,res)=>{
 });
 app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const y=Number(req.query.year);const items=y?all.filter(e=>e.year===y):all;res.set('Cache-Control','public, max-age=3600');res.json({total:items.length,items});});
 app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});
-app.get('/api/rush/episode/:date',async(req,res)=>{const eps=await rushEpisodesOn(req.params.date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${req.params.date}`});try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({date:req.params.date,episodes,stats:rushStats});}catch(e:any){res.status(e.status??502).json({error:e.message,stats:rushStats});}});
+app.get('/api/rush/episode/:date',async(req,res)=>{const eps=await rushEpisodesOn(req.params.date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${req.params.date}`});try{const episodes=await resolveRushDay(eps);res.json({date:req.params.date,episodes,stats:rushStats});}catch(e:any){res.status(e.status??502).json({error:e.message,stats:rushStats});}});
 app.get('/api/classic-radio/shows',(_req,res)=>{
   const groups=getClassicRadioGenres();
   res.set('Cache-Control','no-store').json({schemaVersion:1,genres:groups,totalShows:groups.reduce((n,g)=>n+g.shows.length,0)});
