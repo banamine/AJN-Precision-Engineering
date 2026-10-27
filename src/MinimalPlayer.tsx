@@ -1245,7 +1245,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         </div>
       )}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
-      <WaitingNotes status={statusText} onRetry={onRetry} />
+      <WaitingNotes status={statusText} onRetry={onRetry} archive={typeof src === "string" && src.includes("/api/archive/proxy")} />
       {/^(Failed to load|Unavailable)/.test(statusText) && (onRetry || onBackToGuide) && (
         <div role="alert" data-testid="playback-recovery" className="absolute inset-x-3 bottom-14 z-30 flex flex-wrap items-center gap-2 rounded-lg bg-black/85 p-3 text-xs text-white shadow-lg sm:bottom-16">
           <span className="min-w-0 flex-1 basis-40">{statusText}</span>
