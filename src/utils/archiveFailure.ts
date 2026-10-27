@@ -9,6 +9,8 @@ export interface ProxyErrorBody {
   attempts?: number;
   proxyRequestId?: string;
   errorCode?: string;
+  /** Circuit open only: seconds until the app server will ask that Archive storage server again. */
+  retryAfterSeconds?: number;
 }
 export type ArchiveFailure = 'definite' | 'overloaded' | 'transient';
 
@@ -32,7 +34,22 @@ export function archiveFailureDiagnosticUrl(source: string): string | null {
   }
 }
 
+/** Default pause the server applies to a storage host after 3 timeouts (server/archiveFetch.ts ArchiveHostCircuitBreaker). */
+export const ARCHIVE_CIRCUIT_COOLDOWN_MS = 20_000;
+
+/** How long a Retry must wait before it can succeed (0 = retry now). */
+export function archiveRetryWaitMs(body: ProxyErrorBody | null | undefined): number {
+  if (!body || body.errorCode !== 'AJN_UPSTREAM_CIRCUIT_OPEN') return 0;
+  const s = Number(body.retryAfterSeconds);
+  return Number.isFinite(s) && s > 0 ? Math.min(s, 120) * 1000 : ARCHIVE_CIRCUIT_COOLDOWN_MS;
+}
+
 export function overloadedMessage(body: ProxyErrorBody): string {
+  if (body.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') {
+    // Our server stopped asking this storage host after it timed out; say that, not "Archive is overloaded".
+    const secs = Math.ceil(archiveRetryWaitMs(body) / 1000);
+    return `This Archive storage server isn't responding. The app will try it again in about ${secs} s`;
+  }
   const up = body.upstreamStatus ? ` (HTTP ${body.upstreamStatus})` : '';
   return `Archive's servers are overloaded right now${up}. Try again in a few minutes`;
 }

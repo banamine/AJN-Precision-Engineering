@@ -26,6 +26,8 @@ import { RadioBriefingPlayerOverlay } from "./components/RadioBriefingPlayerOver
 import { attachArchiveVideoPrefetch, type VideoPrefetchTarget } from "./utils/videoPrefetch";
 import { cleanArchiveMusicFilename } from "./utils/archiveMusicTitle";
 import { isArchiveMusicPlayback } from "./utils/isArchiveMusicPlayback";
+import { recordArchivePlaybackProgress } from "./utils/archivePlaybackEvidence";
+import { archiveSubtitleUrl } from "./utils/archiveSubtitles";
 
 interface MinimalPlayerProps {
   src: string;
@@ -531,6 +533,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       }, STALL_WATCHDOG_MS);
     };
     const onProgressOk = () => {
+      recordArchivePlaybackProgress(activeSrc, media.currentTime);
       clearStall();
       if (retries > 0 && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) retries = 0;
     };
@@ -1088,7 +1091,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           playsInline
           preload="metadata"
           className="h-full w-full"
-        />
+        >
+          {/* English subtitles (if the Archive item has an English .srt). Off until the viewer turns them on. */}
+          {archiveSubtitleUrl(activeSrc) && (
+            <track kind="subtitles" srcLang="en" label="English" src={archiveSubtitleUrl(activeSrc) ?? undefined} data-ajn-subtitles="en" />
+          )}
+        </video>
       ) : (
         <div
           data-testid="audio-stage"

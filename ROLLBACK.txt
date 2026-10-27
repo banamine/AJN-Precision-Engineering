@@ -1,0 +1,6 @@
+# Rollback — J2 Live NTD supplement
+
+1. Remove `server/data/liveTvPinned.json` and `testFixtures/liveTvPinned.ts`.
+2. Restore `server/sources/liveTv.ts`, `test-live-tv.ts`, `test-live-tv-api-server.ts`, and `test-live-health.ts` from the J1 base.
+3. Restore `tools/ajn-verify/run.mjs`, `tools/ajn-verify/registry.json`, and `tools/ajn-verify/self-test.mjs` from the J1 verify-kit ZIP. This also restores the prior `verifykit:self-test` baseline hash.
+4. Remove `REVIEW/REPORT.md`, `UPLOAD_ORDER.txt`, `ROLLBACK.txt`, and `SHA256SUMS.txt` if these delivery-only files were copied into a working tree.

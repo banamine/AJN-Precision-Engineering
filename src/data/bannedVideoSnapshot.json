@@ -1,0 +1,844 @@
+{
+ "version": 1,
+ "source": "https://banned.video/trending",
+ "pages": [
+  1,
+  2,
+  3
+ ],
+ "scrapedAt": "2026-10-25T02:21:18-0700",
+ "channels": [
+  {
+   "name": "Banned Media Archive",
+   "network": "ajn",
+   "datedTitles": true
+  },
+  {
+   "name": "Stew Peters Network Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Dangerous Laughter",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Eternal Affairs Media ™ Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Exopolitics Today with Dr. Michael Salla Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Thrivetime Show: The ReAwakening versus The Great Reset Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Sunfellow On COVID-19 Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Vaccine Safety Research Foundation Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "The Dan Bongino Show Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Wave of Trend Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Anything Goes Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "LockPickingLawyer Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Reese Report Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "ZeeeMedia Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Power Slap Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "The S Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "F4Funnyyyy Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "The Strong And Free Truthcast Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Jiggy jaguar",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "OPERATION FREEDOM Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "Know What's Right Archive",
+   "network": "other",
+   "datedTitles": false
+  },
+  {
+   "name": "The Charlie Kirk Show Archive",
+   "network": "other",
+   "datedTitles": false
+  }
+ ],
+ "items": [
+  {
+   "id": "vfz86hv",
+   "rank": 1,
+   "title": "(Censored by Youtube) September 12, 2001 Alex Jones The Day After The Shocking Terror Attack",
+   "channel": "Banned Media Archive",
+   "durationSec": 7966.4,
+   "thumbnailUrl": "https://banned.video/media/public/ewqpC7QHcuHgAwjQ/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vfz86hv-censored-by-youtube-september-12-2001-alex-jones-the-day-after-the-shocking.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vrmlyn8",
+   "rank": 2,
+   "title": "World Has 10-Week Supply Of Wheat: Prepare For The Worst Food Shortages This Planet Has Ever Seen",
+   "channel": "Stew Peters Network Archive",
+   "durationSec": 665.6,
+   "thumbnailUrl": "https://banned.video/media/public/zNDPloeVsFlMvv6H/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vrmlyn8-world-has-10-week-supply-of-wheat-prepare-for-the-worst-food-shortages-this.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vp8v0h2",
+   "rank": 3,
+   "title": "Sex, Marriage & the Death of Democracy: What America Got Wrong | Conn Carroll with A.J. Rice",
+   "channel": "Dangerous Laughter",
+   "durationSec": 3749.7,
+   "thumbnailUrl": "https://banned.video/media/public/p7hvHuw4I90nOw0s/custom/bb1cadd9c5d50ef6.webp",
+   "watchUrl": "https://banned.video/v/vp8v0h2-sex-marriage-the-death-of-democracy-what-america-got-wrong-conn-carroll-with-a.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vrckc5e",
+   "rank": 4,
+   "title": "The Alex Jones Show Aoril 6th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 3052.5,
+   "thumbnailUrl": "https://banned.video/media/public/VNZwuFQs0AQsLln/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vrckc5e-the-alex-jones-show-aoril-6th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "ve4ojoi",
+   "rank": 5,
+   "title": "Ex Illuminati Magic Bloodline Family Member SPEAKS OUT!",
+   "channel": "Eternal Affairs Media ™ Archive",
+   "durationSec": 1835.2,
+   "thumbnailUrl": "https://banned.video/media/public/ko3YQOytqbroui3t/poster_1.webp",
+   "watchUrl": "https://banned.video/v/ve4ojoi-ex-illuminati-magic-bloodline-family-member-speaks-out.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vh70iko",
+   "rank": 6,
+   "title": "The Alex Jones Show March 4th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 11132.5,
+   "thumbnailUrl": "https://banned.video/media/public/44UYZifkNL2FdU9M/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vh70iko-the-alex-jones-show-march-4th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "vmefhey",
+   "rank": 7,
+   "title": "Food Shortage In Australia: Buying Limits Enforced As Plot To Destroy Supply Chain Exposed",
+   "channel": "Stew Peters Network Archive",
+   "durationSec": 308.8,
+   "thumbnailUrl": "https://banned.video/media/public/ITNc3Fz6oNmAcGnm/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vmefhey-food-shortage-in-australia-buying-limits-enforced-as-plot-to-destroy-supply.html",
+   "maxHeight": 1080
+  },
+  {
+   "id": "vdvcwfn",
+   "rank": 8,
+   "title": "Unseen Newly Discovered Footage in Archives of UFO over Mt  Carmel Church Building Site October 24th, 1999 (Coming Up Next Week New Alex Jones Documen",
+   "channel": "Banned Media Archive",
+   "durationSec": 1714.5,
+   "thumbnailUrl": "https://banned.video/media/public/zZI0goDybrYQyMo/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vdvcwfn-unseen-newly-discovered-footage-in-archives-of-ufo-over-mt-carmel-church.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vql968p",
+   "rank": 9,
+   "title": "Imminent Disclosure of Halls of Records and Space Time Portals",
+   "channel": "Exopolitics Today with Dr. Michael Salla Archive",
+   "durationSec": 438.1,
+   "thumbnailUrl": "https://banned.video/media/public/r9tl6y1x0sA8ULup/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vql968p-imminent-disclosure-of-halls-of-records-and-space-time-portals.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vub5527",
+   "rank": 10,
+   "title": "Yuval Noah Harari | Electric Cars Decide Who Dies & \"Eternal Life On Earth w/ Technology\"",
+   "channel": "Thrivetime Show: The ReAwakening versus The Great Reset Archive",
+   "durationSec": 412.4,
+   "thumbnailUrl": "https://banned.video/media/public/ZBoXYfvSOL0sdTm8/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vub5527-yuval-noah-harari-electric-cars-decide-who-dies-eternal-life-on-earth-w.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vuyrsgo",
+   "rank": 11,
+   "title": "School Boards vs Satire: Shamgar Connors Takes on Government School Indoctrination with AJ RICE",
+   "channel": "Dangerous Laughter",
+   "durationSec": 3596.6,
+   "thumbnailUrl": "https://banned.video/media/public/hO2dE2kQIO6RTWI7/custom/aa2dd914c43dfab6.webp",
+   "watchUrl": "https://banned.video/v/vuyrsgo-school-boards-vs-satire-shamgar-connors-takes-on-government-school.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vrowai1",
+   "rank": 12,
+   "title": "Dr. Robert Malone: His Reactions To The Jordon Walker Viral Videos",
+   "channel": "Sunfellow On COVID-19 Archive",
+   "durationSec": 1728.3,
+   "thumbnailUrl": "https://banned.video/media/public/53pI3wfARMuX3V1a/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vrowai1-dr-robert-malone-his-reactions-to-the-jordon-walker-viral-videos.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vflvkme",
+   "rank": 13,
+   "title": "WHY DOES THE LEFT LOVE HAMAS  Jamie Glazov Exposes the Red-Green Alliance   Dangerous Laughter",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4553.2,
+   "thumbnailUrl": "https://banned.video/media/public/NQu83uc3YJBOK6/custom/7491a82b284a8127.webp",
+   "watchUrl": "https://banned.video/v/vflvkme-why-does-the-left-love-hamas-jamie-glazov-exposes-the-red-green-alliance.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vmtm855",
+   "rank": 14,
+   "title": "Was America INFILTRATED After WWII_ Mel K Exposes the Deep State & Globalism _ Dangerous Laughter",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4549.3,
+   "thumbnailUrl": "https://banned.video/media/public/zAfiu201h46bnYoT/custom/d30be3b6b1550fe2.webp",
+   "watchUrl": "https://banned.video/v/vmtm855-was-america-infiltrated-after-wwii-mel-k-exposes-the-deep-state-globalism.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "v7ldiqa",
+   "rank": 15,
+   "title": "Alex Jones Coverups Live Call-in Show November 6, 2002",
+   "channel": "Banned Media Archive",
+   "durationSec": 5829.7,
+   "thumbnailUrl": "https://banned.video/media/public/XPjbyR0rzlM7iPrW/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v7ldiqa-alex-jones-coverups-live-call-in-show-november-6-2002.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vydntbe",
+   "rank": 16,
+   "title": "Are The Kids Ok?",
+   "channel": "Vaccine Safety Research Foundation Archive",
+   "durationSec": 207.3,
+   "thumbnailUrl": "https://banned.video/media/public/CEKr782uRhDRkcdB/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vydntbe-are-the-kids-ok.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "v6eoz99",
+   "rank": 17,
+   "title": "Ep. 1762 An Epic Meltdown Caught On Video -The Dan Bongino Show",
+   "channel": "The Dan Bongino Show Archive",
+   "durationSec": 3257.4,
+   "thumbnailUrl": "https://banned.video/media/public/afGtpqVPmdCQCPN/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v6eoz99-ep-1762-an-epic-meltdown-caught-on-video-the-dan-bongino-show.html",
+   "maxHeight": 1080
+  },
+  {
+   "id": "van20q1",
+   "rank": 18,
+   "title": "Manipulating Humanity through Time Travel: How it Began and Ends",
+   "channel": "Exopolitics Today with Dr. Michael Salla Archive",
+   "durationSec": 606.4,
+   "thumbnailUrl": "https://banned.video/media/public/nbWraATx7NIUx1E/poster_1.webp",
+   "watchUrl": "https://banned.video/v/van20q1-manipulating-humanity-through-time-travel-how-it-began-and-ends.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vjmc6tc",
+   "rank": 19,
+   "title": "20 MOST EMBARRASSING MOMENTS IN SPORT",
+   "channel": "Wave of Trend Archive",
+   "durationSec": 301.1,
+   "thumbnailUrl": "https://banned.video/media/public/rtiLc4RITGwosbMa/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vjmc6tc-20-most-embarrassing-moments-in-sport.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "v7rcrib",
+   "rank": 20,
+   "title": "They're making your kids eat bugs.",
+   "channel": "Anything Goes Archive",
+   "durationSec": 181.1,
+   "thumbnailUrl": "https://banned.video/media/public/pEgu0OZK0ZALnvf/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v7rcrib-they-re-making-your-kids-eat-bugs.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "v4g3qa4",
+   "rank": 21,
+   "title": "Alex Jones Exposes City Council Hypocrites",
+   "channel": "Banned Media Archive",
+   "durationSec": 1079.3,
+   "thumbnailUrl": "https://banned.video/media/public/PnsFb7tbthCwBEwC/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v4g3qa4-alex-jones-exposes-city-council-hypocrites.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vmcl14m",
+   "rank": 22,
+   "title": "[1495] Great Surprise From a 10-Year-Old Viewer!",
+   "channel": "LockPickingLawyer Archive",
+   "durationSec": 239.2,
+   "thumbnailUrl": "https://banned.video/media/public/7rHlNzvTkEKqWr/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vmcl14m-1495-great-surprise-from-a-10-year-old-viewer.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vf7ddv0",
+   "rank": 23,
+   "title": "The Alex Jones Show March 25th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 3686.5,
+   "thumbnailUrl": "https://banned.video/media/public/gFLjMdLh4OLgff8m/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vf7ddv0-the-alex-jones-show-march-25th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "vbrt9la",
+   "rank": 24,
+   "title": "The Alex Jones Show March 29th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 6401.5,
+   "thumbnailUrl": "https://banned.video/media/public/mHCVHLlz5u7sKVMh/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vbrt9la-the-alex-jones-show-march-29th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "v923kbx",
+   "rank": 25,
+   "title": "The Alex Jones Show April 5th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 9971.5,
+   "thumbnailUrl": "https://banned.video/media/public/ul6gywtk31w28ZvV/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v923kbx-the-alex-jones-show-april-5th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "vijs7aa",
+   "rank": 26,
+   "title": "Expert: Guidestones Targeted By Drone Laser Beam Deployed From Drone Manifests \"Voice Of God\"",
+   "channel": "Stew Peters Network Archive",
+   "durationSec": 857.2,
+   "thumbnailUrl": "https://banned.video/media/public/JzLNFziuJifV0Frs/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vijs7aa-expert-guidestones-targeted-by-drone-laser-beam-deployed-from-drone-manifests.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "v97ibu9",
+   "rank": 27,
+   "title": "The Alex Jones Show Aoril 8th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 3538.0,
+   "thumbnailUrl": "https://banned.video/media/public/XoDmiHIOaoO0j1rm/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v97ibu9-the-alex-jones-show-aoril-8th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "vm9c741",
+   "rank": 28,
+   "title": "Classic Alex Jones Exposing Mass Media",
+   "channel": "Banned Media Archive",
+   "durationSec": 7983.8,
+   "thumbnailUrl": "https://banned.video/media/public/SAEST2hBCA2vYybU/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vm9c741-classic-alex-jones-exposing-mass-media.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vrxjkot",
+   "rank": 29,
+   "title": "Trump Lawfare EXPOSED: Alex Swoyer on Courts, Power & Political Revenge | Dangerous Laughter",
+   "channel": "Dangerous Laughter",
+   "durationSec": 3659.8,
+   "thumbnailUrl": "https://banned.video/media/public/z5plPgsfz6W2ZIGp/custom/f57f398a04485bd0.webp",
+   "watchUrl": "https://banned.video/v/vrxjkot-trump-lawfare-exposed-alex-swoyer-on-courts-power-political-revenge-dangerous.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vwxr00o",
+   "rank": 30,
+   "title": "Northern Ireland’s Breaking Point: Jim Dowson Warns the West | Dangerous Laughter with A.J. Rice",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4271.1,
+   "thumbnailUrl": "https://banned.video/media/public/neFsqLckj85DIxxH/custom/68ec081142703b70.webp",
+   "watchUrl": "https://banned.video/v/vwxr00o-northern-irelands-breaking-point-jim-dowson-warns-the-west-dangerous-laughter.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "v2zml0d",
+   "rank": 31,
+   "title": "Big Pharma Set To Control Entire Food Supply",
+   "channel": "Reese Report Archive",
+   "durationSec": 355.1,
+   "thumbnailUrl": "https://banned.video/media/public/y9R8qsyM5fYGW9kf/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v2zml0d-big-pharma-set-to-control-entire-food-supply.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vpcytex",
+   "rank": 32,
+   "title": "Who Called the Swat Team on Alex Jones Plus Hard Hitting Interview with Swat Team Leader Lt  Beck(Classic 1997)",
+   "channel": "Banned Media Archive",
+   "durationSec": 7105.4,
+   "thumbnailUrl": "https://banned.video/media/public/H7Rq1ySoI1WfIdw/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vpcytex-who-called-the-swat-team-on-alex-jones-plus-hard-hitting-interview-with-swat.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vysvd5p",
+   "rank": 33,
+   "title": "The Alex Jones Show March 17th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 6758.0,
+   "thumbnailUrl": "https://banned.video/media/public/bzv5zRVb2KnZ0/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vysvd5p-the-alex-jones-show-march-17th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "v5zxl9q",
+   "rank": 34,
+   "title": "The Alex Jones Show Monday, March 9th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 5048.1,
+   "thumbnailUrl": "https://banned.video/media/public/RgmJgdKpzhxiXLrv/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v5zxl9q-the-alex-jones-show-monday-march-9th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "vtlmsyi",
+   "rank": 35,
+   "title": "Live Aug 1, 2001 Call-in Show Alex Jones Warns About Vaccines Killing Children and Footage of Abby Newman Arrest at Checkpoint",
+   "channel": "Banned Media Archive",
+   "durationSec": 9307.1,
+   "thumbnailUrl": "https://banned.video/media/public/3YwzCXEOGgpXdTRY/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vtlmsyi-live-aug-1-2001-call-in-show-alex-jones-warns-about-vaccines-killing-children.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vzwazmr",
+   "rank": 36,
+   "title": "Alex Jones Young, Good-Looking and Mucho Energetic(Real Spin mid 1990's)",
+   "channel": "Banned Media Archive",
+   "durationSec": 7897.8,
+   "thumbnailUrl": "https://banned.video/media/public/WaSnYkRYeLCOhEv/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vzwazmr-alex-jones-young-good-looking-and-mucho-energetic-real-spin-mid-1990-s.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "v96ysx0",
+   "rank": 37,
+   "title": "HOLLYWOOD’S WOKE ERA IS COLLAPSING? Christian Toto on Disney, Trump, AI & the Culture War",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4458.1,
+   "thumbnailUrl": "https://banned.video/media/public/QFod2TOw4vbQ8be2/custom/72c98723695984a9.webp",
+   "watchUrl": "https://banned.video/v/v96ysx0-hollywoods-woke-era-is-collapsing-christian-toto-on-disney-trump-ai-the-culture.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "v99jaml",
+   "rank": 38,
+   "title": "MIND VIRUSES: How Fear, Propaganda & Irrational Reasoning Hijacks Society | John Leake & A.J. Rice",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4013.5,
+   "thumbnailUrl": "https://banned.video/media/public/DGUiHCiisrJoIAa/custom/a241a84905317a02.webp",
+   "watchUrl": "https://banned.video/v/v99jaml-mind-viruses-how-fear-propaganda-irrational-reasoning-hijacks-society-john.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vydbtk4",
+   "rank": 39,
+   "title": "Jim Breuer Nashville FULL COMEDY SPECIAL | Jim Breuer and John Rich Perform LIVE At General Flynn and Clay Clark’s ReAwaken America Tour",
+   "channel": "Thrivetime Show: The ReAwakening versus The Great Reset Archive",
+   "durationSec": 3500.3,
+   "thumbnailUrl": "https://banned.video/media/public/tvoCXFgeFt8F9T7N/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vydbtk4-jim-breuer-nashville-full-comedy-special-jim-breuer-and-john-rich-perform-live.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "v8anvb2",
+   "rank": 40,
+   "title": "John O'Looney - Hospitals Are Covering Up Baby Deaths By Cremating Babies Themselves",
+   "channel": "ZeeeMedia Archive",
+   "durationSec": 2999.2,
+   "thumbnailUrl": "https://banned.video/media/public/GEXwHgswZsJ0EArA/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v8anvb2-john-o-looney-hospitals-are-covering-up-baby-deaths-by-cremating-babies.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vuw89oz",
+   "rank": 41,
+   "title": "Professor Ian Plimer - Renowned Australian Geologist Discusses Real Science Behind Climate Change",
+   "channel": "ZeeeMedia Archive",
+   "durationSec": 3188.9,
+   "thumbnailUrl": "https://banned.video/media/public/BdAy8RxL7lkMc13/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vuw89oz-professor-ian-plimer-renowned-australian-geologist-discusses-real-science.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vpxo9mu",
+   "rank": 42,
+   "title": "Alex Jones and George Humphrey Expose Very Corrupt New World Order Federal Reverse System(Classic 1998)",
+   "channel": "Banned Media Archive",
+   "durationSec": 5466.1,
+   "thumbnailUrl": "https://banned.video/media/public/RnXYvKdg3uUGPvBu/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vpxo9mu-alex-jones-and-george-humphrey-expose-very-corrupt-new-world-order-federal.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vp4xiin",
+   "rank": 43,
+   "title": "Alex Jones Exposes CPS Baby Kidnapping Operations(Classic Black Helicopters-Black Ski Mask)",
+   "channel": "Banned Media Archive",
+   "durationSec": 2832.6,
+   "thumbnailUrl": "https://banned.video/media/public/82MSLnVyBkU37H/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vp4xiin-alex-jones-exposes-cps-baby-kidnapping-operations-classic-black-helicopters.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vtoxumq",
+   "rank": 44,
+   "title": "EMERALD ROBINSON UNFILTERED: Election Trust, AI, Censorship & the GOP’s 2028 Debate | AJ RICE",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4175.3,
+   "thumbnailUrl": "https://banned.video/media/public/FdUVR42n27qc06lr/custom/be040e1f363987a8.webp",
+   "watchUrl": "https://banned.video/v/vtoxumq-emerald-robinson-unfiltered-election-trust-ai-censorship-the-gops-2028-debate.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vl3crbd",
+   "rank": 45,
+   "title": "The Slap Candle Challenge! (Ep. 4) Slap Shorts with Nina",
+   "channel": "Power Slap Archive",
+   "durationSec": 231.8,
+   "thumbnailUrl": "https://banned.video/media/public/oXB2KG3I8I2y69Jd/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vl3crbd-the-slap-candle-challenge-ep-4-slap-shorts-with-nina.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "v35kmne",
+   "rank": 46,
+   "title": "3 in 1 Powerful DIY PVC Slingshot",
+   "channel": "The S Archive",
+   "durationSec": 304.3,
+   "thumbnailUrl": "https://banned.video/media/public/Ft4W1X1O4PUdpna/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v35kmne-3-in-1-powerful-diy-pvc-slingshot.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vfl2xyx",
+   "rank": 47,
+   "title": "Alex Jones Bullhorns Ku Klux Klan Waco, Tx(Classic 1999) FedsArsonThreatsShoot-out at Mount Carmel",
+   "channel": "Banned Media Archive",
+   "durationSec": 7086.1,
+   "thumbnailUrl": "https://banned.video/media/public/UAiaN2JvR49AH21N/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vfl2xyx-alex-jones-bullhorns-ku-klux-klan-waco-tx-classic-1999-fedsarsonthreatsshoot.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "v4brfyn",
+   "rank": 48,
+   "title": "(Classic Alex Jones)Cop Roughs Up Man in Wheelchair(Classic Mike Hanson Confronts Cop With Camera)",
+   "channel": "Banned Media Archive",
+   "durationSec": 1577.4,
+   "thumbnailUrl": "https://banned.video/media/public/OsfuMi35MWu55tK/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v4brfyn-classic-alex-jones-cop-roughs-up-man-in-wheelchair-classic-mike-hanson.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vxx72s7",
+   "rank": 49,
+   "title": "2025 New Funny Videos Part 3 😂 Try Not To Laugh Challenge (Impossible)",
+   "channel": "F4Funnyyyy Archive",
+   "durationSec": 302.1,
+   "thumbnailUrl": "https://banned.video/media/public/rV3NZmF7yN9hEgeX/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vxx72s7-2025-new-funny-videos-part-3-try-not-to-laugh-challenge-impossible.html",
+   "maxHeight": 1080
+  },
+  {
+   "id": "vzk4iu5",
+   "rank": 50,
+   "title": "Alex Jones Kidnapped by George Bush Jr's Goon SquadWaco Murders Exposed",
+   "channel": "Banned Media Archive",
+   "durationSec": 9093.2,
+   "thumbnailUrl": "https://banned.video/media/public/u04FXToSStIm0e5n/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vzk4iu5-alex-jones-kidnapped-by-george-bush-jr-s-goon-squadwaco-murders-exposed.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "v8w49p4",
+   "rank": 51,
+   "title": "The Alex Jones Show March 23rd, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 8360.0,
+   "thumbnailUrl": "https://banned.video/media/public/OFVmPoYgeWcoRCpZ/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v8w49p4-the-alex-jones-show-march-23rd-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "vrls32c",
+   "rank": 52,
+   "title": "The Alex Jones Show Monday, March 14th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 8767.5,
+   "thumbnailUrl": "https://banned.video/media/public/FlEl2jSTUAFw0G/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vrls32c-the-alex-jones-show-monday-march-14th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "vfrx4ew",
+   "rank": 53,
+   "title": "The Alex Jones Show March 18th, 2008",
+   "channel": "Banned Media Archive",
+   "durationSec": 5182.0,
+   "thumbnailUrl": "https://banned.video/media/public/MqJBKwkplc4xmw/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vfrx4ew-the-alex-jones-show-march-18th-2008.html",
+   "maxHeight": 240
+  },
+  {
+   "id": "v3ey06y",
+   "rank": 54,
+   "title": "Travel Will Be Restricted to the Compliant | Greg Hill and Matt Sattler, Free to Fly Canada Pilots",
+   "channel": "The Strong And Free Truthcast Archive",
+   "durationSec": 2001.2,
+   "thumbnailUrl": "https://banned.video/media/public/I0pnM1dIveHJ0ljN/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v3ey06y-travel-will-be-restricted-to-the-compliant-greg-hill-and-matt-sattler-free-to.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vmg86vs",
+   "rank": 55,
+   "title": "The Common Sense Cowboy Explains What America Forgot _ Patrick Dorinson on Dangerous Laughter",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4501.6,
+   "thumbnailUrl": "https://banned.video/media/public/Qy4jXDzDfgJ3gX2J/custom/62a110bf02b579a7.webp",
+   "watchUrl": "https://banned.video/v/vmg86vs-the-common-sense-cowboy-explains-what-america-forgot-patrick-dorinson-on.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vtlzjzs",
+   "rank": 56,
+   "title": "Alex Jones and Black Helicopter People Build Veteran New House",
+   "channel": "Banned Media Archive",
+   "durationSec": 746.8,
+   "thumbnailUrl": "https://banned.video/media/public/4ltGX44i8sqWyB5j/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vtlzjzs-alex-jones-and-black-helicopter-people-build-veteran-new-house.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "v6fdpkv",
+   "rank": 57,
+   "title": "Alex Jones Warns About Militarization of Our Peace Officers in the Growing NWO Police State(Classic 1990's)",
+   "channel": "Banned Media Archive",
+   "durationSec": 8597.0,
+   "thumbnailUrl": "https://banned.video/media/public/hDilHQi3JdE1N3yz/poster_1.webp",
+   "watchUrl": "https://banned.video/v/v6fdpkv-alex-jones-warns-about-militarization-of-our-peace-officers-in-the-growing-nwo.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vl8k19o",
+   "rank": 58,
+   "title": "Human Umbilical Cord Being Injected In Kids: Tissue Scaffolding Technology in Covid Jab",
+   "channel": "Stew Peters Network Archive",
+   "durationSec": 663.4,
+   "thumbnailUrl": "https://banned.video/media/public/Git3lMnNR0znGPdw/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vl8k19o-human-umbilical-cord-being-injected-in-kids-tissue-scaffolding-technology-in.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vk3laem",
+   "rank": 59,
+   "title": "Alex Jones with Sandy Smith Black Helicopter Raid and Much More Classics",
+   "channel": "Banned Media Archive",
+   "durationSec": 6187.1,
+   "thumbnailUrl": "https://banned.video/media/public/Xl2FiLKyEOBVxww/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vk3laem-alex-jones-with-sandy-smith-black-helicopter-raid-and-much-more-classics.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "vu2wl2i",
+   "rank": 60,
+   "title": "🔥 What happens when political decisions collide with everyday reality?",
+   "channel": "Jiggy jaguar",
+   "durationSec": 3780.2,
+   "thumbnailUrl": "https://banned.video/media/public/qJLYnnsvXGJOtFrR/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vu2wl2i-what-happens-when-political-decisions-collide-with-everyday-reality.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vbcz97s",
+   "rank": 61,
+   "title": "Very Rare Censored Footage of Alex Jones Planning Infiltration of Restricted 2,700 Acre Gentlemen's Club Bohemian Grove Monte Rio, California",
+   "channel": "Banned Media Archive",
+   "durationSec": 8279.8,
+   "thumbnailUrl": "https://banned.video/media/public/kZTKHPqtqe97kYj8/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vbcz97s-very-rare-censored-footage-of-alex-jones-planning-infiltration-of-restricted-2.html",
+   "maxHeight": 480
+  },
+  {
+   "id": "v5ed1pp",
+   "rank": 62,
+   "title": "Iran's GAYATOLLAH Speaks: Trump, Pete Hegseth, Hormuz & the Nuclear Deal | Dangerous Laughter Satire",
+   "channel": "Dangerous Laughter",
+   "durationSec": 3233.5,
+   "thumbnailUrl": "https://banned.video/media/public/kJc9AkTLgyOjZ8ua/custom/564aa69f9b1e34aa.webp",
+   "watchUrl": "https://banned.video/v/v5ed1pp-iran-s-gayatollah-speaks-trump-pete-hegseth-hormuz-the-nuclear-deal-dangerous.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vmv3sn9",
+   "rank": 63,
+   "title": "America’s Enemies Are Already Here — Ex-FBI Agent Mark Rossini Issues a Chilling Warning",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4604.3,
+   "thumbnailUrl": "https://banned.video/media/public/rhXfJEg0ryZ8jTI/custom/2d9f6ac55d3d9a7a.webp",
+   "watchUrl": "https://banned.video/v/vmv3sn9-americas-enemies-are-already-here-ex-fbi-agent-mark-rossini-issues-a-chilling.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vqgyico",
+   "rank": 64,
+   "title": "The Totalitarians Target The Food Supply",
+   "channel": "OPERATION FREEDOM Archive",
+   "durationSec": 1536.8,
+   "thumbnailUrl": "https://banned.video/media/public/BP9OYsWJ1U8fxi0/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vqgyico-the-totalitarians-target-the-food-supply.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vbh1j3u",
+   "rank": 65,
+   "title": "Baby Formula Shortage Connected To Gates: Bill Heavily Invested into Lab-Produced Breast Milk",
+   "channel": "Stew Peters Network Archive",
+   "durationSec": 320.7,
+   "thumbnailUrl": "https://banned.video/media/public/FGC3mSUNOScSk9Zn/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vbh1j3u-baby-formula-shortage-connected-to-gates-bill-heavily-invested-into-lab.html",
+   "maxHeight": 1080
+  },
+  {
+   "id": "vcvphoz",
+   "rank": 66,
+   "title": "U.S. Food Famine Was Simulated in 2015: The Premeditated Plan To Starve Americans",
+   "channel": "Stew Peters Network Archive",
+   "durationSec": 603.8,
+   "thumbnailUrl": "https://banned.video/media/public/t8LoQCrEnZga535I/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vcvphoz-u-s-food-famine-was-simulated-in-2015-the-premeditated-plan-to-starve-americans.html",
+   "maxHeight": 1080
+  },
+  {
+   "id": "vanybv5",
+   "rank": 67,
+   "title": "Rapid Heating of Neptune linked to activating Space Arks",
+   "channel": "Exopolitics Today with Dr. Michael Salla Archive",
+   "durationSec": 345.6,
+   "thumbnailUrl": "https://banned.video/media/public/6oPTF6EnuCtwGul/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vanybv5-rapid-heating-of-neptune-linked-to-activating-space-arks.html",
+   "maxHeight": 1080
+  },
+  {
+   "id": "vfrp3gm",
+   "rank": 68,
+   "title": "Did the Cold War Ever End? China, Communism & America | Dr. Bradley A. Thayer with A.J. Rice",
+   "channel": "Dangerous Laughter",
+   "durationSec": 3696.1,
+   "thumbnailUrl": "https://banned.video/media/public/dKBD7DqFpH96TXqB/custom/1ef35a6d4619ba93.webp",
+   "watchUrl": "https://banned.video/v/vfrp3gm-did-the-cold-war-ever-end-china-communism-america-dr-bradley-a-thayer-with-a-j.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vj5a6a9",
+   "rank": 69,
+   "title": "Who Decides What’s Funny? Beau Robinson on Trump, Comedy & Cancel Culture with A.J. RICE",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4169.1,
+   "thumbnailUrl": "https://banned.video/media/public/c0YPZJcEKHiRZ6M/custom/019d430241ba566d.webp",
+   "watchUrl": "https://banned.video/v/vj5a6a9-who-decides-whats-funny-beau-robinson-on-trump-comedy-cancel-culture-with-a-j.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vahd53u",
+   "rank": 70,
+   "title": "America Is Running Out of Strong Men | Green Beret Nick Freitas with A.J. Rice",
+   "channel": "Dangerous Laughter",
+   "durationSec": 4451.4,
+   "thumbnailUrl": "https://banned.video/media/public/Jnhqm1KKjzyzd1b/custom/90a0ace5f9aede83.webp",
+   "watchUrl": "https://banned.video/v/vahd53u-america-is-running-out-of-strong-men-green-beret-nick-freitas-with-a-j-rice.html",
+   "maxHeight": 720
+  },
+  {
+   "id": "vrjatx0",
+   "rank": 71,
+   "title": "CASH ME OUTSIDE - Calling out disgusting food brands for pedophile story time",
+   "channel": "Know What's Right Archive",
+   "durationSec": 1563.5,
+   "thumbnailUrl": "https://banned.video/media/public/9D2PQGt0IK6RNV9/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vrjatx0-cash-me-outside-calling-out-disgusting-food-brands-for-pedophile-story-time.html",
+   "maxHeight": 360
+  },
+  {
+   "id": "vcu9y1a",
+   "rank": 72,
+   "title": "Street vs. Students: Reactions to ANTIFA Attack | These Answers Will SHOCK You",
+   "channel": "The Charlie Kirk Show Archive",
+   "durationSec": 357.3,
+   "thumbnailUrl": "https://banned.video/media/public/0ZIBCId9z4vB2ImX/poster_1.webp",
+   "watchUrl": "https://banned.video/v/vcu9y1a-street-vs-students-reactions-to-antifa-attack-these-answers-will-shock-you.html",
+   "maxHeight": 360
+  }
+ ]
+}

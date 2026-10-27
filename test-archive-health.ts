@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createArchiveHealth, type ArchiveHealthLogEntry, type ArchiveProbeOutcome } from './server/archiveHealth.ts';
+import { classifyArchiveHealthOutcome, createArchiveHealth, type ArchiveHealthLogEntry, type ArchiveProbeOutcome } from './server/archiveHealth.ts';
 
 let clock = 100_000;
 const make = () => {
@@ -23,7 +23,31 @@ const probe = (ok: boolean, path: string): ArchiveProbeOutcome => ({
   for (const key of ['a', 'b', 'c', 'd', 'e']) recordFailure(health, key);
   assert.equal(health.getStatus().state, 'down');
   assert.deepEqual(health.getStatus().recent, { failures: 5, successes: 0, distinctItems: 5 });
+  assert.match(health.getStatus().lastTransitionReason ?? '', /down threshold met/);
+  assert.equal(health.getStatus().lastTransitionAt, clock);
   console.log('PASS five counted failures across three or more keys with no recent success → down');
+}
+
+{
+  const { health } = make();
+  assert.equal(classifyArchiveHealthOutcome({ status: 502, errorCode: 'AJN_UPSTREAM_CIRCUIT_OPEN' }), 'other');
+  for (const key of ['timeout-a', 'timeout-b', 'timeout-c']) {
+    health.record({ ts: clock, itemKey: key, kind: 'network', errorCode: 'ETIMEDOUT' });
+  }
+  for (let i = 0; i < 10; i++) {
+    health.record({
+      ts: clock + i,
+      itemKey: `breaker-${i % 6}`,
+      kind: classifyArchiveHealthOutcome({ status: 502, errorCode: 'AJN_UPSTREAM_CIRCUIT_OPEN' }),
+      httpStatus: 502,
+      errorCode: 'AJN_UPSTREAM_CIRCUIT_OPEN',
+      path: `/download/breaker-${i % 6}/file.mp4`,
+    });
+  }
+  assert.equal(health.getStatus().state, 'degraded', 'only the three real timeouts count; breaker-open responses cannot trip down');
+  assert.equal(health.getStatus().recent.failures, 3);
+  assert.equal(health.getStatus().lastCountedEvents.some((event) => event.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN'), false);
+  console.log('PASS circuit-open events are neutral: 3 real timeouts + 10 breaker events across 6 keys → degraded, not down');
 }
 
 {
@@ -86,18 +110,19 @@ const probe = (ok: boolean, path: string): ArchiveProbeOutcome => ({
   health.record({ ts: t, itemKey: 'success-1', kind: 'ok', httpStatus: 206 });
   assert.equal(health.getStatus().state, 'down', 'one real success is not enough');
   health.record({ ts: t + 1, itemKey: 'specific-404', kind: 'definite', httpStatus: 404 });
-  health.record({ ts: t + 2, itemKey: 'success-2', kind: 'ok', httpStatus: 206 });
-  assert.equal(health.getStatus().state, 'down', 'an uncounted item failure still breaks the success streak');
-  recordFailure(health, 'between-successes', t + 3);
-  health.record({ ts: t + 4, itemKey: 'success-3', kind: 'ok', httpStatus: 206 });
-  assert.equal(health.getStatus().state, 'down', 'counted failure resets consecutive success count');
-  health.recordProbe({
-    ts: t + 5,
-    archive: probe(true, '/'),
-    control: probe(true, '/generate_204'),
-  });
-  assert.equal(health.getStatus().state, 'ok', 'real request + successful probe are two consecutive Archive successes');
-  console.log('PASS down recovers after two consecutive successes; intervening failure resets recovery');
+  health.record({ ts: t + 2, itemKey: 'circuit-neutral', kind: 'other', errorCode: 'AJN_UPSTREAM_CIRCUIT_OPEN' });
+  assert.equal(health.getStatus().state, 'down', 'one success plus neutral responses are not enough');
+  health.record({ ts: t + 3, itemKey: 'success-2', kind: 'ok', httpStatus: 206 });
+  assert.equal(health.getStatus().state, 'ok', 'neutral item outcomes do not break the two-success recovery streak');
+  const second = make().health;
+  for (const key of ['f-a', 'f-b', 'f-c', 'f-d', 'f-e']) second.record({ ts: t, itemKey: key, kind: 'network', errorCode: 'ETIMEDOUT' });
+  second.record({ ts: t + 60_000, itemKey: 'success-a', kind: 'ok', httpStatus: 206 });
+  second.record({ ts: t + 60_001, itemKey: 'real-failure', kind: 'network', errorCode: 'ETIMEDOUT' });
+  second.record({ ts: t + 60_002, itemKey: 'success-b', kind: 'ok', httpStatus: 206 });
+  assert.equal(second.getStatus().state, 'down', 'a counted failure resets the recovery streak');
+  second.record({ ts: t + 60_003, itemKey: 'success-c', kind: 'ok', httpStatus: 206 });
+  assert.equal(second.getStatus().state, 'ok');
+  console.log('PASS neutral outcomes preserve recovery; a counted failure resets the two-success streak');
 }
 
 {
@@ -193,7 +218,55 @@ const probe = (ok: boolean, path: string): ArchiveProbeOutcome => ({
   assert.equal(entry.errorCode, 'ECONNRESET');
   assert.equal(entry.path, '/download/log-key/f.mp4');
   assert.equal(JSON.stringify(entry).includes('secret'), false);
+  const status = health.getStatus();
+  assert.equal(status.lastTransitionReason, null);
+  assert.equal(status.lastTransitionAt, null);
+  assert.deepEqual(status.lastCountedEvents, [{
+    ts: clock,
+    kind: 'network',
+    errorCode: 'ECONNRESET',
+    httpStatus: null,
+    path: '/download/log-key/f.mp4',
+  }]);
   console.log('PASS each observed outcome logs the required JSON fields and excludes query data');
+}
+
+{
+  const { health } = make();
+  for (let i = 0; i < 7; i++) {
+    health.record({
+      ts: clock + i,
+      itemKey: `diagnostic-${i}`,
+      kind: 'network',
+      errorCode: 'ETIMEDOUT',
+      httpStatus: 503,
+      path: `/download/diagnostic-${i}/file.mp4?token=never-return-this`,
+    });
+  }
+  const events = health.getStatus().lastCountedEvents;
+  assert.equal(events.length, 5);
+  assert.equal(events[0].ts, clock + 2);
+  assert.equal(events[4].path, '/download/diagnostic-6/file.mp4');
+  assert.equal(JSON.stringify(events).includes('never-return-this'), false);
+  console.log('PASS status diagnostics retain only the last five counted, query-free events');
+}
+
+{
+  const { health } = make();
+  health.recordProbe({
+    ts: clock,
+    archive: { ok: false, httpStatus: 429, errorCode: null, path: '/' },
+    control: probe(true, '/generate_204'),
+  });
+  health.recordProbe({
+    ts: clock + 1,
+    archive: { ok: false, httpStatus: 404, errorCode: null, path: '/' },
+    control: probe(true, '/generate_204'),
+  });
+  assert.equal(health.getStatus().state, 'unknown', 'neutral 4xx/429 probes are not reachability evidence');
+  assert.deepEqual(health.getStatus().recent, { failures: 0, successes: 0, distinctItems: 0 });
+  assert.deepEqual(health.getStatus().lastCountedEvents, []);
+  console.log('PASS Archive probe 4xx and 429 responses remain neutral and do not become reachability evidence');
 }
 
 {
@@ -201,6 +274,7 @@ const probe = (ok: boolean, path: string): ArchiveProbeOutcome => ({
   assert.equal(fresh.getStatus().state, 'unknown', 'no data yet must not report ok');
   fresh.record({ ts: 1_001, itemKey: 'first', kind: 'ok', httpStatus: 206 });
   assert.equal(fresh.getStatus().state, 'ok', 'first counted success reports ok');
+  console.log('PASS no evidence reports unknown; first counted success reports ok');
 }
 
 console.log('Archive health state machine tests: PASS');

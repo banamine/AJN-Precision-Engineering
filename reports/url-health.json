@@ -1,0 +1,40 @@
+{
+ "checkedAt": "2026-10-11T03:28:21.031Z",
+ "sum": {
+  "unique": 42103,
+  "checked": 60,
+  "available": 56,
+  "unavailable": 4,
+  "availableNoRange": 0
+ },
+ "bad": [
+  {
+   "u": "https://archive.org/download/01-tv-fighting-crime-part-2_20240703/The%20FBI%20S3E13%20The%20Dynasty.mp4",
+   "at": 1791689280127,
+   "available": false,
+   "rangeSupport": null,
+   "status": 403
+  },
+  {
+   "u": "https://archive.org/download/01-tv-fighting-crime-part-2_20240703/The%20FBI%20S4E20%20The%20Maze.mp4",
+   "at": 1791689290419,
+   "available": false,
+   "rangeSupport": null,
+   "status": 403
+  },
+  {
+   "u": "https://archive.org/download/01-tv-fighting-crime-part-2_20240703/MISSION%20IMPOSSIBLE.S1E15%20The%20Legacy.ia.mp4",
+   "at": 1791689291758,
+   "available": false,
+   "rangeSupport": null,
+   "status": 403
+  },
+  {
+   "u": "https://archive.org/download/01-tv-fighting-crime-part-2_20240703/The%20FBI%20S6E23%20The%20Hitchhiker.mp4",
+   "at": 1791689293095,
+   "available": false,
+   "rangeSupport": null,
+   "status": 403
+  }
+ ]
+}

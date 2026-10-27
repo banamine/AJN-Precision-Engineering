@@ -54,7 +54,7 @@ import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
 import { registerFolderArtRoute } from './server/folderArt.js';
 import { registerCaptionRoutes } from './server/captions/routes.js';
-import { registerAffiliateListingRoute } from './server/routes/affiliateListing.js';
+import { registerArchiveSubtitleRoutes } from './server/archiveSubtitles.js';
 import { registerAudioAsrRoutes } from './server/audioAsrRoutes';
 import { registerNowPlayingRoute } from './server/radioNowPlayingRoute.js';
 import { registerSyncPlaceholder } from './server/routes/syncPlaceholder.js';
@@ -425,7 +425,7 @@ const IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 registerFolderArtRoute(app);
 registerCaptionRoutes(app);
-registerAffiliateListingRoute(app);
+registerArchiveSubtitleRoutes(app);
 registerAudioAsrRoutes(app);
 registerNowPlayingRoute(app);
 app.get('/api/live-radio/status', (_req, res) => {
@@ -637,7 +637,9 @@ app.get('/api/archive/proxy', async (req,res)=>{
         proxyRequestId,
         errorCode: upstream.errorCode,
         reason: upstream.reason,
+        retryAfterMs: upstream.retryAfterMs,
       });
+      if (reply.body.retryAfterSeconds) res.setHeader('Retry-After', String(reply.body.retryAfterSeconds));
       if (!upstream.errorCode && error !== 'Archive media request failed') {
         reply.body.error = error;
       }
@@ -862,7 +864,7 @@ app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.origi
 
 async function startServer(){
  if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
- app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); if(process.env.NODE_ENV!=='test'){startArchiveHealthProber({health:archiveHealth,fetchImpl:fetch,controlUrl:process.env.AJN_CONTROL_PROBE_URL}); for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));}
+ app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); /* Health prober runs regardless of warmers: it sends nothing while Archive is ok, and is the only thing that clears a stale 'down' when no one is playing. */ if(process.env.NODE_ENV!=='test'){startArchiveHealthProber({health:archiveHealth,fetchImpl:fetch,controlUrl:process.env.AJN_CONTROL_PROBE_URL});} if(process.env.AJN_BOOT_WARMERS!=='1'){console.log('[AJN] Archive boot warmers disabled (set AJN_BOOT_WARMERS=1 to enable)');return;} if(process.env.NODE_ENV!=='test'){ for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));}
   // Warm the guides one at a time (Archive rate-limits bursts) so the first
   // viewer gets a filled grid instead of waiting on every source.
   if(process.env.NODE_ENV!=='test'&&process.env.LIBRARY_BACKGROUND!=='off'){void loadLibrarySnapshot().then(()=>startLibraryBackground());}
