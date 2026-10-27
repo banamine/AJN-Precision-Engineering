@@ -10,6 +10,11 @@ import type { Program, ScheduleChannel } from '../src/types';
 
 export interface ExportSnapshot { guideId: string; generatedAt: string; channels: ScheduleChannel[] }
 
+/** Channels retained for Library ingestion but omitted from guide schedules and exports. */
+export function visibleScheduleChannels(channels: readonly ScheduleChannel[]): ScheduleChannel[] {
+  return channels.filter((channel) => !channel.libraryOnly);
+}
+
 /** XMLTV time: "YYYYMMDDhhmmss +0000". */
 export function xmltvTime(iso: string): string {
   const d = new Date(iso);
@@ -49,7 +54,7 @@ function clipSeconds(u: unknown): number {
 
 export function toM3u(snap: ExportSnapshot, channelIds: string[] | null, origin: string): string {
   const lines = ['#EXTM3U', `# AJN guide ${snap.guideId} · generatedAt ${snap.generatedAt}`];
-  for (const ch of snap.channels) {
+  for (const ch of visibleScheduleChannels(snap.channels)) {
     if (channelIds && !channelIds.includes(ch.id)) continue;
     const live = ch.programs.some((p) => (p.metadata as any)?.live);
     // A grouped news show is several clips: list each clip with its own length,
@@ -73,7 +78,7 @@ export function toM3u(snap: ExportSnapshot, channelIds: string[] | null, origin:
 }
 
 export function toXmltv(snap: ExportSnapshot, channelIds: string[] | null): string {
-  const chans = snap.channels.filter((c) => !channelIds || channelIds.includes(c.id));
+  const chans = visibleScheduleChannels(snap.channels).filter((c) => !channelIds || channelIds.includes(c.id));
   const out = ['<?xml version="1.0" encoding="UTF-8"?>', `<tv generator-info-name="AJN Precision Engineering" date="${xmltvTime(snap.generatedAt)}">`];
   for (const c of chans) out.push(`  <channel id="${xml(c.id)}"><display-name>${xml(c.name)}</display-name>${c.logo ? `<icon src="${xml(c.logo)}"/>` : ''}</channel>`);
   for (const c of chans) for (const p of c.programs) {

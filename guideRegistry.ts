@@ -880,7 +880,9 @@ async function getExtraChannels(guideId:string,now:Date):Promise<ScheduleChannel
     if(isAllMyChildrenChannel(c)){
       const built=buildAllMyChildrenChannel(c);
       /* Episodes get a rotating daily grid (air-date order, continues each day). Extras stay date-only (Library-only). */
-      return c.id===AMC_EPISODES_CHANNEL_ID?{...built,programs:layoutRotatingDailySchedule(built.programs,45,now)}:built;
+      return c.id===AMC_EPISODES_CHANNEL_ID
+        ?{...built,programs:layoutRotatingDailySchedule(built.programs,45,now)}
+        :{...built,libraryOnly:true};
     }
     let base=extraBase.get(c.id);
     if(!base){base=c.rows.map(r=>showSourceProgram({...r,channelId:c.id,channelName:c.name,series:c.name},guideId));extraBase.set(c.id,base);}

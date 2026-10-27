@@ -1,7 +1,7 @@
 import { buildDiscoveryChannel, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
 import { createLastGoodCache } from './server/lastGoodCache';
 import { LIBRARY_CATEGORIES, loadLibrarySnapshot, setGuideRecords, recordsFromGuide, queryLibrary, getLibrarySeries, libraryHeatmap, libraryIndexStats, startLibraryBackground } from './server/libraryIndex';
-import { toM3u, toXmltv, type ExportSnapshot } from './server/channelExport';
+import { toM3u, toXmltv, visibleScheduleChannels, type ExportSnapshot } from './server/channelExport';
 import type { ScheduleChannel } from './src/types';
 import { pickOnNow, type HomeNowItem } from './server/homeNow';
 import { buildClassicLightSchedule } from './server/classicLightSchedule';
@@ -98,15 +98,16 @@ function isValidScheduleChannels(
   label: string,
 ): boolean {
   if (!Array.isArray(channels)) return false;
-  const invalidProgramCount = channels.reduce((count, channel) => {
+  const visibleChannels = visibleScheduleChannels(channels);
+  const invalidProgramCount = visibleChannels.reduce((count, channel) => {
     const programs = Array.isArray(channel.programs) ? channel.programs : [];
     return count + programs.filter((program) => program.endTime <= program.startTime).length;
   }, 0);
   if (invalidProgramCount > 0) {
     console.warn(`[${label}] ${guideId}: ${invalidProgramCount} programs with end<=start`);
   }
-  return channels.length > 0
-    && channels.some((channel) => Array.isArray(channel.programs) && channel.programs.length > 0);
+  return visibleChannels.length > 0
+    && visibleChannels.some((channel) => Array.isArray(channel.programs) && channel.programs.length > 0);
 }
 const exportSnaps=createLastGoodCache<ExportSnapshot>({
   ttlMs:EXPORT_TTL_MS,
@@ -130,7 +131,7 @@ app.get('/api/home/now',async(_req,res)=>{
     try{
       const snap=await Promise.race([guideSnapshot(id),new Promise<null>(r=>setTimeout(()=>r(null),3500))]);
       if(!snap){pending.push(id);return;}
-      const it=pickOnNow(id,names.get(id)||id,snap.channels,nowMs);if(it)items.push(it);
+      const it=pickOnNow(id,names.get(id)||id,visibleScheduleChannels(snap.channels),nowMs);if(it)items.push(it);
     }catch(e:any){console.warn('[HomeNow]',id,e?.message);failed.push(id);}
   }));
   items.sort((a,b)=>HOME_NOW_GUIDES.indexOf(a.guideId)-HOME_NOW_GUIDES.indexOf(b.guideId));
@@ -139,7 +140,7 @@ app.get('/api/home/now',async(_req,res)=>{
 });
 import { createClassicUpcoming } from './server/classicUpcoming';
 import { CLASSIC_RADIO_PAGE_MAX, ClassicRadioUpstreamError, classicRadioService, getClassicRadioGenres } from './server/classicRadioTheatre.js';
-const classicUpcoming=createClassicUpcoming({getChannels:async()=>{try{const s=await Promise.race([guideSnapshot('classic-tv'),new Promise<null>(r=>setTimeout(()=>r(null),3500))]);return s?s.channels:null}catch{return null}},now:()=>Date.now()});
+const classicUpcoming=createClassicUpcoming({getChannels:async()=>{try{const s=await Promise.race([guideSnapshot('classic-tv'),new Promise<null>(r=>setTimeout(()=>r(null),3500))]);return s?visibleScheduleChannels(s.channels):null}catch{return null}},now:()=>Date.now()});
 app.get('/api/home/classic-48h',async(req,res)=>{const r=await classicUpcoming.handle(req.query.tz);res.status(r.status).set('Cache-Control','private, max-age=60').json(r.body);});
 const originOf=(req:any)=>`${(req.headers['x-forwarded-proto']||req.protocol||'https').toString().split(',')[0]}://${req.get('host')}`;
 let libraryCache:{at:number;items:any[];generatedAt:string}|null=null;
@@ -218,11 +219,11 @@ app.get('/api/library',async(_req,res)=>{
 app.get('/api/exports',async(req,res)=>{
   const origin=originOf(req);const out:any[]=[];
   for(const g of EXPORT_GUIDES){if(g==='live-tv'){out.push({guideId:g,channel:'(all live channels)',playlist:`${origin}/api/guides/${g}/playlist.m3u`,epg:`${origin}/api/guides/${g}/epg.xml`});continue;}
-    try{for(const c of (await guideSnapshot(g)).channels)out.push({guideId:g,id:c.id,name:c.name,playlist:`${origin}/api/channels/${encodeURIComponent(c.id)}/playlist.m3u?guide=${g}`,epg:`${origin}/api/channels/${encodeURIComponent(c.id)}/epg.xml?guide=${g}`});}catch{}}
+    try{for(const c of visibleScheduleChannels((await guideSnapshot(g)).channels))out.push({guideId:g,id:c.id,name:c.name,playlist:`${origin}/api/channels/${encodeURIComponent(c.id)}/playlist.m3u?guide=${g}`,epg:`${origin}/api/channels/${encodeURIComponent(c.id)}/epg.xml?guide=${g}`});}catch{}}
   res.json({channels:out});
 });
 async function findChannelGuide(id:string,guide?:string):Promise<ExportSnapshot|null>{
-  for(const g of guide?[guide]:EXPORT_GUIDES.filter(x=>x!=='live-tv')){if(!EXPORT_GUIDES.includes(g))continue;const s=await guideSnapshot(g);if(s.channels.some(c=>c.id===id))return s;}
+  for(const g of guide?[guide]:EXPORT_GUIDES.filter(x=>x!=='live-tv')){if(!EXPORT_GUIDES.includes(g))continue;const s=await guideSnapshot(g);if(visibleScheduleChannels(s.channels).some(c=>c.id===id))return s;}
   return null;
 }
 app.get('/api/channels/:id/playlist.m3u',async(req,res)=>{const s=await findChannelGuide(req.params.id,req.query.guide as string|undefined);if(!s)return res.status(404).json({error:'unknown channel'});res.type('audio/x-mpegurl').set('X-AJN-Generated-At',s.generatedAt).send(toM3u(s,[req.params.id],originOf(req)));});
@@ -248,7 +249,7 @@ app.get('/api/schedule/search',async(req,res)=>{
   const query=req.query.q;
   if(typeof query!=='string'||query.length>120)return res.status(400).json({error:'q must be a string of at most 120 characters'});
   try{
-   const channels=await cachedSchedule('classic-tv');
+   const channels=visibleScheduleChannels(await cachedSchedule('classic-tv'));
    return res.json({guideId:'classic-tv',matches:searchClassicProgramTitles(channels,query)});
   }catch{
    return res.status(500).json({error:'Classic TV title search unavailable'});
@@ -274,7 +275,7 @@ app.get('/api/schedule',async(req,res)=>{
   // The Classic guide is ~15 MB of JSON; Cloud Run does not compress, so gzip here (browsers always send Accept-Encoding: gzip).
   // Optional ?channel=<id>: only that channel (the player needs just its own list to pick the next program; the whole guide can be tens of MB).
   const only=typeof req.query.channel==='string'&&req.query.channel?req.query.channel:null;
-   let all=await cachedSchedule(guideId,movieNow);
+   let all=visibleScheduleChannels(await cachedSchedule(guideId,movieNow));
     if(req.query.light==='1'&&guideId==='audio-podcasts'){
      try{
       const localHour=localHourAt(Date.now(),req.query.tz);
