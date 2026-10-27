@@ -12,12 +12,14 @@ export interface ProxyErrorBody {
   /** Circuit open only: seconds until the app server will ask that Archive storage server again. */
   retryAfterSeconds?: number;
 }
-export type ArchiveFailure = 'definite' | 'overloaded' | 'transient';
+export type ArchiveFailure = 'definite' | 'overloaded' | 'transient' | 'slow';
 
 export function classifyArchiveFailure(httpStatus: number, body: ProxyErrorBody): ArchiveFailure {
   const up = body.upstreamStatus ?? 0;
+  if (body.errorCode === 'AJN_UPSTREAM_HEADER_TIMEOUT' || body.errorCode === 'UND_ERR_CONNECT_TIMEOUT' || body.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') return 'slow';
   if (body.reason === 'UNPLAYABLE_ARCHIVE_MEMBER' || [403, 404, 410].includes(up) || httpStatus === 400 || httpStatus === 422) return 'definite';
-  if ([500, 502, 504].includes(up) || httpStatus === 504 || body.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') return 'overloaded';
+  if ([500, 502, 504].includes(up) || httpStatus === 504) return 'overloaded';
+  // The proxy already retried 3 times and got no answer at all: retrying again in place only adds load.
   if (up === 0 && httpStatus >= 500 && (body.attempts ?? 0) >= 3) return 'overloaded';
   return 'transient';
 }

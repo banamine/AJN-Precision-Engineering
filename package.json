@@ -105,7 +105,8 @@
     "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx",
     "test:archive-music-title": "tsx test-archive-music-title.ts",
     "test:bannedvideo": "tsx src/bannedvideo/bannedvideo.test.ts && tsx test-bannedvideo-integration.ts",
-    "test:bannedvideo-demo": "node tools/checks/demo-check.cjs"
+    "test:bannedvideo-demo": "node tools/checks/demo-check.cjs",
+    "test:live-hls": "node tools/checks/live-hls-probe.cjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
