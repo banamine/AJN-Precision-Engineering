@@ -92,11 +92,21 @@ app.get('/api/live/health',(_req,res)=>{res.set('Cache-Control','no-store');res.
 // One last-good snapshot per guide (10 min) feeds the Library and M3U/XMLTV
 // exports, so both files of a channel describe the same lineup.
 const EXPORT_TTL_MS=10*60_000;
-function isValidScheduleChannels(channels: ScheduleChannel[]): boolean {
-  return Array.isArray(channels)
-    && channels.length > 0
-    && channels.some((channel) => Array.isArray(channel.programs) && channel.programs.length > 0)
-    && !channels.some((channel) => (channel.programs ?? []).some((program) => program.endTime <= program.startTime));
+function isValidScheduleChannels(
+  channels: ScheduleChannel[],
+  guideId: string,
+  label: string,
+): boolean {
+  if (!Array.isArray(channels)) return false;
+  const invalidProgramCount = channels.reduce((count, channel) => {
+    const programs = Array.isArray(channel.programs) ? channel.programs : [];
+    return count + programs.filter((program) => program.endTime <= program.startTime).length;
+  }, 0);
+  if (invalidProgramCount > 0) {
+    console.warn(`[${label}] ${guideId}: ${invalidProgramCount} programs with end<=start`);
+  }
+  return channels.length > 0
+    && channels.some((channel) => Array.isArray(channel.programs) && channel.programs.length > 0);
 }
 const exportSnaps=createLastGoodCache<ExportSnapshot>({
   ttlMs:EXPORT_TTL_MS,
@@ -104,7 +114,7 @@ const exportSnaps=createLastGoodCache<ExportSnapshot>({
     const channels=await getScheduleForGuide(guideId);
     return {guideId,generatedAt:new Date().toISOString(),channels};
   },
-  isValid:(snapshot)=>isValidScheduleChannels(snapshot.channels),
+  isValid:(snapshot,guideId)=>isValidScheduleChannels(snapshot.channels,guideId,'Guide snapshot'),
   label:'Guide snapshot',
 });
 function guideSnapshot(guideId:string):Promise<ExportSnapshot>{return exportSnaps.get(guideId);}
@@ -220,10 +230,12 @@ app.get('/api/channels/:id/epg.xml',async(req,res)=>{const s=await findChannelGu
 app.get('/api/guides/:guide/playlist.m3u',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('audio/x-mpegurl').set('X-AJN-Generated-At',s.generatedAt).send(toM3u(s,null,originOf(req)));});
 app.get('/api/guides/:guide/epg.xml',async(req,res)=>{if(!EXPORT_GUIDES.includes(req.params.guide))return res.status(404).json({error:'unknown guide'});const s=await guideSnapshot(req.params.guide);res.type('application/xml').set('X-AJN-Generated-At',s.generatedAt).send(toXmltv(s,null));});
 const SCHEDULE_TTL_MS=60_000;
+const SCHEDULE_LOADING_TTL_MS=4_000;
 const scheduleCache=createLastGoodCache<ScheduleChannel[]>({
   ttlMs:SCHEDULE_TTL_MS,
+  ttlFor:(channels)=>channels.some((channel)=>channel.sourceStatus==='loading')?SCHEDULE_LOADING_TTL_MS:SCHEDULE_TTL_MS,
   load:(guideId)=>getScheduleForGuide(guideId),
-  isValid:isValidScheduleChannels,
+  isValid:(channels,guideId)=>isValidScheduleChannels(channels,guideId,'Schedule snapshot'),
   label:'Schedule snapshot',
 });
 function cachedSchedule(guideId:string,movieNow?:Date){
