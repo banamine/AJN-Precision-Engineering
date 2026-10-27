@@ -27,6 +27,17 @@ Baseline: `origin/main` at `02938ae` (`2026-10-27`).
 - `src/components/PlayerView.tsx`, `src/MinimalPlayer.tsx`, and `src/components/PlayerChrome.tsx` are shared with the live-radio player path. Any Archive music behavior in those files must be behind an Archive-music-only condition; the existing live-radio render branch must remain unchanged.
 - `RadioView`, `RadioDock`, `LiveRadioNowPlaying`, the authoritative audio runtime, proxy/server files, and scheduling code are out of scope.
 
+## Baseline source map
+
+References below are from `origin/main` at `02938ae`:
+
+- **Now Playing and favorite row:** `src/components/PlayerView.tsx:475-485`; it renders the current title and favorite control. `src/components/PlayerChrome.tsx:261-275` renders the bottom audio title/subtitle, while `:83-87` updates playback time from media-element events.
+- **Up Next source:** `src/components/PlayerView.tsx:113-134` fetches and caches one channel schedule per playback item; `:153-167` calls `pickNext()` for preload and end-of-track advance. The visible “next hour” case is Rush-specific (`:259-260`). Archive music had no corresponding queue panel.
+- **Recently Played:** `src/App.tsx:93-116,134-166,209-229` owns persistence and updates; `src/components/HomeView.tsx:332` renders the Home list. `src/components/LiveRadioNowPlaying.tsx:32` has a separate, radio-only recent list.
+- **Spectrum, On Air, and live-level label:** `src/MinimalPlayer.tsx:1071-1095` renders the audio stage and its existing radio badge/level state; `src/components/AudioVisualizerOverlay.tsx:33-46,83-121` reads analyser bins and draws bars.
+- **Audio source and shared analyser graph:** `src/use-audio-normalization.ts:62-67,110-122` creates the shared graph and connects the actual media element once. The Archive visualizer must not make another `AudioContext`, source, or analyser.
+- **Live-radio routing:** `src/App.tsx:321-327` keeps the persistent `PlayerView` mounted while another destination is selected; `:370-372` renders `RadioView`. `src/MinimalPlayer.tsx:112,1071-1095,1154-1159` contains the live-radio-specific stage and Chrome settings.
+
 ## Verification still required
 
 No Archive track or live-radio playback was tested during Phase 1. The implementation phase must capture desktop and phone Chromium evidence for Archive music playing and paused, compare live-radio rendering against the main-branch baseline, and verify a single visible Up Next panel.

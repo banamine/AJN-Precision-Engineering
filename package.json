@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "node test.js && npm run test:epg-program-lifecycle",
+    "typecheck": "tsc --noEmit",
+    "test": "node test.js && npm run test:epg-program-lifecycle && npm run test:archive-music-title",
     "test:audio": "node test-audio-bridge.js",
     "test:audio-singleton": "node test-audio-context-singleton.js",
     "test:audio-video-switch": "node test-audio-video-switch.js",
@@ -99,7 +100,8 @@
     "test:light-guides": "tsx test-classic-light-schedule.ts && tsx test-audio-light-schedule.ts && tsx test-audio-light-client.ts && tsx test-channel-schedule-pool.ts && tsx test-load-schedule.ts && tsx src/guide/scheduleCache.test.ts",
     "test:series": "tsx test-series.ts",
     "test:thumbnail": "tsx test-thumbnail.ts",
-    "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx"
+    "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx",
+    "test:archive-music-title": "tsx test-archive-music-title.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

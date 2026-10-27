@@ -72,6 +72,27 @@ function createAudioRuntime(): AudioRuntime | null {
     runtime.listener = onStateChange; ctx.addEventListener("statechange", onStateChange); audioRuntime = runtime; return runtime;
   } catch { return null; }
 }
+function disconnectRuntimeMediaElement(runtime: AudioRuntime, expected?: HTMLMediaElement): void {
+  if (expected && runtime.connectedElement !== expected) return;
+  if (runtime.connectedElement && runtime.mediaErrorListener) {
+    runtime.connectedElement.removeEventListener("error", runtime.mediaErrorListener);
+  }
+  if (runtime.connectedElement && runtime.mediaPlayingListener) {
+    runtime.connectedElement.removeEventListener("playing", runtime.mediaPlayingListener);
+  }
+  runtime.mediaErrorListener = null;
+  runtime.mediaPlayingListener = null;
+  if (runtime.sourceNode) { try { runtime.sourceNode.disconnect(); } catch {} runtime.sourceNode = null; }
+  runtime.connectedElement = null; runtime.bridgeReady = false; runtime.diagnosticsReady = false;
+}
+
+/** Release only the source owned by this media element; shared analyser nodes stay in the runtime. */
+export function releaseMediaElementAudioSource(media: HTMLMediaElement): void {
+  const runtime = audioRuntime;
+  if (!runtime) return;
+  disconnectRuntimeMediaElement(runtime, media);
+}
+
 function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | null {
   const runtime = createAudioRuntime(); if (!runtime) return null;
   if (runtime.connectedElement === media && runtime.sourceNode) return runtime;
@@ -79,18 +100,7 @@ function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | n
   // A new media element must never inherit the previous element's source node.
   // Clear the singleton bridge before the CORS/native-fallback decision so diagnostics
   // cannot remain attached to stale audio after a player switch.
-  if (runtime.connectedElement !== media) {
-    if (runtime.connectedElement && runtime.mediaErrorListener) {
-      runtime.connectedElement.removeEventListener("error", runtime.mediaErrorListener);
-    }
-    if (runtime.connectedElement && runtime.mediaPlayingListener) {
-      runtime.connectedElement.removeEventListener("playing", runtime.mediaPlayingListener);
-    }
-    runtime.mediaErrorListener = null;
-    runtime.mediaPlayingListener = null;
-    if (runtime.sourceNode) { try { runtime.sourceNode.disconnect(); } catch {} runtime.sourceNode = null; }
-    runtime.connectedElement = null; runtime.bridgeReady = false; runtime.diagnosticsReady = false;
-  }
+  if (runtime.connectedElement !== media) disconnectRuntimeMediaElement(runtime);
 
   // Remember the connected element so statechange to "running" can connect it
   runtime.connectedElement = media;
