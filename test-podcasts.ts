@@ -90,4 +90,23 @@ assert.ok(rows.find((r) => r.id !== 'pod-quash' && r.sourceStatus === 'loading')
 assert.equal(rows[0].id, 'pod-quash', 'Quash is first');
 assert.equal(P.smallArtwork('https://www.omnycontent.com/d/playlist/a/b/c/image.jpg?t=1&size=Large'), 'https://www.omnycontent.com/d/playlist/a/b/c/image.jpg?t=1&size=Small');
 assert.equal(P.smallArtwork('https://artwork.captivate.fm/x.jpg'), 'https://artwork.captivate.fm/x.jpg');
+// Staleness (judged by the newest episode's real publish date, never by fetch time) and visible publish date
+{
+  const mk = (daysOld: number, o: Partial<import('./server/podcasts.ts').PodcastSource> = {}) => {
+    const items = [item(1, { pub: new Date(NOW.getTime() - daysOld * 86400000).toUTCString() })];
+    return P.buildState(src(o), { head: feed('Test Show', []).split('</channel>')[0], items }, NOW, 20);
+  };
+  assert.equal(P.stalenessOf(mk(1), NOW)!.stale, false, 'yesterday is current');
+  assert.equal(P.stalenessOf(mk(14), NOW)!.stale, false, 'exactly the default 14 days is not yet stale');
+  assert.equal(P.stalenessOf(mk(15), NOW)!.stale, true, '15 days is stale for a daily show');
+  assert.equal(P.stalenessOf(mk(60, { cadenceDays: 30 }), NOW)!.stale, false, 'monthly show: 60 days is inside 3x cadence');
+  assert.equal(P.stalenessOf(mk(111, { cadenceDays: 30 }), NOW)!.stale, true, 'monthly show: 111 days is stale (The Quash case)');
+  assert.equal(P.stalenessOf(mk(20, { staleAfterDays: 30 }), NOW)!.stale, false, 'explicit override wins');
+  const stale = mk(111, { cadenceDays: 30 }); const progs = P.toPrograms(stale, 'audio-podcasts', NOW);
+  assert.match(progs[0].description!, /^Published Jun \d+, 2026 · Feed inactive: last episode Jun \d+, 2026 \(111 days ago\) · About ep 1$/);
+  const fresh = P.toPrograms(mk(1), 'audio-podcasts', NOW); assert.match(fresh[0].description!, /^Published Oct 9, 2026 · About ep 1$/);
+  assert.equal(P.stalenessOf({ ...stale, episodes: [] }, NOW), null, 'no episodes: no staleness claim');
+  const ch = P.buildPodcastChannels('audio-podcasts', NOW, layoutDailySchedule);
+  assert.ok(Array.isArray(ch));
+}
 console.log('podcasts: all passed');

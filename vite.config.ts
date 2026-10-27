@@ -68,6 +68,7 @@ export default defineConfig(() => {
   const hmrEnabled = process.env.DISABLE_HMR !== 'true';
   return {
     plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
+    build: { reportCompressedSize: false, sourcemap: false },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

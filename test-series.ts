@@ -12,6 +12,7 @@ const CFG = await import('./collections/series-config.ts');
 assert.deepEqual(P.parseEpisodeName('Taxi 1x01 Like Father Like Daughter.mp4'), { season: 1, episode: 1, title: 'Like Father Like Daughter' });
 assert.deepEqual(P.parseEpisodeName('Taxi S02E01 Louie and the Nice Girl.mp4'), { season: 2, episode: 1, title: 'Louie and the Nice Girl' });
 assert.deepEqual(P.parseEpisodeName('Taxi - S04E02 - Vienna Waits.mp4'), { season: 4, episode: 2, title: 'Vienna Waits' });
+assert.deepEqual(P.parseEpisodeName('Rob E01 (Pilot).mp4'), { episode: 1, title: '(Pilot)' });
 assert.deepEqual(P.parseEpisodeName("Hogan's Heroes_S06E24_Is There a Traitor in the House.mp4"), { season: 6, episode: 24, title: 'Is There a Traitor in the House' });
 assert.deepEqual(P.parseEpisodeName('Episode 10 elaine and the monk.mp4'), { episode: 10, title: 'elaine and the monk' });
 assert.equal(P.parseEpisodeName('Taxi_Episodes_Compilation.mp4'), null, 'a compilation is not an episode');

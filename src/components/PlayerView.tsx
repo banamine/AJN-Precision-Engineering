@@ -17,8 +17,11 @@ import { CaptionPanel } from "../news/captions/CaptionPanel";
 import type { ProxyErrorBody } from "../utils/archiveFailure";
 import { MAX_CONSECUTIVE_PLAYBACK_FAILURES, shouldHoldForArchiveOutage, shouldStopAfterConsecutiveFailures } from "../utils/playbackFailurePolicy";
 import { archiveIdentifierFromPath } from "../utils/thumbnail";
-import { classifyArchiveFailure } from "../utils/archiveFailure";
+import { archiveRetryWaitMs, classifyArchiveFailure } from "../utils/archiveFailure";
+import { SubtitleToggle } from "./SubtitleToggle";
 import { useArchiveStatus } from "../hooks/useArchiveStatus";
+import { getLastArchiveProgressAt, getLastArchiveProgressPosition } from "../utils/archivePlaybackEvidence";
+import { retryStartAtSeconds, scheduleArchiveOutageRetry } from "../utils/archiveOutageRetry";
 import { RadioCaptionPanel } from "../news/captions/RadioCaptionPanel";
 import { useStationTheme } from "../utils/stationArt";
 import { StationBanner } from "./StationBanner";
@@ -69,9 +72,16 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   const stoppedInstanceRef = useRef<unknown>(null);
   const playerWrapRef = useRef<HTMLDivElement | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
+  const [retryPosition, setRetryPosition] = useState<{ key: string; seconds: number } | null>(null);
   const [playbackStopped, setPlaybackStopped] = useState(false);
   const [archivePausedForOutage, setArchivePausedForOutage] = useState(false);
   const skipTimerRef = useRef<number | null>(null);
+  const getPlayerVideo = useCallback(() => playerWrapRef.current?.querySelector("video") ?? null, []);
+  /** When the last failure was our circuit pause on a storage host, Retry before this time cannot succeed. */
+  const retryNotBeforeRef = useRef(0);
+  const retryWaitTimerRef = useRef<number | null>(null);
+  const [retryWaitUntil, setRetryWaitUntil] = useState<number | null>(null);
+  const [retryClock, setRetryClock] = useState(() => Date.now());
   const { state: archiveState, refresh: refreshArchiveStatus } = useArchiveStatus();
   const archiveMusicOn = isArchiveMusicPlayback(nowPlaying?.mediaType, nowPlaying?.channelId);
   const archiveMusicRecentlyPlayed = useMemo(() => {
@@ -424,6 +434,10 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     assetId: nowPlaying.assetId ?? "unknown",
     path: nowPlaying.archivePath ?? nowPlaying.src,
   }) : null, [nowPlaying]);
+  const retryPlayerMedia = useMemo(() => {
+    if (!nowPlaying || !retryPosition || retryPosition.key !== targetKey(nowPlaying)) return nowPlaying;
+    return { ...nowPlaying, startAtSeconds: retryPosition.seconds };
+  }, [nowPlaying, retryPosition]);
 
   const stationTheme = useStationTheme(nowPlaying?.channelId, nowPlaying?.title); // live radio: logo + station colours (null for everything else)
   const onError = useCallback(async (err: MediaError | null, proxyFailure?: ProxyErrorBody | null) => {
@@ -434,7 +448,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     const itemSpecificFailure = Boolean(proxyFailure && classifyArchiveFailure(502, proxyFailure) === 'definite');
     if (isArchiveMedia && !itemSpecificFailure) {
       const latestStatus = await refreshArchiveStatus();
-      if (shouldHoldForArchiveOutage(latestStatus.state, true, itemSpecificFailure)) {
+      if (shouldHoldForArchiveOutage(latestStatus.state, true, itemSpecificFailure, getLastArchiveProgressAt(nowPlaying.src ?? nowPlaying.archivePath))) {
         if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current);
         skipTimerRef.current = null;
         playerWrapRef.current?.querySelector<HTMLMediaElement>("audio, video")?.pause();
@@ -443,6 +457,8 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       }
     }
     failureContextRef.current = proxyFailure ?? null;
+    const waitMs = archiveRetryWaitMs(proxyFailure);
+    if (waitMs > 0) retryNotBeforeRef.current = Math.max(retryNotBeforeRef.current, Date.now() + waitMs);
     failuresRef.current += 1;
     if (shouldStopAfterConsecutiveFailures(failuresRef.current)) {
       if (skipTimerRef.current) window.clearTimeout(skipTimerRef.current);
@@ -482,9 +498,23 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
 
   useEffect(() => {
     setArchivePausedForOutage(false);
+    setRetryPosition(null);
   }, [nowPlaying]);
 
-  const retryCurrent = useCallback(() => {
+  const retryNow = useCallback(() => {
+    if (retryWaitTimerRef.current) window.clearTimeout(retryWaitTimerRef.current);
+    retryWaitTimerRef.current = null;
+    setRetryWaitUntil(null);
+    retryNotBeforeRef.current = 0;
+    const current = latestRef.current;
+    const media = playerWrapRef.current?.querySelector<HTMLMediaElement>("audio, video");
+    const position = retryStartAtSeconds(
+      media?.currentTime,
+      getLastArchiveProgressPosition(current?.src ?? current?.archivePath),
+    );
+    if (current && position !== null) {
+      setRetryPosition({ key: targetKey(current), seconds: position });
+    }
     failuresRef.current = 0;
     failureContextRef.current = null;
     stoppedInstanceRef.current = null;
@@ -496,6 +526,39 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     setArchivePausedForOutage(false);
     setRetryNonce((n) => n + 1);
   }, []);
+
+  // Retry: if the storage host is still paused, wait it out visibly instead of failing instantly.
+  const retryCurrent = useCallback(() => {
+    const wait = retryNotBeforeRef.current - Date.now();
+    if (wait <= 0) { retryNow(); return; }
+    if (retryWaitTimerRef.current) window.clearTimeout(retryWaitTimerRef.current);
+    setRetryWaitUntil(Date.now() + wait);
+    retryWaitTimerRef.current = window.setTimeout(retryNow, wait + 250);
+  }, [retryNow]);
+
+  useEffect(() => {
+    if (retryWaitUntil === null) return;
+    const t = window.setInterval(() => setRetryClock(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [retryWaitUntil]);
+
+  // A different program cancels a pending wait; unmount clears the timer.
+  useEffect(() => () => {
+    if (retryWaitTimerRef.current) window.clearTimeout(retryWaitTimerRef.current);
+    retryWaitTimerRef.current = null;
+  }, [nowPlaying]);
+  useEffect(() => { setRetryWaitUntil(null); retryNotBeforeRef.current = 0; }, [nowPlaying]);
+  const retryWaitSeconds = retryWaitUntil === null ? 0 : Math.max(0, Math.ceil((retryWaitUntil - retryClock) / 1000));
+
+  useEffect(() => {
+    if (!archivePausedForOutage) return;
+    return scheduleArchiveOutageRetry({
+      onRetry: retryCurrent,
+      delayMs: SLOW_RETRY_MS,
+      setTimeoutImpl: (callback, delay) => window.setTimeout(callback, delay),
+      clearTimeoutImpl: (handle) => window.clearTimeout(handle as number),
+    });
+  }, [archivePausedForOutage, nowPlaying, retryCurrent]);
 
   useEffect(() => {
     if (!archivePausedForOutage || archiveState !== 'ok') return;
@@ -524,7 +587,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     <div className="space-y-4">
       {archivePausedForOutage && (
         <div role="alert" data-testid="archive-playback-paused" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
-          <p className="font-semibold">Archive is offline. Playback is paused and will resume automatically when Archive is reachable again.</p>
+          <p className="font-semibold">Playback is paused temporarily. We’ll retry the same item every 30 seconds.</p>
         </div>
       )}
       {!archiveMusicOn && <FullShowStatus />}
@@ -549,7 +612,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         src={nowPlaying.src}
         title={nowPlaying.title}
         mediaType={nowPlaying.mediaType ?? "video"}
-        nowPlaying={nowPlaying}
+        nowPlaying={retryPlayerMedia}
         archiveMusicMode={archiveMusicOn}
         archiveMusicRecentlyPlayed={archiveMusicRecentlyPlayed}
         archiveMusicUpcoming={archiveMusicUpcoming}
@@ -575,11 +638,15 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       {playbackStopped && (
         <div role="alert" data-testid="playback-stopped-after-failures" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
           <p className="font-semibold">Playback stopped after {MAX_CONSECUTIVE_PLAYBACK_FAILURES} consecutive failures.</p>
-          <button type="button" onClick={retryCurrent} className="mt-3 rounded-md border border-amber-300/60 px-4 py-2 text-sm font-semibold hover:bg-amber-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200">
-            Retry this item
+          <button type="button" onClick={retryCurrent} disabled={retryWaitUntil !== null} data-testid="retry-this-item" className="mt-3 rounded-md border border-amber-300/60 px-4 py-2 text-sm font-semibold hover:bg-amber-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 disabled:cursor-wait disabled:opacity-70">
+            {retryWaitUntil !== null ? `Retrying in ${retryWaitSeconds} s…` : 'Retry this item'}
           </button>
+          {retryWaitUntil !== null && (
+            <p className="mt-2 text-xs text-amber-200/90" aria-live="polite">The Archive storage server for this file timed out, so the app paused requests to it. Retrying automatically when the pause ends.</p>
+          )}
         </div>
       )}
+      {!archiveMusicOn && <SubtitleToggle getVideo={getPlayerVideo} />}
       {!archiveMusicOn && <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />}
       {!archiveMusicOn && nowPlaying.channelId === "archive-infowars-radio" && <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />}
       {!archiveMusicOn && <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />}

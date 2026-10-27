@@ -41,18 +41,32 @@ async function requestOutcome(
   const path = new URL(url).pathname || '/';
   try {
     const host = new URL(url).hostname;
-    const methodFetch: ArchiveHealthFetch = (input, init) => fetchImpl(input, { ...init, method });
-    const { res } = await safeFetch(url, {
-      allow: host === 'archive.org' ? (candidate) => candidate === 'archive.org' : anyPublicHost,
-      timeoutMs,
-      fetchImpl: methodFetch,
-      headers: { 'User-Agent': 'AJN-Archive-Health-Probe/1.0', Accept: '*/*' },
-      // The Archive health check is deliberately one physical request.
-      maxRedirects: host === 'archive.org' ? 0 : 3,
-    });
+    const headers = { 'User-Agent': 'AJN-Archive-Health-Probe/1.0', Accept: '*/*' };
+    let res: Response;
+    if (host === 'archive.org') {
+      // This fixed, compile-time URL is checked once with redirects left manual:
+      // any 200–399 response proves Archive answered, and its Location is never fetched.
+      res = await fetchImpl(url, {
+        method,
+        redirect: 'manual',
+        headers,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } else {
+      const methodFetch: ArchiveHealthFetch = (input, init) => fetchImpl(input, { ...init, method });
+      ({ res } = await safeFetch(url, {
+        allow: anyPublicHost,
+        timeoutMs,
+        fetchImpl: methodFetch,
+        headers,
+        maxRedirects: 3,
+      }));
+    }
     await res.body?.cancel().catch(() => {});
     return {
-      ok: res.status >= 200 && res.status < 300,
+      ok: host === 'archive.org'
+        ? res.status >= 200 && res.status < 400
+        : res.status >= 200 && res.status < 300,
       httpStatus: res.status,
       errorCode: null,
       path,

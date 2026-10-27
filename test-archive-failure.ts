@@ -9,4 +9,8 @@ assert.equal(c(502, { upstreamStatus: 404 }), 'definite'); assert.equal(c(403, {
 assert.equal(c(422, { reason: 'UNPLAYABLE_ARCHIVE_MEMBER' }), 'definite'); assert.equal(c(400, {}), 'definite');
 assert.equal(c(502, { upstreamStatus: 503 }), 'transient', '503 keeps the existing path');
 assert.match(m({ upstreamStatus: 504 }), /overloaded right now \(HTTP 504\)\. Try again in a few minutes/); assert.doesNotMatch(m({}), /HTTP/);
+assert.equal(c(503, { errorCode: 'AJN_UPSTREAM_CIRCUIT_OPEN', retryAfterSeconds: 12 }), 'slow', 'our own storage-host pause waits once, then retries');
+assert.equal(c(504, { errorCode: 'AJN_UPSTREAM_HEADER_TIMEOUT' }), 'slow');
+assert.equal(c(504, { errorCode: 'UND_ERR_CONNECT_TIMEOUT' }), 'slow');
+assert.equal(c(504, {}), 'overloaded', 'proxy 504 with no code still counts as overloaded');
 console.log('archive failure: all passed');

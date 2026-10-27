@@ -26,6 +26,8 @@ import { RadioBriefingPlayerOverlay } from "./components/RadioBriefingPlayerOver
 import { attachArchiveVideoPrefetch, type VideoPrefetchTarget } from "./utils/videoPrefetch";
 import { cleanArchiveMusicFilename } from "./utils/archiveMusicTitle";
 import { isArchiveMusicPlayback } from "./utils/isArchiveMusicPlayback";
+import { recordArchivePlaybackProgress } from "./utils/archivePlaybackEvidence";
+import { archiveSubtitleUrl } from "./utils/archiveSubtitles";
 
 interface MinimalPlayerProps {
   src: string;
@@ -464,7 +466,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     let retryTimer: number | null = null;
     let stallTimer: number | null = null;
     let startTimer: number | null = null;
+    let slowRetried = false;
+    let slowTimer: number | null = null;
     const clearStart = () => { if (startTimer !== null) { window.clearTimeout(startTimer); startTimer = null; } };
+    const clearSlow = () => { if (slowTimer !== null) { window.clearTimeout(slowTimer); slowTimer = null; } };
     let pendingSeek: number | null = null;
     let lastRetryPos = 0;
     const clearStall = () => { if (stallTimer !== null) { window.clearTimeout(stallTimer); stallTimer = null; } };
@@ -531,8 +536,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       }, STALL_WATCHDOG_MS);
     };
     const onProgressOk = () => {
+      recordArchivePlaybackProgress(activeSrc, media.currentTime);
       clearStall();
       if (retries > 0 && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) retries = 0;
+      if (slowRetried && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) slowRetried = false;
     };
     const onOnline = () => {
       if (!waitingOnline || mediaRef.current !== media) return;
@@ -570,12 +577,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       waitingForDataRef.current = false;
       hasStartedPlaybackRef.current = false;
       const err = media.error;
-      clearStall(); clearStart();
+      clearStall(); clearStart(); clearSlow();
       // Transient failures (dropped slice, 5xx from the proxy, network blip) are retried
       // in place first. Definite failures (restricted, removed, not streamable) skip at once.
       const failedSrc0 = media.currentSrc || activeSrc;
       let definite = false;
       let overloaded: ProxyErrorBody | null = null;
+      let slow: ProxyErrorBody | null = null;
       let proxyFailure: ProxyErrorBody | null = null;
       const diagnosticUrl = failedSrc0 ? archiveFailureDiagnosticUrl(failedSrc0) : null;
       if (diagnosticUrl) {
@@ -586,7 +594,42 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           const kind = classifyArchiveFailure(r.status, body);
           definite = kind === "definite";
           if (kind === "overloaded") overloaded = body;
+          if (kind === "slow") slow = body;
         } catch { /* proxy unreachable: treat as transient */ }
+      }
+      if (slow) {
+        if (!slowRetried) {
+          slowRetried = true;
+          if (mediaRef.current !== media) return;
+          setStatusText("Archive storage server is slow to respond…");
+          reportTelemetry({
+            event: "playback.slow_wait", ...eventMeta(),
+            reason: slow.errorCode ?? "archive_slow",
+            proxyRequestId: slow.proxyRequestId ?? null,
+          });
+          lastRetryPos = media.currentTime || lastRetryPos || 0;
+          pendingSeek = lastRetryPos > 1 ? lastRetryPos : null;
+          slowTimer = window.setTimeout(() => {
+            slowTimer = null;
+            if (mediaRef.current !== media) return;
+            media.load();
+            if (media.readyState < 1) armStart();
+          }, 25_000);
+          return;
+        }
+        if (mediaRef.current !== media) return;
+        setStatusText("Unavailable — this Archive storage server isn't responding. Skipping…");
+        reportTelemetry({
+          event: "media.error", ...eventMeta(), mediaErrorCode: err?.code ?? null,
+          mediaErrorMessage: err?.message ?? null, readyState: media.readyState, networkState: media.networkState,
+          proxyRequestId: slow.proxyRequestId ?? null,
+        });
+        reportTelemetry({
+          event: "media.unavailable", ...fx().eventMeta(), httpStatus: slow.upstreamStatus ?? 0,
+          reason: slow.errorCode ?? "archive_slow_storage", proxyRequestId: slow.proxyRequestId ?? null,
+        });
+        fx().onErrorEvent?.(err, proxyFailure);
+        return;
       }
       if (overloaded) {
         // The proxy already tried Archive 3 times. Retrying again only piles on; say what is happening, once.
@@ -743,6 +786,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     return () => {
       if (progressTimer !== null) window.clearInterval(progressTimer);
       if (retryTimer !== null) window.clearTimeout(retryTimer);
+      clearSlow();
       clearStall();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
@@ -800,6 +844,44 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       levelLoadingTimeOut: 7000, levelLoadingMaxRetry: 1, levelLoadingRetryDelay: 500,
       startFragPrefetch: true,
     });
+    const hlsProbeWindow = window as Window & {
+      __ajnHlsProbeEnabled?: boolean;
+      __ajnHlsInstance?: Hls;
+      __ajnHlsEvents?: Array<Record<string, unknown>>;
+    };
+    const exposeHlsProbe = import.meta.env.DEV && hlsProbeWindow.__ajnHlsProbeEnabled === true;
+    if (exposeHlsProbe) {
+      hlsProbeWindow.__ajnHlsInstance = hls;
+      hlsProbeWindow.__ajnHlsEvents = [];
+      const recordHlsEvent = (event: string, data: unknown) => {
+        const row = data && typeof data === "object" ? data as Record<string, unknown> : {};
+        const response = row.response && typeof row.response === "object" ? row.response as Record<string, unknown> : {};
+        const primitive = (value: unknown): string | number | boolean | null => {
+          if (typeof value === "string" || typeof value === "boolean") return value;
+          if (typeof value === "number" && Number.isFinite(value)) return value;
+          return null;
+        };
+        const entry = {
+          at: Date.now(),
+          event,
+          type: primitive(row.type),
+          details: primitive(row.details),
+          fatal: primitive(row.fatal),
+          status: primitive(response.code),
+          // HLS.js may place a circular loader/fragment object in `reason`.
+          // The probe only needs scalar event metadata for serializable reports.
+          level: primitive(row.level),
+        };
+        const events = hlsProbeWindow.__ajnHlsEvents ?? [];
+        events.push(entry);
+        if (events.length > 2000) events.splice(0, events.length - 2000);
+        hlsProbeWindow.__ajnHlsEvents = events;
+      };
+      hls.on(Hls.Events.ERROR, (_event, data) => recordHlsEvent("ERROR", data));
+      hls.on(Hls.Events.MANIFEST_LOADED, (_event, data) => recordHlsEvent("MANIFEST_LOADED", data));
+      hls.on(Hls.Events.LEVEL_LOADED, (_event, data) => recordHlsEvent("LEVEL_LOADED", data));
+      hls.on(Hls.Events.BUFFER_RESET, (data) => recordHlsEvent("BUFFER_RESET", data));
+    }
     hlsRef.current = hls;
     let recoveries = 0;
     hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -814,6 +896,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     hls.loadSource(activeSrc);
     hls.attachMedia(media);
     return () => {
+      if (hlsProbeWindow.__ajnHlsInstance === hls) delete hlsProbeWindow.__ajnHlsInstance;
       hls.stopLoad();
       hls.detachMedia();
       hls.destroy();
@@ -1088,7 +1171,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           playsInline
           preload="metadata"
           className="h-full w-full"
-        />
+        >
+          {/* English subtitles (if the Archive item has an English .srt). Off until the viewer turns them on. */}
+          {archiveSubtitleUrl(activeSrc) && (
+            <track kind="subtitles" srcLang="en" label="English" src={archiveSubtitleUrl(activeSrc) ?? undefined} data-ajn-subtitles="en" />
+          )}
+        </video>
       ) : (
         <div
           data-testid="audio-stage"
@@ -1105,7 +1193,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
                     : <span aria-label="Archive music artwork unavailable" role="img" className="text-6xl text-cyan-200">♫</span>}
                 </div>
                 <div className="min-w-0 max-w-xl text-center sm:text-left">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Archive.org Music</p>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Library Music</p>
                   <h1 data-testid="archive-music-title" title={archiveMusicRawFilename} className="break-words text-xl font-bold leading-tight text-white sm:text-3xl">
                     {archiveMusicTitle}
                   </h1>
@@ -1157,7 +1245,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         </div>
       )}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
-      <WaitingNotes status={statusText} onRetry={onRetry} />
+      <WaitingNotes status={statusText} onRetry={onRetry} archive={typeof src === "string" && src.includes("/api/archive/proxy")} />
       {/^(Failed to load|Unavailable)/.test(statusText) && (onRetry || onBackToGuide) && (
         <div role="alert" data-testid="playback-recovery" className="absolute inset-x-3 bottom-14 z-30 flex flex-wrap items-center gap-2 rounded-lg bg-black/85 p-3 text-xs text-white shadow-lg sm:bottom-16">
           <span className="min-w-0 flex-1 basis-40">{statusText}</span>

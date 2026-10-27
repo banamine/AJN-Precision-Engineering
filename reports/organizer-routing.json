@@ -1,0 +1,4187 @@
+{
+ "playlists": [
+  {
+   "folder": "Classic TV",
+   "file": "70 Odd Couple.m3u",
+   "entries": 115,
+   "route": [
+    "existing",
+    "classic-70-odd-couple"
+   ],
+   "added": 1,
+   "already_in_guide": 114,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "90s movies.m3u",
+   "entries": 1,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Adderly.m3u",
+   "entries": 43,
+   "route": [
+    "new",
+    "adderly",
+    "Adderly"
+   ],
+   "added": 43,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Andy G season 3.m3u",
+   "entries": 7,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 7
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Andy Griffith.m3u",
+   "entries": 219,
+   "route": [
+    "existing",
+    "item-the-andy-griffith-show"
+   ],
+   "added": 0,
+   "already_in_guide": 213,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 6
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Archie Bunkers Place.m3u",
+   "entries": 48,
+   "route": [
+    "series",
+    "classic-series-l4-archie-bunkers-place-complete-series",
+    "Archie Bunker's Place"
+   ],
+   "added": 48,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Barney Miller.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 2
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Battlestar Gallitaca.m3u",
+   "entries": 10,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 10
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Benson,227,Archie,Bette.m3u",
+   "entries": 253,
+   "route": "split",
+   "added": 205,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 48,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Benson.m3u",
+   "entries": 79,
+   "route": [
+    "new",
+    "benson",
+    "Benson"
+   ],
+   "added": 63,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 16,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Best video shorts music.m3u",
+   "entries": 10,
+   "route": [
+    "other",
+    "music",
+    "music videos"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 10
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Bette.m3u",
+   "entries": 9,
+   "route": [
+    "new",
+    "bette",
+    "Bette"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 9,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Blacksheep.m3u",
+   "entries": 5,
+   "route": [
+    "existing",
+    "item-black-sheep-squadron"
+   ],
+   "added": 0,
+   "already_in_guide": 5,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Bogart Movies.m3u",
+   "entries": 1,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "CWD.m3u",
+   "entries": 86,
+   "route": [
+    "existing",
+    "item-canada-s-worst-driver"
+   ],
+   "added": 0,
+   "already_in_guide": 81,
+   "dup_of_earlier_playlist": 1,
+   "dropped": {
+    "needs_transcode": 4
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Canadas Worst Drivers.m3u",
+   "entries": 24,
+   "route": [
+    "existing",
+    "item-canada-s-worst-driver"
+   ],
+   "added": 0,
+   "already_in_guide": 16,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 8
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Carrol Burnett.m3u",
+   "entries": 51,
+   "route": [
+    "new",
+    "carol-burnett-show",
+    "The Carol Burnett Show"
+   ],
+   "added": 50,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 1,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Catch A Killer.m3u",
+   "entries": 8,
+   "route": [
+    "existing",
+    "item-forensics-catching-the-killer"
+   ],
+   "added": 0,
+   "already_in_guide": 4,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 4
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Cheers.m3u",
+   "entries": 47,
+   "route": [
+    "existing",
+    "item-cheers"
+   ],
+   "added": 0,
+   "already_in_guide": 34,
+   "dup_of_earlier_playlist": 3,
+   "dropped": {
+    "needs_transcode": 10
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Classic Docs.m3u",
+   "entries": 12,
+   "route": [
+    "new",
+    "classic-documentaries",
+    "Classic Documentaries"
+   ],
+   "added": 12,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Clint walker.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 2
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Corner Gas1-2.m3u",
+   "entries": 22,
+   "route": [
+    "existing",
+    "item-corner-gas"
+   ],
+   "added": 0,
+   "already_in_guide": 11,
+   "dup_of_earlier_playlist": 11,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Cowerdly Dog.m3u",
+   "entries": 27,
+   "route": [
+    "new",
+    "courage-the-cowardly-dog",
+    "Courage the Cowardly Dog"
+   ],
+   "added": 27,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Croc Hunter.m3u",
+   "entries": 43,
+   "route": [
+    "new",
+    "crocodile-hunter-diaries",
+    "The Crocodile Hunter Diaries"
+   ],
+   "added": 43,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Danger man.m3u",
+   "entries": 87,
+   "route": [
+    "new",
+    "danger-man",
+    "Danger Man"
+   ],
+   "added": 87,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Dick van dyke 1-5.m3u",
+   "entries": 30,
+   "route": [
+    "new",
+    "dick-van-dyke-show",
+    "The Dick Van Dyke Show"
+   ],
+   "added": 30,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Discover History.m3u",
+   "entries": 96,
+   "route": [
+    "existing",
+    "item-doc-documentaries-misc"
+   ],
+   "added": 12,
+   "already_in_guide": 51,
+   "dup_of_earlier_playlist": 5,
+   "dropped": {
+    "needs_transcode": 26,
+    "nonmedia": 2
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Dog Day Afternoon.m3u",
+   "entries": 1,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Doomwatch 70.m3u",
+   "entries": 12,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 12
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Dr Hudson Secrets J.m3u",
+   "entries": 5,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 5
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Dr Who.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Dual Survivor 2.m3u",
+   "entries": 12,
+   "route": [
+    "new",
+    "dual-survival",
+    "Dual Survival"
+   ],
+   "added": 12,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Dual3.m3u",
+   "entries": 12,
+   "route": [
+    "new",
+    "dual-survival",
+    "Dual Survival"
+   ],
+   "added": 12,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Enemies Foreign And Domestic.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Feb PODCASTS 24.m3u",
+   "entries": 46,
+   "route": [
+    "other",
+    "audio-podcasts",
+    "audio podcast files"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 46
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Fleming.m3u",
+   "entries": 4,
+   "route": [
+    "new",
+    "fleming",
+    "Fleming: The Man Who Would Be Bond"
+   ],
+   "added": 4,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Flying Cadet.m3u",
+   "entries": 13,
+   "route": [
+    "existing",
+    "item-adventures-of-the-flying-cadets"
+   ],
+   "added": 0,
+   "already_in_guide": 2,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 11
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Good Times.m3u",
+   "entries": 46,
+   "route": [
+    "new",
+    "227",
+    "227"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 46,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "High Incident.m3u",
+   "entries": 24,
+   "route": [
+    "existing",
+    "item-high-incident"
+   ],
+   "added": 0,
+   "already_in_guide": 11,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 13
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Hogan Family.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub; different show from Hogan's Heroes (never merge)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Hogans Heroes 1 2.m3u",
+   "entries": 53,
+   "route": [
+    "series",
+    "classic-series-hogans-heroes",
+    "Hogan's Heroes"
+   ],
+   "added": 53,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Home Improvement.m3u",
+   "entries": 203,
+   "route": [
+    "existing",
+    "item-home-improvement"
+   ],
+   "added": 0,
+   "already_in_guide": 200,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 3
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "How its Made.m3u",
+   "entries": 100,
+   "route": [
+    "existing",
+    "item-doc-how-it-s-made"
+   ],
+   "added": 0,
+   "already_in_guide": 91,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 9
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Interpol calling.m3u",
+   "entries": 19,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 19
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Jack and Bobby.m3u",
+   "entries": 22,
+   "route": [
+    "series",
+    "classic-series-l4-jack-bobby-1x-01-pilot",
+    "Jack & Bobby"
+   ],
+   "added": 22,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Jack of all Trades.m3u",
+   "entries": 22,
+   "route": [
+    "new",
+    "jack-of-all-trades",
+    "Jack of All Trades"
+   ],
+   "added": 22,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Joe Biden\u2019s phone calls with former Ukraine president Poroshenko released[manifest-audio_eng=112024-video_eng=479131.m3u8].mp4.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "news clip, not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "external_url": 1,
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Little Cheynne.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 2
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Logans Run.m3u",
+   "entries": 14,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 14
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "MAYDAY.m3u",
+   "entries": 195,
+   "route": [
+    "existing",
+    "classic-mayday"
+   ],
+   "added": 143,
+   "already_in_guide": 42,
+   "dup_of_earlier_playlist": 10,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Mantracker.m3u",
+   "entries": 36,
+   "route": [
+    "existing",
+    "item-doc-mantracker"
+   ],
+   "added": 0,
+   "already_in_guide": 29,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 7
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Master Catoons.m3u",
+   "entries": 2671,
+   "route": [
+    "skip",
+    "dump list: 1,328 Paul Harvey mp3 + videos already in Unsorted/Docs"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 2671
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Maud.m3u",
+   "entries": 117,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 117
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Memorial Days1.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Micheal Jackson Live.m3u",
+   "entries": 20,
+   "route": [
+    "other",
+    "music",
+    "concert/music video"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 20
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Mission Impossible.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "News Radio.m3u",
+   "entries": 100,
+   "route": [
+    "new",
+    "newsradio",
+    "NewsRadio"
+   ],
+   "added": 99,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 1,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "North South.m3u",
+   "entries": 8,
+   "route": [
+    "existing",
+    "item-north-and-south"
+   ],
+   "added": 0,
+   "already_in_guide": 8,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Odd Couple.m3u",
+   "entries": 12,
+   "route": [
+    "existing",
+    "item-the-odd-couple-2015"
+   ],
+   "added": 0,
+   "already_in_guide": 12,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Petticoat Junction Full.m3u",
+   "entries": 158,
+   "route": [
+    "existing",
+    "classic-petticoat"
+   ],
+   "added": 142,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "same_episode_code_already_in_channel": 16
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Primrose Greengage BW Movies.m3u",
+   "entries": 2,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 2
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Rat Patrol.m3u",
+   "entries": 85,
+   "route": [
+    "existing",
+    "classic-rat-patrol"
+   ],
+   "added": 0,
+   "already_in_guide": 58,
+   "dup_of_earlier_playlist": 27,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Rise And Fall Of Rome.m3u",
+   "entries": 14,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 14
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "SURGICAL SPIRIT (1989-95).m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Schitts Creek.m3u",
+   "entries": 79,
+   "route": [
+    "existing",
+    "item-schitt-s-creek"
+   ],
+   "added": 0,
+   "already_in_guide": 27,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 52
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Search.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Smihonian.m3u",
+   "entries": 23,
+   "route": [
+    "existing",
+    "item-doc-smithsonian"
+   ],
+   "added": 0,
+   "already_in_guide": 7,
+   "dup_of_earlier_playlist": 6,
+   "dropped": {
+    "needs_transcode": 10
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Angry Beavers.m3u",
+   "entries": 61,
+   "route": [
+    "existing",
+    "item-the-angry-beavers"
+   ],
+   "added": 0,
+   "already_in_guide": 11,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 50
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Girl from U.N.C.L.E.m3u",
+   "entries": 29,
+   "route": [
+    "new",
+    "girl-from-uncle",
+    "The Girl from U.N.C.L.E."
+   ],
+   "added": 29,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Invisable Man.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Midnight Run Action Pack.m3u",
+   "entries": 3,
+   "route": [
+    "other",
+    "movies",
+    "TV movies"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 3
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Protectors.m3u",
+   "entries": 58,
+   "route": [
+    "existing",
+    "item-the-protectors"
+   ],
+   "added": 0,
+   "already_in_guide": 36,
+   "dup_of_earlier_playlist": 6,
+   "dropped": {
+    "needs_transcode": 16
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Secret Life of Machines.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Sopranos.m3u",
+   "entries": 98,
+   "route": [
+    "existing",
+    "classic-the-sopranos"
+   ],
+   "added": 38,
+   "already_in_guide": 60,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Uneverse.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "The Waltons.m3u",
+   "entries": 24,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 24
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "TheSimpleLife1998.m3u",
+   "entries": 3,
+   "route": [
+    "new",
+    "the-simple-life",
+    "The Simple Life (1998)"
+   ],
+   "added": 3,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Trouble With Larry.m3u",
+   "entries": 12,
+   "route": [
+    "new",
+    "trouble-with-larry",
+    "The Trouble with Larry"
+   ],
+   "added": 12,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Tucker Carlson.m3u",
+   "entries": 31,
+   "route": [
+    "other",
+    "news",
+    "news clips"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 31
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Twighlight Zone Color 5.m3u",
+   "entries": 156,
+   "route": [
+    "new",
+    "twilight-zone-colorized",
+    "The Twilight Zone (Colorized)"
+   ],
+   "added": 84,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 72
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "WWar Color.m3u",
+   "entries": 10,
+   "route": [
+    "new",
+    "world-wars-in-colour",
+    "World Wars in Colour"
+   ],
+   "added": 10,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Walton Reunions.m3u",
+   "entries": 11,
+   "route": [
+    "new",
+    "waltons-reunion-movies",
+    "The Waltons Reunion Movies"
+   ],
+   "added": 11,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Western Movies.m3u",
+   "entries": 2,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 2
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "Yancy Derringer.m3u",
+   "entries": 34,
+   "route": [
+    "new",
+    "yancy-derringer",
+    "Yancy Derringer"
+   ],
+   "added": 34,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "airplane repo.m3u",
+   "entries": 13,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 13
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "ancient aliens 20 21.m3u",
+   "entries": 18,
+   "route": [
+    "new",
+    "ancient-aliens",
+    "Ancient Aliens"
+   ],
+   "added": 18,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "battalion2.m3u",
+   "entries": 2645,
+   "route": [
+    "skip",
+    "dump list: 1,328 Paul Harvey mp3 + videos already in Unsorted/Docs"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 2645
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "bossum buddies.m3u",
+   "entries": 37,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 37
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "get Smart.m3u",
+   "entries": 137,
+   "route": [
+    "new",
+    "get-smart",
+    "Get Smart"
+   ],
+   "added": 137,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "hillbilly elegy.m3u8",
+   "entries": 1,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 1
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "johhny Carson.m3u",
+   "entries": 6,
+   "route": [
+    "new",
+    "tonight-show-johnny-carson",
+    "The Tonight Show Starring Johnny Carson"
+   ],
+   "added": 6,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "lillyhammer.m3u",
+   "entries": 8,
+   "route": [
+    "new",
+    "lilyhammer",
+    "Lilyhammer"
+   ],
+   "added": 8,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "lonnie 1-2.m3u",
+   "entries": 52,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 52
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "man from atlantis time machine bottle neck.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 2
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "my paul harvey.m3u",
+   "entries": 1328,
+   "route": [
+    "other",
+    "audio-podcasts",
+    "Paul Harvey audio"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 1328
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "pirate high sea.m3u",
+   "entries": 8,
+   "route": [
+    "existing",
+    "item-pirates-of-the-high-seas"
+   ],
+   "added": 0,
+   "already_in_guide": 8,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "robin hood mix.m3u",
+   "entries": 17,
+   "route": [
+    "skip",
+    "unrelated clips mix"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 17
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "the addams family.m3u",
+   "entries": 90,
+   "route": [
+    "existing",
+    "item-the-addams-family"
+   ],
+   "added": 33,
+   "already_in_guide": 1,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "needs_transcode": 52,
+    "no_duration": 4
+   }
+  },
+  {
+   "folder": "Classic TV",
+   "file": "undermind 65.m3u",
+   "entries": 11,
+   "route": [
+    "existing",
+    "item-undermind"
+   ],
+   "added": 0,
+   "already_in_guide": 11,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Classic TV",
+   "file": "wagon-somthing out.m3u",
+   "entries": 6,
+   "route": "split",
+   "added": 5,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other_show_in_mixed_playlist": 1
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Adderly.m3u",
+   "entries": 43,
+   "route": [
+    "new",
+    "adderly",
+    "Adderly"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 43,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Andy G season 3.m3u",
+   "entries": 7,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 7
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Archie Bunkers Place.m3u",
+   "entries": 48,
+   "route": [
+    "series",
+    "classic-series-l4-archie-bunkers-place-complete-series",
+    "Archie Bunker's Place"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 48,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Battlestar Gallitaca.m3u",
+   "entries": 10,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 10
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Benson,227,Archie,Bette.m3u",
+   "entries": 253,
+   "route": "split",
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 253,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Benson.m3u",
+   "entries": 79,
+   "route": [
+    "new",
+    "benson",
+    "Benson"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 79,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Bette.m3u",
+   "entries": 9,
+   "route": [
+    "new",
+    "bette",
+    "Bette"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 9,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Blacksheep.m3u",
+   "entries": 5,
+   "route": [
+    "existing",
+    "item-black-sheep-squadron"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 5,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Carrol Burnett.m3u",
+   "entries": 51,
+   "route": [
+    "new",
+    "carol-burnett-show",
+    "The Carol Burnett Show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 51,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Cowerdly Dog.m3u",
+   "entries": 27,
+   "route": [
+    "new",
+    "courage-the-cowardly-dog",
+    "Courage the Cowardly Dog"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 27,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Croc Hunter.m3u",
+   "entries": 43,
+   "route": [
+    "new",
+    "crocodile-hunter-diaries",
+    "The Crocodile Hunter Diaries"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 43,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Danger man.m3u",
+   "entries": 87,
+   "route": [
+    "new",
+    "danger-man",
+    "Danger Man"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 87,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Dick van dyke 1-5.m3u",
+   "entries": 30,
+   "route": [
+    "new",
+    "dick-van-dyke-show",
+    "The Dick Van Dyke Show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 30,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Dr Hudson Secrets J.m3u",
+   "entries": 5,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 5
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Fleming.m3u",
+   "entries": 4,
+   "route": [
+    "new",
+    "fleming",
+    "Fleming: The Man Who Would Be Bond"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 4,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Good Times.m3u",
+   "entries": 46,
+   "route": [
+    "new",
+    "227",
+    "227"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 46,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Interpol calling.m3u",
+   "entries": 19,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 19
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Jack and Bobby.m3u",
+   "entries": 22,
+   "route": [
+    "series",
+    "classic-series-l4-jack-bobby-1x-01-pilot",
+    "Jack & Bobby"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 22,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Jack of all Trades.m3u",
+   "entries": 22,
+   "route": [
+    "new",
+    "jack-of-all-trades",
+    "Jack of All Trades"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 22,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Joe Biden\u2019s phone calls with former Ukraine president Poroshenko released[manifest-audio_eng=112024-video_eng=479131.m3u8].mp4.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "news clip, not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "external_url": 1,
+    "skip": 1
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Little Cheynne.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 2
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Logans Run.m3u",
+   "entries": 14,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 14
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "MAYDAY.m3u",
+   "entries": 195,
+   "route": [
+    "existing",
+    "classic-mayday"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 195,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "MIT Computing.m3u",
+   "entries": 3,
+   "route": [
+    "skip",
+    "3-episode tech how-to series; not classic TV (ask)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 3
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Maud.m3u",
+   "entries": 117,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 117
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Memorial Days1.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Mini Alex Archive.m3u",
+   "entries": 13,
+   "route": [
+    "existing",
+    "classic-ajn-archive-1"
+   ],
+   "added": 11,
+   "already_in_guide": 2,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "More War.m3u",
+   "entries": 8,
+   "route": [
+    "existing",
+    "item-doc-documentaries-misc"
+   ],
+   "added": 7,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 1,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "My Thre Sons.m3u",
+   "entries": 36,
+   "route": [
+    "new",
+    "my-three-sons",
+    "My Three Sons"
+   ],
+   "added": 36,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "New vet.m3u",
+   "entries": 6,
+   "route": [
+    "new",
+    "new-breed-vets",
+    "New Breed Vets"
+   ],
+   "added": 6,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Odysee 5.m3u",
+   "entries": 19,
+   "route": [
+    "series",
+    "classic-series-l4-odyssey-5-s01e01-e02-ws-dvdrip-xvid-bia",
+    "Odyssey 5"
+   ],
+   "added": 19,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Price is Right.m3u",
+   "entries": 18,
+   "route": [
+    "skip",
+    "E! True Hollywood Story clips, not the show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 18
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "River Monsters.m3u",
+   "entries": 57,
+   "route": [
+    "existing",
+    "classic-river-monsters"
+   ],
+   "added": 0,
+   "already_in_guide": 57,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "SpiderMan Series.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub (<3 playable episodes)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Sports Grand Prix.m3u",
+   "entries": 1,
+   "route": [
+    "skip",
+    "stub; sports, not classic TV"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "Street 2000.m3u",
+   "entries": 11,
+   "route": [
+    "new",
+    "the-street",
+    "The $treet"
+   ],
+   "added": 11,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "The Fugitive.m3u",
+   "entries": 127,
+   "route": [
+    "existing",
+    "classic-the-fugitive"
+   ],
+   "added": 66,
+   "already_in_guide": 59,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "no_duration": 1,
+    "same_episode_code_already_in_channel": 1
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "The Girl from U.N.C.L.E.m3u",
+   "entries": 29,
+   "route": [
+    "new",
+    "girl-from-uncle",
+    "The Girl from U.N.C.L.E."
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 29,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "The Midnight Run Action Pack.m3u",
+   "entries": 3,
+   "route": [
+    "other",
+    "movies",
+    "TV movies"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 3
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "The Sopranos.m3u",
+   "entries": 98,
+   "route": [
+    "existing",
+    "classic-the-sopranos"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 98,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "The Waltons.m3u",
+   "entries": 24,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 24
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "TheSimpleLife1998.m3u",
+   "entries": 3,
+   "route": [
+    "new",
+    "the-simple-life",
+    "The Simple Life (1998)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 3,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Trouble With Larry.m3u",
+   "entries": 12,
+   "route": [
+    "new",
+    "trouble-with-larry",
+    "The Trouble with Larry"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 12,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Twighlight Zone Color 5.m3u",
+   "entries": 156,
+   "route": [
+    "new",
+    "twilight-zone-colorized",
+    "The Twilight Zone (Colorized)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 84,
+   "dropped": {
+    "dark": 72
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "WWar Color.m3u",
+   "entries": 10,
+   "route": [
+    "new",
+    "world-wars-in-colour",
+    "World Wars in Colour"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 10,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "Yancy Derringer.m3u",
+   "entries": 34,
+   "route": [
+    "new",
+    "yancy-derringer",
+    "Yancy Derringer"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 34,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "ancient aliens 20 21.m3u",
+   "entries": 18,
+   "route": [
+    "new",
+    "ancient-aliens",
+    "Ancient Aliens"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 18,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "bossum buddies.m3u",
+   "entries": 37,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 37
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "get Smart.m3u",
+   "entries": 137,
+   "route": [
+    "new",
+    "get-smart",
+    "Get Smart"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 137,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "johhny Carson.m3u",
+   "entries": 6,
+   "route": [
+    "new",
+    "tonight-show-johnny-carson",
+    "The Tonight Show Starring Johnny Carson"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 6,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "lillyhammer.m3u",
+   "entries": 8,
+   "route": [
+    "new",
+    "lilyhammer",
+    "Lilyhammer"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 8,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "lonnie 1-2.m3u",
+   "entries": 52,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 52
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "news master.m3u8",
+   "entries": 100,
+   "route": [
+    "skip",
+    "all items removed from Archive"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "external_url": 100
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "petticoat.m3u",
+   "entries": 141,
+   "route": [
+    "existing",
+    "classic-petticoat"
+   ],
+   "added": 34,
+   "already_in_guide": 38,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "file_missing": 39,
+    "same_episode_code_already_in_channel": 30
+   }
+  },
+  {
+   "folder": "TV",
+   "file": "skinwalkerranch.m3u",
+   "entries": 5,
+   "route": [
+    "new",
+    "secret-of-skinwalker-ranch",
+    "The Secret of Skinwalker Ranch"
+   ],
+   "added": 5,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "TV",
+   "file": "wagon-somthing out.m3u",
+   "entries": 6,
+   "route": "split",
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 5,
+   "dropped": {
+    "other_show_in_mixed_playlist": 1
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "40 +year.m3u",
+   "entries": 377,
+   "route": [
+    "new",
+    "vhs-40-year-mixed-shows",
+    "VHS 40+ Year Mixed Shows"
+   ],
+   "added": 363,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 14
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "40+.m3u",
+   "entries": 361,
+   "route": [
+    "new",
+    "vhs-40-year-mixed-shows",
+    "VHS 40+ Year Mixed Shows"
+   ],
+   "added": 248,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "no_duration": 4,
+    "dark": 109
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "80 movies.m3u",
+   "entries": 7,
+   "route": [
+    "other",
+    "movies",
+    "TV movies"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 7
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "9000 infowars.m3u8",
+   "entries": 1789,
+   "route": [
+    "skip",
+    "news dump (1,789 clips); not added to Classic TV - ask"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1789
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "A Team.m3u",
+   "entries": 70,
+   "route": [
+    "new",
+    "a-team",
+    "The A-Team"
+   ],
+   "added": 70,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "AFHVideos.m3u",
+   "entries": 329,
+   "route": [
+    "new",
+    "americas-funniest-home-videos",
+    "America's Funniest Home Videos"
+   ],
+   "added": 169,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 160,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Academy award winner movies.m3u8",
+   "entries": 6,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 6
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Airpower1.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Alein 3.m3u",
+   "entries": 52,
+   "route": "kw",
+   "added": 20,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 18,
+   "dropped": {
+    "unrecognised_show_in_mixed_playlist": 14
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Alex 24.m3u",
+   "entries": 9831,
+   "route": [
+    "skip",
+    "news dump (9,831 clips); channel classic-alex-24 keeps its 60 - ask before adding"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 9831
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Alice.m3u",
+   "entries": 209,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 209
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "American Experiance.m3u",
+   "entries": 18,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 18
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "American Experience.m3u",
+   "entries": 329,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 329
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Ancient Aliens 1-18.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Around The World In 79 days.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Australia4BillionYears.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Avro Aero.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "BIG WESTERN ZONE.m3u",
+   "entries": 136,
+   "route": [
+    "existing",
+    "classic-big-western-zone"
+   ],
+   "added": 133,
+   "already_in_guide": 1,
+   "dup_of_earlier_playlist": 1,
+   "dropped": {
+    "dark": 1
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "BIG WESTERN ZONE_cleaned.m3u",
+   "entries": 1601,
+   "route": [
+    "existing",
+    "classic-big-western-zone"
+   ],
+   "added": 1087,
+   "already_in_guide": 59,
+   "dup_of_earlier_playlist": 135,
+   "dropped": {
+    "dark": 320
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "BIG WESTERN ZONE_cleaned_cleaned.m3u",
+   "entries": 1601,
+   "route": [
+    "existing",
+    "classic-big-western-zone"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 1281,
+   "dropped": {
+    "dark": 320
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "BW in Color.m3u",
+   "entries": 45,
+   "route": [
+    "new",
+    "colorized-classics",
+    "Colorized Classics"
+   ],
+   "added": 43,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 1,
+   "dropped": {
+    "dark": 1
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Batman 1946.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Big meme File.m3u",
+   "entries": 285,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "external_url": 285
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Blackadder.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Border Camera.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Breaking Bad 2.m3u",
+   "entries": 31,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 31
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Breaking Bad.m3u",
+   "entries": 354,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 354
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Brisco county.m3u",
+   "entries": 28,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 28
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Brother's Keeper.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "ok": 2
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Buck Rogers.m3u",
+   "entries": 32,
+   "route": [
+    "new",
+    "buck-rogers",
+    "Buck Rogers in the 25th Century"
+   ],
+   "added": 32,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Californians.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "CalypsosDream.m3u",
+   "entries": 99,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 99
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "CanadianFilm Archive.m3u",
+   "entries": 99,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 99
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Cartoon Favs.m3u",
+   "entries": 632,
+   "route": [
+    "new",
+    "cartoon-favs",
+    "Cartoon Favs"
+   ],
+   "added": 207,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 178,
+   "dropped": {
+    "dark": 240,
+    "external_url": 7
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Chico and The Man.m3u",
+   "entries": 88,
+   "route": [
+    "new",
+    "chico-and-the-man",
+    "Chico and the Man"
+   ],
+   "added": 88,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "China Beach.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 2
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Classic Music Video.m3u",
+   "entries": 8,
+   "route": [
+    "other",
+    "music",
+    "music videos"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 8
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Classic-22-12-2023.m3u",
+   "entries": 60,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "external_url": 60
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Complete Earth Studies Series.m3u",
+   "entries": 9,
+   "route": [
+    "new",
+    "complete-earth-studies",
+    "Complete Earth Studies"
+   ],
+   "added": 6,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "file_missing": 3
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "DAVE'S CLASSIC BRITISH TV & MOVIES.m3u",
+   "entries": 143,
+   "route": [
+    "existing",
+    "classic-dave-s-classic-british-tv-movies"
+   ],
+   "added": 108,
+   "already_in_guide": 31,
+   "dup_of_earlier_playlist": 4,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Dav Allen.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Default.m3u",
+   "entries": 17,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "external_url": 3,
+    "ok": 6,
+    "dark": 8
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Due South.m3u",
+   "entries": 71,
+   "route": [
+    "new",
+    "due-south",
+    "Due South"
+   ],
+   "added": 69,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "same_episode_code_already_in_channel": 2
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Face To Face.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Fanni Willis Closing Aguments.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Farm music.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Fav Twighlite Zone.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Ffth AI PIF Sixth.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Final Frontier.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "First Live IPTV.m3u",
+   "entries": 14,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "external_url": 14
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Fun Movies.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Galactica 1980.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Get Prepared, The Police State Is Here (Ep 2080).m3u",
+   "entries": 4,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 4
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Get Some In.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Hanna Barbara.m3u",
+   "entries": 136,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 135,
+    "ok": 1
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "History play in order.m3u",
+   "entries": 79,
+   "route": [
+    "new",
+    "history-play-in-order",
+    "History (Play in Order)"
+   ],
+   "added": 79,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Honey mooners.m3u",
+   "entries": 261,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 261
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Info Survior.m3u",
+   "entries": 1155,
+   "route": [
+    "skip",
+    "moved to the Cable TV guide as INFO WARS SURVIVAL (2026-10-08)"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 1155
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Inspector Morse.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Irish RTE.m3u",
+   "entries": 256,
+   "route": [
+    "new",
+    "irish-rte",
+    "Irish RTE"
+   ],
+   "added": 50,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 5,
+   "dropped": {
+    "dark": 4,
+    "movie_in_series_playlist": 197
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "It's Always Sunny in Philadelphia.m3u",
+   "entries": 163,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 163
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "James Coburn's Darkroom.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Joe Biden says he's built most extensive  voter fraud  org in history.mp4.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Kirby Cartoons.m3u",
+   "entries": 203,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 201,
+    "ok": 2
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "LOM.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Liberal Hivemind2.m3u",
+   "entries": 41,
+   "route": [
+    "existing",
+    "classic-liberal-hivemind2"
+   ],
+   "added": 38,
+   "already_in_guide": 3,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "MIT Comp2.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Memorial Days.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "Mini Movie Aus.m3u",
+   "entries": 3,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "ok": 3
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "Mixed Brit.m3u",
+   "entries": 9,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "ok": 2,
+    "needs_transcode": 7
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "all big movies.m3u",
+   "entries": 111,
+   "route": [
+    "other",
+    "movies",
+    "movie"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "other": 109,
+    "external_url": 2
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "banamine.m3u",
+   "entries": 5806,
+   "route": [
+    "skip",
+    "5,806-row mixed dump incl. 2,656 audio files; belongs to Audio, not Classic TV"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "skip": 5806
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "banamine_cleaned.m3u",
+   "entries": 610,
+   "route": "kw",
+   "added": 445,
+   "already_in_guide": 1,
+   "dup_of_earlier_playlist": 13,
+   "dropped": {
+    "unrecognised_show_in_mixed_playlist": 111,
+    "same_episode_code_already_in_channel": 21,
+    "no_duration": 5,
+    "skip": 14
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "banned 4-12-24.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "bannedvideo.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "batt1.m3u",
+   "entries": 18,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "ok": 15,
+    "nonmedia": 3
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "bbc natrual.m3u",
+   "entries": 89,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "file_missing": 89
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "benny lucy ourgang.m3u",
+   "entries": 532,
+   "route": "kw",
+   "added": 141,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "unrecognised_show_in_mixed_playlist": 2,
+    "same_episode_code_already_in_channel": 1,
+    "dark": 388
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "best of UFC.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "bob newhart.m3u",
+   "entries": 147,
+   "route": [
+    "new",
+    "bob-newhart-show",
+    "The Bob Newhart Show"
+   ],
+   "added": 147,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "british-war-movies.m3u",
+   "entries": 205,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 205
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "bugs.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "classic still rock.m3u",
+   "entries": 10,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "ok": 10
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "color history.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "colorizeed movies.m3u",
+   "entries": 63,
+   "route": [
+    "new",
+    "colorized-classics",
+    "Colorized Classics"
+   ],
+   "added": 46,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 10,
+   "dropped": {
+    "private": 7
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "cousteau.m3u",
+   "entries": 42,
+   "route": [
+    "new",
+    "cousteau-odyssey",
+    "The Cousteau Odyssey"
+   ],
+   "added": 18,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "no_duration": 24
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "dark legacy.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "doc moviemix.m3u",
+   "entries": 2,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "ok": 2
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "donner pass.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "fact-fake-news.m3u",
+   "entries": 73,
+   "route": [
+    "existing",
+    "classic-fact-fake-news"
+   ],
+   "added": 58,
+   "already_in_guide": 9,
+   "dup_of_earlier_playlist": 6,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "galxytv.m3u",
+   "entries": 3,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "external_url": 3
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "green acres 1-2.m3u",
+   "entries": 30,
+   "route": [
+    "new",
+    "green-acres",
+    "Green Acres"
+   ],
+   "added": 30,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "hogans.m3u",
+   "entries": 95,
+   "route": [
+    "series",
+    "classic-series-hogans-heroes",
+    "Hogan's Heroes"
+   ],
+   "added": 95,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "imax.m3u",
+   "entries": 0,
+   "route": [
+    "skip",
+    "not routed: empty file"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "knockitoffnow89.m3u",
+   "entries": 642,
+   "route": "kw",
+   "added": 387,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 254,
+    "unrecognised_show_in_mixed_playlist": 1
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "lhop.m3u",
+   "entries": 107,
+   "route": [
+    "new",
+    "little-house-on-the-prairie",
+    "Little House on the Prairie"
+   ],
+   "added": 105,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "same_episode_code_already_in_channel": 2
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "list1 cartoons radio.m3u",
+   "entries": 120,
+   "route": [
+    "new",
+    "cartoon-favs",
+    "Cartoon Favs"
+   ],
+   "added": 67,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "dark": 53
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "mamas family'.m3u",
+   "entries": 17,
+   "route": [
+    "new",
+    "mamas-family",
+    "Mama's Family"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 17,
+   "dropped": {}
+  },
+  {
+   "folder": "Mixed",
+   "file": "mars Rising.m3u",
+   "entries": 6,
+   "route": [
+    "skip",
+    "not routed: no playable TV episodes / not a TV show"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 0,
+   "dropped": {
+    "ok": 6
+   }
+  },
+  {
+   "folder": "Mixed",
+   "file": "merged_playlist.m3u",
+   "entries": 84,
+   "route": [
+    "new",
+    "americas-funniest-home-videos",
+    "America's Funniest Home Videos"
+   ],
+   "added": 0,
+   "already_in_guide": 0,
+   "dup_of_earlier_playlist": 84,
+   "dropped": {}
+  },
+  {
+   "folder": "Movies",
+   "file": "21movies.m3u",
+   "entries": 22,
+   "status": {
+    "ok:video": 22
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Movies",
+   "file": "Amish Films.m3u",
+   "entries": 4,
+   "status": {
+    "ok:video": 4
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Movies",
+   "file": "My Brothers Keeper.m3u",
+   "entries": 1,
+   "status": {
+    "ok:video": 1
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Movies",
+   "file": "Science Fiction Theatre.m3u",
+   "entries": 60,
+   "status": {
+    "ok:video": 60
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Movies",
+   "file": "Thriller.m3u",
+   "entries": 1,
+   "status": {
+    "ok:video": 1
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Movies",
+   "file": "hexia Movies.m3u",
+   "entries": 67,
+   "status": {
+    "ok:video": 67
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "AC Mix.m3u",
+   "entries": 438,
+   "status": {
+    "no_duration": 237,
+    "ok:audio": 200,
+    "dark": 1
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "Billboard80-90.m3u",
+   "entries": 233,
+   "status": {
+    "no_duration": 200,
+    "ok:audio": 20,
+    "nonmedia": 13
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "Eagles.m3u",
+   "entries": 189,
+   "status": {
+    "no_duration": 177,
+    "ok:audio": 12
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "Jazz mix.m3u",
+   "entries": 99,
+   "status": {
+    "ok:audio": 96,
+    "dark": 3
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "K Tel Records.m3u",
+   "entries": 1,
+   "status": {
+    "ok:video": 1
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "Rythm Blues.m3u",
+   "entries": 31,
+   "status": {
+    "ok:video": 29,
+    "no_duration": 2
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "Top of The Pops.m3u",
+   "entries": 84,
+   "status": {
+    "ok:video": 80,
+    "no_duration": 4
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "gratful dead 1977.m3u",
+   "entries": 22,
+   "status": {
+    "no_duration": 22
+   },
+   "route": "not wired (report only)"
+  },
+  {
+   "folder": "Music",
+   "file": "music mixer.m3u",
+   "entries": 849,
+   "status": {
+    "ok:audio": 832,
+    "no_duration": 17
+   },
+   "route": "not wired (report only)"
+  }
+ ],
+ "unrouted": [],
+ "other_contracts": {
+  "movies": [
+   "Classic TV/90s movies.m3u",
+   "Classic TV/Bogart Movies.m3u",
+   "Classic TV/Dog Day Afternoon.m3u",
+   "Classic TV/Primrose Greengage BW Movies.m3u",
+   "Classic TV/The Midnight Run Action Pack.m3u",
+   "Classic TV/Western Movies.m3u",
+   "Classic TV/hillbilly elegy.m3u8",
+   "Mixed/80 movies.m3u",
+   "Mixed/Academy award winner movies.m3u8",
+   "Mixed/CanadianFilm Archive.m3u",
+   "Mixed/Irish RTE.m3u",
+   "Mixed/all big movies.m3u",
+   "TV/The Midnight Run Action Pack.m3u"
+  ],
+  "music": [
+   "Classic TV/Best video shorts music.m3u",
+   "Classic TV/Micheal Jackson Live.m3u",
+   "Mixed/Classic Music Video.m3u"
+  ],
+  "audio-podcasts": [
+   "Classic TV/Feb PODCASTS 24.m3u",
+   "Classic TV/my paul harvey.m3u"
+  ],
+  "news": [
+   "Classic TV/Tucker Carlson.m3u"
+  ]
+ },
+ "new_channels": {
+  "org-227": {
+   "name": "227",
+   "episodes": 92
+  },
+  "org-a-team": {
+   "name": "The A-Team",
+   "episodes": 70
+  },
+  "org-adam-12": {
+   "name": "Adam-12",
+   "episodes": 26
+  },
+  "org-adderly": {
+   "name": "Adderly",
+   "episodes": 43
+  },
+  "org-alfred-hitchcock-hour": {
+   "name": "The Alfred Hitchcock Hour",
+   "episodes": 6
+  },
+  "org-americas-funniest-home-videos": {
+   "name": "America's Funniest Home Videos",
+   "episodes": 169
+  },
+  "org-ancient-aliens": {
+   "name": "Ancient Aliens",
+   "episodes": 38
+  },
+  "org-benny-hill-show": {
+   "name": "The Benny Hill Show",
+   "episodes": 109
+  },
+  "org-benson": {
+   "name": "Benson",
+   "episodes": 109
+  },
+  "org-bette": {
+   "name": "Bette",
+   "episodes": 18
+  },
+  "org-bob-newhart-show": {
+   "name": "The Bob Newhart Show",
+   "episodes": 170
+  },
+  "org-buck-rogers": {
+   "name": "Buck Rogers in the 25th Century",
+   "episodes": 32
+  },
+  "org-cannon": {
+   "name": "Cannon",
+   "episodes": 25
+  },
+  "org-carter-country": {
+   "name": "Carter Country",
+   "episodes": 30
+  },
+  "org-cartoon-favs": {
+   "name": "Cartoon Favs",
+   "episodes": 274
+  },
+  "org-chico-and-the-man": {
+   "name": "Chico and the Man",
+   "episodes": 88
+  },
+  "org-classic-documentaries": {
+   "name": "Classic Documentaries",
+   "episodes": 12
+  },
+  "org-colorized-classics": {
+   "name": "Colorized Classics",
+   "episodes": 89
+  },
+  "org-complete-earth-studies": {
+   "name": "Complete Earth Studies",
+   "episodes": 6
+  },
+  "org-courage-the-cowardly-dog": {
+   "name": "Courage the Cowardly Dog",
+   "episodes": 27
+  },
+  "org-cousteau-odyssey": {
+   "name": "The Cousteau Odyssey",
+   "episodes": 18
+  },
+  "org-crocodile-hunter-diaries": {
+   "name": "The Crocodile Hunter Diaries",
+   "episodes": 43
+  },
+  "org-danger-man": {
+   "name": "Danger Man",
+   "episodes": 87
+  },
+  "org-dave-allen-at-large": {
+   "name": "Dave Allen at Large",
+   "episodes": 10
+  },
+  "org-don-rickles": {
+   "name": "Don Rickles",
+   "episodes": 24
+  },
+  "org-dual-survival": {
+   "name": "Dual Survival",
+   "episodes": 24
+  },
+  "org-due-south": {
+   "name": "Due South",
+   "episodes": 69
+  },
+  "org-eastwick": {
+   "name": "Eastwick",
+   "episodes": 13
+  },
+  "org-fleming": {
+   "name": "Fleming: The Man Who Would Be Bond",
+   "episodes": 4
+  },
+  "org-get-smart": {
+   "name": "Get Smart",
+   "episodes": 137
+  },
+  "org-girl-from-uncle": {
+   "name": "The Girl from U.N.C.L.E.",
+   "episodes": 29
+  },
+  "org-green-acres": {
+   "name": "Green Acres",
+   "episodes": 30
+  },
+  "org-hex": {
+   "name": "Hex",
+   "episodes": 19
+  },
+  "org-history-play-in-order": {
+   "name": "History (Play in Order)",
+   "episodes": 79
+  },
+  "org-hotel": {
+   "name": "Hotel",
+   "episodes": 115
+  },
+  "org-in-search-of": {
+   "name": "In Search Of...",
+   "episodes": 16
+  },
+  "org-indebted": {
+   "name": "Indebted",
+   "episodes": 12
+  },
+  "org-irish-rte": {
+   "name": "Irish RTE",
+   "episodes": 50
+  },
+  "org-jack-of-all-trades": {
+   "name": "Jack of All Trades",
+   "episodes": 22
+  },
+  "org-jeff-foxworthy-show": {
+   "name": "The Jeff Foxworthy Show",
+   "episodes": 41
+  },
+  "org-lilyhammer": {
+   "name": "Lilyhammer",
+   "episodes": 8
+  },
+  "org-little-house-on-the-prairie": {
+   "name": "Little House on the Prairie",
+   "episodes": 105
+  },
+  "org-mamas-family": {
+   "name": "Mama's Family",
+   "episodes": 17
+  },
+  "org-mary-tyler-moore-show": {
+   "name": "The Mary Tyler Moore Show",
+   "episodes": 12
+  },
+  "org-my-favorite-martian": {
+   "name": "My Favorite Martian",
+   "episodes": 37
+  },
+  "org-my-three-sons": {
+   "name": "My Three Sons",
+   "episodes": 36
+  },
+  "org-new-breed-vets": {
+   "name": "New Breed Vets",
+   "episodes": 6
+  },
+  "org-newsradio": {
+   "name": "NewsRadio",
+   "episodes": 99
+  },
+  "org-route-66": {
+   "name": "Route 66",
+   "episodes": 12
+  },
+  "org-secret-of-skinwalker-ranch": {
+   "name": "The Secret of Skinwalker Ranch",
+   "episodes": 5
+  },
+  "org-seduced-inside-the-nxivm-cult": {
+   "name": "Seduced Inside The Nxivm Cult",
+   "episodes": 4
+  },
+  "org-shock-and-awe-the-story-of-electricity": {
+   "name": "Shock And Awe The Story Of Electricity",
+   "episodes": 3
+  },
+  "org-something-is-out-there": {
+   "name": "Something Is Out There (1988)",
+   "episodes": 5
+  },
+  "org-spycraft": {
+   "name": "Spycraft",
+   "episodes": 8
+  },
+  "org-still-standing": {
+   "name": "Still Standing",
+   "episodes": 88
+  },
+  "org-surviving-jeffrey-epstein": {
+   "name": "Surviving Jeffrey Epstein",
+   "episodes": 4
+  },
+  "org-the-new-addams-family": {
+   "name": "The New Addams Family",
+   "episodes": 65
+  },
+  "org-the-rifleman": {
+   "name": "The Rifleman",
+   "episodes": 99
+  },
+  "org-the-simple-life": {
+   "name": "The Simple Life (1998)",
+   "episodes": 3
+  },
+  "org-the-street": {
+   "name": "The $treet",
+   "episodes": 11
+  },
+  "org-the-waltons": {
+   "name": "The Waltons",
+   "episodes": 13
+  },
+  "org-tonight-show-johnny-carson": {
+   "name": "The Tonight Show Starring Johnny Carson",
+   "episodes": 6
+  },
+  "org-trouble-with-larry": {
+   "name": "The Trouble with Larry",
+   "episodes": 12
+  },
+  "org-twilight-zone-colorized": {
+   "name": "The Twilight Zone (Colorized)",
+   "episodes": 84
+  },
+  "org-veronicas-closet": {
+   "name": "Veronica's Closet",
+   "episodes": 4
+  },
+  "org-vhs-40-year-mixed-shows": {
+   "name": "VHS 40+ Year Mixed Shows",
+   "episodes": 611
+  },
+  "org-wagon-train": {
+   "name": "Wagon Train",
+   "episodes": 65
+  },
+  "org-waltons-reunion-movies": {
+   "name": "The Waltons Reunion Movies",
+   "episodes": 11
+  },
+  "org-world-wars-in-colour": {
+   "name": "World Wars in Colour",
+   "episodes": 10
+  },
+  "org-yancy-derringer": {
+   "name": "Yancy Derringer",
+   "episodes": 34
+  }
+ },
+ "merged_into_existing": {
+  "classic-70-odd-couple": 1,
+  "classic-series-l4-archie-bunkers-place-complete-series": 97,
+  "org-carol-burnett-show": 51,
+  "org-dick-van-dyke-show": 31,
+  "item-doc-documentaries-misc": 19,
+  "classic-series-hogans-heroes": 148,
+  "classic-series-l4-jack-bobby-1x-01-pilot": 22,
+  "classic-mayday": 143,
+  "classic-petticoat": 176,
+  "classic-the-sopranos": 38,
+  "item-the-addams-family": 96,
+  "classic-ajn-archive-1": 11,
+  "classic-series-l4-odyssey-5-s01e01-e02-ws-dvdrip-xvid-bia": 19,
+  "classic-the-fugitive": 66,
+  "classic-big-western-zone": 1220,
+  "classic-dave-s-classic-british-tv-movies": 108,
+  "classic-liberal-hivemind2": 38,
+  "classic-rat-patrol": 1,
+  "classic-fact-fake-news": 58
+ },
+ "stub_channels_not_created": {
+  "org-the-alaska-triangle": 1,
+  "org-mysteries-at-the-museum": 1,
+  "org-beyond-the-unknown": 1,
+  "org-love-lucy": 1,
+  "org-bewitched": 1,
+  "org-stories-of-the-century": 1,
+  "org-newhart": 1
+ },
+ "promoted_from_unsorted": 36
+}

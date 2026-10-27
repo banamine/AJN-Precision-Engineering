@@ -12,11 +12,10 @@ import {
   X,
   Box,
 } from 'lucide-react';
-import { Destination, NowPlayingMedia } from '../types';
+import { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { SuggestInput } from './SuggestInput';
 import type { SuggestCandidate } from '../utils/suggest';
-import { useArchiveStatus } from '../hooks/useArchiveStatus';
-import { ArchiveOutageBanner } from './ArchiveOutageBanner';
+import { StatusIndicators } from './StatusIndicators';
 
 interface NavigationProps {
   currentDestination: Destination;
@@ -26,6 +25,8 @@ interface NavigationProps {
   onSearch?: (query: string) => void;
   /** Candidates for the auto-fill dropdown (recent searches, favorites, history, seed topics). */
   suggestions?: SuggestCandidate[];
+  /** Used by the News status report's "Play" buttons (opened only on click). */
+  onPlayProgram?: PlayProgramCallback;
 }
 
 interface NavItemConfig {
@@ -39,11 +40,11 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
   { id: 'home', label: 'Home', icon: Home, description: 'Live broadcast & featured feeds' },
   { id: 'tv-guide', label: 'TV Guide', icon: Tv, description: '24-hour program schedule grid' },
   { id: 'player', label: 'Player', icon: PlayCircle, description: 'Active broadcast monitor' },
-  { id: 'news', label: 'News', icon: Newspaper, description: 'Live Rumble news wall' },
+  { id: 'news', label: 'News', icon: Newspaper, description: 'Rumble, YouTube & Banned Video walls' },
   { id: 'radio', label: 'AJN Radio', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
   { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played' },
   { id: 'library', label: 'Library', icon: FolderArchive, description: 'Curated archives & vaults' },
-  { id: 'search', label: 'Search', icon: Search, description: 'Archive.org TV News search' },
+  { id: 'search', label: 'Search', icon: Search, description: 'TV News search' },
 ];
 
 const DESKTOP_PRIMARY: NavItemConfig[] = [
@@ -76,8 +77,8 @@ export function Navigation({
   nowPlaying,
   onSearch,
   suggestions = [],
+  onPlayProgram,
 }: NavigationProps) {
-  const archiveStatus = useArchiveStatus();
   const [vaultOpen, setVaultOpen] = useState(false);
   const vaultRef = useRef<HTMLDivElement>(null);
   const closeVault = React.useCallback(() => setVaultOpen(false), []);
@@ -134,7 +135,7 @@ export function Navigation({
               className="flex items-center gap-2 sm:gap-2.5 rounded-lg text-left transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 min-h-[44px] min-w-[44px] py-1 px-1 -ml-1 cursor-pointer touch-manipulation"
             >
               <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25">
-                <Radio className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse" />
+                <Radio className="h-4 w-4 sm:h-5 sm:w-5 motion-safe:animate-pulse" />
               </div>
               <div className="hidden lg:flex flex-col min-w-0">
                 <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-100 truncate">
@@ -181,7 +182,7 @@ export function Navigation({
                   {/* Active playing indicator badge on Player tab */}
                   {hasBadge && (
                     <span className="relative flex h-2 w-2 ml-0.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                   )}
@@ -236,7 +237,8 @@ export function Navigation({
           </nav>
 
           {/* Right Header Utility: Dev Mode Access & Stream Status */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <StatusIndicators onPlayProgram={onPlayProgram} />
             <form
               ref={searchRef}
               role="search"
@@ -281,10 +283,10 @@ export function Navigation({
                 type="button"
                 id="header-now-playing-pill"
                 onClick={() => onNavigate('player')}
-                className="hidden lg:flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
+                className="hidden xl:flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
                 title={`Now Playing: ${nowPlaying.title}`}
               >
-                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
                 <span className="max-w-[140px] truncate font-medium text-neutral-200">
                   {nowPlaying.title}
                 </span>
@@ -293,7 +295,6 @@ export function Navigation({
 
           </div>
         </div>
-        <ArchiveOutageBanner state={archiveStatus.state} />
       </header>
 
       {/* ── Mobile Bottom Fixed Tab Bar ────────────────────────────────────────── */}
@@ -324,7 +325,7 @@ export function Navigation({
                 <Icon className={`h-[18px] w-[18px] sm:h-5 sm:w-5 transition-transform ${isActive ? 'text-sky-400 scale-105' : 'text-neutral-400'}`} />
                 {hasBadge && (
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                   </span>
                 )}

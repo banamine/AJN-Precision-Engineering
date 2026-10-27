@@ -5,7 +5,8 @@
     "showAfterMs": 1500,
     "rotateMs": 3600,
     "slowAfterMs": 15000,
-    "retryAfterMs": 25000
+    "retryAfterMs": 25000,
+    "archiveRotateMs": 4000
   },
   "kinds": {
     "loading": {
@@ -156,6 +157,68 @@
       {
         "short": "T.O.A.S.T.",
         "long": "Transmission Of A Slightly Toasty Track"
+      }
+    ],
+    "archive": [
+      {
+        "short": "W.A.I.T.",
+        "long": "Web Archive Is Thinking…"
+      },
+      {
+        "short": "A.R.C.H.I.V.E.",
+        "long": "Archive Retrieval Can Happen In Various Eons"
+      },
+      {
+        "short": "P.A.T.I.E.N.C.E.",
+        "long": "Please Allow The Internet’s Elderly Network A Couple Extra Seconds"
+      },
+      {
+        "short": "B.R.B.",
+        "long": "Buffering, Retrieving, Browsing"
+      },
+      {
+        "short": "H.O.L.D.",
+        "long": "History’s Out Looking for Data"
+      },
+      {
+        "short": "S.N.O.O.Z.E.",
+        "long": "Seeking Nostalgic Old Online Zines Eventually"
+      },
+      {
+        "short": "T.I.M.E.",
+        "long": "The Internet’s Memory’s Evolving"
+      },
+      {
+        "short": "C.R.A.W.L.",
+        "long": "Checking Records Across the Web’s Long-ago"
+      },
+      {
+        "short": "F.E.T.C.H.",
+        "long": "Finding Everything That Came Here"
+      },
+      {
+        "short": "D.I.G.",
+        "long": "Delving Into the Good-old-web"
+      },
+      {
+        "short": "A.W.A.I.T.",
+        "long": "Archive’s Working; Any Instant, Probably"
+      },
+      {
+        "short": "W.A.F.F.L.E.",
+        "long": "Waiting As Forgotten Files Load Eventually"
+      },
+      {
+        "short": "S.L.O.W.",
+        "long": "Searching Lost Online Wonders"
+      },
+      {
+        "short": "G.H.O.S.T.",
+        "long": "Going Hunting for Old Site Treasures"
+      },
+      {
+        "short": "4 S.E.C.O.N.D.S.",
+        "long": "Four Seconds Encouraging Collectors Of Old Networked Data to Search"
       }
     ]
   },

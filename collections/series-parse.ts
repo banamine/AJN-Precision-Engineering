@@ -27,6 +27,9 @@ export function parseEpisodeName(fileName: string): ParsedName | null {
   if (m) return { season: +m[1], episode: +m[2], title: clean(m[3]) };
   m = stem.match(/^\s*episode\s*(\d{1,3})(?!\d)(.*)$/i);
   if (m) return { episode: +m[1], title: clean(m[2]) };
+  // Single-season uploads named "Rob E01 (Pilot)": a bare E-number after a space, no season in the name.
+  m = stem.match(/(?:^|\s)E(\d{1,3})(?!\d)(.*)$/);
+  if (m) return { episode: +m[1], title: clean(m[2]) };
   return null;
 }
 

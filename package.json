@@ -95,13 +95,16 @@
     "test:channels-2": "tsx test-live-news-merge.ts && tsx test-amc-phase2.ts && tsx test-infowars-radio.ts && tsx test-live-news-channels.ts",
     "test:radio-ui": "tsx test-audio-asr.ts && tsx test-radio-caption-track.ts && tsx test-caption-strip-output.tsx && tsx test-radio-accents.ts && tsx test-radio-groups.ts && tsx test-station-banner-render.tsx",
     "test:player-lane": "tsx test-video-prefetch.ts && tsx test-video-prefetch-local.mjs && tsx test-thumbnail-lane.mjs",
+    "test:archive-subtitles": "tsx test-archive-subtitles.ts && tsx test-archive-retry-wait.ts",
     "test:resume-prompt": "tsx test-resume-prompt-fade.ts",
     "test:guide-ui": "tsx test-epg-aired-time.tsx && tsx test-classic-light-guide.mjs && tsx test-audio-light-guide.mjs",
     "test:light-guides": "tsx test-classic-light-schedule.ts && tsx test-audio-light-schedule.ts && tsx test-audio-light-client.ts && tsx test-channel-schedule-pool.ts && tsx test-load-schedule.ts && tsx src/guide/scheduleCache.test.ts",
     "test:series": "tsx test-series.ts",
     "test:thumbnail": "tsx test-thumbnail.ts",
     "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx",
-    "test:archive-music-title": "tsx test-archive-music-title.ts"
+    "test:archive-music-title": "tsx test-archive-music-title.ts",
+    "test:bannedvideo": "tsx src/bannedvideo/bannedvideo.test.ts && tsx test-bannedvideo-integration.ts",
+    "test:live-hls": "node tools/checks/live-hls-probe.cjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

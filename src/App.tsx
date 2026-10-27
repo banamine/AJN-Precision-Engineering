@@ -1,5 +1,4 @@
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { NewsReadyNotice } from './components/NewsReadyNotice';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
@@ -50,9 +49,15 @@ function restoreLastAudio(): NowPlayingMedia | null {
   return { ...last, startAtSeconds: at > 5 ? at : undefined, restoredPaused: true };
 }
 
+/** /bannedvideo (no hash) opens News; NewsTabs selects the BANNED VIDEO tab. */
+function isBannedVideoPath(): boolean {
+  return typeof window !== 'undefined' && /\/bannedvideo\/?$/i.test(window.location.pathname);
+}
+
 function getDestinationFromHash(): Destination {
   if (typeof window === 'undefined') return 'home';
   const hash = window.location.hash.replace('#', '').toLowerCase();
+  if (!hash && isBannedVideoPath()) return 'news';
   switch (hash) {
     case 'tv-guide':
     case 'guide':
@@ -64,7 +69,8 @@ function getDestinationFromHash(): Destination {
     case 'search': return 'search';
     case 'today': return 'today';
     case 'history': return 'history';
-    case 'news': return 'news';
+    case 'news':
+    case 'bannedvideo': return 'news';
     case 'news-cube': return 'news-cube';
     case 'radio':
     case 'ajn-radio': return 'radio';
@@ -76,7 +82,7 @@ function getDestinationFromHash(): Destination {
 }
 
 function getInitialView(): { destination: Destination; fromStorage: boolean } {
-  if (typeof window === 'undefined' || window.location.hash) {
+  if (typeof window === 'undefined' || window.location.hash || isBannedVideoPath()) {
     return { destination: getDestinationFromHash(), fromStorage: false };
   }
   const saved = loadLastView(VALID_DESTINATIONS);
@@ -296,7 +302,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
-      <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
+      <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
       <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${nowPlaying && destination !== 'player' ? 'pb-[13rem] md:pb-[10rem]' : 'pb-20 md:pb-8'}`}>
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full">
@@ -390,7 +396,6 @@ export default function App() {
           </div>
         )}
       </main>
-      <NewsReadyNotice onPlay={handlePlayProgram} />
       <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={Boolean(nowPlaying) && destination !== 'player'} />
       <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
       {nowPlaying && destination !== 'player' && (

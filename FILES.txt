@@ -1,0 +1,6 @@
+AJN classifier fix (2026-10-25) — restores two rules the latest AI Studio edit dropped.
+Before sizes in AI Studio: src/utils/archiveFailure.ts 2825 bytes; test-archive-failure.ts 999 bytes.
+src/utils/archiveFailure.ts  keeps the new "slow" path; adds connect-timeout to it; restores
+                             "proxy 504 = overloaded" and "no answer after 3 attempts = overloaded" (skip, don't hammer Archive)
+test-archive-failure.ts      covers slow/circuit-open/connect-timeout and the restored rules
+Check: npx tsx test-archive-failure.ts  ->  archive failure: all passed

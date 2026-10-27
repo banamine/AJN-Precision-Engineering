@@ -53,6 +53,10 @@ interface OverlayProps {
   enabled: boolean;
   /** Video: subdued strip; audio: ambient fill; Live Radio briefing: reserved bottom strip. */
   mode: "video" | "audio" | "audio-briefing";
+  /** Visual style: "solid" (opacity 0.85) or "transparent" / "semi-transparent" (opacity 0.4). Defaults to "transparent". */
+  style?: "solid" | "transparent" | "semi-transparent" | React.CSSProperties;
+  variant?: "solid" | "transparent" | "semi-transparent";
+  styleVariant?: "solid" | "transparent" | "semi-transparent";
 }
 
 /**
@@ -60,10 +64,86 @@ interface OverlayProps {
  * The requestAnimationFrame loop runs only while enabled, the tab is visible and the canvas is on screen;
  * otherwise it is cancelled and the canvas cleared.
  */
-export function AudioVisualizerOverlay({ analyser, enabled, mode }: OverlayProps) {
+export function AudioVisualizerOverlay({ analyser, enabled, mode, style, variant, styleVariant }: OverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [onScreen, setOnScreen] = useState(true);
   const [tabVisible, setTabVisible] = useState(() => typeof document === "undefined" || document.visibilityState !== "hidden");
+  const [controlsBottom, setControlsBottom] = useState<number | null>(null);
+  const [controlsVisible, setControlsVisible] = useState(true);
+
+  const isSolid = variant === "solid" || styleVariant === "solid" || style === "solid";
+  const customStyle = typeof style === "object" ? style : undefined;
+  const targetOpacity = isSolid ? 0.85 : 0.4;
+
+  useEffect(() => {
+    if (mode !== "video") return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
+
+    const updateControls = () => {
+      const transport =
+        parent.querySelector<HTMLElement>('[data-testid="player-transport"]') ||
+        document.querySelector<HTMLElement>('[data-testid="player-transport"]');
+
+      if (!transport) {
+        setControlsBottom(null);
+        return;
+      }
+
+      const cs = typeof window !== "undefined" ? window.getComputedStyle(transport) : null;
+      const isHidden = Boolean(
+        transport.classList.contains("opacity-0") ||
+        cs?.opacity === "0" ||
+        cs?.display === "none" ||
+        cs?.visibility === "hidden"
+      );
+      setControlsVisible(!isHidden);
+
+      const bottomOffset = cs ? (parseFloat(cs.bottom) || 0) : 0;
+      const h = transport.offsetHeight || transport.getBoundingClientRect().height;
+      if (h > 0) {
+        setControlsBottom(Math.round(h + bottomOffset));
+      } else {
+        const isSm = typeof window !== "undefined" && window.innerWidth >= 640;
+        setControlsBottom(isSm ? 56 + 12 : 80 + 8);
+      }
+    };
+
+    updateControls();
+    const transport =
+      parent.querySelector<HTMLElement>('[data-testid="player-transport"]') ||
+      document.querySelector<HTMLElement>('[data-testid="player-transport"]');
+
+    let mo: MutationObserver | null = null;
+    let ro: ResizeObserver | null = null;
+
+    if (transport && typeof MutationObserver !== "undefined") {
+      mo = new MutationObserver(updateControls);
+      mo.observe(transport, { attributes: true, attributeFilter: ["class", "style"] });
+    }
+    if (transport && typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(updateControls);
+      ro.observe(transport);
+      if (parent) ro.observe(parent);
+    }
+
+    const onWake = () => requestAnimationFrame(updateControls);
+    parent.addEventListener("mousemove", onWake, { passive: true });
+    parent.addEventListener("pointerdown", onWake, { passive: true });
+    parent.addEventListener("touchstart", onWake, { passive: true });
+    parent.addEventListener("keydown", onWake, { passive: true });
+
+    return () => {
+      mo?.disconnect();
+      ro?.disconnect();
+      parent.removeEventListener("mousemove", onWake);
+      parent.removeEventListener("pointerdown", onWake);
+      parent.removeEventListener("touchstart", onWake);
+      parent.removeEventListener("keydown", onWake);
+    };
+  }, [mode]);
 
   useEffect(() => {
     const el = canvasRef.current;
@@ -98,8 +178,8 @@ export function AudioVisualizerOverlay({ analyser, enabled, mode }: OverlayProps
     ro?.observe(canvas);
 
     const data = new Uint8Array(analyser.frequencyBinCount);
-    const alphaTop = mode === "video" ? 0.35 : 0.7;
-    const alphaBottom = mode === "video" ? 0.05 : 0.15;
+    const alphaTop = mode === "video" ? (isSolid ? 0.95 : 0.35) : 0.7;
+    const alphaBottom = mode === "video" ? (isSolid ? 0.25 : 0.05) : 0.15;
     let raf = 0;
     const draw = () => {
       analyser.getByteFrequencyData(data);
@@ -118,21 +198,35 @@ export function AudioVisualizerOverlay({ analyser, enabled, mode }: OverlayProps
     };
     raf = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(raf); ro?.disconnect(); clear(); };
-  }, [run, analyser, mode]);
+  }, [run, analyser, mode, isSolid]);
+
+  const videoOverlayStyle: React.CSSProperties = {
+    position: controlsBottom !== null ? "absolute" : "relative",
+    left: 0,
+    right: 0,
+    height: 48,
+    bottom: controlsBottom !== null ? controlsBottom : undefined,
+    pointerEvents: "none",
+    opacity: controlsVisible ? targetOpacity : 0,
+    transition: "opacity 300ms ease",
+    zIndex: 15,
+    ...customStyle,
+  };
 
   return (
     <canvas
       ref={canvasRef}
       data-testid="visualizer-overlay"
       data-running={run ? "1" : "0"}
+      data-style={isSolid ? "solid" : "transparent"}
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-x-0 w-full ${
-        // video: a strip that sits ABOVE the floating transport; audio: fills its own stage, behind the album art (z-1 < art z-2 < controls z-10)
+      style={mode === "video" ? videoOverlayStyle : customStyle}
+      className={`pointer-events-none ${
         mode === "video"
-          ? "bottom-[6.5rem] z-10 h-10 sm:bottom-[4.5rem]"
+          ? `${controlsBottom !== null ? "absolute inset-x-0" : "relative"} w-full`
           : mode === "audio-briefing"
-            ? "bottom-0 z-[4] h-10"
-            : "inset-0 z-[1] h-full"
+            ? "absolute inset-x-0 bottom-0 z-[4] h-10 w-full"
+            : "absolute inset-0 z-[1] h-full w-full"
       }`}
     />
   );
