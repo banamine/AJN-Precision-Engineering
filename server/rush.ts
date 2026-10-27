@@ -9,7 +9,7 @@ import * as nodePath from 'node:path';
 import { archiveApiFetch } from './archiveLimiter';
 
 export interface RushIndexEntry { id: string; date: string; year: number; }
-export interface RushTrack { file: string; durationSeconds: number; size?: number; format?: string; archivePath: string; mediaUrl: string; }
+export interface RushTrack { file: string; durationSeconds: number; size?: number; format?: string; archivePath: string; mediaUrl: string; kind?: string; role?: string; }
 interface CacheEntry { resolvedAt: string; files: Array<Omit<RushTrack, 'archivePath' | 'mediaUrl'>>; }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -120,6 +120,26 @@ export async function resolveRushItem(id: string): Promise<{ id: string; source:
   if (!r.ok) throw Object.assign(new Error(`metadata HTTP ${r.status}`), { status: 502 });
   const meta: any = await r.json();
   if (meta?.is_dark || !Array.isArray(meta?.files)) throw Object.assign(new Error('item unavailable'), { status: 404 });
+  if (id.includes('morning-update')) {
+    const f = (meta?.files ?? []).find((file: any) =>
+      file?.format === 'h.264 IA' &&
+      String(file?.name ?? '').endsWith('.ia.mp4') &&
+      seconds(file?.length) > 0
+    );
+    if (!f) throw new Error('no h.264 Morning Update video');
+    const singleFile = {
+      file: String(f.name),
+      durationSeconds: seconds(f.length),
+      size: f.size ? Number(f.size) : undefined,
+      format: f.format,
+      kind: 'video',
+      role: 'morning-update',
+    };
+    const entry = { resolvedAt: new Date().toISOString(), files: [singleFile] };
+    loadCache()[id] = entry;
+    saveCache();
+    return { id, source: 'archive', resolvedAt: entry.resolvedAt, tracks: [track(id, singleFile)] };
+  }
   const files = filesFromMetadata(meta);
   if (!files.length) throw Object.assign(new Error('no MP3 with a known duration'), { status: 422 });
   const entry = { resolvedAt: new Date().toISOString(), files };

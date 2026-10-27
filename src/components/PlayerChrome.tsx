@@ -387,7 +387,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
                     <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-cyan-800 bg-slate-950 text-cyan-200">♪</span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold">{row.title}</span>
-                      <span className="block truncate text-xs text-slate-300">{row.artist || "Archive.org"}</span>
+                      <span className="block truncate text-xs text-slate-300">{row.artist || "Library"}</span>
                     </span>
                   </button>
                 </li>
@@ -498,7 +498,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
                     <span aria-hidden="true" className="w-5 shrink-0 text-center font-mono text-xs text-cyan-200">{String(index + 1).padStart(2, "0")}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold">{row.title}</span>
-                      <span className="block truncate text-xs text-slate-300">{row.artist || "Archive.org"}</span>
+                      <span className="block truncate text-xs text-slate-300">{row.artist || "Library"}</span>
                     </span>
                   </button>
                 </li>
