@@ -1193,7 +1193,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
                     : <span aria-label="Archive music artwork unavailable" role="img" className="text-6xl text-cyan-200">♫</span>}
                 </div>
                 <div className="min-w-0 max-w-xl text-center sm:text-left">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Archive.org Music</p>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Library Music</p>
                   <h1 data-testid="archive-music-title" title={archiveMusicRawFilename} className="break-words text-xl font-bold leading-tight text-white sm:text-3xl">
                     {archiveMusicTitle}
                   </h1>

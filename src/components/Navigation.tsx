@@ -44,7 +44,7 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
   { id: 'radio', label: 'AJN Radio', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
   { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played' },
   { id: 'library', label: 'Library', icon: FolderArchive, description: 'Curated archives & vaults' },
-  { id: 'search', label: 'Search', icon: Search, description: 'Archive.org TV News search' },
+  { id: 'search', label: 'Search', icon: Search, description: 'TV News search' },
 ];
 
 const DESKTOP_PRIMARY: NavItemConfig[] = [
