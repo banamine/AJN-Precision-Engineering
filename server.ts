@@ -58,6 +58,7 @@ import { registerArchiveSubtitleRoutes } from './server/archiveSubtitles.js';
 import { registerAudioAsrRoutes } from './server/audioAsrRoutes';
 import { registerNowPlayingRoute } from './server/radioNowPlayingRoute.js';
 import { registerSyncPlaceholder } from './server/routes/syncPlaceholder.js';
+import { registerAffiliateListingRoute } from './server/routes/affiliateListing.js';
 
 const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(express.json());
 app.use(watchdogRouter);
@@ -425,6 +426,7 @@ const IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 registerFolderArtRoute(app);
 registerCaptionRoutes(app);
+registerAffiliateListingRoute(app);
 registerArchiveSubtitleRoutes(app);
 registerAudioAsrRoutes(app);
 registerNowPlayingRoute(app);
