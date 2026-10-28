@@ -201,6 +201,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(() => cachedGuideChannels(guideId) === null);
   const [channelRowState, setChannelRowState] = useState<Record<string, 'loading' | 'error'>>({});
+  const [playNowState, setPlayNowState] = useState<Record<string, 'loading' | 'load-error' | 'no-current'>>({});
   // Short window that follows the red line: no side-scrolling to find what is on now.
   const [viewEl, setViewEl] = useState<HTMLDivElement | null>(null);
   const [viewWidth, setViewWidth] = useState(DEFAULT_VIEW_WIDTH_PX);
@@ -644,22 +645,47 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
 
   const hourMarkers = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
   const nowLeftPx = redLineLeft(nowHour, win);
-  const playLive = useCallback(async (channel: ScheduleChannel, item: LiveItem | null) => {
+  const playLive = useCallback(async (channel: ScheduleChannel, item: LiveItem | null, retrySchedule = false) => {
+    if (playNowState[channel.id] === 'loading') return;
+    setPlayNowState((previous) => {
+      if (!(channel.id in previous)) return previous;
+      const next = { ...previous };
+      delete next[channel.id];
+      return next;
+    });
     let selectedItem = item;
     let now = currentHourFraction();
     if (!selectedItem && channel.hasCurrentProgram === true && channel.programsComplete === false) {
-      const full = await ensureChannelRows(channel.id);
-      if (!full) return;
+      setPlayNowState((previous) => ({ ...previous, [channel.id]: 'loading' }));
+      let full: ScheduleChannel | null = null;
+      try {
+        full = await ensureChannelRows(channel.id, retrySchedule);
+      } catch {
+        full = null;
+      }
+      if (!full) {
+        setPlayNowState((previous) => ({ ...previous, [channel.id]: 'load-error' }));
+        return;
+      }
       now = currentHourFraction();
       selectedItem = findLiveProgram(full, now);
     } else if (selectedItem) {
       void ensureChannelRows(channel.id);
     }
-    if (!selectedItem) return;
+    if (!selectedItem) {
+      setPlayNowState((previous) => ({ ...previous, [channel.id]: 'no-current' }));
+      return;
+    }
+    setPlayNowState((previous) => {
+      if (!(channel.id in previous)) return previous;
+      const next = { ...previous };
+      delete next[channel.id];
+      return next;
+    });
     const t = tuneIn(selectedItem.program, selectedItem.sHour, selectedItem.eHour, now);
     const p = selectedItem.program;
     onSelectProgram?.(t.path, p.title, channel.name, mediaTypeFor(p, channel, guideId), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds, bufferGaugeMetadata(p.metadata));
-  }, [ensureChannelRows, onSelectProgram, guideId]);
+  }, [ensureChannelRows, onSelectProgram, guideId, playNowState]);
 
   if (fetchError && !cachedGuideChannels(guideId)) {
     return (
@@ -771,6 +797,8 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
             const liveItem: LiveItem | null = grouped.get(channel.id)?.liveItem ?? findLiveProgram(channel, nowHour);
             const liveTitle = liveItem?.program.title;
             const canPlayNow = Boolean(liveItem) || channel.hasCurrentProgram === true;
+            const playNowStatus = playNowState[channel.id];
+            const playNowLoading = playNowStatus === 'loading';
             return (
               <div
                 key={channel.id}
@@ -795,10 +823,11 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                   <button
                     type="button"
                     data-play-live={channel.id}
-                    disabled={!canPlayNow}
+                    disabled={!canPlayNow || playNowLoading}
                     onClick={() => { void playLive(channel, liveItem); }}
-                    title={liveItem ? `Play ${liveTitle} from the red line (${channel.name})` : canPlayNow ? `Load and play the current program on ${channel.name}` : `${channel.name}: nothing scheduled right now`}
-                    aria-label={liveItem ? `Play ${channel.name} now: ${liveTitle}` : canPlayNow ? `Load and play ${channel.name} now` : `${channel.name}: nothing on air now`}
+                    title={playNowLoading ? `Loading the current program for ${channel.name}` : liveItem ? `Play ${liveTitle} from the red line (${channel.name})` : canPlayNow ? `Load and play the current program on ${channel.name}` : `${channel.name}: nothing scheduled right now`}
+                    aria-label={playNowLoading ? `Loading ${channel.name} now` : liveItem ? `Play ${channel.name} now: ${liveTitle}` : canPlayNow ? `Load and play ${channel.name} now` : `${channel.name}: nothing on air now`}
+                    aria-busy={playNowLoading}
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${
                       canPlayNow
                         ? (isAudio ? 'border-amber-500/50 bg-amber-500/15 text-amber-300 hover:bg-amber-500/30' : 'border-sky-500/50 bg-sky-500/15 text-sky-300 hover:bg-sky-500/30') + ' cursor-pointer'
@@ -846,6 +875,8 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
               {visible.map((channel) => {
                 const g = grouped.get(channel.id);
                 const isBlocks = !!g && g.mode !== 'programs';
+                const playNowStatus = playNowState[channel.id];
+                const playNowLoading = playNowStatus === 'loading';
                 return (
                 <div
                   key={channel.id}
@@ -911,17 +942,31 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                           </span>
                         );
                       }))}
-                  {channel.programsComplete === false && channelRowState[channel.id] === 'loading' && (
+                  {(channel.programsComplete === false && channelRowState[channel.id] === 'loading' || playNowLoading) && (
                     <div role="status" data-channel-row-loading={channel.id} className="absolute right-2 top-1 z-30 inline-flex items-center gap-1 rounded border border-sky-700/60 bg-neutral-950/95 px-2 py-1 text-[10px] text-sky-200">
                       <span className="h-2 w-2 animate-pulse rounded-full bg-sky-300" />
-                      Loading full schedule…
+                      {playNowLoading ? 'Loading current program…' : 'Loading full schedule…'}
                     </div>
                   )}
-                  {channelRowState[channel.id] === 'error' && (
+                  {(channelRowState[channel.id] === 'error' || playNowStatus === 'load-error') && (
                     <div role="alert" data-channel-row-error={channel.id} className="absolute right-2 top-1 z-30 inline-flex items-center gap-1.5 rounded border border-amber-700/70 bg-neutral-950/95 px-2 py-1 text-[10px] text-amber-200">
                       <CircleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
-                      <span>Full schedule unavailable.</span>
-                      <button type="button" onClick={() => { void ensureChannelRows(channel.id, true); }} data-retry-channel={channel.id} className="rounded border border-amber-600/70 px-1.5 py-0.5 font-semibold hover:bg-amber-900/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">Retry</button>
+                      <span>{playNowStatus === 'load-error' ? 'Could not load the current program.' : 'Full schedule unavailable.'}</span>
+                      <button
+                        type="button"
+                        onClick={() => { void (playNowStatus === 'load-error' ? playLive(channel, null, true) : ensureChannelRows(channel.id, true)); }}
+                        data-retry-channel={channel.id}
+                        data-play-live-retry={playNowStatus === 'load-error' ? channel.id : undefined}
+                        className="rounded border border-amber-600/70 px-1.5 py-0.5 font-semibold hover:bg-amber-900/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200"
+                      >
+                        {playNowStatus === 'load-error' ? 'Retry play' : 'Retry'}
+                      </button>
+                    </div>
+                  )}
+                  {playNowStatus === 'no-current' && (
+                    <div role="alert" data-play-live-no-current={channel.id} className="absolute right-2 top-1 z-30 inline-flex items-center gap-1.5 rounded border border-amber-700/70 bg-neutral-950/95 px-2 py-1 text-[10px] text-amber-200">
+                      <CircleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
+                      <span>No current program was found in the full schedule.</span>
                     </div>
                   )}
                 </div>
