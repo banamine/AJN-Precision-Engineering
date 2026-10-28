@@ -11,6 +11,9 @@ let viewportName = '';
 let externalRequests = 0;
 let archiveRequests = 0;
 let failChannel050Once = true;
+let failChannel071Once = true;
+let activeChannelRequests = 0;
+let maxConcurrentChannelRequests = 0;
 let server;
 let browser;
 
@@ -38,11 +41,16 @@ const fixtureApi = {
       if (requestUrl.searchParams.get('light') === '1') {
         const lightChannels = channels.map((channel) => ({
           ...channel,
-          programs: channel.id === 'demo-channel-050' || channel.id === 'demo-channel-060'
-            ? channel.programs.slice(1, 4)
-            : channel.programs.slice(0, 3),
+          programs: channel.id === 'demo-channel-071'
+            ? []
+            : channel.id === 'demo-channel-050' || channel.id === 'demo-channel-060'
+              ? channel.programs.slice(1, 4)
+              : channel.programs.slice(0, 3),
+          programCount: channel.id === 'demo-channel-072' ? 0 : channel.programs.length,
           programsComplete: false,
-          ...(channel.id === 'demo-channel-050' || channel.id === 'demo-channel-060' ? { hasCurrentProgram: true } : {}),
+          ...(channel.id === 'demo-channel-050' || channel.id === 'demo-channel-060' || channel.id === 'demo-channel-071'
+            ? { hasCurrentProgram: true }
+            : {}),
         }));
         requestLog.push({ viewport: viewportName, route: 'light', channels: lightChannels.length });
         response.end(JSON.stringify({ guideId: 'classic-tv', generatedAt: '2026-01-01T00:00:00.000Z', light: true, channels: lightChannels }));
@@ -57,6 +65,16 @@ const fixtureApi = {
       }
       const nextCount = (routeCounts.get(`${viewportName}:${channelId}`) ?? 0) + 1;
       routeCounts.set(`${viewportName}:${channelId}`, nextCount);
+      activeChannelRequests++;
+      maxConcurrentChannelRequests = Math.max(maxConcurrentChannelRequests, activeChannelRequests);
+      let requestFinished = false;
+      const finishRequest = () => {
+        if (requestFinished) return;
+        requestFinished = true;
+        activeChannelRequests--;
+      };
+      response.once('finish', finishRequest);
+      response.once('close', finishRequest);
       requestLog.push({ viewport: viewportName, route: 'channel', channelId, count: nextCount });
       if (channelId === 'demo-channel-001' && nextCount === 1) {
         setTimeout(() => {
@@ -69,6 +87,12 @@ const fixtureApi = {
         failChannel050Once = false;
         response.statusCode = 503;
         response.end(JSON.stringify({ error: 'synthetic upstream failure' }));
+        return;
+      }
+      if (channelId === 'demo-channel-071' && failChannel071Once) {
+        failChannel071Once = false;
+        response.statusCode = 503;
+        response.end(JSON.stringify({ error: 'synthetic deferred-row failure' }));
         return;
       }
       const channel = channels.find((item) => item.id === channelId);
@@ -87,7 +111,10 @@ const fixtureApi = {
         }, 2_000);
         return;
       }
-      response.end(JSON.stringify({ guideId: 'classic-tv', channels: [{ ...channel, programsComplete: true }] }));
+      setTimeout(() => {
+        if (response.destroyed) return;
+        response.end(JSON.stringify({ guideId: 'classic-tv', channels: [{ ...channel, programsComplete: true }] }));
+      }, 80);
     });
   },
 };
@@ -95,6 +122,8 @@ const fixtureApi = {
 function resetForViewport(name) {
   viewportName = name;
   failChannel050Once = true;
+  failChannel071Once = true;
+  maxConcurrentChannelRequests = 0;
   for (const key of [...routeCounts.keys()]) if (key.startsWith(`${name}:`)) routeCounts.delete(key);
   requestLog.length = 0;
   externalRequests = 0;
@@ -185,6 +214,22 @@ async function runViewport(viewport) {
   const noCurrentText = await page.$eval('[data-play-live-no-current="demo-channel-060"]', (element) => element.textContent ?? '');
   assert.match(noCurrentText, /No current program was found/, `${viewport.name}: missing current item is reported explicitly`);
 
+  await page.$eval('[data-epg-channel-row][data-channel-id="demo-channel-072"]', (element) => element.scrollIntoView({ block: 'center' }));
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  assert.equal(routeCounts.get(`${viewport.name}:demo-channel-072`), undefined,
+    `${viewport.name}: incomplete rows with programCount 0 are not auto-fetched`);
+
+  await page.$eval('[data-epg-channel-row][data-channel-id="demo-channel-071"]', (element) => element.scrollIntoView({ block: 'center' }));
+  const episodeButton = await page.waitForSelector('[data-load-episodes="demo-channel-071"]');
+  await waitForNodeCondition(() => routeCounts.get(`${viewport.name}:demo-channel-071`) === 1, `${viewport.name}: auto-loads empty deferred row`);
+  await page.waitForFunction(() => document.querySelector('[data-load-episodes="demo-channel-071"]')?.textContent?.includes("Couldn't load — Retry"));
+  assert.equal(await page.$eval('[data-load-episodes="demo-channel-071"]', (button) => button.getAttribute('aria-busy')), 'false',
+    `${viewport.name}: retry label is available after the automatic load fails`);
+  await episodeButton.click();
+  await waitForNodeCondition(() => routeCounts.get(`${viewport.name}:demo-channel-071`) === 2, `${viewport.name}: retry fetches deferred row`);
+  await page.waitForFunction(() => document.querySelector('[data-load-episodes="demo-channel-071"]') === null,
+    `${viewport.name}: successful retry replaces the empty-row button`);
+
   await page.$eval('[data-epg-channel-row][data-channel-id="demo-channel-050"]', (element) => element.scrollIntoView({ block: 'center' }));
   try {
     await page.waitForSelector('[data-channel-row-error="demo-channel-050"]');
@@ -208,6 +253,8 @@ async function runViewport(viewport) {
   assert.equal(routeCounts.get(`${viewport.name}:demo-channel-050`), 2, `${viewport.name}: retry repeats exactly once`);
 
   assert.deepEqual(pageErrors, [], `${viewport.name}: Play-now paths do not produce unhandled browser errors`);
+  assert.ok(maxConcurrentChannelRequests <= 4,
+    `${viewport.name}: automatic schedule loads never exceed four in flight (observed ${maxConcurrentChannelRequests})`);
   assert.equal(archiveRequests, 0, `${viewport.name}: zero Archive requests`);
   assert.equal(externalRequests, 0, `${viewport.name}: all non-local requests blocked`);
   const rowCount = await page.$$eval('[data-epg-channel-row]', (rows) => rows.length);
@@ -220,6 +267,7 @@ async function runViewport(viewport) {
     channel048Requests: channel048Count,
     channel050Requests: routeCounts.get(`${viewport.name}:demo-channel-050`),
     channel001TuneRequests: routeCounts.get(`${viewport.name}:demo-channel-001`),
+    maxConcurrentChannelRequests,
     titleSearchRequests: requestLog.filter((entry) => entry.route === 'search').length,
     archiveRequests: archiveRequests,
     externalRequests: externalRequests,
@@ -250,7 +298,7 @@ try {
     results.push(await runViewport(viewport));
   }
   console.log(JSON.stringify({ results, apiRequestCount: requestLog.length, archiveRequests: 0, externalRequests: 0 }));
-  console.log('PASS classic-light-guide: synthetic phone/desktop; light first paint; complete title search; visible fetch; tune; explicit error/retry; no Archive traffic');
+  console.log('PASS classic-light-guide: synthetic phone/desktop; light first paint; automatic visible-row loading (max 4); complete title search; tune; explicit retry states; no Archive traffic');
 } finally {
   if (browser) await browser.close();
   if (server) await server.close();

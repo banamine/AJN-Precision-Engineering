@@ -89,11 +89,14 @@ function makeBlock(id: string, startHour: number, endHour: number, items: GridIt
   };
 }
 
-/** Pure. Never mutates the channel or its programs. Only music-lane channels are grouped. */
+/** Pure. Never mutates the channel or its programs. Dense music and explicitly deferred Infobattalion schedules may be grouped. */
 export function groupProgramsForGrid(channel: ScheduleChannel, pxPerHour: number, nowHour?: number, nowMs?: number): GroupResult {
   const raw = windowItems(channel, nowMs);
   const live = nowHour === undefined ? null : raw.find((i) => nowHour >= i.sHour && nowHour < i.eHour) ?? null;
-  if (!isMusicChannel(channel) || channel.programsComplete === false || raw.length === 0) return { mode: "programs", items: raw, cells: [], liveItem: live };
+  const deferredInfobattalion = channel.deferLightRows === true && /^(cx|tvx)-/.test(channel.id);
+  if ((!isMusicChannel(channel) && !deferredInfobattalion) || channel.programsComplete === false || raw.length === 0) {
+    return { mode: "programs", items: raw, cells: [], liveItem: live };
+  }
   const narrow = raw.filter((i) => (i.eHour - i.sHour) * pxPerHour < MIN_CELL_PX).length;
   if (narrow / raw.length <= NARROW_FRACTION) return { mode: "programs", items: raw, cells: [], liveItem: live };
 

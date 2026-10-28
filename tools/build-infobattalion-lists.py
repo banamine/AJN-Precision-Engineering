@@ -193,6 +193,52 @@ def clean(t):
     t = re.sub(r"\s-\sthe\s(?=\d{4}$)", " ", t, flags=re.I)
     if t.count("(") > t.count(")"): t += ")"
     return t or raw
+
+DISPLAY_NAME_OVERRIDES = {
+    "more full movie cinematic dump (part 3.3)": "Animated Movies 3",
+    "all animated vhs and dvd and blu-ray movies": "Animated Movies",
+}
+
+def clean_display_name(name):
+    """Remove upload-quality noise from display names without changing source identity."""
+    original = str(name or "").strip()
+    override = DISPLAY_NAME_OVERRIDES.get(original.casefold())
+    if override:
+        return override
+
+    value = re.sub(r"Spider-Man;\s*The New", "Spider-Man: The New", original, flags=re.I)
+    value = re.sub(r"\bIncredble\b", "Incredible", value, flags=re.I)
+    value = re.sub(r"\s*\(\s*Upscale\s*\)", " ", value, flags=re.I)
+    value = re.sub(r"\bAI\s+Upscale\b", " ", value, flags=re.I)
+    value = re.sub(r"\bHQ\s*/\s*HD\b|\bHD\b|\bHQ\b", " ", value, flags=re.I)
+    value = re.sub(r"\bDVD\s+ISO\s+NTSC\b", " ", value, flags=re.I)
+    value = re.sub(r"\bwith\s+Subtitles\s+and\s+MKV\b", " ", value, flags=re.I)
+    value = re.sub(r"\(\s*5\.1\s+RCVR\s*\)", " ", value, flags=re.I)
+    value = re.sub(r"\(\s*fan-remastered\s*\)", " ", value, flags=re.I)
+    value = re.sub(r"\bENGLISH\b", " ", value, flags=re.I)
+    def keep_years(match):
+        years = re.findall(r"(?<!\d)(?:19|20)\d{2}(?:\s*(?:-|–|—|to)\s*(?:19|20)\d{2})?", match.group(1), flags=re.I)
+        return " " + " ".join(f"({year.strip()})" for year in years) + " "
+    value = re.sub(r"\(\s*complete\b([^)]*)\)", keep_years, value, flags=re.I)
+    value = re.sub(r"\bVHS\s+and\s+DVD\s+and\s+Blu-ray\b", " ", value, flags=re.I)
+    value = re.sub(r"\(\s*\)", " ", value)
+    value = re.sub(r"\s+the\s*$", " ", value, flags=re.I)
+    value = re.sub(r"\s+", " ", value).strip()
+    return re.sub(r"[\s—\-;]+$", "", value).strip()
+
+def clean_manifest_display_names(extra):
+    """Clean generated Infobattalion names in-place and return an auditable old/new list."""
+    mappings = []
+    for channel in extra.get("channels", []):
+        channel_id = channel.get("id", "")
+        if not channel_id.startswith(("cx-", "tvx-")):
+            continue
+        old = channel.get("name", "")
+        new = clean_display_name(old)
+        if new != old:
+            channel["name"] = new
+            mappings.append({"old": old, "new": new})
+    return mappings
 def norm(s): return re.sub(r"[^a-z0-9]", "", re.sub(r"\(\d{4}\)|\bthe\b|complete.*", "", s.lower()))
 
 def cartoon_channels(shows):
@@ -212,12 +258,13 @@ def cartoon_channels(shows):
         if not kept:
             reject("no_eligible_rows")
         elif len(kept) >= 3:
-            base = slug(clean(title) or ident) or slug(ident)
+            display_title = clean_display_name(clean(title) or ident)
+            base = slug(display_title) or slug(ident)
             cid = "cx-" + base
             if cid in used or cid == "cx-classic-cartoons":
                 cid = "cx-" + slug(ident) + "-" + hashlib.sha256(ident.encode()).hexdigest()[:8]
             used.add(cid)
-            channels.append({"guideId": "classic-tv", "id": cid, "name": cut(clean(title) or ident),
+            channels.append({"guideId": "classic-tv", "id": cid, "name": cut(display_title),
                              "group": "Cartoons", "rows": kept})
         else:
             singles.extend(kept)
@@ -231,7 +278,31 @@ def main():
     ap.add_argument("--extra", default="src/data/extraChannelsManifest.json"); ap.add_argument("--docs", default="src/data/documentariesManifest.json")
     ap.add_argument("--audio", default="src/data/archiveAudioChannels.json"); ap.add_argument("--report", default="reports/infobattalion-lists.json")
     ap.add_argument("--existing-classic", default=None, help="saved /api/schedule?guide=classic-tv JSON, used to skip shows that already have a channel")
+    ap.add_argument("--clean-display-names-only", action="store_true", help="offline-only: clean existing cx-/tvx- display names and update the report; makes no Archive requests")
     a = ap.parse_args()
+    if a.clean_display_names_only:
+        extra_path = os.path.join(root, a.extra)
+        report_path = os.path.join(root, a.report)
+        extra = json.load(open(extra_path, encoding="utf-8"))
+        original_ids = [channel.get("id") for channel in extra.get("channels", [])]
+        mappings = clean_manifest_display_names(extra)
+        if original_ids != [channel.get("id") for channel in extra.get("channels", [])]:
+            raise RuntimeError("Display-name cleanup changed channel IDs")
+        with open(extra_path, "w", encoding="utf-8") as f:
+            json.dump(extra, f, separators=(",", ":"), ensure_ascii=False)
+        report = json.load(open(report_path, encoding="utf-8")) if os.path.exists(report_path) else {}
+        existing_mappings = report.get("display_name_mappings", [])
+        merged_mappings = {
+            entry.get("old"): entry
+            for entry in existing_mappings + mappings
+            if isinstance(entry, dict) and isinstance(entry.get("old"), str) and isinstance(entry.get("new"), str)
+        }
+        report["display_name_mappings"] = list(merged_mappings.values())
+        os.makedirs(os.path.dirname(report_path), exist_ok=True)
+        with open(report_path, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=1)
+        print(json.dumps({"displayNamesChanged": len(mappings), "channelIdsPreserved": True, "archiveRequests": 0}, indent=1))
+        return
     os.makedirs(os.path.join(a.cache, "meta"), exist_ok=True)
     ARCHIVE.ledger_path = os.path.join(a.cache, "request-ledger.jsonl")
     lf = os.path.join(a.cache, "lists.json")
@@ -299,7 +370,8 @@ def main():
     existing = set()
     if a.existing_classic and os.path.exists(a.existing_classic):
         existing = {norm(c["name"]) for c in json.load(open(a.existing_classic))["channels"]}
-    report = {"skipped_in_app": {}, "dark": {}, "excluded": {}, "channels": {}, "needs_decision": {}}
+    report = {"skipped_in_app": {}, "dark": {}, "excluded": {}, "channels": {}, "needs_decision": {},
+              "display_name_mappings": []}
     list_stats = {n: {"members": list_member_counts.get(n, len(ids)), "unique_members": len(ids), "added_ids": set(), "added_rows": 0, "skipped_already_in_app": 0,
                       "skipped_claimed": 0, "rejected": {}} for n, ids in lists.items()}
     def reject_list(name, reason, count=1):
@@ -335,6 +407,7 @@ def main():
             out.append(i)
         return out
     extra = json.load(open(os.path.join(root, a.extra)))
+    report["display_name_mappings"] = clean_manifest_display_names(extra)
     previous_channel_ids = {c.get("id") for c in extra.get("channels", []) if c.get("id")}
     previously_deferred = {c.get("id") for c in extra.get("channels", []) if c.get("id") and c.get("deferLightRows") is True}
     chans = [c for c in extra["channels"] if not generated_channel(c)]
@@ -385,7 +458,7 @@ def main():
             report["excluded"].setdefault("tv_no_playable_runtime", []).append(i)
             reject_list("tv", "no_playable_runtime")
             continue
-        nm = clean(title_of(i)) or i
+        nm = clean_display_name(clean(title_of(i)) or i)
         if norm(nm) and norm(nm) in existing:
             report["skipped_in_app"].setdefault("tv_same_name_channel", []).append(i)
             list_stats["tv"]["skipped_already_in_app"] += 1

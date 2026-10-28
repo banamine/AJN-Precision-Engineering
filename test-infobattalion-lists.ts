@@ -5,6 +5,7 @@ import { buildClassicLightSchedule } from './server/classicLightSchedule';
 import extra from './src/data/extraChannelsManifest.json';
 import docs from './src/data/documentariesManifest.json';
 import audio from './src/data/archiveAudioChannels.json';
+import infobattalionReport from './reports/infobattalion-lists.json';
 
 // The TV Guide uses the bounded light schedule, then loads full programs per visible channel.
 const BUDGET_MB: Record<string, number> = { 'movies-classics-vault': 3, 'cable-tv': 4, 'science-documentaries': 6 };
@@ -15,11 +16,15 @@ const light = buildClassicLightSchedule(classic, Date.now(), '0');
 const lightBytes = Buffer.byteLength(JSON.stringify(light));
 assert.ok(lightBytes < 2 * 1024 * 1024, `classic-tv light schedule: ${(lightBytes / 1048576).toFixed(1)} MiB exceeds 2 MiB`);
 const lightById = new Map(light.channels.map((channel) => [channel.id, channel]));
+const deferredCartoonLight = light.channels.filter((channel) => channel.id.startsWith('cx-'));
+const deferredLightBytes = Buffer.byteLength(JSON.stringify(deferredCartoonLight));
+assert.ok(deferredLightBytes <= 34 * 1024, `deferred cartoon light rows: ${deferredLightBytes} bytes exceeds 34 KiB`);
 for (const channel of classic.filter((c: any) => c.id.startsWith('cx-'))) {
   const lazy = lightById.get(channel.id);
   assert.ok(lazy, `classic-tv light schedule missing ${channel.id}`);
   assert.equal(lazy!.programsComplete, false, `${channel.id} must load full episodes on demand`);
   assert.ok(lazy!.programCount > 0, `${channel.id} must advertise its full episode count`);
+  assert.equal(lazy!.programs.length, 0, `${channel.id} keeps episodes out of the initial light payload`);
 }
 for (const guide of Object.keys(BUDGET_MB)) {
   const channels = await getScheduleForGuide(guide);
@@ -75,7 +80,7 @@ const aids = (audio as any[]).map(a => a.id); assert.equal(aids.length, new Set(
 for (const a of audio as any[]) assert.ok(a.itemId && a.name && a.group, `audio entry ${a.id}`);
 
 type InfobattalionReport = { channels: Record<string, { guide?: string }> };
-type ExtraChannel = { id: string; guideId: string; deferLightRows?: boolean };
+type ExtraChannel = { id: string; name: string; guideId: string; deferLightRows?: boolean };
 type ExtraManifest = { channels: ExtraChannel[] };
 const extraChannels = (extra as ExtraManifest).channels;
 const extraById = new Map(extraChannels.map((channel) => [channel.id, channel]));
@@ -84,6 +89,27 @@ assert.equal(
   true,
   'new list channels defer episode payloads',
 );
+const displayNameMappings = (infobattalionReport as any).display_name_mappings as { old: string; new: string }[];
+assert.ok(Array.isArray(displayNameMappings), 'report records display-name changes');
+const expectedNames: Array<[string, string, string]> = [
+  ['cx-all-animated-vhs-and-dvd-and-blu-ray-movies', 'All Animated VHS and DVD and Blu-ray Movies', 'Animated Movies'],
+  ['cx-more-full-movie-cinematic-dump-part-3-3', 'More full movie cinematic dump (part 3.3)', 'Animated Movies 3'],
+  ['cx-the-incredble-hulk-1966-english', 'The Incredble Hulk (1966) ENGLISH', 'The Incredible Hulk (1966)'],
+  ['cx-spider-man-the-new-animated-series-2003-the-hd', 'Spider-Man; The New Animated Series (2003) The HD', 'Spider-Man: The New Animated Series (2003)'],
+  ['tvx-the-amazing-spider-man-complete-1977-tv-series-seasons-1-2', 'The Amazing Spider-Man (Complete 1977 TV Series) Seasons 1-2', 'The Amazing Spider-Man (1977) Seasons 1-2'],
+];
+for (const [channelId, oldName, newName] of expectedNames) {
+  assert.equal(extraById.get(channelId)?.name, newName, `${channelId} display name`);
+  assert.ok(displayNameMappings.some((mapping) => mapping.old === oldName && mapping.new === newName),
+    `report includes ${JSON.stringify({ old: oldName, new: newName })}`);
+}
+const nameNoise = /(?:\(\s*Upscale\s*\)|\bAI Upscale\b|\b(?:HQ\s*\/\s*HD|HD|HQ)\b|\bDVD ISO NTSC\b|\bwith Subtitles and MKV\b|\(\s*5\.1 RCVR\s*\)|\(fan-remastered\)|\bENGLISH\b|\(\s*complete\b[^)]*\)|\bVHS and DVD and Blu-ray\b|\bIncredble\b|Spider-Man;\s*The New)/i;
+for (const channel of extraChannels.filter((item) => /^(cx|tvx)-/.test(item.id))) {
+  assert.doesNotMatch(channel.name, nameNoise, `${channel.id} has no upload-noise label`);
+  assert.doesNotMatch(channel.name, /(?:\s|—|;|-)+$/, `${channel.id} has no trailing separator`);
+}
+assert.equal(extraById.get('cx-popeye-the-sailor-man-1933-to-1943')?.name, 'Popeye The Sailor Man 1933 to 1943');
+assert.equal(extraById.get('cx-popeye-the-sailor-man-1943-to-1949')?.name, 'Popeye The Sailor Man 1943 to 1949');
 const existingPrefixChannel = extraById.get('tvx-riders-of-death-valley-1941');
 assert.ok(existingPrefixChannel, 'the existing TVX channel remains in the manifest');
 assert.equal(existingPrefixChannel.deferLightRows, undefined, 'legacy TVX channels keep their light-row behavior');

@@ -1821,5 +1821,75 @@
    }
   }
  },
- "deferred_classic_tv_channels": 93
+ "deferred_classic_tv_channels": 93,
+ "display_name_mappings": [
+  {
+   "old": "Inspector Gadget Season 1 Part 2 ( Upscale)",
+   "new": "Inspector Gadget Season 1 Part 2"
+  },
+  {
+   "old": "Inspector Gadget Season 2 ( Upscale)",
+   "new": "Inspector Gadget Season 2"
+  },
+  {
+   "old": "ReBoot with Subtitles and MKV",
+   "new": "ReBoot"
+  },
+  {
+   "old": "All Animated VHS and DVD and Blu-ray Movies",
+   "new": "Animated Movies"
+  },
+  {
+   "old": "Jim Henson's Muppet Babies (fan-remastered)",
+   "new": "Jim Henson's Muppet Babies"
+  },
+  {
+   "old": "Dilbert: The DVD ISO NTSC",
+   "new": "Dilbert"
+  },
+  {
+   "old": "Gargoyles AI Upscale",
+   "new": "Gargoyles"
+  },
+  {
+   "old": "The Incredble Hulk (1966) ENGLISH",
+   "new": "The Incredible Hulk (1966)"
+  },
+  {
+   "old": "Spider-Man; The New Animated Series (2003) The HD",
+   "new": "Spider-Man: The New Animated Series (2003)"
+  },
+  {
+   "old": "Gravity Falls The ( 5.1 RCVR)",
+   "new": "Gravity Falls"
+  },
+  {
+   "old": "More full movie cinematic dump (part 3.3)",
+   "new": "Animated Movies 3"
+  },
+  {
+   "old": "Stroker & Hoop \u2014",
+   "new": "Stroker & Hoop"
+  },
+  {
+   "old": "Yakky Doodle (complete cartoon collection)",
+   "new": "Yakky Doodle"
+  },
+  {
+   "old": "Buddy Full HQ/HD Collection (1933-1935)",
+   "new": "Buddy Full Collection (1933-1935)"
+  },
+  {
+   "old": "X-Men The Animated Series AI Upscale",
+   "new": "X-Men The Animated Series"
+  },
+  {
+   "old": "Teknoman (Upscale)",
+   "new": "Teknoman"
+  },
+  {
+   "old": "The Amazing Spider-Man (Complete 1977 TV Series) Seasons 1-2",
+   "new": "The Amazing Spider-Man (1977) Seasons 1-2"
+  }
+ ]
 }

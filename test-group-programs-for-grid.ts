@@ -51,6 +51,28 @@ export function runGroupingTests(): void {
   assert.equal(groupProgramsForGrid(long, 160, 1).mode, "programs");
   assert.equal(groupProgramsForGrid(chan(tracks.map((p) => ({ ...p, metadata: {} })), "rush"), 160, 1).mode, "programs");
 
+  const shortCartoons = Array.from({ length: 120 }, (_, i) => ({
+    ...prog(i, i * 0.1, (i + 1) * 0.1),
+    guideId: "classic-tv",
+    channelId: "cx-popeye",
+    mediaType: "video" as const,
+  }));
+  const deferredCartoons: ScheduleChannel = {
+    ...chan(shortCartoons, "cx-popeye"),
+    guideId: "classic-tv",
+    name: "Popeye",
+    mediaType: "video",
+    deferLightRows: true,
+    programsComplete: true,
+  };
+  const cartoonBlocks = groupProgramsForGrid(deferredCartoons, 160, 7.2);
+  assert.equal(cartoonBlocks.mode, "blocks", "loaded short cartoons render as readable grouped blocks");
+  assert.equal(cartoonBlocks.liveItem?.program.id, "p72", "grouping retains the exact active program for Play-now");
+  assert.equal(cartoonBlocks.cells.flatMap((cell) => cell.items).length, shortCartoons.length, "grouped cartoon blocks retain every episode");
+
+  const unmarkedTvx = { ...deferredCartoons, id: "tvx-legacy", deferLightRows: undefined };
+  assert.equal(groupProgramsForGrid(unmarkedTvx, 160, 7.2).mode, "programs", "legacy TVX rows stay ungrouped without explicit deferral");
+
   const exactlyTwentyPercent = [
     prog(0, 0, 0.1, "music"), prog(1, 0.1, 0.2, "music"),
     ...Array.from({ length: 8 }, (_, i) => prog(i + 2, 0.2 + i * 2, 2.2 + i * 2, "music")),

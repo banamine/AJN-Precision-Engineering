@@ -522,7 +522,10 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
     if (typeof IntersectionObserver === 'undefined') {
       for (const target of targets) {
         const id = target.dataset.channelId;
-        if (id && channelRowState[id] !== 'error' && channels?.find((channel) => channel.id === id)?.programsComplete === false) void ensureChannelRows(id);
+        const channel = id ? channels?.find((item) => item.id === id) : undefined;
+        if (id && channelRowState[id] !== 'error' && channel?.programsComplete === false && (channel.programCount ?? 0) > 0) {
+          void ensureChannelRows(id);
+        }
       }
       return;
     }
@@ -530,9 +533,12 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
         const id = (entry.target as HTMLElement).dataset.channelId;
-        if (id && channelRowState[id] !== 'error' && channels?.find((channel) => channel.id === id)?.programsComplete === false) void ensureChannelRows(id);
+        const channel = id ? channels?.find((item) => item.id === id) : undefined;
+        if (id && channelRowState[id] !== 'error' && channel?.programsComplete === false && (channel.programCount ?? 0) > 0) {
+          void ensureChannelRows(id);
+        }
       }
-    }, { rootMargin: '160px 0px' });
+    }, { rootMargin: '200px' });
     targets.forEach((target) => observer.observe(target));
     return () => observer.disconnect();
   }, [active, channelRowState, channels, ensureChannelRows, guideId, visibleCount]);
@@ -629,7 +635,10 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   const [drawer, setDrawer] = useState<{ channel: ScheduleChannel; block: GridBlock; opener: HTMLElement } | null>(null);
   const grouped = useMemo(() => {
     const m = new Map<string, ReturnType<typeof groupProgramsForGrid>>();
-    for (const c of visible) if (isMusicChannel(c)) m.set(c.id, groupProgramsForGrid(c, pxPerHour, nowHour));
+    for (const c of visible) {
+      const deferredInfobattalion = c.deferLightRows === true && /^(cx|tvx)-/.test(c.id);
+      if (isMusicChannel(c) || deferredInfobattalion) m.set(c.id, groupProgramsForGrid(c, pxPerHour, nowHour));
+    }
     return m;
   }, [visible, nowHour, pxPerHour]);
 
@@ -903,10 +912,16 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                           <button
                             type="button"
                             data-load-episodes={channel.id}
-                            onClick={() => { void ensureChannelRows(channel.id); }}
-                            className="shrink-0 rounded border border-sky-600/70 bg-sky-950/60 px-2 py-1 not-italic text-[11px] font-semibold text-sky-100 hover:bg-sky-900/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300"
+                            onClick={() => { void ensureChannelRows(channel.id, channelRowState[channel.id] === 'error'); }}
+                            disabled={channelRowState[channel.id] === 'loading'}
+                            aria-busy={channelRowState[channel.id] === 'loading'}
+                            className="shrink-0 rounded border border-sky-600/70 bg-sky-950/60 px-2 py-1 not-italic text-[11px] font-semibold text-sky-100 hover:bg-sky-900/70 disabled:cursor-wait disabled:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300"
                           >
-                            Load episodes
+                            {channelRowState[channel.id] === 'loading'
+                              ? 'Loading episodes…'
+                              : channelRowState[channel.id] === 'error'
+                                ? "Couldn't load — Retry"
+                                : 'Load episodes'}
                           </button>
                         </>
                       ) : channel.programCount ? 'No programs in the current window' : 'No programs available'}
