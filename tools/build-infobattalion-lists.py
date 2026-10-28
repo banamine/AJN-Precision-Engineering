@@ -461,6 +461,9 @@ def main():
         (tv_own if len(rs) >= 3 else tv_single).append((i, nm, rs))
     # TV shows found on the Movies list (classified above) join the Tv Classics additions.
     for i, nm, rs in movie_list_tv:
+        if SKIP_TV.search(i):
+            report["excluded"].setdefault("movies_tv_identifier_exclusion", []).append(i)
+            continue
         if norm(nm) and norm(nm) in existing:
             report["skipped_in_app"].setdefault("movies_tv_same_name_channel", []).append(i)
             continue
