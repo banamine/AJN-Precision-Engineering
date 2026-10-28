@@ -24,6 +24,8 @@ import { useCloudSync } from './hooks/useCloudSync';
 import { buildSuggestCandidates, addRecentSearch, loadRecentSearches, saveRecentSearches } from './utils/suggest';
 import { loadLastView, saveLastView, VALID_DESTINATIONS } from './nav/lastView';
 import type { CubeArticle } from './news-cube/adapter';
+import { AppearanceProvider } from './components/ajn-redesign/appearance';
+import './components/ajn-redesign/theme.css';
 
 const NewsCubePage = lazy(() => import('./news-cube/NewsCubePage'));
 
@@ -301,7 +303,8 @@ export default function App() {
   useAvSyncRecorder(nowPlaying);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
+    <AppearanceProvider>
+    <div className="min-h-[100dvh] bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
       <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${nowPlaying && destination !== 'player' ? 'pb-[13rem] md:pb-[10rem]' : 'pb-20 md:pb-8'}`}>
         {destination === 'home' && (
@@ -402,5 +405,6 @@ export default function App() {
         <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />
       )}
     </div>
+    </AppearanceProvider>
   );
 }

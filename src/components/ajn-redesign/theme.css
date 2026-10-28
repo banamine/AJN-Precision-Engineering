@@ -1,0 +1,268 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --ajn-bg: #000000;
+  --ajn-surface: #121212;
+  --ajn-card: #1a1a1a;
+  --ajn-border: #444444;
+  --ajn-text: #ffffff;
+  --ajn-muted: #cccccc;
+  --ajn-accent: #a84e31;
+  --ajn-accent-text: #ffffff;
+  --ajn-badge-text: #fcd34d;
+  --ajn-font-scale: 1;
+}
+
+html {
+  background: var(--ajn-bg);
+  font-size: calc(16px * var(--ajn-font-scale));
+}
+
+body {
+  background-color: var(--ajn-bg) !important;
+  color: var(--ajn-text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.5;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+html[data-ajn-theme="contrast"] .text-amber-200,
+html[data-ajn-theme="contrast"] .text-amber-300,
+html[data-ajn-theme="contrast"] .text-amber-400,
+html[data-ajn-theme="slate"] .text-amber-200,
+html[data-ajn-theme="slate"] .text-amber-300,
+html[data-ajn-theme="slate"] .text-amber-400 {
+  color: var(--ajn-badge-text) !important;
+}
+
+html[data-ajn-theme="paper"] .text-amber-200,
+html[data-ajn-theme="paper"] .text-amber-300,
+html[data-ajn-theme="paper"] .text-amber-400,
+html[data-ajn-theme="white"] .text-amber-200,
+html[data-ajn-theme="white"] .text-amber-300,
+html[data-ajn-theme="white"] .text-amber-400 {
+  color: var(--ajn-badge-text) !important;
+}
+
+h1, h2, h3 {
+  font-family: 'Newsreader', Georgia, serif;
+  letter-spacing: -0.025em;
+}
+
+.font-mono, code, kbd {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+:where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--ajn-accent) !important;
+  outline-offset: 2px;
+}
+
+button, a, input, select, textarea, summary {
+  min-height: 44px;
+}
+
+button, a, select {
+  min-width: 44px;
+}
+
+[class*="text-[9px]"],
+[class*="text-[10px]"],
+[class*="text-[11px]"] {
+  font-size: max(12px, 0.75rem) !important;
+}
+.text-xs { font-size: max(12px, 0.75rem) !important; }
+
+/* Keep the existing components and their live state intact while translating their neutral utility palette. */
+.bg-neutral-950 { background-color: var(--ajn-bg) !important; }
+.bg-neutral-950\/90 { background-color: color-mix(in srgb, var(--ajn-bg) 90%, transparent) !important; }
+.bg-neutral-950\/40 { background-color: color-mix(in srgb, var(--ajn-bg) 40%, transparent) !important; }
+.bg-neutral-950\/80 { background-color: color-mix(in srgb, var(--ajn-bg) 80%, transparent) !important; }
+.bg-neutral-950\/85 { background-color: color-mix(in srgb, var(--ajn-bg) 85%, transparent) !important; }
+.bg-neutral-950\/20 { background-color: color-mix(in srgb, var(--ajn-bg) 20%, transparent) !important; }
+.bg-neutral-950\/30 { background-color: color-mix(in srgb, var(--ajn-bg) 30%, transparent) !important; }
+.bg-neutral-950\/50 { background-color: color-mix(in srgb, var(--ajn-bg) 50%, transparent) !important; }
+.bg-neutral-950\/55 { background-color: color-mix(in srgb, var(--ajn-bg) 55%, transparent) !important; }
+.bg-neutral-950\/60 { background-color: color-mix(in srgb, var(--ajn-bg) 60%, transparent) !important; }
+.bg-neutral-950\/65 { background-color: color-mix(in srgb, var(--ajn-bg) 65%, transparent) !important; }
+.bg-neutral-950\/70 { background-color: color-mix(in srgb, var(--ajn-bg) 70%, transparent) !important; }
+.bg-neutral-900 { background-color: var(--ajn-surface) !important; }
+.bg-neutral-900\/30, .bg-neutral-900\/40, .bg-neutral-900\/50, .bg-neutral-900\/60, .bg-neutral-900\/70, .bg-neutral-900\/80, .bg-neutral-900\/90 {
+  background-color: color-mix(in srgb, var(--ajn-surface) 88%, transparent) !important;
+}
+.bg-neutral-900\/95 { background-color: color-mix(in srgb, var(--ajn-surface) 95%, transparent) !important; }
+.bg-neutral-800 { background-color: var(--ajn-card) !important; }
+.border-neutral-800, .border-neutral-800\/80, .border-neutral-800\/90, .border-neutral-700, .border-neutral-700\/80 {
+  border-color: var(--ajn-border) !important;
+}
+.divide-neutral-800 > :not([hidden]) ~ :not([hidden]) { border-color: var(--ajn-border) !important; }
+.text-neutral-50, .text-neutral-100 { color: var(--ajn-text) !important; }
+.text-neutral-200, .text-neutral-300 { color: var(--ajn-muted) !important; }
+.text-neutral-400, .text-neutral-500, .text-neutral-600 { color: var(--ajn-muted) !important; }
+.hover\:bg-neutral-800:hover, .hover\:bg-neutral-900:hover { background-color: var(--ajn-card) !important; }
+.hover\:border-neutral-700:hover, .hover\:border-neutral-600:hover { border-color: var(--ajn-accent) !important; }
+.text-sky-100, .text-sky-200, .text-sky-300, .text-sky-400 { color: var(--ajn-accent) !important; }
+.border-sky-300, .border-sky-400, .border-sky-500, .border-b-sky-300, .border-b-sky-400, .border-b-sky-500 { border-color: var(--ajn-accent) !important; }
+.bg-sky-400, .bg-sky-500 { background-color: var(--ajn-accent) !important; }
+.bg-sky-500\/10, .bg-sky-500\/15, .bg-sky-500\/20 { background-color: color-mix(in srgb, var(--ajn-accent) 18%, transparent) !important; }
+.border-sky-500\/20, .border-sky-500\/25, .border-sky-500\/30, .border-sky-500\/40, .border-sky-500\/50, .border-sky-500\/60 { border-color: color-mix(in srgb, var(--ajn-accent) 55%, transparent) !important; }
+.hover\:bg-sky-400:hover, .hover\:bg-sky-500:hover { background-color: var(--ajn-accent) !important; }
+.hover\:text-sky-300:hover, .hover\:text-sky-400:hover { color: var(--ajn-text) !important; }
+.bg-sky-600 { background-color: var(--ajn-accent) !important; }
+.ring-sky-400, .ring-sky-500 { --tw-ring-color: var(--ajn-accent) !important; }
+.accent-sky-400 { accent-color: var(--ajn-accent) !important; }
+button.bg-emerald-600,
+[id^="lib-cat-btn-"].bg-emerald-500 {
+  background-color: var(--ajn-accent) !important;
+  color: #ffffff !important;
+}
+
+/* Carry the approved copper treatment into existing primary actions without
+   changing their labels, source data, or click behavior. */
+#canonical-main-viewport [class*="from-red-600"][class*="via-orange-600"][class*="to-amber-500"] {
+  background-image: linear-gradient(120deg, var(--ajn-accent), color-mix(in srgb, var(--ajn-accent) 74%, #000000)) !important;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ajn-accent) 25%, transparent) !important;
+  color: #ffffff !important;
+  --tw-ring-color: color-mix(in srgb, var(--ajn-accent) 60%, transparent) !important;
+}
+#canonical-main-viewport [class*="from-red-600"][class*="via-orange-600"][class*="to-amber-500"] .text-emerald-300,
+#canonical-main-viewport [class*="from-red-600"][class*="via-orange-600"][class*="to-amber-500"] svg[class*="fill-emerald-300"] {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+#root button[class*="from-orange-500"][class*="to-red-600"] {
+  background-image: linear-gradient(135deg, var(--ajn-accent), color-mix(in srgb, var(--ajn-accent) 76%, #000000)) !important;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ajn-accent) 24%, transparent) !important;
+}
+
+/* Keep the existing persistent player dock in the selected theme. */
+#persistent-mini-player {
+  background-color: color-mix(in srgb, var(--ajn-surface) 96%, transparent) !important;
+  border-color: color-mix(in srgb, var(--ajn-muted) 30%, transparent) !important;
+  color: var(--ajn-text) !important;
+  box-shadow: 0 18px 48px color-mix(in srgb, #000000 34%, transparent) !important;
+}
+#persistent-mini-player button[class*="bg-neutral-800"] {
+  background-color: var(--ajn-card) !important;
+  color: var(--ajn-text) !important;
+}
+#persistent-mini-player button[class*="bg-sky-600"] {
+  background-color: var(--ajn-accent) !important;
+  color: #ffffff !important;
+}
+
+/* On narrow screens the driver-mode action belongs in the hero's reading flow,
+   not over its headline. The same action remains available and unchanged. */
+@media (max-width: 639px) {
+  #canonical-main-viewport [class*="top-4"][class*="right-4"]:has(> button[aria-label="Play full show, high-visibility drive button"]) {
+    position: relative !important;
+    inset: auto !important;
+    width: max-content;
+    max-width: calc(100% - 24px);
+    margin: 12px 12px 0 auto;
+  }
+
+  #canonical-main-viewport [class*="min-h-[330px]"] {
+    min-height: 0 !important;
+    padding: 16px 18px 20px !important;
+  }
+}
+
+html[data-ajn-theme="contrast"] .bg-neutral-950,
+html[data-ajn-theme="slate"] .bg-neutral-950 { color: var(--ajn-text); }
+
+/* Appearance controls */
+.ajn-appearance-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  background: rgb(0 0 0 / 68%);
+  backdrop-filter: blur(5px);
+}
+
+.ajn-appearance-panel {
+  width: min(100%, 500px);
+  max-height: min(calc(100dvh - 24px), 900px);
+  overflow-y: auto;
+  border: 1px solid var(--ajn-border);
+  background: var(--ajn-surface);
+  color: var(--ajn-text);
+  padding: 22px;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 45%);
+  animation: ajn-panel-rise 180ms cubic-bezier(.2,.75,.2,1) both;
+}
+
+@keyframes ajn-panel-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ajn-appearance-header, .ajn-contrast-heading, .ajn-appearance-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ajn-appearance-header { border-bottom: 1px solid var(--ajn-border); padding-bottom: 16px; }
+.ajn-appearance-header h2 { margin: 2px 0 0; font-size: 1.65rem; font-weight: 500; }
+.ajn-eyebrow { margin: 0; color: var(--ajn-accent); font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; }
+.ajn-appearance-intro { color: var(--ajn-muted); font-size: 14px; line-height: 1.6; margin: 16px 0; }
+.ajn-icon-button, .ajn-done-button, .ajn-reset-button {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--ajn-border);
+  border-radius: 2px;
+  padding: 0 14px;
+  color: var(--ajn-text);
+  background: var(--ajn-card);
+  cursor: pointer;
+}
+.ajn-icon-button { width: 44px; padding: 0; }
+.ajn-appearance-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.ajn-appearance-field { display: flex; flex-direction: column; gap: 6px; color: var(--ajn-muted); font-size: 12px; font-weight: 600; }
+.ajn-appearance-field select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--ajn-border);
+  border-radius: 2px;
+  background: var(--ajn-card);
+  color: var(--ajn-text);
+  padding: 0 11px;
+  font: inherit;
+}
+.ajn-contrast-report { margin-top: 20px; border: 1px solid var(--ajn-border); background: var(--ajn-card); padding: 14px; }
+.ajn-contrast-heading { border-bottom: 1px solid var(--ajn-border); padding-bottom: 10px; font-weight: 700; }
+.ajn-pass { color: #78c8a4; }
+.ajn-warning { color: #f0bb65; }
+html[data-ajn-theme="paper"] .ajn-warning,
+html[data-ajn-theme="white"] .ajn-warning { color: var(--ajn-accent); }
+.ajn-ratio-row { display: flex; justify-content: space-between; gap: 12px; padding-top: 10px; color: var(--ajn-muted); font-size: 12px; }
+.ajn-ratio-row strong { color: var(--ajn-text); font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.ajn-contrast-report p { margin: 12px 0 0; color: var(--ajn-muted); font-size: 12px; line-height: 1.5; }
+.ajn-appearance-footer { margin-top: 18px; }
+.ajn-reset-button { background: transparent; }
+.ajn-done-button { border-color: var(--ajn-accent); background: var(--ajn-accent); color: #fff; font-weight: 700; }
+.ajn-done-button:hover { filter: brightness(1.08); }
+
+@media (min-width: 700px) {
+  .ajn-appearance-scrim { align-items: center; padding: 24px; }
+  .ajn-appearance-panel { padding: 26px; }
+}
+
+@media (max-width: 420px) {
+  .ajn-appearance-panel { padding: 18px; }
+  .ajn-appearance-fields { grid-template-columns: 1fr; gap: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ajn-appearance-panel { animation: none; }
+}

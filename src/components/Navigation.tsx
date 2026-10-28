@@ -11,6 +11,7 @@ import {
   ChevronDown,
   X,
   Box,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { SuggestInput } from './SuggestInput';
@@ -239,6 +240,16 @@ export function Navigation({
           {/* Right Header Utility: Dev Mode Access & Stream Status */}
           <div className="flex min-w-0 items-center gap-2">
             <StatusIndicators onPlayProgram={onPlayProgram} />
+            <button
+              type="button"
+              id="open-appearance-settings"
+              aria-label="Open appearance settings"
+              title="Appearance settings"
+              onClick={() => window.dispatchEvent(new Event('ajn:open-appearance'))}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-neutral-800 bg-neutral-900 text-neutral-300 transition hover:border-sky-500/50 hover:text-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+            </button>
             <form
               ref={searchRef}
               role="search"
