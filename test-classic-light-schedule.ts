@@ -47,6 +47,8 @@ const emptyChannel: ScheduleChannel = {
   sourceStatus: 'restricted',
   sourceError: 'Synthetic restriction state',
 };
+const deferredChannel: ScheduleChannel = { ...channel, id: 'cx-fixture', deferLightRows: true };
+const prefixOnlyChannel: ScheduleChannel = { ...channel, id: 'cx-existing-with-default-light-window' };
 
 const selected = selectNowAndNext(programs, 10.5, nowMs, 0);
 assert.deepEqual(selected.map((program) => program.id), ['current', 'next-1', 'next-2']);
@@ -64,6 +66,12 @@ assert.equal(first.playlistName, 'Synthetic local fixture');
 assert.equal(first.programsComplete, false);
 assert.deepEqual(light.channels[1].programs, []);
 assert.equal(light.channels[1].sourceStatus, 'restricted');
+const deferred = buildClassicLightSchedule([deferredChannel], nowMs, '0').channels[0];
+assert.deepEqual(deferred.programs, [], 'Infobattalion episode rows are omitted from the main light payload');
+assert.equal(deferred.programCount, 6, 'the UI can show the number of programs available on demand');
+assert.equal(deferred.hasCurrentProgram, true, 'On now and one-click play retain current-program knowledge');
+assert.equal(deferred.programsComplete, false);
+assert.deepEqual(buildClassicLightSchedule([prefixOnlyChannel], nowMs, '0').channels[0].programs.map((program) => program.id), ['current', 'next-1', 'next-2'], 'channel IDs alone do not alter existing light-row behavior');
 assert.equal(Buffer.byteLength(JSON.stringify(light)) < 2 * 1024 * 1024, true);
 assert.throws(() => buildClassicLightSchedule([channel], nowMs, undefined), /tz must be Date#getTimezoneOffset/);
 const titleSearch = searchClassicProgramTitles([channel], 'synthetic hidden');
@@ -74,4 +82,4 @@ const mixedSearch = filterChannels(numberChannels([lightChannel]), titleIndex, '
 assert.equal(mixedSearch.rows.length, 1, 'server title evidence preserves query terms split between channel name and hidden title');
 assert.equal(mixedSearch.matchedShow.has(channel.id), false, 'mixed channel/title matches do not invent a single title hit');
 
-console.log('PASS classic-light-schedule: now+next2, title index, empty/restricted rows, timezone validation, 2 MiB budget');
+console.log('PASS classic-light-schedule: now+next2, deferred episodes, title index, empty/restricted rows, timezone validation, 2 MiB budget');

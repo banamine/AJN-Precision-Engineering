@@ -859,7 +859,7 @@ export function layoutArchiveItemGuide(
 }
 /** User-requested extra channels (tools/build-extra-channels-manifest.py): INFOWARS NIGHTLY NEWS + INFO WARS SURVIVAL (cable-tv),
  *  uploader / Random / Star Wars movie channels (movies-classics-vault). Real Archive runtimes; deterministic daily rotation. */
-interface ExtraChannelsManifest{schema:string;channels:{guideId:string;id:string;name:string;group:string;rows:{id:string;identifier:string;file:string;title:string;bytes:number;durationSeconds:number;thumb:string|null}[]}[]}
+interface ExtraChannelsManifest{schema:string;channels:{guideId:string;id:string;name:string;group:string;deferLightRows?:boolean;rows:{id:string;identifier:string;file:string;title:string;bytes:number;durationSeconds:number;thumb:string|null}[]}[]}
 const extraBase=new Map<string,Program[]>();
 const AMC_EPISODES_CHANNEL_ID='ajn-allmychildren-episodes';
 /** Full, unrotated All My Children channels. The Library must index every episode/extra, not just the day's grid slice. */
@@ -886,7 +886,7 @@ async function getExtraChannels(guideId:string,now:Date):Promise<ScheduleChannel
     }
     let base=extraBase.get(c.id);
     if(!base){base=c.rows.map(r=>showSourceProgram({...r,channelId:c.id,channelName:c.name,series:c.name},guideId));extraBase.set(c.id,base);}
-    return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs:layoutRotatingDailySchedule(base,100,now),sourceStatus:'snapshot' as const};
+    return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs:layoutRotatingDailySchedule(base,100,now),sourceStatus:'snapshot' as const,...(c.deferLightRows===true?{deferLightRows:true}:{})};
   });
 }
 
@@ -918,7 +918,20 @@ async function getScheduleForGuideRaw(guideId='cable-tv',movieNow?:Date):Promise
     const classic=await addArchiveItemGuide([{id:honeymooners.id,guideId,name:honeymooners.name,mediaType:'video',group:'Classic TV',programs:honeymooners.programs.map((program) => upsertCanonicalProgram(program))},...series,deathValley,...highlights]);
     // @infobattalion "Tv Classics" additions (tools/build-infobattalion-lists.py): bounded daily rotation, one channel per show, appended last so they never replace a curated channel.
     const taken=new Set(classic.map(c=>c.id));
-    return [...classic,...(await getExtraChannels(guideId,buildTime)).filter(c=>!taken.has(c.id))];
+    const names=new Set(classic.map(c=>normShowName(c.name)));
+    const additions=(await getExtraChannels(guideId,buildTime)).filter(c=>!taken.has(c.id)).map(channel=>{
+      let name=channel.name;
+      const key=normShowName(name);
+      if(names.has(key)){
+        const base=`${name} (Archive.org)`;
+        name=base;
+        let suffix=2;
+        while(names.has(normShowName(name)))name=`${base} ${suffix++}`;
+      }
+      names.add(normShowName(name));
+      return name===channel.name?channel:{...channel,name};
+    });
+    return [...classic,...additions];
   }
   if(guideId==='audio-podcasts'){
     const [existing,catalog,podcasts,liveRadio]=await Promise.all([
