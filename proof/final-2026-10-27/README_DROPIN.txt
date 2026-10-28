@@ -28,8 +28,9 @@ vite.config.ts
 
 Changes covered:
 - Allow the Replit, Cloud Run, AI Studio, and localhost preview hosts.
-- Correct the four failing tests: three stale expectations/fixtures and two
-  real UI issues (callback stability and Audio Bridge render churn).
+- Update the four failing test files to match the current player contracts;
+  fix Recently Played callback stability, Audio Bridge render churn, and mute
+  state visibility.
 - Prefer playable H.264 IA Rush derivatives, with original public MPEG4 as a
   fallback; rebuild the role-tagged Rush index with validated dates and stable
   Archive.org paging.
