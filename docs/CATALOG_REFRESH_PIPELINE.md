@@ -43,13 +43,21 @@ Other facts the numbers rest on:
 ## Movies list: films vs TV shows
 `classify_movie_list_item` (tools/build-infobattalion-lists.py) looks at each Movies-list item on its own:
 - has at least one feature-length (>= 45 min), non-episode file → **Movies** (as before);
-- no feature-length file, but 2+ episode-like files (S01E02 / Season / Episode / 1x05 / "Part 1 of 2" titles, or 10-45 min long) → **Classic TV**, one lazy channel per show (3+ files) or "Classic TV Specials & Singles";
+- no feature-length file, but 2+ files with TV-style titles (S01E02 / Season / Episode / 1x05 / "Part 1 of 2"), or 3+ files of 10-45 min → **Classic TV**, one lazy channel per show (3+ files) or "Classic TV Specials & Singles";
+- **owner override wins:** `config/catalog-overrides.json` → `{"items": {"<identifier>": "movie" | "tv" | "skip"}}`;
 - otherwise dropped. Every rerouted and dropped item is listed in `reports/infobattalion-lists.json` (`movies_rerouted_to_tv`, `movies_list_dropped`).
 Duplicates, private files and placeholders are still removed by the admission rules.
 
+## Sources (fail-closed)
+`config/catalog-refresh.json → sources.infobattalion`: the builder reads a source only when `enabled` is true **and**
+its entry in `lists` is true (documentary, music, cartoons, tv, movies, nwt, otr, plus the two broad searches
+`opensource` = opensource_movies "filmography" and `atlas` = @atlas_taggart826). Missing = off. Turning one off removes
+its generated channels on the next run, which the gate sends to review.
+
 ## Playability probe (`tools/catalog-probe.mjs`)
 Every **new** row/documentary entry (compared with `main`) gets a real `Range: bytes=0-1023` request to archive.org, paced 1.55 s.
-200/206 with a media content type passes; anything else (403/404, HTML error page, timeout after one retry) is **removed**
+200/206 with a media content type (video/*, audio/*, application/octet-stream|mp4|ogg) and at least 1 body byte passes;
+redirects are followed by hand so every hop is paced and recorded; anything else (403/404, HTML error page, timeout after one retry) is **removed**
 from the data files before the gate runs, and a new channel left empty is dropped. HTTP 429/503 stops probing; the rest
 count as "not probed" and the PR goes to review. More than 5 % failures also sends it to review.
 Cost: ~1.55 s per new file, so a typical nightly add of a few dozen files takes about a minute.
@@ -66,6 +74,8 @@ Cost: ~1.55 s per new file, so a typical nightly add of a few dozen files takes 
 | New audio channels | ≤ 10 | review |
 | New Classic TV channel not lazy-loaded | none allowed | review |
 | Probe did not run, stopped early, or > 5 % failed | — | review |
+| Existing documentary entry moved to another group, or existing audio channel changed | none allowed | review |
+| Existing rows/entries changed in place (title, duration, file details) | ≤ 100 | review |
 | Payload above auto-merge ceiling | — | review |
 | Payload above hard limit, or measurement missing | — | **block** (PR opened, must not merge) |
 

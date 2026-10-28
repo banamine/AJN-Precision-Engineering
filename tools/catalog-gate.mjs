@@ -36,6 +36,7 @@ export function evaluate(base, head, measure, config, probe = null) {
   const movedChannels = [];
   let addedRows = 0;
   let removedRows = 0;
+  let modifiedRows = 0;
   const shrunkChannels = [];
   for (const [id, after] of headExtra) {
     const before = baseExtra.get(id);
@@ -44,11 +45,14 @@ export function evaluate(base, head, measure, config, probe = null) {
     if (before.guideId !== after.guideId || before.group !== after.group) {
       movedChannels.push({ id, from: `${before.guideId}/${before.group}`, to: `${after.guideId}/${after.group}` });
     }
-    const beforeRows = new Set((before.rows ?? []).map(rowKey));
-    const afterRows = new Set((after.rows ?? []).map(rowKey));
+    const beforeRows = new Map((before.rows ?? []).map((r) => [rowKey(r), r]));
+    const afterRows = new Map((after.rows ?? []).map((r) => [rowKey(r), r]));
     let gone = 0;
-    for (const key of beforeRows) if (!afterRows.has(key)) gone++;
-    for (const key of afterRows) if (!beforeRows.has(key)) addedRows++;
+    for (const key of beforeRows.keys()) if (!afterRows.has(key)) gone++;
+    for (const [key, row] of afterRows) {
+      if (!beforeRows.has(key)) addedRows++;
+      else if (JSON.stringify(beforeRows.get(key)) !== JSON.stringify(row)) modifiedRows++;
+    }
     if (gone) { removedRows += gone; shrunkChannels.push({ id, removedRows: gone }); }
   }
   for (const c of removedChannels) removedRows += c.rows?.length ?? 0;
@@ -58,6 +62,15 @@ export function evaluate(base, head, measure, config, probe = null) {
   const headDocs = new Set((head.docs ?? []).map(docKey));
   const addedDocs = [...headDocs].filter((k) => !baseDocs.has(k)).length;
   const removedDocs = [...baseDocs].filter((k) => !headDocs.has(k)).length;
+  const baseDocByKey = new Map((base.docs ?? []).map((e) => [docKey(e), e]));
+  let modifiedDocs = 0;
+  let movedDocs = 0;
+  for (const e of head.docs ?? []) {
+    const before = baseDocByKey.get(docKey(e));
+    if (!before) continue;
+    if (before.g !== e.g) movedDocs++;
+    else if (JSON.stringify(before) !== JSON.stringify(e)) modifiedDocs++;
+  }
   const baseDocGroups = new Set((base.docs ?? []).map((e) => e.g));
   const newDocGroups = [...new Set((head.docs ?? []).map((e) => e.g))].filter((g) => !baseDocGroups.has(g));
 
@@ -65,11 +78,13 @@ export function evaluate(base, head, measure, config, probe = null) {
   const headAudio = new Map((head.audio ?? []).map((a) => [a.id, a]));
   const addedAudio = [...headAudio.keys()].filter((id) => !baseAudio.has(id));
   const removedAudio = [...baseAudio.keys()].filter((id) => !headAudio.has(id));
+  const modifiedAudio = [...headAudio.entries()].filter(([id, a]) => baseAudio.has(id) && JSON.stringify(baseAudio.get(id)) !== JSON.stringify(a)).map(([id]) => id);
 
   const notDeferred = addedChannels.filter((c) => c.guideId === 'classic-tv' && c.deferLightRows !== true).map((c) => c.id);
 
   const changed = addedChannels.length || removedChannels.length || renamedChannels.length || movedChannels.length
-    || addedRows || removedRows || addedDocs || removedDocs || addedAudio.length || removedAudio.length;
+    || addedRows || removedRows || addedDocs || removedDocs || addedAudio.length || removedAudio.length
+    || modifiedRows || modifiedDocs || movedDocs || modifiedAudio.length;
 
   if (!rules.allowRemovals) {
     if (removedChannels.length) review.push(`${removedChannels.length} channel(s) removed: ${removedChannels.map((c) => c.id).slice(0, 10).join(', ')}`);
@@ -79,6 +94,10 @@ export function evaluate(base, head, measure, config, probe = null) {
   }
   if (!rules.allowRenames && renamedChannels.length) review.push(`${renamedChannels.length} channel name(s) changed`);
   if (movedChannels.length) review.push(`${movedChannels.length} channel(s) moved to another guide/group`);
+  if (movedDocs) review.push(`${movedDocs} documentary entr(ies) moved to another group`);
+  if (modifiedAudio.length) review.push(`${modifiedAudio.length} existing audio channel(s) changed: ${modifiedAudio.slice(0, 10).join(', ')}`);
+  const modified = modifiedRows + modifiedDocs;
+  if (modified > rules.maxModifiedEntries) review.push(`${modified} existing rows/entries changed (title, duration, file details) > limit ${rules.maxModifiedEntries}`);
   if (addedChannels.length > rules.maxNewChannels) review.push(`${addedChannels.length} new channels > limit ${rules.maxNewChannels}`);
   if (addedRows > rules.maxNewRows) review.push(`${addedRows} new rows > limit ${rules.maxNewRows}`);
   if (addedDocs > rules.maxNewDocumentaryEntries) review.push(`${addedDocs} new documentary entries > limit ${rules.maxNewDocumentaryEntries}`);
@@ -120,12 +139,13 @@ export function evaluate(base, head, measure, config, probe = null) {
       renamedChannels: renamedChannels.length, movedChannels: movedChannels.length,
       addedRows, removedRows, addedDocs, removedDocs, newDocGroups: newDocGroups.length,
       addedAudio: addedAudio.length, removedAudio: removedAudio.length,
+      modifiedRows, modifiedDocs, movedDocs, modifiedAudio: modifiedAudio.length,
     },
     addedChannels: addedChannels.map((c) => ({ id: c.id, guideId: c.guideId, group: c.group, name: c.name, rows: c.rows?.length ?? 0, deferLightRows: c.deferLightRows === true })),
     removedChannels: removedChannels.map((c) => ({ id: c.id, name: c.name, rows: c.rows?.length ?? 0 })),
     renamedChannels, movedChannels, shrunkChannels, newDocGroups, addedAudio, removedAudio,
     measure,
-    probe: probe ? { targets: probe.targets, probed: probe.probed, ok: probe.ok, failed: probe.failed.length, unprobed: probe.unprobed, droppedChannels: probe.droppedChannels ?? [] } : null,
+    probe: probe ? { targets: probe.targets, probed: probe.probed, ok: probe.ok, failed: probe.failed.length, unprobed: probe.unprobed, requests: probe.requests ?? null, droppedChannels: probe.droppedChannels ?? [] } : null,
     note: 'Station numbers are alphabetical positions (src/guide/channelIndex.ts numberChannels), so any added channel renumbers the channels after it. Not gated.',
   };
 }
@@ -144,6 +164,7 @@ export function summaryMarkdown(report) {
     `| audio channels | ${c.addedAudio} | ${c.removedAudio} |`,
     '',
     `Renamed: ${c.renamedChannels} · Moved: ${c.movedChannels} · New documentary groups: ${c.newDocGroups}`,
+    `Changed in place: ${c.modifiedRows} rows · ${c.modifiedDocs} documentary entries · ${c.movedDocs} documentary entries moved · ${c.modifiedAudio} audio channels`,
   ];
   if (report.measure) {
     const m = report.measure;

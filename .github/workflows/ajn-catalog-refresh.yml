@@ -29,6 +29,7 @@ on:
       - tools/catalog-probe.mjs
       - tools/build-infobattalion-lists.py
       - config/catalog-refresh.json
+      - config/catalog-overrides.json
 
 permissions:
   contents: write

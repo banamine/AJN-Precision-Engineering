@@ -27,11 +27,14 @@ export function newTargets(base, head) {
   return targets;
 }
 
-/** Pure: is this response a playable media answer? */
-export function judge(status, contentType) {
+const MEDIA_TYPE = /^(video\/|audio\/|application\/(octet-stream|mp4|ogg|x-matroska)|binary\/octet-stream)/;
+
+/** Pure: is this response a playable media answer? Needs 200/206, a media content type and at least 1 body byte. */
+export function judge(status, contentType, bodyBytes) {
   if (status !== 200 && status !== 206) return { ok: false, reason: `HTTP ${status}` };
-  const type = String(contentType ?? '').toLowerCase();
-  if (type.includes('text/html') || type.includes('application/json')) return { ok: false, reason: `not media (${type})` };
+  const type = String(contentType ?? '').toLowerCase().trim();
+  if (!MEDIA_TYPE.test(type)) return { ok: false, reason: `not media (${type || 'no content-type'})` };
+  if (!(bodyBytes > 0)) return { ok: false, reason: 'empty body' };
   return { ok: true };
 }
 
@@ -53,21 +56,54 @@ export function applyFailures(base, head, failedKeys) {
   };
 }
 
-async function probeOne(url, fetchImpl, timeoutMs) {
+async function readUpTo(res, limit) {
+  if (!res.body) return 0;
+  const reader = res.body.getReader();
+  let total = 0;
+  try {
+    while (total < limit) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+    }
+  } finally {
+    try { await reader.cancel(); } catch { /* stream already closed */ }
+  }
+  return total;
+}
+
+/** One target: redirects are followed by hand so every hop is paced and counted. */
+async function probeOne(url, { fetchImpl, timeoutMs, pace, ledger }) {
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let target = url;
     try {
-      const res = await fetchImpl(url, { headers: { Range: 'bytes=0-1023', 'User-Agent': UA }, redirect: 'follow', signal: controller.signal });
-      try { await res.body?.cancel(); } catch { /* body not needed */ }
-      if (res.status === 429 || res.status === 503) return { stop: true, status: res.status };
-      if (res.status >= 500 && attempt === 1) { await new Promise((r) => setTimeout(r, 5000)); continue; }
-      return { status: res.status, ...judge(res.status, res.headers.get('content-type')) };
+      for (let hop = 0; hop < 6; hop++) {
+        await pace();
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        let res;
+        try {
+          res = await fetchImpl(target, { headers: { Range: 'bytes=0-1023', 'User-Agent': UA }, redirect: 'manual', signal: controller.signal });
+          ledger.push({ url: target, status: res.status, hop, attempt });
+          const location = res.headers.get('location');
+          if (res.status >= 300 && res.status < 400 && location) {
+            try { await res.body?.cancel(); } catch { /* not needed */ }
+            target = new URL(location, target).href;
+            continue;
+          }
+          if (res.status === 429 || res.status === 503) { try { await res.body?.cancel(); } catch { /* not needed */ } return { stop: true, status: res.status }; }
+          if (res.status >= 500 && attempt === 1) { try { await res.body?.cancel(); } catch { /* not needed */ } break; }
+          const bytes = res.status === 200 || res.status === 206 ? await readUpTo(res, 1024) : 0;
+          if (!bytes) { try { await res.body?.cancel(); } catch { /* not needed */ } }
+          return { status: res.status, ...judge(res.status, res.headers.get('content-type'), bytes) };
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      if (attempt === 2) return { ok: false, status: 0, reason: 'too many redirects or server error' };
     } catch (error) {
+      ledger.push({ url: target, error: error?.name === 'AbortError' ? 'timeout' : String(error?.message ?? error), attempt });
       if (attempt === 2) return { ok: false, status: 0, reason: error?.name === 'AbortError' ? 'timeout' : String(error?.message ?? error) };
-      await new Promise((r) => setTimeout(r, 5000));
-    } finally {
-      clearTimeout(timer);
     }
   }
   return { ok: false, status: 0, reason: 'unreachable' };
@@ -75,17 +111,20 @@ async function probeOne(url, fetchImpl, timeoutMs) {
 
 export async function probe(targets, { fetchImpl = fetch, intervalMs = 1550, timeoutMs = 30000, max = 4000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
   const failed = [];
+  const ledger = [];
   let ok = 0;
   let stoppedAt = null;
+  let started = false;
+  // Every request (including redirect hops and retries) waits intervalMs after the previous one.
+  const pace = async () => { if (started) await sleep(intervalMs); started = true; };
   const limit = Math.min(targets.length, max);
   for (let i = 0; i < limit; i++) {
-    if (i > 0) await sleep(intervalMs);
-    const result = await probeOne(targets[i].url, fetchImpl, timeoutMs);
+    const result = await probeOne(targets[i].url, { fetchImpl, timeoutMs, pace, ledger });
     if (result.stop) { stoppedAt = { index: i, status: result.status }; break; }
     if (result.ok) ok++; else failed.push({ ...targets[i], status: result.status, reason: result.reason });
   }
   const probed = stoppedAt ? stoppedAt.index : limit;
-  return { targets: targets.length, probed, ok, failed, unprobed: targets.length - probed, stoppedAt };
+  return { targets: targets.length, probed, ok, failed, unprobed: targets.length - probed, stoppedAt, requests: ledger.length, ledger };
 }
 
 function args(argv) {

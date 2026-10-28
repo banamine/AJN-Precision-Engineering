@@ -71,9 +71,13 @@ assert.match(evaluate(base, add, okMeasure, config, { ...okProbe, ok: 2, failed:
 const targets = newTargets(base, add);
 assert.deepEqual(targets.map((t) => t.kind).sort(), ['doc', 'row', 'row']);
 assert.equal(rowUrl({ identifier: 'my item', file: 'dir/A & B.mp4' }), 'https://archive.org/download/my%20item/dir/A%20%26%20B.mp4');
-assert.deepEqual(judge(206, 'video/mp4'), { ok: true });
-assert.equal(judge(200, 'text/html; charset=utf-8').ok, false);
-assert.equal(judge(403, 'video/mp4').ok, false);
+assert.deepEqual(judge(206, 'video/mp4', 1024), { ok: true });
+assert.deepEqual(judge(206, 'application/octet-stream', 10), { ok: true });
+assert.equal(judge(200, 'text/html; charset=utf-8', 500).ok, false);
+assert.equal(judge(200, 'text/plain', 500).ok, false, 'text/plain is not media');
+assert.equal(judge(206, '', 500).ok, false, 'missing content type is not media');
+assert.equal(judge(206, 'video/mp4', 0).reason, 'empty body');
+assert.equal(judge(403, 'video/mp4', 0).ok, false);
 const pruned = applyFailures(base, add, ['b1/a.mp4', 'a3/a.mp4']);
 assert.deepEqual(pruned.droppedChannels, ['tvx-b'], 'a new channel whose only row failed is dropped');
 assert.equal(pruned.extra.channels.find((c) => c.id === 'tvx-a').rows.length, 2, 'existing channel keeps its old rows, loses the failed new one');
@@ -87,5 +91,30 @@ calls = 0;
 const limited = async () => (calls++ === 0 ? new Response('x', { status: 206, headers: { 'content-type': 'video/mp4' } }) : new Response('slow down', { status: 429 }));
 result = await probe(targets, { fetchImpl: limited, sleep: async () => {} });
 assert.equal(result.probed, 1); assert.equal(result.unprobed, 2); assert.equal(result.stoppedAt.status, 429);
+
+// Redirect hops are followed by hand, each one paced and recorded
+const hops = [];
+let sleeps = 0;
+const redirecting = async (url, init) => {
+  hops.push(url); assert.equal(init.redirect, 'manual');
+  return url.includes('ia800') ? new Response('abc', { status: 206, headers: { 'content-type': 'video/mp4' } })
+    : new Response(null, { status: 302, headers: { location: 'https://ia800.us.archive.org/1/items/x/a.mp4' } });
+};
+result = await probe([targets[0]], { fetchImpl: redirecting, sleep: async () => { sleeps++; } });
+assert.equal(result.ok, 1); assert.equal(hops.length, 2); assert.equal(result.requests, 2); assert.equal(sleeps, 1, 'the redirect hop waited its turn');
+
+// In-place changes to existing entries are seen
+const edited = clone(base); edited.extra.channels[0].rows[0].title = 'New title';
+r = evaluate(base, edited, okMeasure, config, okProbe);
+assert.notEqual(r.verdict, 'none'); assert.equal(r.counts.modifiedRows, 1); assert.equal(r.verdict, 'auto', 'a few title fixes can still auto-merge');
+const docMoved = clone(base); docMoved.docs[0].g = 'Other group';
+r = evaluate(base, docMoved, okMeasure, config, okProbe);
+assert.equal(r.counts.movedDocs, 1); assert.equal(r.verdict, 'review');
+const audioEdit = clone(base); audioEdit.audio[0].name = 'Renamed';
+r = evaluate(base, audioEdit, okMeasure, config, okProbe);
+assert.equal(r.counts.modifiedAudio, 1); assert.equal(r.verdict, 'review');
+const bigBase = clone(base); bigBase.extra.channels[0].rows = Array.from({ length: config.autoMerge.maxModifiedEntries + 1 }, (_, i) => row(`m${i}`));
+const bigEdit = clone(bigBase); bigEdit.extra.channels[0].rows.forEach((x) => { x.title = 'changed'; });
+assert.match(evaluate(bigBase, bigEdit, okMeasure, config, okProbe).reasons.join(' '), /existing rows\/entries changed/);
 
 console.log('PASS catalog-gate: none/auto/review/block verdicts, removals, renames, moves, limits, lazy-load, budgets, playability probe');

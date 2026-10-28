@@ -1,0 +1,5 @@
+{
+  "schema": "ajn.catalogOverrides.v1",
+  "note": "Owner decisions for single Archive items on the Movies list. Values: movie | tv | skip. Key = Archive identifier.",
+  "items": {}
+}

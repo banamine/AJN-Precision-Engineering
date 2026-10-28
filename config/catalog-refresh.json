@@ -2,8 +2,28 @@
   "schema": "ajn.catalogRefresh.v1",
   "note": "Thresholds for tools/catalog-gate.mjs. Measured baseline 2026-10-28 on main 8063eb2: classic light 993,290 B; classic full 33,150,193 B; cable-tv 2.07 MB; movies 0.18 MB; science-documentaries 3.66 MB.",
   "sources": {
-    "infobattalion": { "enabled": true, "builder": "tools/build-infobattalion-lists.py", "account": "@infobattalion" },
-    "seamac": { "enabled": false, "account": "@seamac", "status": "pending Replit discovery (claude/GO_REPLIT_ARCHIVE_LIST_REFRESH_DISCOVERY_2026-10-28.txt); needs its own builder section and owner category decisions" }
+    "infobattalion": {
+      "enabled": true,
+      "builder": "tools/build-infobattalion-lists.py",
+      "account": "@infobattalion",
+      "lists": {
+        "documentary": true,
+        "music": true,
+        "cartoons": true,
+        "tv": true,
+        "movies": true,
+        "nwt": true,
+        "otr": true,
+        "opensource": true,
+        "atlas": true
+      },
+      "note": "Fail-closed: the builder reads a list/source only when enabled is true AND its entry here is true. opensource = opensource_movies 'filmography' search; atlas = @atlas_taggart826 account (both broad searches, not owner lists). Turning a source off removes its generated channels on the next run, which the gate sends to review."
+    },
+    "seamac": {
+      "enabled": false,
+      "account": "@seamac",
+      "status": "pending Replit discovery (claude/GO_REPLIT_ARCHIVE_LIST_REFRESH_DISCOVERY_2026-10-28.txt); needs its own builder section and owner category decisions"
+    }
   },
   "dataFiles": {
     "extra": "src/data/extraChannelsManifest.json",
@@ -18,16 +38,37 @@
     "allowRemovals": false,
     "allowRenames": false,
     "requireDeferredClassicChannels": true,
-    "maxProbeFailureRate": 0.05
+    "maxProbeFailureRate": 0.05,
+    "maxModifiedEntries": 100
   },
   "budgets": {
-    "classicLightBytes": { "hardLimit": 2097152, "autoMergeMax": 1782579 },
-    "classicFullGzipBytes": { "hardLimit": 33554432, "autoMergeMax": 16777216, "note": "full /api/schedule?guide=classic-tv is always gzipped above 28 MiB raw (server.ts); Cloud Run drops HTTP/1 bodies above 32 MiB, so the sent (gzipped) size is what must stay under it" },
-    "classicFullBytes": { "hardLimit": 104857600, "autoMergeMax": 62914560, "note": "raw JSON built in server memory (Cloud Run 3Gi); 33.2 MB at baseline" },
+    "classicLightBytes": {
+      "hardLimit": 2097152,
+      "autoMergeMax": 1782579
+    },
+    "classicFullGzipBytes": {
+      "hardLimit": 33554432,
+      "autoMergeMax": 16777216,
+      "note": "full /api/schedule?guide=classic-tv is always gzipped above 28 MiB raw (server.ts); Cloud Run drops HTTP/1 bodies above 32 MiB, so the sent (gzipped) size is what must stay under it"
+    },
+    "classicFullBytes": {
+      "hardLimit": 104857600,
+      "autoMergeMax": 62914560,
+      "note": "raw JSON built in server memory (Cloud Run 3Gi); 33.2 MB at baseline"
+    },
     "guideMB": {
-      "movies-classics-vault": { "hardLimit": 3, "autoMergeMax": 2.7 },
-      "cable-tv": { "hardLimit": 4, "autoMergeMax": 3.6 },
-      "science-documentaries": { "hardLimit": 6, "autoMergeMax": 5.4 }
+      "movies-classics-vault": {
+        "hardLimit": 3,
+        "autoMergeMax": 2.7
+      },
+      "cable-tv": {
+        "hardLimit": 4,
+        "autoMergeMax": 3.6
+      },
+      "science-documentaries": {
+        "hardLimit": 6,
+        "autoMergeMax": 5.4
+      }
     }
   }
 }
