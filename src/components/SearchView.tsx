@@ -483,7 +483,7 @@ const [query, setQuery] = useState<string>('');
       {loading ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-16 text-center space-y-3">
           <RefreshCw className="mx-auto h-8 w-8 text-purple-400 animate-spin" />
-          <p className="text-xs text-neutral-400 font-medium">Searching Archive.org TV News collections...</p>
+          <p className="text-xs text-neutral-400 font-medium">Searching Library TV News collections...</p>
         </div>
       ) : items.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
