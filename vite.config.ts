@@ -75,6 +75,7 @@ export default defineConfig(() => {
       },
     },
     server: {
+      allowedHosts: ['.replit.dev', '.run.app', '.ai.studio', 'localhost'],
       hmr: hmrEnabled ? {} : false,
       watch: hmrEnabled ? {} : null,
     },

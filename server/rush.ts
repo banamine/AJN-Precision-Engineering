@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as nodePath from 'node:path';
 import { archiveApiFetch } from './archiveLimiter';
 
-export interface RushIndexEntry { id: string; date: string; year: number; }
+export interface RushIndexEntry { id: string; date: string; year: number; role?: 'morning-update' | 'full-show'; }
 export interface RushTrack { file: string; durationSeconds: number; size?: number; format?: string; archivePath: string; mediaUrl: string; kind?: string; role?: string; }
 interface CacheEntry { resolvedAt: string; files: Array<Omit<RushTrack, 'archivePath' | 'mediaUrl'>>; }
 
@@ -19,7 +19,15 @@ let rushIndexCache: RushIndexEntry[] | null = null;
 export async function getRushIndex(): Promise<RushIndexEntry[]> {
   if (!rushIndexCache) {
     const mod: any = await import('../src/data/rushIndex.json');
-    rushIndexCache = ((mod.default ?? mod) as RushIndexEntry[]).filter((e) => e && typeof e.id === 'string' && DATE.test(e.date));
+    rushIndexCache = ((mod.default ?? mod) as RushIndexEntry[])
+      .filter((e) => e && typeof e.id === 'string' && DATE.test(e.date))
+      .map((entry) => ({
+        ...entry,
+        // Older snapshots omit role; infer it from the stable Archive identifier.
+        role: entry.role === 'morning-update' || entry.role === 'full-show'
+          ? entry.role
+          : /(?:^|[-_/])morning-update(?:[-_/]|$)/i.test(entry.id) ? 'morning-update' : 'full-show',
+      }));
   }
   return rushIndexCache;
 }
@@ -121,12 +129,23 @@ export async function resolveRushItem(id: string): Promise<{ id: string; source:
   const meta: any = await r.json();
   if (meta?.is_dark || !Array.isArray(meta?.files)) throw Object.assign(new Error('item unavailable'), { status: 404 });
   if (id.includes('morning-update')) {
-    const f = (meta?.files ?? []).find((file: any) =>
+    const files = meta.files.filter((file: any) => !/^true$/i.test(String(file?.private ?? '')));
+    const derivative = files.find((file: any) =>
       file?.format === 'h.264 IA' &&
       String(file?.name ?? '').endsWith('.ia.mp4') &&
       seconds(file?.length) > 0
     );
-    if (!f) throw new Error('no h.264 Morning Update video');
+    // Archive's original MPEG4 uploads tested for the 2014–2016 Morning
+    // Updates contain H.264 video + AAC audio. Prefer the standardized IA
+    // derivative whenever it exists; use the original only as that fallback.
+    const originalMpeg4 = files.find((file: any) =>
+      file?.source === 'original' &&
+      /^mpeg4$/i.test(String(file?.format ?? '')) &&
+      /\.mp4$/i.test(String(file?.name ?? '')) &&
+      seconds(file?.length) > 0
+    );
+    const f = derivative ?? originalMpeg4;
+    if (!f) throw new Error('no compatible Morning Update MP4');
     const singleFile = {
       file: String(f.name),
       durationSeconds: seconds(f.length),

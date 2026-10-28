@@ -12,6 +12,7 @@ const BAR_COUNT = 120;
 export function AudioBridgeStatus({ analyser = null, bufferLine = "Buffer: idle", onCopyBufferLog }: AudioBridgeStatusProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const signalActiveRef = useRef(false);
   const [signalActive, setSignalActive] = useState(false);
   const [copyLabel, setCopyLabel] = useState('Copy buffer log');
 
@@ -39,7 +40,10 @@ export function AudioBridgeStatus({ analyser = null, bufferLine = "Buffer: idle"
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (!analyser || !frequencyData) {
-        setSignalActive(false);
+        if (signalActiveRef.current) {
+          signalActiveRef.current = false;
+          setSignalActive(false);
+        }
         animationFrameRef.current = requestAnimationFrame(render);
         return;
       }
@@ -53,7 +57,11 @@ export function AudioBridgeStatus({ analyser = null, bufferLine = "Buffer: idle"
         total += frequencyData[i];
       }
       const average = frequencyData.length > 0 ? total / frequencyData.length : 0;
-      setSignalActive(peak > 8 || average > 3);
+      const nextSignalActive = peak > 8 || average > 3;
+      if (signalActiveRef.current !== nextSignalActive) {
+        signalActiveRef.current = nextSignalActive;
+        setSignalActive(nextSignalActive);
+      }
 
       const barWidth = canvas.width / BAR_COUNT;
       for (let bar = 0; bar < BAR_COUNT; bar += 1) {

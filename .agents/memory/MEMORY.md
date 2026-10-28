@@ -1,0 +1,1 @@
+- [Archive search pagination](archive-search-pagination.md) — Internet Archive advancedsearch can ignore `start`; use stable sorting with page-based pagination.

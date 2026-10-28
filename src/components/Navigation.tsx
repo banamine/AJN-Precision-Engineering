@@ -11,11 +11,13 @@ import {
   ChevronDown,
   X,
   Box,
+  Settings2,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { SuggestInput } from './SuggestInput';
 import type { SuggestCandidate } from '../utils/suggest';
 import { StatusIndicators } from './StatusIndicators';
+import { useAjnAppearance } from './ajn-platform-redesign/AppearanceProvider';
 
 interface NavigationProps {
   currentDestination: Destination;
@@ -79,6 +81,7 @@ export function Navigation({
   suggestions = [],
   onPlayProgram,
 }: NavigationProps) {
+  const { openAppearance } = useAjnAppearance();
   const [vaultOpen, setVaultOpen] = useState(false);
   const vaultRef = useRef<HTMLDivElement>(null);
   const closeVault = React.useCallback(() => setVaultOpen(false), []);
@@ -239,6 +242,16 @@ export function Navigation({
           {/* Right Header Utility: Dev Mode Access & Stream Status */}
           <div className="flex min-w-0 items-center gap-2">
             <StatusIndicators onPlayProgram={onPlayProgram} />
+            <button
+              type="button"
+              id="ajn-appearance-open"
+              onClick={openAppearance}
+              aria-label="Open appearance settings"
+              title="Appearance settings"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 text-neutral-200 transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            >
+              <Settings2 className="h-5 w-5" aria-hidden="true" />
+            </button>
             <form
               ref={searchRef}
               role="search"
