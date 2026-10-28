@@ -120,9 +120,13 @@ export interface ScheduleChannel {
   programCount?: number;
   /** True when more titles/rows exist beyond the light window. */
   moreTitles?: boolean;
+  /** Present on deferred Classic TV list rows so "On now" stays accurate without episode payloads. */
+  hasCurrentProgram?: boolean;
+  /** Internal manifest signal: defer this generated Classic TV channel's light episode rows. */
+  deferLightRows?: boolean;
   /** Optional playlist label carried into the Classic TV light response. */
   playlistName?: string;
-  /** False marks the 3-row light window; true marks a fully loaded channel. */
+  /** False marks a partial or deferred light schedule; true marks a fully loaded channel. */
   programsComplete?: boolean;
 }
 

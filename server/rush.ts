@@ -8,18 +8,35 @@ import * as fs from 'node:fs';
 import * as nodePath from 'node:path';
 import { archiveApiFetch } from './archiveLimiter';
 
-export interface RushIndexEntry { id: string; date: string; year: number; }
+export type RushRole = 'morning-update' | 'full-show';
+export type RushKind = 'video' | 'audio';
+export interface RushIndexEntry { id: string; date: string; year: number; role?: RushRole; }
 export interface RushTrack { file: string; durationSeconds: number; size?: number; format?: string; archivePath: string; mediaUrl: string; }
-interface CacheEntry { resolvedAt: string; files: Array<Omit<RushTrack, 'archivePath' | 'mediaUrl'>>; }
+export interface RushResolvedItem {
+  id: string; role: RushRole; kind: RushKind; source: 'cache' | 'archive'; resolvedAt: string; tracks: RushTrack[];
+}
+export interface RushUnavailableItem {
+  id: string; role: 'morning-update'; kind: 'video'; unavailable: { reason: string };
+}
+export type RushItemResolution = RushResolvedItem | RushUnavailableItem;
+interface CacheEntry { resolvedAt: string; kind?: RushKind; files: Array<Omit<RushTrack, 'archivePath' | 'mediaUrl'>>; }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+export function isValidRushDate(date: string): boolean {
+  if (!DATE.test(date)) return false;
+  const [year, month, day] = date.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day;
+}
 // Loaded lazily (dynamic import): the frontend bundle pulls guideRegistry in,
 // and a static import would ship the whole index to every browser.
 let rushIndexCache: RushIndexEntry[] | null = null;
 export async function getRushIndex(): Promise<RushIndexEntry[]> {
   if (!rushIndexCache) {
     const mod: any = await import('../src/data/rushIndex.json');
-    rushIndexCache = ((mod.default ?? mod) as RushIndexEntry[]).filter((e) => e && typeof e.id === 'string' && DATE.test(e.date));
+    rushIndexCache = ((mod.default ?? mod) as RushIndexEntry[]).filter((e) =>
+      e && typeof e.id === 'string' && isValidRushDate(e.date)
+      && (e.role === 'morning-update' || e.role === 'full-show'));
   }
   return rushIndexCache;
 }
@@ -63,6 +80,55 @@ const track = (id: string, f: CacheEntry['files'][number]): RushTrack => {
   return { ...f, archivePath, mediaUrl: `/api/archive/proxy?path=${encodeURIComponent(archivePath)}` };
 };
 
+type CodecEvidence = { file: string; videoCodec: string; audioCodec: string };
+// Keep the three owner-verified original-codec entries in this allowed file;
+// the source branch stored them in a separate JSON that is outside this PR's scope.
+const verifiedOriginalCodecs: Record<string, CodecEvidence> = {
+  'rush-limbaugh-radio-show-morning-update-2014-07-04': {
+    file: 'Rush Limbaugh - Jul 04 2014 - Morning Update.mp4', videoCodec: 'h264', audioCodec: 'aac',
+  },
+  'rush-limbaugh-radio-show-morning-update-2015-06-18': {
+    file: 'Rush Limbaugh - Jun 18 2015 - Morning Update.mp4', videoCodec: 'h264', audioCodec: 'aac',
+  },
+  'rush-limbaugh-radio-show-morning-update-2016-06-30': {
+    file: 'Rush Limbaugh - Jun 30 2016 - Morning Update.mp4', videoCodec: 'h264', audioCodec: 'aac',
+  },
+};
+
+/** MP4 selection is evidence-based: prefer the h.264 IA derivative; only admit
+ *  an original MPEG4 file when its H.264/AAC codecs have been verified. */
+export function morningUpdateFilesFromMetadata(meta: any, id: string): CacheEntry['files'] {
+  const files = (Array.isArray(meta?.files) ? meta.files : [])
+    .filter((f: any) => f && typeof f.name === 'string' && /\.mp4$/i.test(f.name) && !/^true$/i.test(String(f.private ?? '')))
+    .map((f: any) => ({
+      raw: f,
+      file: String(f.name),
+      durationSeconds: seconds(f.length),
+      size: f.size ? Number(f.size) : undefined,
+      format: typeof f.format === 'string' ? f.format : undefined,
+    }))
+    .filter((f: any) => f.durationSeconds > 0);
+
+  const derivatives = files.filter((f: any) =>
+    /\.ia\.mp4$/i.test(f.file) && /h\.?264\s+ia/i.test(String(f.format ?? '')))
+    .sort((a: any, b: any) => a.file.localeCompare(b.file));
+  if (derivatives.length) {
+    const { file, durationSeconds, size, format } = derivatives[0];
+    return [{ file, durationSeconds, size, format }];
+  }
+
+  const evidence = verifiedOriginalCodecs[id];
+  if (!evidence || evidence.videoCodec !== 'h264' || evidence.audioCodec !== 'aac') return [];
+  const original = files.find((f: any) =>
+    f.file === evidence.file
+    && f.raw.source === 'original'
+    && !/\.ia\.mp4$/i.test(f.file)
+    && /mpeg4/i.test(String(f.format ?? '')));
+  if (!original) return [];
+  const { file, durationSeconds, size, format } = original;
+  return [{ file, durationSeconds, size, format }];
+}
+
 
 /** The playable MP3s of one Archive item's metadata: not private, uploaded originals preferred (derivatives only if that is all there is),
  *  known duration, natural filename order. Shared by the live resolver and tools/build-audio-snapshot.ts so both always agree. */
@@ -99,15 +165,11 @@ async function seedSnapshot() {
     const mod: any = await import('../src/data/audioItemSnapshot.json');
     const items = (mod.default ?? mod)?.items ?? {};
     const c = loadCache();
-    for (const [id, e] of Object.entries<any>(items)) if (!c[id] && Array.isArray(e?.files) && e.files.length) c[id] = { resolvedAt: String(e.resolvedAt ?? ''), files: e.files };
+    for (const [id, e] of Object.entries<any>(items)) if (!c[id] && Array.isArray(e?.files) && e.files.length) c[id] = { resolvedAt: String(e.resolvedAt ?? ''), kind: 'audio', files: e.files };
   } catch { /* no snapshot packaged: fall back to Archive */ }
 }
 
-/** Files + durations for one Archive item: cache first, Archive metadata on a miss. */
-export async function resolveRushItem(id: string): Promise<{ id: string; source: 'cache' | 'archive'; resolvedAt: string; tracks: RushTrack[] }> {
-  await seedSnapshot();
-  const hit = loadCache()[id];
-  if (hit) { rushStats.cacheHits++; return { id, source: 'cache', resolvedAt: hit.resolvedAt, tracks: hit.files.map((f) => track(id, f)) }; }
+async function fetchArchiveMetadata(id: string): Promise<any> {
   rushStats.archiveCalls++;
   // Archive answers 502/ECONNRESET in bursts (seen at boot): retry transient failures before giving up.
   let r: Response | undefined; let lastErr: unknown;
@@ -120,21 +182,79 @@ export async function resolveRushItem(id: string): Promise<{ id: string; source:
   if (!r.ok) throw Object.assign(new Error(`metadata HTTP ${r.status}`), { status: 502 });
   const meta: any = await r.json();
   if (meta?.is_dark || !Array.isArray(meta?.files)) throw Object.assign(new Error('item unavailable'), { status: 404 });
+  return meta;
+}
+
+/** Files + durations for one Archive item: audio full shows retain the existing
+ *  resolver; Morning Updates use the verified MP4 selection rule. */
+export function resolveRushItem(id: string): Promise<RushResolvedItem>;
+export function resolveRushItem(id: string, role: 'full-show'): Promise<RushResolvedItem>;
+export function resolveRushItem(id: string, role: 'morning-update'): Promise<RushItemResolution>;
+export function resolveRushItem(id: string, role: RushRole): Promise<RushItemResolution>;
+export async function resolveRushItem(id: string, role: RushRole = 'full-show'): Promise<RushItemResolution> {
+  if (role === 'morning-update') {
+    try {
+      const hit = loadCache()[id];
+      if (hit?.kind === 'video' && hit.files.length) {
+        rushStats.cacheHits++;
+        return { id, role, kind: 'video', source: 'cache', resolvedAt: hit.resolvedAt, tracks: hit.files.map((f) => track(id, f)) };
+      }
+      const meta = await fetchArchiveMetadata(id);
+      const files = morningUpdateFilesFromMetadata(meta, id);
+      if (!files.length) return { id, role, kind: 'video', unavailable: { reason: 'No verified H.264/AAC MP4 source is available' } };
+      const entry = { resolvedAt: new Date().toISOString(), kind: 'video' as const, files };
+      loadCache()[id] = entry;
+      saveCache();
+      return { id, role, kind: 'video', source: 'archive', resolvedAt: entry.resolvedAt, tracks: files.map((f) => track(id, f)) };
+    } catch (error) {
+      return { id, role, kind: 'video', unavailable: { reason: (error as Error)?.message || 'Morning Update metadata is unavailable' } };
+    }
+  }
+
+  await seedSnapshot();
+  const hit = loadCache()[id];
+  if (hit && (hit.kind ?? 'audio') === 'audio') {
+    rushStats.cacheHits++;
+    return { id, role, kind: 'audio', source: 'cache', resolvedAt: hit.resolvedAt, tracks: hit.files.map((f) => track(id, f)) };
+  }
+  const meta = await fetchArchiveMetadata(id);
   const files = filesFromMetadata(meta);
   if (!files.length) throw Object.assign(new Error('no MP3 with a known duration'), { status: 422 });
-  const entry = { resolvedAt: new Date().toISOString(), files };
+  const entry = { resolvedAt: new Date().toISOString(), kind: 'audio' as const, files };
   loadCache()[id] = entry;
   saveCache();
-  return { id, source: 'archive', resolvedAt: entry.resolvedAt, tracks: files.map((f: any) => track(id, f)) };
+  return { id, role, kind: 'audio', source: 'archive', resolvedAt: entry.resolvedAt, tracks: files.map((f: any) => track(id, f)) };
+}
+
+/** Resolve each role independently. A failed Morning Update is a typed unavailable
+ *  row; a failed Full Show remains a real date-level error. */
+export async function resolveRushDay(
+  entries: RushIndexEntry[],
+  resolver: (id: string, role: RushRole) => Promise<RushItemResolution> = resolveRushItem,
+): Promise<Array<RushIndexEntry & RushItemResolution>> {
+  const settled = await Promise.allSettled(entries.map((entry) => resolver(entry.id, entry.role ?? 'full-show')));
+  return settled.map((result, index) => {
+    const entry = entries[index];
+    const role = entry.role ?? 'full-show';
+    if (result.status === 'fulfilled') {
+      if (!('unavailable' in result.value)) return { ...entry, ...result.value };
+      if (role === 'morning-update') return { ...entry, ...result.value };
+      throw Object.assign(new Error(result.value.unavailable.reason), { status: 422 });
+    }
+    if (role === 'morning-update') {
+      return { ...entry, id: entry.id, role: 'morning-update', kind: 'video', unavailable: { reason: (result.reason as Error)?.message || 'Morning Update is unavailable' } };
+    }
+    throw result.reason;
+  });
 }
 
 export async function rushEpisodesOn(date: string): Promise<RushIndexEntry[]> {
-  return DATE.test(date) ? (await getRushIndex()).filter((e) => e.date === date) : [];
+  return isValidRushDate(date) ? (await getRushIndex()).filter((e) => e.date === date) : [];
 }
 
 /** The first indexed date after `date` (not "tomorrow": gaps are normal), or null at the end of the archive. */
 export async function nextRushDate(date: string): Promise<string | null> {
-  if (!DATE.test(date)) return null;
+  if (!isValidRushDate(date)) return null;
   let best: string | null = null;
   for (const e of await getRushIndex()) if (e.date > date && (!best || e.date < best)) best = e.date;
   return best;

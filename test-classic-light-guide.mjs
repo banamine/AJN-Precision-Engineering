@@ -38,8 +38,11 @@ const fixtureApi = {
       if (requestUrl.searchParams.get('light') === '1') {
         const lightChannels = channels.map((channel) => ({
           ...channel,
-          programs: channel.programs.slice(0, 3),
+          programs: channel.id === 'demo-channel-050' || channel.id === 'demo-channel-060'
+            ? channel.programs.slice(1, 4)
+            : channel.programs.slice(0, 3),
           programsComplete: false,
+          ...(channel.id === 'demo-channel-050' || channel.id === 'demo-channel-060' ? { hasCurrentProgram: true } : {}),
         }));
         requestLog.push({ viewport: viewportName, route: 'light', channels: lightChannels.length });
         response.end(JSON.stringify({ guideId: 'classic-tv', generatedAt: '2026-01-01T00:00:00.000Z', light: true, channels: lightChannels }));
@@ -74,6 +77,16 @@ const fixtureApi = {
         response.end(JSON.stringify({ error: 'synthetic channel missing' }));
         return;
       }
+      if (channelId === 'demo-channel-060') {
+        setTimeout(() => {
+          if (response.destroyed) return;
+          response.end(JSON.stringify({
+            guideId: 'classic-tv',
+            channels: [{ ...channel, programs: channel.programs.slice(1), hasCurrentProgram: true, programsComplete: true }],
+          }));
+        }, 2_000);
+        return;
+      }
       response.end(JSON.stringify({ guideId: 'classic-tv', channels: [{ ...channel, programsComplete: true }] }));
     });
   },
@@ -99,6 +112,12 @@ async function waitForNodeCondition(predicate, label, timeoutMs = 10_000) {
 async function runViewport(viewport) {
   resetForViewport(viewport.name);
   const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+  const pageErrors = [];
+  const consoleErrors = [];
+  const failedRequests = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+  page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), error: request.failure()?.errorText }));
   page.setDefaultTimeout(20_000);
   await page.setRequestInterception(true);
   page.on('request', (request) => {
@@ -112,7 +131,19 @@ async function runViewport(viewport) {
     void request.abort('blockedbyclient');
   });
   await page.goto(`${serverOrigin}/test-classic-light-guide.html`, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => document.querySelector('[data-testid="epg-result-count"]')?.textContent?.includes('80 channels'));
+  try {
+    await page.waitForFunction(() => document.querySelector('[data-testid="epg-result-count"]')?.textContent?.includes('80 channels'));
+  } catch (error) {
+    console.error('[classic-light-guide diagnostic]', JSON.stringify({
+      viewport: viewport.name,
+      bodyText: await page.$eval('body', (element) => element.innerText.slice(0, 1200)).catch(() => ''),
+      pageErrors,
+      consoleErrors,
+      failedRequests,
+      requestLog,
+    }));
+    throw error;
+  }
   await page.waitForSelector('[data-epg-channel-row][data-channel-id="demo-channel-001"]');
   await page.waitForSelector('#epg-prog-demo-channel-001-0');
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -144,6 +175,16 @@ async function runViewport(viewport) {
   const channel048Count = routeCounts.get(`${viewport.name}:demo-channel-048`) ?? 0;
   assert.equal(channel048Count, 1, `${viewport.name}: visible channel fetches once`);
 
+  await page.$eval('[data-epg-channel-row][data-channel-id="demo-channel-060"]', (element) => element.scrollIntoView({ block: 'center' }));
+  await page.click('[data-play-live="demo-channel-060"]');
+  await waitForNodeCondition(() => routeCounts.get(`${viewport.name}:demo-channel-060`) === 1, `${viewport.name} channel 060 request`);
+  await page.waitForSelector('[data-channel-row-loading="demo-channel-060"]');
+  await page.waitForFunction(() => document.querySelector('[data-play-live="demo-channel-060"]')?.disabled === true);
+  assert.equal(await page.$eval('[data-play-live="demo-channel-060"]', (button) => button.getAttribute('aria-busy')), 'true', `${viewport.name}: play-now announces its loading state`);
+  await page.waitForSelector('[data-play-live-no-current="demo-channel-060"]');
+  const noCurrentText = await page.$eval('[data-play-live-no-current="demo-channel-060"]', (element) => element.textContent ?? '');
+  assert.match(noCurrentText, /No current program was found/, `${viewport.name}: missing current item is reported explicitly`);
+
   await page.$eval('[data-epg-channel-row][data-channel-id="demo-channel-050"]', (element) => element.scrollIntoView({ block: 'center' }));
   try {
     await page.waitForSelector('[data-channel-row-error="demo-channel-050"]');
@@ -157,12 +198,16 @@ async function runViewport(viewport) {
     }));
     throw error;
   }
-  const retry = await page.$('[data-retry-channel="demo-channel-050"]');
-  assert.ok(retry, `${viewport.name}: failed row has Retry`);
-  await retry.click();
+  await page.click('[data-play-live="demo-channel-050"]');
+  await page.waitForSelector('[data-play-live-retry="demo-channel-050"]');
+  const playErrorText = await page.$eval('[data-channel-row-error="demo-channel-050"]', (element) => element.textContent ?? '');
+  assert.match(playErrorText, /Could not load the current program/, `${viewport.name}: failed Play-now load reports an explicit error`);
+  await page.click('[data-play-live-retry="demo-channel-050"]');
+  await page.waitForFunction(() => window.__classicLightPlayed?.channelId === 'demo-channel-050' && window.__classicLightPlayed?.programId === 'demo-channel-050-current');
   await page.waitForFunction(() => document.querySelector('[data-channel-row-error="demo-channel-050"]') === null);
   assert.equal(routeCounts.get(`${viewport.name}:demo-channel-050`), 2, `${viewport.name}: retry repeats exactly once`);
 
+  assert.deepEqual(pageErrors, [], `${viewport.name}: Play-now paths do not produce unhandled browser errors`);
   assert.equal(archiveRequests, 0, `${viewport.name}: zero Archive requests`);
   assert.equal(externalRequests, 0, `${viewport.name}: all non-local requests blocked`);
   const rowCount = await page.$$eval('[data-epg-channel-row]', (rows) => rows.length);

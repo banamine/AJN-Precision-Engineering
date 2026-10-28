@@ -29,7 +29,8 @@ async function serve(
 }
 
 function mockResponse(body: Buffer | string, status = 200): Response {
-  return new Response(body, { status, headers: { 'content-type': 'text/html' } });
+  const responseBody = typeof body === 'string' ? body : new Uint8Array(body);
+  return new Response(responseBody, { status, headers: { 'content-type': 'text/html' } });
 }
 
 const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'affiliate-listing-test-'));

@@ -189,7 +189,8 @@ export function toCubeArticles(raw: unknown, now: number = Date.now()): CubeAdap
       && !/(^|\.)images\.unsplash\.com$/i.test(image.hostname)
       ? image.toString()
       : null;
-    const publisherName = cleanText(item.feedName ?? item.feed ?? item.sourceGroup ?? item.author, 120) || url.hostname;
+    const hostLabel = /(^|\.)archive\.org$/i.test(url.hostname) ? 'Library' : url.hostname;
+    const publisherName = cleanText(item.feedName ?? item.feed ?? item.sourceGroup ?? item.author, 120) || hostLabel;
     const publisherId = cleanText(item.feedId ?? item.sourceGroup, 160) || publisherName;
     accepted.push({
       sourceIndex,

@@ -7,6 +7,7 @@ export interface ClassicLightChannel extends Omit<ScheduleChannel, 'programs'> {
   programs: Program[];
   programCount: number;
   moreTitles: boolean;
+  hasCurrentProgram?: boolean;
   playlistName?: string;
   programsComplete: false;
 }
@@ -66,6 +67,11 @@ export function buildClassicLightSchedule(
     channels: channels.map((channel): ClassicLightChannel => {
       const programs = channel.programs ?? [];
       const selected = selectNowAndNext(programs, nowHour, nowMs, tzMinutes);
+      const deferEpisodeRows = channel.deferLightRows === true;
+      const hasCurrentProgram = deferEpisodeRows && programs.some((program) => {
+        const { start, end } = localHours(program, nowMs, tzMinutes);
+        return Number.isFinite(start) && Number.isFinite(end) && start <= nowHour && nowHour < end;
+      });
       const playlistNameValue = programs
         .map((program) => program.metadata?.playlistName)
         .find((value): value is string => typeof value === 'string' && value.length > 0);
@@ -79,9 +85,12 @@ export function buildClassicLightSchedule(
         ...(channel.sourceStatus !== undefined ? { sourceStatus: channel.sourceStatus } : {}),
         ...(channel.sourceError !== undefined ? { sourceError: channel.sourceError } : {}),
         ...(playlistNameValue !== undefined ? { playlistName: playlistNameValue } : {}),
-        programs: selected,
+        // The Infobattalion channels are discoverable in the main guide, but
+        // their episode rows load only after a user asks for that channel.
+        programs: deferEpisodeRows ? [] : selected,
         programCount: programs.length,
-        moreTitles: programs.length > selected.length,
+        moreTitles: programs.length > (deferEpisodeRows ? 0 : selected.length),
+        ...(deferEpisodeRows ? { hasCurrentProgram } : {}),
         programsComplete: false,
       };
     }),

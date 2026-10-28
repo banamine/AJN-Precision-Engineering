@@ -23,15 +23,44 @@
    "DoomsdayMachine1972",
    "forbiddenworld",
    "m.-1931",
-   "all.-quiet.-on.-the.-western.-front.-1930"
+   "all.-quiet.-on.-the.-western.-front.-1930",
+   "01-glynis-johns",
+   "m-commentary",
+   "lady-chatterley-1993-episode-1",
+   "Detour"
+  ],
+  "movies_already_in_other_guide": [
+   "norma-jean-and-marilyn-1996-hbo"
+  ],
+  "cartoons": [
+   "courage-the-cowardly-dog-1080p-ai-upscale",
+   "patriotic-cartoon-classics-25-all-american-cartoons-from-world-war-ii",
+   "098654",
+   "the-pink-panther-cartoon-collection",
+   "chilly-willy-filmography",
+   "chilly-willy-modern-video-den-listings"
+  ],
+  "cartoons_already_in_other_guide": [
+   "filmography-childhood-productions"
   ],
   "opensource_claimed_by_earlier_list": [
    "filmography-david-decoteau",
    "filmography-david-cronenberg",
+   "filmography-jean-pierre-melville",
    "filmography-elvis-presley",
    "filmography-mike-leigh",
    "filmography-john-woo-asian",
    "filmography-bill-rebane"
+  ],
+  "nwt_already_in_other_guide": [
+   "AlexJonesRadioShow-March12010",
+   "AlexJonesRadioShow-September172009",
+   "new-world-order-exposed-by-insider-in-1969-deleated-from-web",
+   "Alex_Jones_Depopulation",
+   "AlexJonesRadioShow-March12010",
+   "AlexJonesRadioShow-September172009",
+   "new-world-order-exposed-by-insider-in-1969-deleated-from-web",
+   "Alex_Jones_Depopulation"
   ],
   "nwt": [
    "banned.video_-_the_alex_jones_show_2019-2h",
@@ -39,11 +68,15 @@
    "banned.video_-_alex_jones_predictions_2022-1h",
    "banned.video_-_nick_j_fuentes_2021-2h",
    "1of-5.-fury.-720p.hdtv.x-264_202401",
+   "20010911",
+   "the-alex-jones-show-december-2015-hd",
    "banned.video_-_the_alex_jones_show_2019-2h",
    "bitchute_-_banned-dot-video_2021",
    "banned.video_-_alex_jones_predictions_2022-1h",
    "banned.video_-_nick_j_fuentes_2021-2h",
-   "1of-5.-fury.-720p.hdtv.x-264_202401"
+   "1of-5.-fury.-720p.hdtv.x-264_202401",
+   "20010911",
+   "the-alex-jones-show-december-2015-hd"
   ],
   "tv": [
    "The_Fugitive_Series",
@@ -58,8 +91,6 @@
    "partners-in-crime-e-01-pilot",
    "Privatehd.toStarTrek1966S011080pBluRayVC1DTSHDMA7.1HDBEE1",
    "the-secret-service-1969",
-   "01-tv-westerns-part-2-classical-western-theme-music-by-ennio-morricone-sergio-leones-boyhood-friend",
-   "01-tv-fighting-crime-part-7",
    "father-ted-2005",
    "001-tv_202409",
    "it-aint-half-hot-mum-s-06-e-04-the-dhobi-wallahs",
@@ -172,32 +203,205 @@
    "wonderfalls_2004",
    "brooklyn_south",
    "action_1999",
-   "01-tv-fighting-crime-part-2_202406",
-   "01-tv-fighting-crime",
    "cracker-s-1-ep-1-the-mad-woman-in-the-attic-1993",
-   "readme_20250925"
+   "readme_20250925",
+   "hotel_202312"
   ],
-  "tv_same_name_channel": [
-   "mamas-family-Lando18",
-   "y_20251113"
+  "tv_already_in_other_guide": [
+   "01-tv-westerns-part-2-classical-western-theme-music-by-ennio-morricone-sergio-leones-boyhood-friend",
+   "01-tv-fighting-crime-part-7",
+   "01-tv-fighting-crime-part-2_202406",
+   "01-tv-fighting-crime"
+  ],
+  "tv_claimed_by_earlier_list": [
+   "DarwinsDeadlyLegacy"
   ],
   "documentary": [
+   "Wildlife_Nature_Documentaries",
+   "WildlifeDocumentaries",
+   "Wildlife_Specials",
+   "battle_of_san_pietro",
+   "Experime1940",
+   "NewhartSeriesDocumentary",
+   "Biography.1998",
    "mayday-aci",
+   "cowcca-Part_I_-_Living_History_-_The_Korean_War",
+   "KoreanWar",
+   "most-evil-killers",
+   "thesurvivalfolder",
+   "AdolfHitlerAIEnglishSpeeches",
+   "the-9-11-chronicles-part-one-truth-rising-2008",
+   "bbc-the-human-face-1.-face-to-face",
+   "the-giants-dream-the-making-of-the-iron-giant-2016",
+   "In_Search_of_America_2002",
+   "VAS_06_Guadalcanal",
+   "the.-killing.of.-america.-1981.1080p.-blu-ray.-h-264.-aac-rarbg",
+   "AmericanDictators",
+   "on-the-rails-with-8695",
+   "forgotten-america-thanksgiving-in-the-1950s-720p",
+   "forgotten-america-the-1950s-husband-in-the-home-720p",
+   "cold-war-espionage-fake-u.-s.-town-used-to-train-agents-1960-720p",
+   "china-red-revolutions-war-720p",
+   "elite-airborne-special-forces-operations-720p-full-documentary",
+   "Illuminazi",
+   "OpenArms_201409",
+   "censored-2001-fox-news-report-israelis-spying-in-and-on-the-us-urban-moving-systems-911",
+   "the-philadelphia-experiment-1993-uk-vhs",
+   "RussianRightStuff",
+   "612Magic1958",
+   "TheRoadToVictory_201305",
+   "NatoTargets",
+   "Hawaii_201306",
+   "BuriedInIce",
+   "NOVARussianRightStuff",
+   "1956-10-08-mlb-1956.10.8-world-series-game-5-dodgers-yankees-don-larsen",
+   "youtube-ONWW02pNvFk",
+   "Technofeudalism",
+   "01-the-american-revolution",
+   "JourneyToTheEdgeOfTheUniverse2008",
+   "fox-ufos-special-ia-copy",
+   "victory-at-sea-special-collectors-edition-volume-1-ia-copy",
+   "rush-11-22-94-ia-copy",
+   "stopping-the-coming-ice-age-by-larry-ephron-institue-for-a-future-ia-copy",
+   "SmartSharksSwimmingWithRoboshark",
    "prehistoric-park-ep-3-of-6-dinobirds-with-nigel-marven-5-aug-2006",
+   "TheUltimateGuideWhales",
+   "1996-the-ultimate-guide-sharks",
+   "UltimateGuideCrocodiles",
+   "aplaceofdreamsthenationalairandspacemuseum",
+   "American1955",
+   "American1955_2",
+   "LandOfTheMammoth",
+   "AllTheFineYoungMen",
+   "zeitgeist_movie",
+   "TumblerSnapper1952",
+   "youtube-YQPHMwXwlGg",
    "alex-jones-documentaries",
+   "youtube-hBgy4krC8Fc",
+   "bigfootthelostcoasttapes",
+   "a_biography_of_america",
    "volcanoes",
-   "alex-jones-mega-pack",
+   "1a-tallis-scholars-russian-orthodox-music-05-anonymous-medieval-motets-y-vsyu-kr_20250429",
+   "youtube-m_Ej9zxad4I",
+   "youtube-gXGlawiibK8",
+   "PostwarG",
+   "youtube-QxqCQo3zmVA",
+   "NOVATheCaseOfTheAncientAstronauts",
+   "insearchofancientastronautsreel1",
+   "chariots-of-the-gods_202407",
    "the-long-long-trailer_202506",
+   "gov.ntis.ava17487vnb1",
+   "EvelKnievel",
+   "EvelKnievel_842",
+   "the-great-canadian-train-ride",
+   "worlds-greatest-train-ride-videos-trans-america-vhs",
+   "railroad-video-quarterly-issue-22_202103",
+   "youtube-qqHueZNEzig",
+   "yukonpassage1977",
+   "abandoned-rms-queen-elizabeth",
+   "bankrupt-hudsons-bay-company",
+   "bankrupt-red-lobster",
+   "abandoned-atlantic-club-casino-hotel",
+   "abandoned-rubber-bowl",
+   "LizzieBordenDocumentary",
+   "4m3wa2d",
+   "LinesOfFire",
+   "THENEPHILIMGIANTS",
+   "Botany",
+   "0731_Wonderful_World_19_01_23_00",
+   "shadowgate_20200815_1519",
+   "out_of_this_world",
+   "Century21964",
+   "planetearth2006_202301",
+   "anyplacebuthere",
+   "life_2009_bbc",
+   "How.The.Earth.Was.Made",
+   "Victorian.Farm",
+   "Survival1995VirungaRiversOfFireIcenarratedByBrianCox1995",
+   "connections-1-04-faith-in-numbers",
+   "cosmos-ep-13-who-speaks-for-earth",
+   "Bush_JFK_Zapruder",
+   "SubjectN1951",
+   "patterns-of-evidence-the-red-sea-miracle-part-2_202307",
+   "6101_Crystals_Go_to_War_01_20_16_21",
+   "theshockofthenewthemechanicalparadisepart1_201505",
+   "Military_Arms_Channel_Archive",
+   "extreme-alaska-discovery-channel-1999",
+   "EverestTheDeathZone",
    "nova-wonders",
-   "classic-documentaries"
+   "the-explorers-bbc-1975-8-episodes",
+   "NewsMaga00_7",
+   "vintage-vhs-history-channel-founding-fathers-vol-1-rebels-with-a-cause",
+   "internet-historian-archive",
+   "modern-marvels-howard-hughes-tech-2004",
+   "NatureHorses",
+   "naturalhistoryofpsychoticillnessinchildhood",
+   "33584LookoutMountainAirForceStationVwr",
+   "201116_Inside_San_Quentin",
+   "mystery_of_the_senses",
+   "youtube-ajp0_NjvMZE",
+   "The_Corporation_",
+   "more_dangerous_then_dynamite",
+   "odysee_-_internet_historian_2022",
+   "royal-family-1969_202211",
+   "Skull_Bones_Dutch_TV_english",
+   "judge-roy-bean-tv-series",
+   "classic-documentaries",
+   "mindthematrix",
+   "TheMarianasOperation",
+   "william-cooper-hott",
+   "william-cooper-the-ugly-truth-bnai-brth-the-adl",
+   "shots-eugenics-to-pandemics-2022",
+   "the-world-of-tomorrow-1984",
+   "the-war-you-dont-see_202409",
+   "alex-jones-exposes-copenhagen-carbonistas-2of2",
+   "norma-jean-and-marilyn-1996-hbo",
+   "dts0101formulareplays",
+   "9-11_Controlled_Demolitions",
+   "the-secret-war-documentary",
+   "the-living-isles-1986-uk-vhs_202604",
+   "youtube-nmonLKs9Cqc",
+   "youtube-6waM_rWhRuc",
+   "best-of-the-breeders-cup-1994",
+   "redpilled-video-folder_202011",
+   "secret-of-secret-societies",
+   "mayday_air.crash.investigation",
+   "mayday.-air.-crash.-investigation.-s-23-e-01.-deadly.-exchange.-h-264.1080p.-aac.-proper",
+   "to_catch_a_predator_archive",
+   "apocalypse-wwii",
+   "Cold_War_1998_CNN_Kenneth_Branagh",
+   "20010911",
+   "Forbidden_Planet"
   ],
-  "documentary_claimed_by_earlier_list": [
+  "documentary_already_in_other_guide": [
    "ancientalienscollection",
+   "alex-jones-mega-pack",
    "hitlers.-henchmen.-series.-1.1of-6.-hess.-the.-deputy.x-264.-ac-3.-mvgroup.org",
    "hell-in-the-pacific-2001-part-1-inferno"
   ],
+  "documentary_claimed_by_earlier_list": [
+   "OriginsOfTheConspiracy",
+   "FreemasonTemplars"
+  ],
   "otr": [
-   "TheLongJohnNebelCollection"
+   "OTRR_Dimension_X_Singles",
+   "The_Puppet_Masters",
+   "Ilium",
+   "cbsrmt-74-02-08-33-conspiracy-to-defraud",
+   "iwcf-1952-07-16-13-rich-man-poor-man",
+   "ever-after-high-monster-high-the-legend-of-shadow-high",
+   "OTRR_Dark_Fantasy_Singles",
+   "paul-harvey-trots-23",
+   "OTRR_Space_Patrol_Singles",
+   "OTRR_Crime_Classics_Singles",
+   "coast-2-coast-2013-01-11",
+   "1912-antarctica",
+   "george-orwell-audiobooks",
+   "20210317_20210317_1802",
+   "TheLongJohnNebelCollection",
+   "LightsOutoldTimeRadio",
+   "SUSPENSE_Radio_Digitally_Restored_Collection",
+   "Science_Fiction_Radio_Atom_Age_Adventures"
   ],
   "nwt_claimed_by_earlier_list": [
    "behind-the-green-mask-united-nations-agenda-21-videos",
@@ -218,10 +422,70 @@
    "apocalypse-verdun",
    "stalingrad.-1of-3.-the.-attack.-xvi-d.mp-3",
    "hitlers.-henchmen.-series.-1.1of-6.-hess.-the.-deputy.x-264.-ac-3.-mvgroup.org",
-   "hell-in-the-pacific-2001-part-1-inferno"
+   "hell-in-the-pacific-2001-part-1-inferno",
+   "youtube-HnxSB-hct5g",
+   "constitutional-lawyer-lays-out-trumps-battle-plan-to-prosecute-the-biden-admin",
+   "infowars-nightly-news-hd_20200927",
+   "08-2_20210120",
+   "The_Alex_Jones_Channel_YouTube_Archive_2018",
+   "DarwinsDeadlyLegacy",
+   "TheSatanicEmpire",
+   "TheJamesHolmesConspiracy",
+   "TheVaticansUfoAgenda",
+   "HistoryOfAfricanSlaveryInIslam",
+   "MarkOfTheBeast_327",
+   "OriginsOfTheConspiracy",
+   "FreemasonTemplars"
   ],
   "music": [
-   "09.-most-beautiful-soft-rock-love-songs-80s-90s-soft-rock-ballads-70s-80s-90s-ol"
+   "SlowRock_201707",
+   "doja-cat-paint-the-town-red-official-video_202411",
+   "06.-tunnel-13",
+   "cafe-del-mar-the-best-of-cafe-del-mar",
+   "progressive-art-rock-frank-zappa-the-mothers-of-invention-full-discography-1963-",
+   "power-play",
+   "all-star-country",
+   "dancemania-speed-collection-dance-dance-revolution-songs",
+   "romantic-collection-best-erotic-songs-2010",
+   "ultimate-chillout-dreams-2018_202207",
+   "smooth-jazz-chill-groove-o-perfect-vibes-for-any-mood",
+   "BobJamesnEarlKlugh1on1sideA",
+   "new-york-night-jazz-smooth-saxophone-jazz-music-soft-background-music-for-deep-sleep-relax",
+   "best-of-smooth-trumpet-jazz-smooth-jazz-trumpet-jazz",
+   "fourplay-2010-sumida-triphony-hall-tokyo-nhk",
+   "america-4th-of-july-1978-universal-amphitheatre-kwst",
+   "eagles-the-summit-houston-tx-1976-k101",
+   "james-taylor-montreux-jazz-fest-1988-rsr",
+   "jan-akkerman-montreux-jazz-festival-1978",
+   "moody-blues-1991-wbcn-whisky-a-go-go-l.a.",
+   "audioslave-montreux-jazz-festival-2005-drs-3",
+   "dexter-gordon-1987-round-midnight-band-montreux",
+   "santana-mc-laughlin-2016-montreux-jazz-rsi",
+   "rockpalast-al-jarreau-david-sanborn-1985",
+   "weather-report-1976-montreux-jazz-festival-rts",
+   "saxappeal-vol.-1-2-2019-2022",
+   "the-dream-dance-2021",
+   "spacesynth-slowmegamix-1-4-2022",
+   "legends-of-disco-80s-2022",
+   "the-most-relaxing-new-age-music-2018",
+   "oxigen-music-new-age-ambience-2016",
+   "everybody-clap-disco-party-vol.04",
+   "80-90-",
+   "09.-most-beautiful-soft-rock-love-songs-80s-90s-soft-rock-ballads-70s-80s-90s-ol",
+   "w-2-d-1-15-22",
+   "18-hold-back",
+   "1a-tallis-scholars-russian-orthodox-music-05-anonymous-medieval-motets-y-vsyu-kr_202504",
+   "edm-rave-dance-2019-top-100-hits-psy-goa-trance-house-dubstep-bass-trap-techno",
+   "america-sigma-studios-1972-philadelphia-pa-wmmr",
+   "HGMT2",
+   "beautiful-vocal-trance-progressive-2020",
+   "martin-in-the-mix-vocal-trance-nation-61-87",
+   "lp_hit-movie-themes_enoch-light-and-the-light-brigade",
+   "house_music_sets_-_ep_16",
+   "chicane-live-at-palladium-22-01-2000",
+   "scott-muni-wnew-fm-new-york-city-11.05.70",
+   "electric-light-orchestra-winterland-sf-1976-ksan",
+   "zztopeliminatorcdrearartwork"
   ]
  },
  "dark": {
@@ -254,6 +518,22 @@
    "filmography-stanley-kubrick",
    "summer-magic.-1963",
    "filmography-rainer-werner-fassbinder"
+  ],
+  "cartoons": [
+   "king-of-the-hill_202103",
+   "king-of-the-hill13seasons",
+   "the-looney-tunes-show_202405",
+   "tom_and_jerry_hbo",
+   "20.-locomotive-loco",
+   "29.-fleas-be-careful",
+   "pepe-legal",
+   "looney-tunes-back-in-action_202412",
+   "s-01-e-10-a-frightened-hound-meets-demons-underground",
+   "me-tv-toons-launch",
+   "turner_video_393771",
+   "the_jetsons",
+   "4800-cartoon-shorts-disney-looney-tunes",
+   "tripping-the-rift-the-movie"
   ],
   "tv": [
    "EnemyAtTheDoorSeason1",
@@ -360,18 +640,21 @@
    "amy-grant-house-of-love",
    "italo-disco-hits-101-150",
    "retro-remix-vol.1-2-2022",
-   "02-shoot-to-thrill_202303"
+   "02-shoot-to-thrill_202303",
+   "take-it-from-here_202605"
   ]
  },
  "excluded": {
   "tv_episodes_in_movie_lists": 185,
-  "sex_whole_word_rows": 199,
+  "sex_whole_word_rows": 218,
   "tv_no_playable_runtime": [
    "sesame-street_202306",
    "Y2mate.comAndyKaufmanOrsonWellesInterview1982XrGlWAFy1LU360p",
    "01-wacky-tv-contintued",
    "breaking.-bad.-s-01-e-01.-pilot.-1080p.-h-264.-blu-ray",
-   "s-06.7z"
+   "s-06.7z",
+   "05-all-in-the-family-1977",
+   "turner_video_104946"
   ],
   "tv": [
    "honbasho-201903-haru",
@@ -391,14 +674,18 @@
    "survivor-guatemala-bonus-content",
    "survivor-island-of-the-idols-bonus-content",
    "survivor-gabon-bonus-content_202010",
-   "s-1-survivor-borneo-moments-in-history"
+   "s-1-survivor-borneo-moments-in-history",
+   "dvd-transfer-12-wfld"
   ],
   "documentary_no_playable_runtime": [
    "ColdWarInSoviet1-BrezhnevMeetsEuropeanLeaders",
    "secret-weapons-enter-the-secret-world-of-the-soviet-school-for-sex-spies-ia-copy",
    "youtube-g6FTkj6OEWA",
    "evel-knievel-happy-birthday-america",
-   "russia-hoax-by-gregg-jarrett"
+   "russia-hoax-by-gregg-jarrett",
+   "hard-drive-new-content-5",
+   "newnot-archived-12tb",
+   "hard-drive-new-content-4"
   ],
   "russian_language_title": [
    "rush-revere-and-the-american-revolution-by-rush-limbaugh"
@@ -408,15 +695,379 @@
   "mx-movies-classics-list": {
    "guide": "movies-classics-vault",
    "name": "Movies Classics (list)",
-   "rows": 3042,
-   "hours": 5261,
+   "rows": 3620,
+   "hours": 6325,
    "note": "list 5, new items only; films >= 45 min; TV-episode titles excluded"
+  },
+  "cx-disney-anthology-television-series": {
+   "guide": "classic-tv",
+   "name": "Disney anthology television series",
+   "rows": 395,
+   "hours": 417,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-walt-disney-treasures-wave-two-the-complete-goofy-dvd-set": {
+   "guide": "classic-tv",
+   "name": "Walt Disney Treasures: Wave Two: The Complete Goofy DVD set",
+   "rows": 52,
+   "hours": 6,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-bugs-bunny-80th-anniversary-collection-all-cartoons-no-bonus": {
+   "guide": "classic-tv",
+   "name": "Bugs Bunny 80th Anniversary Collection (All Cartoons, No",
+   "rows": 57,
+   "hours": 7,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-cartoon-cartoon-show": {
+   "guide": "classic-tv",
+   "name": "The Cartoon Cartoon Show",
+   "rows": 6,
+   "hours": 2,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-inspector-gadget-season-1-part-2-upscale": {
+   "guide": "classic-tv",
+   "name": "Inspector Gadget Season 1 Part 2 ( Upscale)",
+   "rows": 29,
+   "hours": 11,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-inspector-gadget-season-2-upscale": {
+   "guide": "classic-tv",
+   "name": "Inspector Gadget Season 2 ( Upscale)",
+   "rows": 19,
+   "hours": 7,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-hulk-hogan-s-rock-n-wrestling": {
+   "guide": "classic-tv",
+   "name": "Hulk Hogan's Rock 'n' Wrestling",
+   "rows": 27,
+   "hours": 10,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-underdog-show-the-complete-collection": {
+   "guide": "classic-tv",
+   "name": "The Underdog Show: The Complete Collection",
+   "rows": 47,
+   "hours": 14,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-all-dogs-go-to-heaven": {
+   "guide": "classic-tv",
+   "name": "All Dogs Go to Heaven",
+   "rows": 19,
+   "hours": 10,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-reboot-with-subtitles-and-mkv": {
+   "guide": "classic-tv",
+   "name": "ReBoot with Subtitles and MKV",
+   "rows": 44,
+   "hours": 17,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-all-animated-vhs-and-dvd-and-blu-ray-movies": {
+   "guide": "classic-tv",
+   "name": "All Animated VHS and DVD and Blu-ray Movies",
+   "rows": 196,
+   "hours": 230,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-looney-tunes-the-collector-s-edition-vhs": {
+   "guide": "classic-tv",
+   "name": "Looney Tunes The Collector's Edition VHS",
+   "rows": 15,
+   "hours": 24,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-mouse-factory-ultimate-fan-pack-bonus": {
+   "guide": "classic-tv",
+   "name": "The Mouse Factory Ultimate Fan Pack - & Bonus",
+   "rows": 35,
+   "hours": 14,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-jim-henson-s-muppet-babies-fan-remastered": {
+   "guide": "classic-tv",
+   "name": "Jim Henson's Muppet Babies (fan-remastered)",
+   "rows": 55,
+   "hours": 22,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-dilbert-the-dvd-iso-ntsc": {
+   "guide": "classic-tv",
+   "name": "Dilbert: The DVD ISO NTSC",
+   "rows": 3,
+   "hours": 1,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-gargoyles-ai-upscale": {
+   "guide": "classic-tv",
+   "name": "Gargoyles AI Upscale",
+   "rows": 40,
+   "hours": 15,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-chadam-2010": {
+   "guide": "classic-tv",
+   "name": "Chadam (2010)",
+   "rows": 3,
+   "hours": 1,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-time-squad": {
+   "guide": "classic-tv",
+   "name": "Time Squad",
+   "rows": 52,
+   "hours": 9,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-toon-in-with-me-season-1-2021": {
+   "guide": "classic-tv",
+   "name": "Toon In With Me - Season 1 (2021)",
+   "rows": 8,
+   "hours": 8,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-incredble-hulk-1966-english": {
+   "guide": "classic-tv",
+   "name": "The Incredble Hulk (1966) ENGLISH",
+   "rows": 9,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-new-fantastic-four-1978": {
+   "guide": "classic-tv",
+   "name": "The New Fantastic Four 1978",
+   "rows": 13,
+   "hours": 5,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-spider-man-the-new-animated-series-2003-the-hd": {
+   "guide": "classic-tv",
+   "name": "Spider-Man; The New Animated Series (2003) The HD",
+   "rows": 5,
+   "hours": 2,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-ed-edd-n-eddy-all-episodes-and-specials": {
+   "guide": "classic-tv",
+   "name": "Ed, Edd N Eddy (all episodes and specials)",
+   "rows": 76,
+   "hours": 30,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-gravity-falls-the-5-1-rcvr": {
+   "guide": "classic-tv",
+   "name": "Gravity Falls The ( 5.1 RCVR)",
+   "rows": 62,
+   "hours": 14,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-pantheon-season-1-2": {
+   "guide": "classic-tv",
+   "name": "Pantheon - Season 1 & 2",
+   "rows": 16,
+   "hours": 11,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-ant-and-the-aardvark": {
+   "guide": "classic-tv",
+   "name": "The Ant And The Aardvark",
+   "rows": 17,
+   "hours": 2,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-d-c-follies": {
+   "guide": "classic-tv",
+   "name": "D. C. Follies",
+   "rows": 41,
+   "hours": 15,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-more-full-movie-cinematic-dump-part-3-3": {
+   "guide": "classic-tv",
+   "name": "More full movie cinematic dump (part 3.3)",
+   "rows": 51,
+   "hours": 34,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-stroker-hoop": {
+   "guide": "classic-tv",
+   "name": "Stroker & Hoop \u2014",
+   "rows": 13,
+   "hours": 5,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-charlie-brown-s-all-stars": {
+   "guide": "classic-tv",
+   "name": "Charlie Brown's All Stars",
+   "rows": 3,
+   "hours": 1,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-woody-woodpecker-friends-cartunes": {
+   "guide": "classic-tv",
+   "name": "The Woody Woodpecker & Friends Cartunes",
+   "rows": 510,
+   "hours": 57,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-yakky-doodle-complete-cartoon-collection": {
+   "guide": "classic-tv",
+   "name": "Yakky Doodle (complete cartoon collection)",
+   "rows": 23,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-popeye-the-sailor-man-1933-to-1943": {
+   "guide": "classic-tv",
+   "name": "Popeye The Sailor Man 1933 to 1943",
+   "rows": 123,
+   "hours": 14,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-popeye-the-sailor-man-1943-to-1949": {
+   "guide": "classic-tv",
+   "name": "Popeye The Sailor Man 1943 to 1949",
+   "rows": 43,
+   "hours": 5,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-woody-woodpecker-friends-the-collector-s-edition": {
+   "guide": "classic-tv",
+   "name": "Woody Woodpecker & Friends: The Collector's Edition",
+   "rows": 145,
+   "hours": 16,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-this-is-america-charlie-brown": {
+   "guide": "classic-tv",
+   "name": "This Is America, Charlie Brown",
+   "rows": 8,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-buddy-full-hq-hd-collection-1933-1935": {
+   "guide": "classic-tv",
+   "name": "Buddy Full HQ/HD Collection (1933-1935)",
+   "rows": 23,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-norman-mccabe-warner-brothers-direction-colection": {
+   "guide": "classic-tv",
+   "name": "Norman McCabe Warner Brothers Direction Colection",
+   "rows": 28,
+   "hours": 5,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-disney-rarities-celebrated-shorts-1920s-1960s": {
+   "guide": "classic-tv",
+   "name": "Disney Rarities: Celebrated Shorts: 1920s-1960s",
+   "rows": 37,
+   "hours": 6,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-noveltoons-original-classics": {
+   "guide": "classic-tv",
+   "name": "Noveltoons Original Classics",
+   "rows": 26,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-nutty-squirrels-present": {
+   "guide": "classic-tv",
+   "name": "The Nutty Squirrels Present",
+   "rows": 28,
+   "hours": 2,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-misterjaw": {
+   "guide": "classic-tv",
+   "name": "Misterjaw",
+   "rows": 23,
+   "hours": 2,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-sinbad-jr-and-his-magic-belt": {
+   "guide": "classic-tv",
+   "name": "Sinbad Jr. and his Magic Belt",
+   "rows": 33,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-the-beary-family-album": {
+   "guide": "classic-tv",
+   "name": "The Beary Family Album",
+   "rows": 27,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-andy-panda-filmography": {
+   "guide": "classic-tv",
+   "name": "Andy Panda Filmography",
+   "rows": 28,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-x-men-the-animated-series-ai-upscale": {
+   "guide": "classic-tv",
+   "name": "X-Men The Animated Series AI Upscale",
+   "rows": 33,
+   "hours": 12,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-teknoman-upscale": {
+   "guide": "classic-tv",
+   "name": "Teknoman (Upscale)",
+   "rows": 43,
+   "hours": 14,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-spider-man-unlimited-1999-2001-complete": {
+   "guide": "classic-tv",
+   "name": "Spider-Man Unlimited (1999 - 2001) Complete",
+   "rows": 12,
+   "hours": 4,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-death-note-complete-2006-2007": {
+   "guide": "classic-tv",
+   "name": "Death Note Complete (2006 - 2007)",
+   "rows": 9,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-beavis-and-butt-head-1992-present-final": {
+   "guide": "classic-tv",
+   "name": "Beavis and Butt-Head (1992 - Present) Final",
+   "rows": 15,
+   "hours": 3,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-noddy-s-toyland-adventures-1992": {
+   "guide": "classic-tv",
+   "name": "Noddy's Toyland Adventures (1992)",
+   "rows": 52,
+   "hours": 9,
+   "note": "owner list 3; eligible Archive episodes"
+  },
+  "cx-classic-cartoons": {
+   "guide": "classic-tv",
+   "name": "Classic Cartoons",
+   "rows": 33,
+   "hours": 30,
+   "note": "owner list 3; eligible Archive episodes"
   },
   "mx-filmography": {
    "guide": "movies-classics-vault",
    "name": "Filmography Collection",
-   "rows": 2863,
-   "hours": 4809,
+   "rows": 2992,
+   "hours": 4994,
    "note": "opensource_movies query filmography; full movie + english sub"
   },
   "mx-atlas-taggart": {
@@ -429,8 +1080,8 @@
   "ajn-new-world-tyranny": {
    "guide": "cable-tv",
    "name": "NEW WORLD TYRANNY",
-   "rows": 851,
-   "hours": 714,
+   "rows": 3369,
+   "hours": 2143,
    "note": "list 6, video items"
   },
   "tvx-riders-of-death-valley-1941": {
@@ -457,8 +1108,8 @@
   "tvx-rod-serling": {
    "guide": "classic-tv",
    "name": "Rod Serling",
-   "rows": 119,
-   "hours": 73,
+   "rows": 124,
+   "hours": 75,
    "note": "item 01-rod-serling"
   },
   "tvx-the-organization-1972": {
@@ -692,6 +1343,13 @@
    "hours": 61,
    "note": "item mccloud-Lando18"
   },
+  "tvx-mama-s-family": {
+   "guide": "classic-tv",
+   "name": "Mama's Family",
+   "rows": 114,
+   "hours": 40,
+   "note": "item mamas-family-Lando18"
+  },
   "tvx-airwolf": {
    "guide": "classic-tv",
    "name": "Airwolf",
@@ -705,6 +1363,13 @@
    "rows": 179,
    "hours": 77,
    "note": "item diffrent-strokes-Lando18"
+  },
+  "tvx-wagon-train": {
+   "guide": "classic-tv",
+   "name": "Wagon Train",
+   "rows": 221,
+   "hours": 196,
+   "note": "item y_20251113"
   },
   "tvx-doctor-who": {
    "guide": "classic-tv",
@@ -748,19 +1413,292 @@
    "hours": 72,
    "note": "item ancientalienscollection"
   },
+  "tvx-thriller-1960": {
+   "guide": "classic-tv",
+   "name": "Thriller (1960)",
+   "rows": 56,
+   "hours": 47,
+   "note": "item s-01-e-26-papa-benjamin"
+  },
+  "tvx-father-brown-1974": {
+   "guide": "classic-tv",
+   "name": "Father Brown - 1974",
+   "rows": 13,
+   "hours": 11,
+   "note": "item father-brown-complete-series-1974"
+  },
+  "tvx-wilfred-2011-2014": {
+   "guide": "classic-tv",
+   "name": "Wilfred (2011\u20132014)",
+   "rows": 30,
+   "hours": 11,
+   "note": "item w-i-l-f-r-e-d"
+  },
+  "tvx-ironside-season-3": {
+   "guide": "classic-tv",
+   "name": "Ironside Season 3",
+   "rows": 16,
+   "hours": 13,
+   "note": "item ironsideS03"
+  },
+  "tvx-man-from-atlantis-1977": {
+   "guide": "classic-tv",
+   "name": "Man From Atlantis - 1977",
+   "rows": 16,
+   "hours": 16,
+   "note": "item man-from-atlantis-complete-series-1977"
+  },
+  "tvx-centennial-1978-580p": {
+   "guide": "classic-tv",
+   "name": "Centennial (1978) (580p)",
+   "rows": 12,
+   "hours": 20,
+   "note": "item 04-for-as-long-as-the-waters-flow_202606"
+  },
+  "tvx-the-chronicles-of-narnia-1988": {
+   "guide": "classic-tv",
+   "name": "The Chronicles Of Narnia 1988",
+   "rows": 18,
+   "hours": 9,
+   "note": "item the-chronicles-of-narnia-the-complete-series-1988"
+  },
+  "tvx-cagney-lacey-season-1": {
+   "guide": "classic-tv",
+   "name": "Cagney & Lacey Season 1",
+   "rows": 6,
+   "hours": 5,
+   "note": "item cagney-lacey-s-01"
+  },
+  "tvx-ironside-2013-complete-season": {
+   "guide": "classic-tv",
+   "name": "Ironside 2013 Complete Season",
+   "rows": 9,
+   "hours": 8,
+   "note": "item ironside-2013"
+  },
+  "tvx-hart-to-hart-season-4": {
+   "guide": "classic-tv",
+   "name": "Hart To Hart Season 4",
+   "rows": 21,
+   "hours": 16,
+   "note": "item hart-to-hart-s04"
+  },
+  "tvx-hill-street-blues-season-1": {
+   "guide": "classic-tv",
+   "name": "Hill Street Blues Season 1",
+   "rows": 16,
+   "hours": 13,
+   "note": "item hill.-street.-blues.-s-01"
+  },
+  "tvx-hill-street-blues-season-4": {
+   "guide": "classic-tv",
+   "name": "Hill street blues season 4",
+   "rows": 22,
+   "hours": 17,
+   "note": "item hill.street.blues.s-04e-01.heres.adventure.heres.romance.sdtv.x-264"
+  },
+  "tvx-hill-street-blues-season-7": {
+   "guide": "classic-tv",
+   "name": "Hill Street Blues Season 7",
+   "rows": 21,
+   "hours": 16,
+   "note": "item hill.street.blues.s-07"
+  },
+  "tvx-the-life-and-legend-of-wyatt-earp": {
+   "guide": "classic-tv",
+   "name": "The Life And Legend Of Wyatt Earp",
+   "rows": 215,
+   "hours": 92,
+   "note": "item the-life-and-legend-of-wyatt-earp-s-02-e-39-the-time-for-all-good-men"
+  },
+  "tvx-it-takes-a-thief-1968": {
+   "guide": "classic-tv",
+   "name": "It Takes a Thief - 1968",
+   "rows": 58,
+   "hours": 50,
+   "note": "item it-takes-a-thief-complete-series-1968"
+  },
+  "tvx-arrest-and-trial-1963-1964": {
+   "guide": "classic-tv",
+   "name": "Arrest and Trial (1963-1964)",
+   "rows": 58,
+   "hours": 74,
+   "note": "item ArrestAndTrial1963"
+  },
+  "tvx-norm-archive": {
+   "guide": "classic-tv",
+   "name": "Norm Archive",
+   "rows": 416,
+   "hours": 334,
+   "note": "item NormMacDonaldArchive1"
+  },
+  "tvx-the-felony-squad-1967-complete-season-2": {
+   "guide": "classic-tv",
+   "name": "The Felony Squad (1967) - Complete Season 2",
+   "rows": 26,
+   "hours": 15,
+   "note": "item the-felony-squad-1967-season-2"
+  },
+  "tvx-n-y-p-d-1967": {
+   "guide": "classic-tv",
+   "name": "N.Y.P.D (1967)",
+   "rows": 49,
+   "hours": 21,
+   "note": "item s-02-e-16-the-attacker_202309"
+  },
+  "tvx-wkrp-in-cincinnati": {
+   "guide": "classic-tv",
+   "name": "WKRP in Cincinnati",
+   "rows": 82,
+   "hours": 35,
+   "note": "item wkrp-s-1-e-20-young-master-carlson"
+  },
+  "tvx-room-222-1969-complete-season-4": {
+   "guide": "classic-tv",
+   "name": "Room 222 (1969) - Complete Season 4",
+   "rows": 5,
+   "hours": 3,
+   "note": "item Room-222-Season-4"
+  },
+  "tvx-room-222-1969-complete-season-1": {
+   "guide": "classic-tv",
+   "name": "Room 222 (1969) - Complete Season 1",
+   "rows": 26,
+   "hours": 11,
+   "note": "item Room-222-Season-1"
+  },
+  "tvx-coronet-blue-1967": {
+   "guide": "classic-tv",
+   "name": "Coronet Blue (1967)",
+   "rows": 13,
+   "hours": 11,
+   "note": "item Coronet-Blue-1967-Series"
+  },
+  "tvx-rebel-highway-of-films": {
+   "guide": "classic-tv",
+   "name": "Rebel Highway of films",
+   "rows": 10,
+   "hours": 14,
+   "note": "item rebel-highway-complete-series-of-films"
+  },
+  "tvx-unsolved-mysteries-season-11-cbs-broadcasts": {
+   "guide": "classic-tv",
+   "name": "Unsolved mysteries; Season 11; CBS broadcasts",
+   "rows": 5,
+   "hours": 5,
+   "note": "item um.11.vhs"
+  },
+  "tvx-cops-vhs-collection": {
+   "guide": "classic-tv",
+   "name": "COPS VHS Collection",
+   "rows": 12,
+   "hours": 11,
+   "note": "item CopsVHSTapes"
+  },
+  "tvx-life-goes-on-tv-series-1989-1993-complete": {
+   "guide": "classic-tv",
+   "name": "Life Goes On TV Series (1989-1993) Complete",
+   "rows": 81,
+   "hours": 65,
+   "note": "item life-goes-on-complete-tv-series"
+  },
+  "tvx-perversions-of-science-hbo-tv-series-1997-dvd-rip": {
+   "guide": "classic-tv",
+   "name": "Perversions Of Science HBO TV Series 1997 DVD Rip",
+   "rows": 10,
+   "hours": 4,
+   "note": "item perversions.of.-science.-s-01-e-10-the-peoples-choice-ntsc.-dvd"
+  },
+  "tvx-freakylinks-2000": {
+   "guide": "classic-tv",
+   "name": "FreakyLinks 2000",
+   "rows": 12,
+   "hours": 9,
+   "note": "item freakylinks-complete-series-2000"
+  },
+  "tvx-the-new-alfred-hitchcock-presents-1985-1989": {
+   "guide": "classic-tv",
+   "name": "The New Alfred Hitchcock Presents (1985-1989)",
+   "rows": 64,
+   "hours": 25,
+   "note": "item the-new-alfred-hitchcock-presents-complete"
+  },
+  "tvx-the-amazing-spider-man-complete-1977-tv-series-seasons-1-2": {
+   "guide": "classic-tv",
+   "name": "The Amazing Spider-Man (Complete 1977 TV Series) Seasons 1-2",
+   "rows": 12,
+   "hours": 12,
+   "note": "item theamazingspider-man1977"
+  },
+  "tvx-so-weird": {
+   "guide": "classic-tv",
+   "name": "So Weird",
+   "rows": 21,
+   "hours": 8,
+   "note": "item SoWeird"
+  },
+  "tvx-spawn-season-s01-complete": {
+   "guide": "classic-tv",
+   "name": "SPAWN Season S01 Complete",
+   "rows": 6,
+   "hours": 3,
+   "note": "item spawn-s-01-e-05-souls-in-the-balance-480p-dvdrip"
+  },
+  "tvx-key-west-tv-series": {
+   "guide": "classic-tv",
+   "name": "Key West (TV Series)",
+   "rows": 13,
+   "hours": 10,
+   "note": "item key-west-tv-series-1993"
+  },
+  "tvx-fawlty-towers-vhs-set-bbc-video-cbs-fox-1986": {
+   "guide": "classic-tv",
+   "name": "Fawlty Towers VHS set (BBC Video + CBS FOX) (1986)",
+   "rows": 4,
+   "hours": 6,
+   "note": "item fawlty-towers-vhs-set-bbc-video-cbs-fox-1986"
+  },
+  "tvx-the-nutt-house-1989": {
+   "guide": "classic-tv",
+   "name": "The Nutt House (1989)",
+   "rows": 9,
+   "hours": 4,
+   "note": "item the-nutt-house-1989"
+  },
+  "tvx-three-s-company-season-1-dvd-iso": {
+   "guide": "classic-tv",
+   "name": "Three's Company Season 1 DVD ISO",
+   "rows": 5,
+   "hours": 2,
+   "note": "item threes-company-dvd_202511"
+  },
+  "tvx-even-stevens-season-1-3-films": {
+   "guide": "classic-tv",
+   "name": "Even Stevens (Season 1-3 & Films)",
+   "rows": 61,
+   "hours": 24,
+   "note": "item evenstevensclips"
+  },
+  "tvx-family-comedy-animation": {
+   "guide": "classic-tv",
+   "name": "family comedy animation",
+   "rows": 37,
+   "hours": 63,
+   "note": "item the.-medallion.-2003.1080p.-blu-ray.x-264.-aac-yts.-mx_202603"
+  },
   "tvx-specials-and-singles": {
    "guide": "classic-tv",
    "name": "Classic TV Specials & Singles",
-   "rows": 55,
-   "hours": 59,
-   "note": "44 one/two-file items"
+   "rows": 69,
+   "hours": 79,
+   "note": "56 one/two-file items"
   },
   "documentaries": {
-   "new_groups": 48,
-   "new_rows": 2531
+   "new_groups": 8,
+   "new_rows": 4537
   },
   "audio": {
-   "new": 69
+   "new": 0
   }
  },
  "needs_decision": {
@@ -802,7 +1740,86 @@
    "deep-purple-new-live-rare-the-video-collection-1984-2000",
    "UB2008-05-10",
    "love-disco-the-collection-vol-1-cd-2",
-   "tom-jones-hammersmith-odeon-london-1991-bbc"
+   "tom-jones-hammersmith-odeon-london-1991-bbc",
+   "billy-idol-1987-shoreline-amphitheatre-mtn-view",
+   "just-a-bunch-of-old-tunes",
+   "MARY_J_BLIGE_Family_Affair_2001"
   ]
- }
+ },
+ "lists": {
+  "documentary": {
+   "members": 192,
+   "unique_members": 192,
+   "duplicate_member_entries": 0,
+   "added": 14,
+   "added_rows": 4537,
+   "skipped_already_in_app": 159,
+   "skipped_claimed_by_another_list": 2,
+   "rejected_reason_counts": {
+    "dark_or_metadata_missing": 8,
+    "needs_transcode": 30,
+    "no_duration": 49,
+    "no_playable_runtime": 8,
+    "title_filter": 3,
+    "too_short": 820,
+    "duplicate": 2567,
+    "russian_language_title": 1,
+    "private": 6851
+   }
+  },
+  "cartoons": {
+   "members": 101,
+   "unique_members": 101,
+   "duplicate_member_entries": 0,
+   "added": 80,
+   "added_rows": 2710,
+   "skipped_already_in_app": 7,
+   "skipped_claimed_by_another_list": 0,
+   "rejected_reason_counts": {
+    "dark_or_metadata_missing": 14,
+    "duplicate": 2622,
+    "needs_transcode": 104,
+    "no_duration": 10
+   }
+  },
+  "tv": {
+   "members": 346,
+   "unique_members": 346,
+   "duplicate_member_entries": 0,
+   "added": 142,
+   "added_rows": 4913,
+   "skipped_already_in_app": 131,
+   "skipped_claimed_by_another_list": 1,
+   "rejected_reason_counts": {
+    "dark_or_metadata_missing": 46,
+    "duplicate": 3465,
+    "private": 2012,
+    "no_playable_runtime": 7,
+    "needs_transcode": 73,
+    "identifier_exclusion": 19,
+    "too_short": 1079,
+    "no_duration": 56,
+    "title_filter": 5
+   }
+  },
+  "movies": {
+   "members": 204,
+   "unique_members": 204,
+   "duplicate_member_entries": 0,
+   "added": 140,
+   "added_rows": 3620,
+   "skipped_already_in_app": 28,
+   "skipped_claimed_by_another_list": 0,
+   "rejected_reason_counts": {
+    "dark_or_metadata_missing": 28,
+    "needs_transcode": 14,
+    "duplicate": 900,
+    "too_short": 898,
+    "private": 1021,
+    "no_duration": 17,
+    "title_filter": 187
+   }
+  }
+ },
+ "deferred_classic_tv_channels": 93
 }
