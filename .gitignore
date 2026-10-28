@@ -9,3 +9,4 @@ coverage/
 !.env.example
 .cache/
 probe-results/
+/generated-artifacts/AJN_Precision_Engineering_Full_Patched_Source.zip

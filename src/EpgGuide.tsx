@@ -502,7 +502,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
   const searchIndex = useMemo<SearchIndex>(() => (hasQuery ? buildSearchIndex(numbered, lightTitles) : new Map()), [numbered, hasQuery, lightTitles]);
   // "On now": a channel qualifies when one of its programs covers the current local time (same hours the grid draws).
   const onNowTest = useMemo(() => (onNowOnly
-    ? (c: ScheduleChannel) => (c.programs ?? []).some((p) => { const w = withLocalHours(p); return nowHour >= w.sHour && nowHour < w.eHour; })
+    ? (c: ScheduleChannel) => c.hasCurrentProgram === true || (c.programs ?? []).some((p) => { const w = withLocalHours(p); return nowHour >= w.sHour && nowHour < w.eHour; })
     : undefined), [onNowOnly, nowHour]);
   const filtered = useMemo(() => filterChannels(numbered, searchIndex, deferredQuery, category, onNowTest), [numbered, searchIndex, deferredQuery, category, onNowTest]);
   // Only drop a remembered category once the channel list has really loaded (it is empty while loading).
@@ -644,12 +644,20 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
 
   const hourMarkers = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
   const nowLeftPx = redLineLeft(nowHour, win);
-  const playLive = useCallback((channel: ScheduleChannel, item: LiveItem | null) => {
-    if (!item) return;
-    void ensureChannelRows(channel.id);
-    const now = currentHourFraction();
-    const t = tuneIn(item.program, item.sHour, item.eHour, now);
-    const p = item.program;
+  const playLive = useCallback(async (channel: ScheduleChannel, item: LiveItem | null) => {
+    let selectedItem = item;
+    let now = currentHourFraction();
+    if (!selectedItem && channel.hasCurrentProgram === true && channel.programsComplete === false) {
+      const full = await ensureChannelRows(channel.id);
+      if (!full) return;
+      now = currentHourFraction();
+      selectedItem = findLiveProgram(full, now);
+    } else if (selectedItem) {
+      void ensureChannelRows(channel.id);
+    }
+    if (!selectedItem) return;
+    const t = tuneIn(selectedItem.program, selectedItem.sHour, selectedItem.eHour, now);
+    const p = selectedItem.program;
     onSelectProgram?.(t.path, p.title, channel.name, mediaTypeFor(p, channel, guideId), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds, bufferGaugeMetadata(p.metadata));
   }, [ensureChannelRows, onSelectProgram, guideId]);
 
@@ -762,6 +770,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
             const isAudio = channel.mediaType === 'audio' || guideId === 'audio-podcasts';
             const liveItem: LiveItem | null = grouped.get(channel.id)?.liveItem ?? findLiveProgram(channel, nowHour);
             const liveTitle = liveItem?.program.title;
+            const canPlayNow = Boolean(liveItem) || channel.hasCurrentProgram === true;
             return (
               <div
                 key={channel.id}
@@ -786,12 +795,12 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                   <button
                     type="button"
                     data-play-live={channel.id}
-                    disabled={!liveItem}
-                    onClick={() => playLive(channel, liveItem)}
-                    title={liveItem ? `Play ${liveTitle} from the red line (${channel.name})` : `${channel.name}: nothing scheduled right now`}
-                    aria-label={liveItem ? `Play ${channel.name} now: ${liveTitle}` : `${channel.name}: nothing on air now`}
+                    disabled={!canPlayNow}
+                    onClick={() => { void playLive(channel, liveItem); }}
+                    title={liveItem ? `Play ${liveTitle} from the red line (${channel.name})` : canPlayNow ? `Load and play the current program on ${channel.name}` : `${channel.name}: nothing scheduled right now`}
+                    aria-label={liveItem ? `Play ${channel.name} now: ${liveTitle}` : canPlayNow ? `Load and play ${channel.name} now` : `${channel.name}: nothing on air now`}
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${
-                      liveItem
+                      canPlayNow
                         ? (isAudio ? 'border-amber-500/50 bg-amber-500/15 text-amber-300 hover:bg-amber-500/30' : 'border-sky-500/50 bg-sky-500/15 text-sky-300 hover:bg-sky-500/30') + ' cursor-pointer'
                         : 'border-neutral-800 text-neutral-600 cursor-not-allowed'
                     }`}
@@ -856,8 +865,20 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                   ))}
 
                   {channel.programs.length === 0 ? (
-                    <div className="absolute inset-y-0 flex items-center px-4 text-xs font-medium text-neutral-500 italic bg-neutral-900/30" style={{ left: win.startHour * pxPerHour, width: viewWidth }}>
-                      {channel.sourceError ? `Unavailable — ${channel.sourceError}` : channel.sourceStatus === 'restricted' ? 'Restricted by Archive' : channel.programCount ? 'No programs in the current window' : 'No programs available'}
+                    <div className="absolute inset-y-0 flex items-center gap-2 px-4 text-xs font-medium text-neutral-500 italic bg-neutral-900/30" style={{ left: win.startHour * pxPerHour, width: viewWidth }}>
+                      {channel.sourceError ? `Unavailable — ${channel.sourceError}` : channel.sourceStatus === 'restricted' ? 'Restricted by Archive' : channel.programsComplete === false && (channel.programCount ?? 0) > 0 ? (
+                        <>
+                          <span>Schedule is loaded on demand ({channel.programCount!.toLocaleString()} programs).</span>
+                          <button
+                            type="button"
+                            data-load-episodes={channel.id}
+                            onClick={() => { void ensureChannelRows(channel.id); }}
+                            className="shrink-0 rounded border border-sky-600/70 bg-sky-950/60 px-2 py-1 not-italic text-[11px] font-semibold text-sky-100 hover:bg-sky-900/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300"
+                          >
+                            Load episodes
+                          </button>
+                        </>
+                      ) : channel.programCount ? 'No programs in the current window' : 'No programs available'}
                     </div>
                   ) : isLibraryOnlyChannel(channel) ? (
                     <div data-library-only={channel.id} className="absolute inset-y-0 flex items-center whitespace-nowrap px-4 text-xs font-medium text-neutral-400 italic bg-neutral-900/30" style={{ left: win.startHour * pxPerHour, width: viewWidth }}>
