@@ -1,1 +1,2 @@
 - [Archive search pagination](archive-search-pagination.md) — Internet Archive advancedsearch can ignore `start`; use stable sorting with page-based pagination.
+- [Browser test HMR](browser-test-hmr.md) — Vite can reload when local workflow logs are written; use the built app on a separate port for interactions.
