@@ -108,6 +108,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSavedPositionRef = useRef(0);
+  // Resume key of the source the <media> element has actually loaded. nowPlaying can switch to the
+  // next item one render before the element changes source; saving under the new item's key in that
+  // window stored the previous hour's position for the next hour ("Resume from 16:21?" on Hour 2).
+  const mediaResumeKeyRef = useRef<string | null>(null);
   const playingReportedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   // Autoplay starts muted on every app load. Once the user unmutes, keep that
@@ -214,7 +218,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
 
   const readResumePosition = useCallback(() => {
     try {
-      const saved = Number.parseFloat(localStorage.getItem(resumeKey) ?? "");
+      const saved = Number.parseFloat(localStorage.getItem(mediaResumeKeyRef.current ?? resumeKey) ?? "");
       return Number.isFinite(saved) && saved >= RESUME_MIN_SEC ? saved : null;
     } catch {
       return null;
@@ -224,18 +228,20 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const saveResumePosition = useCallback((media: HTMLMediaElement) => {
     if (Number.isFinite(media.currentTime)) onProgressEvent?.(media.currentTime);
     if (!Number.isFinite(media.currentTime) || media.currentTime < RESUME_MIN_SEC) return;
+    const key = mediaResumeKeyRef.current;
+    if (!key) return;
     if (Number.isFinite(media.duration) && media.duration > 0 && media.currentTime >= media.duration - 5) {
-      try { localStorage.removeItem(resumeKey); } catch {}
+      try { localStorage.removeItem(key); } catch {}
       return;
     }
     const now = Date.now();
     if (now - lastSavedPositionRef.current < RESUME_SAVE_INTERVAL_MS) return;
     lastSavedPositionRef.current = now;
-    try { localStorage.setItem(resumeKey, String(media.currentTime)); } catch {}
-  }, [resumeKey]);
+    try { localStorage.setItem(key, String(media.currentTime)); } catch {}
+  }, [onProgressEvent]);
 
   const clearResumePosition = useCallback(() => {
-    try { localStorage.removeItem(resumeKey); } catch {}
+    try { localStorage.removeItem(mediaResumeKeyRef.current ?? resumeKey); } catch {}
     setResumePosition(null);
     setShowResumePrompt(false);
   }, [resumeKey]);
@@ -363,6 +369,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     const fx = () => fnRef.current;
     const media = mediaRef.current;
     if (!media) return;
+    mediaResumeKeyRef.current = resumeKey; // this effect re-runs per loaded source (activeSrc)
 
     // Set the property before attempting autoplay. This is required by
     // browser autoplay policy and avoids relying on JSX timing alone.

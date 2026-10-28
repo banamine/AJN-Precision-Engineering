@@ -1,28 +1,24 @@
-AJN FULL RESTORE DROP-IN v2 (2026-10-27) - replaces v1. Fixes the two errors from the v1 build.
+AJN drop-in — Rush player + resume fix + 94 restored tests — 2026-10-27
+(Supersedes AJN_dropin_rush_player_2026-10-27.zip — use this one.)
 
-FIX 1  "Cannot set property fetch of #<Window> which has only a getter"
-  Cause: v1 shipped the offline DEMO mode (src/demo/demo-entry.tsx assigns window.fetch). Not needed in AI Studio.
-  Fix: demo mode removed; src/main.tsx back to the normal entry.
-FIX 2  "vite build Killed / exit code 137" (out of memory)
-  Cause: the build ran while the old server was warming every guide (148 + 244 + 1521 channels) in the
-  same container. The new server.ts only warms when AJN_BOOT_WARMERS=1. Vite now skips gzip size
-  reporting and source maps. Measured peak build memory: 937 MB (main: 908 MB).
+Copy every file to the same path in AI Studio, then deploy.
 
-GOOGLE BUILDER: DO EXACTLY THIS
-1. Copy every file in this ZIP to the same path, overwriting. Create folders if needed.
-2. DELETE these files/folders:
-     src/components/ArchiveOutageBanner.tsx
-     src/demo/                       (whole folder)
-     tools/build-demo.cjs
-     tools/checks/demo-check.cjs
-     tools/checks/production-demo-guard.cjs
-     tools/demo-fixtures/            (whole folder)
-3. Edit nothing else. Do not run tests. Then run the build once. If it is killed again, restart the
-   app (stop the dev server) and build again.
-4. Report: files written, files deleted, build result.
+APP CODE (5 files):
+  src/MinimalPlayer.tsx                 resume prompt reads the right hour (Claude)
+  src/components/PlayerView.tsx         Morning Update video, Skip, handoff (Replit PR #139)
+  src/components/RushEpisodePicker.tsx  "Morning Update · 1 min", unavailable label (Replit)
+  src/utils/rushNext.ts                 Morning Update -> Hour 1 (Replit)
+  src/utils/rushSettings.ts             once per day (Replit)
 
-CONTENTS: same as v1 (status pills in the top bar, BANNED VIDEO tab, subtitles, Retry countdown, warmers gate,
-music player + gate fix, live HLS probe, Jeffersons/Good Times/Mister Ed/Fish/Rob!, Library Soap Operas /
-All My Children, podcast inactive labels, Archive waiting-room acronyms, affiliate listing relay kept,
-visible archive.org text removed). Links/URLs/proxy unchanged.
-Gate on this exact tree: tsc 0 errors, npm run build OK, restore tests PASS.
+TESTS (94 files): every test file the AI Studio push cb0b020 deleted, restored from 25c0d9e.
+
+CHECKED (on your AI Studio export + these files):
+  typecheck: 0 errors      build: OK
+  restored tests run one by one: 76 pass, 12 fail
+    7 need a running server / Playwright / internet (cannot run here, not code bugs):
+      test-live-stall-recovery, test-media-session, test-music-timezones (playwright)
+      test-radio-view, test-real-archive-playback, test-live-tv-api-server (need app on :3000)
+      test-music-schedule-budget (network)
+    4 ALREADY FAILED on GitHub main 25c0d9e before today (old, not caused by this zip):
+      test-player-separation, test-runtime-loop-guards, test-mute-indicator, test-library-rank
+    1 flaky (passed on rerun): test-program-store-bounded

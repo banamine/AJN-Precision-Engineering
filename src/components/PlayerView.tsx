@@ -1,8 +1,8 @@
 import { bufferGaugeMetadata } from "../utils/bufferGauge";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PlayCircle, Heart } from "lucide-react";
-import { RUSH_PROGRAM, resolveRushNext, upNextLabel, type RushNext } from "../utils/rushNext";
-import { loadRushSettings, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
+import { RUSH_PRELUDE_PROGRAM, RUSH_PROGRAM, resolveRushNext, rushProgramDate, upNextLabel, type RushNext } from "../utils/rushNext";
+import { loadRushSettings, markRushPreludeSeenToday, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
 import MinimalPlayer from "../MinimalPlayer";
 import { toPlayableSrc } from "../utils/playableSrc";
 import { reportTelemetry } from "../telemetry";
@@ -71,6 +71,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   const failureContextRef = useRef<ProxyErrorBody | null>(null);
   const stoppedInstanceRef = useRef<unknown>(null);
   const playerWrapRef = useRef<HTMLDivElement | null>(null);
+  const seenPreludeProgramsRef = useRef<Set<string>>(new Set());
   const [retryNonce, setRetryNonce] = useState(0);
   const [retryPosition, setRetryPosition] = useState<{ key: string; seconds: number } | null>(null);
   const [playbackStopped, setPlaybackStopped] = useState(false);
@@ -131,11 +132,25 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   }, [continueAcross]);
   useEffect(() => {
     setUpNext(null);
-    if (!nowPlaying || nowPlaying.channelId !== "rush-vod" || !RUSH_PROGRAM.test(String(nowPlaying.programId ?? ""))) return;
+    if (!nowPlaying || nowPlaying.channelId !== "rush-vod" || !rushProgramDate(String(nowPlaying.programId ?? ""))) return;
     let live = true;
     void rushPlanFor(nowPlaying).then((n) => { if (live) setUpNext(n); });
     return () => { live = false; };
   }, [nowPlaying, rushPlanFor]);
+
+  useEffect(() => {
+    const programId = String(nowPlaying?.programId ?? "");
+    if (nowPlaying?.channelId !== "rush-vod" || !RUSH_PRELUDE_PROGRAM.test(programId)) return;
+    const video = playerWrapRef.current?.querySelector("video");
+    if (!video) return;
+    const markSeen = () => {
+      if (seenPreludeProgramsRef.current.has(programId)) return;
+      seenPreludeProgramsRef.current.add(programId);
+      markRushPreludeSeenToday();
+    };
+    video.addEventListener("playing", markSeen, { once: true });
+    return () => video.removeEventListener("playing", markSeen);
+  }, [nowPlaying?.channelId, nowPlaying?.programId, nowPlaying?.src]);
 
   // The channel's program list, fetched once per playing item and shared by the next-track preload
   // and the end-of-track advance (the schedule payload is large; never fetch it twice per item).
@@ -207,7 +222,8 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       if (prevPart) onSelectProgram(prevPart.src, prevPart.title, `Full show · ${q.label}`, prevPart.mediaType, "ajn-radio", "ajn-radio", prevPart.programId);
       return;
     }
-    if (!instance || (instance.channelId === "rush-vod" && RUSH_PROGRAM.test(String(instance.programId ?? "")))) return;
+    if (!instance || (instance.channelId === "rush-vod" &&
+        (RUSH_PROGRAM.test(String(instance.programId ?? "")) || RUSH_PRELUDE_PROGRAM.test(String(instance.programId ?? ""))))) return;
     const programs = await schedulePrograms(instance).catch(() => [] as any[]);
     if (latestRef.current !== instance || !programs.length) return;
     const i = programs.findIndex((p: any) => (instance.programId && p.id === instance.programId) || (instance.archivePath && p.archivePath === instance.archivePath) || p.mediaUrl === instance.src);
@@ -220,7 +236,8 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   const resolveNext = useCallback(async (): Promise<{ src: string; mediaType: string; programId?: string } | null> => {
     const instance = latestRef.current;
     if (instance && isQueuePart(instance.programId)) { const n = peekNextPart(); return n ? { src: toPlayableSrc(n.src), mediaType: n.mediaType } : null; }
-    if (!instance || (instance.channelId === "rush-vod" && RUSH_PROGRAM.test(String(instance.programId ?? "")))) return null;
+    if (!instance || (instance.channelId === "rush-vod" &&
+        (RUSH_PROGRAM.test(String(instance.programId ?? "")) || RUSH_PRELUDE_PROGRAM.test(String(instance.programId ?? ""))))) return null;
     try {
       const programs = await schedulePrograms(instance);
       if (latestRef.current !== instance) return null;
@@ -325,7 +342,8 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
 
     // Rush picked from the calendar: the next hour, then (if the preference is on)
     // the next available date. Same computation as the Up Next line.
-    if (instance.channelId === "rush-vod" && RUSH_PROGRAM.test(String(instance.programId ?? ""))) {
+    if (instance.channelId === "rush-vod" &&
+        (RUSH_PROGRAM.test(String(instance.programId ?? "")) || RUSH_PRELUDE_PROGRAM.test(String(instance.programId ?? "")))) {
       const n = await rushPlanFor(instance);
       if (stale()) return true;
       const base = { guideId: instance.guideId ?? null, channelId: "rush-vod", programId: instance.programId ?? null,
@@ -336,7 +354,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         return false;
       }
       if (n.kind !== "next") { reportTelemetry({ ...base, event: `rush.auto_advance_${n.kind}`, mediaPath: null }); return false; }
-      reportTelemetry({ ...base, event: n.item.date === RUSH_PROGRAM.exec(instance.programId)![1] ? "rush.auto_advance" : "rush.auto_advance_next_date",
+      reportTelemetry({ ...base, event: n.item.date === rushProgramDate(String(instance.programId ?? "")) ? "rush.auto_advance" : "rush.auto_advance_next_date",
         mediaPath: n.item.archivePath, lookupDurationMs: rushPlanRef.current?.ms ?? null });
       onSelectProgram(n.item.archivePath, n.item.title, n.item.subtitle, "audio", "rush-vod", "audio-podcasts", n.item.programId);
       return true;
@@ -650,9 +668,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       {!archiveMusicOn && <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />}
       {!archiveMusicOn && nowPlaying.channelId === "archive-infowars-radio" && <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />}
       {!archiveMusicOn && <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />}
-      {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1]) && (
+      {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, rushProgramDate(String(nowPlaying.programId ?? ""))) && (
         <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">
-          {upNextLabel(upNext, RUSH_PROGRAM.exec(String(nowPlaying.programId ?? ""))?.[1])}
+          {upNextLabel(upNext, rushProgramDate(String(nowPlaying.programId ?? "")))}
         </p>
       )}
       {!archiveMusicOn && (import.meta as any).env?.DEV && (
