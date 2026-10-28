@@ -26,6 +26,7 @@ on:
       - .github/workflows/ajn-catalog-refresh.yml
       - tools/catalog-gate.mjs
       - tools/catalog-measure.mts
+      - tools/catalog-probe.mjs
       - tools/build-infobattalion-lists.py
       - config/catalog-refresh.json
 
@@ -82,13 +83,18 @@ jobs:
           mkdir -p .catalog-cache
           python tools/build-infobattalion-lists.py --cache .catalog-cache --fetch
 
+      # Every NEW file gets a real 1 KB Range request; anything that does not answer with media is removed here.
+      - name: Playability probe of new files
+        timeout-minutes: 150
+        run: node tools/catalog-probe.mjs --base origin/main --out catalog-probe.json
+
       - name: Measure payloads
         run: npx tsx tools/catalog-measure.mts catalog-measure.json
 
       - name: Gate
         id: gate
         run: |
-          node tools/catalog-gate.mjs --base origin/main --measure catalog-measure.json --out catalog-report.json --summary catalog-summary.md
+          node tools/catalog-gate.mjs --base origin/main --measure catalog-measure.json --probe catalog-probe.json --out catalog-report.json --summary catalog-summary.md
           echo "verdict=$(node -p "require('./catalog-report.json').verdict")" >> "$GITHUB_OUTPUT"
           cat catalog-summary.md >> "$GITHUB_STEP_SUMMARY"
 
@@ -96,6 +102,7 @@ jobs:
         if: steps.gate.outputs.verdict != 'none'
         run: |
           node test-catalog-gate.mjs
+          python -m unittest test_infobattalion_builder -q
           npx tsx test-infobattalion-lists.ts
           npx tsx test-classic-light-schedule.ts
 
@@ -106,6 +113,7 @@ jobs:
           name: catalog-refresh-report
           path: |
             catalog-measure.json
+            catalog-probe.json
             catalog-report.json
             catalog-summary.md
             reports/infobattalion-lists.json

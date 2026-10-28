@@ -40,6 +40,20 @@ Other facts the numbers rest on:
 - **Thumbnails are not gated.** **Station numbers are alphabetical positions** (`src/guide/channelIndex.ts`), so every
   added channel renumbers the channels after it — not gated; pinned numbers would need a separate registry (owner decision).
 
+## Movies list: films vs TV shows
+`classify_movie_list_item` (tools/build-infobattalion-lists.py) looks at each Movies-list item on its own:
+- has at least one feature-length (>= 45 min), non-episode file → **Movies** (as before);
+- no feature-length file, but 2+ episode-like files (S01E02 / Season / Episode / 1x05 / "Part 1 of 2" titles, or 10-45 min long) → **Classic TV**, one lazy channel per show (3+ files) or "Classic TV Specials & Singles";
+- otherwise dropped. Every rerouted and dropped item is listed in `reports/infobattalion-lists.json` (`movies_rerouted_to_tv`, `movies_list_dropped`).
+Duplicates, private files and placeholders are still removed by the admission rules.
+
+## Playability probe (`tools/catalog-probe.mjs`)
+Every **new** row/documentary entry (compared with `main`) gets a real `Range: bytes=0-1023` request to archive.org, paced 1.55 s.
+200/206 with a media content type passes; anything else (403/404, HTML error page, timeout after one retry) is **removed**
+from the data files before the gate runs, and a new channel left empty is dropped. HTTP 429/503 stops probing; the rest
+count as "not probed" and the PR goes to review. More than 5 % failures also sends it to review.
+Cost: ~1.55 s per new file, so a typical nightly add of a few dozen files takes about a minute.
+
 ## Gate rules (`config/catalog-refresh.json → autoMerge`)
 
 | Rule | Auto | Otherwise |
@@ -51,6 +65,7 @@ Other facts the numbers rest on:
 | New documentary entries | ≤ 1,500 | review |
 | New audio channels | ≤ 10 | review |
 | New Classic TV channel not lazy-loaded | none allowed | review |
+| Probe did not run, stopped early, or > 5 % failed | — | review |
 | Payload above auto-merge ceiling | — | review |
 | Payload above hard limit, or measurement missing | — | **block** (PR opened, must not merge) |
 
@@ -76,6 +91,5 @@ Undo a bad auto-merge: `git revert <merge sha>` (or the PR's Revert button). Not
 4. @seamac: stays `enabled: false` until Replit's discovery report is reviewed and the builder has a @seamac section with owner-approved categories.
 
 ## Not covered yet (Replit follow-ups)
-- HEAD/Range playability probe of each new MP4 (beyond the metadata admission) — candidate: reuse `server/archiveHealthProbe.ts` patterns.
 - @seamac builder section and category mapping.
 - Thumbnails for new channels.

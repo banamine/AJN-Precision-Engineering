@@ -23,7 +23,7 @@ export function gitJson(ref, file) {
 const rowKey = (row) => `${row.identifier}/${row.file ?? row.id ?? ''}`;
 
 /** Pure. base/head are { extra, docs, audio } payloads (null = missing file). */
-export function evaluate(base, head, measure, config) {
+export function evaluate(base, head, measure, config, probe = null) {
   const rules = config.autoMerge;
   const review = [];
   const block = [];
@@ -85,6 +85,14 @@ export function evaluate(base, head, measure, config) {
   if (addedAudio.length > rules.maxNewAudioChannels) review.push(`${addedAudio.length} new audio channels > limit ${rules.maxNewAudioChannels}`);
   if (rules.requireDeferredClassicChannels && notDeferred.length) review.push(`new Classic TV channel(s) not lazy-loaded: ${notDeferred.join(', ')}`);
 
+  if (changed) {
+    if (!probe) review.push('playability probe did not run');
+    else {
+      if (probe.unprobed > 0) review.push(`${probe.unprobed} new row(s) not probed${probe.stoppedAt ? ` (Archive answered HTTP ${probe.stoppedAt.status})` : ''}`);
+      const rate = probe.probed ? probe.failed.length / probe.probed : 0;
+      if (rate > rules.maxProbeFailureRate) review.push(`${probe.failed.length}/${probe.probed} new rows failed the playability probe (removed); rate above ${rules.maxProbeFailureRate}`);
+    }
+  }
   const b = config.budgets;
   if (!measure) {
     block.push('payload measurement missing');
@@ -117,6 +125,7 @@ export function evaluate(base, head, measure, config) {
     removedChannels: removedChannels.map((c) => ({ id: c.id, name: c.name, rows: c.rows?.length ?? 0 })),
     renamedChannels, movedChannels, shrunkChannels, newDocGroups, addedAudio, removedAudio,
     measure,
+    probe: probe ? { targets: probe.targets, probed: probe.probed, ok: probe.ok, failed: probe.failed.length, unprobed: probe.unprobed, droppedChannels: probe.droppedChannels ?? [] } : null,
     note: 'Station numbers are alphabetical positions (src/guide/channelIndex.ts numberChannels), so any added channel renumbers the channels after it. Not gated.',
   };
 }
@@ -140,6 +149,10 @@ export function summaryMarkdown(report) {
     const m = report.measure;
     lines.push('', `Payloads: classic light ${m.classicLightBytes.toLocaleString('en-US')} B · classic full ${m.classicFullBytes.toLocaleString('en-US')} B raw / ${(m.classicFullGzipBytes ?? 0).toLocaleString('en-US')} B gzip · ` +
       Object.entries(m.guideMB).map(([g, v]) => `${g} ${v} MB`).join(' · '));
+  }
+  if (report.probe) {
+    const p = report.probe;
+    lines.push('', `Playability probe: ${p.ok}/${p.probed} new rows answered with media; ${p.failed} failed and were removed; ${p.unprobed} not probed.`);
   }
   if (report.addedChannels.length) {
     lines.push('', '<details><summary>New channels</summary>', '', ...report.addedChannels.map((ch) => `- \`${ch.id}\` ${ch.guideId}/${ch.group}: ${ch.name} (${ch.rows} rows${ch.deferLightRows ? ', lazy' : ''})`), '', '</details>');
@@ -167,7 +180,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const base = Object.fromEntries(Object.entries(files).map(([k, f]) => [k, gitJson(a.base ?? 'origin/main', f)]));
   const head = Object.fromEntries(Object.entries(files).map(([k, f]) => [k, readJson(f)]));
   const measure = a.measure ? readJson(a.measure) : null;
-  const report = evaluate(base, head, measure, config);
+  const probe = a.probe ? readJson(a.probe) : null;
+  const report = evaluate(base, head, measure, config, probe);
   if (a.out) writeFileSync(a.out, JSON.stringify(report, null, 1));
   if (a.summary) writeFileSync(a.summary, summaryMarkdown(report));
   console.log(summaryMarkdown(report));

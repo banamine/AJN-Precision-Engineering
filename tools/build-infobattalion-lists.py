@@ -129,6 +129,18 @@ SEX = re.compile(r"\bsex\b", re.I)
 def cut(s, n=60):
     return s if len(s) <= n else (s[:n].rsplit(" ", 1)[0] if " " in s[:n] else s[:n])
 TVISH = re.compile(r"\bs\d{1,2}\s?e\d{1,3}\b|\bseason \d+|\bepisode \d+|\b\d{1,2}x\d{2}\b|60 minutes|abc news|nightline|\bpart \d+ of \d+", re.I)
+EPISODE_MIN_SECONDS = 600     # same floor as the Tv Classics list
+MOVIE_MIN_SECONDS = 2700      # films >= 45 min
+def classify_movie_list_item(movie_rows, episode_rows):
+    """Pure. A Movies-list item with at least one feature-length, non-episode file stays a movie.
+    One with none, but with 2+ episode-like files (TV-style title or 10-45 min long), is a TV show and goes to Classic TV.
+    Anything else is dropped (and reported)."""
+    if movie_rows:
+        return "movie", movie_rows
+    episodic = [r for r in episode_rows if TVISH.search(r["title"]) or r["durationSeconds"] < MOVIE_MIN_SECONDS]
+    if len(episodic) >= 2:
+        return "tv", episodic
+    return "none", []
 def tidy_title(t):
     t = re.sub(r"^\d{8} - [A-Za-z0-9_-]{8,} - ", "", t or ""); t = re.sub(r"\.ia$", "", t.strip(), flags=re.I)
     t = re.sub(r"\s*\{imdb-tt\d+\}", "", t); return re.sub(r"\s+", " ", t).strip(" -.")
@@ -356,8 +368,28 @@ def main():
         if len(keep) != len(rows): report["excluded"]["sex_whole_word_rows"] = report["excluded"].get("sex_whole_word_rows", 0) + len(rows) - len(keep)
         return keep, dropped
     # ---- Movies
-    movies_new = pick_new("movies")
-    r, d = rows_for(movies_new, 2700, True, source_list="movies"); record_rows("movies", r); add("movies-classics-vault", "mx-movies-classics-list", "Movies Classics (list)", "Movies", r, "list 5, new items only; films >= 45 min; TV-episode titles excluded")
+    # Each Movies-list item is classified on its own: feature films stay in Movies; items whose files are
+    # TV episodes (TV-style titles, or 10-45 min files) move to Classic TV below instead of being dropped.
+    movie_rows, movie_list_tv = [], []
+    report["movies_rerouted_to_tv"] = []
+    report["movies_list_dropped"] = []
+    for i in pick_new("movies"):
+        full, _ = rows_for([i], MOVIE_MIN_SECONDS, True, source_list="movies")
+        eps, _ = rows_for([i], EPISODE_MIN_SECONDS)
+        kind, rows = classify_movie_list_item(full, eps)
+        if kind == "movie":
+            movie_rows += rows
+        elif kind == "tv":
+            title = clean(title_of(i)) or i
+            movie_list_tv.append((i, title, rows))
+            claimed.add(i.lower())
+            report["movies_rerouted_to_tv"].append({"identifier": i, "title": title, "rows": len(rows),
+                                                    "sample": [r["title"] for r in rows[:3]]})
+        else:
+            report["movies_list_dropped"].append({"identifier": i, "title": title_of(i), "episodeLikeRows": len(eps)})
+    record_rows("movies", movie_rows)
+    add("movies-classics-vault", "mx-movies-classics-list", "Movies Classics (list)", "Movies", movie_rows,
+        "list 5, new items only; films >= 45 min; TV-episode items moved to Classic TV")
     # ---- Cartoons (list 3; ahead of generic filmography/other sources so cartoons keep their requested group)
     cartoon_shows = []
     for i in pick_new("cartoons"):
@@ -389,6 +421,12 @@ def main():
         if norm(nm) and norm(nm) in existing:
             report["skipped_in_app"].setdefault("tv_same_name_channel", []).append(i)
             list_stats["tv"]["skipped_already_in_app"] += 1
+            continue
+        (tv_own if len(rs) >= 3 else tv_single).append((i, nm, rs))
+    # TV shows found on the Movies list (classified above) join the Tv Classics additions.
+    for i, nm, rs in movie_list_tv:
+        if norm(nm) and norm(nm) in existing:
+            report["skipped_in_app"].setdefault("movies_tv_same_name_channel", []).append(i)
             continue
         (tv_own if len(rs) >= 3 else tv_single).append((i, nm, rs))
     used = set()

@@ -17,7 +17,8 @@
     "maxNewAudioChannels": 10,
     "allowRemovals": false,
     "allowRenames": false,
-    "requireDeferredClassicChannels": true
+    "requireDeferredClassicChannels": true,
+    "maxProbeFailureRate": 0.05
   },
   "budgets": {
     "classicLightBytes": { "hardLimit": 2097152, "autoMergeMax": 1782579 },

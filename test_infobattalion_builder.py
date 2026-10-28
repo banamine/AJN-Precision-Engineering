@@ -180,5 +180,31 @@ class InfobattalionBuilderTests(unittest.TestCase):
         self.assertEqual(len(audio), 2)
 
 
+class MovieListClassificationTests(unittest.TestCase):
+    def ep(self, title, duration):
+        return {"identifier": "x", "file": f"{title}.mp4", "title": title, "durationSeconds": duration}
+
+    def test_feature_film_stays_a_movie(self):
+        film = [self.ep("Night of the Living Dead", 5760)]
+        self.assertEqual(builder.classify_movie_list_item(film, film), ("movie", film))
+
+    def test_episode_titles_move_to_tv(self):
+        eps = [self.ep("Show S01E01", 1500), self.ep("Show S01E02", 1500), self.ep("Show S01E03", 1500)]
+        kind, rows = builder.classify_movie_list_item([], eps)
+        self.assertEqual(kind, "tv")
+        self.assertEqual(len(rows), 3)
+
+    def test_short_untitled_files_move_to_tv(self):
+        eps = [self.ep("Pilot", 1320), self.ep("The Big Game", 1320)]
+        self.assertEqual(builder.classify_movie_list_item([], eps)[0], "tv")
+
+    def test_single_short_file_is_dropped_not_rerouted(self):
+        self.assertEqual(builder.classify_movie_list_item([], [self.ep("Trailer", 700)]), ("none", []))
+
+    def test_long_two_part_tv_titles_move_to_tv(self):
+        eps = [self.ep("Miniseries Part 1 of 2", 5400), self.ep("Miniseries Part 2 of 2", 5400)]
+        self.assertEqual(builder.classify_movie_list_item([], eps)[0], "tv")
+
+
 if __name__ == "__main__":
     unittest.main()
