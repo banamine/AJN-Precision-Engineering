@@ -180,6 +180,14 @@ class InfobattalionBuilderTests(unittest.TestCase):
         self.assertEqual(len(audio), 2)
 
 
+class InAppScanTests(unittest.TestCase):
+    def test_test_files_are_not_app_references(self):
+        for name in ("test-infobattalion-lists.ts", "src/news/news.test.ts", "test_infobattalion_builder.py"):
+            self.assertTrue(builder.is_test_file(name), name)
+        for name in ("guideRegistry.ts", "src/data/extraChannelsManifest.json", "server/latest-test.ts"):
+            self.assertFalse(builder.is_test_file(name), name)
+
+
 class MovieListClassificationTests(unittest.TestCase):
     def ep(self, title, duration):
         return {"identifier": "x", "file": f"{title}.mp4", "title": title, "durationSeconds": duration}

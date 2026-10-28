@@ -131,6 +131,10 @@ def cut(s, n=60):
 TVISH = re.compile(r"\bs\d{1,2}\s?e\d{1,3}\b|\bseason \d+|\bepisode \d+|\b\d{1,2}x\d{2}\b|60 minutes|abc news|nightline|\bpart \d+ of \d+", re.I)
 EPISODE_MIN_SECONDS = 600     # same floor as the Tv Classics list
 MOVIE_MIN_SECONDS = 2700      # films >= 45 min
+def is_test_file(path):
+    """Test files name identifiers to assert on them; that must not count as the item being in the app."""
+    base = os.path.basename(path)
+    return base.startswith(("test-", "test_")) or ".test." in base
 def classify_movie_list_item(movie_rows, episode_rows):
     """Pure. A Movies-list item with at least one feature-length, non-episode file stays a movie.
     One with none, but with 2+ episode-like files (TV-style title or 10-45 min long), is a TV show and goes to Classic TV.
@@ -302,6 +306,7 @@ def main():
         for f in glob.glob(os.path.join(root, pat), recursive=True):
             # libraryIndex/archiveCatalog are the Library SEARCH index, not guides: an item found only there is NOT on any channel.
             if os.path.basename(f) in ("libraryIndex.json", "archiveCatalog.json"): continue
+            if is_test_file(f): continue
             if os.path.realpath(f) in generated_paths:
                 current = ungenerated_payload(f, manifest_payloads[os.path.realpath(f)], a.extra, a.docs, a.audio)
                 txt += json.dumps(current).lower()
