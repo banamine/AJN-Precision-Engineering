@@ -24,7 +24,7 @@ const gzipAsync=promisify(gzipCb);
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { patchServer } from './server-patch.js';
-import { getRushIndex, rushEpisodesOn, resolveRushItem, rushStats, nextRushDate } from './server/rush';
+import { getRushIndex, rushEpisodesOn, resolveRushItem, resolveRushDay, rushStats, nextRushDate } from './server/rush';
 import { hlsProxyAllowed, rewritePlaylist } from './server/hlsPlaylistProxy';
 import express,{Request,Response} from 'express';
 import path from 'path';
@@ -326,8 +326,46 @@ app.get('/api/schedule',async(req,res)=>{
  catch(e){console.error('[Schedule]',e);res.status(500).json({error:'Failed to generate schedule data',channels:[]});}
 });
 app.get('/api/rush/index',async(req,res)=>{const all=await getRushIndex();const y=Number(req.query.year);const items=y?all.filter(e=>e.year===y):all;res.set('Cache-Control','public, max-age=3600');res.json({total:items.length,items});});
-app.get('/api/rush/next/:date',async(req,res)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date))return res.status(400).json({error:'date must be YYYY-MM-DD'});const nextDate=await nextRushDate(req.params.date);if(!nextDate)return res.json({currentDate:req.params.date,nextDate:null});const eps=await rushEpisodesOn(nextDate);try{const episodes=await Promise.all(eps.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));res.json({currentDate:req.params.date,nextDate,episodes});}catch(e:any){res.status(e.status??502).json({currentDate:req.params.date,nextDate,error:e.message});}});
-app.get('/api/rush/episode/:date',async(req,res)=>{const date=req.params.date;const eps=await rushEpisodesOn(date);if(!eps.length)return res.status(404).json({error:`no Rush episode indexed for ${date}`});const items=[...eps];let speculativeId:string|null=null;if(!items.some(e=>!e.id.includes('morning-update'))){speculativeId=`rush-limbaugh-radio-show-${date}`;const year=parseInt(date.slice(0,4),10)||0;items.push({id:speculativeId,date,year});}const settled=await Promise.allSettled(items.map(e=>resolveRushItem(e.id).then(r=>({...e,...r}))));const relevant=settled.filter((s,i)=>!(s.status==='rejected'&&items[i].id===speculativeId));if(relevant.length>0&&relevant.every(s=>s.status==='rejected')){const err=(relevant[0] as PromiseRejectedResult).reason;return res.status(err?.status??502).json({error:err?.message??'all items failed',stats:rushStats});}const episodes:any[]=[];settled.forEach((s,i)=>{if(s.status==='fulfilled'){episodes.push(s.value);}else if(items[i].id!==speculativeId&&items[i].id.includes('morning-update')){episodes.push({id:items[i].id,role:'morning-update',unavailable:true,reason:s.reason?.message??String(s.reason)});}});episodes.sort((a,b)=>{const aMu=(a.id?.includes('morning-update')||a.role==='morning-update')?0:1;const bMu=(b.id?.includes('morning-update')||b.role==='morning-update')?0:1;return aMu-bMu;});return res.json({date,episodes,stats:rushStats});});
+app.get('/api/rush/next/:date', async (req, res) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date)) return res.status(400).json({ error: 'date must be YYYY-MM-DD' });
+  const nextDate = await nextRushDate(req.params.date);
+  if (!nextDate) return res.json({ currentDate: req.params.date, nextDate: null });
+  const eps = await rushEpisodesOn(nextDate);
+  try {
+    const episodes = await Promise.all(eps.map(async (entry) => {
+      const role = entry.role ?? (entry.id.includes('morning-update') ? 'morning-update' : 'full-show');
+      return { ...entry, ...await resolveRushItem(entry.id, role) };
+    }));
+    res.json({ currentDate: req.params.date, nextDate, episodes });
+  } catch (e: any) {
+    res.status(e.status ?? 502).json({ currentDate: req.params.date, nextDate, error: e.message });
+  }
+});
+app.get('/api/rush/episode/:date', async (req, res) => {
+  const date = req.params.date;
+  const eps = await rushEpisodesOn(date);
+  if (!eps.length) return res.status(404).json({ error: `no Rush episode indexed for ${date}` });
+  const hasIndexedFullShow = eps.some((entry) =>
+    (entry.role ?? (entry.id.includes('morning-update') ? 'morning-update' : 'full-show')) === 'full-show'
+  );
+  try {
+    const episodes = await resolveRushDay(eps);
+    // Preserve main's deterministic legacy lookup when the indexed date has no
+    // full-show row. This optional item is never added unless its metadata resolves.
+    if (!hasIndexedFullShow) {
+      const fallbackId = `rush-limbaugh-radio-show-${date}`;
+      try {
+        const fallback = await resolveRushItem(fallbackId, 'full-show');
+        episodes.push({ id: fallbackId, date, year: Number(date.slice(0, 4)), role: 'full-show', ...fallback });
+      } catch {
+        // Keep the actual indexed results; the UI reports when Hour 1 is absent.
+      }
+    }
+    res.json({ date, episodes, stats: rushStats });
+  } catch (e: any) {
+    res.status(e.status ?? 502).json({ error: e.message, stats: rushStats });
+  }
+});
 app.get('/api/classic-radio/shows',(_req,res)=>{
   const groups=getClassicRadioGenres();
   res.set('Cache-Control','no-store').json({schemaVersion:1,genres:groups,totalShows:groups.reduce((n,g)=>n+g.shows.length,0)});
