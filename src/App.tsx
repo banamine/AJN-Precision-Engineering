@@ -24,6 +24,7 @@ import { useCloudSync } from './hooks/useCloudSync';
 import { buildSuggestCandidates, addRecentSearch, loadRecentSearches, saveRecentSearches } from './utils/suggest';
 import { loadLastView, saveLastView, VALID_DESTINATIONS } from './nav/lastView';
 import type { CubeArticle } from './news-cube/adapter';
+import { AjnAppearanceProvider } from './components/ajn-platform-redesign/AppearanceProvider';
 
 const NewsCubePage = lazy(() => import('./news-cube/NewsCubePage'));
 
@@ -138,6 +139,8 @@ export default function App() {
   const [nowPlaying, setNowPlaying] = useState<NowPlayingMedia | null>(() => restoreLastAudio());
   const [externalSearch, setExternalSearch] = useState<{ q: string; n: number }>({ q: '', n: 0 });
   const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedItem[]>(() => readRecentlyPlayed());
+  const recentlyPlayedRef = useRef(recentlyPlayed);
+  recentlyPlayedRef.current = recentlyPlayed;
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [favorites, setFavorites] = useState<FavoriteMedia[]>(() => loadMediaFavorites());
   const [recentSearches, setRecentSearches] = useState<string[]>(() => loadRecentSearches());
@@ -224,7 +227,7 @@ export default function App() {
       sourceId,
       assetId,
       archivePath: rawReference,
-      progressSeconds: recentlyPlayed.find((item) => item.id === id)?.progressSeconds ?? 0,
+      progressSeconds: recentlyPlayedRef.current.find((item) => item.id === id)?.progressSeconds ?? 0,
       updatedAt: Date.now(),
     };
 
@@ -237,7 +240,7 @@ export default function App() {
     if (stayOnPageRef.current) { stayOnPageRef.current = false; return; }
     setDestination('player');
     if (typeof window !== 'undefined') window.location.hash = '#player';
-  }, [recentlyPlayed]);
+  }, []);
 
   const handleAdvanceProgram = useCallback<PlayProgramCallback>((...args) => {
     stayOnPageRef.current = true;
@@ -301,6 +304,7 @@ export default function App() {
   useAvSyncRecorder(nowPlaying);
 
   return (
+    <AjnAppearanceProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
       <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${nowPlaying && destination !== 'player' ? 'pb-[13rem] md:pb-[10rem]' : 'pb-20 md:pb-8'}`}>
@@ -402,5 +406,6 @@ export default function App() {
         <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />
       )}
     </div>
+    </AjnAppearanceProvider>
   );
 }

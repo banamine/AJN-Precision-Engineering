@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./components/ajn-platform-redesign/theme.css";
 
 @keyframes viewFadeIn {
   from {
