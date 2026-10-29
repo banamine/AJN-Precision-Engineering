@@ -1,0 +1,79 @@
+diff --git a/src/MinimalPlayer.tsx b/src/MinimalPlayer.tsx
+--- a/src/MinimalPlayer.tsx
++++ b/src/MinimalPlayer.tsx
+@@ -17,6 +17,8 @@
+ import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
+ import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
+ import { ArchiveMusicSpectrum } from "./components/ArchiveMusicSpectrum";
++import { HeatmapStrip } from "./components/HeatmapStrip";
++import { PreludeBackdropVideo, type BackdropSource } from "./components/PreludeBackdropVideo";
+ import { useFolderArt } from "./utils/useFolderArt";
+ import { usePersistentFlag } from "./utils/persistentFlag";
+ import { useFrameCapture } from "./utils/useFrameCapture";
+@@ -104,6 +106,12 @@
+ // until the app is closed or reloaded.
+ let sessionUnmuted = false;
+ 
++const PRELUDE_BACKDROP: BackdropSource = {
++  kind: "mp4",
++  src: `${import.meta.env.BASE_URL}media/prelude-loop.mp4`,
++  poster: `${import.meta.env.BASE_URL}media/prelude-loop-poster.jpg`,
++};
++
+ export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite }: MinimalPlayerProps) {
+   const mediaRef = useRef<HTMLMediaElement>(null);
+   const containerRef = useRef<HTMLDivElement>(null);
+@@ -192,7 +200,7 @@
+   // it (a re-run calls load(), which aborts the play() in flight).
+   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
+ 
+-  const { diagnosticsAnalyserRef, resumeAudioContext } = useAudioNormalization(
++  const { diagnosticsAnalyserRef, preAnalyserRef, resumeAudioContext } = useAudioNormalization(
+     mediaRef,
+     isVideo ? "video" : "audio",
+     activeSrc,
+@@ -203,6 +211,10 @@
+   const [diagnosticsOpen, setDiagnosticsOpen] = usePersistentFlag("ajn_diagnostics_expanded", false);
+   const [visualizerOn, setVisualizerOn] = usePersistentFlag("ajn_visualizer_enabled", true);
+   const analyserNode = diagnosticsAnalyserRef.current;
++  // Archive-music extras (decorative backdrop video + small heat-map). The heat-map READS the existing pre-gain analyser (2048-point FFT); it never changes it.
++  const [preludeVideoOn, setPreludeVideoOn] = usePersistentFlag("ajn_prelude_video_enabled", true);
++  const [heatmapOn, setHeatmapOn] = usePersistentFlag("ajn_heatmap_enabled", true);
++  const heatmapAnalyser = preAnalyserRef.current;
+   const analyzerState = useAnalyzerState(analyserNode, isPlaying);
+ 
+   const eventMeta = useCallback(() => ({
+@@ -1192,7 +1204,13 @@
+           {archiveMusicOn ? (
+             <>
+               <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0" style={{ background: "radial-gradient(ellipse at center, rgba(8, 145, 178, 0.2), rgba(2, 6, 23, 0.96) 72%)" }} />
++              <PreludeBackdropVideo source={PRELUDE_BACKDROP} enabled={preludeVideoOn} />
+               <ArchiveMusicSpectrum analyser={analyserNode} isPlaying={isPlaying} analyzerState={analyzerState} />
++              <HeatmapStrip analyser={heatmapAnalyser} analyzerState={analyzerState} isPlaying={isPlaying} enabled={heatmapOn} resetKey={archiveMusicRawFilename} />
++              <div className="absolute right-2 top-2 z-[3] flex gap-1.5" data-testid="archive-extras-toggles">
++                <button type="button" aria-pressed={preludeVideoOn} onClick={() => setPreludeVideoOn((v) => !v)} className="rounded-full border border-slate-600 bg-slate-950/80 px-2.5 py-1 text-[11px] font-medium text-slate-200 hover:border-cyan-300 aria-pressed:border-cyan-300/70 aria-pressed:text-cyan-100">Backdrop</button>
++                <button type="button" aria-pressed={heatmapOn} onClick={() => setHeatmapOn((v) => !v)} className="hidden rounded-full border border-slate-600 bg-slate-950/80 px-2.5 py-1 text-[11px] font-medium text-slate-200 hover:border-cyan-300 aria-pressed:border-cyan-300/70 aria-pressed:text-cyan-100 sm:block">Heat-map</button>
++              </div>
+               <div className="relative z-[2] mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8">
+                 <div data-testid="audio-art" className="flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900 shadow-[0_0_45px_rgba(34,211,238,0.24)] ring-2 ring-cyan-200/70 sm:h-52 sm:w-52">
+                   {artUrl
+diff --git a/package.json b/package.json
+--- a/package.json
++++ b/package.json
+@@ -11,7 +11,7 @@
+     "clean": "rm -rf dist server.js",
+     "lint": "tsc --noEmit",
+     "typecheck": "tsc --noEmit",
+-    "test": "node test.js && npm run test:epg-program-lifecycle && npm run test:archive-music-title",
++    "test": "node test.js && npm run test:epg-program-lifecycle && npm run test:archive-music-title && npm run test:heatmap-color",
+     "test:audio": "node test-audio-bridge.js",
+     "test:audio-singleton": "node test-audio-context-singleton.js",
+     "test:audio-video-switch": "node test-audio-video-switch.js",
+@@ -103,6 +103,7 @@
+     "test:thumbnail": "tsx test-thumbnail.ts",
+     "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx",
+     "test:archive-music-title": "tsx test-archive-music-title.ts",
++    "test:heatmap-color": "tsx test-heatmap-color.ts",
+     "test:bannedvideo": "tsx src/bannedvideo/bannedvideo.test.ts && tsx test-bannedvideo-integration.ts",
+     "test:live-hls": "node tools/checks/live-hls-probe.cjs"
+   },

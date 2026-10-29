@@ -17,6 +17,8 @@ import { releaseMediaElementAudioSource, useAudioNormalization } from "./use-aud
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
 import { ArchiveMusicSpectrum } from "./components/ArchiveMusicSpectrum";
+import { MiniEqVisualizer } from "./components/MiniEqVisualizer";
+import { PreludeBackdropVideo, type BackdropSource } from "./components/PreludeBackdropVideo";
 import { useFolderArt } from "./utils/useFolderArt";
 import { usePersistentFlag } from "./utils/persistentFlag";
 import { useFrameCapture } from "./utils/useFrameCapture";
@@ -103,6 +105,12 @@ function bufferLine(snapshot: BufferGaugeSnapshot, active: boolean): string {
 // (including scheduler auto-advance, which remounts this player) stays unmuted
 // until the app is closed or reloaded.
 let sessionUnmuted = false;
+
+const PRELUDE_BACKDROP: BackdropSource = {
+  kind: "mp4",
+  src: `${import.meta.env.BASE_URL}media/prelude-loop.mp4`,
+  poster: `${import.meta.env.BASE_URL}media/prelude-loop-poster.jpg`,
+};
 
 export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
@@ -203,6 +211,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [diagnosticsOpen, setDiagnosticsOpen] = usePersistentFlag("ajn_diagnostics_expanded", false);
   const [visualizerOn, setVisualizerOn] = usePersistentFlag("ajn_visualizer_enabled", true);
   const analyserNode = diagnosticsAnalyserRef.current;
+  // Archive-music extras: decorative backdrop video + mini multicolor equalizer on the cover tile. Both are decorative; the equalizer READS the same analyser as the blue bars.
+  const [preludeVideoOn] = usePersistentFlag("ajn_prelude_video_enabled", true);
+  const [miniEqOn] = usePersistentFlag("ajn_mini_eq_enabled", true);
   const analyzerState = useAnalyzerState(analyserNode, isPlaying);
 
   const eventMeta = useCallback(() => ({
@@ -1192,12 +1203,15 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           {archiveMusicOn ? (
             <>
               <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0" style={{ background: "radial-gradient(ellipse at center, rgba(8, 145, 178, 0.2), rgba(2, 6, 23, 0.96) 72%)" }} />
+              <PreludeBackdropVideo source={PRELUDE_BACKDROP} enabled={preludeVideoOn} />
               <ArchiveMusicSpectrum analyser={analyserNode} isPlaying={isPlaying} analyzerState={analyzerState} />
+
               <div className="relative z-[2] mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8">
-                <div data-testid="audio-art" className="flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900 shadow-[0_0_45px_rgba(34,211,238,0.24)] ring-2 ring-cyan-200/70 sm:h-52 sm:w-52">
+                <div data-testid="audio-art" className="relative flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900 shadow-[0_0_45px_rgba(34,211,238,0.24)] ring-2 ring-cyan-200/70 sm:h-52 sm:w-52">
                   {artUrl
                     ? <img src={artUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" />
-                    : <span aria-label="Archive music artwork unavailable" role="img" className="text-6xl text-cyan-200">♫</span>}
+                    : <span aria-label="Archive music artwork unavailable" role="img" className="text-6xl text-cyan-200/40">♫</span>}
+                  <MiniEqVisualizer analyser={analyserNode} analyzerState={analyzerState} isPlaying={isPlaying} enabled={miniEqOn} hasImage={Boolean(artUrl)} />
                 </div>
                 <div className="min-w-0 max-w-xl text-center sm:text-left">
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Library Music</p>

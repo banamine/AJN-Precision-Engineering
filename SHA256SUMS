@@ -1,0 +1,10 @@
+193332c1167456c9016bb0d61d1ffab001993509c9f93031bf12f110cee404a6  ./INSTALL-PRELUDE-MINI-EQ-2026-10-28.md
+22ffd9b3e121616a1c04d2720192d9d90461fd7cafa72c068a2ffb938ec0ac8b  ./mini-eq-prelude.patch
+c3d698fc3c8681883a427434a05662cbecb532717818a69d9f2e3e8c33322278  ./package.json
+2aa492b761c3c1746a2efb4528b26adfaedb8ef133434a4faf467bac31250523  ./public/media/prelude-loop-poster.jpg
+ffb191ff587f0c068c18315ffb6c692a01990f40b21c8b448feab797c81ee65f  ./public/media/prelude-loop.mp4
+0e13d293f107bc21465c38c4e8c0b8ad3f48be4a765f167ce135d5eda49e1089  ./src/MinimalPlayer.tsx
+0e2f4b43937609a5b797447425ad06f874777ab3c6aef8d90f590361541ab65b  ./src/components/MiniEqVisualizer.tsx
+ee2db3336c67368a986453068bf6844b7ef7a25be70d0fca2a888dd365e58510  ./src/components/PreludeBackdropVideo.tsx
+c239f541b3c8eb24af5a08e9a538a237b4ad9ab9ca4e3a63bc4e9d728bdbfb9c  ./src/utils/miniEqBars.ts
+47e8aa595e6f1b51340eb68045c41af51548f34f2031d341643f9afe98ffeaf5  ./test-mini-eq.ts

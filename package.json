@@ -11,7 +11,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "node test.js && npm run test:epg-program-lifecycle && npm run test:archive-music-title",
+    "test": "node test.js && npm run test:epg-program-lifecycle && npm run test:archive-music-title && npm run test:mini-eq",
     "test:audio": "node test-audio-bridge.js",
     "test:audio-singleton": "node test-audio-context-singleton.js",
     "test:audio-video-switch": "node test-audio-video-switch.js",
@@ -103,6 +103,7 @@
     "test:thumbnail": "tsx test-thumbnail.ts",
     "test:archive-item-guide": "NODE_ENV=test tsx test-archive-item-guide.tsx",
     "test:archive-music-title": "tsx test-archive-music-title.ts",
+    "test:mini-eq": "tsx test-mini-eq.ts",
     "test:bannedvideo": "tsx src/bannedvideo/bannedvideo.test.ts && tsx test-bannedvideo-integration.ts",
     "test:live-hls": "node tools/checks/live-hls-probe.cjs"
   },
