@@ -49,6 +49,7 @@
     "test:daily-highlights": "tsx test-daily-highlights.ts",
     "test:live-tv": "tsx test-live-tv.ts",
     "test:proxy-range": "tsx test-proxy-range.ts",
+    "test:proxy-body-telemetry": "tsx test-proxy-body-telemetry.ts",
     "test:archive-health": "tsx test-archive-health.ts",
     "test:archive-health-server": "tsx test-archive-health-server.ts",
     "test:archive-health-ui": "tsx test-archive-health-ui.tsx",
