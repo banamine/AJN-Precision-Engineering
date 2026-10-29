@@ -9,13 +9,13 @@ assert.ok(indexCss.includes('rgba(239, 68, 68'), 'index.css must use red glowing
 assert.ok(indexCss.includes('prefers-reduced-motion: reduce'), 'index.css must support prefers-reduced-motion');
 assert.ok(indexCss.includes('animation: none !important'), 'index.css must disable pulsing under reduced-motion');
 
-// 2. Check PlayerChrome.tsx has mute indicators on both video and audio playback views
+// 2. Check PlayerChrome.tsx keeps mute state visible in video, standard audio, and Archive music controls
 const chrome = readFileSync('src/components/PlayerChrome.tsx', 'utf8');
 const muteButtonOccurrences = (chrome.match(/data-testid="mute-button"/g) || []).length;
-assert.equal(muteButtonOccurrences, 2, 'PlayerChrome must have mute buttons in both video and audio views');
+assert.equal(muteButtonOccurrences, 3, 'PlayerChrome must have mute buttons in video, audio, and Archive music views');
 
 const muteIndicatorClassOccurrences = (chrome.match(/mute-indicator-ring/g) || []).length;
-assert.equal(muteIndicatorClassOccurrences, 2, 'PlayerChrome must apply mute-indicator-ring in both views');
+assert.equal(muteIndicatorClassOccurrences, 3, 'PlayerChrome must apply mute-indicator-ring in all three views');
 
 // Verify accessible labels in PlayerChrome
 assert.ok(chrome.includes('aria-label={p.isMuted ? "Muted — click to unmute" : "Unmuted — click to mute"}'), 'PlayerChrome must have accessible aria-label with Muted/Unmuted states');
@@ -28,13 +28,15 @@ assert.ok(miniPlayer.includes('data-testid="mute-button"'), 'MiniPlayerDock must
 assert.ok(miniPlayer.includes('mute-indicator-ring'), 'MiniPlayerDock must apply mute-indicator-ring when muted');
 assert.ok(miniPlayer.includes('aria-label={muted ? "Muted — click to unmute" : "Unmuted — click to mute"}'), 'MiniPlayerDock must have accessible aria-label');
 
-// 4. Check MinimalPlayer.tsx starts muted on fresh launch and handles user interaction unmuting
+// 4. Check MinimalPlayer starts muted and changes state only through explicit media controls.
 const mp = readFileSync('src/MinimalPlayer.tsx', 'utf8');
 assert.ok(mp.includes('let sessionUnmuted = false;'), 'MinimalPlayer must initialize sessionUnmuted to false for fresh launch');
 assert.ok(mp.includes('const [isMuted, setIsMuted] = useState(() => !sessionUnmuted);'), 'MinimalPlayer must initialize isMuted based on !sessionUnmuted');
 assert.ok(mp.includes('volumechange'), 'MinimalPlayer must listen to volumechange to keep indicator matching playback state');
-assert.ok(mp.includes('onUserInteraction'), 'MinimalPlayer must listen for user interaction to unmute playback on launch');
-assert.ok(mp.includes('sessionUnmuted = true;'), 'MinimalPlayer must update sessionUnmuted to true upon unmuting');
+assert.ok(mp.includes('const toggleMute = () => {'), 'MinimalPlayer must expose an explicit mute control');
+assert.ok(mp.includes('media.muted = nextMuted;'), 'MinimalPlayer must change the real media element mute state');
+assert.ok(mp.includes('sessionUnmuted = !nextMuted;'), 'MinimalPlayer must persist the explicit mute choice for this session');
+assert.ok(!mp.includes('onUserInteraction'), 'MinimalPlayer must not unmute merely because the viewer interacts with the page');
 
 // 5. Check usePersistentMedia.ts provides muted state and volumechange tracking
 const persistent = readFileSync('src/hooks/usePersistentMedia.ts', 'utf8');

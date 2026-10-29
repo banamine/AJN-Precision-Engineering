@@ -77,7 +77,7 @@ function FullShowShortcuts({ onPlayProgram, className = '', testId }: { onPlayPr
         <button key={s.showSlug} type="button" data-testid={`shortcut-${s.showSlug}`}
           onClick={() => onPlayProgram(s.url, s.title, `Full show · ${s.showName} · ${s.dateLabel}`, 'audio', 'ajn-radio', 'ajn-radio', s.id)}
           aria-label={`Play full show: ${s.showName}, ${s.dateLabel}${s.dayKind === 'special' ? ', special broadcast' : ''}`}
-          className="group flex items-center gap-3 rounded-2xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 p-2.5 pr-4 text-left shadow-2xl shadow-orange-950/80 ring-2 ring-orange-400/90 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70">
+          className="ajn-primary-action group flex items-center gap-3 rounded-2xl p-2.5 pr-4 text-left ring-2 ring-orange-400/90 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/45 ring-1 ring-white/25"><Play className="ml-0.5 h-5 w-5 fill-emerald-300 text-emerald-300" /></span>
           <span className="flex min-w-0 flex-col">
             <span className="truncate text-[11px] font-black uppercase tracking-wider text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">{s.showName} · FULL SHOW</span>
@@ -181,7 +181,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
             }}
             title="Play Full Show (High-Visibility Drive Mode)"
             aria-label="Play full show, high-visibility drive button"
-            className="group flex items-center gap-3 sm:gap-4 rounded-2xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 p-2.5 sm:p-3 pr-4 sm:pr-5 shadow-2xl shadow-orange-950/80 ring-2 ring-orange-400/90 transition-all duration-200 hover:scale-105 active:scale-95 hover:from-red-500 hover:via-orange-500 hover:to-amber-400 cursor-pointer"
+            className="ajn-primary-action group flex items-center gap-3 sm:gap-4 rounded-2xl p-2.5 sm:p-3 pr-4 sm:pr-5 ring-2 ring-orange-400/90 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
           >
             <span className="flex h-11 w-11 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-xl bg-black/45 shadow-inner ring-1 ring-white/25 group-hover:bg-black/35">
               <Play className="h-6 w-6 sm:h-7 sm:w-7 fill-emerald-300 text-emerald-300 transition-transform duration-200 group-hover:scale-115 ml-0.5" />
@@ -227,7 +227,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
                     onPlayProgram(hero.archivePath, hero.title, hero.category, hero.mediaType);
                   }
                 }}
-                className="inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 px-5 py-3 text-sm sm:text-base font-black text-emerald-300 shadow-xl shadow-orange-950/70 ring-2 ring-orange-400/80 hover:from-red-500 hover:to-orange-500 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                className="ajn-primary-action inline-flex items-center gap-3 rounded-xl px-5 py-3 text-sm sm:text-base font-black ring-2 ring-orange-400/80 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/40">
                   <Play className="h-5 w-5 fill-emerald-300 text-emerald-300 ml-0.5" />
