@@ -418,12 +418,14 @@ export function PlayerChrome(p: PlayerChromeProps) {
               <button
                 type="button"
                 data-testid="mute-button"
+                data-muted={p.isMuted ? "true" : "false"}
                 aria-label={p.isMuted ? "Muted — click to unmute" : "Unmuted — click to mute"}
                 aria-pressed={p.isMuted}
                 onClick={p.onToggleMute}
-                className={`${btn} !h-11 !w-11 ${p.isMuted ? "bg-red-950/50 text-red-300" : "text-slate-100"}`}
+                className={`${btn} !h-11 !w-11 ${p.isMuted ? "mute-indicator-ring bg-red-950/50 text-red-300" : "text-slate-100"}`}
               >
                 {p.isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                <span className="sr-only">{p.isMuted ? "Muted" : "Unmuted"}</span>
               </button>
               <input
                 type="range"

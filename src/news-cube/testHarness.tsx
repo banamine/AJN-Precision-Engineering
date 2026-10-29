@@ -4,6 +4,7 @@ import '../index.css';
 import * as THREE from 'three';
 import NewsCubePage from './NewsCubePage';
 import { Navigation } from '../components/Navigation';
+import { AjnAppearanceProvider } from '../components/ajn-platform-redesign/AppearanceProvider';
 import { syntheticDigestFixture } from './syntheticDigestFixture.test';
 import type { CubeArticle } from './adapter';
 import type { CubeRendererFactory, CubeRendererPort } from './cubeRenderer';
@@ -57,7 +58,7 @@ const playbackBridge = {
 
 function mount() {
   root = createRoot(document.getElementById('root')!);
-  root.render(<>
+  root.render(<AjnAppearanceProvider>
     <Navigation currentDestination="news-cube" onNavigate={(destination) => { lastDestination = destination; }} nowPlaying={null} />
     <main className="mx-auto max-w-7xl px-4 pt-8 pb-20">
       <NewsCubePage
@@ -71,7 +72,7 @@ function mount() {
         archiveStateOverride="ok"
       />
     </main>
-  </>);
+  </AjnAppearanceProvider>);
 }
 
 (window as any).__newsCubeHarness = {
