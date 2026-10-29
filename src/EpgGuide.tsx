@@ -1,4 +1,5 @@
 import { bufferGaugeMetadata } from "./utils/bufferGauge";
+import { cleanAjnDisplayTitle } from "./utils/ajnTitleNormalizer";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback, useDeferredValue } from "react";
 import { ScheduleChannel, Program, MediaType, PlayProgramCallback } from "./types";
 import { Tv, Radio, Disc3, Sparkles, Play, ChevronLeft, ChevronRight, Search, X, CircleAlert } from "lucide-react";
@@ -108,22 +109,24 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
   const thumbnail = program.metadata?.thumbnailUrl;
   const useBackgroundThumbnail = width < 150;
   const aired = airedTimeLabel(program);
+  const displayProgramTitle = cleanAjnDisplayTitle(program.title);
+  const displayChannelName = cleanAjnDisplayTitle(channel.name);
   return (
     <button
       type="button"
       id={`epg-prog-${channel.id}-${idx}`}
-      title={program.title}
-      aria-label={`${program.title}, ${channel.name}${aired ? `, ${aired.label}` : ''}`}
+      title={displayProgramTitle}
+      aria-label={`${displayProgramTitle}, ${displayChannelName}${aired ? `, ${aired.label}` : ''}`}
       onClick={() => {
         onRequestFullRows?.();
         const sourceId = program.sourceId ?? program.metadata?.sourceId;
         const assetId = program.assetId ?? program.metadata?.assetId;
         if (isLive && tune) {
           const t = tuneIn(program, tune.sHour, tune.eHour, tune.nowHour());
-          onSelectProgram?.(t.path, program.title, channel.name, mediaType, channel.id, program.guideId, program.id, sourceId, assetId, t.startAtSeconds, bufferGaugeMetadata(program.metadata));
+          onSelectProgram?.(t.path, displayProgramTitle, displayChannelName, mediaType, channel.id, program.guideId, program.id, sourceId, assetId, t.startAtSeconds, bufferGaugeMetadata(program.metadata));
           return;
         }
-        onSelectProgram?.(program.archivePath || program.mediaUrl, program.title, channel.name, mediaType, channel.id, program.guideId, program.id, sourceId, assetId, undefined, bufferGaugeMetadata(program.metadata));
+        onSelectProgram?.(program.archivePath || program.mediaUrl, displayProgramTitle, displayChannelName, mediaType, channel.id, program.guideId, program.id, sourceId, assetId, undefined, bufferGaugeMetadata(program.metadata));
       }}
       onFocus={(event) => { if (aired) onAiredTimeVisibilityChange?.(event.currentTarget, aired.label); }}
       onMouseEnter={(event) => { if (aired) onAiredTimeVisibilityChange?.(event.currentTarget, aired.label); }}
@@ -176,7 +179,7 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
             className="h-7 w-9 shrink-0 rounded object-cover"
           />
         )}
-        <span className="relative z-10 truncate font-semibold text-neutral-100 group-hover:text-white">{program.title}</span>
+        <span className="relative z-10 truncate font-semibold text-neutral-100 group-hover:text-white">{displayProgramTitle}</span>
       </span>
       {program.description && (
         <span className="relative z-10 truncate text-[10px] text-neutral-400">{program.description}</span>
@@ -684,7 +687,7 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
     });
     const t = tuneIn(selectedItem.program, selectedItem.sHour, selectedItem.eHour, now);
     const p = selectedItem.program;
-    onSelectProgram?.(t.path, p.title, channel.name, mediaTypeFor(p, channel, guideId), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds, bufferGaugeMetadata(p.metadata));
+    onSelectProgram?.(t.path, cleanAjnDisplayTitle(p.title), cleanAjnDisplayTitle(channel.name), mediaTypeFor(p, channel, guideId), channel.id, p.guideId, p.id, p.sourceId ?? p.metadata?.sourceId, p.assetId ?? p.metadata?.assetId, t.startAtSeconds, bufferGaugeMetadata(p.metadata));
   }, [ensureChannelRows, onSelectProgram, guideId, playNowState]);
 
   if (fetchError && !cachedGuideChannels(guideId)) {
@@ -795,7 +798,8 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
           {visible.map((channel) => {
             const isAudio = channel.mediaType === 'audio' || guideId === 'audio-podcasts';
             const liveItem: LiveItem | null = grouped.get(channel.id)?.liveItem ?? findLiveProgram(channel, nowHour);
-            const liveTitle = liveItem?.program.title;
+            const displayChannelName = cleanAjnDisplayTitle(channel.name);
+            const liveTitle = liveItem ? cleanAjnDisplayTitle(liveItem.program.title) : undefined;
             const canPlayNow = Boolean(liveItem) || channel.hasCurrentProgram === true;
             const playNowStatus = playNowState[channel.id];
             const playNowLoading = playNowStatus === 'loading';
@@ -810,23 +814,23 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
               >
                 <div className="flex min-w-0 items-center gap-2">
                   <span data-testid="station-number" title={`Station ${stationOf.get(channel.id)}`} className="w-8 shrink-0 text-right font-mono text-[11px] font-semibold tabular-nums text-neutral-400">{stationLabel(stationOf.get(channel.id) ?? 0)}</span>
-                  <ChannelLogo logo={channel.logo} name={channel.name} fallback={
+                  <ChannelLogo logo={channel.logo} name={displayChannelName} fallback={
                     <LazyThumb title={channel.name} input={{
                       path: liveItem?.program.archivePath ?? liveItem?.program.mediaUrl ?? channel.programs[0]?.archivePath ?? channel.programs[0]?.mediaUrl ?? null,
                       guideId, channelId: channel.id, category: channel.group ?? null, mediaType: channel.mediaType, name: channel.name,
                       placeholder: ajnArtFor({ show: `${channel.name} ${channel.group ?? ''}`, mediaType: channel.mediaType, onlyAjn: true }),
                     }} />
                   } />
-                  <span className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-100" title={channel.name}>
-                    {channel.name}
+                  <span className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-100" title={displayChannelName}>
+                    {displayChannelName}
                   </span>
                   <button
                     type="button"
                     data-play-live={channel.id}
                     disabled={!canPlayNow || playNowLoading}
                     onClick={() => { void playLive(channel, liveItem); }}
-                    title={playNowLoading ? `Loading the current program for ${channel.name}` : liveItem ? `Play ${liveTitle} from the red line (${channel.name})` : canPlayNow ? `Load and play the current program on ${channel.name}` : `${channel.name}: nothing scheduled right now`}
-                    aria-label={playNowLoading ? `Loading ${channel.name} now` : liveItem ? `Play ${channel.name} now: ${liveTitle}` : canPlayNow ? `Load and play ${channel.name} now` : `${channel.name}: nothing on air now`}
+                    title={playNowLoading ? `Loading the current program for ${displayChannelName}` : liveItem ? `Play ${liveTitle} from the red line (${displayChannelName})` : canPlayNow ? `Load and play the current program on ${displayChannelName}` : `${displayChannelName}: nothing scheduled right now`}
+                    aria-label={playNowLoading ? `Loading ${displayChannelName} now` : liveItem ? `Play ${displayChannelName} now: ${liveTitle}` : canPlayNow ? `Load and play ${displayChannelName} now` : `${displayChannelName}: nothing on air now`}
                     aria-busy={playNowLoading}
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${
                       canPlayNow
@@ -836,10 +840,10 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                   >
                     <Play className="h-3 w-3 fill-current" />
                   </button>
-                  {channel.id !== 'item-unsorted' && <ShowInfoButton channelId={channel.id} title={channel.name} fallback={buildFallbackShowInfo(channel)} />}
+                  {channel.id !== 'item-unsorted' && <ShowInfoButton channelId={channel.id} title={displayChannelName} fallback={buildFallbackShowInfo(channel)} />}
                 </div>
                 {filtered.matchedShow.has(channel.id) && (
-                  <span data-testid="matched-show" className="mt-0.5 truncate pl-10 text-[10px] text-sky-300" title={filtered.matchedShow.get(channel.id)}>↳ {filtered.matchedShow.get(channel.id)}</span>
+                  <span data-testid="matched-show" className="mt-0.5 truncate pl-10 text-[10px] text-sky-300" title={cleanAjnDisplayTitle(filtered.matchedShow.get(channel.id) ?? "")}>↳ {cleanAjnDisplayTitle(filtered.matchedShow.get(channel.id) ?? "")}</span>
                 )}
                 <div className="flex items-center gap-1.5 mt-1 pl-10">
                   {channel.highlight === 'must-listen' && (
