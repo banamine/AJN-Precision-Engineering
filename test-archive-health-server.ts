@@ -264,7 +264,7 @@ const app = express();
 const routeHealth = createArchiveHealth({}, { now: () => clock });
 registerArchiveHealthRoutes(app, routeHealth, () => ({
   status: 'ok', service: 'test-proxy', uptime: 10, timestamp: 'fixture-time',
-  stats: { totalRequests: 1 },
+  stats: { totalRequests: 1, bodyStallsUpstream: 2, bodyStallsBackpressure: 3 },
 }));
 const server = app.listen(0, '127.0.0.1');
 try {
@@ -289,6 +289,8 @@ try {
   assert.equal(statusJson.state, 'unknown');
   assert.equal(healthJson.status, 'ok');
   assert.equal(healthJson.stats.totalRequests, 1);
+  assert.equal(healthJson.stats.bodyStallsUpstream, 2);
+  assert.equal(healthJson.stats.bodyStallsBackpressure, 3);
   console.log('PASS local status endpoints: no-store shape and additive health key');
 } finally {
   await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
