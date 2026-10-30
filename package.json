@@ -106,7 +106,10 @@
     "test:archive-music-title": "tsx test-archive-music-title.ts",
     "test:mini-eq": "tsx test-mini-eq.ts",
     "test:bannedvideo": "tsx src/bannedvideo/bannedvideo.test.ts && tsx test-bannedvideo-integration.ts",
-    "test:live-hls": "node tools/checks/live-hls-probe.cjs"
+    "test:live-hls": "node tools/checks/live-hls-probe.cjs",
+    "test:catalog-gate": "node test-catalog-gate.mjs",
+    "catalog:measure": "tsx tools/catalog-measure.mts",
+    "catalog:gate": "node tools/catalog-gate.mjs --base origin/main"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

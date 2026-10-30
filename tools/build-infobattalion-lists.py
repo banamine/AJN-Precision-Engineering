@@ -129,6 +129,48 @@ SEX = re.compile(r"\bsex\b", re.I)
 def cut(s, n=60):
     return s if len(s) <= n else (s[:n].rsplit(" ", 1)[0] if " " in s[:n] else s[:n])
 TVISH = re.compile(r"\bs\d{1,2}\s?e\d{1,3}\b|\bseason \d+|\bepisode \d+|\b\d{1,2}x\d{2}\b|60 minutes|abc news|nightline|\bpart \d+ of \d+", re.I)
+EPISODE_MIN_SECONDS = 600     # same floor as the Tv Classics list
+MOVIE_MIN_SECONDS = 2700      # films >= 45 min
+def is_test_file(path):
+    """Test files name identifiers to assert on them; that must not count as the item being in the app."""
+    base = os.path.basename(path)
+    return base.startswith(("test-", "test_")) or ".test." in base
+def classify_movie_list_item(movie_rows, episode_rows, override=None):
+    """Pure. Decide where one Movies-list item goes.
+    override (config/catalog-overrides.json) wins: "movie" | "tv" | "skip".
+    Otherwise: a feature-length (>= 45 min), non-episode file -> movie. With none: 2+ files with TV-style titles,
+    or 3+ files of 10-45 min, -> tv (Classic TV). Anything else is dropped (and reported)."""
+    if override == "skip":
+        return "none", []
+    if override == "movie":
+        return ("movie", movie_rows or episode_rows) if (movie_rows or episode_rows) else ("none", [])
+    if override == "tv":
+        return ("tv", episode_rows) if episode_rows else ("none", [])
+    if movie_rows:
+        return "movie", movie_rows
+    titled = [r for r in episode_rows if TVISH.search(r["title"])]
+    if len(titled) >= 2:
+        return "tv", titled
+    short = [r for r in episode_rows if r["durationSeconds"] < MOVIE_MIN_SECONDS]
+    if len(short) >= 3:
+        return "tv", short
+    return "none", []
+SOURCE_NAMES = ("documentary", "music", "cartoons", "tv", "movies", "nwt", "otr", "opensource", "atlas")
+def source_switches(config):
+    """Pure, fail-closed: a source is read only when config says sources.infobattalion.enabled AND lists.<name> is true."""
+    ib = ((config or {}).get("sources") or {}).get("infobattalion") or {}
+    lists = ib.get("lists") or {}
+    on = ib.get("enabled") is True
+    return {name: on and lists.get(name) is True for name in SOURCE_NAMES}
+def load_overrides(path):
+    """config/catalog-overrides.json: {"items": {"<identifier>": "movie" | "tv" | "skip"}} (identifier match is case-insensitive)."""
+    if not path or not os.path.exists(path):
+        return {}
+    items = (json.load(open(path)).get("items") or {})
+    bad = {k: v for k, v in items.items() if v not in ("movie", "tv", "skip")}
+    if bad:
+        raise ValueError(f"catalog overrides must be movie|tv|skip: {bad}")
+    return {k.lower(): v for k, v in items.items()}
 def tidy_title(t):
     t = re.sub(r"^\d{8} - [A-Za-z0-9_-]{8,} - ", "", t or ""); t = re.sub(r"\.ia$", "", t.strip(), flags=re.I)
     t = re.sub(r"\s*\{imdb-tt\d+\}", "", t); return re.sub(r"\s+", " ", t).strip(" -.")
@@ -231,7 +273,11 @@ def main():
     ap.add_argument("--extra", default="src/data/extraChannelsManifest.json"); ap.add_argument("--docs", default="src/data/documentariesManifest.json")
     ap.add_argument("--audio", default="src/data/archiveAudioChannels.json"); ap.add_argument("--report", default="reports/infobattalion-lists.json")
     ap.add_argument("--existing-classic", default=None, help="saved /api/schedule?guide=classic-tv JSON, used to skip shows that already have a channel")
+    ap.add_argument("--config", default="config/catalog-refresh.json"); ap.add_argument("--overrides", default="config/catalog-overrides.json")
     a = ap.parse_args()
+    enabled = source_switches(json.load(open(os.path.join(root, a.config))) if os.path.exists(os.path.join(root, a.config)) else {})
+    overrides = load_overrides(os.path.join(root, a.overrides))
+    print("[sources] enabled:", ", ".join(n for n, v in enabled.items() if v) or "none", "| disabled:", ", ".join(n for n, v in enabled.items() if not v) or "none")
     os.makedirs(os.path.join(a.cache, "meta"), exist_ok=True)
     ARCHIVE.ledger_path = os.path.join(a.cache, "request-ledger.jsonl")
     lf = os.path.join(a.cache, "lists.json")
@@ -248,14 +294,14 @@ def main():
             out += h["hits"]
             if len(out) >= h["total"] or not h["hits"]: return out
             pg += 1
-    os_items = items_file("opensource_filmography", lambda: [{"identifier": x["fields"]["identifier"], "title": x["fields"].get("title")} for x in paged(
+    os_items = [] if not enabled["opensource"] else items_file("opensource_filmography", lambda: [{"identifier": x["fields"]["identifier"], "title": x["fields"].get("title")} for x in paged(
         user_query="filmography", page_type="collection_details", page_target="opensource_movies",
         filter_map=json.dumps({"subject": {"full movie": "inc", "english sub": "inc"}, "mediatype": {"movies": "inc"}}))])
-    atlas_items = items_file("atlas_taggart826", lambda: [{"identifier": x["fields"]["identifier"], "title": x["fields"].get("title")} for x in paged(
+    atlas_items = [] if not enabled["atlas"] else items_file("atlas_taggart826", lambda: [{"identifier": x["fields"]["identifier"], "title": x["fields"].get("title")} for x in paged(
         user_query="", page_type="account_details", page_target="@atlas_taggart826", filter_map=json.dumps({"subject": {"full movie": "inc", "english sub": "inc"}}))])
     list_ids = (("documentary", 1), ("music", 2), ("cartoons", 3), ("tv", 4), ("movies", 5), ("nwt", 6), ("otr", 10))
     list_member_counts = {n: len(L[i]["members"]) for n, i in list_ids}
-    lists = {n: list(dict.fromkeys(m["identifier"] for m in L[i]["members"])) for n, i in list_ids}
+    lists = {n: (list(dict.fromkeys(m["identifier"] for m in L[i]["members"])) if enabled[n] else []) for n, i in list_ids}
     lists["opensource"] = [x["identifier"] for x in os_items]; lists["atlas"] = [x["identifier"] for x in atlas_items]
     if a.fetch:
         ids = list(dict.fromkeys(i for v in lists.values() for i in v))
@@ -290,6 +336,7 @@ def main():
         for f in glob.glob(os.path.join(root, pat), recursive=True):
             # libraryIndex/archiveCatalog are the Library SEARCH index, not guides: an item found only there is NOT on any channel.
             if os.path.basename(f) in ("libraryIndex.json", "archiveCatalog.json"): continue
+            if is_test_file(f): continue
             if os.path.realpath(f) in generated_paths:
                 current = ungenerated_payload(f, manifest_payloads[os.path.realpath(f)], a.extra, a.docs, a.audio)
                 txt += json.dumps(current).lower()
@@ -356,8 +403,29 @@ def main():
         if len(keep) != len(rows): report["excluded"]["sex_whole_word_rows"] = report["excluded"].get("sex_whole_word_rows", 0) + len(rows) - len(keep)
         return keep, dropped
     # ---- Movies
-    movies_new = pick_new("movies")
-    r, d = rows_for(movies_new, 2700, True, source_list="movies"); record_rows("movies", r); add("movies-classics-vault", "mx-movies-classics-list", "Movies Classics (list)", "Movies", r, "list 5, new items only; films >= 45 min; TV-episode titles excluded")
+    # Each Movies-list item is classified on its own: feature films stay in Movies; items whose files are
+    # TV episodes (TV-style titles, or 10-45 min files) move to Classic TV below instead of being dropped.
+    movie_rows, movie_list_tv = [], []
+    report["movies_rerouted_to_tv"] = []
+    report["movies_list_dropped"] = []
+    for i in pick_new("movies"):
+        full, _ = rows_for([i], MOVIE_MIN_SECONDS, True, source_list="movies")
+        eps, _ = rows_for([i], EPISODE_MIN_SECONDS)
+        kind, rows = classify_movie_list_item(full, eps, overrides.get(i.lower()))
+        if kind == "movie":
+            movie_rows += rows
+        elif kind == "tv":
+            title = clean(title_of(i)) or i
+            movie_list_tv.append((i, title, rows))
+            claimed.add(i.lower())
+            report["movies_rerouted_to_tv"].append({"identifier": i, "title": title, "rows": len(rows),
+                                                    "sample": [r["title"] for r in rows[:3]]})
+        else:
+            report["movies_list_dropped"].append({"identifier": i, "title": title_of(i), "episodeLikeRows": len(eps),
+                                                  "override": overrides.get(i.lower())})
+    record_rows("movies", movie_rows)
+    add("movies-classics-vault", "mx-movies-classics-list", "Movies Classics (list)", "Movies", movie_rows,
+        "list 5, new items only; films >= 45 min; TV-episode items moved to Classic TV")
     # ---- Cartoons (list 3; ahead of generic filmography/other sources so cartoons keep their requested group)
     cartoon_shows = []
     for i in pick_new("cartoons"):
@@ -389,6 +457,15 @@ def main():
         if norm(nm) and norm(nm) in existing:
             report["skipped_in_app"].setdefault("tv_same_name_channel", []).append(i)
             list_stats["tv"]["skipped_already_in_app"] += 1
+            continue
+        (tv_own if len(rs) >= 3 else tv_single).append((i, nm, rs))
+    # TV shows found on the Movies list (classified above) join the Tv Classics additions.
+    for i, nm, rs in movie_list_tv:
+        if SKIP_TV.search(i):
+            report["excluded"].setdefault("movies_tv_identifier_exclusion", []).append(i)
+            continue
+        if norm(nm) and norm(nm) in existing:
+            report["skipped_in_app"].setdefault("movies_tv_same_name_channel", []).append(i)
             continue
         (tv_own if len(rs) >= 3 else tv_single).append((i, nm, rs))
     used = set()

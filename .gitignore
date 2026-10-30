@@ -10,3 +10,8 @@ coverage/
 .cache/
 probe-results/
 /generated-artifacts/AJN_Precision_Engineering_Full_Patched_Source.zip
+.catalog-cache/
+catalog-measure.json
+catalog-report.json
+catalog-summary.md
+catalog-probe.json

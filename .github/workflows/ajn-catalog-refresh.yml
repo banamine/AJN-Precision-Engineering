@@ -1,0 +1,174 @@
+name: AJN Catalog Refresh
+# Nightly: re-read the @infobattalion Archive lists, rebuild the catalog data files, measure payloads,
+# run the catalog gate (tools/catalog-gate.mjs) and open a PR. The PR merges itself ONLY when:
+#   gate verdict == auto  AND  Application CI passed on the PR head  AND  auto-merge is switched on
+#   (repo variable AJN_CATALOG_AUTOMERGE == 'true', or the manual run's automerge input).
+# Otherwise the PR stays open with the label catalog:needs-review. Merging does not deploy; deploys stay manual.
+# Docs: docs/CATALOG_REFRESH_PIPELINE.md
+
+on:
+  schedule:
+    - cron: '23 10 * * *' # 03:23 PDT / 02:23 PST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only build + gate; upload the report, open no PR'
+        type: boolean
+        default: true
+      automerge:
+        description: 'Allow this run to merge an AUTO-verdict PR after CI passes'
+        type: boolean
+        default: false
+  # Dry-run proof on PRs that change the pipeline itself (real Archive crawl, no PR opened, nothing merged).
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/ajn-catalog-refresh.yml
+      - tools/catalog-gate.mjs
+      - tools/catalog-measure.mts
+      - tools/catalog-probe.mjs
+      - tools/build-infobattalion-lists.py
+      - config/catalog-refresh.json
+      - config/catalog-overrides.json
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  issues: write
+
+concurrency:
+  group: ajn-catalog-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Refresh catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      # Only the nightly schedule, or a manual run with dry_run unticked, may open a PR.
+      DRY_RUN: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) && 'false' || 'true' }}
+      AUTOMERGE: ${{ github.event_name != 'pull_request' && ((github.event_name == 'workflow_dispatch' && inputs.automerge) || vars.AJN_CATALOG_AUTOMERGE == 'true') }}
+      NODE_OPTIONS: --max-old-space-size=4096
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # Archive item metadata is cached between runs so a nightly run only fetches NEW items
+      # (the builder paces Archive requests at ~1.55 s each; a cold full crawl takes ~30-60 min).
+      - name: Restore Archive metadata cache
+        uses: actions/cache@v6
+        with:
+          path: .catalog-cache
+          key: catalog-meta-${{ github.run_id }}
+          restore-keys: catalog-meta-
+
+      - name: Rebuild catalog from Archive lists
+        timeout-minutes: 300
+        run: |
+          mkdir -p .catalog-cache
+          python tools/build-infobattalion-lists.py --cache .catalog-cache --fetch
+
+      # Every NEW file gets a real 1 KB Range request; anything that does not answer with media is removed here.
+      - name: Playability probe of new files
+        timeout-minutes: 150
+        run: node tools/catalog-probe.mjs --base origin/main --out catalog-probe.json
+
+      - name: Measure payloads
+        run: npx tsx tools/catalog-measure.mts catalog-measure.json
+
+      - name: Gate
+        id: gate
+        run: |
+          node tools/catalog-gate.mjs --base origin/main --measure catalog-measure.json --probe catalog-probe.json --out catalog-report.json --summary catalog-summary.md
+          echo "verdict=$(node -p "require('./catalog-report.json').verdict")" >> "$GITHUB_OUTPUT"
+          cat catalog-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Focused catalog tests
+        if: steps.gate.outputs.verdict != 'none'
+        run: |
+          node test-catalog-gate.mjs
+          python -m unittest test_infobattalion_builder -q
+          npx tsx test-infobattalion-lists.ts
+          npx tsx test-classic-light-schedule.ts
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: catalog-refresh-report
+          path: |
+            catalog-measure.json
+            catalog-probe.json
+            catalog-report.json
+            catalog-summary.md
+            reports/infobattalion-lists.json
+            .catalog-cache/request-ledger.jsonl
+          if-no-files-found: ignore
+
+      - name: Open PR
+        id: pr
+        if: steps.gate.outputs.verdict != 'none' && env.DRY_RUN != 'true'
+        run: |
+          set -euo pipefail
+          branch="catalog/refresh-$(date -u +%Y%m%d-%H%M)"
+          git config user.name "ajn-catalog-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add src/data/extraChannelsManifest.json src/data/documentariesManifest.json src/data/archiveAudioChannels.json reports/infobattalion-lists.json
+          git commit -m "Catalog refresh $(date -u +%Y-%m-%d): ${{ steps.gate.outputs.verdict }}"
+          git push origin "$branch"
+          gh label create "catalog:auto" --color 0E8A16 --description "Catalog gate: safe to auto-merge after CI" --force
+          gh label create "catalog:needs-review" --color D93F0B --description "Catalog gate: owner review required" --force
+          label="catalog:needs-review"; [ "${{ steps.gate.outputs.verdict }}" = "auto" ] && label="catalog:auto"
+          url=$(gh pr create --base main --head "$branch" --title "Catalog refresh $(date -u +%Y-%m-%d) (${{ steps.gate.outputs.verdict }})" --body-file catalog-summary.md --label "$label")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "PR: $url" >> "$GITHUB_STEP_SUMMARY"
+
+      # PRs opened with GITHUB_TOKEN do not start pull_request workflows, so run Application CI explicitly on the branch.
+      - name: Run Application CI on the PR branch
+        id: ci
+        if: steps.pr.outputs.branch != ''
+        run: |
+          set -euo pipefail
+          gh workflow run ajn-ci.yml --ref "${{ steps.pr.outputs.branch }}"
+          sleep 20
+          run_id=""
+          for i in $(seq 1 30); do
+            run_id=$(gh run list --workflow ajn-ci.yml --branch "${{ steps.pr.outputs.branch }}" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+            [ -n "$run_id" ] && break
+            sleep 10
+          done
+          [ -n "$run_id" ] || { echo "CI run not found"; echo "result=missing" >> "$GITHUB_OUTPUT"; exit 0; }
+          if gh run watch "$run_id" --exit-status --interval 60; then result=success; else result=failure; fi
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+          gh pr comment "${{ steps.pr.outputs.url }}" --body "Application CI on this branch: **$result** (run $run_id)."
+
+      - name: Merge when safe
+        if: steps.pr.outputs.url != ''
+        run: |
+          set -euo pipefail
+          verdict="${{ steps.gate.outputs.verdict }}"; ci="${{ steps.ci.outputs.result }}"
+          if [ "$verdict" = "auto" ] && [ "$ci" = "success" ] && [ "$AUTOMERGE" = "true" ]; then
+            gh pr merge "${{ steps.pr.outputs.url }}" --squash --delete-branch
+            echo "Merged automatically (verdict auto, CI success)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh pr edit "${{ steps.pr.outputs.url }}" --add-label "catalog:needs-review" --remove-label "catalog:auto" || true
+            gh pr comment "${{ steps.pr.outputs.url }}" --body "Not merged automatically: verdict=$verdict, CI=$ci, auto-merge enabled=$AUTOMERGE. Owner review needed."
+          fi

@@ -180,5 +180,79 @@ class InfobattalionBuilderTests(unittest.TestCase):
         self.assertEqual(len(audio), 2)
 
 
+class InAppScanTests(unittest.TestCase):
+    def test_test_files_are_not_app_references(self):
+        for name in ("test-infobattalion-lists.ts", "src/news/news.test.ts", "test_infobattalion_builder.py"):
+            self.assertTrue(builder.is_test_file(name), name)
+        for name in ("guideRegistry.ts", "src/data/extraChannelsManifest.json", "server/latest-test.ts"):
+            self.assertFalse(builder.is_test_file(name), name)
+
+
+class SourceSwitchTests(unittest.TestCase):
+    def test_fail_closed(self):
+        self.assertFalse(any(builder.source_switches({}).values()))
+        off = {"sources": {"infobattalion": {"enabled": False, "lists": {"movies": True}}}}
+        self.assertFalse(builder.source_switches(off)["movies"])
+        on = {"sources": {"infobattalion": {"enabled": True, "lists": {"movies": True, "atlas": False}}}}
+        sw = builder.source_switches(on)
+        self.assertTrue(sw["movies"])
+        self.assertFalse(sw["atlas"])
+        self.assertFalse(sw["tv"], "a source missing from the config is off")
+
+    def test_repo_config_enables_current_sources(self):
+        import json
+        sw = builder.source_switches(json.load(open(os.path.join(os.path.dirname(__file__), "config", "catalog-refresh.json"))))
+        self.assertTrue(all(sw.values()), sw)
+
+    def test_overrides_validate(self):
+        import json, tempfile
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            json.dump({"items": {"Some_Item": "tv"}}, f)
+        self.assertEqual(builder.load_overrides(f.name), {"some_item": "tv"})
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            json.dump({"items": {"x": "documentary"}}, f)
+        with self.assertRaises(ValueError):
+            builder.load_overrides(f.name)
+        self.assertEqual(builder.load_overrides(os.path.join(os.path.dirname(__file__), "config", "catalog-overrides.json")), {})
+
+
+class MovieListClassificationTests(unittest.TestCase):
+    def ep(self, title, duration):
+        return {"identifier": "x", "file": f"{title}.mp4", "title": title, "durationSeconds": duration}
+
+    def test_feature_film_stays_a_movie(self):
+        film = [self.ep("Night of the Living Dead", 5760)]
+        self.assertEqual(builder.classify_movie_list_item(film, film), ("movie", film))
+
+    def test_episode_titles_move_to_tv(self):
+        eps = [self.ep("Show S01E01", 1500), self.ep("Show S01E02", 1500), self.ep("Show S01E03", 1500)]
+        kind, rows = builder.classify_movie_list_item([], eps)
+        self.assertEqual(kind, "tv")
+        self.assertEqual(len(rows), 3)
+
+    def test_three_short_untitled_files_move_to_tv(self):
+        eps = [self.ep("Pilot", 1320), self.ep("The Big Game", 1320), self.ep("Road Trip", 1320)]
+        self.assertEqual(builder.classify_movie_list_item([], eps)[0], "tv")
+
+    def test_two_short_untitled_files_are_not_guessed_as_tv(self):
+        eps = [self.ep("Making Of", 1320), self.ep("Interview", 1320)]
+        self.assertEqual(builder.classify_movie_list_item([], eps), ("none", []))
+
+    def test_owner_override_wins(self):
+        film = [self.ep("A Film", 5760)]
+        eps = [self.ep("Show S01E01", 1500), self.ep("Show S01E02", 1500)]
+        self.assertEqual(builder.classify_movie_list_item(film, film, "skip"), ("none", []))
+        self.assertEqual(builder.classify_movie_list_item(film, eps, "tv"), ("tv", eps))
+        self.assertEqual(builder.classify_movie_list_item([], eps, "movie"), ("movie", eps))
+        self.assertEqual(builder.classify_movie_list_item([], [], "tv"), ("none", []))
+
+    def test_single_short_file_is_dropped_not_rerouted(self):
+        self.assertEqual(builder.classify_movie_list_item([], [self.ep("Trailer", 700)]), ("none", []))
+
+    def test_long_two_part_tv_titles_move_to_tv(self):
+        eps = [self.ep("Miniseries Part 1 of 2", 5400), self.ep("Miniseries Part 2 of 2", 5400)]
+        self.assertEqual(builder.classify_movie_list_item([], eps)[0], "tv")
+
+
 if __name__ == "__main__":
     unittest.main()
