@@ -29,15 +29,13 @@ const c = L.recordFromMetadata(
 
 L.setLibraryIndexForTests([a, b, c]);
 
-// Isolate the fixture category; the always-present owner-approved NKER150
-// manifest is also part of production queries and can contain matching text.
-const mashResults = L.queryLibrary({ category: 'classic-cinema', q: 'mash' });
+const mashResults = L.queryLibrary({ q: 'mash' });
 assert.deepEqual(
   mashResults.items.map((i: any) => i.title),
   ['MASH', 'Mash Years Retrospective', 'Radio Hour']
 );
 
-const emptyResults = L.queryLibrary({ category: 'classic-cinema' });
+const emptyResults = L.queryLibrary({});
 assert.deepEqual(
   emptyResults.items.map((i: any) => i.title),
   ['Radio Hour', 'MASH', 'Mash Years Retrospective']

@@ -78,6 +78,23 @@
   font-size: max(0.75rem, 0.75em) !important;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .ajn-platform-shell :is([data-epg-channel-row], [data-epg-window-start], [data-music-row], [data-epg-toolbar]) :is(button, a[role="button"], select),
+  .ajn-platform-shell [data-testid="epg-search-clear"] {
+    min-height: 0;
+    min-width: 0;
+  }
+}
+
+.ajn-platform-shell :is([data-epg-channel-row], [data-epg-window-start], [data-music-row], [data-epg-toolbar]) :is([class*="text-[9px]"], [class*="text-[10px]"], [class*="text-[11px]"]) {
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+.ajn-platform-shell :is([data-epg-channel-row], [data-epg-window-start], [data-music-row]) :is([class*="tracking-wider"], [data-testid="replay-tag"]) {
+  white-space: nowrap !important;
+}
+
 .ajn-platform-shell .selected-card {
   border-left-color: var(--ajn-accent) !important;
   background: var(--ajn-surface) !important;

@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for TV Guide button geometry and badge wrapping fix in theme.css, scoping the button exemptions to fine-pointer devices and maintaining vertical centering and 11px text floor.",
+  "updatedAt":  "2026-10-30T08:26:54.799696098Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
