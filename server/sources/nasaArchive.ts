@@ -5,6 +5,7 @@
  * The last good lineup is kept when a refresh fails. No Node APIs at import time. */
 import type { Program } from '../../src/types';
 import { archiveApiFetch } from '../archiveLimiter';
+import { toArchiveUpstreamUrl } from '../archivePathEncoding';
 
 export const NASA_CHANNEL_ID = 'nasa-missions';
 export const NASA_QUERY = 'collection:nasa AND mediatype:movies AND (apollo OR gemini OR mercury OR "space shuttle" OR skylab OR spacewalk OR "moon landing")';
@@ -32,7 +33,7 @@ export function resolveDuration(file: any, meta: any, fallback = DEFAULT_DURATIO
 export function selectVideoFile(identifier: string, meta: any): SelectedMedia | null {
   const m = selectPlayableFile(identifier, meta?.files, meta?.metadata?.runtime, 'video');
   if (m.availability === 'unsupported') return null;
-  return { fileName: m.filename, format: m.format, archivePath: m.canonicalPath, canonicalUrl: `https://archive.org${m.canonicalPath}`, selectionReason: m.selectedBecause };
+  return { fileName: m.filename, format: m.format, archivePath: m.canonicalPath, canonicalUrl: toArchiveUpstreamUrl(m.canonicalPath), selectionReason: m.selectedBecause };
 }
 
 const metaCache = new Map<string, { at: number; meta: any }>();

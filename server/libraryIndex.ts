@@ -13,6 +13,7 @@ import { selectPlayableFile, type LibraryAvailability, type DurationSource } fro
 import { matchesQuery, scoreMatch } from '../src/search/normalize';
 import { archiveApiFetch } from './archiveLimiter';
 import { safeFetch } from './safeFetch';
+import { toArchiveUpstreamUrl } from './archivePathEncoding';
 import { groupLibraryResults, findLibrarySeries, type LibrarySeries, type SeriesFile } from './library/series';
 import nker150Manifest from '../src/data/nker150Manifest.json';
 import { shouldExposeNker150Record } from './nker150Rights';
@@ -264,7 +265,7 @@ export async function probeRecord(r: IndexRecord): Promise<LibraryAvailability> 
   if (!r.path.startsWith('/download/')) return availability(r);
   const st = probe.get(r.id) ?? { fails: 0, status: r.availability };
   try {
-    const { res } = await safeFetch(`https://archive.org${r.path.split('?')[0]}`, { allow: archiveHost, timeoutMs: 15_000, fetchImpl: probeFetch, headers: { Range: 'bytes=0-1', 'User-Agent': 'AJN-Precision-Engineering/LibraryCheck' } });
+    const { res } = await safeFetch(toArchiveUpstreamUrl(r.path.split('?')[0]), { allow: archiveHost, timeoutMs: 15_000, fetchImpl: probeFetch, headers: { Range: 'bytes=0-1', 'User-Agent': 'AJN-Precision-Engineering/LibraryCheck' } });
     const ct = res.headers.get('content-type') ?? '';
     await res.body?.cancel().catch(() => {});
     if ((res.status === 206 || res.status === 200) && !/text\/html/i.test(ct)) { st.fails = 0; st.status = 'verified'; }

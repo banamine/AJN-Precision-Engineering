@@ -7,6 +7,7 @@
  * files played from the start (VOD order), not a clock-synchronized live feed.
  * Live TV channels are real live streams. */
 import type { Program, ScheduleChannel } from '../src/types';
+import { toArchiveUpstreamUrl } from './archivePathEncoding';
 
 export interface ExportSnapshot { guideId: string; generatedAt: string; channels: ScheduleChannel[] }
 
@@ -31,9 +32,9 @@ const m3uTitle = (s: unknown) => String(s ?? '').replace(/[\r\n]+/g, ' ').replac
 export function externalUrl(p: Program, origin: string): string | null {
   const raw = String(p.archivePath || p.mediaUrl || '');
   if (!raw) return null;
-  if (raw.startsWith('/download/')) return `https://archive.org${raw}`;
+  if (raw.startsWith('/download/')) return toArchiveUpstreamUrl(raw);
   const proxied = /^\/api\/archive\/proxy\?path=([^&]+)/.exec(raw);
-  if (proxied) { const path = decodeURIComponent(proxied[1]); if (path.startsWith('/download/')) return `https://archive.org${path}`; }
+  if (proxied) { const path = decodeURIComponent(proxied[1]); if (path.startsWith('/download/')) return toArchiveUpstreamUrl(path); }
   if (/^https:\/\/ia\d+\.[a-z0-9.]*archive\.org\//i.test(raw)) return null; // edge server links expire: never publish them
   if (/^https?:\/\//i.test(raw)) return raw;
   if (raw.startsWith('/')) return origin + raw;

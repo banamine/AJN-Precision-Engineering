@@ -21,6 +21,11 @@ assert.equal(baseProgramId('x:d12'), 'x');
 
 assert.equal(xmltvTime('2026-09-27T10:00:00.000Z'), '20260927100000 +0000');
 assert.equal(externalUrl(channels[0].programs[0], 'https://app.example'), 'https://archive.org/download/a/a.mp4');
+assert.equal(
+  externalUrl({ archivePath: '/download/id/folder/a#b?c%d e/Фильм.mp4' } as any, 'https://app.example'),
+  'https://archive.org/download/id/folder/a%23b%3Fc%25d%20e/%D0%A4%D0%B8%D0%BB%D1%8C%D0%BC.mp4',
+  'M3U export encodes reserved delimiters within Archive filename segments',
+);
 assert.equal(externalUrl({ mediaUrl: '/api/archive/proxy?path=%2Fdownload%2Fz%2Fz.mp4' } as any, 'https://app'), 'https://archive.org/download/z/z.mp4');
 assert.equal(externalUrl(channels[1].programs[0], 'https://app'), null, 'edge-server link never published');
 assert.equal(externalUrl({ mediaUrl: '/api/ajn/proxy?url=x' } as any, 'https://app.example'), 'https://app.example/api/ajn/proxy?url=x');

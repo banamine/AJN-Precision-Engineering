@@ -1,4 +1,5 @@
 import { PROXY_SLICE_BYTES } from './proxyRange.js';
+import { archiveUpstreamPathname, toArchiveUpstreamUrl } from './archivePathEncoding.js';
 import {
   fetchArchiveMediaWithRetry,
   type ArchiveFetchOptions,
@@ -14,7 +15,12 @@ const MEDIA_EXTENSIONS = /\.(?:mp4|m4v|mov|webm|mkv|avi|mpg|mpeg|ogv|ogg|mp3|m4a
 const NON_MEDIA_EXTENSIONS = /\.(?:m3u8?|mpd|srt|vtt|ttml|ass|ssa|lrc|json|xml|txt|pls|xspf|ts)$/i;
 
 export function isReadAheadMediaPath(path: string): boolean {
-  const pathname = path.split(/[?#]/, 1)[0] ?? path;
+  let pathname: string;
+  try {
+    pathname = archiveUpstreamPathname(path);
+  } catch {
+    return false;
+  }
   return !NON_MEDIA_EXTENSIONS.test(pathname) && MEDIA_EXTENSIONS.test(pathname);
 }
 
@@ -247,7 +253,7 @@ export class SliceReadAhead {
     const controller = new AbortController();
     const inFlight: InFlightRead = { controller, expectedBytes, receivedBytes: 0 };
     this.inFlightByPath.set(input.cleanPath, inFlight);
-    const url = `https://archive.org${input.cleanPath}`;
+    const url = toArchiveUpstreamUrl(input.cleanPath);
     const headers = {
       ...input.headers,
       Range: `bytes=${start}-${requestedEnd}`,

@@ -5,4 +5,5 @@ assert.equal(archiveProxyContentType('/download/x/a.AAC?x=1', 'application/octet
 assert.equal(archiveProxyContentType('/download/x/a.mp3', 'application/octet-stream'), 'application/octet-stream');
 assert.equal(archiveProxyContentType('/download/x/a.m4a', 'audio/mpeg'), 'audio/mpeg');
 assert.equal(archiveProxyContentType('/download/x/a.m4a', null), null);
+assert.equal(archiveProxyContentType('/download/x/a%3Fname.m4a', 'application/octet-stream'), 'audio/mp4');
 console.log('archive proxy content-type correction: all passed');

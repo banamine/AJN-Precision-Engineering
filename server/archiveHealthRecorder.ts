@@ -1,5 +1,6 @@
 import { archiveIdentifierAndRest } from './archiveFetch.js';
 import { classifyArchiveHealthOutcome, type ArchiveHealth, type ArchiveHealthEventKind } from './archiveHealth.js';
+import { validateArchivePath } from './archivePathEncoding.js';
 
 export type ArchiveRequestClass = 'search' | 'metadata' | 'home';
 
@@ -15,6 +16,13 @@ export interface ArchiveHealthOutcome {
 }
 
 function safePath(path: string): string {
+  const canonical = validateArchivePath(path);
+  if (canonical.valid && canonical.cleanPath) {
+    return canonical.cleanPath.replace(
+      /(?:\?|%3F)(?:token|session|auth|access_token|key|password)=.*/ig,
+      '',
+    );
+  }
   try {
     return new URL(path, 'https://archive.org').pathname || '/';
   } catch {
@@ -42,8 +50,8 @@ function inferRequestClass(path: string): ArchiveRequestClass {
 /** Call once per logical proxy request, after its internal retries have completed. */
 export function recordArchiveHealthOutcome(health: ArchiveHealth, outcome: ArchiveHealthOutcome): ArchiveHealthEventKind {
   const path = safePath(outcome.path);
-  const itemKey = archiveIdentifierAndRest(`https://archive.org${path}`)?.id
-    ?? identifierFromPath(path)
+  const itemKey = identifierFromPath(path)
+    ?? archiveIdentifierAndRest(`https://archive.org${path}`)?.id
     ?? outcome.requestClass
     ?? inferRequestClass(path);
   const kind = classifyArchiveHealthOutcome(outcome);

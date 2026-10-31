@@ -51,6 +51,7 @@ import {
   getRecentArchiveProxyFailure,
   rememberArchiveProxyFailureUnlessOutage,
 } from './server/archiveProxyFailureCache.js';
+import { toArchiveUpstreamUrl, validateArchivePath } from './server/archivePathEncoding.js';
 import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
 import { registerFolderArtRoute } from './server/folderArt.js';
@@ -417,28 +418,6 @@ app.post('/api/channels/build-news',async(req,res)=>{
 });
 app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});if(r.status==='upstream_error'){return res.status(502).json({query,network,status:r.status,total:0,items:[],safeEndDate:r.safeEndDate,error:r.error||'Archive search upstream unavailable'});}res.json({query,network,status:r.status,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({query,network,status:'upstream_error',error:'Search failed',items:[],total:0});}});
 
-function validateArchivePath(raw:string){
-  if(!raw||typeof raw!=='string')return{valid:false,error:'Path is required'};
-  if(!raw.startsWith('/'))return{valid:false,error:'Path must begin with a forward slash (/)' };
-  if(raw.startsWith('/api/archive/proxy'))return{valid:false,error:'Nested archive proxy paths are forbidden'};
-  // Reject only real dot segments (/../, /./, also percent-encoded). Archive
-  // filenames may legitimately contain "..", e.g. "Vol...1.mp4".
-  const segments=raw.split('?')[0].split('/');
-  const isDotSegment=(seg:string)=>/^(\.|%2e){1,2}$/i.test(seg);
-  if(segments.some(isDotSegment)||raw.includes('\\'))return{valid:false,error:'Directory traversal sequences are forbidden'};
-  if(/^https?:\/\//i.test(raw)||raw.includes('://'))return{valid:false,error:'Embedded schemes/hosts are forbidden'};
-
-  let cleanPath = raw;
-  const cdnMatch = raw.match(/^\/\d+\/items\/([^/?#]+)(\/.*)$/);
-  if (cdnMatch) {
-    cleanPath = `/download/${cdnMatch[1]}${cdnMatch[2]}`;
-  } else if (!raw.startsWith('/download/')) {
-    return{valid:false,error:'Only Archive.org /download paths are permitted'};
-  }
-  return{valid:true,cleanPath};
-}
-
-const ARCHIVE_BASE='https://archive.org';
 interface ByteRange { start:number; end:number|null; }
 function parseRangeHeader(header:string|undefined):ByteRange|null {
   if(!header) return null;
@@ -546,7 +525,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
 
   const isReadAheadCandidate=!isImage&&isReadAheadMediaPath(v.cleanPath);
   try{
-    const upstreamUrl=`${ARCHIVE_BASE}${v.cleanPath}`;
+    const upstreamUrl=toArchiveUpstreamUrl(v.cleanPath);
     const upstreamHeaders:Record<string,string>={'User-Agent':'AJN-Precision-Engineering/ArchiveProxy','Accept': isImage ? 'image/*,*/*' : '*/*'};
     let mediaSlice:{start:number;end:number}|null=null;
     let readaheadKind:'hit'|'miss'|'off'='off';
@@ -896,7 +875,7 @@ app.get('/api/hls/playlist',async(req,res)=>{
     return res.send(rewritePlaylist(text,finalUrl.toString()));
   }catch(e:any){if(e instanceof SafeFetchError&&e.reason==='redirect_blocked')return res.status(502).json({error:'redirected off allowlist',detail:e.message});return res.status(e instanceof SafeFetchError&&e.reason==='timeout'?504:502).json({error:'playlist proxy failure',reason:e?.reason,detail:e?.message});}
 });
-app.get('/api/archive/metadata',async(req,res)=>{ const v=validateArchivePath((req.query.path as string)||''); if(!v.valid||!v.cleanPath)return res.status(400).json({error:v.error}); try{const r=await fetch(`${ARCHIVE_BASE}${v.cleanPath}`,{method:'HEAD',headers:{'User-Agent':'AJN-Precision-Engineering-Proxy/1.0'}});res.json({status:r.status,ok:r.ok,contentType:r.headers.get('content-type'),contentLength:r.headers.get('content-length'),acceptRanges:r.headers.get('accept-ranges'),proxyUrl:`/api/archive/proxy?path=${encodeURIComponent(v.cleanPath)}`});}catch(e:any){res.status(502).json({error:e.message});} });
+app.get('/api/archive/metadata',async(req,res)=>{ const v=validateArchivePath((req.query.path as string)||''); if(!v.valid||!v.cleanPath)return res.status(400).json({error:v.error}); try{const r=await fetch(toArchiveUpstreamUrl(v.cleanPath),{method:'HEAD',headers:{'User-Agent':'AJN-Precision-Engineering-Proxy/1.0'}});res.json({status:r.status,ok:r.ok,contentType:r.headers.get('content-type'),contentLength:r.headers.get('content-length'),acceptRanges:r.headers.get('accept-ranges'),proxyUrl:`/api/archive/proxy?path=${encodeURIComponent(v.cleanPath)}`});}catch(e:any){res.status(502).json({error:e.message});} });
 
 app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.originalUrl}));
 

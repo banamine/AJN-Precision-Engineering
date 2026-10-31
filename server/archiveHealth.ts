@@ -1,3 +1,5 @@
+import { validateArchivePath } from './archivePathEncoding';
+
 export type ArchiveHealthState = 'ok' | 'degraded' | 'down' | 'unreachable_from_here';
 export type ArchiveHealthEventKind = 'ok' | 'network' | 'server5xx' | 'definite' | 'other';
 
@@ -149,6 +151,14 @@ export function createArchiveHealth(
 
   const safePath = (value: string | undefined): string => {
     if (!value) return '/';
+    const canonical = validateArchivePath(value);
+    if (canonical.valid && canonical.cleanPath) {
+      const redacted = canonical.cleanPath.replace(
+        /(?:\?|%3F)(?:token|session|auth|access_token|key|password)=.*/ig,
+        '',
+      );
+      return redacted;
+    }
     try {
       return new URL(value, 'http://ajn.invalid').pathname || '/';
     } catch {
