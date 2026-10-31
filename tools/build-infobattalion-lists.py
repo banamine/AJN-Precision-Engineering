@@ -12,7 +12,7 @@ no <30 s / <100 KB placeholders. Deterministic: same cache -> same output. Run i
 (`git checkout -- src/data/extraChannelsManifest.json src/data/documentariesManifest.json src/data/archiveAudioChannels.json`), otherwise items it added last time count as "already in app". Usage:
   python tools/build-infobattalion-lists.py --cache DIR [--fetch]    (DIR/lists.json, DIR/*.items.json are fetched when --fetch)
 """
-import argparse, glob, hashlib, importlib.util, json, os, re, threading, time, urllib.parse, urllib.request, urllib.error, concurrent.futures as cf
+import argparse, email.utils, glob, hashlib, importlib.util, json, os, re, threading, time, urllib.parse, urllib.request, urllib.error, concurrent.futures as cf
 from datetime import datetime, timezone
 here = os.path.dirname(os.path.abspath(__file__)); root = os.path.dirname(here)
 def load(name):
@@ -63,7 +63,7 @@ class ArchiveClient:
             return started
 
     def get(self, url):
-        for attempt in range(1, 4):
+        for attempt in range(1, 5):
             target = url
             for hop in range(6):
                 started = self._start(target, attempt)
@@ -92,8 +92,27 @@ class ArchiveClient:
                     self._ledger({"event": "result", "startedMonotonic": started, "url": target, "attempt": attempt,
                                   "status": error.code, "retryAfter": retry_after})
                     if error.code in (429, 503) or retry_after:
-                        with self._start_lock: self._stopped = True
-                        raise ArchiveFetchStopped(f"Archive returned HTTP {error.code}; Retry-After={retry_after or 'none'}; stopping fetch") from error
+                        if attempt < 4:
+                            wait_seconds = self.interval
+                            if retry_after:
+                                try:
+                                    wait_seconds = max(0.0, float(retry_after))
+                                except ValueError:
+                                    try:
+                                        retry_at = email.utils.parsedate_to_datetime(retry_after)
+                                        if retry_at.tzinfo is None:
+                                            retry_at = retry_at.replace(tzinfo=timezone.utc)
+                                        wait_seconds = max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
+                                    except (TypeError, ValueError, OverflowError):
+                                        wait_seconds = self.interval
+                            wait_seconds = min(60.0, max(self.interval, wait_seconds))
+                            self._ledger({"event": "retry_wait", "startedMonotonic": started, "url": target,
+                                          "attempt": attempt, "waitSeconds": wait_seconds, "retryAfter": retry_after})
+                            self.sleeper(wait_seconds)
+                            break
+                        with self._start_lock:
+                            self._stopped = True
+                        raise ArchiveFetchStopped(f"Archive returned HTTP {error.code}; Retry-After={retry_after or 'none'}; retry cap reached") from error
                     if error.code >= 500 and attempt < 3:
                         break
                     raise
@@ -108,8 +127,32 @@ class ArchiveClient:
 
 ARCHIVE = ArchiveClient()
 
+def strip_uploader_fields(value):
+    """Remove uploader contact identifiers before Archive JSON is cached or written."""
+    if isinstance(value, dict):
+        return {
+            key: strip_uploader_fields(child)
+            for key, child in value.items()
+            if str(key).lower().replace("-", "_") not in ("uploader", "uploader_email", "uploaderemail")
+        }
+    if isinstance(value, list):
+        return [strip_uploader_fields(child) for child in value]
+    return value
+
+def sanitize_archive_json(data):
+    try:
+        parsed = json.loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+        return data
+    return json.dumps(strip_uploader_fields(parsed), ensure_ascii=False).encode("utf-8")
+
 def archive_download(url, dest):
-    data = ARCHIVE.get(url)
+    try:
+        data = sanitize_archive_json(ARCHIVE.get(url))
+    except urllib.error.HTTPError as error:
+        if error.code != 404:
+            raise
+        data = json.dumps({"__ajn_status": "NOT_FOUND"}).encode("utf-8")
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     with open(dest + ".tmp", "wb") as f: f.write(data)
     os.replace(dest + ".tmp", dest)
@@ -118,7 +161,7 @@ def archive_download(url, dest):
 org.http_get = archive_download
 
 def jget(url):
-    return json.loads(ARCHIVE.get(url).decode("utf-8"))
+    return strip_uploader_fields(json.loads(ARCHIVE.get(url).decode("utf-8")))
 def page(**p):
     return jget("https://archive.org/services/search/beta/page_production/?" + urllib.parse.urlencode(p))["response"]["body"]
 
@@ -135,6 +178,21 @@ def is_test_file(path):
     """Test files name identifiers to assert on them; that must not count as the item being in the app."""
     base = os.path.basename(path)
     return base.startswith(("test-", "test_")) or ".test." in base
+def text_has_identifier(text, identifier):
+    """Search source text for a whole Archive identifier, not a substring collision."""
+    return bool(re.search(
+        r"(?<![\w.-])" + re.escape(identifier) + r"(?![\w.-])",
+        text,
+        flags=re.IGNORECASE,
+    ))
+def identifiers_in_text(text, identifiers):
+    """Find exact identifiers with one pass over the scanned app source."""
+    candidates = sorted({str(i).lower() for i in identifiers if i}, key=len, reverse=True)
+    if not candidates:
+        return set()
+    alternatives = "|".join(re.escape(i) for i in candidates)
+    pattern = re.compile(r"(?<![\w.-])(?:" + alternatives + r")(?![\w.-])", re.IGNORECASE)
+    return {match.group(0).lower() for match in pattern.finditer(text)}
 def classify_movie_list_item(movie_rows, episode_rows, override=None):
     """Pure. Decide where one Movies-list item goes.
     override (config/catalog-overrides.json) wins: "movie" | "tv" | "skip".
@@ -216,6 +274,39 @@ def manifest_channel(guide, channel_id, name, group, rows, defer_light_rows=Fals
         entry["deferLightRows"] = True
     return entry
 
+def upsert_channel_preserving_position(channels, replacement):
+    """Replace a channel in place by stable id, or append it if it is new."""
+    channel_id = replacement.get("id")
+    for index, channel in enumerate(channels):
+        if channel.get("id") == channel_id:
+            channels[index] = replacement
+            return index
+    channels.append(replacement)
+    return len(channels) - 1
+
+def filter_list5_movie_rows(rows, keep_short=False):
+    """Hold the existing duration/title-filtered rows unless the owner opts in."""
+    included, held = [], []
+    for row in rows:
+        rules = []
+        if row["durationSeconds"] < MOVIE_MIN_SECONDS:
+            rules.append("film_under_45_minutes")
+        if TVISH.search(row["title"]):
+            rules.append("tv_episode_title")
+        if SEX.search(row["title"]):
+            rules.append("existing_sex_title_filter")
+        if rules and (not keep_short or "existing_sex_title_filter" in rules):
+            for rule in rules:
+                held.append({
+                    "identifier": row["identifier"],
+                    "title": row["title"],
+                    "durationSeconds": row["durationSeconds"],
+                    "rule": rule,
+                })
+        else:
+            included.append(row)
+    return included, held
+
 def ungenerated_payload(path, payload, extra_path, docs_path, audio_path):
     target = os.path.realpath(path)
     if target == os.path.realpath(extra_path):
@@ -270,12 +361,20 @@ def cartoon_channels(shows):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--cache", required=True); ap.add_argument("--fetch", action="store_true")
+    ap.add_argument("--lists", nargs="+", type=int, choices=(5,), default=None,
+                    help="process only owner list 5 (Movies Classics), preserving all other generated guides")
+    ap.add_argument("--keep-short", action="store_true",
+                    help="include list-5 rows under 45 minutes or with TV-style titles; default is to report and hold them")
     ap.add_argument("--extra", default="src/data/extraChannelsManifest.json"); ap.add_argument("--docs", default="src/data/documentariesManifest.json")
     ap.add_argument("--audio", default="src/data/archiveAudioChannels.json"); ap.add_argument("--report", default="reports/infobattalion-lists.json")
     ap.add_argument("--existing-classic", default=None, help="saved /api/schedule?guide=classic-tv JSON, used to skip shows that already have a channel")
     ap.add_argument("--config", default="config/catalog-refresh.json"); ap.add_argument("--overrides", default="config/catalog-overrides.json")
     a = ap.parse_args()
+    if a.keep_short and not a.lists:
+        ap.error("--keep-short requires --lists 5")
     enabled = source_switches(json.load(open(os.path.join(root, a.config))) if os.path.exists(os.path.join(root, a.config)) else {})
+    if a.lists:
+        enabled = {name: value and name == "movies" for name, value in enabled.items()}
     overrides = load_overrides(os.path.join(root, a.overrides))
     print("[sources] enabled:", ", ".join(n for n, v in enabled.items() if v) or "none", "| disabled:", ", ".join(n for n, v in enabled.items() if not v) or "none")
     os.makedirs(os.path.join(a.cache, "meta"), exist_ok=True)
@@ -303,14 +402,6 @@ def main():
     list_member_counts = {n: len(L[i]["members"]) for n, i in list_ids}
     lists = {n: (list(dict.fromkeys(m["identifier"] for m in L[i]["members"])) if enabled[n] else []) for n, i in list_ids}
     lists["opensource"] = [x["identifier"] for x in os_items]; lists["atlas"] = [x["identifier"] for x in atlas_items]
-    if a.fetch:
-        ids = list(dict.fromkeys(i for v in lists.values() for i in v))
-        def one(i):
-            f = os.path.join(a.cache, "meta", org.md5id(i) + ".json")
-            if not os.path.exists(f): org.http_get("https://archive.org/metadata/" + urllib.parse.quote(i, safe=""), f)
-        with cf.ThreadPoolExecutor(8) as ex: list(ex.map(one, ids))
-        if ARCHIVE._stopped:
-            raise ArchiveFetchStopped("Archive fetch stopped; no manifests were written")
     meta = org.Meta(a.cache, False)
     titles = {}
     def title_of(i):
@@ -320,7 +411,7 @@ def main():
             if isinstance(titles[i], list): titles[i] = titles[i][0]
         return titles[i]
     # everything already referenced by the app (read BEFORE this run's own output is written)
-    txt = ""
+    txt_chunks = []
     generated_paths = {
         os.path.realpath(os.path.join(root, a.extra)),
         os.path.realpath(os.path.join(root, a.docs)),
@@ -338,20 +429,85 @@ def main():
             if os.path.basename(f) in ("libraryIndex.json", "archiveCatalog.json"): continue
             if is_test_file(f): continue
             if os.path.realpath(f) in generated_paths:
-                current = ungenerated_payload(f, manifest_payloads[os.path.realpath(f)], a.extra, a.docs, a.audio)
-                txt += json.dumps(current).lower()
+                current = manifest_payloads[os.path.realpath(f)] if a.lists else \
+                    ungenerated_payload(f, manifest_payloads[os.path.realpath(f)], a.extra, a.docs, a.audio)
+                txt_chunks.append(json.dumps(current).lower())
             else:
-                txt += open(f, errors="ignore").read().lower()
-    inapp = lambda i: i.lower() in txt
+                with open(f, errors="ignore") as source_file:
+                    txt_chunks.append(source_file.read().lower())
+    txt = "\n".join(txt_chunks)
+    in_app_ids = set(existing_manifest_guides) | identifiers_in_text(
+        txt, (identifier for rows in lists.values() for identifier in rows)
+    )
+    inapp = lambda i: i.lower() in in_app_ids
+    if a.fetch:
+        ids = list(dict.fromkeys(i for v in lists.values() for i in v))
+        if a.lists:
+            ids = [i for i in ids if not inapp(i)]
+        def cache_path(i):
+            return os.path.join(a.cache, "meta", org.md5id(i) + ".json")
+        def one(i):
+            f = cache_path(i)
+            if not os.path.exists(f):
+                org.http_get("https://archive.org/metadata/" + urllib.parse.quote(i, safe=""), f)
+        for pos, ident in enumerate(ids):
+            try:
+                one(ident)
+            except (ArchiveFetchStopped, urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError):
+                ARCHIVE._stopped = True
+                for pending in ids[pos:]:
+                    path = cache_path(pending)
+                    if not os.path.exists(path):
+                        os.makedirs(os.path.dirname(path), exist_ok=True)
+                        with open(path, "w", encoding="utf-8") as marker:
+                            json.dump({"__ajn_status": "ARCHIVE_BUSY"}, marker)
+                break
     existing = set()
     if a.existing_classic and os.path.exists(a.existing_classic):
         existing = {norm(c["name"]) for c in json.load(open(a.existing_classic))["channels"]}
-    report = {"skipped_in_app": {}, "dark": {}, "excluded": {}, "channels": {}, "needs_decision": {}}
+    report = {"skipped_in_app": {}, "dark": {}, "excluded": {}, "channels": {}, "needs_decision": {},
+              "movies_filter_holds": [], "movies_item_statuses": []}
     list_stats = {n: {"members": list_member_counts.get(n, len(ids)), "unique_members": len(ids), "added_ids": set(), "added_rows": 0, "skipped_already_in_app": 0,
                       "skipped_claimed": 0, "rejected": {}} for n, ids in lists.items()}
     def reject_list(name, reason, count=1):
         stats = list_stats[name]["rejected"]
         stats[reason] = stats.get(reason, 0) + count
+    def item_status(ident, cache, metadata, item_title):
+        path = os.path.join(cache, "meta", org.md5id(ident) + ".json")
+        if not os.path.exists(path):
+            return "ARCHIVE_BUSY" if ARCHIVE._stopped else "NOT_FOUND"
+        try:
+            raw = json.load(open(path))
+        except (OSError, ValueError):
+            return "ARCHIVE_BUSY"
+        marker = raw.get("__ajn_status") if isinstance(raw, dict) else None
+        if marker in ("NOT_FOUND", "ARCHIVE_BUSY"):
+            return marker
+        if raw.get("is_dark"):
+            return "DARK"
+        md = raw.get("metadata") or {}
+        restricted = md.get("access-restricted-item") or md.get("loan")
+        collections = md.get("collection") or []
+        if isinstance(collections, str):
+            collections = [collections]
+        if restricted or any(any(token in str(c).lower() for token in ("inlibrary", "printdisabled", "loan")) for c in collections):
+            return "RESTRICTED"
+        files = raw.get("files") or []
+        videos = [f for f in files if str(f.get("name", "")).rsplit(".", 1)[-1].lower() in org.VIDEO_EXT]
+        if not files:
+            return "NO_PLAYABLE_FILE"
+        private = lambda f: str(f.get("private", "")).lower() in ("true", "1", "yes")
+        if videos and all(private(f) for f in videos):
+            return "RESTRICTED"
+        rows, _ = xc.item_rows([(ident, item_title)], metadata, min_len=0)
+        if rows:
+            return "ADMIT"
+        def number(value):
+            try: return float(value or 0)
+            except (TypeError, ValueError): return 0
+        if videos and all(private(f) or number(f.get("length")) < 30 or number(f.get("size")) < 100000 for f in videos):
+            return "TOO_SHORT"
+        return "NO_PLAYABLE_FILE"
     def record_rows(name, rows):
         stats = list_stats[name]
         stats["added_rows"] += len(rows)
@@ -370,25 +526,40 @@ def main():
                 report["skipped_in_app"].setdefault(name + "_claimed_by_earlier_list", []).append(i)
                 list_stats[name]["skipped_claimed"] += 1
                 continue
-            it = meta.get(i)
-            if not it or it["state"] != "ok":
-                report["dark"].setdefault(name, []).append(i)
-                reject_list(name, "dark_or_metadata_missing")
-                continue
             if inapp(i):
                 report["skipped_in_app"].setdefault(name, []).append(i)
                 list_stats[name]["skipped_already_in_app"] += 1
+                continue
+            it = meta.get(i)
+            if not it or it["state"] != "ok":
+                status = item_status(i, a.cache, meta, title_of(i))
+                if status == "DARK":
+                    report["dark"].setdefault(name, []).append(i)
+                else:
+                    report["needs_decision"].setdefault(name + "_status", {})[i] = status
+                reject_list(name, status.lower())
+                if a.lists and name == "movies":
+                    report["movies_item_statuses"].append({
+                        "identifier": i,
+                        "title": title_of(i),
+                        "status": status,
+                        "included": False,
+                    })
                 continue
             out.append(i)
         return out
     extra = json.load(open(os.path.join(root, a.extra)))
     previous_channel_ids = {c.get("id") for c in extra.get("channels", []) if c.get("id")}
     previously_deferred = {c.get("id") for c in extra.get("channels", []) if c.get("id") and c.get("deferLightRows") is True}
-    chans = [c for c in extra["channels"] if not generated_channel(c)]
+    existing_movies_list = next((c for c in extra["channels"] if c.get("id") == "mx-movies-classics-list"), None)
+    if a.lists:
+        chans = list(extra["channels"])
+    else:
+        chans = [c for c in extra["channels"] if not generated_channel(c)]
     def add(guide, cid, name, group, rows, note="", defer_light_rows=False):
         if not rows: return
         defer = should_defer_light_rows(cid, previous_channel_ids, previously_deferred, defer_light_rows)
-        chans.append(manifest_channel(guide, cid, name, group, rows, defer))
+        upsert_channel_preserving_position(chans, manifest_channel(guide, cid, name, group, rows, defer))
         claimed.update(r["identifier"].lower() for r in rows)
         report["channels"][cid] = {"guide": guide, "name": name, "rows": len(rows), "hours": round(sum(r["durationSeconds"] for r in rows) / 3600), "note": note}
     def rows_for(idents, min_len=0, movies=False, source_list=None):
@@ -409,6 +580,31 @@ def main():
     report["movies_rerouted_to_tv"] = []
     report["movies_list_dropped"] = []
     for i in pick_new("movies"):
+        if a.lists:
+            candidates, dropped = xc.item_rows([(i, title_of(i))], meta, min_len=0)
+            for row in candidates:
+                row["title"] = tidy_title(row["title"])
+            if not candidates:
+                report["movies_item_statuses"].append({
+                    "identifier": i,
+                    "title": title_of(i),
+                    "status": item_status(i, a.cache, meta, title_of(i)),
+                    "included": False,
+                    "reason": dropped,
+                })
+                continue
+            included, held_rows = filter_list5_movie_rows(candidates, a.keep_short)
+            report["movies_filter_holds"].extend(held_rows)
+            movie_rows.extend(included)
+            report["movies_item_statuses"].append({
+                "identifier": i,
+                "title": title_of(i),
+                "status": "ADMIT",
+                "included": bool(included),
+                "includedRows": len(included),
+                "heldRules": sorted({row["rule"] for row in held_rows}),
+            })
+            continue
         full, _ = rows_for([i], MOVIE_MIN_SECONDS, True, source_list="movies")
         eps, _ = rows_for([i], EPISODE_MIN_SECONDS)
         kind, rows = classify_movie_list_item(full, eps, overrides.get(i.lower()))
@@ -424,8 +620,18 @@ def main():
             report["movies_list_dropped"].append({"identifier": i, "title": title_of(i), "episodeLikeRows": len(eps),
                                                   "override": overrides.get(i.lower())})
     record_rows("movies", movie_rows)
-    add("movies-classics-vault", "mx-movies-classics-list", "Movies Classics (list)", "Movies", movie_rows,
-        "list 5, new items only; films >= 45 min; TV-episode items moved to Classic TV")
+    existing_movie_rows = existing_movies_list.get("rows", []) if a.lists and existing_movies_list else []
+    merged_movie_rows = list(existing_movie_rows)
+    seen_movie_rows = {(str(r.get("identifier", "")).lower(), str(r.get("file", "")).lower()) for r in merged_movie_rows}
+    for row in movie_rows:
+        key = (str(row.get("identifier", "")).lower(), str(row.get("file", "")).lower())
+        if key not in seen_movie_rows:
+            seen_movie_rows.add(key)
+            merged_movie_rows.append(row)
+    add("movies-classics-vault", "mx-movies-classics-list", "Movies Classics (list)", "Movies",
+        merged_movie_rows if a.lists else movie_rows,
+        "list 5; preserves existing rows and other guides; under-45-minute and TV-title rows are held unless --keep-short" if a.lists
+        else "list 5, new items only; films >= 45 min; TV-episode items moved to Classic TV")
     # ---- Cartoons (list 3; ahead of generic filmography/other sources so cartoons keep their requested group)
     cartoon_shows = []
     for i in pick_new("cartoons"):
@@ -538,10 +744,11 @@ def main():
         1 for c in chans if c.get("guideId") == "classic-tv" and c.get("deferLightRows") is True
     )
     json.dump({"schema": "ajn.extraChannelsManifest.v1", "channels": chans}, open(os.path.join(root, a.extra), "w"), separators=(",", ":"))
-    for e in docs: e.pop("_ib", None)
-    for e in audio: e.pop("_ib", None)
-    json.dump(docs, open(os.path.join(root, a.docs), "w"), separators=(",", ":"), ensure_ascii=False)
-    json.dump(audio, open(os.path.join(root, a.audio), "w"), indent=1, ensure_ascii=False)
+    if not a.lists:
+        for e in docs: e.pop("_ib", None)
+        for e in audio: e.pop("_ib", None)
+        json.dump(docs, open(os.path.join(root, a.docs), "w"), separators=(",", ":"), ensure_ascii=False)
+        json.dump(audio, open(os.path.join(root, a.audio), "w"), indent=1, ensure_ascii=False)
     os.makedirs(os.path.dirname(os.path.join(root, a.report)), exist_ok=True)
     json.dump(report, open(os.path.join(root, a.report), "w"), indent=1)
     print(json.dumps({"lists": report["lists"], "channels": report["channels"], "skipped": {k: len(v) for k, v in report["skipped_in_app"].items()}, "dark": {k: len(v) for k, v in report["dark"].items()},
