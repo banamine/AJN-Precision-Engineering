@@ -33,6 +33,8 @@
     "AJN-Precision-Engineering",
     "app",
     "tools/checks/firestore-emulator-check.ts",
+    "ajn-bufferGauge-fetchstate",
+    "ajn-telemetry-audit",
     "AJN_DROPIN_P2_PLUS_CAPTIONS",
     "AJN_K1_LIVE_NEWS_MERGE",
     "AJN_FIX_CAPTIONS_TYPES",
