@@ -53,6 +53,32 @@ export const ARCHIVE_HOST_FAILURE_WINDOW_MS = 90_000;
 
 export type HeaderWaitBudget = () => number;
 
+/** A media response whose headers took this long marks that storage node "slow". */
+export const ARCHIVE_SLOW_HEADER_MS = 8_000;
+/** How long a slow mark lasts before the node is tried first again. */
+export const ARCHIVE_SLOW_NODE_TTL_MS = 5 * 60_000;
+/** Header timeout for a replica tried instead of a slow node (primary stays the fallback). */
+export const ARCHIVE_SLOW_REPLICA_HEADER_TIMEOUT_MS = 10_000;
+
+const slowNodes = new Map<string, number>();
+
+export function markArchiveNodeSlow(host: string, now = Date.now()): void {
+  if (slowNodes.size > 200) slowNodes.clear();
+  slowNodes.set(host.toLowerCase(), now + ARCHIVE_SLOW_NODE_TTL_MS);
+}
+
+export function clearArchiveNodeSlow(host: string): void {
+  slowNodes.delete(host.toLowerCase());
+}
+
+export function isArchiveNodeSlow(host: string, now = Date.now()): boolean {
+  const key = host.toLowerCase();
+  const until = slowNodes.get(key);
+  if (until === undefined) return false;
+  if (until <= now) { slowNodes.delete(key); return false; }
+  return true;
+}
+
 export function createHeaderWaitBudget(
   totalMs = ARCHIVE_HEADER_WAIT_BUDGET_MS,
   now: () => number = () => globalThis.performance?.now?.() ?? Date.now(),
@@ -324,6 +350,8 @@ export async function resolveArchiveMediaRedirect(
     timeoutMs?: number;
     physicalContext?: ArchivePhysicalRequestContext;
     headerWaitBudget?: HeaderWaitBudget;
+    /** Return the storage-node URL from the front door without a 1-byte probe (proxy default: on). */
+    skipNodeProbe?: boolean;
   } = {},
 ): Promise<ResolveResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
@@ -375,6 +403,14 @@ export async function resolveArchiveMediaRedirect(
       throw new ArchiveRedirectRejectedError('Archive redirect rejected: invalid Location URL');
     }
     validateArchiveRedirect(nextUrl);
+    // Do not probe the storage node the front door redirects to. The 1-byte probe pays
+    // the same first-byte wait as the real media request, so a slow node made every
+    // uncached request wait twice. The caller's real request validates the node and
+    // follows any further redirect itself. (Probing only continues for non-front-door hops.)
+    const nextIsNode = nextUrl.hostname.toLowerCase() !== 'archive.org';
+    if (nextIsNode && ((opts.skipNodeProbe && currentUrl.hostname.toLowerCase() === 'archive.org') || isArchiveNodeSlow(nextUrl.hostname))) {
+      return { url: nextUrl.toString(), status: 200 };
+    }
     currentUrl = nextUrl;
   }
 
@@ -443,6 +479,8 @@ async function resolveArchiveMediaRedirectSingleFlight(
     timeoutMs?: number;
     physicalContext?: ArchivePhysicalRequestContext;
     headerWaitBudget?: HeaderWaitBudget;
+    /** Return the storage-node URL from the front door without a 1-byte probe (proxy default: on). */
+    skipNodeProbe?: boolean;
   } = {},
 ): Promise<ResolveResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
@@ -454,7 +492,7 @@ async function resolveArchiveMediaRedirectSingleFlight(
     flights = new Map();
     resolveFlightsByFetch.set(fetchImpl, flights);
   }
-  const key = `${initialUrl}\n${opts.maxRedirects ?? 5}\n${opts.timeoutMs ?? NODE_HEADER_TIMEOUT_MS}`;
+  const key = `${initialUrl}\n${opts.maxRedirects ?? 5}\n${opts.timeoutMs ?? NODE_HEADER_TIMEOUT_MS}\n${opts.skipNodeProbe ? 1 : 0}`;
   let flight = flights.get(key);
   if (!flight) {
     const controller = new AbortController();
@@ -510,6 +548,8 @@ export interface ArchiveFetchResult {
   rateLimit?: { status: 429 | 503; retryAfterSeconds: number };
   /** Circuit open: how long until this storage host may be asked again. */
   retryAfterMs?: number;
+  /** Storage host that timed out or whose circuit is open (an allow-listed archive hostname). */
+  host?: string;
 }
 
 export interface ArchiveFetchOptions {
@@ -531,6 +571,8 @@ export interface ArchiveFetchOptions {
   cooldownStore?: ArchiveCooldownStore;
   now?: () => number;
   physicalContext?: ArchivePhysicalRequestContext;
+  /** Skip the 1-byte probe of the storage node (the real media request validates it). Default off. */
+  skipNodeProbe?: boolean;
 }
 
 const defaultSleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
@@ -562,6 +604,7 @@ async function fetchFromAlternateNode(
   log: (message: string, detail: Record<string, unknown>) => void,
   physicalContext?: ArchivePhysicalRequestContext,
   headerWaitBudget?: HeaderWaitBudget,
+  skipSlowNodes = false,
 ): Promise<{ response: Response; url: string } | null> {
   const parts = archiveIdentifierAndRest(upstreamUrl);
   if (!parts) return null;
@@ -576,6 +619,7 @@ async function fetchFromAlternateNode(
 
   for (const host of nodes.hosts.slice(0, MAX_ALTERNATE_NODES)) {
     if (opts.signal?.aborted) return null;
+    if (skipSlowNodes && isArchiveNodeSlow(host)) continue;
     const url = `https://${host}${nodes.dir}/${parts.rest}`;
     try {
       validateArchiveRedirect(new URL(url));
@@ -590,7 +634,7 @@ async function fetchFromAlternateNode(
         headerWaitBudget,
       );
       if (response.status >= 200 && response.status < 300) {
-        log('[archive-proxy] primary node unreachable, served from alternate node', {
+        log(skipSlowNodes ? '[archive-proxy] slow node avoided, served from replica' : '[archive-proxy] primary node unreachable, served from alternate node', {
           requestId: opts.requestId ?? null,
           failedHost,
           alternateHost: host,
@@ -667,6 +711,7 @@ export async function fetchArchiveMediaWithRetry(
           fetchImpl, signal: opts.signal, timeoutMs: opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
           physicalContext: physicalContext('resolve'),
           headerWaitBudget: headerWaitBudgetMs,
+          skipNodeProbe: opts.skipNodeProbe,
         });
       if (!opts.fetchImpl && resolved.url && !(cached && cached.expires > Date.now())) {
         if (redirectCache.size > 500) redirectCache.clear();
@@ -676,6 +721,26 @@ export async function fetchArchiveMediaWithRetry(
 
       if (resolved.url) {
         failedHost = new URL(resolved.url).hostname;
+        // Slow-node avoidance: a node that recently took >= ARCHIVE_SLOW_HEADER_MS to
+        // send headers is skipped in favour of a replica (short header timeout). The slow
+        // node stays the fallback, so this never turns a working stream into an error.
+        if (attempt === 1 && isArchiveNodeSlow(failedHost)) {
+          try {
+            const replica = await fetchFromAlternateNode(
+              upstreamUrl, failedHost,
+              { ...opts, headerTimeoutMs: Math.min(opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS, ARCHIVE_SLOW_REPLICA_HEADER_TIMEOUT_MS) },
+              fetchImpl, log, physicalContext('replica'), headerWaitBudgetMs, true,
+            );
+            if (replica) {
+              if (!opts.fetchImpl) redirectCache.set(upstreamUrl, { url: replica.url, expires: Date.now() + REDIRECT_TTL_MS });
+              return { response: replica.response, status: replica.response.status, attempts: attempt };
+            }
+          } catch (error) {
+            if (opts.signal?.aborted) throw error;
+            // Replica lookup failed: fall through to the slow primary node.
+          }
+        }
+        const mediaStartedAt = (opts.headerBudgetNow ?? Date.now)();
         response = await timedFetch(
           fetchImpl,
           resolved.url,
@@ -686,7 +751,39 @@ export async function fetchArchiveMediaWithRetry(
           archiveItemKeyFromUrl(upstreamUrl),
           headerWaitBudgetMs,
         );
+        // The node is no longer probed first, so follow a node-side redirect here
+        // (bounded, every hop re-validated against the Archive allow-list).
+        for (let hop = 0; hop < 3 && REDIRECT_STATUSES.has(response.status); hop++) {
+          const location = response.headers.get('location');
+          if (!location) break;
+          let hopUrl: URL;
+          try { hopUrl = new URL(location, resolved.url); } catch {
+            throw new ArchiveRedirectRejectedError('Archive redirect rejected: invalid Location URL');
+          }
+          validateArchiveRedirect(hopUrl);
+          await response.body?.cancel().catch(() => {});
+          failedHost = hopUrl.hostname;
+          response = await timedFetch(
+            fetchImpl,
+            hopUrl,
+            { method: 'GET', redirect: 'manual', headers: opts.headers },
+            opts.signal,
+            opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
+            physicalContext('media'),
+            archiveItemKeyFromUrl(upstreamUrl),
+            headerWaitBudgetMs,
+          );
+        }
         status = response.status;
+        if (status >= 200 && status < 300) {
+          const headerMs = (opts.headerBudgetNow ?? Date.now)() - mediaStartedAt;
+          if (headerMs >= ARCHIVE_SLOW_HEADER_MS) {
+            markArchiveNodeSlow(failedHost);
+            log('[archive-proxy] storage node slow to respond', { requestId: opts.requestId ?? null, host: failedHost, headerMs });
+          } else {
+            clearArchiveNodeSlow(failedHost);
+          }
+        }
         if (status < 200 || status >= 300) {
           failure = 'media';
           retryAfterHeader = response.headers.get('retry-after');
@@ -741,6 +838,7 @@ export async function fetchArchiveMediaWithRetry(
         failure: 'resolve',
         errorCode: upstreamCode,
         errorMessage: message,
+        host: failedHost ?? undefined,
       };
       if (upstreamCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED') return last;
       // A circuit-open result means this host must not be retried during cooldown.
@@ -748,7 +846,7 @@ export async function fetchArchiveMediaWithRetry(
       if (upstreamCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') {
         const openHost = (networkError as { host?: string }).host ?? failedHost ?? 'archive.org';
         const retryAfterMs = archiveHostCircuitBreaker.remainingMs(openHost) || archiveHostCircuitBreaker.cooldownMs;
-        return { ...last, attempts: Math.max(0, attempt - 1), retryAfterMs };
+        return { ...last, attempts: Math.max(0, attempt - 1), retryAfterMs, host: openHost };
       }
       if (attempt < attempts && !opts.signal?.aborted) {
         const delayMs = baseDelayMs * 2 ** (attempt - 1);
@@ -838,6 +936,7 @@ export async function fetchArchiveMediaWithRetry(
 /** Test-only reset for module-scoped retry, redirect, and circuit state. */
 export function resetArchiveFetchStateForTests(): void {
   archiveHostCircuitBreaker.reset();
+  slowNodes.clear();
   resolveFlightsByFetch = new WeakMap();
   redirectCache.clear();
   metadataCache.clear();

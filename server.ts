@@ -620,6 +620,8 @@ app.get('/api/archive/proxy', async (req,res)=>{
       headers:upstreamHeaders,
       signal:upstreamAbort.signal,
       requestId:proxyRequestId,
+      // No separate 1-byte probe of the storage node (it doubled slow first-byte waits). Set AJN_ARCHIVE_NODE_PROBE=1 to restore it.
+      skipNodeProbe:process.env.AJN_ARCHIVE_NODE_PROBE!=='1',
       physicalContext:auditLedgerEnabled?{
         requestId:proxyRequestId,
         onPhysicalRequest:(event)=>physicalArchiveRequests.push(event),
@@ -679,6 +681,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
         errorCode: upstream.errorCode,
         reason: upstream.reason,
         retryAfterMs: upstream.retryAfterMs,
+        host: upstream.host,
       });
       if (reply.body.retryAfterSeconds) res.setHeader('Retry-After', String(reply.body.retryAfterSeconds));
       if (!upstream.errorCode && error !== 'Archive media request failed') {
