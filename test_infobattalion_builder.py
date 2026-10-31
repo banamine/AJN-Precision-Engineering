@@ -2,8 +2,11 @@ import email.message
 import importlib.util
 import io
 import os
+import json
+import tempfile
 import unittest
 import urllib.error
+from unittest import mock
 
 
 SPEC = importlib.util.spec_from_file_location(
@@ -110,10 +113,11 @@ class InfobattalionBuilderTests(unittest.TestCase):
             self.assertEqual(client.get("https://archive.org/test"), b"{}")
         self.assertEqual(starts, [0.0, 1.55, 3.1])
 
-    def test_rate_limit_stops_without_retry(self):
+    def test_rate_limit_retries_three_times_with_pacing_and_honors_retry_after(self):
+        clock = FakeClock()
         attempts = []
         headers = email.message.Message()
-        headers["Retry-After"] = "60"
+        headers["Retry-After"] = "2"
 
         def opener(_request, timeout):
             attempts.append(timeout)
@@ -121,11 +125,64 @@ class InfobattalionBuilderTests(unittest.TestCase):
                 "https://archive.org/test", 429, "rate limited", headers, None
             )
 
-        client = builder.ArchiveClient(opener=opener)
+        client = builder.ArchiveClient(
+            opener=opener, clock=clock.now, sleeper=clock.sleep
+        )
         with self.assertRaises(builder.ArchiveFetchStopped):
             client.get("https://archive.org/test")
-        self.assertEqual(attempts, [120])
+        self.assertEqual(attempts, [120, 120, 120, 120])
+        self.assertEqual(clock.value, 6.0)
         self.assertTrue(client._stopped)
+
+    def test_retry_after_is_capped_at_sixty_seconds(self):
+        clock = FakeClock()
+        headers = email.message.Message()
+        headers["Retry-After"] = "300"
+
+        def opener(_request, timeout):
+            raise urllib.error.HTTPError(
+                "https://archive.org/test", 503, "unavailable", headers, None
+            )
+
+        client = builder.ArchiveClient(
+            opener=opener, clock=clock.now, sleeper=clock.sleep
+        )
+        with self.assertRaises(builder.ArchiveFetchStopped):
+            client.get("https://archive.org/test")
+        self.assertEqual(clock.value, 180.0)
+        self.assertTrue(client._stopped)
+
+    def test_list5_upsert_keeps_original_channel_position(self):
+        channels = [
+            {"id": "before", "name": "Before"},
+            {"id": "mx-movies-classics-list", "name": "Old"},
+            {"id": "after", "name": "After"},
+        ]
+        index = builder.upsert_channel_preserving_position(
+            channels, {"id": "mx-movies-classics-list", "name": "Updated"}
+        )
+        self.assertEqual(index, 1)
+        self.assertEqual([c["id"] for c in channels], [
+            "before", "mx-movies-classics-list", "after"
+        ])
+        self.assertEqual(channels[1]["name"], "Updated")
+
+    def test_list5_short_and_tv_title_rows_are_reported_and_held_by_default(self):
+        rows = [
+            {"identifier": "movie", "title": "Long feature", "durationSeconds": 5400},
+            {"identifier": "short", "title": "Short film", "durationSeconds": 1200},
+            {"identifier": "episode", "title": "Show S01E01", "durationSeconds": 1500},
+        ]
+        included, held = builder.filter_list5_movie_rows(rows)
+        self.assertEqual([r["identifier"] for r in included], ["movie"])
+        self.assertEqual(
+            {(r["identifier"], r["rule"]) for r in held},
+            {("short", "film_under_45_minutes"), ("episode", "film_under_45_minutes"),
+             ("episode", "tv_episode_title")},
+        )
+        included_keep, held_keep = builder.filter_list5_movie_rows(rows, keep_short=True)
+        self.assertEqual([r["identifier"] for r in included_keep], ["movie", "short", "episode"])
+        self.assertEqual(held_keep, [])
 
     def test_redirect_hop_is_paced_and_followed_explicitly(self):
         clock = FakeClock()
@@ -181,11 +238,120 @@ class InfobattalionBuilderTests(unittest.TestCase):
 
 
 class InAppScanTests(unittest.TestCase):
+    def test_archive_json_cache_strips_uploader_fields(self):
+        raw = json.dumps({
+            "metadata": {"identifier": "fixture", "title": "Feature", "uploader": "test@example.invalid"},
+            "files": [{"name": "Feature.mp4", "size": "1000000"}],
+            "nested": [{"uploader_email": "test@example.invalid"}],
+        }).encode()
+        sanitized = builder.sanitize_archive_json(raw)
+        data = json.loads(sanitized)
+        self.assertNotIn("uploader", data["metadata"])
+        self.assertNotIn("uploader_email", data["nested"][0])
+        self.assertEqual(data["metadata"]["identifier"], "fixture")
+        self.assertEqual(data["files"][0]["name"], "Feature.mp4")
+
+    def test_identifier_scan_requires_whole_identifier(self):
+        self.assertTrue(builder.text_has_identifier('{"identifier":"film_2024"}', "film_2024"))
+        self.assertTrue(builder.text_has_identifier("url=/download/film-2024/file.mp4", "film-2024"))
+        self.assertFalse(builder.text_has_identifier("film_2024-extra", "film_2024"))
+        self.assertFalse(builder.text_has_identifier("prefixfilm_2024", "film_2024"))
+        self.assertEqual(
+            builder.identifiers_in_text(
+                "film_2024-extra /download/film-2024/file.mp4",
+                ["film_2024", "film-2024"],
+            ),
+            {"film-2024"},
+        )
+
     def test_test_files_are_not_app_references(self):
         for name in ("test-infobattalion-lists.ts", "src/news/news.test.ts", "test_infobattalion_builder.py"):
             self.assertTrue(builder.is_test_file(name), name)
         for name in ("guideRegistry.ts", "src/data/extraChannelsManifest.json", "server/latest-test.ts"):
             self.assertFalse(builder.is_test_file(name), name)
+
+
+class List5IntegrationTests(unittest.TestCase):
+    def test_partial_list5_build_only_fetches_new_ids_and_preserves_other_data(self):
+        existing_id = "already-in-target-guide"
+        new_id = "fixture-new-list5-film"
+        extra = {
+            "schema": "ajn.extraChannelsManifest.v1",
+            "channels": [
+                {"guideId": "movies-classics-vault", "id": "before", "name": "Before", "rows": []},
+                {"guideId": "movies-classics-vault", "id": "mx-movies-classics-list",
+                 "name": "Movies Classics (list)", "group": "Movies",
+                 "rows": [row(existing_id, duration=4000)]},
+                {"guideId": "classic-tv", "id": "after", "name": "After", "rows": []},
+            ],
+        }
+        docs = [{"id": "curated-doc"}]
+        audio = [{"id": "curated-audio"}]
+        with tempfile.TemporaryDirectory() as temp:
+            cache = os.path.join(temp, "cache")
+            extra_path = os.path.join(temp, "extra.json")
+            docs_path = os.path.join(temp, "docs.json")
+            audio_path = os.path.join(temp, "audio.json")
+            report_path = os.path.join(temp, "report.json")
+            for path, payload in ((extra_path, extra), (docs_path, docs), (audio_path, audio)):
+                with open(path, "w", encoding="utf-8") as stream:
+                    json.dump(payload, stream)
+            empty = {"id": 1, "members": []}
+            response = {
+                "value": [
+                    {**empty, "id": list_id,
+                     "members": [{"identifier": existing_id}, {"identifier": new_id}]
+                     if list_id == 5 else []}
+                    for list_id in (1, 2, 3, 4, 5, 6, 10)
+                ]
+            }
+            requests = []
+
+            def archive_get(url):
+                requests.append(url)
+                if url.endswith("/services/users/@infobattalion/lists"):
+                    return json.dumps(response).encode()
+                if url.endswith("/metadata/" + new_id):
+                    return json.dumps({
+                        "metadata": {"identifier": new_id, "title": "Feature Film"},
+                        "files": [{
+                            "name": "Feature Film.mp4", "size": "2000000",
+                            "length": "5400", "source": "original", "private": "false",
+                        }],
+                    }).encode()
+                raise AssertionError(f"unexpected Archive request: {url}")
+
+            argv = [
+                "build-infobattalion-lists.py", "--cache", cache, "--fetch", "--lists", "5",
+                "--extra", extra_path, "--docs", docs_path, "--audio", audio_path,
+                "--report", report_path,
+            ]
+            with mock.patch.object(builder.ARCHIVE, "get", side_effect=archive_get), \
+                    mock.patch("sys.argv", argv):
+                builder.main()
+
+            self.assertEqual(len(requests), 2)
+            self.assertTrue(requests[0].endswith("/services/users/@infobattalion/lists"))
+            self.assertTrue(requests[1].endswith("/metadata/" + new_id))
+            with open(extra_path, encoding="utf-8") as stream:
+                rebuilt = json.load(stream)
+            self.assertEqual(
+                [c["id"] for c in rebuilt["channels"]],
+                ["before", "mx-movies-classics-list", "after"],
+            )
+            self.assertEqual(rebuilt["channels"][0], extra["channels"][0])
+            self.assertEqual(rebuilt["channels"][2], extra["channels"][2])
+            self.assertEqual(len(rebuilt["channels"][1]["rows"]), 2)
+            with open(docs_path, encoding="utf-8") as stream:
+                self.assertEqual(json.load(stream), docs)
+            with open(audio_path, encoding="utf-8") as stream:
+                self.assertEqual(json.load(stream), audio)
+            with open(report_path, encoding="utf-8") as stream:
+                report = json.load(stream)
+            new_status = next(x for x in report["movies_item_statuses"] if x["identifier"] == new_id)
+            self.assertEqual(new_status["title"], "Feature Film")
+            self.assertEqual(new_status["status"], "ADMIT")
+            self.assertTrue(new_status["included"])
 
 
 class SourceSwitchTests(unittest.TestCase):
