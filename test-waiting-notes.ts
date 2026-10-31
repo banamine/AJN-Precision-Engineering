@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import data from './src/data/waitingNotes.json' with { type: 'json' };
 import { createDeck, mulberry32, waitKindOf, type WaitingNotesData } from './src/utils/waitingNotes.ts';
 const D = data as unknown as WaitingNotesData;
@@ -28,6 +29,9 @@ assert.notDeepEqual(run(7, 50).map((n) => n.text), run(8, 50).map((n) => n.text)
 const first = run(3, 60).filter((n) => n.kind === 'line').slice(0, lines).map((n) => n.text); assert.equal(new Set(first).size, first.length, 'a full pass uses each line once');
 assert.ok(a.some((n) => n.kind === 'quote') && !a.some((n) => n.kind === 'slow'), 'quotes appear; slow notes only when slow');
 assert.ok(run(5, 40, 20000).some((n) => n.kind === 'slow'), 'slow notes appear after slowAfterMs');
+const waitingNotesSource = readFileSync(new URL('./src/components/WaitingNotes.tsx', import.meta.url), 'utf8');
+assert.match(waitingNotesSource, /Waiting for a playback response/);
+assert.doesNotMatch(waitingNotesSource, /delay is upstream, not AJN|waiting-slow-source/);
 const themesSeen = new Set(run(11, 30).map((n) => n.theme)); assert.ok(themesSeen.size >= 5, 'themes are mixed');
 const d = createDeck(D, mulberry32(1)); const acr = Array.from({ length: 12 }, () => d.acronym('seeking').short); for (let i = 1; i < acr.length; i++) assert.notEqual(acr[i], acr[i - 1]);
 // 4. Archive waits: only the Archive-themed pool, all 15 phrases get used, never the same one twice in a row, settings present

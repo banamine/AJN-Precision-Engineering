@@ -58,7 +58,7 @@ export function WaitingNotes({ status, onRetry, archive = false }: { status: str
           </div>
           <p data-testid="waiting-note" className="mt-0.5 text-sm leading-snug text-neutral-100">{note?.text ?? ""}</p>
           <p role="status" data-testid="waiting-real-status" className="mt-1 text-[11px] text-neutral-400">
-            {archive ? <>Waiting for the library… {secs} s · {status.replace(/…+$/, "")}</> : <>{status.replace(/…+$/, "")} · {secs}s</>}
+            {archive ? <>Waiting for a playback response… {secs} s · {status.replace(/…+$/, "")}</> : <>{status.replace(/…+$/, "")} · {secs}s</>}
             {onRetry && elapsed >= retryAfterMs && (
               <>
                 {" · "}
@@ -66,11 +66,6 @@ export function WaitingNotes({ status, onRetry, archive = false }: { status: str
               </>
             )}
           </p>
-          {archive && elapsed >= DATA.settings.slowAfterMs && (
-            <p data-testid="waiting-slow-source" className="mt-1 text-[11px] leading-snug text-amber-300">
-              The source is sending this file very slowly (the delay is upstream, not AJN). It may not play smoothly; Retry or pick another episode.
-            </p>
-          )}
         </div>
       </div>
     </div>

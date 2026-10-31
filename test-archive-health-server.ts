@@ -9,7 +9,7 @@ import {
   buildArchiveProxyFailureReply,
   clearArchiveProxyFailureCacheForTests,
   getRecentArchiveProxyFailure,
-  rememberArchiveProxyFailureUnlessOutage,
+  rememberArchiveProxyFailureForDiagnostic,
 } from './server/archiveProxyFailureCache.ts';
 
 let clock = 200_000;
@@ -298,17 +298,17 @@ try {
 
 clearArchiveProxyFailureCacheForTests();
 const reply = buildArchiveProxyFailureReply({ upstreamStatus: 0, attempts: 3, proxyRequestId: 'fixture', errorCode: 'ETIMEDOUT' });
-assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/a/a.mp3', reply, 'down'), false);
-assert.equal(getRecentArchiveProxyFailure('/download/a/a.mp3'), null);
-assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/b/b.mp3', reply, 'unreachable_from_here'), false);
-assert.equal(getRecentArchiveProxyFailure('/download/b/b.mp3'), null);
-assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/c/c.mp3', reply, 'degraded'), true);
+rememberArchiveProxyFailureForDiagnostic('/download/a/a.mp3', reply);
+assert.deepEqual(getRecentArchiveProxyFailure('/download/a/a.mp3'), reply, 'outage-time proxy failures remain available to the player diagnostic');
+rememberArchiveProxyFailureForDiagnostic('/download/b/b.mp3', reply);
+assert.deepEqual(getRecentArchiveProxyFailure('/download/b/b.mp3'), reply, 'unreachable-upstream failures remain diagnostic');
+rememberArchiveProxyFailureForDiagnostic('/download/c/c.mp3', reply);
 assert.deepEqual(getRecentArchiveProxyFailure('/download/c/c.mp3'), reply);
 const definiteReply = buildArchiveProxyFailureReply({ upstreamStatus: 403, attempts: 1, proxyRequestId: 'definite-fixture' });
-assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/private/private.mp3', definiteReply, 'ok'), false);
-assert.equal(getRecentArchiveProxyFailure('/download/private/private.mp3'), null);
+rememberArchiveProxyFailureForDiagnostic('/download/private/private.mp3', definiteReply);
+assert.deepEqual(getRecentArchiveProxyFailure('/download/private/private.mp3'), definiteReply, 'item-specific failures are diagnostic-only and expire by the short cache TTL');
 const unplayableReply = buildArchiveProxyFailureReply({ upstreamStatus: 422, attempts: 0, proxyRequestId: 'member-fixture', errorCode: 'UNPLAYABLE_ARCHIVE_MEMBER' });
-assert.equal(rememberArchiveProxyFailureUnlessOutage('/download/item/file.zip/item.mp3', unplayableReply, 'ok'), false);
-assert.equal(getRecentArchiveProxyFailure('/download/item/file.zip/item.mp3'), null);
-console.log('PASS outage-period failures are excluded from item failure cache; degraded failures remain diagnostic');
+rememberArchiveProxyFailureForDiagnostic('/download/item/file.zip/item.mp3', unplayableReply);
+assert.deepEqual(getRecentArchiveProxyFailure('/download/item/file.zip/item.mp3'), unplayableReply);
+console.log('PASS short-lived player diagnostics retain outage, item-specific, and unplayable responses');
 console.log('PASS injected probe: 2 probe rounds, 4 fake requests, 0 real Archive requests');

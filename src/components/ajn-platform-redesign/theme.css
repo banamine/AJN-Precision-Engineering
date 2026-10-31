@@ -168,3 +168,29 @@
 @media (prefers-reduced-motion: reduce) {
   .ajn-platform-shell { transition: none; }
 }
+
+/* Telemetry Audit (inside the Appearance panel) */
+.ajn-audit { border: 1px solid #484848; border-radius: 11px; background: #161616; }
+.ajn-audit-toggle { display: flex; width: 100%; min-height: 48px; align-items: center; gap: 10px; border: 0; border-radius: 11px; background: transparent; color: #f5f5f5; padding: 8px 12px; text-align: left; cursor: pointer; font: 700 13px 'Plus Jakarta Sans', sans-serif; }
+.ajn-audit-hint { margin-left: auto; color: #c1c1c1; font: 600 11px 'JetBrains Mono', monospace; }
+.ajn-audit-body { display: grid; gap: 12px; border-top: 1px solid #343434; padding: 12px; }
+.ajn-audit-note { margin: 0; color: #c8c8c8; font-size: 12px; }
+.ajn-audit-grid { display: grid; gap: 6px; margin: 0; }
+.ajn-audit-grid > div { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+.ajn-audit-grid dt { color: #c8c8c8; }
+.ajn-audit-grid dd { margin: 0; color: #fcd34d; font: 600 12px 'JetBrains Mono', monospace; text-align: right; }
+.ajn-audit-path { margin: 0; overflow: hidden; color: #c1c1c1; font: 500 11px 'JetBrains Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
+.ajn-audit-spark { width: 100%; height: 56px; border: 1px solid #343434; border-radius: 8px; background: #101010; }
+.ajn-audit-spark-line { stroke: #7fb3c8; stroke-width: 1.6; }
+.ajn-audit-spark-floor { stroke: #765027; stroke-dasharray: 3 3; stroke-width: 1; }
+.ajn-audit-spark-chunk { fill: #fcd34d; }
+.ajn-audit-findings { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ajn-audit-findings li { display: grid; gap: 2px; border: 1px solid #484848; border-left-width: 4px; border-radius: 8px; background: #1a1a1a; padding: 8px 10px; font-size: 12px; }
+.ajn-audit-findings li strong { color: #fff; }
+.ajn-audit-findings li span { color: #c8c8c8; }
+.ajn-audit-findings li.is-ok { border-left-color: #4f9a5e; }
+.ajn-audit-findings li.is-info { border-left-color: #6e8fa0; }
+.ajn-audit-findings li.is-warn { border-left-color: #d29a3d; }
+.ajn-audit-findings li.is-bad { border-left-color: #d4604a; }
+.ajn-audit-export { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #484848; border-radius: 10px; background: #1a1a1a; color: #f3f3f3; padding: 0 14px; cursor: pointer; font: 600 12px 'Plus Jakarta Sans', sans-serif; }
+.ajn-audit-export:disabled { opacity: .5; cursor: not-allowed; }

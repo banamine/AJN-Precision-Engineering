@@ -39,12 +39,38 @@ export class ArchiveCircuitOpenError extends Error {
   }
 }
 
+export class ArchiveHeaderBudgetExceededError extends Error {
+  readonly code = 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED';
+  constructor(readonly host: string) {
+    super('AJN proxy exhausted its total response-header wait budget');
+    this.name = 'ArchiveHeaderBudgetExceededError';
+  }
+}
+
+export const ARCHIVE_HEADER_WAIT_BUDGET_MS = 60_000;
+export const ARCHIVE_HOST_FAILURE_DISTINCT_ITEMS = 3;
+export const ARCHIVE_HOST_FAILURE_WINDOW_MS = 90_000;
+
+export type HeaderWaitBudget = () => number;
+
+export function createHeaderWaitBudget(
+  totalMs = ARCHIVE_HEADER_WAIT_BUDGET_MS,
+  now: () => number = () => globalThis.performance?.now?.() ?? Date.now(),
+): HeaderWaitBudget {
+  const deadline = now() + Math.max(0, totalMs);
+  return () => Math.max(0, deadline - now());
+}
+
 export class ArchiveHostCircuitBreaker {
-  private readonly states = new Map<string, { failures: number; openUntil: number }>();
+  private readonly states = new Map<string, {
+    failuresByItem: Map<string, { failures: number; lastFailureAt: number }>;
+    openUntil: number;
+  }>();
 
   constructor(
-    readonly threshold = 3,
+    readonly distinctItemThreshold = ARCHIVE_HOST_FAILURE_DISTINCT_ITEMS,
     readonly cooldownMs = 20_000,
+    readonly windowMs = ARCHIVE_HOST_FAILURE_WINDOW_MS,
   ) {}
 
   canRequest(host: string, now = Date.now()): boolean {
@@ -56,13 +82,25 @@ export class ArchiveHostCircuitBreaker {
     return true;
   }
 
-  recordTimeout(host: string, now = Date.now()): { failures: number; opened: boolean } {
+  recordTimeout(
+    host: string,
+    itemKey: string,
+    now = Date.now(),
+  ): { itemFailures: number; distinctItems: number; opened: boolean } {
     const key = host.toLowerCase();
-    const prior = this.states.get(key);
-    const failures = (prior?.failures ?? 0) + 1;
-    const opened = failures >= this.threshold;
-    this.states.set(key, { failures, openUntil: opened ? now + this.cooldownMs : 0 });
-    return { failures, opened };
+    const state = this.states.get(key) ?? { failuresByItem: new Map(), openUntil: 0 };
+    for (const [item, failure] of state.failuresByItem) {
+      if (now - failure.lastFailureAt > this.windowMs) state.failuresByItem.delete(item);
+    }
+    const item = itemKey || 'unknown';
+    const prior = state.failuresByItem.get(item);
+    const itemFailures = (prior?.failures ?? 0) + 1;
+    state.failuresByItem.set(item, { failures: itemFailures, lastFailureAt: now });
+    const distinctItems = state.failuresByItem.size;
+    const opened = distinctItems >= this.distinctItemThreshold;
+    if (opened) state.openUntil = now + this.cooldownMs;
+    this.states.set(key, state);
+    return { itemFailures, distinctItems, opened };
   }
 
   /** Milliseconds until an open circuit for this host allows requests again (0 when closed). */
@@ -97,8 +135,9 @@ export function validateArchiveRedirect(target: URL): void {
 }
 
 // Bound connection + response-header wait; once headers arrive the media body is streamed
-// without a timer. This is deliberately shorter than Undici's observed ~20 s connect wait.
-export const NODE_HEADER_TIMEOUT_MS = 8_000;
+// without this timer. The per-hop ceiling tolerates observed first-byte delays while the
+// shared request budget below prevents retries/redirects from waiting without bound.
+export const NODE_HEADER_TIMEOUT_MS = 25_000;
 export const METADATA_TIMEOUT_MS = 10_000;
 const MAX_ALTERNATE_NODES = 2;
 
@@ -115,11 +154,19 @@ function timedFetch(
   parent: AbortSignal | undefined,
   ms: number,
   physicalContext?: ArchivePhysicalRequestContext,
+  itemKey = 'unknown',
+  headerWaitBudget?: HeaderWaitBudget,
 ): Promise<Response> {
   const host = new URL(url).hostname.toLowerCase();
   if (!archiveHostCircuitBreaker.canRequest(host)) {
     return Promise.reject(new ArchiveCircuitOpenError(host));
   }
+  const remainingBudgetMs = headerWaitBudget?.() ?? ms;
+  if (remainingBudgetMs <= 0) {
+    return Promise.reject(new ArchiveHeaderBudgetExceededError(host));
+  }
+  const requestTimeoutMs = Math.min(ms, remainingBudgetMs);
+  const limitedByTotalBudget = requestTimeoutMs < ms;
   const controller = new AbortController();
   const parentAbort = () => controller.abort();
   if (parent?.aborted) controller.abort();
@@ -129,7 +176,7 @@ function timedFetch(
   const timer = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, ms);
+  }, requestTimeoutMs);
   const requestInit = { ...init, signal: controller.signal };
   const request = physicalContext
     ? archiveApiFetchWithContext(url, requestInit, physicalContext, fetchImpl)
@@ -143,10 +190,17 @@ function timedFetch(
     .catch((error) => {
       const undiciConnectTimeout = errorCode(error) === 'UND_ERR_CONNECT_TIMEOUT';
       if (undiciConnectTimeout || timedOut) {
-        const state = archiveHostCircuitBreaker.recordTimeout(host);
+        if (timedOut && limitedByTotalBudget) {
+          throw new ArchiveHeaderBudgetExceededError(host);
+        }
+        const state = archiveHostCircuitBreaker.recordTimeout(host, itemKey);
         if (state.opened) {
           console.warn('[archive-proxy] upstream host circuit opened', JSON.stringify({
-            host, consecutiveTimeouts: state.failures, cooldownMs: archiveHostCircuitBreaker.cooldownMs,
+            host,
+            distinctItemFailures: state.distinctItems,
+            distinctItemThreshold: archiveHostCircuitBreaker.distinctItemThreshold,
+            windowMs: archiveHostCircuitBreaker.windowMs,
+            cooldownMs: archiveHostCircuitBreaker.cooldownMs,
           }));
         }
         if (undiciConnectTimeout) throw error;
@@ -154,7 +208,7 @@ function timedFetch(
       if (!timedOut) {
         throw error;
       }
-      const timeout = new Error(`Archive response headers timed out after ${ms} ms`) as Error & {
+      const timeout = new Error(`Archive response headers timed out after ${requestTimeoutMs} ms`) as Error & {
         code: string; archiveHost: string; cause?: unknown;
       };
       timeout.name = 'TimeoutError';
@@ -181,13 +235,33 @@ export function archiveIdentifierAndRest(upstreamUrl: string): { id: string; res
   }
 }
 
+function archiveItemKeyFromUrl(rawUrl: string | URL): string {
+  try {
+    const segments = new URL(rawUrl).pathname.split('/').filter(Boolean);
+    const downloadId = segments[0] === 'download' ? segments[1] : undefined;
+    const metadataId = segments[0] === 'metadata' ? segments[1] : undefined;
+    const itemsIndex = segments.indexOf('items');
+    const storageId = itemsIndex >= 0 ? segments[itemsIndex + 1] : undefined;
+    const id = downloadId ?? metadataId ?? storageId;
+    return id ? decodeURIComponent(id) : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 const metadataCache = new Map<string, { dir: string; hosts: string[]; expires: number }>();
 
 /** Other storage nodes that hold the item, from Archive's metadata (never includes `skipHost`). */
 export async function lookupAlternateNodes(
   id: string,
   skipHost: string | null,
-  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; timeoutMs?: number; physicalContext?: ArchivePhysicalRequestContext } = {},
+  opts: {
+    fetchImpl?: FetchImpl;
+    signal?: AbortSignal;
+    timeoutMs?: number;
+    physicalContext?: ArchivePhysicalRequestContext;
+    headerWaitBudget?: HeaderWaitBudget;
+  } = {},
 ): Promise<{ dir: string; hosts: string[] } | null> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const cached = opts.fetchImpl ? undefined : metadataCache.get(id);
@@ -201,6 +275,8 @@ export async function lookupAlternateNodes(
         opts.signal,
         opts.timeoutMs ?? METADATA_TIMEOUT_MS,
         opts.physicalContext,
+        id,
+        opts.headerWaitBudget,
       );
       if (!response.ok) return null;
       const meta = await response.json() as { dir?: unknown; server?: unknown; d1?: unknown; d2?: unknown; workable_servers?: unknown };
@@ -215,7 +291,8 @@ export async function lookupAlternateNodes(
         if (metadataCache.size > 500) metadataCache.clear();
         metadataCache.set(id, entry);
       }
-    } catch {
+    } catch (error) {
+      if (errorCode(error) === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED') throw error;
       return null;
     }
   }
@@ -240,7 +317,14 @@ export interface ResolveResult {
  */
 export async function resolveArchiveMediaRedirect(
   initialUrl: string,
-  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; maxRedirects?: number; timeoutMs?: number; physicalContext?: ArchivePhysicalRequestContext } = {},
+  opts: {
+    fetchImpl?: FetchImpl;
+    signal?: AbortSignal;
+    maxRedirects?: number;
+    timeoutMs?: number;
+    physicalContext?: ArchivePhysicalRequestContext;
+    headerWaitBudget?: HeaderWaitBudget;
+  } = {},
 ): Promise<ResolveResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const maxRedirects = opts.maxRedirects ?? 5;
@@ -260,6 +344,8 @@ export async function resolveArchiveMediaRedirect(
         opts.signal,
         opts.timeoutMs ?? NODE_HEADER_TIMEOUT_MS,
         opts.physicalContext,
+        archiveItemKeyFromUrl(initialUrl),
+        opts.headerWaitBudget,
       );
     } catch (error) {
       (error as { archiveHost?: string }).archiveHost = currentUrl.hostname;
@@ -303,25 +389,46 @@ type ResolveFlight = {
 };
 let resolveFlightsByFetch = new WeakMap<FetchImpl, Map<string, ResolveFlight>>();
 
-function waitForCaller<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
-  if (!signal) return promise;
-  if (signal.aborted) {
+function waitForCaller<T>(
+  promise: Promise<T>,
+  signal?: AbortSignal,
+  headerWaitBudget?: HeaderWaitBudget,
+  budgetHost = 'archive.org',
+): Promise<T> {
+  if (signal?.aborted) {
     const error = new Error('Archive fetch aborted');
     error.name = 'AbortError';
     return Promise.reject(error);
   }
+  const remainingBudgetMs = headerWaitBudget?.();
+  if (remainingBudgetMs !== undefined && remainingBudgetMs <= 0) {
+    return Promise.reject(new ArchiveHeaderBudgetExceededError(budgetHost));
+  }
+  if (!signal && remainingBudgetMs === undefined) return promise;
   return new Promise<T>((resolve, reject) => {
-    const cleanup = () => signal.removeEventListener('abort', onAbort);
-    const onAbort = () => {
+    let settled = false;
+    const timer = remainingBudgetMs === undefined
+      ? undefined
+      : setTimeout(() => finish(() => reject(new ArchiveHeaderBudgetExceededError(budgetHost))), remainingBudgetMs);
+    const cleanup = () => {
+      if (timer !== undefined) clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+    };
+    const finish = (complete: () => void) => {
+      if (settled) return;
+      settled = true;
       cleanup();
+      complete();
+    };
+    const onAbort = () => {
       const error = new Error('Archive fetch aborted');
       error.name = 'AbortError';
-      reject(error);
+      finish(() => reject(error));
     };
-    signal.addEventListener('abort', onAbort, { once: true });
+    signal?.addEventListener('abort', onAbort, { once: true });
     promise.then(
-      (value) => { cleanup(); resolve(value); },
-      (error) => { cleanup(); reject(error); },
+      (value) => finish(() => resolve(value)),
+      (error) => finish(() => reject(error)),
     );
   });
 }
@@ -329,7 +436,14 @@ function waitForCaller<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T>
 /** Coalesce only the bounded 1-byte redirect probe; each client receives its own streamed media response. */
 async function resolveArchiveMediaRedirectSingleFlight(
   initialUrl: string,
-  opts: { fetchImpl?: FetchImpl; signal?: AbortSignal; maxRedirects?: number; timeoutMs?: number; physicalContext?: ArchivePhysicalRequestContext } = {},
+  opts: {
+    fetchImpl?: FetchImpl;
+    signal?: AbortSignal;
+    maxRedirects?: number;
+    timeoutMs?: number;
+    physicalContext?: ArchivePhysicalRequestContext;
+    headerWaitBudget?: HeaderWaitBudget;
+  } = {},
 ): Promise<ResolveResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   if (opts.physicalContext) {
@@ -365,7 +479,12 @@ async function resolveArchiveMediaRedirectSingleFlight(
   }
   flight.waiters += 1;
   try {
-    return await waitForCaller(flight.promise, opts.signal);
+    return await waitForCaller(
+      flight.promise,
+      opts.signal,
+      opts.headerWaitBudget,
+      new URL(initialUrl).hostname,
+    );
   } finally {
     flight.waiters -= 1;
     if (flight.waiters === 0 && !flight.settled) flight.controller.abort();
@@ -400,8 +519,12 @@ export interface ArchiveFetchOptions {
   attempts?: number;
   baseDelayMs?: number;
   requestId?: string;
-  /** Max wait for response headers per upstream request (default 8 s). */
+  /** Max wait for response headers per upstream request (default 25 s). */
   headerTimeoutMs?: number;
+  /** Total wall-clock budget for all response-header waits in one media request (default 60 s). */
+  totalHeaderWaitMs?: number;
+  /** Injectable monotonic clock for deterministic budget tests. */
+  headerBudgetNow?: () => number;
   log?: (message: string, detail: Record<string, unknown>) => void;
   sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /** Injectable only for deterministic tests; production uses one shared host store. */
@@ -438,6 +561,7 @@ async function fetchFromAlternateNode(
   fetchImpl: FetchImpl,
   log: (message: string, detail: Record<string, unknown>) => void,
   physicalContext?: ArchivePhysicalRequestContext,
+  headerWaitBudget?: HeaderWaitBudget,
 ): Promise<{ response: Response; url: string } | null> {
   const parts = archiveIdentifierAndRest(upstreamUrl);
   if (!parts) return null;
@@ -446,6 +570,7 @@ async function fetchFromAlternateNode(
     signal: opts.signal,
     timeoutMs: opts.headerTimeoutMs,
     physicalContext: physicalContext ? { ...physicalContext, stage: 'alternate-metadata' } : undefined,
+    headerWaitBudget,
   });
   if (!nodes) return null;
 
@@ -461,6 +586,8 @@ async function fetchFromAlternateNode(
         opts.signal,
         opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
         physicalContext ? { ...physicalContext, stage: 'alternate' } : undefined,
+        parts.id,
+        headerWaitBudget,
       );
       if (response.status >= 200 && response.status < 300) {
         log('[archive-proxy] primary node unreachable, served from alternate node', {
@@ -472,7 +599,8 @@ async function fetchFromAlternateNode(
         return { response, url };
       }
       await response.body?.cancel().catch(() => {});
-    } catch {
+    } catch (error) {
+      if (errorCode(error) === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED') throw error;
       // Try the next replica.
     }
   }
@@ -504,6 +632,8 @@ export async function fetchArchiveMediaWithRetry(
   const sleep = opts.sleep ?? defaultSleep;
   const cooldowns = opts.cooldownStore ?? sharedArchiveCooldownStore;
   const now = opts.now ?? (() => Date.now());
+  const headerWaitBudget = createHeaderWaitBudget(opts.totalHeaderWaitMs, opts.headerBudgetNow);
+  const headerWaitBudgetMs = () => headerWaitBudget();
   const log = opts.log ?? ((message, detail) => console.log(message, JSON.stringify(detail)));
 
   let last: ArchiveFetchResult = { response: null, status: 0, attempts: 0 };
@@ -536,6 +666,7 @@ export async function fetchArchiveMediaWithRetry(
         : await resolveArchiveMediaRedirectSingleFlight(upstreamUrl, {
           fetchImpl, signal: opts.signal, timeoutMs: opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
           physicalContext: physicalContext('resolve'),
+          headerWaitBudget: headerWaitBudgetMs,
         });
       if (!opts.fetchImpl && resolved.url && !(cached && cached.expires > Date.now())) {
         if (redirectCache.size > 500) redirectCache.clear();
@@ -552,6 +683,8 @@ export async function fetchArchiveMediaWithRetry(
           opts.signal,
           opts.headerTimeoutMs ?? NODE_HEADER_TIMEOUT_MS,
           physicalContext('media'),
+          archiveItemKeyFromUrl(upstreamUrl),
+          headerWaitBudgetMs,
         );
         status = response.status;
         if (status < 200 || status >= 300) {
@@ -589,12 +722,13 @@ export async function fetchArchiveMediaWithRetry(
       const primaryArchiveTimedOut = failedHost?.toLowerCase() === 'archive.org'
         && (upstreamCode === 'UND_ERR_CONNECT_TIMEOUT'
           || upstreamCode === 'AJN_UPSTREAM_HEADER_TIMEOUT'
-          || upstreamCode === 'AJN_UPSTREAM_CIRCUIT_OPEN');
+          || upstreamCode === 'AJN_UPSTREAM_CIRCUIT_OPEN'
+          || upstreamCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED');
       // Querying metadata for an alternate replica repeats the same failing dependency
       // when archive.org itself cannot establish the initial connection.
-      const alternate = primaryArchiveTimedOut
+      const alternate = primaryArchiveTimedOut || upstreamCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED'
         ? null
-        : await fetchFromAlternateNode(upstreamUrl, failedHost, opts, fetchImpl, log, physicalContext('alternate'));
+        : await fetchFromAlternateNode(upstreamUrl, failedHost, opts, fetchImpl, log, physicalContext('alternate'), headerWaitBudgetMs);
       if (alternate) {
         if (!opts.fetchImpl) redirectCache.set(upstreamUrl, { url: alternate.url, expires: Date.now() + REDIRECT_TTL_MS });
         return { response: alternate.response, status: alternate.response.status, attempts: attempt };
@@ -608,6 +742,7 @@ export async function fetchArchiveMediaWithRetry(
         errorCode: upstreamCode,
         errorMessage: message,
       };
+      if (upstreamCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED') return last;
       // A circuit-open result means this host must not be retried during cooldown.
       // We already tried an alternate replica when the failed host was not archive.org.
       if (upstreamCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') {

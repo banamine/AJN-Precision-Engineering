@@ -12,7 +12,13 @@ import { NowPlayingMedia, MediaType } from "./types";
 import type { Program, RecentlyPlayedItem } from "./types";
 import { PlayerChrome } from "./components/PlayerChrome";
 import { WaitingNotes } from "./components/WaitingNotes";
-import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
+import {
+  archiveFailureDiagnosticUrl,
+  classifyArchiveFailure,
+  overloadedMessage,
+  structuredArchiveWaitMessage,
+  type ProxyErrorBody,
+} from "./utils/archiveFailure";
 import { releaseMediaElementAudioSource, useAudioNormalization } from "./use-audio-normalization";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
@@ -97,7 +103,10 @@ function bufferClockNowMs(): number {
 function bufferLine(snapshot: BufferGaugeSnapshot, active: boolean): string {
   if (!active || snapshot.health === "idle") return "Buffer: idle";
   const fillRate = snapshot.fillRateRatio === null ? "fill pending" : `${snapshot.fillRateRatio.toFixed(1)}x`;
-  const base = `Buffer ${Math.round(snapshot.aheadSeconds)} s ahead · ${snapshot.health} ${fillRate} · ${snapshot.underrunCount} underruns`;
+  const fetchNote = snapshot.fetchState === "suspended" ? " · browser paused fetching (buffer held)"
+    : snapshot.fetchState === "starved" ? " · source not delivering"
+    : "";
+  const base = `Buffer ${Math.round(snapshot.aheadSeconds)} s ahead · ${snapshot.health} ${fillRate}${fetchNote} · ${snapshot.underrunCount} underruns`;
   return snapshot.kbps === null ? base : `${base} · needs ~${(snapshot.kbps / 1000).toFixed(1)} Mbit/s`;
 }
 
@@ -607,7 +616,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       if (diagnosticUrl) {
         try {
           const r = await fetch(diagnosticUrl, { cache: "no-store", headers: { Accept: "application/json" } });
-          const body = (await r.json().catch(() => ({}))) as ProxyErrorBody;
+          const body = { ...(await r.json().catch(() => ({}))) as ProxyErrorBody, proxyHttpStatus: r.status };
           if (r.status !== 404) proxyFailure = body;
           const kind = classifyArchiveFailure(r.status, body);
           definite = kind === "definite";
@@ -619,7 +628,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         if (!slowRetried) {
           slowRetried = true;
           if (mediaRef.current !== media) return;
-          setStatusText("Archive storage server is slow to respond…");
+          setStatusText(`Loading… (${structuredArchiveWaitMessage(slow)}; retrying once)`);
           reportTelemetry({
             event: "playback.slow_wait", ...eventMeta(),
             reason: slow.errorCode ?? "archive_slow",
@@ -636,7 +645,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           return;
         }
         if (mediaRef.current !== media) return;
-        setStatusText("Unavailable — this Archive storage server isn't responding. Skipping…");
+        setStatusText(`Unavailable — ${structuredArchiveWaitMessage(slow)}. Skipping…`);
         reportTelemetry({
           event: "media.error", ...eventMeta(), mediaErrorCode: err?.code ?? null,
           mediaErrorMessage: err?.message ?? null, readyState: media.readyState, networkState: media.networkState,
@@ -712,7 +721,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           proxyRequestId: proxyFailure.proxyRequestId ?? null,
         });
       } else {
-        setStatusText(`Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`);
+        setStatusText(diagnosticUrl
+          ? `Failed to load — Archive proxy media failed; browser HTTP cause unavailable${err ? ` (MediaError ${err.code})` : ""}.`
+          : `Failed to load — ${err ? `code ${err.code}: ${err.message || "no message"}` : "upstream error"}`);
       }
       reportTelemetry({
         event: "media.error",
@@ -774,6 +785,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         readyState: media.readyState,
         paused: media.paused || media.ended,
         waiting: waitingForDataRef.current,
+        networkState: media.networkState,
       });
       setBufferGaugeSnapshot(snapshot);
       const item = nowPlayingRef.current;

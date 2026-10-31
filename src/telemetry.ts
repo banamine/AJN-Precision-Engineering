@@ -116,6 +116,9 @@ export interface BufferSampleLogEntry {
   sliceIndex: number | null;
   programId: string | null;
   mediaPath: string | null;
+  fetchState: BufferGaugeSnapshot["fetchState"];
+  chunkAddedSeconds: number;
+  measuredDrainRate: number;
 }
 
 type BufferEvent = Partial<AjnTelemetryEvent> & { event: string };
@@ -159,6 +162,9 @@ export function createBufferSampleReporter(options: {
       sliceIndex: snapshot.sliceIndex,
       programId: input.programId ?? null,
       mediaPath,
+      fetchState: snapshot.fetchState,
+      chunkAddedSeconds: snapshot.chunkAddedSeconds,
+      measuredDrainRate: snapshot.measuredDrainRate,
     };
     samples.push(entry);
     if (samples.length > 120) samples.splice(0, samples.length - 120);

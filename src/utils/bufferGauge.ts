@@ -5,6 +5,17 @@ export interface BufferGaugeMetadata {
   durationSeconds?: number;
 }
 
+/**
+ * What the browser's media fetcher is doing, read from HTMLMediaElement.networkState
+ * (never guessed from a buffer-size threshold):
+ *  - loading:   fetching now (NETWORK_LOADING)
+ *  - suspended: browser deliberately stopped fetching while data is buffered (NETWORK_IDLE) - not a network fault
+ *  - starved:   fetching, but no new media for STARVED_AFTER_MS while the buffer is low
+ *  - idle:      paused/ended, nothing to say
+ *  - unknown:   caller did not supply networkState, or the element has no source
+ */
+export type FetchState = "loading" | "suspended" | "starved" | "idle" | "unknown";
+
 export interface BufferGaugeSample {
   /** Monotonic milliseconds from the current process/browser time origin. */
   t: number;
@@ -13,6 +24,8 @@ export interface BufferGaugeSample {
   readyState: number;
   paused: boolean;
   waiting: boolean;
+  /** HTMLMediaElement.networkState (0 empty, 1 idle, 2 loading, 3 no source). Optional. */
+  networkState?: number;
 }
 
 export interface BufferGaugeSnapshot {
@@ -28,6 +41,13 @@ export interface BufferGaugeSnapshot {
   sliceIndex: number | null;
   currentTime: number;
   windowSpanMs: number;
+  /** Media seconds that landed in the buffer on the latest sample (0 when none). */
+  chunkAddedSeconds: number;
+  /** Seconds since the last real chunk arrival; null until one has been seen. */
+  secondsSinceChunk: number | null;
+  /** Measured d(currentTime)/dt; `drainRate` stays the 1x contract value. */
+  measuredDrainRate: number;
+  fetchState: FetchState;
 }
 
 export interface BufferGaugeOptions extends BufferGaugeMetadata {
@@ -42,6 +62,14 @@ const DRAINING_EXIT_RATE = 1.0;
 const LOW_BUFFER_SECONDS = 20;
 const LOW_BUFFER_EXIT_SECONDS = 22;
 const EIGHT_MIB_BITS = 8 * 1024 * 1024 * 8;
+/** A bufferedEnd step smaller than this is range-merge noise, not a delivered chunk. */
+const CHUNK_MIN_SECONDS = 0.05;
+/** "filling" is only claimed while a chunk actually landed this recently. */
+const FILLING_RECENT_CHUNK_MS = 3_000;
+/** Loading with no new media for this long while the buffer is low = starved. */
+const STARVED_AFTER_MS = 8_000;
+const NETWORK_IDLE = 1;
+const NETWORK_LOADING = 2;
 
 // Health thresholds use measured buffer-growth / media-time drain ratio:
 // filling above 1.05x; draining below 0.9x for a full 15-second window while
@@ -88,8 +116,17 @@ export function createBufferGauge(options: BufferGaugeOptions = {}) {
   let underrunStartedAt: number | null = null;
   let longestUnderrunMs = 0;
   let underrunActive = false;
+  let chunkAddedSeconds = 0;
+  let lastChunkAt: number | null = null;
+  let lastSampleAt = 0;
+  let measuredDrainRate = 0;
+  let fetchState: FetchState = "unknown";
 
   const snapshot = (): BufferGaugeSnapshot => ({
+    chunkAddedSeconds,
+    secondsSinceChunk: lastChunkAt === null ? null : Math.max(0, (lastSampleAt - lastChunkAt) / 1000),
+    measuredDrainRate,
+    fetchState,
     aheadSeconds,
     fillRateSecondsPerSecond,
     drainRate,
@@ -130,6 +167,21 @@ export function createBufferGauge(options: BufferGaugeOptions = {}) {
       }
     }
 
+    // Real chunk arrival: bufferedEnd moved forward on a continuous timeline.
+    // A seek/discontinuity jumps bufferedEnd to another range and is NOT a chunk.
+    chunkAddedSeconds = 0;
+    if (previous && !discontinuity) {
+      const delta = sample.bufferedEnd - previous.bufferedEnd;
+      if (delta > CHUNK_MIN_SECONDS) {
+        chunkAddedSeconds = delta;
+        lastChunkAt = time;
+      }
+    }
+    measuredDrainRate = previous && !discontinuity && elapsedSeconds > 0 && !sample.paused
+      ? Math.min(4, Math.max(0, mediaDelta / elapsedSeconds))
+      : 0;
+    lastSampleAt = time;
+
     currentTime = sample.currentTime;
     aheadSeconds = Math.max(0, sample.bufferedEnd - sample.currentTime);
     window.push({ t: time, bufferedEnd: sample.bufferedEnd });
@@ -168,9 +220,20 @@ export function createBufferGauge(options: BufferGaugeOptions = {}) {
     }
     underrunActive = active;
 
+    const sinceChunkMs = lastChunkAt === null ? null : time - lastChunkAt;
+    if (!playing) fetchState = "idle";
+    else if (sample.networkState === NETWORK_IDLE && aheadSeconds > 0) fetchState = "suspended";
+    else if (sample.networkState === NETWORK_LOADING) {
+      fetchState = sinceChunkMs !== null && sinceChunkMs > STARVED_AFTER_MS && aheadSeconds < LOW_BUFFER_SECONDS
+        ? "starved"
+        : "loading";
+    } else fetchState = "unknown";
+    // Windowed rate alone keeps "filling" lit for ~15 s after one burst; require a live arrival too.
+    const recentChunk = sinceChunkMs !== null && sinceChunkMs <= FILLING_RECENT_CHUNK_MS;
+
     if (!playing) health = "idle";
     else if (active) health = "underrun";
-    else if ((fillRateRatio ?? 0) > (health === "filling" ? FILLING_EXIT_RATE : FILLING_RATE)) health = "filling";
+    else if (recentChunk && (fillRateRatio ?? 0) > (health === "filling" ? FILLING_EXIT_RATE : FILLING_RATE)) health = "filling";
     else if (
       spanMs >= FILL_WINDOW_MS
       && fillRateRatio !== null

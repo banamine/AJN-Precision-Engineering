@@ -49,7 +49,7 @@ import { registerArchiveHealthRoutes } from './server/archiveHealthRoutes.js';
 import {
   buildArchiveProxyFailureReply,
   getRecentArchiveProxyFailure,
-  rememberArchiveProxyFailureUnlessOutage,
+  rememberArchiveProxyFailureForDiagnostic,
 } from './server/archiveProxyFailureCache.js';
 import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
@@ -684,7 +684,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
       if (!upstream.errorCode && error !== 'Archive media request failed') {
         reply.body.error = error;
       }
-      rememberArchiveProxyFailureUnlessOutage(v.cleanPath, reply, archiveHealth.getStatus().state);
+      rememberArchiveProxyFailureForDiagnostic(v.cleanPath, reply);
       return res.status(reply.status).json(reply.body);
     }
 
@@ -705,7 +705,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
         reason: 'Archive returned a web page, not media (not yet published or unavailable)',
       });
       reply.body.error = 'Archive returned a web page, not media (not yet published or unavailable)';
-      rememberArchiveProxyFailureUnlessOutage(v.cleanPath, reply, archiveHealth.getStatus().state);
+      rememberArchiveProxyFailureForDiagnostic(v.cleanPath, reply);
       return res.status(reply.status).json(reply.body);
     }
     recordHealthOutcome({ status: mediaResponse.status });
@@ -845,7 +845,7 @@ app.get('/api/archive/proxy', async (req,res)=>{
       reason: err?.message || String(err),
     });
     reply.body.error = 'Archive proxy redirect failure';
-    rememberArchiveProxyFailureUnlessOutage(v.cleanPath, reply, archiveHealth.getStatus().state);
+    rememberArchiveProxyFailureForDiagnostic(v.cleanPath, reply);
     return res.status(reply.status).json(reply.body);
   }
 });

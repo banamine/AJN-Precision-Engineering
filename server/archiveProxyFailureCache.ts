@@ -31,14 +31,17 @@ export function buildArchiveProxyFailureReply(input: {
   retryAfterMs?: number;
 }): ArchiveProxyFailureReply {
   const timedOut = input.errorCode === 'UND_ERR_CONNECT_TIMEOUT'
-    || input.errorCode === 'AJN_UPSTREAM_HEADER_TIMEOUT';
+    || input.errorCode === 'AJN_UPSTREAM_HEADER_TIMEOUT'
+    || input.errorCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED';
   const circuitOpen = input.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN';
   const status: ArchiveProxyFailureReply['status'] = timedOut ? 504 : circuitOpen ? 503 : 502;
   return {
     status,
     body: {
       error: timedOut
-        ? 'Archive upstream timed out'
+        ? input.errorCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED'
+          ? 'AJN proxy exhausted its total response-header wait budget'
+          : 'Archive upstream timed out waiting for response headers'
         : circuitOpen
           ? 'Archive upstream temporarily unavailable'
           : 'Archive media request failed',
@@ -79,19 +82,13 @@ export function rememberArchiveProxyFailure(
   prune(now);
 }
 
-/** Outage failures describe the site/network, not a permanently bad media item. */
-export function rememberArchiveProxyFailureUnlessOutage(
+/** Keep short-lived structured diagnostics for the failed media element, including outages. */
+export function rememberArchiveProxyFailureForDiagnostic(
   path: string,
   reply: ArchiveProxyFailureReply,
-  state: string,
   now = Date.now(),
-): boolean {
-  const itemSpecific = [400, 403, 404, 410, 422].includes(reply.body.upstreamStatus)
-    || reply.body.errorCode === 'UNPLAYABLE_ARCHIVE_MEMBER'
-    || reply.body.reason === 'UNPLAYABLE_ARCHIVE_MEMBER';
-  if (state === 'down' || state === 'unreachable_from_here' || itemSpecific) return false;
+): void {
   rememberArchiveProxyFailure(path, reply, now);
-  return true;
 }
 
 export function getRecentArchiveProxyFailure(

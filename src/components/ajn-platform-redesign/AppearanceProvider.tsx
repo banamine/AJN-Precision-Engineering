@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { RotateCcw, X } from 'lucide-react';
+import { TelemetryAudit } from './TelemetryAudit';
 
 type BackgroundChoice = 'contrast' | 'paper' | 'white' | 'slate';
 type TextChoice = 'auto' | 'white' | 'ink' | 'softblack';
@@ -190,6 +191,7 @@ export function AjnAppearanceProvider({ children }: { children: ReactNode }) {
                 <div><span>Accent contrast</span><strong>{accentRatio.toFixed(2)}:1</strong></div>
                 <p>{ratio >= 4.5 && accentRatio >= 4.5 ? 'WCAG AA contrast target met.' : 'Contrast is below the 4.5:1 AA target for normal text.'}</p>
               </div>
+              <TelemetryAudit />
             </div>
             <footer className="ajn-appearance-footer">
               <button type="button" className="ajn-reset-button" onClick={() => setSettings(DEFAULTS)}><RotateCcw size={16} /> Reset to High Contrast</button>

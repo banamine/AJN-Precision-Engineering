@@ -9,6 +9,8 @@ export interface ProxyErrorBody {
   attempts?: number;
   proxyRequestId?: string;
   errorCode?: string;
+  /** Client-only status from the diagnostic response; not emitted in the JSON body. */
+  proxyHttpStatus?: number;
   /** Circuit open only: seconds until the app server will ask that Archive storage server again. */
   retryAfterSeconds?: number;
 }
@@ -16,7 +18,12 @@ export type ArchiveFailure = 'definite' | 'overloaded' | 'transient' | 'slow';
 
 export function classifyArchiveFailure(httpStatus: number, body: ProxyErrorBody): ArchiveFailure {
   const up = body.upstreamStatus ?? 0;
-  if (body.errorCode === 'AJN_UPSTREAM_HEADER_TIMEOUT' || body.errorCode === 'UND_ERR_CONNECT_TIMEOUT' || body.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') return 'slow';
+  if (
+    body.errorCode === 'AJN_UPSTREAM_HEADER_TIMEOUT'
+    || body.errorCode === 'UND_ERR_CONNECT_TIMEOUT'
+    || body.errorCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED'
+    || body.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN'
+  ) return 'slow';
   if (body.reason === 'UNPLAYABLE_ARCHIVE_MEMBER' || [403, 404, 410].includes(up) || httpStatus === 400 || httpStatus === 422) return 'definite';
   if ([500, 502, 504].includes(up) || httpStatus === 504) return 'overloaded';
   // The proxy already retried 3 times and got no answer at all: retrying again in place only adds load.
@@ -48,10 +55,39 @@ export function archiveRetryWaitMs(body: ProxyErrorBody | null | undefined): num
 
 export function overloadedMessage(body: ProxyErrorBody): string {
   if (body.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') {
-    // Our server stopped asking this storage host after it timed out; say that, not "Archive is overloaded".
     const secs = Math.ceil(archiveRetryWaitMs(body) / 1000);
-    return `This Archive storage server isn't responding. The app will try it again in about ${secs} s`;
+    return `AJN proxy paused requests to this storage host. Retry in about ${secs} s`;
   }
-  const up = body.upstreamStatus ? ` (HTTP ${body.upstreamStatus})` : '';
-  return `Archive's servers are overloaded right now${up}. Try again in a few minutes`;
+  if (body.errorCode === 'AJN_UPSTREAM_HEADER_TIMEOUT' || body.errorCode === 'UND_ERR_CONNECT_TIMEOUT') {
+    return 'Archive upstream timed out while waiting for response headers (HTTP 504)';
+  }
+  if (body.errorCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED') {
+    return 'AJN proxy stopped after its 60 s total response-header wait budget';
+  }
+  if ([500, 502, 503, 504].includes(body.upstreamStatus ?? 0)) {
+    return `Archive upstream returned HTTP ${body.upstreamStatus}`;
+  }
+  if (body.proxyHttpStatus === 504) {
+    return 'AJN proxy returned HTTP 504; the upstream cause was not recorded';
+  }
+  if ((body.upstreamStatus ?? 0) === 0 && (body.attempts ?? 0) > 0) {
+    return `AJN proxy received no upstream response after ${body.attempts} attempts`;
+  }
+  return body.error ?? `AJN proxy request failed${body.proxyHttpStatus ? ` (HTTP ${body.proxyHttpStatus})` : ''}`;
+}
+
+export function structuredArchiveWaitMessage(body: ProxyErrorBody): string {
+  if (body.errorCode === 'AJN_UPSTREAM_CIRCUIT_OPEN') {
+    return `AJN proxy circuit open; retry in about ${Math.ceil(archiveRetryWaitMs(body) / 1000)} s`;
+  }
+  if (body.errorCode === 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED') {
+    return 'AJN proxy exhausted its 60 s total response-header wait budget';
+  }
+  if (body.errorCode === 'AJN_UPSTREAM_HEADER_TIMEOUT' || body.errorCode === 'UND_ERR_CONNECT_TIMEOUT') {
+    return 'Archive upstream response headers timed out (HTTP 504)';
+  }
+  if (body.proxyHttpStatus === 504) {
+    return 'AJN proxy returned HTTP 504; upstream cause is not confirmed';
+  }
+  return body.error ?? 'Archive proxy reported a temporary playback failure';
 }

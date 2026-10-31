@@ -1,7 +1,9 @@
 // Unit regression: Archive proxy retries transient upstream errors only.
 import assert from 'node:assert/strict';
 import {
+  ARCHIVE_HEADER_WAIT_BUDGET_MS,
   archiveHostCircuitBreaker,
+  createHeaderWaitBudget,
   fetchArchiveMediaWithRetry,
   NODE_HEADER_TIMEOUT_MS,
   resetArchiveFetchStateForTests,
@@ -240,7 +242,7 @@ const headers = { 'User-Agent': 'test', Accept: '*/*', Range: 'bytes=0-10' };
   console.log('PASS duplicate requests → one resolution probe, two independent media responses');
 }
 
-// 11. Three connect timeouts open a per-host circuit; the next request fails without another fetch.
+// 11. Repeated timeouts on one item do not open a host-wide circuit; three distinct items do.
 {
   resetArchiveFetchStateForTests();
   let calls = 0;
@@ -257,23 +259,86 @@ const headers = { 'User-Agent': 'test', Accept: '*/*', Range: 'bytes=0-10' };
   assert.equal(result.attempts, 3);
   assert.equal(result.errorCode, 'UND_ERR_CONNECT_TIMEOUT');
   assert.equal(calls, 3);
-  assert.equal(archiveHostCircuitBreaker.canRequest('archive.org'), false);
+  assert.equal(archiveHostCircuitBreaker.canRequest('archive.org'), true, 'three failures for one item do not block unrelated items');
+  for (const id of ['brother-bear', 'third-item']) {
+    const other = await fetchArchiveMediaWithRetry(`https://archive.org/download/${id}/file.mp4`, {
+      headers, fetchImpl: impl, attempts: 1, sleep: noSleep, log,
+    });
+    assert.equal(other.errorCode, 'UND_ERR_CONNECT_TIMEOUT');
+  }
+  assert.equal(calls, 5);
+  assert.equal(archiveHostCircuitBreaker.canRequest('archive.org'), false, 'three distinct item failures open the host circuit');
   const opened = await fetchArchiveMediaWithRetry(DOWNLOAD, {
     headers, fetchImpl: impl, attempts: 3, sleep: noSleep, log,
   });
   assert.equal(opened.errorCode, 'AJN_UPSTREAM_CIRCUIT_OPEN');
   assert.equal(opened.attempts, 0);
-  assert.equal(calls, 3, 'open circuit performs no new upstream request');
-  assert.ok(NODE_HEADER_TIMEOUT_MS <= 8_000);
-  console.log('PASS three connect timeouts → host circuit opens; next request makes 0 fetches');
+  assert.equal(calls, 5, 'open circuit performs no new upstream request');
+  assert.equal(NODE_HEADER_TIMEOUT_MS, 25_000);
+  assert.equal(ARCHIVE_HEADER_WAIT_BUDGET_MS, 60_000);
+  console.log('PASS one item stays isolated; 3 distinct timed-out items open the host circuit');
 }
 
-// 12. An open storage-node circuit is bypassed through another public replica.
+// 12. The total header budget bounds all retry/redirect header waits to 60 seconds.
+{
+  resetArchiveFetchStateForTests();
+  let fakeNow = 0;
+  const budget = createHeaderWaitBudget(60_000, () => fakeNow);
+  assert.equal(budget(), 60_000);
+  fakeNow += 25_000;
+  assert.equal(budget(), 35_000);
+  fakeNow += 25_000;
+  assert.equal(budget(), 10_000);
+  fakeNow += 10_000;
+  assert.equal(budget(), 0);
+  resetArchiveFetchStateForTests();
+  let simulatedNow = 0;
+  let stagedCalls = 0;
+  const stagedFetch = (async (input: any) => {
+    stagedCalls += 1;
+    simulatedNow += 20;
+    if (String(input).startsWith('https://archive.org/download/')) {
+      return new Response(null, {
+        status: 302,
+        headers: { location: 'https://ia800.us.archive.org/download/slow-budget-item/file.mp4' },
+      });
+    }
+    return new Response(null, { status: 503 });
+  }) as FetchImpl;
+  const acrossStages = await fetchArchiveMediaWithRetry('https://archive.org/download/slow-budget-item/file.mp4', {
+    headers,
+    attempts: 3,
+    totalHeaderWaitMs: 30,
+    headerBudgetNow: () => simulatedNow,
+    fetchImpl: stagedFetch,
+    sleep: noSleep,
+    log,
+  });
+  assert.equal(acrossStages.errorCode, 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED');
+  assert.equal(stagedCalls, 2, 'shared deadline spans redirect probe and media response, then prevents another attempt');
+
+  resetArchiveFetchStateForTests();
+  const reply = await fetchArchiveMediaWithRetry(DOWNLOAD, {
+    headers,
+    attempts: 3,
+    headerTimeoutMs: 25_000,
+    totalHeaderWaitMs: 30,
+    fetchImpl: (async (_input: any, init?: any) => new Promise<Response>((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => reject(new Error('stub fetch aborted')), { once: true });
+    })) as FetchImpl,
+    sleep: noSleep,
+    log,
+  });
+  assert.equal(reply.errorCode, 'AJN_PROXY_HEADER_BUDGET_EXHAUSTED');
+  console.log('PASS total response-header wait budget stops at 60 s (short-budget abort tested offline)');
+}
+
+// 13. An open storage-node circuit is bypassed through another public replica.
 {
   resetArchiveFetchStateForTests();
   const failedReplica = 'dn721905.ca.archive.org';
   const healthyReplica = 'dn721906.ca.archive.org';
-  for (let i = 0; i < 3; i++) archiveHostCircuitBreaker.recordTimeout(failedReplica);
+  for (const id of ['one', 'two', 'three']) archiveHostCircuitBreaker.recordTimeout(failedReplica, id);
   const calls: string[] = [];
   const impl = (async (input: any) => {
     const url = String(input);
