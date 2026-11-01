@@ -9,6 +9,7 @@ import { buildAudioLightSchedule } from './server/audioLightSchedule';
 import { searchClassicProgramTitles } from './server/classicScheduleSearch';
 import { localHourAt } from './server/scheduleWindow';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
+import { resolveMoviesClassicChannelAlias } from './server/moviesClassicsSchedule';
 import { liveTvHealthSummary, getAudioLoopRows } from './guideRegistry';
 import { isKnownEnclosure, resolveEnclosure } from './server/podcasts';
 import { getLiveRadioStatus, queryLiveRadioStations } from './server/liveRadio';
@@ -276,7 +277,10 @@ app.get('/api/schedule',async(req,res)=>{
  try{
   // The Classic guide is ~15 MB of JSON; Cloud Run does not compress, so gzip here (browsers always send Accept-Encoding: gzip).
   // Optional ?channel=<id>: only that channel (the player needs just its own list to pick the next program; the whole guide can be tens of MB).
-  const only=typeof req.query.channel==='string'&&req.query.channel?req.query.channel:null;
+  const requestedChannel=typeof req.query.channel==='string'&&req.query.channel?req.query.channel:null;
+  const only=guideId==='movies-classics-vault'&&requestedChannel
+    ?resolveMoviesClassicChannelAlias(requestedChannel)
+    :requestedChannel;
    let all=visibleScheduleChannels(await cachedSchedule(guideId,movieNow));
     if(req.query.light==='1'&&guideId==='audio-podcasts'){
      try{
