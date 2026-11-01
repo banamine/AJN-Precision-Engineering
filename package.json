@@ -31,6 +31,7 @@
     "test:movies-classics-producer": "tsx test-movies-classics-producer.js",
     "test:movies-classics": "tsx test-movies-classics.js",
     "test:movies-channel-split": "tsx test-movies-channel-split.ts",
+    "test:showinfo-popover": "tsx test-showinfo-fallback.ts && node test-showinfo-popover.mjs",
     "test:ui-phase12": "node test-ui-phase12.mjs",
     "test:ui-phase34": "node test-ui-phase34.mjs",
     "test:old-british-tv": "tsx test-old-british-tv.ts",

@@ -15,6 +15,7 @@ import { windowByHour } from './server/scheduleWindow';
 import { getRtDocumentaryChannel, RT_CHANNEL_ID, RT_CHANNEL_NAME } from './server/rtDocumentary';
 import { layoutRotatingDailySchedule } from './server/dailyRotation';
 import {
+  buildBalancedMovieOrder,
   layoutBalancedMovieSchedule,
   splitMoviesClassicsChannel,
   type MoviesClassicsManifestChannel,
@@ -910,7 +911,11 @@ async function getExtraChannels(guideId:string,now:Date):Promise<ScheduleChannel
       : guideId === 'movies-classics-vault'
         ? layoutBalancedMovieSchedule(base, 100, now)
         : layoutRotatingDailySchedule(base, 100, now);
-    return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs,sourceStatus:'snapshot' as const,...(singleFileMovie?{libraryOnly:true}:{}),...(c.deferLightRows===true?{deferLightRows:true}:{})};
+    const rotationPool = guideId === 'movies-classics-vault' ? buildBalancedMovieOrder(base) : base;
+    const rotationTitleCount = new Set(rotationPool
+      .map((program) => String(program.title ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase())
+      .filter(Boolean)).size;
+    return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs,rotationTitleCount,sourceStatus:'snapshot' as const,...(singleFileMovie?{libraryOnly:true}:{}),...(c.deferLightRows===true?{deferLightRows:true}:{})};
   });
 }
 
