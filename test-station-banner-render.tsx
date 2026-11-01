@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { StationBanner, StationIcon } from './src/components/StationBanner.tsx';
 import { getStationTheme } from './src/utils/radioAccents.ts';
 import { Navigation } from './src/components/Navigation.tsx';
+import { AjnAppearanceProvider } from './src/components/ajn-platform-redesign/AppearanceProvider.tsx';
 
 // Station with a real logo: the logo is drawn, in the station's colours.
 const withLogo = renderToStaticMarkup(<StationBanner theme={getStationTheme('radio:ch109-warm-109', '', 'https://img.example/warm.png')} title="Warm 109" subtitle="Toronto" />);
@@ -13,7 +14,7 @@ const noLogo = renderToStaticMarkup(<StationIcon theme={getStationTheme('radio:c
 assert.ok(!noLogo.includes('<img') && noLogo.includes('🎄'));
 
 // Navigation: every destination has its own icon (no two items share one svg), and none is the old Tv/FolderArchive reuse.
-const html = renderToStaticMarkup(<Navigation currentDestination="home" onNavigate={() => {}} nowPlaying={null} />);
+const html = renderToStaticMarkup(<AjnAppearanceProvider><Navigation currentDestination="home" onNavigate={() => {}} nowPlaying={null} /></AjnAppearanceProvider>);
 const mobile = html.slice(html.indexOf('id="mobile-bottom-nav"'));
 const icons = [...mobile.matchAll(/<svg[^>]*class="[^"]*lucide-([a-z-]+)/g)].map((m) => m[1]);
 assert.equal(icons.length, 8, `8 mobile icons, got ${icons.join(',')}`);

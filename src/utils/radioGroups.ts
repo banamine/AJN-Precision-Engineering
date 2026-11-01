@@ -21,14 +21,6 @@ export const RADIO_GROUPS: RadioGroupDef[] = [
       { id: 'radio:ch109-christmas', label: 'Christmas' },
     ],
   },
-  {
-    id: 'ajn-live',
-    title: 'AJN Live',
-    members: [
-      { id: 'radio:ajn-alex-jones-show', label: 'Alex Jones Show' },
-      { id: 'radio:ajn-infowars-live-aac', label: 'Infowars Live AAC' },
-    ],
-  },
 ];
 
 export const RADIO_GROUP_KEY = 'ajn.radio.group.v1';

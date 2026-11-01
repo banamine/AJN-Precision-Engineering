@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import {defineConfig, Plugin} from 'vite';
 
+const browserTarget = ['chrome87', 'edge88', 'es2020', 'firefox78', 'safari14.1'];
+
 // LINT.IfChange(aistudio_media_plugin)
 function aistudioMediaPlugin(): Plugin {
   return {
@@ -68,7 +70,8 @@ export default defineConfig(() => {
   const hmrEnabled = process.env.DISABLE_HMR !== 'true';
   return {
     plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
-    build: { reportCompressedSize: false, sourcemap: false },
+    build: { target: browserTarget, reportCompressedSize: false, sourcemap: false },
+    optimizeDeps: { esbuildOptions: { target: browserTarget } },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

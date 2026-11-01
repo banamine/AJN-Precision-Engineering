@@ -8,29 +8,23 @@ const playerView = readFileSync("src/components/PlayerView.tsx", "utf8");
 if (app.includes("setNowPlaying(nextRecentlyPlayed);\n      return [nextRecentlyPlayed")) {
   throw new Error("App still nests setNowPlaying inside the setRecentlyPlayed updater");
 }
-if (!app.includes("const existing = recentlyPlayedRef.current.find((item) => item.id === id);")) {
-  throw new Error("Recently Played lookup must use a ref so handlePlayProgram remains stable");
+if (!app.includes("const recentlyPlayedRef = useRef(recentlyPlayed);") || !app.includes("recentlyPlayedRef.current = recentlyPlayed;")) {
+  throw new Error("Recently Played state must be mirrored to a ref for stable playback callbacks");
 }
-if (!app.includes("  }, []);\n\n  const handleEpgSelect")) {
-  throw new Error("handlePlayProgram must not recreate on every Recently Played update");
+if (!app.includes("recentlyPlayedRef.current.find((item) => item.id === id)") || !app.includes("  }, []);\n\n  const handleAdvanceProgram")) {
+  throw new Error("handlePlayProgram must read the ref and remain stable across Recently Played updates");
 }
 if (!bridge.includes("signalActiveRef")) {
   throw new Error("AudioBridgeStatus lacks render-storm guard");
 }
-if (bridge.includes("setSignalActive(peak > 8 || average > 3)")) {
-  throw new Error("AudioBridgeStatus still sets React state on every animation frame");
+if (!bridge.includes("if (signalActiveRef.current !== nextSignalActive)")) {
+  throw new Error("AudioBridgeStatus must only update signal state when the value changes");
 }
-if (!player.includes('isAudio ? "audio" : "skip"')) {
-  throw new Error("Video path must not attach the AudioBridge");
+if (!player.includes('isVideo ? "video" : "audio"') || !player.includes("if (isVideo) return;")) {
+  throw new Error("Audio element setup must not run for video playback");
 }
-if (player.includes("readResumePosition = useCallback(() =>") && player.includes("[onProgressEvent, resumeKey]")) {
-  throw new Error("readResumePosition must not depend on the unstable progress callback");
-}
-if (playerView.includes('onPlayEvent={() =>') || playerView.includes('onPauseEvent={() =>') || playerView.includes('onErrorEvent={(err) =>')) {
-  throw new Error("PlayerView still passes unstable inline playback callbacks");
-}
-if (!playerView.includes("const handleProgressEvent = useCallback")) {
-  throw new Error("PlayerView progress callback must be memoized");
+if (!player.includes("fnRef.current = { eventMeta, readResumePosition, saveResumePosition, clearResumePosition, reportPlaying, onPauseEvent, onProgramEnded, onErrorEvent };")) {
+  throw new Error("Media event listeners must read current callbacks through the stable callback ref");
 }
 if (player.includes("Math.random")) {
   throw new Error("Player source contains forbidden fake randomness");
