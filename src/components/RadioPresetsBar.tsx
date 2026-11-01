@@ -14,6 +14,16 @@ const HOLD_MS = 500;
 const HOLD_SLOP_PX = 10;
 const STATUS_MS = 4000;
 
+export const PRESET_VIEW_KEY = 'ajn.radio.presetView.v1';
+export type PresetView = 'wall' | 'unit';
+/** The remembered view ('wall' when nothing is stored or storage is blocked). */
+export function readPresetView(storage?: { getItem(key: string): string | null }): PresetView {
+  try {
+    const s = storage ?? (typeof window === 'undefined' ? null : window.localStorage);
+    return s?.getItem(PRESET_VIEW_KEY) === 'unit' ? 'unit' : 'wall';
+  } catch { return 'wall'; }
+}
+
 /** What the dock knows about the station that is playing right now (the directory record, when the station was picked there). */
 export interface PresetSourceInfo { number?: number; logo?: string; corsVerified?: boolean }
 
@@ -30,6 +40,8 @@ interface RadioPresetsBarProps {
   onPresetTuned?: (channelId: string, logo?: string) => void;
   /** Full-screen dock: five tiles in one row and no "All stations" tile. */
   wide?: boolean;
+  /** Seeds the view (tests). Normally read from this device's saved choice. */
+  initialView?: PresetView;
 }
 
 function initialsOf(name: string): string {
@@ -42,7 +54,7 @@ function tileColor(id: string, name?: string): string {
 }
 
 /** Five hardware-style presets: tap to tune, press and hold (half a second) to save the station that is playing. */
-export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wide = false }: RadioPresetsBarProps): ReactElement {
+export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wide = false, initialView }: RadioPresetsBarProps): ReactElement {
   const presets: RadioPresetMap = useRadioPresets();
   const [status, setStatus] = useState<string>('');
   const [holding, setHolding] = useState<RadioPresetSlot | null>(null);
@@ -50,6 +62,12 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   const [menu, setMenu] = useState<RadioPresetSlot | null>(null);
   const [bank, setBank] = useState<'presets' | 'recent'>('presets');
   const [recents, setRecents] = useState<RecentStation[]>([]);
+  const [view, setViewState] = useState<PresetView>(() => initialView ?? readPresetView());
+  const [preview, setPreview] = useState<string | null>(null); // head unit: key hovered/focused, shown on the LCD
+  const setView = useCallback((next: PresetView) => {
+    setViewState(next);
+    try { window.localStorage.setItem(PRESET_VIEW_KEY, next); } catch { /* blocked storage: the choice just is not remembered */ }
+  }, []);
   const timer = useRef<number | null>(null);
   const statusTimer = useRef<number | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -73,6 +91,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   }, []);
 
   const playing = station && station.channelId?.startsWith('radio:') ? station : null;
+  const isHoldingSlot = (slot: RadioPresetSlot): boolean => holding === slot;
 
   /** Saves the playing station into a slot. Returns true when saved. */
   const assign = useCallback((slot: RadioPresetSlot): boolean => {
@@ -166,8 +185,92 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           <button key={id} type="button" data-testid={`radio-bank-${id}`} aria-pressed={bank === id} onClick={() => openBank(id)}
             className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${bank === id ? 'bg-neutral-800 text-orange-300' : 'text-neutral-400 hover:text-neutral-200'}`}>{text}</button>
         ))}
+        <div role="group" aria-label="Preset view" className="ml-auto flex items-center gap-1">
+          {([['wall', 'Wall'], ['unit', 'Head unit']] as const).map(([id, text]) => (
+            <button key={id} type="button" data-testid={`radio-view-${id}`} aria-pressed={view === id} onClick={() => setView(id)}
+              className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${view === id ? 'bg-neutral-800 text-orange-300' : 'text-neutral-400 hover:text-neutral-200'}`}>{text}</button>
+          ))}
+        </div>
       </div>
-      {bank === 'presets' ? (
+      {view === 'unit' ? (
+      <div data-testid="radio-head-unit" className="mx-auto my-2 w-[calc(100%-1.5rem)] max-w-[420px] rounded-2xl border border-neutral-600/70 bg-gradient-to-b from-neutral-800 to-neutral-950 p-2 shadow-inner">
+        <p className="px-1 pb-1 font-mono text-[10px] font-bold tracking-widest text-neutral-400">AJN-1</p>
+        {(() => {
+          const nowTheme = playing ? getStationTheme(playing.channelId ?? '', playing.title, info?.logo ?? getStationArt(playing.channelId)) : null;
+          const nowLogo = playing ? (info?.logo ?? getStationArt(playing.channelId)) : undefined;
+          const accent = nowTheme?.accentColor ?? '#a3a3a3';
+          const line2 = preview ?? playing?.title ?? 'No station';
+          const line3 = preview ? '' : (playing?.subtitle ?? '');
+          return (
+            <div data-testid="radio-head-unit-lcd" className="flex min-h-[112px] items-stretch gap-2 rounded-lg border border-black/60 p-2"
+              style={{ background: nowTheme ? nowTheme.themeColor : '#0a0a0a', color: `${accent}d9` }}>
+              <div className="flex min-w-0 flex-1 flex-col justify-between">
+                <div className="flex items-center justify-between gap-2 font-mono text-[10px] font-bold uppercase tracking-wider">
+                  <span className="whitespace-nowrap">{bank === 'presets' ? 'My presets' : 'Recent'}</span>
+                  <span data-testid="radio-head-unit-lamp" className="flex items-center gap-1 whitespace-nowrap">
+                    <span aria-hidden="true" className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-400 animate-pulse motion-reduce:animate-none' : 'bg-neutral-600'}`} />{live ? 'ON AIR' : 'OFF AIR'}
+                  </span>
+                </div>
+                <p className="truncate text-sm font-bold leading-tight">{line2}</p>
+                <p className="truncate text-[11px] leading-tight opacity-80">{line3}</p>
+              </div>
+              <div aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center self-center overflow-hidden rounded border-2 border-black/70 bg-black/40">
+                {nowLogo && !broken.has(playing?.channelId ?? '') ? (
+                  <img src={nowLogo} alt="" draggable={false} referrerPolicy="no-referrer" className="h-full w-full object-contain" onError={() => setBroken((prev) => new Set(prev).add(playing?.channelId ?? ''))} />
+                ) : (
+                  <span className="text-base font-bold">{playing ? initialsOf(playing.title) : '--'}</span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+        <div className="mt-2 grid grid-cols-6 gap-1.5">
+          {RADIO_PRESET_SLOTS.map((slot) => {
+            const p = bank === 'presets' ? presets[slot] : undefined;
+            const r = bank === 'recent' ? recents[slot - 1] : undefined;
+            const id = p?.channelId ?? r?.channelId;
+            const title = p?.title ?? r?.title;
+            const active = Boolean(id && playing && id === playing.channelId);
+            const logoSrc = p ? (p.logo ?? getStationArt(p.channelId)) : r ? getStationArt(r.channelId) : undefined;
+            const showLogo = Boolean(logoSrc) && !broken.has(id ?? '');
+            const color = id ? tileColor(id, title) : undefined;
+            const keyBase = `relative flex h-14 min-w-14 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${active ? 'border-orange-500 bg-orange-500/15 text-white' : id ? 'border-neutral-600 bg-neutral-900 text-neutral-100 hover:border-orange-500/60' : 'border-dashed border-neutral-700/70 bg-neutral-900/50 text-neutral-500'}`;
+            const body = (
+              <>
+                {isHoldingSlot(slot) && <span aria-hidden="true" data-testid="radio-preset-hold" className="pointer-events-none absolute inset-0 z-[2] rounded-lg ring-2 ring-orange-400" style={{ animation: `ajnPresetFill ${HOLD_MS}ms linear forwards`, background: 'rgba(249,115,22,0.22)' }} />}
+                <span aria-hidden="true" className="font-mono text-[11px] font-bold text-orange-400">{slot}</span>
+                {id ? (showLogo
+                  ? <img src={logoSrc} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false} className="h-[22px] w-[22px] rounded-sm object-contain" onError={() => setBroken((prev) => new Set(prev).add(id))} />
+                  : <span aria-hidden="true" style={{ color }} className="text-[11px] font-bold">{initialsOf(title ?? '?')}</span>)
+                  : <span aria-hidden="true" className="text-sm leading-none">+</span>}
+                {active && live && <span aria-hidden="true" data-testid="radio-preset-live" className="ajn-live-dot absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse motion-reduce:animate-none" />}
+              </>
+            );
+            const hover = { onMouseEnter: () => title && setPreview(title), onFocus: () => title && setPreview(title), onMouseLeave: () => setPreview(null), onBlur: () => setPreview(null) };
+            if (bank === 'recent') {
+              return (
+                <button key={slot} type="button" data-testid={`radio-recent-${slot}`} disabled={!r} aria-current={active ? 'true' : undefined}
+                  aria-label={r ? `${r.title}${active ? (live ? ', playing now' : ', current station') : ''}. Tap to tune.` : `Recent ${slot}, empty`}
+                  onClick={() => r && tuneRecent(r)} {...hover} className={`${keyBase} disabled:cursor-default`}>{body}</button>
+              );
+            }
+            const label = p
+              ? `Preset ${slot}: ${p.title}${p.number ? `, station ${p.number}` : ''}${active ? (live ? ', playing now' : ', current station') : ''}. Tap to tune. Press and hold, or Shift+Enter, to replace it with the playing station.`
+              : `Preset ${slot}, empty. Press and hold, or Shift+Enter, to save the playing station here.`;
+            return (
+              <button key={slot} type="button" data-testid={`radio-preset-${slot}`} data-filled={p ? 'true' : 'false'} aria-label={label} aria-current={active ? 'true' : undefined} title={label}
+                onPointerDown={onPointerDown(slot)} onPointerMove={onPointerMove} onPointerUp={cancelHold} onPointerCancel={cancelHold} onPointerLeave={cancelHold}
+                onClick={onClick(slot)} onKeyDown={onKeyDown(slot)}
+                onContextMenu={(e) => { e.preventDefault(); cancelHold(); fired.current = null; setMenu(slot); }}
+                {...hover} style={color && !active ? { borderColor: `${color}50` } : undefined} className={keyBase}>{body}</button>
+            );
+          })}
+          <button type="button" data-testid="radio-preset-bank" aria-label={`Bank: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`}
+            onClick={() => openBank(bank === 'presets' ? 'recent' : 'presets')}
+            className="flex h-14 min-w-14 cursor-pointer select-none items-center justify-center rounded-lg border border-neutral-600 bg-neutral-800 text-[11px] font-bold tracking-wider text-orange-300 hover:border-orange-500/60 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400">BANK</button>
+        </div>
+      </div>
+      ) : bank === 'presets' ? (
       <div role="group" aria-label="Radio presets" className={`grid gap-2 px-3 py-2 ${wide ? 'grid-cols-5' : 'grid-cols-3'}`}>
         {RADIO_PRESET_SLOTS.map((slot) => {
           const p = presets[slot];
