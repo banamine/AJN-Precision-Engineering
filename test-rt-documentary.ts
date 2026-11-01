@@ -162,14 +162,14 @@ const rtCard = buildFallbackShowInfo(channel);
 assert.equal(rtCard.title, 'RT Documentaries');
 assert.match(rtCard.overview, /video channel in the “Documentary” group/);
 assert.ok(rtCard.facts.some((f) => /Originally aired \d{4}-\d{2}-\d{2}/.test(f)));
-assert.ok(rtCard.facts.includes('Source: Internet Archive'));
-assert.match(rtCard.link!.href, /^https:\/\/archive\.org\/details\/RT_\d{8}_\d{6}_Documentary$/);
+assert.ok(!rtCard.facts.some((f) => /Source:|Source status/.test(f)));
+assert.equal('link' in rtCard, false, 'fallback cards do not expose outbound source links');
 assert.equal(buildFallbackShowInfo(channel), rtCard, 'memoised');
 const empty = buildFallbackShowInfo({ id: 'x', name: 'Empty', group: 'News', mediaType: 'video', programs: [], sourceError: 'upstream down' });
 assert.match(empty.overview, /Nothing is scheduled.*upstream down/);
-assert.equal(empty.link, null);
+assert.equal('link' in empty, false);
 const audio = buildFallbackShowInfo({ id: 'a', name: 'Radio', mediaType: 'audio', programs: [{ title: 'Song 00:00', startTimeUtc: undefined, archivePath: undefined, metadata: {} }] });
 assert.match(audio.overview, /audio channel/);
-assert.equal(audio.facts.includes('Source: Internet Archive'), false, 'no source claim without archive paths');
+assert.ok(!audio.facts.some((f) => /Source:|Source status/.test(f)), 'fallback cards make no source claims');
 
 console.log('test-rt-documentary: ALL PASS');

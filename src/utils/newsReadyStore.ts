@@ -16,15 +16,7 @@ export type NewShow = {
   sourceId?: string;
 };
 
-type VersionInfo = {
-  version: number;
-  fetchedAt: string | null;
-  refreshing: boolean;
-  newShows: NewShow[];
-  latestAiredAt: string | null;
-  staleChannelCount?: number;
-  unknownChannelCount?: number;
-};
+type VersionInfo = { version: number; fetchedAt: string | null; refreshing: boolean; newShows: NewShow[] };
 
 export type NewsReadyPhase = 'checking' | 'current' | 'ready' | 'error';
 
@@ -34,9 +26,6 @@ export interface NewsReadySnapshot {
   version: number | null;
   newShows: NewShow[];
   fetchedAt: string | null;
-  latestAiredAt?: string | null;
-  staleChannelCount?: number;
-  unknownChannelCount?: number;
   refreshing: boolean;
   /** Time of the last poll attempt that produced this snapshot. */
   checkedAt: number | null;
@@ -77,13 +66,6 @@ function parseVersion(data: unknown): VersionInfo | null {
     fetchedAt: typeof d.fetchedAt === 'string' ? d.fetchedAt : null,
     refreshing: d.refreshing === true,
     newShows: Array.isArray(d.newShows) ? d.newShows.filter(isNewShow) : [],
-    latestAiredAt: typeof d.latestAiredAt === 'string' ? d.latestAiredAt : null,
-    ...(typeof d.staleChannelCount === 'number' && Number.isFinite(d.staleChannelCount)
-      ? { staleChannelCount: d.staleChannelCount }
-      : {}),
-    ...(typeof d.unknownChannelCount === 'number' && Number.isFinite(d.unknownChannelCount)
-      ? { unknownChannelCount: d.unknownChannelCount }
-      : {}),
   };
 }
 
@@ -121,23 +103,12 @@ export function createNewsReadyPoller(deps: NewsReadyPollerDeps): NewsReadyPolle
           seenVersion = info.version;
         }
         if (info.version > seenVersion && info.newShows.length > 0) {
-          publish({
-            phase: 'ready', version: info.version, newShows: info.newShows, fetchedAt: info.fetchedAt,
-            latestAiredAt: info.latestAiredAt, staleChannelCount: info.staleChannelCount,
-            unknownChannelCount: info.unknownChannelCount, refreshing: info.refreshing, checkedAt: at,
-          });
+          publish({ phase: 'ready', version: info.version, newShows: info.newShows, fetchedAt: info.fetchedAt, refreshing: info.refreshing, checkedAt: at });
         } else if (snapshot.phase === 'ready' && snapshot.version !== null && snapshot.version > seenVersion) {
           // Still holding an unseen list; keep it (only the refresh flag/time change).
-          publish({
-            ...snapshot, latestAiredAt: info.latestAiredAt, staleChannelCount: info.staleChannelCount,
-            unknownChannelCount: info.unknownChannelCount, refreshing: info.refreshing, checkedAt: at,
-          });
+          publish({ ...snapshot, refreshing: info.refreshing, checkedAt: at });
         } else {
-          publish({
-            phase: 'current', version: info.version, newShows: [], fetchedAt: info.fetchedAt,
-            latestAiredAt: info.latestAiredAt, staleChannelCount: info.staleChannelCount,
-            unknownChannelCount: info.unknownChannelCount, refreshing: info.refreshing, checkedAt: at,
-          });
+          publish({ phase: 'current', version: info.version, newShows: [], fetchedAt: info.fetchedAt, refreshing: info.refreshing, checkedAt: at });
         }
       } catch {
         // A failed check never discards an unseen list the user can still play.

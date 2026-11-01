@@ -66,7 +66,8 @@ for (const [curatedId, archiveId] of [
 }
 assert.ok(classic.some((c: any) => c.id.startsWith('classic-series-taxi')), 'Taxi must stay');
 const movies = await getScheduleForGuide('movies-classics-vault');
-for (const id of ['mx-movies-classics-list', 'mx-filmography', 'mx-atlas-taggart']) assert.ok(movies.some((c: any) => c.id === id && c.programs.length > 0), `movies channel ${id}`);
+for (const id of ['mx-movies-classics-01', 'mx-movies-classics-20', 'mx-filmography', 'mx-atlas-taggart']) assert.ok(movies.some((c: any) => c.id === id && c.programs.length > 0), `movies channel ${id}`);
+assert.equal(movies.filter((channel: any) => channel.id.startsWith('mx-movies-classics-')).length, 20, 'movie list is split into 20 schedule channels');
 assert.ok((await getScheduleForGuide('cable-tv')).some((c: any) => c.id === 'ajn-new-world-tyranny' && c.programs.length > 0));
 assert.equal((extra as any).schema, 'ajn.extraChannelsManifest.v1');
 for (const c of (extra as any).channels) for (const r of c.rows) assert.ok(r.durationSeconds >= 30 && r.identifier && r.file, `${c.id}: bad row ${r.id}`);
@@ -88,3 +89,6 @@ const existingPrefixChannel = extraById.get('tvx-riders-of-death-valley-1941');
 assert.ok(existingPrefixChannel, 'the existing TVX channel remains in the manifest');
 assert.equal(existingPrefixChannel.deferLightRows, undefined, 'legacy TVX channels keep their light-row behavior');
 console.log('infobattalion lists OK', { tvx: tvx.length, movies: movies.length, audio: aids.length });
+// This standalone test calls the cable guide, which starts long-lived live-refresh timers.
+// All assertions are complete here; end the test process instead of keeping those timers alive.
+process.exit(0);

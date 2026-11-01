@@ -14,6 +14,12 @@ import { getLiveRadioChannels } from './server/liveRadio';
 import { windowByHour } from './server/scheduleWindow';
 import { getRtDocumentaryChannel, RT_CHANNEL_ID, RT_CHANNEL_NAME } from './server/rtDocumentary';
 import { layoutRotatingDailySchedule } from './server/dailyRotation';
+import {
+  buildBalancedMovieOrder,
+  layoutBalancedMovieSchedule,
+  splitMoviesClassicsChannel,
+  type MoviesClassicsManifestChannel,
+} from './server/moviesClassicsSchedule';
 import { getNasaPrograms, NASA_CHANNEL_ID } from './server/sources/nasaArchive';
 import newsLogos from './src/data/newsLogos.json';
 import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
@@ -27,7 +33,6 @@ import { buildMoviesClassicsPrograms, resolveMoviesClassicsManifest } from './sr
 import moviesClassicsManifest from './src/data/moviesClassicsManifest.json';
 import { normalizeChannelIdentity, normalizeProgramIdentity, normalizeSourceIdentity, normalizeAssetIdentity, sanitizeIdentityUrl } from './src/utils/epgIdentity';
 import { buildAllMyChildrenChannel, isAllMyChildrenChannel } from './collections/allmychildren-channel';
-import { getNewsFreshness, NEWS_STALE_AFTER_MS } from './src/guide/newsFreshness';
 
 export const GUIDES: Guide[] = [
   { id: 'cable-tv', name: 'Cable TV', type: 'video', enabled: true,
@@ -564,19 +569,7 @@ async function getAudioChannels(guideId:string):Promise<ScheduleChannel[]>{
  * bumps and the UI offers "Latest news ready". Layout is computed per request
  * from real air times so the grid is always today's. */
 const NEWS_REFRESH_MS=6*3600_000;
-type NewsRefreshOutcome='ok'|'empty'|'timeout'|'error';
-type NewsChannelState={
-  programs:Program[];
-  status:string;
-  error?:string;
-  rejected?:any[];
-  dataFetchedAt?:string;
-  lastRefreshAttemptAt?:string;
-  lastRefreshOutcome?:NewsRefreshOutcome;
-  lastRefreshMs?:number;
-  lastRefreshQuery?:string;
-  lastRefreshNumFound?:number;
-};
+type NewsChannelState={programs:Program[];status:string;error?:string;rejected?:any[]};
 export type NewsShowRef = {
   channelId: string;
   channelName: string;
@@ -589,30 +582,11 @@ export type NewsShowRef = {
   assetId?: string;
   sourceId?: string;
 };
-let newsState:{version:number;fetchedAt:string|null;fingerprint:string;channels:Map<string,NewsChannelState>;newShows:NewsShowRef[]}|null=null;
+let newsState:{version:number;fetchedAt:string;fingerprint:string;channels:Map<string,NewsChannelState>;newShows:NewsShowRef[]}|null=null;
 let cableNewsFetch:typeof fetch|undefined;
-let cableNewsClockForTests:(()=>Date)|undefined;
-let cableNewsRefreshing:Promise<unknown>|null=null;
+let cableNewsRefreshing:Promise<void>|null=null;
 let newsTimer:ReturnType<typeof setInterval>|null=null;
 export function setCableNewsFetchForTests(impl?:typeof fetch){cableNewsFetch=impl;newsState=null;}
-export function setCableNewsClockForTests(clock?:(()=>Date)){cableNewsClockForTests=clock;newsState=null;}
-function newsNow():Date{return cableNewsClockForTests?.()??new Date();}
-
-function newsDataFreshness(channels:Map<string,NewsChannelState>,nowMs:number){
-  let latestAiredAt:string|null=null;
-  let staleChannelCount=0;
-  let unknownChannelCount=0;
-  for(const channel of channels.values()){
-    if(!channel.programs.length)continue;
-    const freshness=getNewsFreshness(channel.programs,nowMs);
-    if(freshness.state==='stale')staleChannelCount+=1;
-    else if(freshness.state==='unknown')unknownChannelCount+=1;
-    if(freshness.latestAiredAt&&(!latestAiredAt||Date.parse(freshness.latestAiredAt)>Date.parse(latestAiredAt))){
-      latestAiredAt=freshness.latestAiredAt;
-    }
-  }
-  return{latestAiredAt,staleChannelCount,unknownChannelCount};
-}
 
 async function seedFromSnapshot(){
   if(newsState)return;
@@ -621,66 +595,24 @@ async function seedFromSnapshot(){
   const snap=validateNewsSnapshot(mod.default??mod);
   if(!snap||cableNewsFetch)return;
   newsState={version:snap.version,fetchedAt:snap.fetchedAt,fingerprint:newsFingerprint(snap.channels),newShows:[],
-    channels:new Map(snap.channels.map(c=>[c.id,{
-      programs:c.programs,status:'snapshot',error:`packaged news from ${snap.fetchedAt}`,
-      ...(c.programs.length?{dataFetchedAt:snap.fetchedAt}:{}),
-    }]))};
+    channels:new Map(snap.channels.map(c=>[c.id,{programs:c.programs,status:'snapshot',error:`packaged news from ${snap.fetchedAt}`}]))};
 }
 
 /** Fetch every network (sequentially, quietly) and swap the result in atomically. */
-export async function refreshCableNews(
-  guideId='cable-tv',
-  fetchImpl?:typeof fetch,
-  options:{metadataConcurrency?:number}={},
-):Promise<Array<{network:string;outcome:NewsRefreshOutcome;dataFetchedAt?:string}>>{
-  await seedFromSnapshot();
+export async function refreshCableNews(guideId='cable-tv'):Promise<void>{
   const next=new Map<string,NewsChannelState>();
-  const refreshResults:Array<{network:string;outcome:NewsRefreshOutcome;dataFetchedAt?:string}>=[];
   for(const [network,channelId,channelName] of NEWS_NETWORKS){
-    let attemptedQuery:string|undefined;
-    let attemptedNumFound:number|undefined;
-    const [r]=await runSources([{contract:archiveNewsContract,input:{
-      network,channelId,channelName,guideId,rows:12,windowDays:2,
-      fetchImpl:fetchImpl??cableNewsFetch,metadataConcurrency:options.metadataConcurrency,
-      onQuery:(query:string,numFound?:number)=>{attemptedQuery=query;attemptedNumFound=typeof numFound==='number'?numFound:undefined;},
-    } as ArchiveNewsInput}],{timeoutMs:90_000,now:newsNow()});
+    const [r]=await runSources([{contract:archiveNewsContract,input:{network,channelId,channelName,guideId,rows:12,windowDays:2,fetchImpl:cableNewsFetch} as ArchiveNewsInput}],{timeoutMs:90_000});
     const grouped=groupClipPrograms([...r.programs].sort((x,y)=>String(x.startTimeUtc).localeCompare(String(y.startTimeUtc)))).map(toSnapshotProgram);
     const prev=newsState?.channels.get(channelId);
-    const outcome:NewsRefreshOutcome=grouped.length?'ok':/timeout/i.test(r.error??'')?'timeout':
-      r.status==='offline'||r.status==='upstream_error'?'error':'empty';
-    const details={
-      lastRefreshAttemptAt:r.fetchedAt,
-      lastRefreshOutcome:outcome,
-      ...(typeof r.durationMs==='number'?{lastRefreshMs:r.durationMs}:{}),
-      ...((r.diagnostics?.queryUsed??attemptedQuery)?{lastRefreshQuery:r.diagnostics?.queryUsed??attemptedQuery}:{}),
-      ...(typeof (r.diagnostics?.numFound??attemptedNumFound)==='number'?{lastRefreshNumFound:r.diagnostics?.numFound??attemptedNumFound}:{}),
-    };
-    console.info('[Cable TV News refresh]',JSON.stringify({
-      network,
-      query:r.diagnostics?.queryUsed??attemptedQuery??null,
-      numFound:r.diagnostics?.numFound??attemptedNumFound??null,
-      ms:r.durationMs??null,
-      outcome,
-    }));
-    if(grouped.length)next.set(channelId,{programs:grouped,status:r.status,rejected:r.rejected,dataFetchedAt:r.fetchedAt,...details});
-    else if(prev?.programs.length)next.set(channelId,{...prev,...details,status:'stale',error:`showing last known shows; refresh: ${r.error??r.status}`});
-    else next.set(channelId,{programs:[],status:r.status,error:r.error,rejected:r.rejected,...details});
-    const retained=next.get(channelId);
-    refreshResults.push({network,outcome,...(retained?.dataFetchedAt?{dataFetchedAt:retained.dataFetchedAt}:{})});
+    if(grouped.length)next.set(channelId,{programs:grouped,status:r.status,rejected:r.rejected});
+    else if(prev?.programs.length)next.set(channelId,{...prev,status:'stale',error:`showing last known shows; refresh: ${r.error??r.status}`});
+    else next.set(channelId,{programs:[],status:r.status,error:r.error,rejected:r.rejected});
   }
   const list=[...next.values()];
   const fingerprint=newsFingerprint(list);
   const prevState=newsState;
-  const newestSuccessfulFetch=(nextValue:Map<string,NewsChannelState>):string|null=>{
-    const values=[...nextValue.values()].map(c=>c.dataFetchedAt).filter((value):value is string=>Boolean(value));
-    return values.sort((a,b)=>Date.parse(b)-Date.parse(a))[0]??null;
-  };
-  const fetchedAt=newestSuccessfulFetch(next);
-  if(prevState&&prevState.fingerprint===fingerprint){
-    prevState.channels=next;
-    prevState.fetchedAt=fetchedAt??prevState.fetchedAt;
-    return refreshResults;
-  }
+  if(prevState&&prevState.fingerprint===fingerprint){prevState.channels=next;return;}
   const old=new Set(prevState?[...prevState.channels.values()].flatMap(c=>c.programs.map(p=>p.archivePath)):[]);
   const newShows: NewsShowRef[] = NEWS_NETWORKS.flatMap(([,channelId,channelName])=>(next.get(channelId)?.programs??[])
     .filter(p=>!old.has(p.archivePath)).map(p=>({
@@ -695,8 +627,7 @@ export async function refreshCableNews(
       assetId:p.assetId,
       sourceId:p.sourceId,
     })));
-  newsState={version:(prevState?.version??0)+1,fetchedAt:fetchedAt??prevState?.fetchedAt??null,fingerprint,channels:next,newShows:prevState?newShows.slice(0,50):[]};
-  return refreshResults;
+  newsState={version:(prevState?.version??0)+1,fetchedAt:new Date().toISOString(),fingerprint,channels:next,newShows:prevState?newShows.slice(0,50):[]};
 }
 
 function kickNewsRefresh(guideId:string){
@@ -708,30 +639,19 @@ function startNewsTimer(guideId:string){
   if(newsTimer||cableNewsFetch)return;
   newsTimer=setInterval(()=>void kickNewsRefresh(guideId),NEWS_REFRESH_MS);
   (newsTimer as any).unref?.();
-  const nowMs=newsNow().getTime();
-  const freshness=newsState?newsDataFreshness(newsState.channels,nowMs):null;
-  // A snapshot known to be over 48h old starts refresh immediately; a merely
-  // overdue snapshot retains the existing short background delay.
-  const snapshotAgeMs=newsState?.fetchedAt?nowMs-Date.parse(newsState.fetchedAt):0;
-  if(freshness?.staleChannelCount||snapshotAgeMs>NEWS_STALE_AFTER_MS){
-    void kickNewsRefresh(guideId);
-  }else if(newsState?.fetchedAt&&nowMs-Date.parse(newsState.fetchedAt)>NEWS_REFRESH_MS){
-    setTimeout(()=>void kickNewsRefresh(guideId),30_000).unref?.();
-  }
+  // A packaged snapshot older than one refresh period: refresh soon, off the startup path.
+  if(newsState&&Date.now()-Date.parse(newsState.fetchedAt)>NEWS_REFRESH_MS)setTimeout(()=>void kickNewsRefresh(guideId),30_000).unref?.();
 }
 
 export async function getNewsVersion(){
   await seedFromSnapshot();
-  startNewsTimer('cable-tv');
-  const freshness=newsState?newsDataFreshness(newsState.channels,newsNow().getTime()):null;
-  return newsState?{version:newsState.version,fetchedAt:newsState.fetchedAt,refreshing:!!cableNewsRefreshing,newShows:newsState.newShows,
-    ...(freshness??{latestAiredAt:null,staleChannelCount:0,unknownChannelCount:0})}
+  return newsState?{version:newsState.version,fetchedAt:newsState.fetchedAt,refreshing:!!cableNewsRefreshing,newShows:newsState.newShows}
     :{version:0,fetchedAt:null,refreshing:!!cableNewsRefreshing,newShows:[]};
 }
 
 /** Grouped shows for the snapshot generator. */
 export function exportNewsSnapshot():NewsSnapshot|null{
-  if(!newsState||!newsState.fetchedAt)return null;
+  if(!newsState)return null;
   return {schema:1,version:newsState.version,fetchedAt:newsState.fetchedAt,
     channels:NEWS_NETWORKS.map(([network,id,name])=>({id,network,name,programs:newsState!.channels.get(id)?.programs??[]}))};
 }
@@ -740,7 +660,7 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
   await seedFromSnapshot();
   startNewsTimer(guideId);
   if(!newsState)await kickNewsRefresh(guideId); // no snapshot at all: first fetch must wait
-  const now=newsNow();
+  const now=new Date();
   // RT Documentaries: always-on channel, listed first; a failure here never touches the news rows.
   const rtChannel:ScheduleChannel=await getRtDocumentaryChannel(guideId,{fetchImpl:cableNewsFetch}).then(ch=>({...ch,logo:(newsLogos as Record<string,string>)[RT_CHANNEL_ID]})).catch(e=>({
     id:RT_CHANNEL_ID,guideId,name:RT_CHANNEL_NAME,mediaType:'video' as MediaType,group:'Documentary',logo:(newsLogos as Record<string,string>)[RT_CHANNEL_ID],programs:[],
@@ -752,12 +672,6 @@ async function getCableNewsChannels(guideId:string):Promise<ScheduleChannel[]>{
       logo:(newsLogos as Record<string,string>)[channelId], // real network logos (public/logos/news); a channel without a logo shows the guide's Tv icon, never a placeholder image
       programs:layoutDailySchedule((c?.programs??[]).map(p=>upsertCanonicalProgram(p)),5,now,320),
       sourceStatus:c?.status??'loading',rejected:c?.rejected,sourceError:c?.error,
-      dataFetchedAt:c?.dataFetchedAt,
-      lastRefreshAttemptAt:c?.lastRefreshAttemptAt,
-      lastRefreshOutcome:c?.lastRefreshOutcome,
-      lastRefreshMs:c?.lastRefreshMs,
-      lastRefreshQuery:c?.lastRefreshQuery,
-      lastRefreshNumFound:c?.lastRefreshNumFound,
     };
   });
   return [rtChannel,...newsChannels];
@@ -951,7 +865,7 @@ export function layoutArchiveItemGuide(
 }
 /** User-requested extra channels (tools/build-extra-channels-manifest.py): INFOWARS NIGHTLY NEWS + INFO WARS SURVIVAL (cable-tv),
  *  uploader / Random / Star Wars movie channels (movies-classics-vault). Real Archive runtimes; deterministic daily rotation. */
-interface ExtraChannelsManifest{schema:string;channels:{guideId:string;id:string;name:string;group:string;deferLightRows?:boolean;rows:{id:string;identifier:string;file:string;title:string;bytes:number;durationSeconds:number;thumb:string|null}[]}[]}
+interface ExtraChannelsManifest{schema:string;channels:MoviesClassicsManifestChannel[]}
 const extraBase=new Map<string,Program[]>();
 const AMC_EPISODES_CHANNEL_ID='ajn-allmychildren-episodes';
 /** Full, unrotated All My Children channels. The Library must index every episode/extra, not just the day's grid slice. */
@@ -968,7 +882,11 @@ async function getExtraChannels(guideId:string,now:Date):Promise<ScheduleChannel
   const mod:any=await import('./src/data/extraChannelsManifest.json');
   const manifest=(mod.default??mod) as ExtraChannelsManifest;
   if(manifest.schema!=='ajn.extraChannelsManifest.v1')throw new Error('Unexpected extra channels manifest schema');
-  return manifest.channels.filter(c=>c.guideId===guideId&&c.rows.length>0).map(c=>{
+ const selected = manifest.channels.filter(c=>c.guideId===guideId&&c.rows.length>0);
+ const expanded = guideId === 'movies-classics-vault'
+   ? selected.flatMap((channel) => splitMoviesClassicsChannel(channel))
+   : selected;
+ return expanded.map(c=>{
     if(isAllMyChildrenChannel(c)){
       const built=buildAllMyChildrenChannel(c);
       /* Episodes get a rotating daily grid (air-date order, continues each day). Extras stay date-only (Library-only). */
@@ -977,8 +895,27 @@ async function getExtraChannels(guideId:string,now:Date):Promise<ScheduleChannel
         :{...built,libraryOnly:true};
     }
     let base=extraBase.get(c.id);
-    if(!base){base=c.rows.map(r=>showSourceProgram({...r,channelId:c.id,channelName:c.name,series:c.name},guideId));extraBase.set(c.id,base);}
-    return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs:layoutRotatingDailySchedule(base,100,now),sourceStatus:'snapshot' as const,...(c.deferLightRows===true?{deferLightRows:true}:{})};
+    if(!base){
+      base=c.rows.map(r=>{
+        const program=showSourceProgram({...r,channelId:c.legacyChannelId??c.id,channelName:c.name,series:c.name},guideId);
+        return c.legacyChannelId
+          ?{...program,metadata:{...(program.metadata??{}),legacyChannelId:c.legacyChannelId}}
+          :program;
+      });
+      extraBase.set(c.id,base);
+    }
+    const singleFileMovie = guideId === 'movies-classics-vault'
+      && new Set(base.map((program) => String(program.archivePath || program.mediaUrl || ''))).size <= 1;
+    const programs = singleFileMovie
+      ? base
+      : guideId === 'movies-classics-vault'
+        ? layoutBalancedMovieSchedule(base, 100, now)
+        : layoutRotatingDailySchedule(base, 100, now);
+    const rotationPool = guideId === 'movies-classics-vault' ? buildBalancedMovieOrder(base) : base;
+    const rotationTitleCount = new Set(rotationPool
+      .map((program) => String(program.title ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase())
+      .filter(Boolean)).size;
+    return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs,rotationTitleCount,sourceStatus:'snapshot' as const,...(singleFileMovie?{libraryOnly:true}:{}),...(c.deferLightRows===true?{deferLightRows:true}:{})};
   });
 }
 
@@ -1048,7 +985,7 @@ async function getScheduleForGuideRaw(guideId='cable-tv',movieNow?:Date):Promise
       name:'Cinema Classics Vault',
       mediaType:'video',
       group:'Movies',
-      programs:layoutRotatingDailySchedule(programs,100,movieNow??new Date()),
+       programs:layoutBalancedMovieSchedule(programs,100,movieNow??new Date()),
     },...await getExtraChannels(guideId,movieNow??new Date())];
   }
   if(guideId===OLD_BRITISH_TV_GUIDE_ID){

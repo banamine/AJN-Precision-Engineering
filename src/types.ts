@@ -101,14 +101,6 @@ export interface ScheduleChannel {
   /** Why items were left out, e.g. "restricted: all MP4 files are private". */
   rejected?: Array<{ id: string; reason: string }>;
   sourceError?: string;
-  /** Last successful fetch time for this channel's retained program data. */
-  dataFetchedAt?: string;
-  /** Time of the most recent refresh attempt, if one has run. */
-  lastRefreshAttemptAt?: string;
-  lastRefreshOutcome?: 'ok' | 'empty' | 'timeout' | 'error';
-  lastRefreshMs?: number;
-  lastRefreshQuery?: string;
-  lastRefreshNumFound?: number;
   /** Structured source health details; only populated by channels that expose measurable selection diagnostics. */
   diagnostics?: {
     candidateCount?: number;
@@ -126,6 +118,8 @@ export interface ScheduleChannel {
   titles?: string[];
   /** Total number of rows in the full channel schedule. */
   programCount?: number;
+  /** Distinct normalized titles in the full source/rotation pool, when known. */
+  rotationTitleCount?: number;
   /** True when more titles/rows exist beyond the light window. */
   moreTitles?: boolean;
   /** Present on deferred Classic TV list rows so "On now" stays accurate without episode payloads. */

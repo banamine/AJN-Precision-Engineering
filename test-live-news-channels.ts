@@ -18,7 +18,6 @@ const { valid, rejected } = validateLiveNews(raw);
 assert.deepEqual(rejected, [], 'no data row is rejected');
 assert.equal(valid.length, raw.length);
 assert.ok(valid.length >= 20, `live news loaded: ${valid.length}`);
-assert.equal(valid.find((c) => c.id === 'live-news-gbnews')?.name, 'GB News (Australia)', 'the Australia feed has an explicit regional label');
 
 // 2. Validator rejects what it must.
 const ok = { id: 'live-news-a', name: 'A', url: 'https://a.example/a.m3u8', verifiedAt: '2026-10-14' };

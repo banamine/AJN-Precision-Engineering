@@ -23,10 +23,6 @@ export interface SourceResult {
   fetchedAt: string;
   durationMs?: number;
   error?: string;
-  diagnostics?: {
-    queryUsed?: string;
-    numFound?: number;
-  };
 }
 
 export interface HookContext {
