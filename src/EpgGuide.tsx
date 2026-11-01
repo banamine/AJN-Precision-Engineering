@@ -15,6 +15,7 @@ import { channelSchedulePool } from "./guide/channelSchedulePool";
 import { groupProgramsForGrid, isMusicChannel, type GridBlock } from "./guide/groupProgramsForGrid";
 import { BlockCell, NowPlayingLine, TrackDrawer } from "./guide/BlockCell";
 import { findLiveProgram, tuneIn, mediaTypeFor, isLiveStream, type LiveItem } from "./guide/liveTune";
+import { getNewsFreshness, newsFreshnessBanner, newsTimelineLabel } from "./guide/newsFreshness";
 import { computeWindow, panBy, intersects, clipToWindow, redLineLeft, type TimeWindow } from "./guide/timeWindow";
 import { loadLastView, saveLastView, VALID_DESTINATIONS } from "./nav/lastView";
 import { loadFilterPrefs, saveFilterPrefs } from "./guide/filterPrefs";
@@ -109,6 +110,10 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
   const thumbnail = program.metadata?.thumbnailUrl;
   const useBackgroundThumbnail = width < 150;
   const aired = airedTimeLabel(program);
+  const isCableNewsChannel = guideId === 'cable-tv' && channel.group?.toLowerCase() === 'news';
+  const timelineLabel = isCableNewsChannel
+    ? newsTimelineLabel(program, isLive, Date.now())
+    : isLive ? 'On Air Now' : null;
   const displayProgramTitle = cleanAjnDisplayTitle(program.title);
   const displayChannelName = cleanAjnDisplayTitle(channel.name);
   return (
@@ -155,14 +160,14 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
           className="pointer-events-none absolute inset-0 z-0 h-full w-full rounded-lg object-cover opacity-30"
         />
       )}
-      {isLive && (
+      {timelineLabel && (
         <span className={`relative z-10 mb-0.5 inline-flex w-fit items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${
-          mediaType === 'audio' ? 'text-amber-400' : 'text-sky-400'
+          timelineLabel === 'In Rotation' ? 'text-neutral-300' : mediaType === 'audio' ? 'text-amber-400' : 'text-sky-400'
         }`}>
-          <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${
-            mediaType === 'audio' ? 'bg-amber-400' : 'bg-sky-400'
+          <span className={`h-1.5 w-1.5 rounded-full ${
+            timelineLabel === 'In Rotation' ? 'bg-neutral-400' : `animate-pulse ${mediaType === 'audio' ? 'bg-amber-400' : 'bg-sky-400'}`
           }`} />
-          On Air Now
+          {timelineLabel}
           {mediaType !== 'audio' && !isLiveStream(program) && (
             <span data-testid="replay-tag" className="rounded bg-neutral-700/70 px-1 py-px text-[9px] font-bold tracking-wide text-neutral-200">REPLAY</span>
           )}
@@ -799,6 +804,10 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
             const isAudio = channel.mediaType === 'audio' || guideId === 'audio-podcasts';
             const liveItem: LiveItem | null = grouped.get(channel.id)?.liveItem ?? findLiveProgram(channel, nowHour);
             const displayChannelName = cleanAjnDisplayTitle(channel.name);
+            const newsFreshness = guideId === 'cable-tv' && channel.group?.toLowerCase() === 'news'
+              ? getNewsFreshness(channel.programs, Date.now())
+              : null;
+            const newsFreshnessMessage = newsFreshness ? newsFreshnessBanner(newsFreshness) : null;
             const liveTitle = liveItem ? cleanAjnDisplayTitle(liveItem.program.title) : undefined;
             const canPlayNow = Boolean(liveItem) || channel.hasCurrentProgram === true;
             const playNowStatus = playNowState[channel.id];
@@ -853,6 +862,17 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                     {channel.group || (isAudio ? 'Audio Stream' : 'Video Feed')}
                   </span>
                 </div>
+                {newsFreshnessMessage && channel.programs.length > 0 && (
+                  <span
+                    data-testid="news-stale-banner"
+                    title={newsFreshnessMessage}
+                    className={`mt-0.5 truncate pl-10 text-[9px] font-medium ${
+                      newsFreshness?.state === 'stale' ? 'text-amber-300' : 'text-neutral-400'
+                    }`}
+                  >
+                    {newsFreshnessMessage}
+                  </span>
+                )}
                 {grouped.has(channel.id) && (
                   <NowPlayingLine channelId={channel.id} item={grouped.get(channel.id)?.liveItem ?? null} nowHour={nowHour} />
                 )}

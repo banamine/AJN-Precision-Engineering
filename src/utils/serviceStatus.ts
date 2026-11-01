@@ -7,6 +7,7 @@
 import type { ClientArchiveState, ClientArchivePhase } from '../hooks/useArchiveStatus';
 import type { NewsReadySnapshot } from './newsReadyStore';
 import { ARCHIVE_PROGRESS_WINDOW_MS } from './archivePlaybackEvidence';
+import { NEWS_STALE_AFTER_MS } from '../guide/newsFreshness';
 
 /** ok = green, warn = amber, error = red, neutral = grey (checking / nothing to report). */
 export type StatusTone = 'ok' | 'warn' | 'error' | 'neutral';
@@ -141,10 +142,38 @@ export function describeArchiveStatus(input: ArchiveIndicatorInput): ServiceIndi
   }
 }
 
-export function describeNewsStatus(snapshot: NewsReadySnapshot, intervalMinutes = 5): ServiceIndicator {
+export function describeNewsStatus(snapshot: NewsReadySnapshot, intervalMinutes = 5, nowMs = Date.now()): ServiceIndicator {
   const base = { id: 'news' as const, service: 'News' };
   const checked = clock(snapshot.checkedAt);
   const fetched = clock(snapshot.fetchedAt ? Date.parse(snapshot.fetchedAt) : null);
+
+  const staleChannelCount = snapshot.staleChannelCount ?? 0;
+  const unknownChannelCount = snapshot.unknownChannelCount ?? 0;
+  const latestAiredAtMs = snapshot.latestAiredAt ? Date.parse(snapshot.latestAiredAt) : Number.NaN;
+  const latestAiredTooOld = Number.isFinite(latestAiredAtMs) && nowMs - latestAiredAtMs > NEWS_STALE_AFTER_MS;
+  if (staleChannelCount > 0 || latestAiredTooOld) {
+    const latest = Number.isFinite(latestAiredAtMs) ? clock(latestAiredAtMs) : null;
+    return {
+      ...base, tone: 'warn', label: 'News stale', shortLabel: 'News',
+      tooltip: 'One or more Cable TV news channels only have recordings older than 48 hours.',
+      detail: [
+        `${staleChannelCount || 1} Cable TV news channel${(staleChannelCount || 1) === 1 ? '' : 's'} have no recordings from the last 48 hours${latest ? `; newest available aired ${latest}` : ''}.`,
+        snapshot.phase === 'error' ? `The last refresh check failed${checked ? ` at ${checked}` : ''}.` : 'Newer recordings have not loaded yet.',
+      ],
+      pulseKey: null, count: staleChannelCount || 1,
+    };
+  }
+  if (unknownChannelCount > 0) {
+    return {
+      ...base, tone: 'warn', label: 'News freshness unknown', shortLabel: 'News',
+      tooltip: 'Aired-time metadata is missing for one or more Cable TV news channels.',
+      detail: [
+        `${unknownChannelCount} populated Cable TV news channel${unknownChannelCount === 1 ? '' : 's'} do not have a verifiable aired time.`,
+        'The guide cannot confirm that these recordings are current.',
+      ],
+      pulseKey: null, count: unknownChannelCount,
+    };
+  }
 
   if (snapshot.phase === 'ready' && snapshot.newShows.length > 0) {
     const n = snapshot.newShows.length;

@@ -101,6 +101,14 @@ export interface ScheduleChannel {
   /** Why items were left out, e.g. "restricted: all MP4 files are private". */
   rejected?: Array<{ id: string; reason: string }>;
   sourceError?: string;
+  /** Last successful fetch time for this channel's retained program data. */
+  dataFetchedAt?: string;
+  /** Time of the most recent refresh attempt, if one has run. */
+  lastRefreshAttemptAt?: string;
+  lastRefreshOutcome?: 'ok' | 'empty' | 'timeout' | 'error';
+  lastRefreshMs?: number;
+  lastRefreshQuery?: string;
+  lastRefreshNumFound?: number;
   /** Structured source health details; only populated by channels that expose measurable selection diagnostics. */
   diagnostics?: {
     candidateCount?: number;

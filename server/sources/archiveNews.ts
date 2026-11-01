@@ -20,6 +20,10 @@ export interface ArchiveNewsInput {
   rows?: number;
   /** Injected for tests; defaults to global fetch. */
   fetchImpl?: typeof fetch;
+  /** One request at a time for the manual snapshot refresh tool. */
+  metadataConcurrency?: number;
+  /** Optional progress hook lets callers preserve the attempted query on timeout. */
+  onQuery?: (queryUsed: string, numFound?: number) => void;
 }
 
 interface ArchiveFile {
@@ -134,21 +138,31 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
     const network = codes[0];
     const day = (d: Date) => d.toISOString().slice(0, 10);
     let docs: Array<{ identifier: string; title?: string }> = [];
+    let queryUsed: string | undefined;
+    let numFound: number | undefined;
     const searchErrors: number[] = [];
     const queries = codes.flatMap((c) => [`collection:${c}`, `collection:TV-${c}`, `identifier:${c}_*`]);
     for (const where of queries) {
+      queryUsed = where;
+      input.onQuery?.(where);
       const q = `${where} AND mediatype:movies AND date:[${day(windowStart)} TO ${day(ctx.now)}]`;
       const url = 'https://archive.org/advancedsearch.php'
         + `?q=${encodeURIComponent(q)}&fl[]=identifier&fl[]=title`
         + `&rows=${Math.min(Math.max(input.rows ?? 25, 1), 100)}&sort[]=date+desc&output=json`;
-      const { status, body } = await getJson<{ response?: { docs?: typeof docs } }>(fetchImpl, url, ctx.signal);
+      const { status, body } = await getJson<{ response?: { docs?: typeof docs; numFound?: number } }>(fetchImpl, url, ctx.signal);
       if (status >= 400) searchErrors.push(status);
       docs = body?.response?.docs ?? [];
+      numFound = body?.response?.numFound;
+      input.onQuery?.(where, numFound);
       if (docs.length > 0) break;
     }
     // One collection failing and the other returning nothing is not "no news": report it.
     if (docs.length === 0 && searchErrors.length > 0) {
-      return { ...base, status: 'upstream_error', programs, rejected, error: `advancedsearch HTTP ${[...new Set(searchErrors)].join(', ')}` };
+      return {
+        ...base, status: 'upstream_error', programs, rejected,
+        error: `advancedsearch HTTP ${[...new Set(searchErrors)].join(', ')}`,
+        diagnostics: { queryUsed, numFound },
+      };
     }
 
     // 2. Window check first (no network), then metadata for the rest in parallel
@@ -169,7 +183,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
     // Deadline: stop starting metadata requests after 45s and keep what we have,
     // so one slow network can't turn the whole row into a timeout.
     const deadline = Date.now() + 45_000;
-    const metas = await mapWithConcurrency(candidates, METADATA_CONCURRENCY, (c) =>
+    const metas = await mapWithConcurrency(candidates, Math.max(1, input.metadataConcurrency ?? METADATA_CONCURRENCY), (c) =>
       Date.now() > deadline ? Promise.resolve({ status: 0, body: null as ArchiveMetadata | null }) : getJson<ArchiveMetadata>(fetchImpl, `https://archive.org/metadata/${encodeURIComponent(c.id)}`, ctx.signal)
         .catch((err) => ({ status: 0, body: null as ArchiveMetadata | null, err: String(err?.message ?? err) })),
     );
@@ -218,7 +232,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
             sourceId: normalizeSourceIdentity({ channelId: input.channelId, url: `archive:${network}`, protocol: 'direct_archive' }),
             sourceClass: 'archive_org',
             isArchivedSource: true,
-            metadata: { externalId: clipId, network, show: aired.show, durationSeconds: end - start, durationSource: 'clip', clip: { index: n, start, end, itemDurationSeconds: duration } },
+            metadata: { externalId: clipId, network, show: aired.show, airedUtc: aired.airedUtc.toISOString(), durationSeconds: end - start, durationSource: 'clip', clip: { index: n, start, end, itemDurationSeconds: duration } },
           });
         });
         continue;
@@ -247,7 +261,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
         sourceId: normalizeSourceIdentity({ channelId: input.channelId, url: `archive:${network}`, protocol: 'direct_archive' }),
         sourceClass: 'archive_org',
         isArchivedSource: true,
-        metadata: { externalId: id, network, show: aired.show, durationSeconds, durationSource: durationSeconds ? 'metadata' : 'unknown' },
+        metadata: { externalId: id, network, show: aired.show, airedUtc: aired.airedUtc.toISOString(), durationSeconds, durationSource: durationSeconds ? 'metadata' : 'unknown' },
       });
     }
 
@@ -256,7 +270,7 @@ export const archiveNewsContract: SourceContract<ArchiveNewsInput> = {
       programs.length > 0 ? (rejected.length ? 'partial' : 'ok')
         : restricted > 0 ? 'restricted'
           : rejected.length > 0 ? 'partial' : 'ok';
-    return { ...base, status, programs, rejected };
+    return { ...base, status, programs, rejected, diagnostics: { queryUsed, numFound } };
   },
 };
 
