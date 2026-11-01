@@ -5,6 +5,7 @@ import liveRadioDirectoryJson from './data/liveRadioDirectory.json';
 // Vancouver / Lower Mainland additions: SERVER-ONLY, same rules as the bulk directory.
 import liveRadioVancouverJson from './data/liveRadioVancouver.json';
 import liveRadioClassicHits109Json from './data/liveRadioClassicHits109.json';
+import liveRadioAjnJson from './data/liveRadioAjn.json';
 import liveRadioNumbersJson from './data/liveRadioNumbers.json';
 
 export interface LiveRadioStation {
@@ -150,7 +151,7 @@ export function validateLiveRadioStations(raw: unknown[]): { valid: LiveRadioSta
 function defaultRawStations(): unknown[] {
   const curated = ((liveRadioSourcesJson as { stations?: unknown[] })?.stations ?? []);
   const bulk = ((liveRadioDirectoryJson as { stations?: unknown[] })?.stations ?? []);
-  const extra = [...((liveRadioVancouverJson as { stations?: unknown[] })?.stations ?? []), ...((liveRadioClassicHits109Json as { stations?: unknown[] })?.stations ?? [])];
+  const extra = [...((liveRadioVancouverJson as { stations?: unknown[] })?.stations ?? []), ...((liveRadioClassicHits109Json as { stations?: unknown[] })?.stations ?? []), ...((liveRadioAjnJson as { stations?: unknown[] })?.stations ?? [])];
   // An addition is skipped when the base lists already carry its id or stream URL, so a later merge into the bulk file never duplicates it.
   const seenIds = new Set<string>();
   const seenUrls = new Set<string>();
