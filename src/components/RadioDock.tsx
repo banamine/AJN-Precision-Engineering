@@ -10,6 +10,7 @@ import { RadioPresetsBar } from './RadioPresetsBar';
 import { RadioStationGroup } from './RadioStationGroup';
 import { useStationTheme } from '../utils/stationArt';
 import { stationGradient } from '../utils/radioAccents';
+import { RadioSpectrum } from './RadioSpectrum';
 
 interface RadioDockProps {
   nowPlaying: NowPlayingMedia | null;
@@ -294,6 +295,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, o
         <div data-testid="radio-dock-body" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <RadioPresetsBar defaultView="unit" station={station} wide={full} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
             onPresetTuned={(id, logo) => setPresetTuned({ id, logo })} />
+          <RadioSpectrum className="mx-3 mb-2" playing={live} />
 
           <RadioStationGroup onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />
 

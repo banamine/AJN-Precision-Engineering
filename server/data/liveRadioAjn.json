@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "note": "AJN Live group. Probed 2026-10-31: HTTP 200, audio/aacp, access-control-allow-origin *, icy-metaint 16384. Deliberately NOT included here (reserved for a later podcast channel): the .mp3 alias path, the /warroom/ path (same audio as /alexjonesshow at probe time), and audio.alexjoneslive.com:8443 (unverified).",
+  "stations": [
+    {
+      "id": "radio:ajn-alex-jones-show",
+      "name": "AJN Live - Alex Jones Show",
+      "country": "US",
+      "genres": ["Talk", "News"],
+      "description": "Live Alex Jones Show stream.",
+      "language": "en",
+      "streamUrl": "https://stream.alexjones.media/alexjonesshow",
+      "streamType": "aac",
+      "homepage": "https://www.infowars.com/",
+      "enabled": true,
+      "verifiedAt": "2026-10-31",
+      "corsVerified": true,
+      "inGuide": false
+    },
+    {
+      "id": "radio:ajn-infowars-live-aac",
+      "name": "AJN Live - Infowars Live AAC",
+      "country": "US",
+      "genres": ["Talk", "News"],
+      "description": "Infowars live AAC stream (separate feed).",
+      "language": "en",
+      "streamUrl": "https://stream.alexjones.media/stream/7/",
+      "streamType": "aac",
+      "homepage": "https://www.infowars.com/",
+      "enabled": true,
+      "verifiedAt": "2026-10-31",
+      "corsVerified": true,
+      "inGuide": false
+    }
+  ]
+}
