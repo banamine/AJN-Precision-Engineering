@@ -56,7 +56,7 @@ assert.equal((html.match(/data-testid="radio-preset-[1-5]"/g) ?? []).length, 5);
 assert.equal((html.match(/data-filled="false"/g) ?? []).length, 5);
 assert.match(html, /border-dashed/); assert.match(html, /Preset 1, empty/); assert.doesNotMatch(html, /radio-preset-live/);
 assert.match(html, /role="status"/); assert.match(html, /aria-live="polite"/);
-assert.match(html, /min-h-\[64px\]/);
+assert.match(html, /h-\[112px\]/);
 // With presets in storage (initial state reads storage; the hook is client-side so server render uses the initial read)
 saveRadioPreset(1, st('a', { number: 683, logo: 'https://l.example/a.png' }));
 saveRadioPreset(2, st('b', { number: 109 }));
