@@ -267,7 +267,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
           )}
         </div>
 
-        <RadioPresetsBar station={station} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
+        <RadioPresetsBar station={station} wide={full} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
           onPresetTuned={(id, logo) => setPresetTuned({ id, logo })} />
 
         <RadioStationGroup onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />
