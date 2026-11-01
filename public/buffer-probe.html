@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AJN buffer probe (diagnostic only)</title>
+<style>
+:root{color-scheme:dark}body{margin:0;font:13px/1.45 system-ui,Segoe UI,sans-serif;background:#0d1014;color:#dbe2ea;padding:16px;max-width:1100px}
+h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:18px 0 6px;color:#f5b301}
+textarea{width:100%;height:150px;background:#151a21;color:#dbe2ea;border:1px solid #2a3340;border-radius:6px;padding:8px;font:12px ui-monospace,Consolas,monospace}
+label{margin-right:14px;white-space:nowrap}input[type=number]{width:64px;background:#151a21;color:#dbe2ea;border:1px solid #2a3340;border-radius:4px;padding:2px 4px}
+button{background:#f5b301;color:#111;border:0;border-radius:6px;padding:7px 14px;font-weight:700;cursor:pointer}button.sec{background:#243040;color:#dbe2ea}button:disabled{opacity:.4}
+table{border-collapse:collapse;width:100%;margin-top:6px}th,td{border-bottom:1px solid #222b36;padding:4px 6px;text-align:right;white-space:nowrap}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+th{color:#8fa1b5;font-weight:600}.ok{color:#3ddc84}.bad{color:#ff6b6b}.mid{color:#f5b301}.dim{color:#7d8da0}
+pre{background:#151a21;border:1px solid #2a3340;border-radius:6px;padding:8px;overflow:auto;max-height:260px;font-size:11px}
+video{width:1px;height:1px;position:absolute;left:-9999px}
+</style></head><body>
+<h1>AJN buffer probe</h1>
+<div class="dim">Diagnostic page. Read-only: it only requests media through your own proxy and measures. Put it in <code>public/</code>, open <code>/buffer-probe.html</code> on the live app (same origin as the proxy). Nothing here is simulated: every number comes from the browser or from response headers.</div>
+
+<h2>1. Items (one per line: <code>group | label | /download/identifier/file.mp4</code>)</h2>
+<textarea id="items">movies | The Spy in Black (1939) | /download/vintage-spy-movies/06%20The%20Spy%20in%20Black%201939%20classic%20British%20espionage%20thriller.ia.mp4
+movies | Decision Before Dawn (1951) | /download/uboatwolfpacks/1951%20Decision%20before%20dawn.mp4</textarea>
+<div class="dim">Path may be an archive path (it is wrapped as <code>/api/archive/proxy?path=…</code>) or a full URL starting with <code>/api/</code>. Groups used for the summary: movies, tv, audio, other.</div>
+
+<h2>2. Settings</h2>
+<div>
+<label>Seconds per browser arm <input id="secs" type="number" value="60" min="20" max="300"></label>
+<label>Steady window starts at (s) <input id="skip" type="number" value="10" min="0"></label>
+<label><input type="checkbox" id="armMeta" checked> arm M: browser, preload="metadata" (what the app uses)</label>
+<label><input type="checkbox" id="armAuto"> arm A: browser, preload="auto"</label>
+<label><input type="checkbox" id="armFetch" checked> arm F: fetch one 8 MiB slice (delivery rate)</label>
+<label>Fetch arm cap (s) <input id="cap" type="number" value="12" min="4" max="120"></label>
+<label>crossOrigin <select id="cors"><option value="">none</option><option value="anonymous">anonymous</option></select></label>
+</div>
+<p><button id="run">Run</button> <button class="sec" id="stop" disabled>Stop</button> <button class="sec" id="copy" disabled>Copy JSON</button> <button class="sec" id="dl" disabled>Download JSON</button> <span id="status" class="dim"></span></p>
+
+<h2>3. Results per item</h2>
+<table id="tbl"><thead><tr><th>group</th><th>item</th><th>kbps</th><th>8 MiB = s</th><th>start ms</th><th>arm</th><th>ahead med s</th><th>ahead p10-p90</th><th>% time &lt;5 s</th><th>fill x</th><th>chunks</th><th>net IDLE %</th><th>stalls</th><th>delivery KB/s</th><th>ρ = delivery / bitrate</th><th>verdict</th></tr></thead><tbody></tbody></table>
+<h2>4. Summary by group</h2>
+<table id="sum"><thead><tr><th>group</th><th>n items</th><th>shallow (med ahead &lt; 10 s)</th><th>share, 95% Wilson</th><th>median ahead s</th><th>median ρ</th></tr></thead><tbody></tbody></table>
+<h2>5. How to read it</h2>
+<pre id="legend">bitrate b (kbps)  = 8 * totalBytes / durationSeconds / 1000        (totalBytes from Content-Range, duration from the video element)
+8 MiB slice (s)   = 8*1024*1024*8 / (b*1000)                          (how many seconds one proxy slice holds)
+delivery rate     = bytes received by fetch / seconds (after first byte)
+ρ                 = delivery rate / (b*1000/8)                         ρ≈1: proxy/upstream hands data out at about the playback rate.  ρ≥3: data arrives fast.
+fill x            = (bufferedEnd gain) / (wall seconds) over the steady window     ≈1: buffer grows at playback speed only
+verdicts: HEALTHY (median ahead ≥ 30 s) | UPSTREAM_PACED (ahead &lt; 10 s and ρ &lt; 1.5) | CLIENT_OR_SLICE_LIMITED (ahead &lt; 10 s and ρ ≥ 3) | MIXED (otherwise) | NO_DELIVERY_DATA (arm F off).</pre>
+<div id="vid"></div>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const MiB = 1024 * 1024, SLICE = 8 * MiB;
+let stopFlag = false;
+const results = []; // one object per item
+
+function proxyUrl(p) {
+  p = p.trim();
+  if (p.startsWith("/api/") || /^https?:/.test(p)) return p;
+  return "/api/archive/proxy?path=" + encodeURIComponent(decodeURIComponent(p));
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const q = (arr, p) => { if (!arr.length) return null; const s = [...arr].sort((a, b) => a - b); const i = (s.length - 1) * p; const lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
+const fmt = (v, d = 1) => (v === null || v === undefined || Number.isNaN(v)) ? "–" : Number(v).toFixed(d);
+function wilson(k, n) { if (!n) return [null, null]; const z = 1.96, p = k / n, d = 1 + z * z / n; const c = p + z * z / (2 * n); const m = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)); return [Math.max(0, (c - m) / d), Math.min(1, (c + m) / d)]; }
+
+async function sizeProbe(url) {
+  const r = await fetch(url, { headers: { Range: "bytes=0-0" }, cache: "no-store" });
+  const cr = r.headers.get("content-range");
+  await r.arrayBuffer().catch(() => {});
+  const m = cr && /\/(\d+)\s*$/.exec(cr);
+  return { status: r.status, total: m ? Number(m[1]) : null, contentRange: cr, type: r.headers.get("content-type"), acceptRanges: r.headers.get("accept-ranges") };
+}
+
+async function fetchArm(url, total, bitrateKbps, capSec) {
+  // read one 8 MiB aligned slice from ~60% into the file (avoids slices the browser arms just warmed)
+  const start = total ? Math.floor(total * 0.6 / SLICE) * SLICE : 0;
+  const end = total ? Math.min(total - 1, start + SLICE - 1) : SLICE - 1;
+  const t0 = performance.now();
+  const out = { start, end, ok: false };
+  try {
+    const r = await fetch(url, { headers: { Range: `bytes=${start}-${end}` }, cache: "no-store" });
+    const tHdr = performance.now();
+    out.status = r.status; out.headerMs = tHdr - t0;
+    out.headers = {}; for (const k of ["content-range", "content-length", "accept-ranges", "cache-control", "etag", "last-modified", "server-timing", "x-ajn-archive-proxy", "x-ajn-readahead", "x-proxy-request-id", "content-type", "connection"]) { const v = r.headers.get(k); if (v !== null) out.headers[k] = v; }
+    const rd = r.body.getReader(); let bytes = 0, tFirst = null, last = tHdr, maxGap = 0; const marks = [];
+    for (;;) { const { done, value } = await rd.read(); const now = performance.now(); if (done) break; if (tFirst === null) tFirst = now; maxGap = Math.max(maxGap, now - last); last = now; bytes += value.byteLength; marks.push([Math.round(now - t0), bytes]); if (now - t0 > capSec * 1000) { out.capped = true; await rd.cancel().catch(() => {}); break; } }
+    const tEnd = performance.now();
+    out.bytes = bytes; out.totalMs = tEnd - t0; out.ttfbMs = (tFirst ?? tEnd) - t0; out.maxGapMs = maxGap;
+    const body = Math.max(1, tEnd - (tFirst ?? t0)) / 1000;
+    out.bytesPerSec = bytes / body; out.marks = marks.length > 60 ? marks.filter((_, i) => i % Math.ceil(marks.length / 60) === 0) : marks;
+    out.rho = bitrateKbps ? out.bytesPerSec / (bitrateKbps * 1000 / 8) : null; out.ok = true;
+  } catch (e) { out.error = String(e && e.message || e); }
+  return out;
+}
+
+function bufferedEndAt(v) { const t = v.currentTime, b = v.buffered; for (let i = 0; i < b.length; i++) if (t >= b.start(i) - 0.25 && t <= b.end(i) + 0.25) return b.end(i); return t; }
+
+async function browserArm(url, preload, seconds, skip, cors) {
+  const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = preload; if (cors) v.crossOrigin = cors;
+  $("vid").appendChild(v);
+  const events = []; const tStart = performance.now(); const ev = (n) => events.push([Math.round(performance.now() - tStart), n]);
+  let stalls = 0, startMs = null;
+  for (const n of ["loadedmetadata", "loadeddata", "canplay", "playing", "seeking", "error"]) v.addEventListener(n, () => { ev(n); if (n === "playing" && startMs === null) startMs = performance.now() - tStart; });
+  v.addEventListener("waiting", () => { if (startMs !== null) stalls++; ev("waiting"); }); // only rebuffering after playback began counts
+  v.src = url; v.play().catch((e) => ev("play-rejected:" + e.name));
+  const samples = []; let prevEnd = 0;
+  const loop = setInterval(() => {
+    const tt = (performance.now() - tStart) / 1000; const be = bufferedEndAt(v);
+    samples.push({ t: +tt.toFixed(2), cur: +v.currentTime.toFixed(2), end: +be.toFixed(2), ahead: +Math.max(0, be - v.currentTime).toFixed(2), ns: v.networkState, rs: v.readyState, paused: v.paused });
+    prevEnd = be;
+  }, 1000);
+  const deadline = tStart + seconds * 1000;
+  while (performance.now() < deadline && !stopFlag) { await sleep(250); if (v.error) break; if (v.ended) break; }
+  clearInterval(loop);
+  const duration = Number.isFinite(v.duration) ? v.duration : null; const err = v.error ? { code: v.error.code, message: v.error.message } : null;
+  v.removeAttribute("src"); v.load(); v.remove();
+  // metrics over the steady window
+  const win = samples.filter((s) => s.t >= skip && s.cur > 0);
+  const ahead = win.map((s) => s.ahead);
+  let fill = null; if (win.length > 3) { const a = win[0], b = win[win.length - 1]; const dt = b.t - a.t; if (dt > 0) fill = (b.end - a.end) / dt; }
+  const jumps = []; for (let i = 1; i < samples.length; i++) { const d = samples[i].end - samples[i - 1].end; if (d > 0.5 + 1.0) jumps.push({ t: samples[i].t, addedSec: +d.toFixed(2) }); } // > 1.5 s in one second = more than playback speed
+  const idle = win.length ? win.filter((s) => s.ns === 1).length / win.length : null;
+  return { preload, startMs, duration, error: err, events, samples, metrics: { aheadMed: q(ahead, .5), aheadP10: q(ahead, .1), aheadP90: q(ahead, .9), pctUnder5: ahead.length ? ahead.filter((x) => x < 5).length / ahead.length : null, fill, chunks: jumps.length, jumps: jumps.slice(0, 40), idlePct: idle, stalls } };
+}
+
+function verdict(armM, f) {
+  if (!armM) return "–";
+  const med = armM.metrics.aheadMed; if (med === null) return "NO_DATA";
+  if (med >= 30) return "HEALTHY";
+  if (!f || !f.ok || f.rho === null) return med < 10 ? "SHALLOW (NO_DELIVERY_DATA)" : "MIXED";
+  if (med < 10 && f.rho < 1.5) return "UPSTREAM_PACED";
+  if (med < 10 && f.rho >= 3) return "CLIENT_OR_SLICE_LIMITED";
+  return "MIXED";
+}
+
+function addRow(item, rec) {
+  const tb = $("tbl").tBodies[0];
+  const arms = rec.arms; const f = rec.fetch;
+  const rows = arms.length ? arms : [null];
+  rows.forEach((a, i) => {
+    const tr = tb.insertRow(); const m = a && a.metrics; const vd = a ? verdict(arms[0], f) : "–";
+    const cls = vd === "HEALTHY" ? "ok" : vd.startsWith("UPSTREAM") || vd.startsWith("CLIENT") ? "bad" : "mid";
+    const cells = [i === 0 ? item.group : "", i === 0 ? item.label : "", i === 0 ? fmt(rec.kbps, 0) : "", i === 0 ? fmt(rec.sliceSec, 1) : "", a ? fmt(a.startMs, 0) : "", a ? a.preload : "F",
+      m ? fmt(m.aheadMed) : "", m ? `${fmt(m.aheadP10)}–${fmt(m.aheadP90)}` : "", m ? fmt(m.pctUnder5 * 100, 0) : "", m ? fmt(m.fill, 2) : "", m ? m.chunks : "", m ? fmt(m.idlePct * 100, 0) : "", m ? m.stalls : "",
+      i === 0 && f && f.ok ? fmt(f.bytesPerSec / 1024, 0) : "", i === 0 && f && f.ok ? fmt(f.rho, 2) : "", i === 0 ? vd : ""];
+    cells.forEach((c, k) => { const td = tr.insertCell(); td.textContent = c; if (k === 15) td.className = cls; });
+  });
+}
+
+function summarize() {
+  const tb = $("sum").tBodies[0]; tb.innerHTML = ""; const g = {};
+  for (const r of results) { (g[r.item.group] ||= []).push(r); }
+  for (const [name, list] of Object.entries(g)) {
+    const meds = list.map((r) => r.arms[0]?.metrics.aheadMed).filter((x) => x !== null && x !== undefined);
+    const shallow = meds.filter((x) => x < 10).length; const [lo, hi] = wilson(shallow, meds.length);
+    const rhos = list.map((r) => r.fetch?.rho).filter((x) => typeof x === "number");
+    const tr = tb.insertRow(); [name, meds.length, shallow, `${fmt(shallow / Math.max(1, meds.length) * 100, 0)}%  (${fmt(lo * 100, 0)}–${fmt(hi * 100, 0)}%)`, fmt(q(meds, .5)), fmt(q(rhos, .5), 2)].forEach((c) => { tr.insertCell().textContent = c; });
+  }
+}
+
+async function run() {
+  stopFlag = false; results.length = 0; $("tbl").tBodies[0].innerHTML = ""; $("run").disabled = true; $("stop").disabled = false; $("copy").disabled = $("dl").disabled = true;
+  const secs = +$("secs").value, skip = +$("skip").value, cors = $("cors").value;
+  const items = $("items").value.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => { const p = l.split("|").map((x) => x.trim()); return p.length >= 3 ? { group: p[0], label: p[1], path: p.slice(2).join("|") } : { group: "other", label: p[0], path: p[p.length - 1] }; });
+  let n = 0;
+  for (const item of items) {
+    if (stopFlag) break; n++; $("status").textContent = `item ${n}/${items.length}: ${item.label}`;
+    const url = proxyUrl(item.path); const rec = { item, url, startedAt: new Date().toISOString(), arms: [] };
+    try { rec.size = await sizeProbe(url); } catch (e) { rec.size = { error: String(e) }; }
+    for (const [flag, pre] of [["armMeta", "metadata"], ["armAuto", "auto"]]) {
+      if (!$(flag).checked || stopFlag) continue;
+      $("status").textContent = `item ${n}/${items.length}: ${item.label}: browser arm ${pre}`;
+      rec.arms.push(await browserArm(url, pre, secs, skip, cors)); await sleep(1500);
+    }
+    const dur = rec.arms.map((a) => a.duration).find(Boolean) || null; const total = rec.size && rec.size.total;
+    rec.durationSec = dur; rec.totalBytes = total; rec.kbps = dur && total ? total * 8 / dur / 1000 : null; rec.sliceSec = rec.kbps ? SLICE * 8 / (rec.kbps * 1000) : null;
+    if ($("armFetch").checked && !stopFlag) { $("status").textContent = `item ${n}/${items.length}: ${item.label}: delivery probe`; rec.fetch = await fetchArm(url, total, rec.kbps, +$("cap").value); }
+    results.push(rec); addRow(item, rec); summarize(); await sleep(1000);
+  }
+  $("status").textContent = stopFlag ? "stopped" : "done"; $("run").disabled = false; $("stop").disabled = true; $("copy").disabled = $("dl").disabled = false;
+}
+function payload() { return JSON.stringify({ tool: "ajn-buffer-probe", at: new Date().toISOString(), userAgent: navigator.userAgent, settings: { secs: +$("secs").value, skip: +$("skip").value, cors: $("cors").value }, results }, null, 1); }
+$("run").onclick = run; $("stop").onclick = () => { stopFlag = true; };
+$("copy").onclick = async () => { await navigator.clipboard.writeText(payload()); $("status").textContent = "copied"; };
+$("dl").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([payload()], { type: "application/json" })); a.download = "ajn-buffer-probe-" + Date.now() + ".json"; a.click(); };
+window.__probe = { run, results };
+</script></body></html>

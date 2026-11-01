@@ -795,6 +795,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         snapshot,
         programId: item?.programId ?? null,
         mediaPath: item?.archivePath ?? media.currentSrc ?? activeSrc ?? null,
+        networkState: media.networkState,
+        readyState: media.readyState,
+        preload: media.preload,
       });
     };
     const progressTimer = progressWd ? window.setInterval(() => {
