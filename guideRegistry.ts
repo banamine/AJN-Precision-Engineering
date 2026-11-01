@@ -14,6 +14,12 @@ import { getLiveRadioChannels } from './server/liveRadio';
 import { windowByHour } from './server/scheduleWindow';
 import { getRtDocumentaryChannel, RT_CHANNEL_ID, RT_CHANNEL_NAME } from './server/rtDocumentary';
 import { layoutRotatingDailySchedule } from './server/dailyRotation';
+import {
+  buildBalancedMovieOrder,
+  layoutBalancedMovieSchedule,
+  splitMoviesClassicsChannel,
+  type MoviesClassicsManifestChannel,
+} from './server/moviesClassicsSchedule';
 import { getNasaPrograms, NASA_CHANNEL_ID } from './server/sources/nasaArchive';
 import newsLogos from './src/data/newsLogos.json';
 import { validateNewsSnapshot, toSnapshotProgram, newsFingerprint, type NewsSnapshot } from './server/newsSnapshot';
@@ -951,7 +957,7 @@ export function layoutArchiveItemGuide(
 }
 /** User-requested extra channels (tools/build-extra-channels-manifest.py): INFOWARS NIGHTLY NEWS + INFO WARS SURVIVAL (cable-tv),
  *  uploader / Random / Star Wars movie channels (movies-classics-vault). Real Archive runtimes; deterministic daily rotation. */
-interface ExtraChannelsManifest{schema:string;channels:{guideId:string;id:string;name:string;group:string;deferLightRows?:boolean;rows:{id:string;identifier:string;file:string;title:string;bytes:number;durationSeconds:number;thumb:string|null}[]}[]}
+interface ExtraChannelsManifest{schema:string;channels:MoviesClassicsManifestChannel[]}
 const extraBase=new Map<string,Program[]>();
 const AMC_EPISODES_CHANNEL_ID='ajn-allmychildren-episodes';
 /** Full, unrotated All My Children channels. The Library must index every episode/extra, not just the day's grid slice. */
@@ -968,7 +974,11 @@ async function getExtraChannels(guideId:string,now:Date):Promise<ScheduleChannel
   const mod:any=await import('./src/data/extraChannelsManifest.json');
   const manifest=(mod.default??mod) as ExtraChannelsManifest;
   if(manifest.schema!=='ajn.extraChannelsManifest.v1')throw new Error('Unexpected extra channels manifest schema');
-  return manifest.channels.filter(c=>c.guideId===guideId&&c.rows.length>0).map(c=>{
+ const selected = manifest.channels.filter(c=>c.guideId===guideId&&c.rows.length>0);
+ const expanded = guideId === 'movies-classics-vault'
+   ? selected.flatMap((channel) => splitMoviesClassicsChannel(channel))
+   : selected;
+ return expanded.map(c=>{
     if(isAllMyChildrenChannel(c)){
       const built=buildAllMyChildrenChannel(c);
       /* Episodes get a rotating daily grid (air-date order, continues each day). Extras stay date-only (Library-only). */
@@ -977,8 +987,27 @@ async function getExtraChannels(guideId:string,now:Date):Promise<ScheduleChannel
         :{...built,libraryOnly:true};
     }
     let base=extraBase.get(c.id);
-    if(!base){base=c.rows.map(r=>showSourceProgram({...r,channelId:c.id,channelName:c.name,series:c.name},guideId));extraBase.set(c.id,base);}
-    return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs:layoutRotatingDailySchedule(base,100,now),sourceStatus:'snapshot' as const,...(c.deferLightRows===true?{deferLightRows:true}:{})};
+    if(!base){
+      base=c.rows.map(r=>{
+        const program=showSourceProgram({...r,channelId:c.legacyChannelId??c.id,channelName:c.name,series:c.name},guideId);
+        return c.legacyChannelId
+          ?{...program,metadata:{...(program.metadata??{}),legacyChannelId:c.legacyChannelId}}
+          :program;
+      });
+      extraBase.set(c.id,base);
+    }
+    const singleFileMovie = guideId === 'movies-classics-vault'
+      && new Set(base.map((program) => String(program.archivePath || program.mediaUrl || ''))).size <= 1;
+    const programs = singleFileMovie
+      ? base
+      : guideId === 'movies-classics-vault'
+        ? layoutBalancedMovieSchedule(base, 100, now)
+        : layoutRotatingDailySchedule(base, 100, now);
+    const rotationPool = guideId === 'movies-classics-vault' ? buildBalancedMovieOrder(base) : base;
+    const rotationTitleCount = new Set(rotationPool
+      .map((program) => String(program.title ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase())
+      .filter(Boolean)).size;
+    return {id:c.id,guideId,name:c.name,mediaType:'video' as MediaType,group:c.group,programs,rotationTitleCount,sourceStatus:'snapshot' as const,...(singleFileMovie?{libraryOnly:true}:{}),...(c.deferLightRows===true?{deferLightRows:true}:{})};
   });
 }
 
@@ -1048,7 +1077,7 @@ async function getScheduleForGuideRaw(guideId='cable-tv',movieNow?:Date):Promise
       name:'Cinema Classics Vault',
       mediaType:'video',
       group:'Movies',
-      programs:layoutRotatingDailySchedule(programs,100,movieNow??new Date()),
+       programs:layoutBalancedMovieSchedule(programs,100,movieNow??new Date()),
     },...await getExtraChannels(guideId,movieNow??new Date())];
   }
   if(guideId===OLD_BRITISH_TV_GUIDE_ID){

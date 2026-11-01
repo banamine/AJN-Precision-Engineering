@@ -96,6 +96,9 @@ export interface BufferSampleReport {
   snapshot: BufferGaugeSnapshot;
   programId?: string | null;
   mediaPath?: string | null;
+  networkState?: number | null;
+  readyState?: number | null;
+  preload?: string | null;
 }
 
 export interface BufferSampleLogEntry {
@@ -119,6 +122,9 @@ export interface BufferSampleLogEntry {
   fetchState: BufferGaugeSnapshot["fetchState"];
   chunkAddedSeconds: number;
   measuredDrainRate: number;
+  networkState: number | null;
+  readyState: number | null;
+  preload: string | null;
 }
 
 type BufferEvent = Partial<AjnTelemetryEvent> & { event: string };
@@ -165,6 +171,9 @@ export function createBufferSampleReporter(options: {
       fetchState: snapshot.fetchState,
       chunkAddedSeconds: snapshot.chunkAddedSeconds,
       measuredDrainRate: snapshot.measuredDrainRate,
+      networkState: input.networkState ?? null,
+      readyState: input.readyState ?? null,
+      preload: input.preload ?? null,
     };
     samples.push(entry);
     if (samples.length > 120) samples.splice(0, samples.length - 120);

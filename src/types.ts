@@ -126,6 +126,8 @@ export interface ScheduleChannel {
   titles?: string[];
   /** Total number of rows in the full channel schedule. */
   programCount?: number;
+  /** Distinct normalized titles in the full source/rotation pool, when known. */
+  rotationTitleCount?: number;
   /** True when more titles/rows exist beyond the light window. */
   moreTitles?: boolean;
   /** Present on deferred Classic TV list rows so "On now" stays accurate without episode payloads. */
