@@ -1,0 +1,43 @@
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { parseLoudnormJson, planFor, evaluate, outliers, DEFAULTS } from './lib.mjs';
+let fail = 0; const ok = (c, m) => { if (!c) { fail++; console.error('FAIL', m); } else console.log('ok', m); };
+// --- pure logic
+const j = '[Parsed_loudnorm_0 @ 0x1]\n{\n"input_i" : "-30.10",\n"input_tp" : "-12.00",\n"input_lra" : "3.00",\n"input_thresh" : "-40.5",\n"target_offset" : "0.2"\n}';
+const m = parseLoudnormJson(j); ok(m.i === -30.1 && m.tp === -12 && m.offset === 0.2, 'parses loudnorm json');
+ok(parseLoudnormJson('{"input_i":"-inf","input_tp":"-inf"}').i === null && parseLoudnormJson('nothing') === null, '-inf / garbage -> null');
+ok(planFor({ i: -22, tp: -8, lra: 4 }).method === 'constant-gain', 'fits peak limit -> constant gain');
+ok(planFor({ i: -22, tp: -3, lra: 4 }).method === 'loudnorm-2pass-linear', 'would clip -> linear loudnorm');
+ok(planFor({ i: -22, tp: -3 }).gain === 6, 'gain math');
+ok(planFor({ i: -45, tp: -20 }).action === 'review' && planFor({ i: -60, tp: -40 }).action === 'review', 'huge gain / silence -> review, not processed');
+ok(planFor(null).action === 'review' && planFor({ i: null, tp: null }).action === 'review', 'unmeasurable -> review');
+ok(planFor({ i: -16.01, tp: -5 }).action === 'copy-ok', 'already on target');
+ok(evaluate({ i: -16.2, tp: -1.6 }).ok && !evaluate({ i: -17, tp: -2 }).ok && !evaluate({ i: -16, tp: -0.5 }).ok && !evaluate(null).ok, 'evaluate uses tolerance and true peak');
+const set = outliers([-16, -17, -15, -16.5, -15.5, -30].map((i, k) => ({ key: 'f' + k, i }))); ok(set.has('f5') && set.size === 1, 'outlier detection');
+ok(outliers([{ key: 'a', i: -10 }, { key: 'b', i: -30 }]).size === 0, 'too few files -> no outlier claims');
+// --- real ffmpeg integration (skipped if ffmpeg missing)
+if (spawnSync('ffmpeg', ['-version']).status === 0) {
+  const here = dirname(fileURLToPath(import.meta.url)); const t = mkdtempSync(join(tmpdir(), 'loud-')); const inD = join(t, 'in'), outD = join(t, 'out'); mkdirSync(inD);
+  const gen = (name, vol) => spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anoisesrc=d=20:c=pink:r=44100:a=0.5:seed=7', '-af', `volume=${vol}`, '-ac', '1', '-b:a', '128k', join(inD, name)]);
+  gen('quiet.mp3', '-6dB'); gen('hot.mp3', '+3dB'); gen('mid.mp3', '-3dB'); gen('toolow.mp3', '-24dB');
+  const sums = ['quiet.mp3', 'hot.mp3', 'mid.mp3', 'toolow.mp3'].map((n) => createHash('sha256').update(readFileSync(join(inD, n))).digest('hex'));
+  const r = spawnSync('node', [join(here, 'normalize-batch.mjs'), '--in', inD, '--out', outD], { encoding: 'utf8' });
+  console.log(r.stdout); if (r.stderr) console.error(r.stderr);
+  const rows = readFileSync(join(outD, 'normalize-log.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  ok(rows.length === 4 && rows.every((x) => x.out_lufs !== null || x.status === 'review'), 'log has a row per file');
+  const passed = rows.filter((x) => x.status === 'pass'); ok(passed.length >= 2, 'at least two files pass re-measurement');
+  ok(rows.find((x) => x.file === 'toolow.mp3').status === 'review' && !existsSync(join(outD, 'toolow.mp3')), 'the 24 dB-too-quiet file goes to REVIEW and is not processed');
+  ok(rows.filter((x) => x.status !== 'pass' && !x.flags.some((f) => f.startsWith('loudnorm fell back'))).every((x) => !existsSync(join(outD, x.file))), 'no output is left for failed/rejected rows (only a dynamic-fallback review keeps its on-target file, flagged)');
+  ok(passed.every((x) => Math.abs(x.out_lufs + 16) <= 0.5 && x.out_tp <= -1.4), 'passed outputs are within 0.5 LU of -16 and TP <= -1.5(+0.1)');
+  ok(['quiet.mp3', 'hot.mp3', 'mid.mp3', 'toolow.mp3'].every((n, k) => createHash('sha256').update(readFileSync(join(inD, n))).digest('hex') === sums[k]), 'originals byte-identical');
+  ok(existsSync(join(outD, 'normalize-log.csv')), 'csv written');
+  const again = spawnSync('node', [join(here, 'normalize-batch.mjs'), '--in', inD, '--out', outD], { encoding: 'utf8' });
+  ok(/skip \(unchanged\)/.test(again.stdout), 'rerun skips unchanged files');
+  const bad = spawnSync('node', [join(here, 'normalize-batch.mjs'), '--in', inD, '--out', inD], { encoding: 'utf8' }); ok(bad.status === 2, 'refuses out == in');
+  rmSync(t, { recursive: true, force: true });
+} else console.log('SKIP ffmpeg integration (ffmpeg not installed)');
+process.exit(fail ? 1 : 0);

@@ -1,22 +1,20 @@
-# AJN Safe News Proxy Repair Pack
+# AJN buffer diagnostics drop-in (base: main 4c4c855)
 
-Purpose: a drop-in, Builder-ready repair package for the Archive.org news proxy path.
+NOT a behavior fix. No playback behavior changes. It adds the data needed to name the cause of the ~2.4 s buffer on some films.
 
-IMPORTANT:
-- This pack is intentionally safe for the currently-working LIVE deployment.
-- Do NOT publish/redeploy directly from this pack.
-- Apply the surgical server.ts changes in the sandbox, run all verification gates, and only then publish.
-- Do not change the canonical player, EPG, navigation, or news channel definitions as part of this repair.
+Files (copy over, same paths):
+- src/telemetry.ts        +9 lines: networkState / readyState / preload on buffer samples
+- src/MinimalPlayer.tsx   +3 lines: passes those three values from the <video> element
+- public/buffer-probe.html  NEW static page (served at /buffer-probe.html after build)
 
-Known runtime failure:
-PipelineStatus::DEMUXER_ERROR_COULD_NOT_OPEN: FFmpegDemuxer: open context failed
+Apply: copy the three files into the repo, or `git apply buffer-diagnostics.patch`.
+Verified: `npx tsc --noEmit` passes on base + these changes.
+Rollback: delete public/buffer-probe.html and revert the two src files (or revert the branch).
 
-Known failure mode:
-The proxy can return a JSON error body after media headers have been prepared, or abort a long-running upstream request because an initialization timeout remains attached to the entire stream lifetime. Either can present as a media demuxer failure.
+After deploy:
+1. Open /buffer-probe.html on the live app, paste item lines
+   `group | label | /download/<identifier>/<file>`, seconds per arm 45, Run, Copy JSON.
+2. Or play a film ~60 s and paste getBufferSamples() (now includes networkState/readyState/preload).
 
-Target:
-server.ts — /api/archive/proxy (or the equivalent Archive.org media proxy handler in the installed sandbox).
-
-See:
-- server.ts.patch.md
-- BUILDER_INSTALL_AND_VERIFY.md
+Why not a preload fix: headless Chromium A/B with autoplay showed preload="metadata" vs "auto" makes
+no real difference (1588 kbps: 17.8 s vs 16.0 s ahead), so it is not proven to be the cause.

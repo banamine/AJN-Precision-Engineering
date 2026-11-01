@@ -83,8 +83,7 @@ const mock = (async (input: any, init: any) => {
   const data = mp4(f.seconds, f.codecs !== false); const h: Record<string, string> = { 'content-type': f.type ?? 'video/mp4', 'content-length': String(data.length), etag: f.etag ?? '"e"', 'last-modified': f.lm ?? 'x' };
   if (init?.method === 'HEAD') return new Response(null, { status: 200, headers: h });
   const m = String(init?.headers?.Range ?? '').match(/bytes=(\d+)-(\d+)/);
-  const responseData = m ? data.slice(+m[1], +m[2] + 1) : data;
-  return new Response(new Uint8Array(responseData), { status: m ? 206 : 200, headers: h });
+  return m ? new Response(data.slice(+m[1], +m[2] + 1), { status: 206, headers: h }) : new Response(data, { status: 200, headers: h });
 }) as typeof fetch;
 setFoxClipsFetchForTests(mock);
 // Sizes in the mock are the mock's own: sync the seed records once so "unchanged" is truly unchanged.

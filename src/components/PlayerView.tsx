@@ -1,6 +1,6 @@
 import { bufferGaugeMetadata } from "../utils/bufferGauge";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PlayCircle, Heart } from "lucide-react";
+import { PlayCircle, Heart, Bookmark } from "lucide-react";
 import { RUSH_PRELUDE_PROGRAM, RUSH_PROGRAM, resolveRushNext, rushProgramDate, upNextLabel, type RushNext } from "../utils/rushNext";
 import { loadRushSettings, markRushPreludeSeenToday, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
 import MinimalPlayer from "../MinimalPlayer";
@@ -66,7 +66,7 @@ const SKIP_AFTER_ERROR_MS = 1500;
 // After a long run of failures (offline?) keep trying, but slowly: playback is never left idle.
 const SLOW_RETRY_MS = 30_000;
 
-export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite, recentlyPlayed = [], onResumeRecentlyPlayed }: any) {
+export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite, isWatchLater = false, onToggleWatchLater, recentlyPlayed = [], onResumeRecentlyPlayed }: any) {
   const failuresRef = useRef(0);
   const failureContextRef = useRef<ProxyErrorBody | null>(null);
   const stoppedInstanceRef = useRef<unknown>(null);
@@ -613,6 +613,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       {!archiveMusicOn && onToggleFavorite && (
         <div className="flex items-center justify-between gap-3">
           <span className="min-w-0 truncate text-sm font-semibold text-neutral-100" data-testid="player-title">{nowPlaying.title}</span>
+          <div className="flex shrink-0 items-center gap-2">
           <button type="button" data-testid="player-heart" aria-pressed={isFavorite} onClick={onToggleFavorite}
             aria-label={isFavorite ? `Remove ${nowPlaying.title} from favorites` : `Add ${nowPlaying.title} to favorites`}
             title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
@@ -620,6 +621,16 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
             <Heart className={`h-4 w-4 ${isFavorite ? "fill-rose-500 text-rose-500" : ""}`} aria-hidden="true" />
             {isFavorite ? "Favorited" : "Favorite"}
           </button>
+          {onToggleWatchLater && (
+            <button type="button" data-testid="player-watch-later" aria-pressed={isWatchLater} onClick={onToggleWatchLater}
+              aria-label={isWatchLater ? `Remove ${nowPlaying.title} from Watch Later` : `Save ${nowPlaying.title} to Watch Later`}
+              title={isWatchLater ? "Remove from Watch Later" : "Save to Watch Later"}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${isWatchLater ? "border-sky-500/60 bg-sky-500/10 text-sky-300" : "border-neutral-700 text-neutral-300 hover:border-sky-500/50 hover:text-sky-300"}`}>
+              <Bookmark className={`h-4 w-4 ${isWatchLater ? "fill-sky-500 text-sky-500" : ""}`} aria-hidden="true" />
+              {isWatchLater ? "Saved" : "Watch Later"}
+            </button>
+          )}
+          </div>
         </div>
       )}
       <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>
@@ -646,9 +657,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={onError}
         autoplayBlockedLabel={nowPlaying.channelId === "rush-vod" ? "Next hour ready — tap Play" : undefined}
-        onProgressEvent={(positionSeconds: number) => {
+        onProgressEvent={(positionSeconds: number, durationSeconds?: number) => {
           const itemId = nowPlaying.assetId || nowPlaying.programId || nowPlaying.sourceId || nowPlaying.archivePath || nowPlaying.src;
-          onProgress?.(itemId, positionSeconds);
+          onProgress?.(itemId, positionSeconds, durationSeconds);
         }}
       />
       </Fragment>

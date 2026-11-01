@@ -8,6 +8,7 @@ import {
   Radio,
   Newspaper,
   History as HistoryIcon,
+  Bookmark,
   ChevronDown,
   X,
   Box,
@@ -47,6 +48,7 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
   { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played' },
   { id: 'library', label: 'Library', icon: FolderArchive, description: 'Curated archives & vaults' },
   { id: 'search', label: 'Search', icon: Search, description: 'TV News search' },
+  { id: 'watch-later', label: 'Watch Later', icon: Bookmark, description: 'Saved, and half-played, to finish later' },
 ];
 
 const DESKTOP_PRIMARY: NavItemConfig[] = [
@@ -55,7 +57,10 @@ const DESKTOP_PRIMARY: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[2],
   PRIMARY_DESTINATIONS[3],
   PRIMARY_DESTINATIONS[5],
+  PRIMARY_DESTINATIONS[8], // Watch Later sits right after History
 ];
+// Mobile bar keeps the same order, with Watch Later next to History.
+const MOBILE_DESTINATIONS: NavItemConfig[] = [0, 1, 2, 3, 4, 5, 8, 6, 7].map((i) => PRIMARY_DESTINATIONS[i]);
 const VAULT_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[4],
   PRIMARY_DESTINATIONS[6],
@@ -127,7 +132,7 @@ export function Navigation({
         id="canonical-app-header"
         className="sticky top-0 z-40 w-full border-b border-neutral-800/80 bg-neutral-950/90 backdrop-blur-md"
       >
-        <div className="mx-auto flex h-14 lg:h-[52px] w-full max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 lg:h-[52px] w-full max-w-7xl 2xl:max-w-[1600px] items-center justify-between px-3 sm:px-6 lg:px-8">
           {/* Brand & Badge */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
@@ -140,7 +145,7 @@ export function Navigation({
               <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25">
                 <Radio className="h-4 w-4 sm:h-5 sm:w-5 motion-safe:animate-pulse" />
               </div>
-              <div className="hidden lg:flex flex-col min-w-0">
+              <div className="hidden 2xl:flex flex-col min-w-0">
                 <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-100 truncate">
                   AJN Precision
                 </span>
@@ -169,7 +174,9 @@ export function Navigation({
                   type="button"
                   onClick={() => onNavigate(item.id)}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`group relative flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
+                  aria-label={item.label}
+                  title={item.label}
+                  className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
                     isActive
                       ? 'bg-neutral-800/90 text-sky-400 shadow-inner border border-neutral-700/80'
                       : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
@@ -180,7 +187,7 @@ export function Navigation({
                       isActive ? 'text-sky-400' : 'text-neutral-400'
                     }`}
                   />
-                  <span>{item.label}</span>
+                  <span className="hidden xl:inline">{item.label}</span>
 
                   {/* Active playing indicator badge on Player tab */}
                   {hasBadge && (
@@ -203,14 +210,14 @@ export function Navigation({
                 aria-haspopup="menu"
                 aria-expanded={vaultOpen}
                 onClick={() => setVaultOpen((o) => !o)}
-                className={`group relative flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
+                className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
                   vaultActive
                     ? 'bg-neutral-800/90 text-sky-400 shadow-inner border border-neutral-700/80'
                     : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
                 }`}
               >
                 <FolderArchive className={`h-4 w-4 ${vaultActive ? 'text-sky-400' : 'text-neutral-400'}`} />
-                <span>Vault</span>
+                <span className="hidden xl:inline">Vault</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${vaultOpen ? 'rotate-180' : ''}`} />
               </button>
               {vaultOpen && (
@@ -317,7 +324,7 @@ export function Navigation({
         id="mobile-bottom-nav"
         className="fixed bottom-0 inset-x-0 z-40 flex h-14 sm:h-16 w-full items-stretch justify-around border-t border-neutral-800/90 bg-neutral-950/95 backdrop-blur-lg md:hidden px-1 sm:px-2 pb-safe select-none"
       >
-        {PRIMARY_DESTINATIONS.map((item) => {
+        {MOBILE_DESTINATIONS.map((item) => {
           const Icon = item.icon;
           const isActive = (currentDestination === 'today' ? 'tv-guide' : currentDestination) === item.id;
           const hasBadge = item.id === 'player' && nowPlaying;
@@ -344,7 +351,7 @@ export function Navigation({
                 )}
               </div>
               <span className="text-[10px] sm:text-[11px] leading-tight tracking-tight truncate max-w-full px-0.5 font-medium">
-                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Radio' : item.label}
+                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Radio' : item.id === 'watch-later' ? 'Later' : item.label}
               </span>
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 sm:w-8 rounded-full bg-sky-400" />

@@ -74,7 +74,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
         const panel = document.getElementById('radio-dock-panel');
         const phone = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768;
         const target = (!phone && panel?.querySelector<HTMLElement>('[data-testid="live-radio-search"]')) || panel?.querySelector<HTMLElement>('[data-testid="radio-dock-close"]');
-        target?.focus();
+        target?.focus({ preventScroll: true }); // keep the presets in view: the search box sits below them
       }, 60);
       wasOpen.current = true;
       return () => window.clearTimeout(t);
@@ -217,7 +217,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
         style={theme ? { borderColor: theme.borderTint } : undefined}
         className={`${open ? 'flex' : 'hidden'} fixed z-[55] flex-col overflow-hidden border border-red-700/70 bg-neutral-950/97 shadow-2xl shadow-black/70 backdrop-blur-md ${
           full ? 'inset-0 z-[60] max-h-none rounded-none' : 'inset-x-0 bottom-14 max-h-[80vh] rounded-t-2xl sm:bottom-16 md:inset-x-auto md:bottom-6 md:right-6 md:w-[27rem] md:rounded-2xl'}`}>
-        <div style={theme ? { background: `linear-gradient(90deg, ${theme.accentColor}, ${theme.themeColor})` } : undefined} className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-700 px-3 py-2 text-white">
+        <div style={theme ? { background: `linear-gradient(90deg, ${theme.accentColor}, ${theme.themeColor})` } : undefined} className="flex shrink-0 items-center gap-2 bg-gradient-to-r from-orange-600 to-red-700 px-3 py-2 text-white">
           <Radio className="h-4 w-4 shrink-0" aria-hidden="true" />
           <div className="mr-auto min-w-0">
             <p className="text-sm font-extrabold uppercase leading-tight tracking-wider">Radio</p>
@@ -237,7 +237,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
           </button>
         </div>
 
-        <div data-testid="radio-dock-now" role="status" className="flex items-center gap-3 border-b border-neutral-800 px-3 py-2">
+        <div data-testid="radio-dock-now" role="status" className="flex shrink-0 items-center gap-3 border-b border-neutral-800 px-3 py-2">
           {station ? (
             <>
               {nowLogo ? (
@@ -267,13 +267,16 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
           )}
         </div>
 
-        <RadioPresetsBar station={station} wide={full} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
-          onPresetTuned={(id, logo) => setPresetTuned({ id, logo })} />
+        {/* One scrolling body under the title bar and Now playing row: on a short window the presets, station group and directory scroll together instead of squeezing the directory to nothing or scrolling the title bar out of view. */}
+        <div data-testid="radio-dock-body" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <RadioPresetsBar station={station} wide={full} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
+            onPresetTuned={(id, logo) => setPresetTuned({ id, logo })} />
 
-        <RadioStationGroup onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />
+          <RadioStationGroup onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
-          {everOpened && <LiveRadioDirectory compact wide={full} onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />}
+          <div className="pb-2">
+            {everOpened && <LiveRadioDirectory compact wide={full} onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />}
+          </div>
         </div>
       </aside>
     </>

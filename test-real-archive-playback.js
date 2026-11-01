@@ -119,16 +119,13 @@ try {
   // (server/sources/archiveNews.ts), so this gate plays the same clip through the proxy.
   // A failure here is a real news-playback failure, not an external availability condition.
   let cnnPlaybackPassed = false;
+  let cnnCircuitWaits = 0;
+  const CNN_MAX_CIRCUIT_WAITS = 3;
   for (const candidate of cnnCandidates) {
     const id = candidate.identifier;
     const clipPath = `/download/${encodeURIComponent(id)}/${encodeURIComponent(`${id}.mp4`)}?exact=1&start=0&end=${CLIP_SECONDS}`;
-    const result = await waitForMedia(
-      page,
-      buildArchiveProxyUrl(clipPath),
-      `CNN Newsroom Live clip — ${id} — 0-${CLIP_SECONDS}s`,
-      20_000,
-      false,
-    );
+    const clipLabel = `CNN Newsroom Live clip — ${id} — 0-${CLIP_SECONDS}s`;
+    let result = await waitForMedia(page, buildArchiveProxyUrl(clipPath), clipLabel, 20_000, false);
     if (result.event === 'loadedmetadata') {
       console.log(`[CNN clip] ${id} played through the proxy (clip 0-${CLIP_SECONDS}s)`);
       cnnPlaybackPassed = true;
@@ -136,12 +133,32 @@ try {
     }
     console.warn(`[CNN clip] ${id} clip did not load: ${result.message ?? result.event}`);
     // Evidence: the browser only says "Format error". Ask the proxy what it actually answered for this clip.
+    let circuitRetryAfterSeconds = null;
     try {
       const probe = await fetch(new URL(buildArchiveProxyUrl(clipPath), BASE_URL), { headers: { Range: 'bytes=0-0' }, signal: AbortSignal.timeout(15_000) });
       const body = (await probe.text()).slice(0, 300).replace(/\s+/g, ' ');
       console.warn(`[CNN clip diagnostic] ${id} proxy HTTP ${probe.status} content-type=${probe.headers.get('content-type')} request-id=${probe.headers.get('x-proxy-request-id')} retry-after=${probe.headers.get('retry-after')} body=${body}`);
+      if (probe.status === 503 && body.includes('AJN_UPSTREAM_CIRCUIT_OPEN')) {
+        const headerSeconds = Number(probe.headers.get('retry-after'));
+        circuitRetryAfterSeconds = Number.isFinite(headerSeconds) && headerSeconds > 0 ? headerSeconds : 20;
+      }
     } catch (error) {
       console.warn(`[CNN clip diagnostic] ${id} proxy probe failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    // The proxy's circuit breaker refused this request without contacting Archive (attempts: 0).
+    // That is not a verdict on this clip: wait out the cooldown the proxy reported and retry it once.
+    if (circuitRetryAfterSeconds !== null && cnnCircuitWaits < CNN_MAX_CIRCUIT_WAITS) {
+      cnnCircuitWaits += 1;
+      const waitSeconds = circuitRetryAfterSeconds + 1;
+      console.warn(`[CNN clip] ${id} proxy circuit open: waiting ${waitSeconds}s then retrying once (wait ${cnnCircuitWaits}/${CNN_MAX_CIRCUIT_WAITS})`);
+      await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000));
+      result = await waitForMedia(page, buildArchiveProxyUrl(clipPath), `${clipLabel} (retry after circuit cooldown)`, 20_000, false);
+      if (result.event === 'loadedmetadata') {
+        console.log(`[CNN clip] ${id} played through the proxy after circuit cooldown (clip 0-${CLIP_SECONDS}s)`);
+        cnnPlaybackPassed = true;
+        break;
+      }
+      console.warn(`[CNN clip] ${id} clip still did not load after circuit cooldown: ${result.message ?? result.event}`);
     }
   }
   assert.ok(cnnPlaybackPassed, `No current-window CNN Newsroom Live clip (0-${CLIP_SECONDS}s) reached loadedmetadata through the proxy (${cnnCandidates.length} candidates tried)`);
