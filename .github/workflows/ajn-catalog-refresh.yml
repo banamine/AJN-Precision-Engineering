@@ -27,6 +27,7 @@ on:
       - tools/catalog-gate.mjs
       - tools/catalog-measure.mts
       - tools/catalog-probe.mjs
+      - test-catalog-probe-resilience.mjs
       - tools/build-infobattalion-lists.py
       - config/catalog-refresh.json
       - config/catalog-overrides.json
@@ -87,7 +88,7 @@ jobs:
       # Every NEW file gets a real 1 KB Range request; anything that does not answer with media is removed here.
       - name: Playability probe of new files
         timeout-minutes: 150
-        run: node tools/catalog-probe.mjs --base origin/main --out catalog-probe.json
+        run: node tools/catalog-probe.mjs --base origin/main --out catalog-probe.json --workers 4 --perHost 2 --interval 750 --timeout 20000 --deadlineMinutes 110 --cacheDir .catalog-cache
 
       - name: Measure payloads
         run: npx tsx tools/catalog-measure.mts catalog-measure.json
@@ -103,6 +104,7 @@ jobs:
         if: steps.gate.outputs.verdict != 'none'
         run: |
           node test-catalog-gate.mjs
+          node test-catalog-probe-resilience.mjs
           python -m unittest test_infobattalion_builder -q
           npx tsx test-infobattalion-lists.ts
           npx tsx test-classic-light-schedule.ts

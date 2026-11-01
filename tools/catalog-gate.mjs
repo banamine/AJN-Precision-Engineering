@@ -107,7 +107,7 @@ export function evaluate(base, head, measure, config, probe = null) {
   if (changed) {
     if (!probe) review.push('playability probe did not run');
     else {
-      if (probe.unprobed > 0) review.push(`${probe.unprobed} new row(s) not probed${probe.stoppedAt ? ` (Archive answered HTTP ${probe.stoppedAt.status})` : ''}`);
+      if (probe.unprobed > 0) review.push(`${probe.unprobed} new row(s) not probed${probe.deadlineHit ? ' (probe deadline reached)' : ''}`);
       const rate = probe.probed ? probe.failed.length / probe.probed : 0;
       if (rate > rules.maxProbeFailureRate) review.push(`${probe.failed.length}/${probe.probed} new rows failed the playability probe (removed); rate above ${rules.maxProbeFailureRate}`);
     }
@@ -145,7 +145,11 @@ export function evaluate(base, head, measure, config, probe = null) {
     removedChannels: removedChannels.map((c) => ({ id: c.id, name: c.name, rows: c.rows?.length ?? 0 })),
     renamedChannels, movedChannels, shrunkChannels, newDocGroups, addedAudio, removedAudio,
     measure,
-    probe: probe ? { targets: probe.targets, probed: probe.probed, ok: probe.ok, failed: probe.failed.length, unprobed: probe.unprobed, requests: probe.requests ?? null, droppedChannels: probe.droppedChannels ?? [] } : null,
+    probe: probe ? {
+      targets: probe.targets, probed: probe.probed, ok: probe.ok, failed: probe.failed.length,
+      unprobed: probe.unprobed, cacheHits: probe.cacheHits ?? 0, deadlineHit: probe.deadlineHit === true,
+      requests: probe.requests ?? null, droppedChannels: probe.droppedChannels ?? [],
+    } : null,
     note: 'Station numbers are alphabetical positions (src/guide/channelIndex.ts numberChannels), so any added channel renumbers the channels after it. Not gated.',
   };
 }
@@ -173,7 +177,7 @@ export function summaryMarkdown(report) {
   }
   if (report.probe) {
     const p = report.probe;
-    lines.push('', `Playability probe: ${p.ok}/${p.probed} new rows answered with media; ${p.failed} failed and were removed; ${p.unprobed} not probed.`);
+    lines.push('', `Playability probe: ${p.ok}/${p.probed} rows answered with media; ${p.failed} failed and were removed; ${p.cacheHits ?? 0} reused from cache; ${p.unprobed} not probed${p.deadlineHit ? ' (deadline reached)' : ''}.`);
   }
   if (report.addedChannels.length) {
     lines.push('', '<details><summary>New channels</summary>', '', ...report.addedChannels.map((ch) => `- \`${ch.id}\` ${ch.guideId}/${ch.group}: ${ch.name} (${ch.rows} rows${ch.deferLightRows ? ', lazy' : ''})`), '', '</details>');

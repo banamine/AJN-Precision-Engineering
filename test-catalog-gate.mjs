@@ -64,7 +64,10 @@ assert.match(md, /\| channels \| 1 \| 0 \|/);
 
 // Probe outcome gates auto-merge
 assert.match(evaluate(base, add, okMeasure, config).reasons.join(' '), /probe did not run/);
-assert.match(evaluate(base, add, okMeasure, config, { ...okProbe, probed: 2, unprobed: 1, stoppedAt: { index: 2, status: 429 } }).reasons.join(' '), /not probed .*429/);
+const deadlineGate = evaluate(base, add, okMeasure, config, { ...okProbe, probed: 2, unprobed: 1, deadlineHit: true });
+assert.equal(deadlineGate.verdict, 'review');
+assert.match(deadlineGate.reasons.join(' '), /not probed .*deadline/);
+assert.match(summaryMarkdown(deadlineGate), /1 not probed \(deadline reached\)/);
 assert.match(evaluate(base, add, okMeasure, config, { ...okProbe, ok: 2, failed: [{}] }).reasons.join(' '), /failed the playability probe/);
 
 // Probe helpers
@@ -85,12 +88,12 @@ assert.equal(pruned.extra.channels.find((c) => c.id === 'tvx-a').rows.length, 2,
 const answers = { 0: [206, 'video/mp4'], 1: [404, 'text/html'], 2: [206, 'video/mp4'] };
 let calls = 0;
 const fakeFetch = async () => { const [status, type] = answers[calls++]; return new Response('x', { status, headers: { 'content-type': type } }); };
-let result = await probe(targets, { fetchImpl: fakeFetch, sleep: async () => {} });
+let result = await probe(targets, { fetchImpl: fakeFetch, intervalMs: 0, sleep: async () => {} });
 assert.equal(result.ok, 2); assert.equal(result.failed.length, 1); assert.equal(result.failed[0].reason, 'HTTP 404'); assert.equal(result.unprobed, 0);
 calls = 0;
 const limited = async () => (calls++ === 0 ? new Response('x', { status: 206, headers: { 'content-type': 'video/mp4' } }) : new Response('slow down', { status: 429 }));
-result = await probe(targets, { fetchImpl: limited, sleep: async () => {} });
-assert.equal(result.probed, 1); assert.equal(result.unprobed, 2); assert.equal(result.stoppedAt.status, 429);
+result = await probe(targets.slice(0, 2), { fetchImpl: limited, maxWorkers: 1, intervalMs: 0, sleep: async () => {} });
+assert.equal(result.probed, 2); assert.equal(result.unprobed, 0); assert.equal(result.failed.length, 1); assert.equal(result.failed[0].status, 429);
 
 // Redirect hops are followed by hand, each one paced and recorded
 const hops = [];
@@ -100,8 +103,8 @@ const redirecting = async (url, init) => {
   return url.includes('ia800') ? new Response('abc', { status: 206, headers: { 'content-type': 'video/mp4' } })
     : new Response(null, { status: 302, headers: { location: 'https://ia800.us.archive.org/1/items/x/a.mp4' } });
 };
-result = await probe([targets[0]], { fetchImpl: redirecting, sleep: async () => { sleeps++; } });
-assert.equal(result.ok, 1); assert.equal(hops.length, 2); assert.equal(result.requests, 2); assert.equal(sleeps, 1, 'the redirect hop waited its turn');
+result = await probe([targets[0]], { fetchImpl: redirecting, intervalMs: 0, sleep: async () => { sleeps++; } });
+assert.equal(result.ok, 1); assert.equal(hops.length, 2); assert.equal(result.requests, 2);
 
 // In-place changes to existing entries are seen
 const edited = clone(base); edited.extra.channels[0].rows[0].title = 'New title';

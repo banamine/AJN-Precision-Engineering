@@ -1,0 +1,235 @@
+import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { probe, parseRetryAfter } from './tools/catalog-probe.mjs';
+
+const temp = mkdtempSync(join(tmpdir(), 'ajn-catalog-probe-'));
+const goodResponse = () => new Response(new Uint8Array([1]), {
+  status: 206,
+  headers: { 'content-type': 'video/mp4' },
+});
+const target = (index, host = 'archive.org') => ({
+  kind: 'row',
+  key: `item-${index}/episode-${index}.mp4`,
+  identifier: `item-${index}`,
+  file: `episode-${index}.mp4`,
+  size: 10_000 + index,
+  url: `https://${host}/download/item-${index}/episode-${index}.mp4`,
+});
+const clockSleep = (clock) => async (ms) => {
+  clock.value += ms;
+  await new Promise((resolve) => setImmediate(resolve));
+};
+const metadataPath = (cacheDir, identifier) => join(
+  cacheDir,
+  'meta',
+  `${createHash('md5').update(identifier).digest('hex').slice(0, 16)}.json`,
+);
+const writeMetadata = (cacheDir, row, mtime, size = row.size) => {
+  mkdirSync(join(cacheDir, 'meta'), { recursive: true });
+  writeFileSync(metadataPath(cacheDir, row.identifier), JSON.stringify({
+    files: [{ name: row.file, size, mtime }],
+  }));
+};
+
+try {
+  assert.equal(parseRetryAfter('2', 100), 2000);
+  assert.equal(parseRetryAfter('Wed, 21 Oct 2015 07:28:00 GMT', Date.parse('Wed, 21 Oct 2015 07:27:00 GMT')), 60_000);
+
+  // Four workers overall; no host has more than two requests active.
+  const activeByHost = new Map();
+  let active = 0;
+  let maxActive = 0;
+  let maxHostActive = 0;
+  const fetchImpl = async (url) => {
+    const host = new URL(url).host;
+    const hostActive = (activeByHost.get(host) ?? 0) + 1;
+    activeByHost.set(host, hostActive);
+    active++;
+    maxActive = Math.max(maxActive, active);
+    maxHostActive = Math.max(maxHostActive, hostActive);
+    await new Promise((resolve) => setTimeout(resolve, 3));
+    active--;
+    activeByHost.set(host, activeByHost.get(host) - 1);
+    return goodResponse();
+  };
+  let result = await probe(
+    Array.from({ length: 12 }, (_, i) => target(i, i % 2 ? 'ia800.us.archive.org' : 'archive.org')),
+    { fetchImpl, maxWorkers: 4, maxPerHost: 2, intervalMs: 0, timeoutMs: 100 },
+  );
+  assert.equal(result.ok, 12);
+  assert.ok(maxActive <= 4, `overall concurrency ${maxActive} exceeded 4`);
+  assert.ok(maxHostActive <= 2, `per-host concurrency ${maxHostActive} exceeded 2`);
+
+  // Fake-clock proof of the per-host physical-start gap, independent of wall-clock timing.
+  const paceClock = { value: 0 };
+  const pacedStarts = [];
+  result = await probe([target(12), target(13), target(14)], {
+    maxWorkers: 1,
+    intervalMs: 750,
+    now: () => paceClock.value,
+    sleep: clockSleep(paceClock),
+    fetchImpl: async (url) => { pacedStarts.push({ host: new URL(url).host, at: paceClock.value }); return goodResponse(); },
+  });
+  assert.equal(result.ok, 3);
+  assert.deepEqual(pacedStarts.map((x) => x.at), [0, 750, 1500]);
+
+  // A 429 is not retried, but its Retry-After blocks later requests to that same host.
+  const cooldownClock = { value: 0 };
+  const cooldownStarts = [];
+  let cooldownCalls = 0;
+  result = await probe([target(20), target(21)], {
+    maxWorkers: 1,
+    intervalMs: 750,
+    now: () => cooldownClock.value,
+    sleep: clockSleep(cooldownClock),
+    fetchImpl: async (url) => {
+      cooldownStarts.push({ host: new URL(url).host, at: cooldownClock.value });
+      cooldownCalls++;
+      return cooldownCalls === 1
+        ? new Response('rate limited', { status: 429, headers: { 'retry-after': '2' } })
+        : goodResponse();
+    },
+  });
+  assert.equal(cooldownCalls, 2, '429 is recorded once, not retried');
+  assert.equal(result.failed.length, 1);
+  assert.equal(result.ok, 1);
+  assert.ok(cooldownStarts[1].at - cooldownStarts[0].at >= 2000, 'Retry-After was honored before the next same-host request');
+
+  // Header timeouts retry once, then become failed.
+  let timeoutCalls = 0;
+  result = await probe([target(30)], {
+    maxWorkers: 1,
+    intervalMs: 0,
+    timeoutMs: 5,
+    deadlineMs: 1000,
+    fetchImpl: (_url, init) => new Promise((_resolve, reject) => {
+      timeoutCalls++;
+      init.signal.addEventListener('abort', () => {
+        const error = new Error('aborted');
+        error.name = 'AbortError';
+        reject(error);
+      }, { once: true });
+    }),
+  });
+  assert.equal(timeoutCalls, 2, 'a header timeout gets exactly one retry');
+  assert.equal(result.failed.length, 1);
+  assert.equal(result.failed[0].reason, 'timeout');
+
+  // One 5xx retry only; the second 5xx remains failed.
+  let serverErrorCalls = 0;
+  result = await probe([target(31)], {
+    maxWorkers: 1,
+    intervalMs: 0,
+    fetchImpl: async () => {
+      serverErrorCalls++;
+      return new Response('temporary server error', { status: 503, headers: { 'retry-after': '0' } });
+    },
+  });
+  assert.equal(serverErrorCalls, 2);
+  assert.equal(result.failed[0].status, 503);
+
+  // Deadline leaves all undispatched work unprobed and resolves normally (the CLI's exit path is 0).
+  let forbiddenFetchCalls = 0;
+  result = await probe([target(40), target(41), target(42)], {
+    deadlineMs: 0,
+    now: () => 1000,
+    fetchImpl: async () => { forbiddenFetchCalls++; throw new Error('network must not run'); },
+  });
+  assert.equal(forbiddenFetchCalls, 0);
+  assert.equal(result.unprobed, 3);
+  assert.equal(result.deadlineHit, true);
+
+  // Exercise the actual CLI deadline path in a temporary Git fixture, with offline fetch hard-blocked.
+  const cliRepo = join(temp, 'cli-repo');
+  mkdirSync(join(cliRepo, 'config'), { recursive: true });
+  mkdirSync(join(cliRepo, 'data'), { recursive: true });
+  writeFileSync(join(cliRepo, 'config/catalog-refresh.json'), JSON.stringify({
+    dataFiles: { extra: 'data/extra.json', docs: 'data/docs.json' },
+  }));
+  writeFileSync(join(cliRepo, 'data/extra.json'), JSON.stringify({ channels: [] }));
+  writeFileSync(join(cliRepo, 'data/docs.json'), JSON.stringify([]));
+  execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: cliRepo });
+  execFileSync('git', ['config', 'user.name', 'Offline Test'], { cwd: cliRepo });
+  execFileSync('git', ['config', 'user.email', 'offline-test@example.invalid'], { cwd: cliRepo });
+  execFileSync('git', ['add', '.'], { cwd: cliRepo });
+  execFileSync('git', ['commit', '-qm', 'base fixture'], { cwd: cliRepo });
+  writeFileSync(join(cliRepo, 'data/extra.json'), JSON.stringify({
+    channels: [{
+      guideId: 'classic-tv',
+      id: 'fixture-channel',
+      rows: [{ identifier: 'fixture-item', file: 'fixture.mp4', bytes: 123, title: 'Fixture' }],
+    }],
+  }));
+  execFileSync('git', ['add', 'data/extra.json'], { cwd: cliRepo });
+  execFileSync('git', ['commit', '-qm', 'head fixture'], { cwd: cliRepo });
+  const cliResult = spawnSync(process.execPath, [
+    resolve('tools/catalog-probe.mjs'),
+    '--base', 'HEAD~1',
+    '--config', 'config/catalog-refresh.json',
+    '--out', 'probe.json',
+    '--deadlineMinutes', '0',
+    '--cacheDir', '.catalog-cache',
+    '--offline', 'true',
+  ], { cwd: cliRepo, encoding: 'utf8' });
+  assert.equal(cliResult.status, 0, cliResult.stderr);
+  const cliProbe = JSON.parse(readFileSync(join(cliRepo, 'probe.json'), 'utf8'));
+  assert.equal(cliProbe.requests, 0, 'offline CLI deadline starts no network requests');
+  assert.equal(cliProbe.unprobed, 1);
+  assert.equal(cliProbe.deadlineHit, true);
+
+  // Results are reused only for the same identifier/file/size/mtime and within the 7-day TTL.
+  const cacheDir = join(temp, 'cache');
+  const cacheClock = { value: Date.UTC(2026, 9, 31) };
+  const cachedTarget = target(50);
+  writeMetadata(cacheDir, cachedTarget, 1234);
+  let cacheFetchCalls = 0;
+  const cacheOptions = {
+    cacheDir,
+    maxWorkers: 1,
+    intervalMs: 0,
+    now: () => cacheClock.value,
+    fetchImpl: async () => { cacheFetchCalls++; return goodResponse(); },
+  };
+  result = await probe([cachedTarget], cacheOptions);
+  assert.equal(result.cacheHits, 0);
+  assert.equal(cacheFetchCalls, 1);
+  result = await probe([cachedTarget], cacheOptions);
+  assert.equal(result.cacheHits, 1);
+  assert.equal(cacheFetchCalls, 1, 'cached row was not re-probed');
+  writeMetadata(cacheDir, cachedTarget, 1234, cachedTarget.size + 1);
+  result = await probe([cachedTarget], cacheOptions);
+  assert.equal(result.cacheHits, 0, 'changed size invalidates the cache key');
+  assert.equal(cacheFetchCalls, 2);
+  writeMetadata(cacheDir, cachedTarget, 1235, cachedTarget.size + 1);
+  result = await probe([cachedTarget], cacheOptions);
+  assert.equal(result.cacheHits, 0, 'changed size also invalidates the cache key');
+  assert.equal(cacheFetchCalls, 3);
+  cacheClock.value += 7 * 24 * 60 * 60 * 1000 + 1;
+  result = await probe([cachedTarget], cacheOptions);
+  assert.equal(result.cacheHits, 0, 'entries older than seven days expire');
+  assert.equal(cacheFetchCalls, 4);
+  const cacheFile = join(cacheDir, 'playability-probe-cache.json');
+  assert.equal(JSON.parse(readFileSync(cacheFile, 'utf8')).schema, 1);
+
+  // Deadline output stays reviewable and progress is emitted exactly every 50 completed targets.
+  const progress = [];
+  const progressClock = { value: 0 };
+  result = await probe(Array.from({ length: 100 }, (_, i) => target(100 + i)), {
+    maxWorkers: 4,
+    intervalMs: 0,
+    now: () => progressClock.value,
+    sleep: clockSleep(progressClock),
+    fetchImpl: async () => goodResponse(),
+    onProgress: (event) => progress.push(event.probed),
+  });
+  assert.equal(result.probed, 100);
+  assert.deepEqual(progress, [50, 100]);
+
+  console.log('PASS catalog-probe-resilience: concurrency, pacing, Retry-After, timeout/5xx retry, deadline, cache TTL/key, progress');
+} finally {
+  rmSync(temp, { recursive: true, force: true });
+}
