@@ -56,7 +56,7 @@ assert.equal((html.match(/data-testid="radio-preset-[1-5]"/g) ?? []).length, 5);
 assert.equal((html.match(/data-filled="false"/g) ?? []).length, 5);
 assert.match(html, /border-dashed/); assert.match(html, /Preset 1, empty/); assert.doesNotMatch(html, /radio-preset-live/);
 assert.match(html, /role="status"/); assert.match(html, /aria-live="polite"/);
-assert.match(html, /min-h-\[64px\]/);
+assert.match(html, /h-\[112px\]/);
 // With presets in storage (initial state reads storage; the hook is client-side so server render uses the initial read)
 saveRadioPreset(1, st('a', { number: 683, logo: 'https://l.example/a.png' }));
 saveRadioPreset(2, st('b', { number: 109 }));
@@ -76,4 +76,17 @@ assert.match(html, />ST</);
 // a non-radio now-playing item is never treated as a station
 html = renderToStaticMarkup(createElement(RadioPresetsBar, { station: { ...playingNow, channelId: 'tv:x' }, live: true, onPlay: noop }));
 assert.doesNotMatch(html, /aria-current="true"/);
-console.log('PASS radio presets: store rules, refusals, bad data, injectable storage, bar markup (5 slots, empty, filled, active, paused, non-radio)');
+// ---- Preset Wall: empty tile text, "All stations", wide mode, banks ----
+store.clear();
+html = renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop }));
+assert.equal((html.match(/data-testid="radio-preset-[1-5]"/g) ?? []).length, 5);
+assert.equal((html.match(/data-filled="false"/g) ?? []).length, 5);
+assert.match(html, /Empty\. Play a station, then hold to save\./);
+assert.match(html, /All stations/); assert.doesNotMatch(html, /radio-preset-6/);
+assert.match(html, /data-testid="radio-bank-presets"/); assert.match(html, /data-testid="radio-bank-recent"/);
+html = renderToStaticMarkup(createElement(RadioPresetsBar, { station: playingNow, live: true, onPlay: noop }));
+assert.match(html, /\+ Save &quot;Station b&quot; here/, 'empty tile shows the FULL station name');
+assert.doesNotMatch(html, /Save Station here/);
+html = renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop, wide: true }));
+assert.match(html, /grid-cols-5/); assert.doesNotMatch(html, /All stations/);
+console.log('PASS radio presets: store rules, refusals, bad data, injectable storage, bar markup (5 slots, empty, filled, active, paused, non-radio, wall, banks, wide)');

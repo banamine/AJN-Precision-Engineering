@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
+import { Search } from 'lucide-react';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import {
@@ -7,6 +8,7 @@ import {
 } from '../utils/radioPresets';
 import { getStationTheme } from '../utils/radioAccents';
 import { getStationArt } from '../utils/stationArt';
+import { readRecentStations, type RecentStation } from '../utils/radioRecent';
 
 const HOLD_MS = 500;
 const HOLD_SLOP_PX = 10;
@@ -26,6 +28,8 @@ interface RadioPresetsBarProps {
   onPlay: PlayProgramCallback;
   /** Lets the dock show the preset's picture in its "now playing" strip. */
   onPresetTuned?: (channelId: string, logo?: string) => void;
+  /** Full-screen dock: five tiles in one row and no "All stations" tile. */
+  wide?: boolean;
 }
 
 function initialsOf(name: string): string {
@@ -38,12 +42,14 @@ function tileColor(id: string, name?: string): string {
 }
 
 /** Five hardware-style presets: tap to tune, press and hold (half a second) to save the station that is playing. */
-export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned }: RadioPresetsBarProps): ReactElement {
+export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wide = false }: RadioPresetsBarProps): ReactElement {
   const presets: RadioPresetMap = useRadioPresets();
   const [status, setStatus] = useState<string>('');
   const [holding, setHolding] = useState<RadioPresetSlot | null>(null);
   const [broken, setBroken] = useState<Set<string>>(() => new Set());
   const [menu, setMenu] = useState<RadioPresetSlot | null>(null);
+  const [bank, setBank] = useState<'presets' | 'recent'>('presets');
+  const [recents, setRecents] = useState<RecentStation[]>([]);
   const timer = useRef<number | null>(null);
   const statusTimer = useRef<number | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -97,6 +103,15 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned }: 
     onPlay(p.src, p.title, p.subtitle, 'audio', p.channelId, p.guideId ?? 'audio-podcasts', p.programId);
   }, [onPlay, onPresetTuned]);
 
+  const openBank = useCallback((next: 'presets' | 'recent') => {
+    setBank(next);
+    if (next === 'recent') setRecents(readRecentStations().slice(0, 6));
+  }, []);
+  const tuneRecent = useCallback((r: RecentStation) => {
+    onPresetTuned?.(r.channelId, getStationArt(r.channelId));
+    onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId);
+  }, [onPlay, onPresetTuned]);
+
   const onPointerDown = (slot: RadioPresetSlot) => (e: ReactPointerEvent<HTMLButtonElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     cancelHold();
@@ -146,59 +161,110 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned }: 
 
   return (
     <div data-testid="radio-presets" className="relative border-b border-neutral-800 bg-neutral-950/90">
-      <div role="group" aria-label="Radio presets" className="grid grid-cols-5 gap-1.5 px-3 py-2">
+      <div role="group" aria-label="Radio preset banks" className="flex items-center gap-1 px-3 pt-2">
+        {([['presets', 'My presets'], ['recent', 'Recent']] as const).map(([id, text]) => (
+          <button key={id} type="button" data-testid={`radio-bank-${id}`} aria-pressed={bank === id} onClick={() => openBank(id)}
+            className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${bank === id ? 'bg-neutral-800 text-orange-300' : 'text-neutral-400 hover:text-neutral-200'}`}>{text}</button>
+        ))}
+      </div>
+      {bank === 'presets' ? (
+      <div role="group" aria-label="Radio presets" className={`grid gap-2 px-3 py-2 ${wide ? 'grid-cols-5' : 'grid-cols-3'}`}>
         {RADIO_PRESET_SLOTS.map((slot) => {
           const p = presets[slot];
           const active = Boolean(p && playing && p.channelId === playing.channelId);
           const isHolding = holding === slot;
           const theme = p ? getStationTheme(p.channelId, p.title, p.logo ?? getStationArt(p.channelId)) : null;
-          const base = 'relative flex min-h-[64px] min-w-0 select-none flex-col items-stretch gap-0.5 overflow-hidden rounded-lg px-1.5 py-1 text-left transition-transform active:scale-95 motion-reduce:transition-none cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400';
+          const base = 'relative flex h-[112px] min-w-0 select-none flex-col overflow-hidden rounded-xl text-left transition-transform active:scale-95 motion-reduce:transition-none cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400';
           const tone = !p
             ? 'border border-dashed border-neutral-700/60 bg-neutral-900/40 text-neutral-400 hover:border-neutral-500 hover:bg-neutral-900'
             : active
-              ? 'border border-orange-500 bg-orange-500/15 text-white ring-1 ring-orange-400/40'
+              ? 'border border-orange-500 bg-orange-500/15 text-white'
               : 'border border-neutral-700/80 bg-neutral-900/90 text-neutral-100 shadow-sm hover:border-orange-500/60';
           const label = p
             ? `Preset ${slot}: ${p.title}${p.number ? `, station ${p.number}` : ''}${active ? (live ? ', playing now' : ', current station') : ''}. Tap to tune. Press and hold, or Shift+Enter, to replace it with the playing station.`
             : `Preset ${slot}, empty. Press and hold, or Shift+Enter, to save the playing station here.`;
           const logoSrc = p ? (p.logo ?? getStationArt(p.channelId)) : undefined;
           const showLogo = Boolean(logoSrc) && !broken.has(p?.channelId ?? '');
+          const color = theme ? theme.color : p ? tileColor(p.channelId) : undefined;
           return (
             <button key={slot} type="button" data-testid={`radio-preset-${slot}`} data-filled={p ? 'true' : 'false'} aria-label={label} aria-current={active ? 'true' : undefined} title={label}
               onPointerDown={onPointerDown(slot)} onPointerMove={onPointerMove} onPointerUp={cancelHold} onPointerCancel={cancelHold} onPointerLeave={cancelHold}
               onClick={onClick(slot)} onKeyDown={onKeyDown(slot)}
               onContextMenu={(e) => { e.preventDefault(); cancelHold(); fired.current = null; setMenu(slot); }}
-              style={theme && !active ? { borderColor: `${theme.color}50` } : undefined}
+              style={color ? (active ? { boxShadow: `0 0 0 2px ${color}` } : { borderColor: `${color}50` }) : undefined}
               className={`${base} ${tone}`}>
               {isHolding && (
-                <span aria-hidden="true" data-testid="radio-preset-hold" className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-orange-400"
+                <span aria-hidden="true" data-testid="radio-preset-hold" className="pointer-events-none absolute inset-0 z-[2] rounded-xl ring-2 ring-orange-400"
                   style={{ animation: `ajnPresetFill ${HOLD_MS}ms linear forwards`, background: 'rgba(249,115,22,0.22)' }} />
               )}
-              <span className="relative flex items-center justify-between gap-1">
-                <span className="font-mono text-xs font-bold text-orange-400">{slot}</span>
-                {theme && <span className="text-[10px]" title={theme.label}>{theme.iconEmoji}</span>}
-                {p?.number ? <span className="font-mono text-[10px] text-neutral-400">#{p.number}</span> : null}
-                {active && live && <span aria-hidden="true" data-testid="radio-preset-live" className="ajn-live-dot h-2 w-2 shrink-0 rounded-full bg-emerald-400 animate-pulse" />}
-              </span>
               {p ? (
                 <>
-                  <span className="relative flex flex-1 items-center justify-center">
+                  <span className="relative flex h-[72px] w-full shrink-0 items-center justify-center overflow-hidden" style={{ background: `${color}33` }}>
                     {showLogo ? (
                       <img src={logoSrc} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false}
-                        className="h-7 w-7 rounded bg-neutral-900 object-contain" onError={() => setBroken((prev) => new Set(prev).add(p.channelId))} />
+                        className="h-full w-full object-contain p-1" onError={() => setBroken((prev) => new Set(prev).add(p.channelId))} />
                     ) : (
-                      <span aria-hidden="true" style={{ background: theme ? theme.color : tileColor(p.channelId), boxShadow: theme ? `0 0 8px ${theme.color}45` : undefined }} className="flex h-7 w-7 items-center justify-center rounded text-[11px] font-bold text-neutral-100">{initialsOf(p.title)}</span>
+                      <span aria-hidden="true" style={{ color }} className="text-lg font-bold">{initialsOf(p.title)}</span>
                     )}
+                    <span aria-hidden="true" className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-orange-400">{slot}</span>
+                    {active && live && <span aria-hidden="true" data-testid="radio-preset-live" className="ajn-live-dot absolute bottom-1 right-1 h-2 w-2 rounded-full bg-emerald-400 animate-pulse motion-reduce:animate-none" />}
                   </span>
-                  <span className="relative block truncate text-[11px] font-semibold leading-tight">{p.title}</span>
+                  <span className="relative block min-w-0 px-1.5 pt-1">
+                    <span className="block truncate text-xs font-semibold leading-tight">{p.title}</span>
+                    <span className="block truncate text-[10px] leading-tight text-neutral-400">{p.number ? `#${p.number}` : (theme?.label ?? '')}</span>
+                  </span>
                 </>
               ) : (
-                <span className="relative flex flex-1 items-center justify-center text-lg leading-none text-neutral-600" aria-hidden="true">+</span>
+                <span className="relative flex h-full flex-col items-center justify-center gap-1 px-2 text-center">
+                  <span aria-hidden="true" className="font-mono text-xs font-bold text-orange-400/80">{slot}</span>
+                  <span className="line-clamp-2 text-[10px] leading-tight text-neutral-400">{playing ? `+ Save "${playing.title}" here` : 'Empty. Play a station, then hold to save.'}</span>
+                </span>
               )}
             </button>
           );
         })}
+        {!wide && (
+          <button type="button" data-testid="radio-all-stations"
+            onClick={() => document.querySelector<HTMLElement>('[data-testid="live-radio-search"]')?.focus()}
+            className="flex h-[112px] min-w-0 cursor-pointer select-none flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-neutral-700/60 bg-neutral-900/30 px-2 text-center text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400">
+            <Search className="h-5 w-5" aria-hidden="true" />
+            <span className="text-xs font-semibold">All stations</span>
+          </button>
+        )}
       </div>
+      ) : (
+      <div role="group" aria-label="Recent radio stations" className={`grid gap-2 px-3 py-2 ${wide ? 'grid-cols-5' : 'grid-cols-3'}`}>
+        {recents.length === 0 ? (
+          <p data-testid="radio-recent-empty" className="col-span-full py-6 text-center text-xs text-neutral-400">No stations played yet.</p>
+        ) : recents.map((r, i) => {
+          const isNow = Boolean(playing && playing.channelId === r.channelId);
+          const logoSrc = getStationArt(r.channelId);
+          const showLogo = Boolean(logoSrc) && !broken.has(r.channelId);
+          const color = tileColor(r.channelId, r.title);
+          return (
+            <button key={r.channelId} type="button" data-testid={`radio-recent-${i + 1}`} aria-current={isNow ? 'true' : undefined}
+              aria-label={`${r.title}${isNow ? (live ? ', playing now' : ', current station') : ''}. Tap to tune.`}
+              onClick={() => tuneRecent(r)}
+              style={isNow ? { boxShadow: `0 0 0 2px ${color}` } : { borderColor: `${color}50` }}
+              className={`relative flex h-[112px] min-w-0 cursor-pointer select-none flex-col overflow-hidden rounded-xl border text-left active:scale-95 motion-reduce:transition-none touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${isNow ? 'border-orange-500 bg-orange-500/15 text-white' : 'border-neutral-700/80 bg-neutral-900/90 text-neutral-100 hover:border-orange-500/60'}`}>
+              <span className="relative flex h-[72px] w-full shrink-0 items-center justify-center overflow-hidden" style={{ background: `${color}33` }}>
+                {showLogo ? (
+                  <img src={logoSrc} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false}
+                    className="h-full w-full object-contain p-1" onError={() => setBroken((prev) => new Set(prev).add(r.channelId))} />
+                ) : (
+                  <span aria-hidden="true" style={{ color }} className="text-lg font-bold">{initialsOf(r.title)}</span>
+                )}
+                {isNow && live && <span aria-hidden="true" className="ajn-live-dot absolute bottom-1 right-1 h-2 w-2 rounded-full bg-emerald-400 animate-pulse motion-reduce:animate-none" />}
+              </span>
+              <span className="relative block min-w-0 px-1.5 pt-1">
+                <span className="block truncate text-xs font-semibold leading-tight">{r.title}</span>
+                <span className="block truncate text-[10px] leading-tight text-neutral-400">{r.subtitle ?? ''}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      )}
       <p data-testid="radio-presets-status" role="status" aria-live="polite" className={`px-3 pb-2 text-[11px] text-orange-200 ${status ? '' : 'sr-only'}`}>{status || 'Radio presets. Tap to tune; press and hold to save the playing station.'}</p>
       <style>{`@keyframes ajnPresetFill{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}@media (prefers-reduced-motion:reduce){[data-testid="radio-preset-hold"]{animation:none!important}}`}</style>
       {menu !== null && (
