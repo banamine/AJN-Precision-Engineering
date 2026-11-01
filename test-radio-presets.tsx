@@ -109,4 +109,9 @@ assert.equal(readPresetView({ getItem: () => 'unit' }), 'unit');
 assert.equal(readPresetView({ getItem: () => 'junk' }), 'wall');
 assert.equal(readPresetView({ getItem: () => { throw new Error('blocked'); } }), 'wall');
 assert.equal(PRESET_VIEW_KEY, 'ajn.radio.presetView.v1');
+// the app asks for the head unit by default; a stored choice always wins
+assert.equal(readPresetView({ getItem: () => null }, 'unit'), 'unit');
+assert.equal(readPresetView({ getItem: () => 'wall' }, 'unit'), 'wall');
+assert.equal(readPresetView({ getItem: () => { throw new Error('blocked'); } }, 'unit'), 'unit');
+assert.match(renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop, defaultView: 'unit' })), /radio-head-unit/);
 console.log('PASS radio presets: store rules, refusals, bad data, injectable storage, bar markup (5 slots, empty, filled, active, paused, non-radio, wall, banks, wide, head unit)');

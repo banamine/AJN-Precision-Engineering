@@ -209,7 +209,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
       {/* Live radio, ready on arrival: the same presets, head unit and storage as the floating Radio dock, so a listener never has to open the dock first. */}
       <section className="ajr-live" aria-label="Live radio presets" data-testid="radio-page-live">
         <div className="ajr-label">LIVE RADIO · YOUR PRESETS</div>
-        <RadioPresetsBar station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
+        <RadioPresetsBar defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
       </section>
 
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />

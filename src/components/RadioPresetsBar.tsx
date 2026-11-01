@@ -17,11 +17,12 @@ const STATUS_MS = 4000;
 export const PRESET_VIEW_KEY = 'ajn.radio.presetView.v1';
 export type PresetView = 'wall' | 'unit';
 /** The remembered view ('wall' when nothing is stored or storage is blocked). */
-export function readPresetView(storage?: { getItem(key: string): string | null }): PresetView {
+export function readPresetView(storage?: { getItem(key: string): string | null }, fallback: PresetView = 'wall'): PresetView {
   try {
     const s = storage ?? (typeof window === 'undefined' ? null : window.localStorage);
-    return s?.getItem(PRESET_VIEW_KEY) === 'unit' ? 'unit' : 'wall';
-  } catch { return 'wall'; }
+    const v = s?.getItem(PRESET_VIEW_KEY);
+    return v === 'unit' || v === 'wall' ? v : fallback;
+  } catch { return fallback; }
 }
 
 /** What the dock knows about the station that is playing right now (the directory record, when the station was picked there). */
@@ -42,6 +43,8 @@ interface RadioPresetsBarProps {
   wide?: boolean;
   /** Seeds the view (tests). Normally read from this device's saved choice. */
   initialView?: PresetView;
+  /** View used when the listener has not chosen one yet. The app passes 'unit' (the automotive head unit); the default stays 'wall'. */
+  defaultView?: PresetView;
 }
 
 function initialsOf(name: string): string {
@@ -54,7 +57,7 @@ function tileColor(id: string, name?: string): string {
 }
 
 /** Five hardware-style presets: tap to tune, press and hold (half a second) to save the station that is playing. */
-export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wide = false, initialView }: RadioPresetsBarProps): ReactElement {
+export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wide = false, initialView, defaultView = 'wall' }: RadioPresetsBarProps): ReactElement {
   const presets: RadioPresetMap = useRadioPresets();
   const [status, setStatus] = useState<string>('');
   const [holding, setHolding] = useState<RadioPresetSlot | null>(null);
@@ -62,7 +65,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   const [menu, setMenu] = useState<RadioPresetSlot | null>(null);
   const [bank, setBank] = useState<'presets' | 'recent'>('presets');
   const [recents, setRecents] = useState<RecentStation[]>([]);
-  const [view, setViewState] = useState<PresetView>(() => initialView ?? readPresetView());
+  const [view, setViewState] = useState<PresetView>(() => initialView ?? readPresetView(undefined, defaultView));
   const [preview, setPreview] = useState<string | null>(null); // head unit: key hovered/focused, shown on the LCD
   const setView = useCallback((next: PresetView) => {
     setViewState(next);

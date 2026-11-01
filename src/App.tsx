@@ -400,9 +400,9 @@ export default function App() {
           </div>
         )}
       </main>
-      <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={Boolean(nowPlaying) && destination !== 'player'} onPlayerPage={destination === 'player'} />
+      <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={Boolean(nowPlaying) && destination !== 'player' && destination !== 'radio'} onPlayerPage={destination === 'player'} onRadioPage={destination === 'radio'} />
       <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
-      {nowPlaying && destination !== 'player' && (
+      {nowPlaying && destination !== 'player' && destination !== 'radio' && (
         <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />
       )}
     </div>

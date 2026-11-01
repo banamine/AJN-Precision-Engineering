@@ -20,6 +20,8 @@ interface RadioDockProps {
   miniPlayerShowing: boolean;
   /** True on the Player page: the button moves to the top-right so it never covers the player's bottom control bar (Fullscreen, PiP, volume). */
   onPlayerPage?: boolean;
+  /** True on the Radio page: the radio is part of the page itself (one player), so the floating button is not drawn. */
+  onRadioPage?: boolean;
 }
 
 const LONG_PRESS_MS = 500;
@@ -29,7 +31,7 @@ const RIPPLE_MS = 600;
 const isStation = (m: NowPlayingMedia | null): m is NowPlayingMedia => Boolean(m?.channelId?.startsWith('radio:'));
 
 /** Radio button + small panel. Lives above every page, so the sound and the controls never depend on which page is open. */
-export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, onPlayerPage = false }: RadioDockProps): ReactElement {
+export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, onPlayerPage = false, onRadioPage = false }: RadioDockProps): ReactElement {
   const [open, setOpen] = useState<boolean>(false);
   const [everOpened, setEverOpened] = useState<boolean>(false); // keep filters and page once opened; mount lazily so startup stays light
   const [full, setFull] = useState<boolean>(false); // full-screen Radio: more stations and sectors in view
@@ -164,6 +166,21 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, o
     closeMenu();
     onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId);
   };
+  // Player page: the button sits just under the header whatever height the header has (status badges can wrap), so it never overlaps it.
+  const [headerH, setHeaderH] = useState<number>(0);
+  useEffect(() => {
+    if (!onPlayerPage) return undefined;
+    const el = document.getElementById('canonical-app-header');
+    if (!el) return undefined;
+    const read = () => setHeaderH(Math.round(el.offsetHeight));
+    read();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(read) : null;
+    ro?.observe(el);
+    window.addEventListener('resize', read);
+    return () => { ro?.disconnect(); window.removeEventListener('resize', read); };
+  }, [onPlayerPage]);
+  const topStyle = onPlayerPage && headerH > 0 ? { top: headerH + 12 } : undefined;
+  const menuTopStyle = onPlayerPage && headerH > 0 ? { top: headerH + 12 + 56 } : undefined;
   const menuLift = onPlayerPage
     ? 'top-[7.25rem] sm:top-[7.75rem]'
     : miniPlayerShowing ? 'bottom-[12.5rem] sm:bottom-[13.5rem] md:bottom-[9.5rem]' : 'bottom-[8.5rem] sm:bottom-[9.25rem] md:bottom-[5.25rem]';
@@ -175,7 +192,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, o
 
   return (
     <>
-      {!open && (
+      {!open && !onRadioPage && (
         <button type="button" id="radio-dock-button" data-testid="radio-dock-button" onClick={onBtnClick} aria-expanded={false} aria-controls="radio-dock-panel" aria-haspopup="menu"
           onPointerDown={onBtnPointerDown} onPointerMove={onBtnPointerMove} onPointerUp={cancelPress} onPointerCancel={cancelPress}
           onContextMenu={(e) => { e.preventDefault(); cancelPress(); pressFired.current = false; openMenu(); }}
@@ -183,7 +200,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, o
           onPointerEnter={(e) => { if (e.pointerType === 'mouse') setBtnHold(true); }} onPointerLeave={() => { setBtnHold(false); cancelPress(); }}
           onFocus={(e) => setBtnHold(e.currentTarget.matches(':focus-visible'))} onBlur={() => setBtnHold(false)}
           title="Live Radio: tap to open, press and hold for recent stations"
-          className={`fixed right-3 sm:right-6 ${lift} z-[45] flex min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full bg-gradient-to-br from-orange-500 to-red-600 ${onPlayerPage ? 'px-3' : 'px-4'} text-sm font-extrabold uppercase tracking-wider text-white shadow-lg shadow-red-900/50 ring-1 ring-white/20 transition-[opacity,transform,background-color] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:from-orange-400 hover:to-red-500 active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white`}>
+          style={topStyle} className={`fixed right-3 sm:right-6 ${lift} z-[45] flex min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full bg-gradient-to-br from-orange-500 to-red-600 ${onPlayerPage ? 'px-3' : 'px-4'} text-sm font-extrabold uppercase tracking-wider text-white ${onPlayerPage ? 'shadow-md shadow-black/40' : 'shadow-lg shadow-red-900/50'} ring-1 ring-white/20 transition-[opacity,transform,background-color] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:from-orange-400 hover:to-red-500 active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white`}>
           {ripples.map((r) => (
             <span key={r.id} aria-hidden="true" data-testid="radio-ripple" className="ajn-ripple" style={{ left: r.x - r.size / 2, top: r.y - r.size / 2, width: r.size, height: r.size }} />
           ))}
@@ -197,7 +214,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, o
 
       {menuOpen && !open && (
         <div ref={menuRef} role="menu" aria-label="Recent radio stations" data-testid="radio-quick-menu"
-          className={`fixed right-3 sm:right-6 ${menuLift} z-[50] w-64 overflow-hidden rounded-2xl border border-red-700/70 bg-neutral-950/97 text-neutral-100 shadow-2xl shadow-black/70 backdrop-blur-md`}>
+          style={menuTopStyle} className={`fixed right-3 sm:right-6 ${menuLift} z-[50] w-64 overflow-hidden rounded-2xl border border-red-700/70 bg-neutral-950/97 text-neutral-100 shadow-2xl shadow-black/70 backdrop-blur-md`}>
           <p className="border-b border-neutral-800 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-orange-300">Switch station</p>
           {recents.length === 0 ? (
             <p className="px-3 py-3 text-xs text-neutral-400" data-testid="radio-quick-empty">No stations played yet. Open Radio and pick one: it will show up here.</p>
@@ -275,7 +292,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, o
 
         {/* One scrolling body under the title bar and Now playing row: on a short window the presets, station group and directory scroll together instead of squeezing the directory to nothing or scrolling the title bar out of view. */}
         <div data-testid="radio-dock-body" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <RadioPresetsBar station={station} wide={full} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
+          <RadioPresetsBar defaultView="unit" station={station} wide={full} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
             onPresetTuned={(id, logo) => setPresetTuned({ id, logo })} />
 
           <RadioStationGroup onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />
