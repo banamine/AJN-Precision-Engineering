@@ -18,6 +18,8 @@ interface RadioDockProps {
   onNavigate: (dest: Destination) => void;
   /** True when the bottom mini player is on screen, so the button sits above it. */
   miniPlayerShowing: boolean;
+  /** True on the Player page: the button moves to the top-right so it never covers the player's bottom control bar (Fullscreen, PiP, volume). */
+  onPlayerPage?: boolean;
 }
 
 const LONG_PRESS_MS = 500;
@@ -27,7 +29,7 @@ const RIPPLE_MS = 600;
 const isStation = (m: NowPlayingMedia | null): m is NowPlayingMedia => Boolean(m?.channelId?.startsWith('radio:'));
 
 /** Radio button + small panel. Lives above every page, so the sound and the controls never depend on which page is open. */
-export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }: RadioDockProps): ReactElement {
+export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing, onPlayerPage = false }: RadioDockProps): ReactElement {
   const [open, setOpen] = useState<boolean>(false);
   const [everOpened, setEverOpened] = useState<boolean>(false); // keep filters and page once opened; mount lazily so startup stays light
   const [full, setFull] = useState<boolean>(false); // full-screen Radio: more stations and sectors in view
@@ -162,10 +164,14 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
     closeMenu();
     onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId);
   };
-  const menuLift = miniPlayerShowing ? 'bottom-[12.5rem] sm:bottom-[13.5rem] md:bottom-[9.5rem]' : 'bottom-[8.5rem] sm:bottom-[9.25rem] md:bottom-[5.25rem]';
+  const menuLift = onPlayerPage
+    ? 'top-[7.25rem] sm:top-[7.75rem]'
+    : miniPlayerShowing ? 'bottom-[12.5rem] sm:bottom-[13.5rem] md:bottom-[9.5rem]' : 'bottom-[8.5rem] sm:bottom-[9.25rem] md:bottom-[5.25rem]';
 
   // The button rides above the bottom nav (phone) and above the mini player when it is showing.
-  const lift = miniPlayerShowing ? 'bottom-[9.5rem] sm:bottom-[10.5rem] md:bottom-[6.5rem]' : 'bottom-[4.75rem] sm:bottom-[5.5rem] md:bottom-6';
+  const lift = onPlayerPage
+    ? 'top-16 sm:top-[4.5rem]'
+    : miniPlayerShowing ? 'bottom-[9.5rem] sm:bottom-[10.5rem] md:bottom-[6.5rem]' : 'bottom-[4.75rem] sm:bottom-[5.5rem] md:bottom-6';
 
   return (
     <>
@@ -177,12 +183,12 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
           onPointerEnter={(e) => { if (e.pointerType === 'mouse') setBtnHold(true); }} onPointerLeave={() => { setBtnHold(false); cancelPress(); }}
           onFocus={(e) => setBtnHold(e.currentTarget.matches(':focus-visible'))} onBlur={() => setBtnHold(false)}
           title="Live Radio: tap to open, press and hold for recent stations"
-          className={`fixed right-3 sm:right-6 ${lift} z-[45] flex min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full bg-gradient-to-br from-orange-500 to-red-600 px-4 text-sm font-extrabold uppercase tracking-wider text-white shadow-lg shadow-red-900/50 ring-1 ring-white/20 transition-[opacity,transform,background-color] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:from-orange-400 hover:to-red-500 active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white`}>
+          className={`fixed right-3 sm:right-6 ${lift} z-[45] flex min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full bg-gradient-to-br from-orange-500 to-red-600 ${onPlayerPage ? 'px-3' : 'px-4'} text-sm font-extrabold uppercase tracking-wider text-white shadow-lg shadow-red-900/50 ring-1 ring-white/20 transition-[opacity,transform,background-color] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:from-orange-400 hover:to-red-500 active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white`}>
           {ripples.map((r) => (
             <span key={r.id} aria-hidden="true" data-testid="radio-ripple" className="ajn-ripple" style={{ left: r.x - r.size / 2, top: r.y - r.size / 2, width: r.size, height: r.size }} />
           ))}
           <Radio className="relative h-5 w-5" aria-hidden="true" />
-          <span className="relative">Radio</span>
+          <span className={onPlayerPage ? 'sr-only' : 'relative'}>Radio</span>
           {live && (
             <span data-testid="radio-live-dot" role="img" aria-label="Radio is playing" className="ajn-live-dot relative h-2.5 w-2.5 rounded-full bg-emerald-300" />
           )}
