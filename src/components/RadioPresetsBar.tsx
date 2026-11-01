@@ -203,7 +203,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const line3 = preview ? '' : (playing?.subtitle ?? '');
           return (
             <div data-testid="radio-head-unit-lcd" className="flex min-h-[112px] items-stretch gap-2 rounded-lg border border-black/60 p-2"
-              style={{ background: nowTheme ? nowTheme.themeColor : '#0a0a0a', color: `${accent}d9` }}>
+              style={{ background: nowTheme ? nowTheme.themeColor : '#0a0a0a', color: `color-mix(in srgb, ${accent} 45%, white)` }}>
               <div className="flex min-w-0 flex-1 flex-col justify-between">
                 <div className="flex items-center justify-between gap-2 font-mono text-[10px] font-bold uppercase tracking-wider">
                   <span className="whitespace-nowrap">{bank === 'presets' ? 'My presets' : 'Recent'}</span>
@@ -212,7 +212,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                   </span>
                 </div>
                 <p className="truncate text-sm font-bold leading-tight">{line2}</p>
-                <p className="truncate text-[11px] leading-tight opacity-80">{line3}</p>
+                <p className="truncate text-[11px] leading-tight">{line3}</p>
               </div>
               <div aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center self-center overflow-hidden rounded border-2 border-black/70 bg-black/40">
                 {nowLogo && !broken.has(playing?.channelId ?? '') ? (
@@ -320,7 +320,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
               ) : (
                 <span className="relative flex h-full flex-col items-center justify-center gap-1 px-2 text-center">
                   <span aria-hidden="true" className="font-mono text-xs font-bold text-orange-400/80">{slot}</span>
-                  <span className="line-clamp-2 text-[10px] leading-tight text-neutral-400">{playing ? `+ Save "${playing.title}" here` : 'Empty. Play a station, then hold to save.'}</span>
+                  <span className="line-clamp-2 text-[10px] leading-tight text-neutral-400">{playing ? `+ Save "${playing.title}" here` : 'Play a station, then hold to save.'}</span>
                 </span>
               )}
             </button>

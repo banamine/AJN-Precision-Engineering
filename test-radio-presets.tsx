@@ -81,7 +81,7 @@ store.clear();
 html = renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop }));
 assert.equal((html.match(/data-testid="radio-preset-[1-5]"/g) ?? []).length, 5);
 assert.equal((html.match(/data-filled="false"/g) ?? []).length, 5);
-assert.match(html, /Empty\. Play a station, then hold to save\./);
+assert.match(html, /Play a station, then hold to save\./);
 assert.match(html, /All stations/); assert.doesNotMatch(html, /radio-preset-6/);
 assert.match(html, /data-testid="radio-bank-presets"/); assert.match(html, /data-testid="radio-bank-recent"/);
 html = renderToStaticMarkup(createElement(RadioPresetsBar, { station: playingNow, live: true, onPlay: noop }));
