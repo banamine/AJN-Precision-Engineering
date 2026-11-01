@@ -178,3 +178,5 @@
 .ajr .ajr-sync-btn:hover { background: #aee9d5; color: #09100f; }
 .ajr .ajr-sync-btn[aria-pressed="true"] { background: #aee9d5; color: #09100f; }
 .ajr .ajr-sync-btn:focus-visible { outline: 2px solid #edf1e9; outline-offset: 2px; }
+
+.ajr-live{padding:20px 0 4px;border-top:1px solid rgba(255,255,255,.08)}.ajr-live>.ajr-label{margin-bottom:8px}.ajr-live [data-testid="radio-presets"]{border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden}
