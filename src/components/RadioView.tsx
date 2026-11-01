@@ -9,6 +9,7 @@ import { filterEntries, formatClock, isPlayingEntry, neighbour, showChips, showI
 import { dayKindLabel, groupShowDays, planFullShow, type FullShowMode, type ShowDay } from '../utils/ajnShowGroups';
 import { startShowQueue } from '../utils/showQueue';
 import { FullShowStatus } from './FullShowStatus';
+import { RadioPresetsBar } from './RadioPresetsBar';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
 import { useDigest } from '../hooks/useDigest';
 import { DailyBriefing, NewsTicker } from './DailyBriefing';
@@ -146,6 +147,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   const playingEntry = useMemo(() => everyEntry.find(entry => isPlayingEntry(entry, nowPlaying?.programId)) ?? null, [everyEntry, nowPlaying?.programId]);
   const playingHere = playingEntry !== null && entries.includes(playingEntry);
   const progressById = useMemo(() => new Map(recentlyPlayed.map(item => [item.programId ?? item.id, item.progressSeconds])), [recentlyPlayed]);
+  const liveStation = nowPlaying?.channelId?.startsWith('radio:') ? nowPlaying : null; // a live station, not an AJN archive episode
   const liveMedia = usePersistentMedia(nowPlaying?.mediaType, nowPlaying ? `${nowPlaying.src}|${nowPlaying.mediaType}` : undefined, Boolean(nowPlaying));
 
   const update = (patch: Partial<RadioFilter>) => { setFilter(current => ({ ...current, ...patch })); setVisible(PAGE_SIZE); };
@@ -202,6 +204,12 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
           <a href="#ajr-listen" className="ajr-explore" onClick={event => { event.preventDefault(); document.getElementById('ajr-listen')?.scrollIntoView({ behavior: 'smooth' }); }}>BROWSE EPISODES <ArrowDownRight size={15} /></a>
         </div>
         <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
+      </section>
+
+      {/* Live radio, ready on arrival: the same presets, head unit and storage as the floating Radio dock, so a listener never has to open the dock first. */}
+      <section className="ajr-live" aria-label="Live radio presets" data-testid="radio-page-live">
+        <div className="ajr-label">LIVE RADIO · YOUR PRESETS</div>
+        <RadioPresetsBar station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
       </section>
 
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
