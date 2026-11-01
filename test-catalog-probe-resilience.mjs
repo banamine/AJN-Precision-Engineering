@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { probe, parseRetryAfter } from './tools/catalog-probe.mjs';
+import { applyFailures, probe, parseRetryAfter } from './tools/catalog-probe.mjs';
 
 const temp = mkdtempSync(join(tmpdir(), 'ajn-catalog-probe-'));
 const goodResponse = () => new Response(new Uint8Array([1]), {
@@ -95,13 +95,24 @@ try {
     },
   });
   assert.equal(cooldownCalls, 2, '429 is recorded once, not retried');
-  assert.equal(result.failed.length, 1);
+  assert.equal(result.failed.length, 0);
+  assert.equal(result.inconclusive.length, 1);
   assert.equal(result.ok, 1);
   assert.ok(cooldownStarts[1].at - cooldownStarts[0].at >= 2000, 'Retry-After was honored before the next same-host request');
 
-  // Header timeouts retry once, then become failed.
+  // A 429 remains in the catalog because it is not a definitive item response.
+  const rateLimitedTarget = target(20);
+  const rateLimitedData = {
+    base: { extra: { channels: [] }, docs: [] },
+    head: { extra: { channels: [{ id: 'new-rate-limited', rows: [rateLimitedTarget] }] }, docs: [] },
+  };
+  const keptAfter429 = applyFailures(rateLimitedData.base, rateLimitedData.head, result.failed.map((failure) => failure.key));
+  assert.equal(keptAfter429.extra.channels[0].rows.length, 1);
+
+  // Header timeouts retry once, then remain inconclusive and are not removed.
   let timeoutCalls = 0;
-  result = await probe([target(30)], {
+  const timeoutTarget = target(30);
+  result = await probe([timeoutTarget], {
     maxWorkers: 1,
     intervalMs: 0,
     timeoutMs: 5,
@@ -116,10 +127,29 @@ try {
     }),
   });
   assert.equal(timeoutCalls, 2, 'a header timeout gets exactly one retry');
-  assert.equal(result.failed.length, 1);
-  assert.equal(result.failed[0].reason, 'timeout');
+  assert.equal(result.failed.length, 0);
+  assert.equal(result.inconclusive.length, 1);
+  assert.equal(result.inconclusive[0].reason, 'timeout');
+  const timeoutData = {
+    base: { extra: { channels: [] }, docs: [] },
+    head: { extra: { channels: [{ id: 'new-timeout', rows: [timeoutTarget] }] }, docs: [] },
+  };
+  const keptAfterTimeout = applyFailures(timeoutData.base, timeoutData.head, result.failed.map((failure) => failure.key));
+  assert.equal(keptAfterTimeout.extra.channels[0].rows.length, 1);
 
-  // One 5xx retry only; the second 5xx remains failed.
+  // Network errors also get one retry, then remain inconclusive.
+  let networkErrorCalls = 0;
+  result = await probe([target(32)], {
+    maxWorkers: 1,
+    intervalMs: 0,
+    fetchImpl: async () => { networkErrorCalls++; throw new Error('connection reset'); },
+  });
+  assert.equal(networkErrorCalls, 2);
+  assert.equal(result.failed.length, 0);
+  assert.equal(result.inconclusive.length, 1);
+  assert.match(result.inconclusive[0].reason, /connection reset/);
+
+  // One 5xx retry only; the second 5xx remains inconclusive.
   let serverErrorCalls = 0;
   result = await probe([target(31)], {
     maxWorkers: 1,
@@ -130,7 +160,9 @@ try {
     },
   });
   assert.equal(serverErrorCalls, 2);
-  assert.equal(result.failed[0].status, 503);
+  assert.equal(result.failed.length, 0);
+  assert.equal(result.inconclusive.length, 1);
+  assert.equal(result.inconclusive[0].status, 503);
 
   // Deadline leaves all undispatched work unprobed and resolves normally (the CLI's exit path is 0).
   let forbiddenFetchCalls = 0;
@@ -215,6 +247,77 @@ try {
   const cacheFile = join(cacheDir, 'playability-probe-cache.json');
   assert.equal(JSON.parse(readFileSync(cacheFile, 'utf8')).schema, 1);
 
+  // Only definitive failures may be cached; transient results are probed again.
+  const outcomeCacheDir = join(temp, 'outcome-cache');
+  const limitedCacheTarget = target(60);
+  writeMetadata(outcomeCacheDir, limitedCacheTarget, 6000);
+  result = await probe([limitedCacheTarget], {
+    cacheDir: outcomeCacheDir,
+    maxWorkers: 1,
+    intervalMs: 0,
+    fetchImpl: async () => new Response('rate limited', { status: 429 }),
+  });
+  assert.equal(result.inconclusive.length, 1);
+  assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(outcomeCacheDir, 'playability-probe-cache.json'), 'utf8')).entries), []);
+
+  const timedOutCacheTarget = target(61);
+  writeMetadata(outcomeCacheDir, timedOutCacheTarget, 6100);
+  let timedOutCacheCalls = 0;
+  result = await probe([timedOutCacheTarget], {
+    cacheDir: outcomeCacheDir,
+    maxWorkers: 1,
+    intervalMs: 0,
+    timeoutMs: 5,
+    fetchImpl: (_url, init) => new Promise((_resolve, reject) => {
+      timedOutCacheCalls++;
+      init.signal.addEventListener('abort', () => {
+        const error = new Error('aborted');
+        error.name = 'AbortError';
+        reject(error);
+      }, { once: true });
+    }),
+  });
+  assert.equal(timedOutCacheCalls, 2);
+  assert.equal(result.inconclusive.length, 1);
+  assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(outcomeCacheDir, 'playability-probe-cache.json'), 'utf8')).entries), []);
+
+  const definitiveCacheTarget = target(62);
+  writeMetadata(outcomeCacheDir, definitiveCacheTarget, 6200);
+  result = await probe([definitiveCacheTarget], {
+    cacheDir: outcomeCacheDir,
+    maxWorkers: 1,
+    intervalMs: 0,
+    fetchImpl: async () => new Response('not found', { status: 404 }),
+  });
+  assert.equal(result.failed.length, 1);
+  const cachedDefinitive = Object.values(JSON.parse(readFileSync(join(outcomeCacheDir, 'playability-probe-cache.json'), 'utf8')).entries);
+  assert.equal(cachedDefinitive.length, 1);
+  assert.equal(cachedDefinitive[0].result.definitive, true);
+
+  // Old transient failures in a version-1 cache are discarded and retried.
+  const legacyTarget = target(63);
+  const legacyMtime = 6300;
+  writeMetadata(outcomeCacheDir, legacyTarget, legacyMtime);
+  const legacyKey = JSON.stringify([legacyTarget.identifier, legacyTarget.file, legacyTarget.size, legacyMtime]);
+  const legacyCacheFile = join(outcomeCacheDir, 'playability-probe-cache.json');
+  writeFileSync(legacyCacheFile, JSON.stringify({
+    schema: 1,
+    entries: {
+      [legacyKey]: { cachedAt: cacheClock.value, result: { status: 429, ok: false, reason: 'HTTP 429' } },
+    },
+  }));
+  let legacyProbeCalls = 0;
+  result = await probe([legacyTarget], {
+    cacheDir: outcomeCacheDir,
+    maxWorkers: 1,
+    intervalMs: 0,
+    now: () => cacheClock.value,
+    fetchImpl: async () => { legacyProbeCalls++; return goodResponse(); },
+  });
+  assert.equal(result.cacheHits, 0);
+  assert.equal(legacyProbeCalls, 1);
+  assert.equal(result.ok, 1);
+
   // Deadline output stays reviewable and progress is emitted exactly every 50 completed targets.
   const progress = [];
   const progressClock = { value: 0 };
@@ -229,7 +332,7 @@ try {
   assert.equal(result.probed, 100);
   assert.deepEqual(progress, [50, 100]);
 
-  console.log('PASS catalog-probe-resilience: concurrency, pacing, Retry-After, timeout/5xx retry, deadline, cache TTL/key, progress');
+  console.log('PASS catalog-probe-resilience: concurrency, pacing, Retry-After, definitive/inconclusive outcomes, retries, cache safety, deadline, progress');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }

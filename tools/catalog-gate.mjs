@@ -85,6 +85,7 @@ export function evaluate(base, head, measure, config, probe = null) {
   const changed = addedChannels.length || removedChannels.length || renamedChannels.length || movedChannels.length
     || addedRows || removedRows || addedDocs || removedDocs || addedAudio.length || removedAudio.length
     || modifiedRows || modifiedDocs || movedDocs || modifiedAudio.length;
+  const inconclusiveCount = Array.isArray(probe?.inconclusive) ? probe.inconclusive.length : Number(probe?.inconclusive ?? 0);
 
   if (!rules.allowRemovals) {
     if (removedChannels.length) review.push(`${removedChannels.length} channel(s) removed: ${removedChannels.map((c) => c.id).slice(0, 10).join(', ')}`);
@@ -104,12 +105,17 @@ export function evaluate(base, head, measure, config, probe = null) {
   if (addedAudio.length > rules.maxNewAudioChannels) review.push(`${addedAudio.length} new audio channels > limit ${rules.maxNewAudioChannels}`);
   if (rules.requireDeferredClassicChannels && notDeferred.length) review.push(`new Classic TV channel(s) not lazy-loaded: ${notDeferred.join(', ')}`);
 
+  if (inconclusiveCount > 0) {
+    review.push(`${inconclusiveCount} new row(s) inconclusive; kept in the catalog and not cached as failed`);
+  }
   if (changed) {
     if (!probe) review.push('playability probe did not run');
     else {
       if (probe.unprobed > 0) review.push(`${probe.unprobed} new row(s) not probed${probe.deadlineHit ? ' (probe deadline reached)' : ''}`);
-      const rate = probe.probed ? probe.failed.length / probe.probed : 0;
-      if (rate > rules.maxProbeFailureRate) review.push(`${probe.failed.length}/${probe.probed} new rows failed the playability probe (removed); rate above ${rules.maxProbeFailureRate}`);
+      const failedCount = Array.isArray(probe.failed) ? probe.failed.length : Number(probe.failed ?? 0);
+      const resolvedCount = Math.max(0, probe.probed - inconclusiveCount);
+      const rate = resolvedCount ? failedCount / resolvedCount : 0;
+      if (rate > rules.maxProbeFailureRate) review.push(`${failedCount}/${resolvedCount} new rows had definitive playability failures (removed); rate above ${rules.maxProbeFailureRate}`);
     }
   }
   const b = config.budgets;
@@ -130,7 +136,7 @@ export function evaluate(base, head, measure, config, probe = null) {
     }
   }
 
-  const verdict = !changed ? 'none' : block.length ? 'block' : review.length ? 'review' : 'auto';
+  const verdict = !changed && inconclusiveCount === 0 ? 'none' : block.length ? 'block' : review.length ? 'review' : 'auto';
   return {
     verdict,
     reasons: [...block, ...review],
@@ -146,7 +152,9 @@ export function evaluate(base, head, measure, config, probe = null) {
     renamedChannels, movedChannels, shrunkChannels, newDocGroups, addedAudio, removedAudio,
     measure,
     probe: probe ? {
-      targets: probe.targets, probed: probe.probed, ok: probe.ok, failed: probe.failed.length,
+      targets: probe.targets, probed: probe.probed, ok: probe.ok,
+      failed: Array.isArray(probe.failed) ? probe.failed.length : Number(probe.failed ?? 0),
+      inconclusive: inconclusiveCount,
       unprobed: probe.unprobed, cacheHits: probe.cacheHits ?? 0, deadlineHit: probe.deadlineHit === true,
       requests: probe.requests ?? null, droppedChannels: probe.droppedChannels ?? [],
     } : null,
@@ -177,7 +185,7 @@ export function summaryMarkdown(report) {
   }
   if (report.probe) {
     const p = report.probe;
-    lines.push('', `Playability probe: ${p.ok}/${p.probed} rows answered with media; ${p.failed} failed and were removed; ${p.cacheHits ?? 0} reused from cache; ${p.unprobed} not probed${p.deadlineHit ? ' (deadline reached)' : ''}.`);
+    lines.push('', `Playability probe: ${p.ok} playable; ${p.failed} definitive failures removed; ${p.inconclusive ?? 0} inconclusive rows kept (not cached); ${p.cacheHits ?? 0} reused from cache; ${p.unprobed} not probed${p.deadlineHit ? ' (deadline reached)' : ''}.`);
   }
   if (report.addedChannels.length) {
     lines.push('', '<details><summary>New channels</summary>', '', ...report.addedChannels.map((ch) => `- \`${ch.id}\` ${ch.guideId}/${ch.group}: ${ch.name} (${ch.rows} rows${ch.deferLightRows ? ', lazy' : ''})`), '', '</details>');

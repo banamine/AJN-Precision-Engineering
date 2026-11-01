@@ -10,7 +10,7 @@ const chan = (id, rows, extra = {}) => ({ guideId: 'classic-tv', id, name: id, g
 const okMeasure = { classicLightBytes: 1_000_000, classicFullBytes: 33_000_000, classicFullGzipBytes: 3_000_000, guideMB: { 'movies-classics-vault': 0.2, 'cable-tv': 2.1, 'science-documentaries': 3.7 } };
 const base = { extra: { channels: [chan('tvx-a', [row('a1'), row('a2')])] }, docs: [{ g: 'G', id: 'd1', u: 'u1' }], audio: [{ id: 'otr-x', name: 'X' }] };
 const clone = (v) => JSON.parse(JSON.stringify(v));
-const okProbe = { targets: 3, probed: 3, ok: 3, failed: [], unprobed: 0, stoppedAt: null };
+const okProbe = { targets: 3, probed: 3, ok: 3, failed: [], inconclusive: [], unprobed: 0, stoppedAt: null };
 
 // Unchanged -> none
 assert.equal(evaluate(base, clone(base), okMeasure, config).verdict, 'none');
@@ -68,7 +68,12 @@ const deadlineGate = evaluate(base, add, okMeasure, config, { ...okProbe, probed
 assert.equal(deadlineGate.verdict, 'review');
 assert.match(deadlineGate.reasons.join(' '), /not probed .*deadline/);
 assert.match(summaryMarkdown(deadlineGate), /1 not probed \(deadline reached\)/);
-assert.match(evaluate(base, add, okMeasure, config, { ...okProbe, ok: 2, failed: [{}] }).reasons.join(' '), /failed the playability probe/);
+assert.match(evaluate(base, add, okMeasure, config, { ...okProbe, ok: 2, failed: [{}] }).reasons.join(' '), /definitive playability failures/);
+const inconclusiveGate = evaluate(base, clone(base), okMeasure, config, { ...okProbe, probed: 1, inconclusive: [{}] });
+assert.equal(inconclusiveGate.verdict, 'review');
+assert.equal(inconclusiveGate.probe.inconclusive, 1);
+assert.match(inconclusiveGate.reasons.join(' '), /1 new row\(s\) inconclusive/);
+assert.match(summaryMarkdown(inconclusiveGate), /1 inconclusive rows kept \(not cached\)/);
 
 // Probe helpers
 const targets = newTargets(base, add);
@@ -81,6 +86,9 @@ assert.equal(judge(200, 'text/plain', 500).ok, false, 'text/plain is not media')
 assert.equal(judge(206, '', 500).ok, false, 'missing content type is not media');
 assert.equal(judge(206, 'video/mp4', 0).reason, 'empty body');
 assert.equal(judge(403, 'video/mp4', 0).ok, false);
+assert.equal(judge(403, 'video/mp4', 0).definitive, true, '403 is definitive restricted');
+assert.equal(judge(404, 'text/html', 0).definitive, true);
+assert.equal(judge(410, 'text/html', 0).definitive, true);
 const pruned = applyFailures(base, add, ['b1/a.mp4', 'a3/a.mp4']);
 assert.deepEqual(pruned.droppedChannels, ['tvx-b'], 'a new channel whose only row failed is dropped');
 assert.equal(pruned.extra.channels.find((c) => c.id === 'tvx-a').rows.length, 2, 'existing channel keeps its old rows, loses the failed new one');
@@ -93,7 +101,20 @@ assert.equal(result.ok, 2); assert.equal(result.failed.length, 1); assert.equal(
 calls = 0;
 const limited = async () => (calls++ === 0 ? new Response('x', { status: 206, headers: { 'content-type': 'video/mp4' } }) : new Response('slow down', { status: 429 }));
 result = await probe(targets.slice(0, 2), { fetchImpl: limited, maxWorkers: 1, intervalMs: 0, sleep: async () => {} });
-assert.equal(result.probed, 2); assert.equal(result.unprobed, 0); assert.equal(result.failed.length, 1); assert.equal(result.failed[0].status, 429);
+assert.equal(result.probed, 2); assert.equal(result.unprobed, 0);
+assert.equal(result.failed.length, 0); assert.equal(result.inconclusive.length, 1); assert.equal(result.inconclusive[0].status, 429);
+const after429 = applyFailures(base, add, result.failed.map((failure) => failure.key));
+assert.ok(after429.extra.channels.some((channel) => channel.rows.some((item) => item.identifier === 'b1')), '429 row is kept');
+
+const goneTarget = targets.find((target) => target.key === 'b1/a.mp4');
+result = await probe([goneTarget], {
+  fetchImpl: async () => new Response('missing', { status: 404, headers: { 'content-type': 'text/html' } }),
+  maxWorkers: 1, intervalMs: 0, sleep: async () => {},
+});
+assert.equal(result.failed.length, 1);
+assert.equal(result.inconclusive.length, 0);
+const after404 = applyFailures(base, add, result.failed.map((failure) => failure.key));
+assert.deepEqual(after404.droppedChannels, ['tvx-b'], 'a new channel with only a 404 row is removed');
 
 // Redirect hops are followed by hand, each one paced and recorded
 const hops = [];

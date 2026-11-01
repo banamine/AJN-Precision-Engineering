@@ -36,10 +36,12 @@ const MEDIA_TYPE = /^(video\/|audio\/|application\/(octet-stream|mp4|ogg|x-matro
 
 /** Pure: is this response a playable media answer? Needs 200/206, a media content type and at least 1 body byte. */
 export function judge(status, contentType, bodyBytes) {
-  if (status !== 200 && status !== 206) return { ok: false, reason: `HTTP ${status}` };
+  if (status === 403) return { ok: false, definitive: true, reason: 'restricted (HTTP 403)' };
+  if (status === 404 || status === 410) return { ok: false, definitive: true, reason: `HTTP ${status}` };
+  if (status !== 200 && status !== 206) return { ok: false, inconclusive: true, reason: `HTTP ${status}` };
   const type = String(contentType ?? '').toLowerCase().trim();
-  if (!MEDIA_TYPE.test(type)) return { ok: false, reason: `not media (${type || 'no content-type'})` };
-  if (!(bodyBytes > 0)) return { ok: false, reason: 'empty body' };
+  if (!MEDIA_TYPE.test(type)) return { ok: false, definitive: true, reason: `not media (${type || 'no content-type'})` };
+  if (!(bodyBytes > 0)) return { ok: false, definitive: true, reason: 'empty body' };
   return { ok: true };
 }
 
@@ -202,9 +204,14 @@ function readProbeCache(cacheDir) {
   return { entries: parsed.entries, path };
 }
 
+function cacheableResult(result) {
+  return result?.ok === true || (result?.ok === false && result?.definitive === true);
+}
+
 function writeProbeCache(cache, nowMs) {
   if (!cache.path) return;
   const entries = Object.fromEntries(Object.entries(cache.entries).filter(([, value]) =>
+    cacheableResult(value.result) &&
     Number.isFinite(value.cachedAt) && nowMs - value.cachedAt >= 0 && nowMs - value.cachedAt <= CACHE_TTL_MS));
   mkdirSync(dirname(cache.path), { recursive: true });
   writeFileSync(cache.path, JSON.stringify({ schema: 1, entries }, null, 1));
@@ -247,14 +254,14 @@ async function probeOne(target, { fetchImpl, timeoutMs, scheduler, ledger, now, 
           if (response.status === 429) {
             scheduler.noteRetryAfter(currentUrl, response.headers.get('retry-after'));
             await cancelBody(response);
-            return { status: response.status, ok: false, reason: 'HTTP 429' };
+            return { status: response.status, ok: false, inconclusive: true, reason: 'HTTP 429' };
           }
           if (response.status >= 500 && response.status <= 599) {
             scheduler.noteRetryAfter(currentUrl, response.headers.get('retry-after'));
             await cancelBody(response);
             return attempt === 1
               ? { status: response.status, retryable: true }
-              : { status: response.status, ok: false, reason: `HTTP ${response.status}` };
+              : { status: response.status, ok: false, inconclusive: true, reason: `HTTP ${response.status}` };
           }
           const bodyBytes = response.status === 200 || response.status === 206 ? await readUpTo(response, 1024) : 0;
           if (!bodyBytes) await cancelBody(response);
@@ -266,7 +273,8 @@ async function probeOne(target, { fetchImpl, timeoutMs, scheduler, ledger, now, 
             status: 0,
             ok: false,
             reason: timedOut ? 'timeout' : String(error?.message ?? error),
-            retryable: timedOut && attempt === 1,
+            retryable: attempt === 1,
+            inconclusive: attempt > 1,
           };
         } finally {
           clearTimeout(timer);
@@ -277,9 +285,9 @@ async function probeOne(target, { fetchImpl, timeoutMs, scheduler, ledger, now, 
       if (outcome.retryable && attempt === 1) { retry = true; break; }
       return outcome;
     }
-    if (!retry) return { status: 0, ok: false, reason: 'too many redirects' };
+    if (!retry) return { status: 0, ok: false, inconclusive: true, reason: 'too many redirects' };
   }
-  return { status: 0, ok: false, reason: 'unreachable' };
+  return { status: 0, ok: false, inconclusive: true, reason: 'unreachable' };
 }
 
 export async function probe(targets, {
@@ -307,6 +315,7 @@ export async function probe(targets, {
   const scheduler = createHostScheduler({ maxPerHost, intervalMs, now, sleep });
   const ledger = [];
   const failed = [];
+  const inconclusive = [];
   let cursor = 0;
   let probed = 0;
   let ok = 0;
@@ -316,7 +325,7 @@ export async function probe(targets, {
     if (!onProgress || probed === 0 || probed % 50 !== 0) return;
     const elapsedMs = Math.max(0, now() - startedAt);
     const rowsPerMinute = elapsedMs > 0 ? Math.round((probed * 60_000) / elapsedMs) : 0;
-    onProgress({ probed, total: targets.length, ok, failed: failed.length, elapsedMs, rowsPerMinute });
+    onProgress({ probed, total: targets.length, ok, failed: failed.length, inconclusive: inconclusive.length, elapsedMs, rowsPerMinute });
   };
   const worker = async () => {
     while (true) {
@@ -328,20 +337,21 @@ export async function probe(targets, {
       const cached = descriptor ? cache.entries[descriptor.key] : null;
       const cacheAge = cached ? now() - cached.cachedAt : Infinity;
       let result;
-      if (cached && Number.isFinite(cacheAge) && cacheAge >= 0 && cacheAge <= CACHE_TTL_MS) {
+      if (cached && cacheableResult(cached.result) && Number.isFinite(cacheAge) && cacheAge >= 0 && cacheAge <= CACHE_TTL_MS) {
         result = { ...cached.result, cached: true };
         cacheHits++;
       } else {
         result = await probeOne(target, { fetchImpl, timeoutMs, scheduler, ledger, now, deadlineAt });
         if (result.unprobed) { deadlineHit = true; return; }
-        if (descriptor) cache.entries[descriptor.key] = {
+        if (descriptor && cacheableResult(result)) cache.entries[descriptor.key] = {
           cachedAt: now(),
-          result: { status: result.status, ok: result.ok, reason: result.reason ?? null },
+          result: { status: result.status, ok: result.ok, definitive: result.definitive === true, reason: result.reason ?? null },
         };
       }
       probed++;
       if (result.ok) ok++;
-      else failed.push({ ...target, status: result.status, reason: result.reason });
+      else if (result.definitive === true) failed.push({ ...target, status: result.status, reason: result.reason });
+      else inconclusive.push({ ...target, status: result.status, reason: result.reason });
       reportProgress();
     }
   };
@@ -352,6 +362,7 @@ export async function probe(targets, {
     probed,
     ok,
     failed,
+    inconclusive,
     unprobed: targets.length - probed,
     deadlineHit,
     cacheHits,
@@ -384,7 +395,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     deadlineMs: Number(a.deadlineMinutes ?? 110) * 60_000,
     cacheDir: a.cacheDir ?? '.catalog-cache',
     fetchImpl: a.offline === 'true' ? async () => { throw new Error('offline mode blocked fetch'); } : fetch,
-    onProgress: (p) => console.log(`[probe] ${p.probed}/${p.total} · ok ${p.ok} · failed ${p.failed} · elapsed ${Math.round(p.elapsedMs / 1000)}s · ${p.rowsPerMinute} rows/min`),
+    onProgress: (p) => console.log(`[probe] ${p.probed}/${p.total} · ok ${p.ok} · failed ${p.failed} · inconclusive ${p.inconclusive} · elapsed ${Math.round(p.elapsedMs / 1000)}s · ${p.rowsPerMinute} rows/min`),
   });
   if (result.failed.length) {
     const next = applyFailures(base, head, result.failed.map((f) => f.key));
@@ -393,5 +404,5 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     result.droppedChannels = next.droppedChannels;
   }
   if (a.out) writeFileSync(a.out, JSON.stringify(result, null, 1));
-  console.log(`[probe] ok ${result.ok} · failed ${result.failed.length} · cached ${result.cacheHits} · unprobed ${result.unprobed}${result.deadlineHit ? ' (deadline reached)' : ''}`);
+  console.log(`[probe] ok ${result.ok} · failed ${result.failed.length} · inconclusive ${result.inconclusive.length} · cached ${result.cacheHits} · unprobed ${result.unprobed}${result.deadlineHit ? ' (deadline reached)' : ''}`);
 }
