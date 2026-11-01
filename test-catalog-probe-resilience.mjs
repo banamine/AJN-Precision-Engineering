@@ -260,6 +260,31 @@ try {
   assert.equal(result.inconclusive.length, 1);
   assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(outcomeCacheDir, 'playability-probe-cache.json'), 'utf8')).entries), []);
 
+  // Other client-side HTTP errors are inconclusive, retained, and not cached.
+  for (const status of [408, 423]) {
+    const statusTarget = target(status);
+    const statusMtime = status * 100;
+    writeMetadata(outcomeCacheDir, statusTarget, statusMtime);
+    result = await probe([statusTarget], {
+      cacheDir: outcomeCacheDir,
+      maxWorkers: 1,
+      intervalMs: 0,
+      fetchImpl: async () => new Response(`HTTP ${status}`, { status }),
+    });
+    assert.equal(result.failed.length, 0, `HTTP ${status} is not a definitive failure`);
+    assert.equal(result.inconclusive.length, 1);
+    assert.equal(result.inconclusive[0].status, status);
+    const statusData = {
+      base: { extra: { channels: [] }, docs: [] },
+      head: { extra: { channels: [{ id: `new-http-${status}`, rows: [statusTarget] }] }, docs: [] },
+    };
+    const keptAfterStatus = applyFailures(statusData.base, statusData.head, result.failed.map((failure) => failure.key));
+    assert.equal(keptAfterStatus.extra.channels[0].rows.length, 1, `HTTP ${status} row remains in the catalog`);
+    const statusCacheKey = JSON.stringify([statusTarget.identifier, statusTarget.file, statusTarget.size, statusMtime]);
+    const statusCacheEntries = JSON.parse(readFileSync(join(outcomeCacheDir, 'playability-probe-cache.json'), 'utf8')).entries;
+    assert.equal(Object.hasOwn(statusCacheEntries, statusCacheKey), false, `HTTP ${status} is not cached`);
+  }
+
   const timedOutCacheTarget = target(61);
   writeMetadata(outcomeCacheDir, timedOutCacheTarget, 6100);
   let timedOutCacheCalls = 0;
