@@ -68,6 +68,9 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
     setViewState(next);
     try { window.localStorage.setItem(PRESET_VIEW_KEY, next); } catch { /* blocked storage: the choice just is not remembered */ }
   }, []);
+  const [knobAngle, setKnobAngle] = useState(0); // knob art only: turns one detent per station step
+  const knobDrag = useRef<{ x: number; acc: number } | null>(null);
+  const knobMoved = useRef(false);
   const timer = useRef<number | null>(null);
   const statusTimer = useRef<number | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -131,6 +134,19 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
     onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId);
   }, [onPlay, onPresetTuned]);
 
+  /** Knob / skip keys: step to the previous or next station in the visible bank. Does nothing (and says so) when the bank is empty. */
+  const stepStation = useCallback((dir: 1 | -1) => {
+    const list = bank === 'presets'
+      ? RADIO_PRESET_SLOTS.map((n) => presets[n]).filter((p): p is RadioPreset => Boolean(p)).map((p) => ({ channelId: p.channelId, title: p.title, go: () => tune(p) }))
+      : recents.map((r) => ({ channelId: r.channelId, title: r.title, go: () => tuneRecent(r) }));
+    if (!list.length) { say(bank === 'presets' ? 'No presets saved yet. Play a station, then press and hold a key.' : 'No recent stations yet.'); return; }
+    const i = list.findIndex((x) => x.channelId === playing?.channelId);
+    const next = list[i < 0 ? (dir > 0 ? 0 : list.length - 1) : (i + dir + list.length) % list.length];
+    setKnobAngle((a) => a + dir * 36);
+    next.go();
+    say(`Tuned ${next.title}`);
+  }, [bank, presets, recents, playing, tune, tuneRecent, say]);
+
   const onPointerDown = (slot: RadioPresetSlot) => (e: ReactPointerEvent<HTMLButtonElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     cancelHold();
@@ -193,17 +209,46 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
         </div>
       </div>
       {view === 'unit' ? (
-      <div data-testid="radio-head-unit" className="mx-auto my-2 w-[calc(100%-1.5rem)] max-w-[420px] rounded-2xl border border-neutral-600/70 bg-gradient-to-b from-neutral-800 to-neutral-950 p-2 shadow-inner">
-        <p className="px-1 pb-1 font-mono text-[10px] font-bold tracking-widest text-neutral-400">AJN-1</p>
+      <div data-testid="radio-head-unit" className="mx-auto my-2 w-[calc(100%-1.5rem)] max-w-[420px] rounded-xl border-2 border-[#20242c] p-2 pb-2.5"
+        style={{ background: 'linear-gradient(180deg,#2a2e36 0%,#14171c 45%,#0a0c0f 100%)', boxShadow: '0 12px 28px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.18), inset 0 -2px 4px rgba(0,0,0,0.8)' }}>
+        <div className="flex items-center justify-between px-1 pb-1.5 font-mono text-[10px] font-bold tracking-widest text-neutral-400">
+          <span>AJN-1</span><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-neutral-700" />
+        </div>
         {(() => {
           const nowTheme = playing ? getStationTheme(playing.channelId ?? '', playing.title, info?.logo ?? getStationArt(playing.channelId)) : null;
           const nowLogo = playing ? (info?.logo ?? getStationArt(playing.channelId)) : undefined;
           const accent = nowTheme?.accentColor ?? '#a3a3a3';
           const line2 = preview ?? playing?.title ?? 'No station';
           const line3 = preview ? '' : (playing?.subtitle ?? '');
+          const skipCls = 'flex h-11 w-11 cursor-pointer items-center justify-center rounded border border-neutral-600 bg-neutral-800 text-[11px] font-bold text-neutral-200 hover:border-orange-500/60 active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400';
           return (
-            <div data-testid="radio-head-unit-lcd" className="flex min-h-[112px] items-stretch gap-2 rounded-lg border border-black/60 p-2"
-              style={{ background: nowTheme ? nowTheme.themeColor : '#0a0a0a', color: `${accent}d9` }}>
+            <div className="flex items-stretch gap-2">
+            <div className="flex w-[92px] shrink-0 flex-col items-center justify-between gap-1.5">
+              <button type="button" data-testid="radio-head-unit-knob" aria-label={`Tune knob: turn or press for the next station in ${bank === 'presets' ? 'My presets' : 'Recent'}. Arrow keys step back and forward.`}
+                onPointerDown={(e) => { knobDrag.current = { x: e.clientX, acc: 0 }; knobMoved.current = false; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* capture is optional */ } }}
+                onPointerMove={(e) => {
+                  const d = knobDrag.current; if (!d) return;
+                  d.acc += e.clientX - d.x; d.x = e.clientX;
+                  while (Math.abs(d.acc) >= 24) { const dir = d.acc > 0 ? 1 : -1; d.acc -= dir * 24; knobMoved.current = true; stepStation(dir); }
+                }}
+                onPointerUp={() => { knobDrag.current = null; }} onPointerCancel={() => { knobDrag.current = null; }}
+                onClick={() => { if (knobMoved.current) { knobMoved.current = false; return; } stepStation(1); }}
+                onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); stepStation(1); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); stepStation(-1); } }}
+                onWheel={(e) => { if (e.deltaY) stepStation(e.deltaY > 0 ? 1 : -1); }}
+                className="relative h-16 w-16 shrink-0 cursor-ew-resize touch-none select-none rounded-full p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                style={{ background: 'linear-gradient(180deg,#4b5563 0%,#1e2229 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.25)' }}>
+                <span aria-hidden="true" className="relative block h-full w-full rounded-full transition-transform duration-150 motion-reduce:transition-none"
+                  style={{ transform: `rotate(${knobAngle}deg)`, background: 'conic-gradient(from 180deg at 50% 50%, #374151 0deg, #9ca3af 45deg, #374151 90deg, #1f2937 135deg, #9ca3af 180deg, #374151 225deg, #1f2937 270deg, #9ca3af 315deg, #374151 360deg)', boxShadow: '0 8px 18px rgba(0,0,0,0.85), inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -3px 6px rgba(0,0,0,0.9)' }}>
+                  <span className="absolute left-1/2 top-0.5 h-3.5 w-1.5 -translate-x-1/2 rounded-full bg-amber-400" style={{ boxShadow: '0 0 8px #f97316' }} />
+                </span>
+              </button>
+              <div className="flex gap-1.5">
+                <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => stepStation(-1)} className={skipCls}>{'\u23EE'}</button>
+                <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => stepStation(1)} className={skipCls}>{'\u23ED'}</button>
+              </div>
+            </div>
+            <div data-testid="radio-head-unit-lcd" className="flex min-h-[112px] min-w-0 flex-1 items-stretch gap-2 rounded-md border border-black p-2"
+              style={{ background: nowTheme ? nowTheme.themeColor : '#0a0a0a', color: `${accent}d9`, boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.9), 0 1px 1px rgba(255,255,255,0.12)' }}>
               <div className="flex min-w-0 flex-1 flex-col justify-between">
                 <div className="flex items-center justify-between gap-2 font-mono text-[10px] font-bold uppercase tracking-wider">
                   <span className="whitespace-nowrap">{bank === 'presets' ? 'My presets' : 'Recent'}</span>
@@ -222,9 +267,10 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                 )}
               </div>
             </div>
+            </div>
           );
         })()}
-        <div className="mt-2 grid grid-cols-6 gap-1.5">
+        <div className="mt-2.5 grid grid-cols-6 gap-1.5">
           {RADIO_PRESET_SLOTS.map((slot) => {
             const p = bank === 'presets' ? presets[slot] : undefined;
             const r = bank === 'recent' ? recents[slot - 1] : undefined;
