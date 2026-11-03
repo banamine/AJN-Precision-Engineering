@@ -184,6 +184,9 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
     }));
   };
 
+  const toDeck = (list: RadioEntry[]) => list.slice(0, 40).map(entry => ({ id: entry.id, title: entry.title, subtitle: AJN_CHANNEL_LABELS[entry.channel], play: () => playEntry(entry) }));
+  const deckSources = useMemo(() => ({ podcasts: toDeck(catalog.radio), archive: toDeck(catalog.exclusive), browseArchive: onNavigate ? () => onNavigate('library') : undefined }), [catalog, playEntry, onNavigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const show = showChips(entries);
   const type = typeChips(entries);
   const label = AJN_CHANNEL_LABELS[channel];
@@ -200,23 +203,13 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
       <section className="ajr-live" aria-label="Live radio presets" data-testid="radio-page-live">
         <div className="ajr-label">LIVE RADIO · YOUR PRESETS</div>
-        <RadioPresetsBar defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
+        <RadioPresetsBar deckSources={deckSources} defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
         <RadioSpectrum className="mt-3" playing={liveStation !== null && liveMedia.attached && !liveMedia.paused} />
-      </section>
-      <section className="ajr-hero">
-        <div>
-          <div className="ajr-eyebrow"><i />AJN AUDIO · DAILY NEWS</div>
-          <h1>A frequency<br />of <em>your own.</em></h1>
-          <p className="ajr-hero-desc">Listen to the latest AJN shows and hours, and read today&apos;s news, all in one place.</p>
-          <a href="#ajr-listen" className="ajr-explore" onClick={event => { event.preventDefault(); document.getElementById('ajr-listen')?.scrollIntoView({ behavior: 'smooth' }); }}>BROWSE EPISODES <ArrowDownRight size={15} /></a>
-        </div>
-        <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
       </section>
 
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
 
       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
-        <FullShowDays days={showDays.slice(0, 12)} onPlay={playFullShow} />
         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>
         {error && <p className="ajr-status ajr-status-error" role="alert">{error}</p>}
         {loading && items.length === 0 && !error && <p className="ajr-status" role="status">Loading AJN feeds…</p>}
@@ -283,10 +276,20 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
           })}
         </ul>
         {shown.length > visible && <button type="button" className="ajr-more" onClick={() => setVisible(count => count + PAGE_SIZE)}>MORE FROM {label.toUpperCase()} <ArrowDownRight size={14} /></button>}
+        <FullShowDays days={showDays.slice(0, 12)} onPlay={playFullShow} />
       </section>
 
       <DailyBriefing news={news} />
 
+      <section className="ajr-hero">
+        <div>
+          <div className="ajr-eyebrow"><i />AJN AUDIO · DAILY NEWS</div>
+          <h1>A frequency<br />of <em>your own.</em></h1>
+          <p className="ajr-hero-desc">Listen to the latest AJN shows and hours, and read today&apos;s news, all in one place.</p>
+          <a href="#ajr-listen" className="ajr-explore" onClick={event => { event.preventDefault(); document.getElementById('ajr-listen')?.scrollIntoView({ behavior: 'smooth' }); }}>BROWSE EPISODES <ArrowDownRight size={15} /></a>
+        </div>
+        <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
+      </section>
       <footer className="ajr-footer"><span>AJN AUDIO · SHOWS FROM THE AJN FEEDS</span><span>NEWS FROM THE DAILY DIGEST</span></footer>
     </div>
   );
