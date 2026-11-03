@@ -285,12 +285,6 @@ export function ShowInfoButton({ channelId, title, fallback }: ShowInfoButtonPro
           ) : (
             <>
               {fallback!.facts.map((fact) => <p key={fact}>{fact}</p>)}
-              {fallback!.link && (
-                <a href={fallback!.link.href} target="_blank" rel="noopener noreferrer" className="text-sky-300 underline underline-offset-2 hover:text-sky-200">
-                  {fallback!.link.label}
-                </a>
-              )}
-              <p className="text-[10px] text-neutral-500">Built from this channel’s own schedule data. No curated description is available yet.</p>
             </>
           )}
         </div>
