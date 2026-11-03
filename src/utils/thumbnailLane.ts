@@ -1,8 +1,18 @@
 export const THUMBNAIL_LANE_LIMIT = 4;
 
+/**
+ * A slot is normally released when its image loads, errors or unmounts. A request that does none of those
+ * (a stalled host, e.g. a Fox clip thumbnail that never answers) used to hold its slot forever, and
+ * THUMBNAIL_LANE_LIMIT of them starved every other logo and thumbnail on the page. After this long the
+ * lane takes the slot back so the rest of the queue keeps moving; the stalled image may still finish later.
+ * Mutable so tests do not have to wait for the real value.
+ */
+export const thumbnailLaneConfig = { leaseTimeoutMs: 8_000 };
+
 interface PendingThumbnail {
   cancelled: boolean;
   granted: boolean;
+  leaseTimer?: ReturnType<typeof setTimeout>;
   onGranted: (release: () => void) => void;
   release: () => void;
 }
@@ -16,6 +26,7 @@ function pump(): void {
     if (!job || job.cancelled) continue;
     job.granted = true;
     activeLoads++;
+    job.leaseTimer = setTimeout(job.release, thumbnailLaneConfig.leaseTimeoutMs);
     job.onGranted(job.release);
   }
 }
@@ -29,6 +40,7 @@ export function enqueueThumbnailLoad(onGranted: (release: () => void) => void): 
     release: () => {
       if (!job.granted) return;
       job.granted = false;
+      if (job.leaseTimer !== undefined) { clearTimeout(job.leaseTimer); job.leaseTimer = undefined; }
       activeLoads = Math.max(0, activeLoads - 1);
       pump();
     },
