@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Home,
@@ -44,7 +45,7 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
   { id: 'tv-guide', label: 'Live TV Guide', icon: Tv, description: '24-hour program schedule grid' },
   { id: 'player', label: 'Player', icon: PlayCircle, description: 'Active broadcast monitor' },
   { id: 'news', label: 'News', icon: Newspaper, description: 'Rumble, YouTube & Banned Video walls' },
-  { id: 'radio', label: 'AJN Radio', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
+  { id: 'radio', label: 'Listen', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
   { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played' },
   { id: 'library', label: 'Archive Vault', icon: FolderArchive, description: 'Curated archives & vaults' },
   { id: 'search', label: 'Search', icon: Search, description: 'TV News search' },
@@ -54,15 +55,20 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
 const DESKTOP_PRIMARY: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[0],
   PRIMARY_DESTINATIONS[1],
+  PRIMARY_DESTINATIONS[4],
   PRIMARY_DESTINATIONS[6],
 ];
 const MY_LIBRARY_ITEMS: NavItemConfig[] = [PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8]];
 // Keep all existing destinations directly reachable on mobile.
-const MOBILE_DESTINATIONS: NavItemConfig[] = [0, 1, 2, 3, 4, 5, 8, 6, 7].map((i) => PRIMARY_DESTINATIONS[i]);
+const MOBILE_DESTINATIONS: NavItemConfig[] = [0, 1, 4, 6].map((i) => PRIMARY_DESTINATIONS[i]);
+// Everything else stays one tap away in the mobile "More" sheet.
+const MOBILE_MORE_ITEMS: NavItemConfig[] = [
+  PRIMARY_DESTINATIONS[2], PRIMARY_DESTINATIONS[3], PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8],
+  { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
+];
 const VAULT_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[2],
   PRIMARY_DESTINATIONS[3],
-  PRIMARY_DESTINATIONS[4],
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
 ];
 
@@ -86,6 +92,17 @@ export function Navigation({
   onPlayProgram,
 }: NavigationProps) {
   const { openAppearance } = useAjnAppearance();
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const mobileMoreRef = useRef<HTMLDivElement>(null);
+  const mobileSheetRef = useRef<HTMLDivElement>(null);
+  const closeMobileMore = React.useCallback(() => setMobileMoreOpen(false), []);
+  useEffect(() => {
+    if (!mobileMoreOpen) return;
+    const onDown = (e: MouseEvent) => { const t = e.target as Node; if (!mobileMoreRef.current?.contains(t) && !mobileSheetRef.current?.contains(t)) closeMobileMore(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMobileMore(); };
+    document.addEventListener('mousedown', onDown); document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [mobileMoreOpen, closeMobileMore]);
   const [vaultOpen, setVaultOpen] = useState(false);
   const vaultRef = useRef<HTMLDivElement>(null);
   const closeVault = React.useCallback(() => setVaultOpen(false), []);
@@ -343,7 +360,7 @@ export function Navigation({
                 type="button"
                 id="header-now-playing-pill"
                 onClick={() => onNavigate('player')}
-                className="hidden xl:flex min-h-[44px] items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
+                className="hidden 2xl:flex min-h-[44px] items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
                 title={`Now Playing: ${nowPlaying.title}`}
               >
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
@@ -391,7 +408,7 @@ export function Navigation({
                 )}
               </div>
               <span className="whitespace-nowrap text-[10px] sm:text-[11px] leading-tight tracking-tight px-0.5 font-medium">
-                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Radio' : item.id === 'watch-later' ? 'Later' : item.id === 'library' ? 'Vault' : item.label}
+                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Listen' : item.id === 'watch-later' ? 'Later' : item.id === 'library' ? 'Vault' : item.label}
               </span>
               {isActive && (
                 <span className="ajn-nav-underline absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 sm:w-8 rounded-full" />
@@ -399,6 +416,30 @@ export function Navigation({
             </button>
           );
         })}
+        <div ref={mobileMoreRef} className="relative flex h-full">
+          <button type="button" id="mobile-nav-more" aria-haspopup="menu" aria-expanded={mobileMoreOpen} aria-label="More destinations"
+            onClick={() => setMobileMoreOpen((o) => !o)}
+            className={`relative min-w-[44px] min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-3 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer touch-manipulation ${MOBILE_MORE_ITEMS.some((m) => m.id === activeDestination) || mobileMoreOpen ? 'ajn-nav-item-active font-semibold' : 'text-neutral-400 hover:text-neutral-200'}`}>
+            <Box className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+            <span className="whitespace-nowrap text-[10px] sm:text-[11px] leading-tight font-medium">More</span>
+          </button>
+          {mobileMoreOpen && createPortal(
+            <div ref={mobileSheetRef} role="menu" aria-label="More" className="fixed bottom-[4.5rem] right-2 z-[70] w-60 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
+              {MOBILE_MORE_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button key={item.id} id={`mobile-nav-${item.id}`} role="menuitem" type="button" onClick={() => { setMobileMoreOpen(false); onNavigate(item.id); }}
+                    aria-current={activeDestination === item.id ? 'page' : undefined}
+                    className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${activeDestination === item.id ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'}`}>
+                    <Icon className="h-4 w-4 text-neutral-400" />
+                    <span className="font-medium">{item.id === 'watch-later' ? 'Watch Later' : item.label}</span>
+                  </button>
+                );
+              })}
+            </div>,
+            document.body,
+          )}
+        </div>
       </nav>
     </>
   );

@@ -336,11 +336,30 @@ export default function App() {
 
   useAvSyncRecorder(nowPlaying);
 
+  // The Player page fits one screen: it needs the real height of the top bar (+ mobile bottom bar) to size the video.
+  useEffect(() => {
+    const root = document.documentElement;
+    const measure = () => {
+      const top = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+      const bottomEl = document.getElementById('mobile-bottom-nav');
+      const bottom = bottomEl && getComputedStyle(bottomEl).display !== 'none' ? bottomEl.getBoundingClientRect().height : 0;
+      root.style.setProperty('--ajn-nav-h', `${Math.round(top + bottom)}px`);
+    };
+    measure();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    const header = document.querySelector('header');
+    const bottomNav = document.getElementById('mobile-bottom-nav');
+    if (ro && header) ro.observe(header);
+    if (ro && bottomNav) ro.observe(bottomNav);
+    window.addEventListener('resize', measure);
+    return () => { ro?.disconnect(); window.removeEventListener('resize', measure); };
+  }, [destination]);
+
   return (
     <AjnAppearanceProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
-      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${nowPlaying && destination !== 'player' ? 'pb-[13rem] md:pb-[10rem]' : 'pb-20 md:pb-8'}`}>
+      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : nowPlaying ? 'pb-[13rem] md:pb-[10rem]' : 'pb-20 md:pb-8'}`}>
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full">
             <HomeView
@@ -365,7 +384,7 @@ export default function App() {
           <div
             id="persistent-player"
             hidden={destination !== 'player'}
-            className={`w-full ${destination === 'player' ? 'view-fade-in' : ''}`}
+            className={`w-full ${destination === 'player' ? 'view-fade-in h-full' : ''}`}
           >
             <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} isWatchLater={nowPlayingId ? isInWatchLater(watchLaterEntries, nowPlayingId) : false} onToggleWatchLater={toggleNowPlayingWatchLater} />
           </div>
