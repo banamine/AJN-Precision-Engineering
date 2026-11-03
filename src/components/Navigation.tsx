@@ -40,30 +40,29 @@ interface NavItemConfig {
 }
 
 const PRIMARY_DESTINATIONS: NavItemConfig[] = [
-  { id: 'home', label: 'Home', icon: Home, description: 'Live broadcast & featured feeds' },
-  { id: 'tv-guide', label: 'TV Guide', icon: Tv, description: '24-hour program schedule grid' },
+  { id: 'home', label: 'Discover', icon: Home, description: 'Live broadcast & featured feeds' },
+  { id: 'tv-guide', label: 'Live TV Guide', icon: Tv, description: '24-hour program schedule grid' },
   { id: 'player', label: 'Player', icon: PlayCircle, description: 'Active broadcast monitor' },
   { id: 'news', label: 'News', icon: Newspaper, description: 'Rumble, YouTube & Banned Video walls' },
   { id: 'radio', label: 'AJN Radio', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
   { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played' },
-  { id: 'library', label: 'Library', icon: FolderArchive, description: 'Curated archives & vaults' },
+  { id: 'library', label: 'Archive Vault', icon: FolderArchive, description: 'Curated archives & vaults' },
   { id: 'search', label: 'Search', icon: Search, description: 'TV News search' },
   { id: 'watch-later', label: 'Watch Later', icon: Bookmark, description: 'Saved, and half-played, to finish later' },
 ];
 
 const DESKTOP_PRIMARY: NavItemConfig[] = [
-  { ...PRIMARY_DESTINATIONS[0], label: 'Live' },
-  { ...PRIMARY_DESTINATIONS[1], label: 'Guide' },
-  PRIMARY_DESTINATIONS[2],
-  PRIMARY_DESTINATIONS[3],
-  PRIMARY_DESTINATIONS[5],
-  PRIMARY_DESTINATIONS[8], // Watch Later sits right after History
+  PRIMARY_DESTINATIONS[0],
+  PRIMARY_DESTINATIONS[1],
+  PRIMARY_DESTINATIONS[6],
 ];
-// Mobile bar keeps the same order, with Watch Later next to History.
+const MY_LIBRARY_ITEMS: NavItemConfig[] = [PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8]];
+// Keep all existing destinations directly reachable on mobile.
 const MOBILE_DESTINATIONS: NavItemConfig[] = [0, 1, 2, 3, 4, 5, 8, 6, 7].map((i) => PRIMARY_DESTINATIONS[i]);
 const VAULT_ITEMS: NavItemConfig[] = [
+  PRIMARY_DESTINATIONS[2],
+  PRIMARY_DESTINATIONS[3],
   PRIMARY_DESTINATIONS[4],
-  PRIMARY_DESTINATIONS[6],
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
 ];
 
@@ -91,6 +90,10 @@ export function Navigation({
   const vaultRef = useRef<HTMLDivElement>(null);
   const closeVault = React.useCallback(() => setVaultOpen(false), []);
   useDismiss(vaultOpen, closeVault, vaultRef);
+  const [myLibraryOpen, setMyLibraryOpen] = useState(false);
+  const myLibraryRef = useRef<HTMLDivElement>(null);
+  const closeMyLibrary = React.useCallback(() => setMyLibraryOpen(false), []);
+  useDismiss(myLibraryOpen, closeMyLibrary, myLibraryRef);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -123,14 +126,16 @@ export function Navigation({
     if (!q) setSearchOpen(false);
   };
   const pickSuggestion = (text: string) => { setSearchText(text); if (onSearch) onSearch(text); else onNavigate('search'); };
-  const vaultActive = VAULT_ITEMS.some((v) => v.id === currentDestination);
+  const activeDestination = currentDestination === 'today' ? 'tv-guide' : currentDestination === 'player' ? null : currentDestination;
+  const vaultActive = VAULT_ITEMS.some((v) => v.id === activeDestination);
+  const myLibraryActive = MY_LIBRARY_ITEMS.some((item) => item.id === activeDestination);
 
   return (
     <>
       {/* ── Desktop / Tablet Header Navigation Bar ──────────────────────────────── */}
       <header
         id="canonical-app-header"
-        className="sticky top-0 z-40 w-full border-b border-neutral-800/80 bg-neutral-950/90 backdrop-blur-md"
+        className="ajn-redesign-surface ajn-redesign-nav sticky top-0 z-40 w-full border-b border-neutral-800/80 bg-neutral-950/90 backdrop-blur-md"
       >
         <div className="mx-auto flex h-14 lg:h-[52px] w-full max-w-7xl 2xl:max-w-[1600px] items-center justify-between px-3 sm:px-6 lg:px-8">
           {/* Brand & Badge */}
@@ -140,18 +145,14 @@ export function Navigation({
               id="brand-logo-btn"
               onClick={() => onNavigate('home')}
               title="AJN Precision Broadcast Engine - Return to Home"
-              className="flex items-center gap-2 sm:gap-2.5 rounded-lg text-left transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 min-h-[44px] min-w-[44px] py-1 px-1 -ml-1 cursor-pointer touch-manipulation"
+              className="flex min-h-[44px] min-w-[44px] items-center gap-2 sm:gap-2.5 rounded-lg px-1 py-1 text-left transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] -ml-1 cursor-pointer touch-manipulation"
             >
-              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25">
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] text-[var(--ajn-accent)]">
                 <Radio className="h-4 w-4 sm:h-5 sm:w-5 motion-safe:animate-pulse" />
               </div>
               <div className="hidden 2xl:flex flex-col min-w-0">
-                <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-100 truncate">
-                  AJN Precision
-                </span>
-                <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider sm:tracking-widest text-neutral-400 truncate">
-                  Broadcast Engine
-                </span>
+                <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-100 truncate">AJN Precision</span>
+                <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider sm:tracking-widest text-neutral-400 truncate">Broadcast Engine</span>
               </div>
             </button>
           </div>
@@ -164,7 +165,7 @@ export function Navigation({
           >
             {DESKTOP_PRIMARY.map((item) => {
               const Icon = item.icon;
-              const isActive = (currentDestination === 'today' ? 'tv-guide' : currentDestination) === item.id;
+              const isActive = activeDestination === item.id;
               const hasBadge = item.id === 'player' && nowPlaying;
 
               return (
@@ -176,15 +177,15 @@ export function Navigation({
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={item.label}
                   title={item.label}
-                  className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
+                  className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
                     isActive
-                      ? 'bg-neutral-800/90 text-sky-400 shadow-inner border border-neutral-700/80'
+                      ? 'ajn-nav-item-active'
                       : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
                   }`}
                 >
                   <Icon
                     className={`h-4 w-4 transition-transform group-hover:scale-105 ${
-                      isActive ? 'text-sky-400' : 'text-neutral-400'
+                      isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'
                     }`}
                   />
                   <span className="hidden xl:inline">{item.label}</span>
@@ -198,30 +199,69 @@ export function Navigation({
                   )}
 
                   {isActive && (
-                    <span className="absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-sky-400" />
+                    <span className="ajn-nav-underline absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />
                   )}
                 </button>
               );
             })}
+            <div ref={myLibraryRef} className="relative">
+              <button
+                type="button"
+                id="nav-link-my-library"
+                aria-haspopup="menu"
+                aria-expanded={myLibraryOpen}
+                aria-current={myLibraryActive ? 'page' : undefined}
+                onClick={() => setMyLibraryOpen((open) => !open)}
+                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${myLibraryActive ? 'ajn-nav-item-active' : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100'}`}
+              >
+                <Bookmark className={`h-4 w-4 ${myLibraryActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
+                <span className="hidden xl:inline">My Library</span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${myLibraryOpen ? 'rotate-180' : ''}`} />
+                {myLibraryActive && <span className="ajn-nav-underline absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />}
+              </button>
+              {myLibraryOpen && (
+                <div role="menu" aria-label="My Library" className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
+                  {MY_LIBRARY_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeDestination === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        id={`nav-link-${item.id}`}
+                        role="menuitem"
+                        type="button"
+                        onClick={() => { setMyLibraryOpen(false); onNavigate(item.id); }}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'}`}
+                      >
+                        <Icon className={`h-4 w-4 ${isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
+                        <span className="flex flex-col"><span className="font-medium">{item.label}</span><span className="text-[10px] text-neutral-500">{item.description}</span></span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             <div ref={vaultRef} className="relative">
               <button
                 type="button"
                 id="nav-link-vault"
                 aria-haspopup="menu"
                 aria-expanded={vaultOpen}
+                aria-current={vaultActive ? 'page' : undefined}
                 onClick={() => setVaultOpen((o) => !o)}
-                className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
+                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
                   vaultActive
-                    ? 'bg-neutral-800/90 text-sky-400 shadow-inner border border-neutral-700/80'
+                    ? 'ajn-nav-item-active'
                     : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
                 }`}
               >
-                <FolderArchive className={`h-4 w-4 ${vaultActive ? 'text-sky-400' : 'text-neutral-400'}`} />
-                <span className="hidden xl:inline">Vault</span>
+                <Box className={`h-4 w-4 ${vaultActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
+                <span className="hidden xl:inline">More</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${vaultOpen ? 'rotate-180' : ''}`} />
               </button>
               {vaultOpen && (
-                <div role="menu" aria-label="Vault" className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
+                <div role="menu" aria-label="More" className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
                   {VAULT_ITEMS.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -231,9 +271,9 @@ export function Navigation({
                         role="menuitem"
                         type="button"
                         onClick={() => { setVaultOpen(false); onNavigate(item.id); }}
-                        aria-current={currentDestination === item.id ? 'page' : undefined}
-                        className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                          currentDestination === item.id ? 'text-sky-400' : 'text-neutral-200'
+                        aria-current={activeDestination === item.id ? 'page' : undefined}
+                        className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${
+                          activeDestination === item.id ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'
                         }`}
                       >
                         <Icon className="h-4 w-4 text-neutral-400" />
@@ -255,7 +295,7 @@ export function Navigation({
               onClick={openAppearance}
               aria-label="Open appearance settings"
               title="Appearance settings"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 text-neutral-200 transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 text-neutral-200 transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
             >
               <Settings2 className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -265,7 +305,7 @@ export function Navigation({
               id="header-search"
               onSubmit={submitSearch}
               className={`relative hidden md:flex items-center rounded-lg border bg-neutral-900/80 backdrop-blur-md transition-all duration-200 ${
-                searchOpen ? 'w-64 border-sky-500/50' : `w-10 border-neutral-800 ${currentDestination === 'search' ? 'text-sky-400' : ''}`
+                searchOpen ? 'w-64 border-[var(--ajn-accent)]' : `w-10 border-neutral-800 ${activeDestination === 'search' ? 'text-[var(--ajn-accent)]' : ''}`
               }`}
             >
               <button
@@ -273,9 +313,9 @@ export function Navigation({
                 id="nav-link-search"
                 aria-label="Search (/ or Ctrl+K)"
                 title="Search ( / or Ctrl+K )"
-                aria-current={currentDestination === 'search' ? 'page' : undefined}
+                aria-current={activeDestination === 'search' ? 'page' : undefined}
                 onClick={() => { setSearchOpen(true); window.setTimeout(() => searchInputRef.current?.focus(), 0); }}
-                className="flex h-9 w-10 shrink-0 items-center justify-center text-neutral-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                className="flex h-11 w-11 shrink-0 items-center justify-center text-neutral-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
               >
                 <Search className="h-4 w-4" />
               </button>
@@ -293,7 +333,7 @@ export function Navigation({
                 className="min-w-0 flex-1 bg-transparent pr-1 text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none"
               />
               {searchOpen && searchText && (
-                <button type="button" aria-label="Clear search" onClick={() => { setSearchText(''); searchInputRef.current?.focus(); }} className="mr-1 flex h-6 w-6 items-center justify-center text-neutral-400 hover:text-white">
+                <button type="button" aria-label="Clear search" onClick={() => { setSearchText(''); searchInputRef.current?.focus(); }} className="mr-1 flex h-11 w-11 items-center justify-center text-neutral-400 hover:text-white">
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
@@ -303,7 +343,7 @@ export function Navigation({
                 type="button"
                 id="header-now-playing-pill"
                 onClick={() => onNavigate('player')}
-                className="hidden xl:flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
+                className="hidden xl:flex min-h-[44px] items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
                 title={`Now Playing: ${nowPlaying.title}`}
               >
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
@@ -322,11 +362,11 @@ export function Navigation({
         role="navigation"
         aria-label="Mobile Navigation"
         id="mobile-bottom-nav"
-        className="fixed bottom-0 inset-x-0 z-40 flex h-14 sm:h-16 w-full items-stretch justify-around border-t border-neutral-800/90 bg-neutral-950/95 backdrop-blur-lg md:hidden px-1 sm:px-2 pb-safe select-none"
+        className="ajn-redesign-surface ajn-redesign-nav fixed bottom-0 inset-x-0 z-40 flex h-14 sm:h-16 w-full items-stretch justify-around border-t border-neutral-800/90 bg-neutral-950/95 backdrop-blur-lg md:hidden px-1 sm:px-2 pb-safe select-none"
       >
         {MOBILE_DESTINATIONS.map((item) => {
           const Icon = item.icon;
-          const isActive = (currentDestination === 'today' ? 'tv-guide' : currentDestination) === item.id;
+          const isActive = activeDestination === item.id;
           const hasBadge = item.id === 'player' && nowPlaying;
 
           return (
@@ -337,12 +377,12 @@ export function Navigation({
               onClick={() => onNavigate(item.id)}
               aria-current={isActive ? 'page' : undefined}
               aria-label={`${item.label} (${item.description})`}
-              className={`relative flex-1 min-w-0 min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-0.5 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer touch-manipulation ${
-                isActive ? 'text-sky-400 font-semibold' : 'text-neutral-400 hover:text-neutral-200'
+              className={`relative min-w-[44px] min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-2 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer touch-manipulation ${
+                isActive ? 'ajn-nav-item-active font-semibold' : 'text-neutral-400 hover:text-neutral-200'
               }`}
             >
               <div className="relative flex items-center justify-center">
-                <Icon className={`h-[18px] w-[18px] sm:h-5 sm:w-5 transition-transform ${isActive ? 'text-sky-400 scale-105' : 'text-neutral-400'}`} />
+                <Icon className={`h-[18px] w-[18px] sm:h-5 sm:w-5 transition-transform ${isActive ? 'text-[var(--ajn-accent)] scale-105' : 'text-neutral-400'}`} />
                 {hasBadge && (
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
                     <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -350,11 +390,11 @@ export function Navigation({
                   </span>
                 )}
               </div>
-              <span className="text-[10px] sm:text-[11px] leading-tight tracking-tight truncate max-w-full px-0.5 font-medium">
-                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Radio' : item.id === 'watch-later' ? 'Later' : item.label}
+              <span className="whitespace-nowrap text-[10px] sm:text-[11px] leading-tight tracking-tight px-0.5 font-medium">
+                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Radio' : item.id === 'watch-later' ? 'Later' : item.id === 'library' ? 'Vault' : item.label}
               </span>
               {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 sm:w-8 rounded-full bg-sky-400" />
+                <span className="ajn-nav-underline absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 sm:w-8 rounded-full" />
               )}
             </button>
           );

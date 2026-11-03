@@ -17,9 +17,9 @@ import {
 import { NewsReadyReport } from './NewsReadyNotice';
 
 const TONE_CLASS: Record<StatusTone, { pill: string; icon: string }> = {
-  ok: { pill: 'border-emerald-600/50 bg-emerald-950/40 text-emerald-100', icon: 'text-emerald-400' },
+  ok: { pill: 'border-neutral-600/60 bg-neutral-900/60 text-neutral-100', icon: 'text-[#E06D3B]' },
   warn: { pill: 'border-amber-600/60 bg-amber-950/40 text-amber-100', icon: 'text-amber-400' },
-  error: { pill: 'border-rose-600/60 bg-rose-950/50 text-rose-100', icon: 'text-rose-400' },
+  error: { pill: 'border-red-500/60 bg-red-950/50 text-red-100', icon: 'text-red-400' },
   neutral: { pill: 'border-neutral-700/80 bg-neutral-900/80 text-neutral-300', icon: 'text-neutral-400' },
 };
 
@@ -139,7 +139,7 @@ export function StatusIndicatorsView({ indicators, newsSnapshot, onPlayProgram, 
             >
               <span className="relative flex h-3.5 w-3.5 shrink-0 items-center justify-center">
                 {ind.pulseKey && (
-                  <span key={ind.pulseKey} aria-hidden="true" className="ajn-status-pulse absolute inset-0 rounded-full bg-emerald-400/60" />
+                  <span key={ind.pulseKey} aria-hidden="true" className="ajn-status-pulse absolute inset-0 rounded-full bg-[#E06D3B]/60" />
                 )}
                 <ToneIcon indicator={ind} className={`relative h-3.5 w-3.5 ${tone.icon}`} />
               </span>
@@ -149,7 +149,7 @@ export function StatusIndicatorsView({ indicators, newsSnapshot, onPlayProgram, 
               <span className={phoneIconOnly(ind) ? 'hidden sm:inline md:hidden xl:inline' : 'md:hidden xl:inline'}>{ind.label}</span>
               <span className="hidden lg:inline xl:hidden">{ind.shortLabel}</span>
               {ind.count ? (
-                <span aria-hidden="true" className="rounded-full bg-emerald-500/25 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-100">{ind.count}</span>
+                <span aria-hidden="true" className="rounded-full bg-[#E06D3B]/25 px-1.5 py-0.5 text-[10px] font-semibold text-orange-100">{ind.count}</span>
               ) : null}
             </button>
 

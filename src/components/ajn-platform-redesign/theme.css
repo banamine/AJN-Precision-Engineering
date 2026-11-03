@@ -194,3 +194,143 @@
 .ajn-audit-findings li.is-bad { border-left-color: #d4604a; }
 .ajn-audit-export { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #484848; border-radius: 10px; background: #1a1a1a; color: #f3f3f3; padding: 0 14px; cursor: pointer; font: 600 12px 'Plus Jakarta Sans', sans-serif; }
 .ajn-audit-export:disabled { opacity: .5; cursor: not-allowed; }
+
+/*
+ * Redesign slice A–B tokens are scoped to navigation and the two dock controls.
+ * The appearance provider's existing --ajn-accent remains unchanged everywhere else.
+ */
+.ajn-platform-shell .ajn-redesign-surface {
+  --ajn-base: #0F1117;
+  --ajn-card-2: #181B24;
+  --ajn-line: #282D3D;
+  --ajn-accent: #E06D3B;
+  --ajn-accent-hover: #F97316;
+  --ajn-live: #EF4444;
+  --ajn-on-accent: #0F1117;
+}
+
+.ajn-platform-shell .ajn-redesign-surface:where(.ajn-redesign-nav) {
+  background: var(--ajn-base) !important;
+  border-color: var(--ajn-line) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface.ajn-dock {
+  min-height: 64px;
+  height: 64px;
+  background: var(--ajn-card-2) !important;
+  border-color: var(--ajn-line) !important;
+  color: var(--ajn-text);
+}
+
+.ajn-platform-shell .ajn-redesign-surface :where(button, a, input):focus-visible {
+  outline-color: var(--ajn-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-nav-item-active {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--ajn-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-nav-item-active :where(svg, span) {
+  color: var(--ajn-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-nav-underline {
+  background: var(--ajn-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-dock-control {
+  border: 1px solid var(--ajn-line);
+  background: var(--ajn-base) !important;
+  color: var(--ajn-text) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-dock-control:hover {
+  border-color: var(--ajn-accent) !important;
+  color: var(--ajn-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-dock-expand {
+  border-color: var(--ajn-accent) !important;
+  background: var(--ajn-accent) !important;
+  color: var(--ajn-on-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-dock-expand :where(svg, span) {
+  color: var(--ajn-on-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-dock-status-live {
+  border-color: var(--ajn-live) !important;
+  background: var(--ajn-live) !important;
+  color: var(--ajn-on-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-radio-dock-inline {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--ajn-line);
+  background: var(--ajn-base) !important;
+  color: var(--ajn-accent) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-radio-dock-inline:hover {
+  border-color: var(--ajn-accent) !important;
+  background: var(--ajn-card-2) !important;
+}
+
+.ajn-platform-shell .ajn-redesign-surface .ajn-dock-volume-popover {
+  border: 1px solid var(--ajn-line);
+  background: var(--ajn-card-2);
+}
+
+@media (max-width: 767px) {
+  .ajn-platform-shell #mobile-bottom-nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .ajn-platform-shell #mobile-bottom-nav::-webkit-scrollbar { display: none; }
+  .ajn-platform-shell #mobile-bottom-nav > button {
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: 44px;
+    scroll-snap-align: start;
+  }
+}
+
+@media (pointer: coarse) {
+  .ajn-platform-shell .ajn-redesign-surface :where(button, a[role="button"], input[type="range"]) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .ajn-platform-shell #mobile-bottom-nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .ajn-platform-shell #mobile-bottom-nav::-webkit-scrollbar { display: none; }
+  .ajn-platform-shell #mobile-bottom-nav > button { flex: 0 0 auto; width: max-content; min-width: 44px; }
+}
+
+
+/* Remaining blue/teal guide tints -> copper (TV Guide rows, chips, buttons) */
+.ajn-platform-shell :where([class~="bg-sky-500/15"], [class~="bg-sky-500/20"], [class~="hover:bg-sky-500/30"], [class~="bg-sky-950/60"], [class~="bg-sky-950/50"], [class~="bg-sky-950/40"], [class~="bg-sky-900/70"]) {
+  background-color: rgba(224, 109, 59, 0.14) !important;
+}
+.ajn-platform-shell :where([class~="border-sky-500/60"], [class~="border-sky-600/70"], [class~="border-sky-800/60"]) {
+  border-color: rgba(224, 109, 59, 0.55) !important;
+}
+.ajn-platform-shell :where([class~="text-sky-100"], [class~="text-sky-300"], [class~="text-sky-400"], [class~="text-sky-200"]) {
+  color: #F4A27D !important;
+}
+.ajn-platform-shell :where([class~="bg-sky-300"], [class~="bg-sky-400"]) {
+  background-color: var(--ajn-accent) !important;
+}

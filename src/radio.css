@@ -2,8 +2,8 @@
    Look and feel ported from the original AJN Audio app (banamine/AJN-AUDIO-, radio-platform/src/styles.css). */
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;800&display=swap');
 
-.ajr{--station:#aee9d5;--station-glow:#aee9d540;--station-bright:#c0ffe8;--muted:#87928a;--line:rgba(229,239,228,.13);--mono:'DM Mono',ui-monospace,monospace;--rec:#43e08a;--live:#ff4d45;
-  font-family:'Manrope',system-ui,sans-serif;color:#edf1e9;background:radial-gradient(ellipse at 69% 18%,rgba(49,83,70,.18),transparent 38%),#09100f;
+.ajr{--station:#E06D3B;--station-glow:#E06D3B40;--station-bright:#F97316;--muted:#87928a;--line:rgba(229,239,228,.13);--mono:'DM Mono',ui-monospace,monospace;--rec:#43e08a;--live:#ff4d45;
+  font-family:'Manrope',system-ui,sans-serif;color:#edf1e9;background:radial-gradient(ellipse at 69% 18%,rgba(224,109,59,.16),transparent 42%),#0F1117;
   border:1px solid var(--line);padding:0 clamp(16px,4vw,56px);overflow:hidden;position:relative;-webkit-font-smoothing:antialiased}
 .ajr *{box-sizing:border-box}
 :where(.ajr) button{font:inherit;color:inherit;cursor:pointer}
@@ -97,7 +97,7 @@
 .ajr-tabs{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 18px}
 .ajr-tab{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid rgba(222,238,225,.16);background:rgba(212,230,218,.03);color:#e9f2e8;font:500 15px 'Manrope',system-ui,sans-serif}
 .ajr-tab small{font:400 10px var(--mono);letter-spacing:.12em;opacity:.6}
-.ajr-tab.selected{border-color:var(--station);background:rgba(174,233,213,.09)}
+.ajr-tab.selected{border-color:var(--station);background:rgba(224,109,59,.12)}
 .ajr-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
 .ajr-chip{border:1px solid rgba(222,238,225,.16);background:transparent;color:#c8d5ca;font:8px var(--mono);letter-spacing:.9px;padding:7px 11px;border-radius:6px;transition:border-color .15s,color .15s,background .15s}
 .ajr-chip:hover{border-color:#ea580c;color:#86efac}
@@ -174,7 +174,15 @@
 
 /* Parallel Audio/Video Sync buttons (Now Playing panel) */
 .ajr .ajr-sync { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
-.ajr .ajr-sync-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 999px; border: 1px solid #aee9d5; background: transparent; color: #aee9d5; font: 600 11px/1 'DM Mono', ui-monospace, monospace; letter-spacing: .08em; cursor: pointer; }
-.ajr .ajr-sync-btn:hover { background: #aee9d5; color: #09100f; }
-.ajr .ajr-sync-btn[aria-pressed="true"] { background: #aee9d5; color: #09100f; }
+.ajr .ajr-sync-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 999px; border: 1px solid #E06D3B; background: transparent; color: #E06D3B; font: 600 11px/1 'DM Mono', ui-monospace, monospace; letter-spacing: .08em; cursor: pointer; }
+.ajr .ajr-sync-btn:hover { background: #E06D3B; color: #0F1117; }
+.ajr .ajr-sync-btn[aria-pressed="true"] { background: #E06D3B; color: #0F1117; }
 .ajr .ajr-sync-btn:focus-visible { outline: 2px solid #edf1e9; outline-offset: 2px; }
+
+.ajr-live{padding:20px 0 4px;border-top:1px solid rgba(255,255,255,.08)}.ajr-live>.ajr-label{margin-bottom:8px}.ajr-live [data-testid="radio-presets"]{border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden}
+
+.ajr .ajr-refresh{background:#E06D3B;color:#0F1117}
+.ajr .ajr-live{padding-top:18px}
+.ajr .ajr-hero{min-height:260px}
+
+body[data-ajn-page="radio"] button#radio-dock-button.fixed{display:none !important}

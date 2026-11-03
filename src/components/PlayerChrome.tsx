@@ -215,7 +215,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
           value={p.isMuted ? 0 : p.volume}
           onChange={(e) => p.onVolume(Number(e.target.value))}
           aria-label="Volume"
-          className="hidden h-1 w-0 cursor-pointer appearance-none overflow-hidden rounded bg-neutral-700 accent-sky-400 opacity-0 transition-all duration-200 group-hover:ml-1 group-hover:w-20 group-hover:opacity-100 group-focus-within:ml-1 group-focus-within:w-20 group-focus-within:opacity-100 sm:block"
+          className="hidden h-1 w-0 cursor-pointer appearance-none overflow-hidden rounded bg-neutral-700 accent-[#E06D3B] opacity-0 transition-all duration-200 group-hover:ml-1 group-hover:w-20 group-hover:opacity-100 group-focus-within:ml-1 group-focus-within:w-20 group-focus-within:opacity-100 sm:block"
         />
       </div>
       <span className="ml-auto shrink-0 font-mono text-[11px] sm:ml-0 tabular-nums text-neutral-200 sm:text-xs" data-testid="player-time">
@@ -335,7 +335,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
               <span className="sr-only">{p.isMuted ? "Muted" : "Unmuted"}</span>
             </button>
             <input type="range" min={0} max={1} step={0.05} value={p.isMuted ? 0 : p.volume} onChange={(e) => p.onVolume(Number(e.target.value))} aria-label="Volume"
-              className="ml-1 hidden h-1 w-20 cursor-pointer appearance-none rounded bg-neutral-700 accent-sky-400 md:block" />
+              className="ml-1 hidden h-1 w-20 cursor-pointer appearance-none rounded bg-neutral-700 accent-[#E06D3B] md:block" />
           </div>
           <button type="button" data-testid="analyzer-pill" data-state={p.analyzerState} onClick={p.onToggleDiagnostics} aria-expanded={p.diagnosticsOpen} aria-controls="audio-bridge-drawer"
             aria-label={`${PILL[p.analyzerState].label} — ${p.diagnosticsOpen ? "hide" : "show"} diagnostics`} title="Diagnostics"
@@ -435,7 +435,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
                 value={p.isMuted ? 0 : p.volume}
                 onChange={(event) => p.onVolume(Number(event.target.value))}
                 aria-label="Volume"
-                className="h-11 w-16 cursor-pointer accent-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 sm:w-24"
+                className="h-11 w-16 cursor-pointer accent-[#E06D3B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 sm:w-24"
               />
             </div>
           </div>

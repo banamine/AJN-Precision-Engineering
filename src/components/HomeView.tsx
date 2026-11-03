@@ -46,7 +46,7 @@ function archiveThumb(archivePath: string): string | undefined {
 function TypePill({ type }: { type?: string }) {
   const audio = type === 'audio';
   return (
-    <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow ${audio ? 'bg-sky-600' : 'bg-orange-500'}`}>
+    <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow ${audio ? 'bg-[var(--ajn-card)] text-[var(--ajn-text)] ring-1 ring-[var(--ajn-border)]' : 'bg-[var(--ajn-accent)] text-[var(--ajn-accent-text)]'}`}>
       {audio ? 'Audio' : 'Video'}
     </span>
   );
@@ -56,7 +56,7 @@ function TypePill({ type }: { type?: string }) {
 function MediaCard({ image, fit = 'cover', onClick, label, className = '', children }: { key?: string | number; image?: string; fit?: 'cover' | 'contain'; onClick: () => void; label: string; className?: string; children: ReactNode }) {
   const [broken, setBroken] = useState(false);
   return (
-    <button type="button" onClick={onClick} aria-label={label} className={`group relative isolate overflow-hidden rounded-xl border border-white/10 bg-neutral-900 text-left transition hover:border-sky-400/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${className}`}>
+    <button type="button" onClick={onClick} aria-label={label} className={`group relative isolate overflow-hidden rounded-xl border border-white/10 bg-neutral-900 text-left transition hover:border-[var(--ajn-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${className}`}>
       {image && !broken && (
         <img src={image} alt="" aria-hidden="true" loading="lazy" onError={() => setBroken(true)}
           className={fit === 'contain' ? 'absolute inset-0 z-0 h-full w-full object-contain p-6 pb-14 opacity-90 transition duration-300 group-hover:scale-105' : 'absolute inset-0 z-0 h-full w-full object-cover transition duration-300 group-hover:scale-105'} />
@@ -77,11 +77,11 @@ function FullShowShortcuts({ onPlayProgram, className = '', testId }: { onPlayPr
         <button key={s.showSlug} type="button" data-testid={`shortcut-${s.showSlug}`}
           onClick={() => onPlayProgram(s.url, s.title, `Full show · ${s.showName} · ${s.dateLabel}`, 'audio', 'ajn-radio', 'ajn-radio', s.id)}
           aria-label={`Play full show: ${s.showName}, ${s.dateLabel}${s.dayKind === 'special' ? ', special broadcast' : ''}`}
-          className="ajn-primary-action group flex items-center gap-3 rounded-2xl p-2.5 pr-4 text-left ring-2 ring-orange-400/90 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/45 ring-1 ring-white/25"><Play className="ml-0.5 h-5 w-5 fill-emerald-300 text-emerald-300" /></span>
+          className="group flex items-center gap-3 rounded-2xl border border-[var(--ajn-accent)]/60 bg-[var(--ajn-card)]/80 p-2.5 pr-4 text-left text-[var(--ajn-text)] backdrop-blur-md transition hover:border-[var(--ajn-accent)] hover:bg-[var(--ajn-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--ajn-accent)] text-[#0F1117]"><Play className="ml-0.5 h-5 w-5 fill-current" /></span>
           <span className="flex min-w-0 flex-col">
-            <span className="truncate text-[11px] font-black uppercase tracking-wider text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">{s.showName} · FULL SHOW</span>
-            <span className="truncate text-xs font-extrabold text-white drop-shadow">{s.dateLabel}{s.dayKind === 'special' ? ' · SPECIAL' : ''}</span>
+            <span className="truncate text-[11px] font-black uppercase tracking-wider">{s.showName} · FULL SHOW</span>
+            <span className="truncate text-xs font-semibold text-neutral-300">{s.dateLabel}{s.dayKind === 'special' ? ' · SPECIAL' : ''}</span>
           </span>
         </button>
       ))}
@@ -164,7 +164,8 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
 
   return (
     <div className="space-y-14 pb-16">
-      <section className="relative isolate overflow-hidden rounded-2xl border border-sky-500/20 bg-neutral-950 shadow-2xl">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" data-testid="home-top-grid">
+      <section className="relative isolate overflow-hidden rounded-2xl border border-[var(--ajn-border)] bg-neutral-950 shadow-2xl">
         <img src={heroImage} alt="" aria-hidden="true" onError={() => setHeroImage('/Classic%20Archive.png')} className="absolute inset-0 h-full w-full object-cover opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/90 to-neutral-950/55" />
         
@@ -181,13 +182,13 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
             }}
             title="Play Full Show (High-Visibility Drive Mode)"
             aria-label="Play full show, high-visibility drive button"
-            className="ajn-primary-action group flex items-center gap-3 sm:gap-4 rounded-2xl p-2.5 sm:p-3 pr-4 sm:pr-5 ring-2 ring-orange-400/90 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+            className="ajn-primary-action group flex items-center gap-3 sm:gap-4 rounded-2xl p-2.5 sm:p-3 pr-4 sm:pr-5 ring-2 ring-[var(--ajn-accent)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
           >
             <span className="flex h-11 w-11 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-xl bg-black/45 shadow-inner ring-1 ring-white/25 group-hover:bg-black/35">
-              <Play className="h-6 w-6 sm:h-7 sm:w-7 fill-emerald-300 text-emerald-300 transition-transform duration-200 group-hover:scale-115 ml-0.5" />
+              <Play className="h-6 w-6 sm:h-7 sm:w-7 fill-current transition-transform duration-200 group-hover:scale-115 ml-0.5" />
             </span>
             <span className="flex flex-col text-left">
-              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider">
                 FULL SHOW • DRIVE PLAY
               </span>
               <span className="text-xs sm:text-sm font-extrabold tracking-tight text-white drop-shadow">
@@ -198,11 +199,11 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
         </div>
 
         {/* Daily shortcuts: newest Alex Jones + War Room full shows, stacked under the Drive Play button (tablet/desktop). */}
-        <div className="absolute right-4 top-[5.75rem] z-20 hidden w-[17rem] sm:right-6 sm:top-[7.25rem] sm:block">
+        <div className="absolute right-4 top-[5.75rem] z-20 hidden w-[17rem] sm:right-6 sm:top-[7.25rem] 2xl:block">
           <FullShowShortcuts onPlayProgram={onPlayProgram} testId="full-show-shortcuts-overlay" />
         </div>
 
-        <div className="relative z-10 min-h-[330px] flex flex-col justify-end p-6 sm:p-8 lg:p-10">
+        <div className="relative z-10 min-h-[330px] flex flex-col justify-end p-6 pt-28 sm:p-8 sm:pt-28 lg:p-10 lg:pt-28">
           <div className="max-w-3xl space-y-4">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/20">
@@ -227,10 +228,10 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
                     onPlayProgram(hero.archivePath, hero.title, hero.category, hero.mediaType);
                   }
                 }}
-                className="ajn-primary-action inline-flex items-center gap-3 rounded-xl px-5 py-3 text-sm sm:text-base font-black ring-2 ring-orange-400/80 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                className="ajn-primary-action inline-flex items-center gap-3 rounded-xl px-5 py-3 text-sm sm:text-base font-black ring-2 ring-[var(--ajn-accent)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/40">
-                  <Play className="h-5 w-5 fill-emerald-300 text-emerald-300 ml-0.5" />
+                  <Play className="h-5 w-5 fill-current ml-0.5" />
                 </span>
                 <span className="tracking-wide">PLAY FULL SHOW</span>
               </button>
@@ -248,10 +249,34 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
                 </button>
               )}
             </div>
-            <FullShowShortcuts onPlayProgram={onPlayProgram} className="sm:hidden" testId="full-show-shortcuts-inline" />
+            <FullShowShortcuts onPlayProgram={onPlayProgram} className="2xl:hidden" testId="full-show-shortcuts-inline" />
           </div>
         </div>
       </section>
+
+      <section aria-labelledby="live-now-heading" className="min-w-0 space-y-3" data-testid="home-live-now">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="live-now-heading" className="text-xl font-semibold tracking-tight text-neutral-100">Live Now</h2>
+          <button type="button" onClick={() => onNavigate('tv-guide')} className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--ajn-accent)] hover:underline">All live channels <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></button>
+        </div>
+        {liveChannels.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-[var(--ajn-border)] p-4 text-sm text-neutral-400">No live channel data loaded yet. Open the Live TV Guide to see what is on.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {liveChannels.map((channel) => (
+              <MediaCard key={channel.id} image={channel.logo} fit="contain" className="aspect-[4/3]" label={`Play ${channel.name}: ${channel.currentProgram}`}
+                onClick={() => onPlayProgram(channel.archivePath, channel.currentProgram, channel.name, channel.mediaType)}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{channel.networkTag}</span>
+                  <span className="inline-flex items-center gap-1 rounded-md bg-[#EF4444] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#0F1117]"><span className="h-1.5 w-1.5 rounded-full bg-[#0F1117]" aria-hidden="true" />Live</span>
+                </div>
+                <div className="min-w-0"><h3 className="truncate text-sm font-semibold text-white">{channel.name}</h3><p className="truncate text-[11px] text-neutral-300">{channel.currentProgram}</p></div>
+              </MediaCard>
+            ))}
+          </div>
+        )}
+      </section>
+      </div>
 
       <LiveRadioBand />
       <HomeBroadcastHub onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
