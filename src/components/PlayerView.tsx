@@ -14,6 +14,7 @@ import { loadAjnFeeds } from "../services/ajnFeeds";
 import { buildRadioCatalog } from "../utils/ajnRadioCatalog";
 import { pickLatestFullShows, type FeedItemLike } from "../utils/latestFullShows";
 import { CaptionPanel } from "../news/captions/CaptionPanel";
+import { useCaptionTrack } from "../news/captions/useCaptionTrack";
 import type { ProxyErrorBody } from "../utils/archiveFailure";
 import { MAX_CONSECUTIVE_PLAYBACK_FAILURES, shouldHoldForArchiveOutage, shouldStopAfterConsecutiveFailures } from "../utils/playbackFailurePolicy";
 import { archiveIdentifierFromPath } from "../utils/thumbnail";
@@ -65,6 +66,29 @@ export function titleIdOf(channelId: string | undefined, title: string | undefin
 const SKIP_AFTER_ERROR_MS = 1500;
 // After a long run of failures (offline?) keep trying, but slowly: playback is never left idle.
 const SLOW_RETRY_MS = 30_000;
+const CAPTION_OVERLAY_PREF_KEY = "ajn.captionOverlay.v1";
+
+function readCaptionOverlayPreference(): boolean {
+  try { return window.localStorage.getItem(CAPTION_OVERLAY_PREF_KEY) === "on"; }
+  catch { return false; }
+}
+
+function writeCaptionOverlayPreference(enabled: boolean): void {
+  try { window.localStorage.setItem(CAPTION_OVERLAY_PREF_KEY, enabled ? "on" : "off"); }
+  catch { /* Browser storage can be disabled; the in-memory preference still works. */ }
+}
+
+function useWidePlayerLayout(): boolean {
+  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const update = () => setWide(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return wide;
+}
 
 export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite, isWatchLater = false, onToggleWatchLater, recentlyPlayed = [], onResumeRecentlyPlayed }: any) {
   const failuresRef = useRef(0);
@@ -85,6 +109,14 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   const [retryClock, setRetryClock] = useState(() => Date.now());
   const { state: archiveState, refresh: refreshArchiveStatus } = useArchiveStatus();
   const archiveMusicOn = isArchiveMusicPlayback(nowPlaying?.mediaType, nowPlaying?.channelId);
+  const widePlayerLayout = useWidePlayerLayout();
+  const captionState = useCaptionTrack(
+    nowPlaying?.guideId !== "cable-tv" || nowPlaying.mediaType === "audio" || archiveMusicOn ? undefined : nowPlaying.archivePath,
+    getPlayerVideo,
+  );
+  const [captionOverlayOn, setCaptionOverlayOn] = useState(readCaptionOverlayPreference);
+  const [nativeSubtitlesShowing, setNativeSubtitlesShowing] = useState(false);
+  const reportNativeSubtitleMode = useCallback((showing: boolean) => setNativeSubtitlesShowing(showing), []);
   const archiveMusicRecentlyPlayed = useMemo(() => {
     if (!archiveMusicOn) return [];
     const current = nowPlaying;
@@ -601,40 +633,12 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {archivePausedForOutage && (
-        <div role="alert" data-testid="archive-playback-paused" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
-          <p className="font-semibold">Playback is paused temporarily. We’ll retry the same item every 30 seconds.</p>
-        </div>
-      )}
-      {!archiveMusicOn && <FullShowStatus />}
-      {stationTheme && <StationBanner theme={stationTheme} title={nowPlaying.title} subtitle={nowPlaying.subtitle} />}
-      {!archiveMusicOn && onToggleFavorite && (
-        <div className="flex items-center justify-between gap-3">
-          <span className="min-w-0 truncate text-sm font-semibold text-neutral-100" data-testid="player-title">{nowPlaying.title}</span>
-          <div className="flex shrink-0 items-center gap-2">
-          <button type="button" data-testid="player-heart" aria-pressed={isFavorite} onClick={onToggleFavorite}
-            aria-label={isFavorite ? `Remove ${nowPlaying.title} from favorites` : `Add ${nowPlaying.title} to favorites`}
-            title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isFavorite ? "border-rose-500/60 bg-rose-500/10 text-rose-300" : "border-neutral-700 text-neutral-300 hover:border-rose-500/50 hover:text-rose-300"}`}>
-            <Heart className={`h-4 w-4 ${isFavorite ? "fill-rose-500 text-rose-500" : ""}`} aria-hidden="true" />
-            {isFavorite ? "Favorited" : "Favorite"}
-          </button>
-          {onToggleWatchLater && (
-            <button type="button" data-testid="player-watch-later" aria-pressed={isWatchLater} onClick={onToggleWatchLater}
-              aria-label={isWatchLater ? `Remove ${nowPlaying.title} from Watch Later` : `Save ${nowPlaying.title} to Watch Later`}
-              title={isWatchLater ? "Remove from Watch Later" : "Save to Watch Later"}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${isWatchLater ? "border-sky-500/60 bg-sky-500/10 text-sky-300" : "border-neutral-700 text-neutral-300 hover:border-sky-500/50 hover:text-sky-300"}`}>
-              <Bookmark className={`h-4 w-4 ${isWatchLater ? "fill-sky-500 text-sky-500" : ""}`} aria-hidden="true" />
-              {isWatchLater ? "Saved" : "Watch Later"}
-            </button>
-          )}
-          </div>
-        </div>
-      )}
-      <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>
-      <Fragment key={retryNonce}>
+  const overlayText = captionState.phase === "ready" ? captionState.current?.text.trim() : "";
+  const captionOverlaySlot = captionOverlayOn && !nativeSubtitlesShowing && overlayText
+    ? <div data-testid="caption-overlay" aria-live="off" className="pointer-events-none absolute bottom-16 left-1/2 z-20 line-clamp-2 w-max max-w-[90%] -translate-x-1/2 rounded bg-black/80 px-3 py-1 text-center text-white shadow-lg">{overlayText}</div>
+    : null;
+  const playerElement = (
+    <Fragment key={retryNonce}>
       <MinimalPlayer
         onRetry={retryCurrent}
         onBackToGuide={() => onNavigate?.("tv-guide")}
@@ -656,28 +660,84 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         onPlayEvent={() => { failuresRef.current = 0; failureContextRef.current = null; stoppedInstanceRef.current = null; advancingForRef.current = null; setPlaybackStopped(false); failedRef.current.clear(); console.log("[AJN PLAYBACK] play", meta); }}
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={onError}
+        overlaySlot={captionOverlaySlot}
         autoplayBlockedLabel={nowPlaying.channelId === "rush-vod" ? "Next hour ready — tap Play" : undefined}
         onProgressEvent={(positionSeconds: number, durationSeconds?: number) => {
           const itemId = nowPlaying.assetId || nowPlaying.programId || nowPlaying.sourceId || nowPlaying.archivePath || nowPlaying.src;
           onProgress?.(itemId, positionSeconds, durationSeconds);
         }}
       />
-      </Fragment>
-      </div>
-      {playbackStopped && (
-        <div role="alert" data-testid="playback-stopped-after-failures" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
-          <p className="font-semibold">Playback stopped after {MAX_CONSECUTIVE_PLAYBACK_FAILURES} consecutive failures.</p>
-          <button type="button" onClick={retryCurrent} disabled={retryWaitUntil !== null} data-testid="retry-this-item" className="mt-3 rounded-md border border-amber-300/60 px-4 py-2 text-sm font-semibold hover:bg-amber-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 disabled:cursor-wait disabled:opacity-70">
-            {retryWaitUntil !== null ? `Retrying in ${retryWaitSeconds} s…` : 'Retry this item'}
-          </button>
-          {retryWaitUntil !== null && (
-            <p className="mt-2 text-xs text-amber-200/90" aria-live="polite">The Archive storage server for this file timed out, so the app paused requests to it. Retrying automatically when the pause ends.</p>
-          )}
+    </Fragment>
+  );
+  const playerMetadata = (
+    <>
+      {archivePausedForOutage && (
+        <div role="alert" data-testid="archive-playback-paused" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
+          <p className="font-semibold">Playback is paused temporarily. We’ll retry the same item every 30 seconds.</p>
         </div>
       )}
-      {!archiveMusicOn && <SubtitleToggle getVideo={getPlayerVideo} />}
-      {!archiveMusicOn && <CaptionPanel nowPlaying={nowPlaying} getVideo={() => playerWrapRef.current?.querySelector("video") ?? null} />}
-      {!archiveMusicOn && nowPlaying.channelId === "archive-infowars-radio" && <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />}
+      {!archiveMusicOn && <FullShowStatus />}
+      {stationTheme && <StationBanner theme={stationTheme} title={nowPlaying.title} subtitle={nowPlaying.subtitle} />}
+      {!archiveMusicOn && onToggleFavorite && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="min-w-0 truncate text-sm font-semibold text-neutral-100" data-testid="player-title">{nowPlaying.title}</span>
+          <div className="flex shrink-0 items-center gap-2">
+            <button type="button" data-testid="player-heart" aria-pressed={isFavorite} onClick={onToggleFavorite}
+              aria-label={isFavorite ? `Remove ${nowPlaying.title} from favorites` : `Add ${nowPlaying.title} to favorites`}
+              title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isFavorite ? "border-rose-500/60 bg-rose-500/10 text-rose-300" : "border-neutral-700 text-neutral-300 hover:border-rose-500/50 hover:text-rose-300"}`}>
+              <Heart className={`h-4 w-4 ${isFavorite ? "fill-rose-500 text-rose-500" : ""}`} aria-hidden="true" />
+              {isFavorite ? "Favorited" : "Favorite"}
+            </button>
+            {onToggleWatchLater && (
+              <button type="button" data-testid="player-watch-later" aria-pressed={isWatchLater} onClick={onToggleWatchLater}
+                aria-label={isWatchLater ? `Remove ${nowPlaying.title} from Watch Later` : `Save ${nowPlaying.title} to Watch Later`}
+                title={isWatchLater ? "Remove from Watch Later" : "Save to Watch Later"}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${isWatchLater ? "border-sky-500/60 bg-sky-500/10 text-sky-300" : "border-neutral-700 text-neutral-300 hover:border-sky-500/50 hover:text-sky-300"}`}>
+                <Bookmark className={`h-4 w-4 ${isWatchLater ? "fill-sky-500 text-sky-500" : ""}`} aria-hidden="true" />
+                {isWatchLater ? "Saved" : "Watch Later"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+  const playbackFailure = playbackStopped ? (
+    <div role="alert" data-testid="playback-stopped-after-failures" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
+      <p className="font-semibold">Playback stopped after {MAX_CONSECUTIVE_PLAYBACK_FAILURES} consecutive failures.</p>
+      <button type="button" onClick={retryCurrent} disabled={retryWaitUntil !== null} data-testid="retry-this-item" className="mt-3 rounded-md border border-amber-300/60 px-4 py-2 text-sm font-semibold hover:bg-amber-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 disabled:cursor-wait disabled:opacity-70">
+        {retryWaitUntil !== null ? `Retrying in ${retryWaitSeconds} s…` : "Retry this item"}
+      </button>
+      {retryWaitUntil !== null && (
+        <p className="mt-2 text-xs text-amber-200/90" aria-live="polite">The Archive storage server for this file timed out, so the app paused requests to it. Retrying automatically when the pause ends.</p>
+      )}
+    </div>
+  ) : null;
+  const videoControls = !archiveMusicOn ? (
+    <div className="flex min-h-0 flex-wrap items-center gap-2">
+      <SubtitleToggle getVideo={getPlayerVideo} onNativeModeChange={reportNativeSubtitleMode} />
+      {captionState.phase !== "off" && (
+        <button
+          type="button"
+          data-testid="caption-overlay-toggle"
+          aria-pressed={captionOverlayOn}
+          disabled={nativeSubtitlesShowing}
+          title={nativeSubtitlesShowing ? "The in-player overlay is disabled while English subtitles are showing." : captionOverlayOn ? "Turn the in-player caption overlay off" : "Turn the in-player caption overlay on"}
+          onClick={() => { const next = !captionOverlayOn; setCaptionOverlayOn(next); writeCaptionOverlayPreference(next); }}
+          className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50 ${captionOverlayOn ? "border-sky-500/60 bg-sky-950/50 text-sky-100" : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"}`}
+        >
+          CC overlay {captionOverlayOn ? "On" : "Off"}
+        </button>
+      )}
+    </div>
+  ) : null;
+  const radioCaptions = !archiveMusicOn && nowPlaying.channelId === "archive-infowars-radio"
+    ? <RadioCaptionPanel identifier={nowPlaying.sourceId} getAudio={() => playerWrapRef.current?.querySelector("audio") ?? null} />
+    : null;
+  const secondaryPlayerInfo = (
+    <>
+      {radioCaptions}
       {!archiveMusicOn && <AvSyncControls nowPlaying={nowPlaying} onPlay={onSelectProgram} onNavigate={onNavigate} variant="compact" />}
       {nowPlaying.channelId === "rush-vod" && upNextLabel(upNext, rushProgramDate(String(nowPlaying.programId ?? ""))) && (
         <p className="text-xs text-neutral-400" aria-live="polite" data-testid="rush-up-next">
@@ -689,6 +749,56 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
           <summary className="cursor-pointer text-neutral-400">Developer playback identity</summary>
           <pre className="mt-2 text-neutral-300">{JSON.stringify(meta, null, 2)}</pre>
         </details>
+      )}
+    </>
+  );
+  const isAudioPage = nowPlaying.mediaType === "audio" || archiveMusicOn;
+
+  if (isAudioPage) {
+    return (
+      <div className="space-y-4">
+        {playerMetadata}
+        <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
+        {playbackFailure}
+        {videoControls}
+        {captionState.phase !== "off" && <CaptionPanel state={captionState} />}
+        {secondaryPlayerInfo}
+      </div>
+    );
+  }
+
+  const captionPanel = captionState.phase === "off" ? null : <CaptionPanel state={captionState} variant="sidebar" />;
+  const desktopSidebar = captionPanel ? (
+    <aside className="ajn-player-page-right" aria-label="Player details and captions">
+      <div className="min-h-0 flex-1">{captionPanel}</div>
+      {secondaryPlayerInfo}
+    </aside>
+  ) : null;
+
+  return (
+    <div data-testid="player-page-layout" data-caption-phase={captionState.phase} className="ajn-player-page-layout">
+      {widePlayerLayout ? (
+        <>
+          <div className="ajn-player-page-left">
+            {playerMetadata}
+            <div ref={playerWrapRef} className="ajn-player-page-video" style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
+            {playbackFailure}
+            {videoControls}
+            {!captionPanel && secondaryPlayerInfo}
+          </div>
+          {desktopSidebar}
+        </>
+      ) : (
+        <>
+          <div ref={playerWrapRef} className="ajn-player-page-video" style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
+          <div className="ajn-player-page-lower" data-testid="player-lower-region">
+            {captionPanel}
+            {playerMetadata}
+            {playbackFailure}
+            {videoControls}
+            {secondaryPlayerInfo}
+          </div>
+        </>
       )}
     </div>
   );

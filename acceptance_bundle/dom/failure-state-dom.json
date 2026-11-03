@@ -1,0 +1,69 @@
+{
+  "forcedFailure": "Playwright aborted the real configured stream host, producing browser net::ERR_CONNECTION_REFUSED and an HTMLMediaElement error; no React state was injected.",
+  "failedRequests": [
+    {
+      "url": "https://broadcast.classichits109.com/70s-90s",
+      "reason": "net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "url": "https://broadcast.classichits109.com/70s-90s",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://broadcast.classichits109.com/70s-90s",
+      "reason": "net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "url": "https://broadcast.classichits109.com/70s-90s",
+      "reason": "net::ERR_CONNECTION_REFUSED"
+    }
+  ],
+  "checks": [
+    {
+      "viewport": "desktop",
+      "dockCount": 1,
+      "status": "failed",
+      "statusText": "failed",
+      "retry": "Retry Classic Hits 109",
+      "retryVisible": true,
+      "radioCount": 1,
+      "radioInSlot": true,
+      "radioConnected": true,
+      "radioRect": {
+        "x": 1251,
+        "y": 822,
+        "w": 44,
+        "h": 44
+      },
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s#nometer",
+        "paused": true,
+        "errorCode": 4,
+        "errorMessage": "MEDIA_ELEMENT_ERROR: Format error"
+      }
+    },
+    {
+      "viewport": "mobile",
+      "dockCount": 1,
+      "status": "failed",
+      "statusText": "failed",
+      "retry": "Retry Classic Hits 109",
+      "retryVisible": true,
+      "radioCount": 1,
+      "radioInSlot": true,
+      "radioConnected": true,
+      "radioRect": {
+        "x": 291,
+        "y": 722,
+        "w": 44,
+        "h": 44
+      },
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s#nometer",
+        "paused": true,
+        "errorCode": 4,
+        "errorMessage": "MEDIA_ELEMENT_ERROR: Format error"
+      }
+    }
+  ]
+}

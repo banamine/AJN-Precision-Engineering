@@ -1,95 +1,111 @@
-# TV Guide Layout & Button Geometry Fix in theme.css
+# Listen View Layout Optimization: Preserving the Deck with Real-Data Search & Filters
 
-Scoped CSS adjustment in `src/components/ajn-platform-redesign/theme.css` to exempt TV Guide buttons from the global 44px touch target on mouse/fine-pointer devices, keep an 11px typography floor, and prevent "ON AIR NOW" badges from wrapping.
+A targeted enhancement to the **Listen** (`#radio` / `#listen`) view that keeps the radio deck and tuner unit intact, positions an instant search bar and format/genre pills directly under the deck, repositions the "Full shows by day" shelf below the primary Listen-back episode list, and operates exclusively on verified real data sources (live feeds, saved presets, and catalog full shows) without any mocked or hardcoded content.
+
+---
 
 ### User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The button exemption rule is scoped strictly to `@media (hover: hover) and (pointer: fine)` as requested, ensuring standard desktop/pointer interactions preserve the compact 24px button geometry while touch devices retain larger tap targets.
-
-- **Confirmed Decision 1**: Scoped pointer exemption via `@media (hover: hover) and (pointer: fine)` for `[data-epg-channel-row]`, `[data-epg-window-start]`, `[data-music-row]`, and `[data-epg-toolbar]`.
-- **Confirmed Decision 2**: Strict `white-space: nowrap !important` on live badges (`[class*="tracking-wider"]`, `[data-testid="replay-tag"]`) to eliminate multi-line text breaking.
-- **Confirmed Decision 3**: Readable 11px font floor with `line-height: 1.25` for guide subtext to ensure vertical centering within 52px and 68px cell heights.
-- **Zero Protected File Edits**: Zero modifications to `src/EpgGuide.tsx`, `src/guide/BlockCell.tsx`, or any backend/EPG logic.
+> **Confirmed Directives & Decisions:**
+> 1. **Keep the Deck Intact**: The interactive radio deck / presets unit (`RadioPresetsBar`), spectrum visualizer, and persistent playback head are fully preserved. No skeuomorphic head-unit deletion.
+> 2. **Reposition Search & Genre Pills**: A fast search bar and category filter pills sit directly below the live deck section for immediate discovery.
+> 3. **Move "Full shows by day"**: Relocate `<FullShowDays />` from the top of `#ajr-listen` to below the main Listen-back episode grid (`.ajr-grid`), matching the owner's workflow.
+> 4. **Strictly Verified Data (Zero Hardcoded/Invented Content)**:
+>    - Live radio and user presets driven strictly by real saved presets and live station channels.
+>    - Search and genre filter pills dynamically driven by real catalog shows and broadcast types (e.g., *Alex Jones Show*, *War Room*, *Special Reports*, *Exclusive Interviews*) from `loadAjnFeeds()` and `buildRadioCatalog()`.
+>    - Full show days derived strictly from verified feed items via `groupShowDays()`.
+>    - Zero hardcoded fake series, fake dramas, or non-existent streams.
+> 5. **Visual Styling**: Applied using the warm copper (`#E06D3B`), deep slate canvas (`#0F1117`), dark charcoal cards (`#181B24`), and hairline borders (`#282D3D`).
+> 6. **Protected File Integrity**: Strict compliance with Addendum 2026-10-13. Zero modifications to `server.ts`, `guideRegistry.ts`, `channels.ts`, `src/MinimalPlayer.tsx`, `src/components/PlayerChrome.tsx`, `src/EpgGuide.tsx`, or `package.json`.
 
 ---
 
 ### 1. Overview & Core Concept
 
-- **What It Does**: Resolves layout collision, truncation, and vertical misalignment in the TV Guide by overriding platform-shell broad rules for button sizing and typography.
-- **Target Audience / Persona**: Users navigating the TV Guide, music radio blocks, and podcast schedules on desktop and mouse/pointer devices.
-- **Key Value**: Restores full visibility of station names, unoverlaps the play button from the `NowPlayingLine` and category info, and guarantees clean single-line vertical centering for "ON AIR NOW" blocks.
+- **What It Does**: Streamlines the Listen view layout so users can immediately search and filter real AJN broadcasts and presets right underneath the live deck. Preserves the active tuner controls while establishing a logical top-to-bottom visual hierarchy:
+  1. Live radio deck & user presets.
+  2. Instant search bar & dynamic category/format filter pills.
+  3. Now-playing broadcast panel.
+  4. Listen-back episode grid (with active filters & sort).
+  5. Full shows by day shelf.
+- **Key Value**: Delivers instant discovery and clutter-free navigation without altering backend pipelines, breaking established player contracts, or introducing unverified metadata.
 
 ---
 
 ### 2. User Experience & Visual Design
 
-- **Station Column**:
-  - The play button (`data-play-live`) and `ShowInfoButton` render at their natural 24×24px (`h-6 w-6`).
-  - Channel name (`span.truncate`) retains ~40px of extra width without truncating early.
-  - The play button stays inline with the title and does not protrude downward into the station category or `NowPlayingLine`.
-- **Timeline Blocks & Program Cells**:
-  - Short-duration blocks (<44px width) are no longer artificially expanded or distorted.
-  - Live indicator badges ("ON AIR NOW") remain on a single line with pulsing dot.
-  - Cell text stays vertically centered across all row heights (52px/68px standard, 68px/84px audio).
-- **EPG Toolbar**:
-  - Pan chevrons (`h-6 w-6`), "Now" button, and duration selector stay aligned to 24px height.
+#### Key User Flows
+1. **Live Radio & Tuner Access**:
+   - The user views the radio tuner deck at the top with their real saved presets, live status indicators, and frequency tuner.
+2. **Instant Search & Category Filter Bar**:
+   - Positioned immediately beneath the live deck.
+   - The user types a keyword (e.g., host name, topic, or date) or clicks a dynamic category pill (e.g. *All*, *Alex Jones Show*, *War Room*, *Special Reports*, *Full Shows*).
+   - Filtering occurs in real time across the real catalog without page reloads or spinners.
+   - A single-tap `✕` button clears search inputs immediately.
+3. **Listen-Back Episode Browsing**:
+   - The filtered catalog is displayed in the responsive `.ajr-grid` with play action buttons, date metadata, and duration indicators.
+4. **Full Shows by Day Section**:
+   - Positioned below the episode grid, allowing listeners looking for complete multi-hour broadcast day recordings to find packaged daily shows without crowding the initial viewport.
+
+#### Visual Styling & Tokens
+- **Canvas Base**: Deep Slate `#0F1117`
+- **Deck & Card Surfaces**: Dark Charcoal `#181B24` with hairline border `#282D3D`
+- **Interactive Accents**: Warm Copper `#E06D3B` (hover `#F97316`) for active filter pills, search focus ring, and play buttons
+- **Live Status**: Signal Red `#EF4444` indicator dot for active live streaming
+- **Typography & Metadata**: Off-white `#F1F5F9` titles, `#9CA3AF` for dates and durations, tabular numerals (`tabular-nums`) for elapsed times
 
 ---
 
 ### 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Pointer Media Query Scoping**
-  - *Chosen Approach*: Wrap the button exemption in `@media (hover: hover) and (pointer: fine)`.
-  - *Why*: Accommodates precise mouse navigation on desktop without interfering with mobile/coarse touch targets.
-- **Decision 2: Subtext Font Floor (11px @ 1.25 line-height)**
-  - *Chosen Approach*: Specific override for guide subtext (`text-[9px]`, `text-[10px]`, `text-[11px]`) down to 11px.
-  - *Why*: The global 12px / 1.5 line-height created ~60px text blocks that overflowed 52px cell containers. 11px @ 1.25 line-height totals ~38px across 3 lines, fitting comfortably within the 52px container.
+- **Decision 1: Place Search & Filters Directly Under the Deck**:
+  - *Approach*: Position the search input and quick format pills between the live deck section and the listen-back section.
+  - *Why*: Provides immediate discovery utility right where the user lands, eliminating the need to scroll past multiple sections to search episodes.
+- **Decision 2: Move "Full shows by day" Below Listen-Back Grid**:
+  - *Approach*: Move `<FullShowDays />` to render after the `.ajr-grid` episode list.
+  - *Why*: Daily full show archives are multi-hour collections that take up significant vertical height; placing them below the individual episode list allows users to immediately see fresh individual broadcasts first.
+- **Decision 3: Exclusively Real Data Sources**:
+  - *Approach*: All pills, counts, and search results are derived directly from `catalog.radio`, `catalog.exclusive`, and `showDays` populated by `loadAjnFeeds()`.
+  - *Why*: Strict adherence to engineering rules prohibiting fabricated or unverified content.
 
 ---
 
-### 4. Technical Architecture & Data Strategy
+### 4. Technical Architecture & Component Structure
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│               src/components/ajn-platform-redesign/             │
-│                            theme.css                            │
-├─────────────────────────────────────────────────────────────────┤
-│ Lines 72-79 (Global Shell Baseline)                            │
-│  ├── :where(button, ...) { min-height: 44px; min-width: 44px; } │
-│  └── :where([class*="text-[9px]"], ...) { font-size: 12px; }    │
-├─────────────────────────────────────────────────────────────────┤
-│ Lines 80+ (Proposed Guide Precision Overrides)                  │
-│  ├── @media (hover: hover) and (pointer: fine)                  │
-│  │    └── :is([data-epg-channel-row], [data-epg-window-start],  │
-│  │           [data-music-row], [data-epg-toolbar]) :is(...)     │
-│  │           { min-height: 0; min-width: 0; }                   │
-│  ├── Guide subtext floor (11px, 1.25 line-height)              │
-│  └── Live badge nowrap ([class*="tracking-wider"])              │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          RadioView / Listen View                            │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ 1. Header & Live Radio Presets Deck (RadioPresetsBar + Spectrum)      │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ 2. Instant Search & Topic/Format Filter Pills                         │  │
+│  │    [All] [Alex Jones Show] [War Room] [Special Reports] [Sunday...]   │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ 3. Now Playing Panel (Persistent Player status & scrub controls)      │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ 4. Listen-Back Episodes Grid (.ajr-grid)                              │  │
+│  │    - Real feed episodes filtered by query and selected pill           │  │
+│  │    - Pagination / Show More controls                                  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ 5. Full Shows by Day Section (<FullShowDays />)                       │  │
+│  │    - Grouped multi-hour days from groupShowDays()                     │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### Exact Edits to Apply (Pending Approval):
-
-In `/src/components/ajn-platform-redesign/theme.css`, insert after line 79:
-
-```css
-/* Guide-specific button exemptions scoped to mouse / fine-pointer devices */
-@media (hover: hover) and (pointer: fine) {
-  .ajn-platform-shell :is([data-epg-channel-row], [data-epg-window-start], [data-music-row], [data-epg-toolbar]) :is(button, a[role="button"], select) {
-    min-height: 0;
-    min-width: 0;
-  }
-}
-
-/* Maintain readable 11px floor with compact line height to fit 52-68px cell heights */
-.ajn-platform-shell :is([data-epg-channel-row], [data-epg-window-start], [data-music-row]) :is([class*="text-[9px]"], [class*="text-[10px]"], [class*="text-[11px]"]) {
-  font-size: 11px !important;
-  line-height: 1.25 !important;
-}
-
-/* Prevent "ON AIR NOW" / status badges from wrapping and vertically pushing cell content off-center */
-.ajn-platform-shell :is([data-epg-window-start], [data-music-row]) :is([class*="tracking-wider"], [data-testid="replay-tag"]) {
-  white-space: nowrap !important;
-}
-```
+#### Target Code Changes:
+- **`src/components/RadioView.tsx`**:
+  - Insert the instant search input and quick format pills directly under `<section className="ajr-live">`.
+  - Move `<FullShowDays days={showDays.slice(0, 12)} onPlay={playFullShow} />` from the top of `#ajr-listen` to after `<ul className="ajr-grid">`.
+  - Ensure filter state cleanly syncs with both search and pill selections.
+  - Apply warm copper and dark slate styling tokens.

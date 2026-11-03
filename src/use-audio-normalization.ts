@@ -87,6 +87,10 @@ function disconnectRuntimeMediaElement(runtime: AudioRuntime, expected?: HTMLMed
 }
 
 /** Release only the source owned by this media element; shared analyser nodes stay in the runtime. */
+/** Read-only handle on the app-wide analyser the persistent player already feeds. Creates no nodes; null until a CORS-verified stream is bridged. */
+export function getSharedAnalyser(): AnalyserNode | null {
+  return audioRuntime && audioRuntime.diagnosticsReady ? audioRuntime.diagnosticsAnalyser : null;
+}
 export function releaseMediaElementAudioSource(media: HTMLMediaElement): void {
   const runtime = audioRuntime;
   if (!runtime) return;

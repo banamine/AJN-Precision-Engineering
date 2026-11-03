@@ -7,7 +7,9 @@ import { buildRadioCatalog, type RadioEntry, type RadioFeedItem } from '../utils
 import { AJN_CHANNEL_LABELS, formatAirDate, type AjnChannel } from '../utils/ajnClassify';
 import { filterEntries, formatClock, isPlayingEntry, neighbour, showChips, showInitials, showKey, showLabel, typeChips, typeKey, typeLabel, type RadioFilter, type RadioSort } from '../utils/ajnRadioBrowse';
 import { dayKindLabel, groupShowDays, planFullShow, type FullShowMode, type ShowDay } from '../utils/ajnShowGroups';
-import { startShowQueue } from '../utils/showQueue';
+import { clearShowQueue, startShowQueue } from '../utils/showQueue';
+import { buildMusicItems, buildPodcastItems, loadConcertItems, type ListenItem } from '../utils/listenCatalog';
+import { ListenBrowser } from './ListenBrowser';
 import { FullShowStatus } from './FullShowStatus';
 import { RadioPresetsBar } from './RadioPresetsBar';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
@@ -184,6 +186,37 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
     }));
   };
 
+  const music = useMemo(() => buildMusicItems().items, []);
+  const podcastEps = useMemo(() => buildPodcastItems(), []);
+  const [concerts, setConcerts] = useState<ListenItem[] | null>(null);
+  const [concertsError, setConcertsError] = useState<string | null>(null);
+  const concertsAsked = useRef(false);
+  const loadConcerts = useCallback(() => {
+    if (concertsAsked.current) return;
+    concertsAsked.current = true;
+    loadConcertItems().then(setConcerts).catch((e: unknown) => { concertsAsked.current = false; setConcertsError(e instanceof Error ? e.message : 'could not load the concert list'); });
+  }, []);
+  /** Plays every real file of an item in order (one queue); a single file plays on its own. */
+  const playItem = useCallback((item: ListenItem) => {
+    const files = item.tracks();
+    if (files.length === 0) return;
+    if (files.length === 1) {
+      clearShowQueue();
+      onPlayProgram(files[0].src, files[0].title, item.subtitle, 'audio', item.channelId, item.guideId, files[0].programId);
+      return;
+    }
+    const first = startShowQueue({ mode: 'audio', items: files, missingHours: [], singleFile: false, playable: true }, item.title);
+    if (first) onPlayProgram(first.src, first.title, item.title, 'audio', item.channelId, item.guideId, first.programId);
+  }, [onPlayProgram]);
+  const presetFor = useCallback((item: ListenItem) => {
+    const first = item.tracks()[0];
+    return first ? { itemId: item.id, title: item.title, subtitle: item.subtitle, src: first.src, channelId: item.channelId, guideId: item.guideId, programId: first.programId } : null;
+  }, []);
+  const toDeck = useCallback((list: readonly ListenItem[]) => list.map((item) => ({ id: item.id, title: item.title, subtitle: item.subtitle, play: () => playItem(item), preset: presetFor(item) ?? { itemId: item.id, title: item.title, src: '' } })), [playItem, presetFor]);
+  const deckSources = useMemo(() => ({
+    music: toDeck(music), podcasts: toDeck(podcastEps), concerts: concerts ? toDeck(concerts) : null, loadConcerts, concertsError,
+  }), [music, podcastEps, concerts, concertsError, toDeck, loadConcerts]);
+
   const show = showChips(entries);
   const type = typeChips(entries);
   const label = AJN_CHANNEL_LABELS[channel];
@@ -199,24 +232,16 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
       <NewsTicker news={news} />
 
       <section className="ajr-live" aria-label="Live radio presets" data-testid="radio-page-live">
-        <div className="ajr-label">LIVE RADIO · YOUR PRESETS</div>
-        <RadioPresetsBar defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
+        <div className="ajr-label">YOUR DECK · LIVE RADIO · MUSIC · CONCERTS · PODCASTS</div>
+        <RadioPresetsBar deckSources={deckSources} nowPlaying={nowPlaying} playingNow={liveMedia.attached && !liveMedia.paused} defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
         <RadioSpectrum className="mt-3" playing={liveStation !== null && liveMedia.attached && !liveMedia.paused} />
-      </section>
-      <section className="ajr-hero">
-        <div>
-          <div className="ajr-eyebrow"><i />AJN AUDIO · DAILY NEWS</div>
-          <h1>A frequency<br />of <em>your own.</em></h1>
-          <p className="ajr-hero-desc">Listen to the latest AJN shows and hours, and read today&apos;s news, all in one place.</p>
-          <a href="#ajr-listen" className="ajr-explore" onClick={event => { event.preventDefault(); document.getElementById('ajr-listen')?.scrollIntoView({ behavior: 'smooth' }); }}>BROWSE EPISODES <ArrowDownRight size={15} /></a>
-        </div>
-        <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
       </section>
 
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
 
+      <ListenBrowser music={music} concerts={concerts} podcasts={podcastEps} concertsError={concertsError} loadConcerts={loadConcerts} playingProgramId={nowPlaying?.programId} onPlay={playItem} presetFor={presetFor} />
+
       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
-        <FullShowDays days={showDays.slice(0, 12)} onPlay={playFullShow} />
         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>
         {error && <p className="ajr-status ajr-status-error" role="alert">{error}</p>}
         {loading && items.length === 0 && !error && <p className="ajr-status" role="status">Loading AJN feeds…</p>}
@@ -283,10 +308,20 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
           })}
         </ul>
         {shown.length > visible && <button type="button" className="ajr-more" onClick={() => setVisible(count => count + PAGE_SIZE)}>MORE FROM {label.toUpperCase()} <ArrowDownRight size={14} /></button>}
+        <FullShowDays days={showDays.slice(0, 12)} onPlay={playFullShow} />
       </section>
 
       <DailyBriefing news={news} />
 
+      <section className="ajr-hero">
+        <div>
+          <div className="ajr-eyebrow"><i />AJN AUDIO · DAILY NEWS</div>
+          <h1>A frequency<br />of <em>your own.</em></h1>
+          <p className="ajr-hero-desc">Listen to the latest AJN shows and hours, and read today&apos;s news, all in one place.</p>
+          <a href="#ajr-listen" className="ajr-explore" onClick={event => { event.preventDefault(); document.getElementById('ajr-listen')?.scrollIntoView({ behavior: 'smooth' }); }}>BROWSE EPISODES <ArrowDownRight size={15} /></a>
+        </div>
+        <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
+      </section>
       <footer className="ajr-footer"><span>AJN AUDIO · SHOWS FROM THE AJN FEEDS</span><span>NEWS FROM THE DAILY DIGEST</span></footer>
     </div>
   );

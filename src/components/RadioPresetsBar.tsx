@@ -9,6 +9,7 @@ import {
 import { getStationTheme } from '../utils/radioAccents';
 import { getStationArt } from '../utils/stationArt';
 import { readRecentStations, type RecentStation } from '../utils/radioRecent';
+import { AUDIO_SLOTS, saveAudioPreset, useAudioPresets, type AudioBank, type AudioPreset, type AudioPresetInput } from '../utils/audioPresets';
 
 const HOLD_MS = 500;
 const HOLD_SLOP_PX = 10;
@@ -28,7 +29,23 @@ export function readPresetView(storage?: { getItem(key: string): string | null }
 /** What the dock knows about the station that is playing right now (the directory record, when the station was picked there). */
 export interface PresetSourceInfo { number?: number; logo?: string; corsVerified?: boolean }
 
+export interface DeckItem { id: string; title: string; subtitle?: string; play: () => void; /** What a preset key stores for this item. */ preset: AudioPresetInput }
+export interface DeckSources {
+  music: DeckItem[];
+  /** null until the concert catalog has loaded (it is fetched on demand). */
+  concerts: DeckItem[] | null;
+  podcasts: DeckItem[];
+  loadConcerts?: () => void;
+  concertsError?: string | null;
+}
+
 interface RadioPresetsBarProps {
+  /** Archive Music / Podcasts deck modes: real episode lists supplied by the Radio page. */
+  deckSources?: DeckSources;
+  /** Whatever is playing now (any audio), used to store Archive Music, Concerts and Podcasts onto preset keys. */
+  nowPlaying?: NowPlayingMedia | null;
+  /** True while any audio is actually playing (not paused). */
+  playingNow?: boolean;
   /** The station playing now, or null. Only "radio:" ids can be saved. */
   station: NowPlayingMedia | null;
   /** Extra detail (number, logo) when the dock has it. */
@@ -57,7 +74,7 @@ function tileColor(id: string, name?: string): string {
 }
 
 /** Five hardware-style presets: tap to tune, press and hold (half a second) to save the station that is playing. */
-export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wide = false, initialView, defaultView = 'wall' }: RadioPresetsBarProps): ReactElement {
+export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wide = false, initialView, defaultView = 'wall', deckSources, nowPlaying, playingNow }: RadioPresetsBarProps): ReactElement {
   const presets: RadioPresetMap = useRadioPresets();
   const [status, setStatus] = useState<string>('');
   const [holding, setHolding] = useState<RadioPresetSlot | null>(null);
@@ -72,6 +89,11 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
     try { window.localStorage.setItem(PRESET_VIEW_KEY, next); } catch { /* blocked storage: the choice just is not remembered */ }
   }, []);
   const [knobAngle, setKnobAngle] = useState(0); // knob art only: turns one detent per station step
+  const [mode, setMode] = useState<'live' | 'archive' | 'podcasts'>('live');
+  const [sub, setSub] = useState<'music' | 'concerts'>('music');
+  const [browse, setBrowse] = useState(false); // non-live tabs: false = my saved keys, true = pages of the catalog
+  const audioPresets = useAudioPresets();
+  const [listPage, setListPage] = useState(0);
   const [storeArmed, setStoreArmed] = useState(false); // head unit: STORE pressed, next preset key saves the playing station
   const [vol, setVol] = useState(1);
   const [hasPlayer, setHasPlayer] = useState(false);
@@ -119,7 +141,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   const isHoldingSlot = (slot: RadioPresetSlot): boolean => holding === slot;
 
   /** Saves the playing station into a slot. Returns true when saved. */
-  const assign = useCallback((slot: RadioPresetSlot): boolean => {
+  const assignLive = useCallback((slot: RadioPresetSlot): boolean => {
     if (!playing || !playing.channelId) { say('Play a station first, then press and hold a preset to save it.'); return false; }
     // Number and picture come from the directory record; if this station was started elsewhere, reuse what another slot already knows about it.
     const known = RADIO_PRESET_SLOTS.map((n) => presets[n]).find((p) => p?.channelId === playing.channelId);
@@ -168,6 +190,37 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
     next.go();
     say(`Tuned ${next.title}`);
   }, [bank, presets, recents, playing, tune, tuneRecent, say]);
+  const audioBank: AudioBank | null = mode === 'live' ? null : mode === 'podcasts' ? 'podcasts' : sub;
+  const modeItems: DeckItem[] = audioBank === 'music' ? (deckSources?.music ?? []) : audioBank === 'concerts' ? (deckSources?.concerts ?? []) : audioBank === 'podcasts' ? (deckSources?.podcasts ?? []) : [];
+  const playingItem = (it: DeckItem): boolean => Boolean(nowPlaying?.programId && nowPlaying.programId.startsWith(`${it.id}::`));
+  const bankLabel = audioBank === 'music' ? 'Archive Music' : audioBank === 'concerts' ? 'Live Concerts' : 'Podcasts';
+  const turn = useCallback((dir: 1 | -1) => {
+    if (mode === 'live') { stepStation(dir); return; }
+    if (!modeItems.length) { say(audioBank === 'concerts' && !deckSources?.concerts ? 'Concerts are still loading…' : `${bankLabel}: nothing loaded yet.`); return; }
+    const cur = modeItems.findIndex((x) => nowPlaying?.programId?.startsWith(`${x.id}::`));
+    const next = modeItems[cur < 0 ? (dir > 0 ? 0 : modeItems.length - 1) : (cur + dir + modeItems.length) % modeItems.length];
+    setKnobAngle((a) => a + dir * 36);
+    next.play();
+    say(`Playing ${next.title}`);
+  }, [mode, modeItems, audioBank, bankLabel, deckSources?.concerts, nowPlaying?.programId, stepStation, say]);
+
+  /** Stores whatever is playing from this tab onto a key of this tab's bank. Refuses (and says why) when nothing from this tab is playing. */
+  const assignAudio = useCallback((slot: RadioPresetSlot): boolean => {
+    if (!audioBank) return false;
+    const it = modeItems.find((x) => nowPlaying?.programId?.startsWith(`${x.id}::`));
+    if (!it) { say(`Play something from ${bankLabel} first, then press STORE and a key.`); return false; }
+    const res = saveAudioPreset(audioBank, slot, it.preset);
+    if (!res.saved) { say('This could not be saved to a preset.'); return false; }
+    try { navigator.vibrate?.(30); } catch { /* no haptics */ }
+    say(`Saved to ${bankLabel} key ${slot}: ${it.title}`);
+    return true;
+  }, [audioBank, modeItems, nowPlaying?.programId, bankLabel, say]);
+  const assign = useCallback((slot: RadioPresetSlot): boolean => (mode === 'live' ? assignLive(slot) : assignAudio(slot)), [mode, assignLive, assignAudio]);
+  const playAudioPreset = useCallback((p: AudioPreset) => {
+    const it = modeItems.find((x) => x.id === p.itemId);
+    if (it) { it.play(); return; }
+    onPlay(p.src, p.title, p.subtitle, 'audio', p.channelId, p.guideId ?? 'audio-podcasts', p.programId);
+  }, [modeItems, onPlay]);
 
   const onPointerDown = (slot: RadioPresetSlot) => (e: ReactPointerEvent<HTMLButtonElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -188,6 +241,13 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   };
   const onClick = (slot: RadioPresetSlot) => () => {
     if (fired.current === slot) { fired.current = null; return; }
+    if (mode !== 'live') {
+      if (storeArmed) { setStoreArmed(false); assignAudio(slot); return; }
+      const ap = audioBank ? audioPresets[audioBank][slot] : undefined;
+      if (ap) { playAudioPreset(ap); return; }
+      say(`${bankLabel} key ${slot} is empty. Play something here, then press & hold the key (or STORE then the key).`);
+      return;
+    }
     if (storeArmed) { setStoreArmed(false); assign(slot); return; }
     const p = presets[slot];
     if (p) { tune(p); return; }
@@ -242,26 +302,32 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const nowTheme = playing ? getStationTheme(playing.channelId ?? '', playing.title, info?.logo ?? getStationArt(playing.channelId)) : null;
           const nowLogo = playing ? (info?.logo ?? getStationArt(playing.channelId)) : undefined;
           const accent = nowTheme?.accentColor ?? '#E06D3B';
-          const line2 = preview ?? playing?.title ?? 'No station';
-          const line3 = preview ? '' : (playing?.subtitle ?? (playing ? '' : 'Pick a station or press a preset'));
+          const curItem = mode === 'live' ? undefined : modeItems.find((x) => playingItem(x));
+          const lampOn = mode === 'live' ? live : Boolean(playingNow && curItem);
+          const loadingConcerts = audioBank === 'concerts' && !deckSources?.concerts && !deckSources?.concertsError;
+          const line2 = mode === 'live' ? (preview ?? playing?.title ?? 'No station') : (preview ?? curItem?.title ?? (loadingConcerts ? 'Loading concerts…' : modeItems.length ? `${bankLabel}` : (deckSources?.concertsError && audioBank === 'concerts' ? 'Concerts unavailable' : 'Nothing loaded')));
+          const line3 = mode === 'live' ? (preview ? '' : (playing?.subtitle ?? (playing ? '' : 'Pick a station or press a preset'))) : (deckSources?.concertsError && audioBank === 'concerts' && !modeItems.length ? deckSources.concertsError : curItem?.subtitle ?? `${modeItems.length} to choose from · keys are your saved ${bankLabel.toLowerCase()}`);
           const glassKey = 'relative flex h-16 min-w-0 flex-1 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
           const keyBg = { background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.45)' } as const;
-          const modeBtn = (label: string, selected: boolean, target?: string) => (
-            <button key={label} type="button" aria-pressed={selected}
-              onClick={() => { if (selected) return; const el = target ? document.getElementById(target) : null; if (el) el.scrollIntoView({ behavior: 'smooth' }); else say('Open the Radio page to browse Archive Music and Podcasts.'); }}
-              className={`min-h-[44px] flex-1 cursor-pointer rounded-lg px-3 text-sm font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${selected ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-transparent text-neutral-300 hover:text-white'}`}>{label}</button>
-          );
+          const modeBtn = (label: string, key: 'live' | 'archive' | 'podcasts') => {
+            const selected = mode === key;
+            return (
+              <button key={key} type="button" data-testid={`radio-mode-${key}`} aria-pressed={selected}
+                onClick={() => { setMode(key); setListPage(0); setBrowse(false); setStoreArmed(false); if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.(); say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts'); }}
+                className={`min-h-[44px] flex-1 cursor-pointer rounded-lg px-3 text-sm font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${selected ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-transparent text-neutral-300 hover:text-white'}`}>{label}</button>
+            );
+          };
           const volAngle = -135 + vol * 270;
           return (
-            <div className="relative grid gap-5 md:grid-cols-[minmax(0,1fr)_270px] md:gap-x-8">
+            <div className="relative grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[minmax(0,1fr)_270px] md:gap-x-8">
               <div className="space-y-4 md:col-start-1 md:row-start-1">
                 <div data-testid="radio-head-unit-lcd" className="flex min-h-[112px] items-stretch gap-3 rounded-2xl p-4"
                   style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
                   <div className="flex min-w-0 flex-1 flex-col justify-between gap-1">
                     <div className="flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-300">
-                      <span className="whitespace-nowrap">AJN-1 · {bank === 'presets' ? 'My presets' : 'Recent'}</span>
-                      <span data-testid="radio-head-unit-lamp" className={`flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-black tracking-wider ${live ? 'border-red-400/70 bg-red-500/15 text-red-200' : 'border-white/20 bg-white/5 text-neutral-300'}`} style={live ? { boxShadow: '0 0 14px rgba(239,68,68,0.55)' } : undefined}>
-                        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${live ? 'bg-red-400 animate-pulse motion-reduce:animate-none' : 'bg-neutral-500'}`} />{live ? 'ON AIR' : 'OFF AIR'}
+                      <span className="min-w-0 truncate">AJN-1 · {mode === 'live' ? (bank === 'presets' ? 'My presets' : 'Recent') : browse ? `${bankLabel} · browse` : `${bankLabel} · my keys`}</span>
+                      <span data-testid="radio-head-unit-lamp" className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-black tracking-wider ${lampOn ? 'border-red-400/70 bg-red-500/15 text-red-200' : 'border-white/20 bg-white/5 text-neutral-300'}`} style={lampOn ? { boxShadow: '0 0 14px rgba(239,68,68,0.55)' } : undefined}>
+                        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${lampOn ? 'bg-red-400 animate-pulse motion-reduce:animate-none' : 'bg-neutral-500'}`} />{mode === 'live' ? (live ? 'ON AIR' : 'OFF AIR') : (lampOn ? 'PLAYING' : 'STOPPED')}
                       </span>
                     </div>
                     <p className="truncate text-2xl font-semibold leading-tight text-white sm:text-[28px]">{line2}</p>
@@ -274,8 +340,17 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                   ) : null}
                 </div>
                 <div role="group" aria-label="Radio source" className="flex gap-1 rounded-xl p-1" style={{ background: 'rgba(15,17,23,0.45)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  {modeBtn('Live Radio', true)}{modeBtn('Archive Music', false, 'ajr-listen')}{modeBtn('Podcasts', false, 'ajr-listen')}
+                  {modeBtn('Live Radio', 'live')}{modeBtn('Archive Music', 'archive')}{modeBtn('Podcasts', 'podcasts')}
                 </div>
+                {mode === 'archive' && (
+                  <div role="group" aria-label="Archive source" className="flex gap-1">
+                    {([['music', 'Music channels'], ['concerts', 'Live concerts']] as const).map(([k, text]) => (
+                      <button key={k} type="button" data-testid={`radio-sub-${k}`} aria-pressed={sub === k}
+                        onClick={() => { setSub(k); setListPage(0); setBrowse(false); setStoreArmed(false); if (k === 'concerts') deckSources?.loadConcerts?.(); }}
+                        className={`min-h-[36px] cursor-pointer rounded-full px-3 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${sub === k ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-white/15 text-neutral-300 hover:text-white'}`}>{text}</button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col items-center gap-3 md:col-start-2 md:row-start-1 md:row-span-1">
@@ -294,12 +369,12 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                     onPointerMove={(e) => {
                       const d = knobDrag.current; if (!d) return;
                       d.acc += e.clientX - d.x; d.x = e.clientX;
-                      while (Math.abs(d.acc) >= 24) { const dir = d.acc > 0 ? 1 : -1; d.acc -= dir * 24; knobMoved.current = true; stepStation(dir); }
+                      while (Math.abs(d.acc) >= 24) { const dir = d.acc > 0 ? 1 : -1; d.acc -= dir * 24; knobMoved.current = true; turn(dir); }
                     }}
                     onPointerUp={() => { knobDrag.current = null; }} onPointerCancel={() => { knobDrag.current = null; }}
-                    onClick={() => { if (knobMoved.current) { knobMoved.current = false; return; } stepStation(1); }}
-                    onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); stepStation(1); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); stepStation(-1); } }}
-                    onWheel={(e) => { if (e.deltaY) stepStation(e.deltaY > 0 ? 1 : -1); }}
+                    onClick={() => { if (knobMoved.current) { knobMoved.current = false; return; } turn(1); }}
+                    onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); turn(1); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); turn(-1); } }}
+                    onWheel={(e) => { if (e.deltaY) turn(e.deltaY > 0 ? 1 : -1); }}
                     className="absolute left-1/2 top-1/2 h-[132px] w-[132px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none select-none rounded-full p-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
                     style={{ background: 'linear-gradient(180deg,#c9825f 0%,#E06D3B 40%,#7a3a20 100%)', boxShadow: '0 10px 26px rgba(0,0,0,0.75), 0 0 22px rgba(224,109,59,0.45), inset 0 1px 2px rgba(255,255,255,0.5)' }}>
                     <span aria-hidden="true" className="relative block h-full w-full rounded-full transition-transform duration-150 motion-reduce:transition-none"
@@ -309,13 +384,50 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                   </button>
                 </div>
                 <div className="sr-only focus-within:not-sr-only focus-within:flex focus-within:gap-2">
-                  <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => stepStation(-1)} className="rounded border border-white/30 px-3 py-2 text-xs text-white">Previous</button>
-                  <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => stepStation(1)} className="rounded border border-white/30 px-3 py-2 text-xs text-white">Next</button>
+                  <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => turn(-1)} className="rounded border border-white/30 px-3 py-2 text-xs text-white">Previous</button>
+                  <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => turn(1)} className="rounded border border-white/30 px-3 py-2 text-xs text-white">Next</button>
                 </div>
               </div>
 
               <div className="space-y-2 md:col-start-1 md:row-start-2">
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row">
+                  {mode !== 'live' && !browse ? (
+                  <div className="grid flex-1 grid-cols-5 gap-2">
+                    {AUDIO_SLOTS.map((slot) => {
+                      const ap = audioBank ? audioPresets[audioBank][slot] : undefined;
+                      const act = Boolean(ap && nowPlaying?.programId?.startsWith(`${ap.itemId}::`));
+                      return (
+                        <button key={slot} type="button" data-testid={`radio-audio-preset-${slot}`} data-filled={ap ? 'true' : 'false'} aria-current={act ? 'true' : undefined}
+                          aria-label={ap ? `${bankLabel} key ${slot}: ${ap.title}. Tap to play. Press and hold to replace with what is playing.` : `${bankLabel} key ${slot}, empty. Play something, then press and hold to save it here.`}
+                          onPointerDown={onPointerDown(slot)} onPointerMove={onPointerMove} onPointerUp={cancelHold} onPointerCancel={cancelHold} onPointerLeave={cancelHold}
+                          onClick={onClick(slot)} onKeyDown={onKeyDown(slot)}
+                          onMouseEnter={() => ap && setPreview(ap.title)} onMouseLeave={() => setPreview(null)} onFocus={() => ap && setPreview(ap.title)} onBlur={() => setPreview(null)}
+                          style={act ? { ...keyBg, background: 'linear-gradient(180deg, rgba(224,109,59,0.30), rgba(224,109,59,0.08))' } : keyBg}
+                          className={`${glassKey} ${act ? 'border-[#E06D3B] text-white' : ap ? 'border-white/25 text-white hover:border-[#E06D3B]/70' : 'border-dashed border-white/20 text-neutral-400'}`}>
+                          {isHoldingSlot(slot) && <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-[2] rounded-xl ring-2 ring-[#E06D3B]" style={{ animation: `ajnPresetFill ${HOLD_MS}ms linear forwards`, background: 'rgba(224,109,59,0.22)' }} />}
+                          <span aria-hidden="true" className={`text-lg font-semibold leading-none ${act ? 'text-[#F9A56D]' : ''}`}>{String(slot).padStart(2, '0')}</span>
+                          <span aria-hidden="true" className="w-full truncate px-1 text-[10px] leading-none text-neutral-300">{ap?.title ?? '+'}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  ) : mode !== 'live' ? (
+                  <div className="grid flex-1 grid-cols-5 gap-2">
+                    {RADIO_PRESET_SLOTS.map((slot) => {
+                      const it = modeItems[listPage * 5 + slot - 1];
+                      const act = Boolean(it && playingItem(it));
+                      return (
+                        <button key={slot} type="button" data-testid={`radio-deck-item-${slot}`} disabled={!it} aria-label={it ? `Play ${it.title}` : `Slot ${slot}, empty`} title={it?.title}
+                          onClick={() => it && it.play()} onMouseEnter={() => it && setPreview(it.title)} onMouseLeave={() => setPreview(null)} onFocus={() => it && setPreview(it.title)} onBlur={() => setPreview(null)}
+                          style={act ? { ...keyBg, background: 'linear-gradient(180deg, rgba(224,109,59,0.30), rgba(224,109,59,0.08))' } : keyBg}
+                          className={`${glassKey} ${act ? 'border-[#E06D3B] text-white' : it ? 'border-white/25 text-white hover:border-[#E06D3B]/70' : 'border-dashed border-white/20 text-neutral-500'} disabled:cursor-default`}>
+                          <span aria-hidden="true" className={`text-lg font-semibold leading-none ${act ? 'text-[#F9A56D]' : ''}`}>{String(listPage * 5 + slot).padStart(2, '0')}</span>
+                          <span aria-hidden="true" className="w-full truncate px-1 text-[10px] leading-none text-neutral-300">{it?.title ?? '–'}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  ) : (
                   <div className="grid flex-1 grid-cols-5 gap-2">
                     {RADIO_PRESET_SLOTS.map((slot) => {
                       const p = bank === 'presets' ? presets[slot] : undefined;
@@ -353,12 +465,13 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                       );
                     })}
                   </div>
+                  )}
                   <div className="flex h-11 w-full shrink-0 overflow-hidden rounded-xl border border-white/25 sm:h-auto sm:w-[104px]" style={keyBg}>
                     <button type="button" data-testid="radio-preset-bank" aria-label={`Bank: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`}
-                      onClick={() => openBank(bank === 'presets' ? 'recent' : 'presets')}
+                      onClick={() => { if (mode === 'live') openBank(bank === 'presets' ? 'recent' : 'presets'); else if (!browse) { setBrowse(true); setListPage(0); say(`${bankLabel}: browsing, 5 at a time`); } else if (modeItems.length > (listPage + 1) * 5) setListPage((pg) => pg + 1); else { setBrowse(false); setListPage(0); say(`${bankLabel}: my keys`); } }}
                       className="flex-1 cursor-pointer text-[11px] font-bold tracking-wider text-neutral-100 hover:text-white touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">BANK</button>
                     <button type="button" data-testid="radio-preset-store" aria-pressed={storeArmed} aria-label="Store: press, then a preset key, to save the playing station"
-                      onClick={() => { if (!playing) { say('Play a station first, then press Store and a preset key.'); return; } setStoreArmed((v) => !v); say(storeArmed ? 'Store cancelled' : 'Store armed: press a preset key'); }}
+                      onClick={() => { if (mode === 'live' && !playing) { say('Play a station first, then press Store and a preset key.'); return; } if (mode !== 'live' && browse) { setBrowse(false); } setStoreArmed((v) => !v); say(storeArmed ? 'Store cancelled' : 'Store armed: press a preset key'); }}
                       className={`flex-1 cursor-pointer border-l border-white/20 text-[11px] font-bold tracking-wider touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${storeArmed ? 'bg-[#E06D3B] text-[#0F1117]' : 'text-neutral-100 hover:text-white'}`}>STORE</button>
                   </div>
                 </div>
@@ -381,7 +494,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                   <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-300">Volume</span>
                 </div>
                 <div className="flex flex-col items-center gap-1.5">
-                  <button type="button" data-testid="radio-bank-select" aria-label={`Bank select: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`} onClick={() => openBank(bank === 'presets' ? 'recent' : 'presets')}
+                  <button type="button" data-testid="radio-bank-select" aria-label={`Bank select: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`} onClick={() => { if (mode === 'live') openBank(bank === 'presets' ? 'recent' : 'presets'); else if (!browse) { setBrowse(true); setListPage(0); } else if (modeItems.length > (listPage + 1) * 5) setListPage((pg) => pg + 1); else { setBrowse(false); setListPage(0); } }}
                     className="relative h-16 w-16 cursor-pointer rounded-full p-1.5 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
                     style={{ background: 'linear-gradient(180deg,#c9825f,#7a3a20)', boxShadow: '0 6px 16px rgba(0,0,0,0.6)' }}>
                     <span aria-hidden="true" className="relative block h-full w-full rounded-full transition-transform duration-200 motion-reduce:transition-none" style={{ transform: `rotate(${bank === 'presets' ? -40 : 40}deg)`, background: 'conic-gradient(from 180deg, #3b4150, #8d94a1, #3b4150, #1f2430, #8d94a1, #3b4150)', boxShadow: 'inset 0 2px 2px rgba(255,255,255,0.4), inset 0 -3px 6px rgba(0,0,0,0.7)' }}>

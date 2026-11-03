@@ -1,0 +1,35 @@
+--- /tmp/claude-0/x/skin/src/components/ajn-platform-redesign/AppearanceProvider.tsx	2026-11-03 08:11:59.623348105 -0700
++++ /tmp/claude-0/x/skin/src/components/ajn-platform-redesign/AppearanceProvider.tsx	2026-11-03 08:11:59.659978195 -0700
+@@ -28,12 +28,12 @@
+ const STORAGE_KEY = 'ajn-appearance-settings.v1';
+ const DEFAULTS: AppearanceSettings = { background: 'contrast', text: 'auto', accent: 'copper', size: 'M' };
+ const palettes: Record<BackgroundChoice, ThemeColors> = {
+-  contrast: { background: '#000000', surface: '#121212', card: '#1a1a1a', border: '#444444', text: '#ffffff', muted: '#cccccc', accent: '#a84e31', accentText: '#ffffff' },
++  contrast: { background: '#0F1117', surface: '#181B24', card: '#20242F', border: '#282D3D', text: '#ffffff', muted: '#c7cbd6', accent: '#E06D3B', accentText: '#0F1117' },
+   paper: { background: '#f2efe6', surface: '#ffffff', card: '#e8e4d9', border: '#d6d0c0', text: '#1c1c1a', muted: '#4a4a42', accent: '#a84e31', accentText: '#ffffff' },
+   white: { background: '#ffffff', surface: '#ffffff', card: '#f5f5f2', border: '#d8d8d2', text: '#1c1c1a', muted: '#4a4a42', accent: '#a84e31', accentText: '#ffffff' },
+   slate: { background: '#1e2528', surface: '#273035', card: '#2c373d', border: '#46545b', text: '#f2efe6', muted: '#c1c9cd', accent: '#a84e31', accentText: '#ffffff' },
+ };
+-const accents: Record<AccentChoice, string> = { copper: '#a84e31', blue: '#315e71', gold: '#b8860b', green: '#2f6b3a' };
++const accents: Record<AccentChoice, string> = { copper: '#E06D3B', blue: '#315e71', gold: '#b8860b', green: '#2f6b3a' };
+ const scales: Record<SizeChoice, string> = { S: '0.9375', M: '1', L: '1.125', XL: '1.25' };
+ 
+ function loadSettings(): AppearanceSettings {
+@@ -72,7 +72,7 @@
+   '--ajn-muted': colors.muted,
+   '--ajn-accent': colors.accent,
+   '--ajn-accent-text': colors.accentText,
+-  '--ajn-badge': colors.background === '#000000' || colors.background === '#1e2528' ? '#fcd34d' : '#8a3a1f',
++  '--ajn-badge': colors.background === '#000000' || colors.background === '#0F1117' || colors.background === '#1e2528' ? '#fcd34d' : '#8a3a1f',
+   '--ajn-font-scale': scales[size],
+   '--text-xs': `calc(0.75rem * ${scales[size]})`,
+   '--text-sm': `calc(0.875rem * ${scales[size]})`,
+@@ -105,7 +105,7 @@
+       : settings.text === 'ink' ? '#1c1c1a'
+         : settings.text === 'softblack' ? '#2b2b28' : base.text;
+     const lightText = text === '#ffffff' ? '#d0d0d0' : text === '#1c1c1a' ? '#4a4a42' : text === '#2b2b28' ? '#555550' : base.muted;
+-    return { ...base, text, muted: lightText, accent: accents[settings.accent], accentText: settings.accent === 'gold' ? '#1c1c1a' : '#ffffff' };
++    return { ...base, text, muted: lightText, accent: accents[settings.accent], accentText: settings.accent === 'gold' ? '#1c1c1a' : settings.accent === 'copper' ? '#0F1117' : '#ffffff' };
+   }, [base, settings.accent, settings.text]);
+ 
+   useEffect(() => {

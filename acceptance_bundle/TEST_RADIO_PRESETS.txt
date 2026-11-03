@@ -1,0 +1,3 @@
+Command: NET_GUARD=block npx tsx test-radio-presets.tsx
+Exit: 0
+PASS radio presets: store rules, refusals, bad data, injectable storage, bar markup (5 slots, empty, filled, active, paused, non-radio)

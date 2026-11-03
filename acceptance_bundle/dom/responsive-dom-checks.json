@@ -1,0 +1,379 @@
+{
+  "checks": [
+    {
+      "state": "nothing-playing",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:5001/",
+      "dockCount": 0,
+      "dockVisible": false,
+      "radioCount": 1,
+      "radioConnected": true,
+      "radioParentId": "",
+      "radioParentClass": "min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200",
+      "radioInSlot": false,
+      "radioRect": {
+        "x": 1241.375,
+        "y": 832,
+        "width": 110.625,
+        "height": 44
+      },
+      "panelOpen": false,
+      "status": null,
+      "statusText": null,
+      "liveColor": null,
+      "liveBackground": null,
+      "retryLabel": null,
+      "media": null
+    },
+    {
+      "state": "nothing-playing",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:5001/",
+      "dockCount": 0,
+      "dockVisible": false,
+      "radioCount": 1,
+      "radioConnected": true,
+      "radioParentId": "",
+      "radioParentClass": "min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200",
+      "radioInSlot": false,
+      "radioRect": {
+        "x": 267.375,
+        "y": 724,
+        "width": 110.625,
+        "height": 44
+      },
+      "panelOpen": false,
+      "status": null,
+      "statusText": null,
+      "liveColor": null,
+      "liveBackground": null,
+      "retryLabel": null,
+      "media": null
+    },
+    {
+      "state": "live-real",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:5001/",
+      "dockCount": 1,
+      "dockVisible": true,
+      "radioCount": 1,
+      "radioConnected": true,
+      "radioParentId": "radio-dock-slot",
+      "radioParentClass": "flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center",
+      "radioInSlot": true,
+      "radioRect": {
+        "x": 1254.046875,
+        "y": 816.453125,
+        "width": 44,
+        "height": 44
+      },
+      "panelOpen": false,
+      "status": "playing",
+      "statusText": "LIVE",
+      "liveColor": "rgb(15, 17, 23)",
+      "liveBackground": "rgb(239, 68, 68)",
+      "retryLabel": "Pause Classic Hits 109",
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s",
+        "paused": false,
+        "currentTime": 0.696117,
+        "readyState": 3,
+        "errorCode": null
+      }
+    },
+    {
+      "state": "live-real",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:5001/",
+      "dockCount": 1,
+      "dockVisible": true,
+      "radioCount": 1,
+      "radioConnected": true,
+      "radioParentId": "radio-dock-slot",
+      "radioParentClass": "flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center",
+      "radioInSlot": true,
+      "radioRect": {
+        "x": 291,
+        "y": 722,
+        "width": 44,
+        "height": 44
+      },
+      "panelOpen": false,
+      "status": "playing",
+      "statusText": "LIVE",
+      "liveColor": "rgb(15, 17, 23)",
+      "liveBackground": "rgb(239, 68, 68)",
+      "retryLabel": "Pause Classic Hits 109",
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s",
+        "paused": false,
+        "currentTime": 1.982726,
+        "readyState": 3,
+        "errorCode": null
+      }
+    },
+    {
+      "state": "radio-open-dock-mounted",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:5001/",
+      "dockCount": 1,
+      "dockVisible": true,
+      "radioCount": 0,
+      "radioConnected": false,
+      "radioParentId": "",
+      "radioParentClass": "",
+      "radioInSlot": false,
+      "radioRect": null,
+      "panelOpen": true,
+      "status": "playing",
+      "statusText": "LIVE",
+      "liveColor": "rgb(15, 17, 23)",
+      "liveBackground": "rgb(239, 68, 68)",
+      "retryLabel": "Pause Classic Hits 109",
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s",
+        "paused": false,
+        "currentTime": 2.858564,
+        "readyState": 3,
+        "errorCode": null
+      }
+    },
+    {
+      "state": "radio-open-dock-mounted",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:5001/",
+      "dockCount": 1,
+      "dockVisible": true,
+      "radioCount": 0,
+      "radioConnected": false,
+      "radioParentId": "",
+      "radioParentClass": "",
+      "radioInSlot": false,
+      "radioRect": null,
+      "panelOpen": true,
+      "status": "playing",
+      "statusText": "LIVE",
+      "liveColor": "rgb(15, 17, 23)",
+      "liveBackground": "rgb(239, 68, 68)",
+      "retryLabel": "Pause Classic Hits 109",
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s",
+        "paused": false,
+        "currentTime": 4.196005,
+        "readyState": 3,
+        "errorCode": null
+      }
+    },
+    {
+      "state": "player-page",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:5001/#player",
+      "dockCount": 0,
+      "dockVisible": false,
+      "radioCount": 1,
+      "radioConnected": true,
+      "radioParentId": "",
+      "radioParentClass": "min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200",
+      "radioInSlot": false,
+      "radioRect": {
+        "x": 1241.375,
+        "y": 832,
+        "width": 110.625,
+        "height": 44
+      },
+      "panelOpen": false,
+      "status": null,
+      "statusText": null,
+      "liveColor": null,
+      "liveBackground": null,
+      "retryLabel": null,
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s",
+        "paused": false,
+        "currentTime": 5.443806,
+        "readyState": 3,
+        "errorCode": null
+      }
+    },
+    {
+      "state": "player-page",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:5001/#player",
+      "dockCount": 0,
+      "dockVisible": false,
+      "radioCount": 1,
+      "radioConnected": true,
+      "radioParentId": "",
+      "radioParentClass": "min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200",
+      "radioInSlot": false,
+      "radioRect": {
+        "x": 267.375,
+        "y": 724,
+        "width": 110.625,
+        "height": 44
+      },
+      "panelOpen": false,
+      "status": null,
+      "statusText": null,
+      "liveColor": null,
+      "liveBackground": null,
+      "retryLabel": null,
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s",
+        "paused": false,
+        "currentTime": 6.050284,
+        "readyState": 3,
+        "errorCode": null
+      }
+    },
+    {
+      "state": "dock-closed-x",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:5001/#",
+      "dockCount": 0,
+      "dockVisible": false,
+      "radioCount": 1,
+      "radioConnected": true,
+      "radioParentId": "",
+      "radioParentClass": "min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200",
+      "radioInSlot": false,
+      "radioRect": {
+        "x": 1241.375,
+        "y": 832,
+        "width": 110.625,
+        "height": 44
+      },
+      "panelOpen": false,
+      "status": null,
+      "statusText": null,
+      "liveColor": null,
+      "liveBackground": null,
+      "retryLabel": null,
+      "media": null
+    },
+    {
+      "state": "dock-closed-x",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:5001/#",
+      "dockCount": 0,
+      "dockVisible": false,
+      "radioCount": 1,
+      "radioConnected": true,
+      "radioParentId": "",
+      "radioParentClass": "min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200",
+      "radioInSlot": false,
+      "radioRect": {
+        "x": 267.375,
+        "y": 724,
+        "width": 110.625,
+        "height": 44
+      },
+      "panelOpen": false,
+      "status": null,
+      "statusText": null,
+      "liveColor": null,
+      "liveBackground": null,
+      "retryLabel": null,
+      "media": null
+    },
+    {
+      "state": "radio-reopened-after-x",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:5001/#",
+      "dockCount": 0,
+      "dockVisible": false,
+      "radioCount": 0,
+      "radioConnected": false,
+      "radioParentId": "",
+      "radioParentClass": "",
+      "radioInSlot": false,
+      "radioRect": null,
+      "panelOpen": true,
+      "status": null,
+      "statusText": null,
+      "liveColor": null,
+      "liveBackground": null,
+      "retryLabel": null,
+      "media": null
+    },
+    {
+      "state": "radio-reopened-after-x",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:5001/#",
+      "dockCount": 0,
+      "dockVisible": false,
+      "radioCount": 0,
+      "radioConnected": false,
+      "radioParentId": "",
+      "radioParentClass": "",
+      "radioInSlot": false,
+      "radioRect": null,
+      "panelOpen": true,
+      "status": null,
+      "statusText": null,
+      "liveColor": null,
+      "liveBackground": null,
+      "retryLabel": null,
+      "media": null
+    }
+  ],
+  "maxRadioButtonCount": 1,
+  "buttonNeverDuplicated": true,
+  "orphanChecks": [
+    {
+      "viewport": "desktop",
+      "connected": true,
+      "inSlot": false,
+      "parentId": "",
+      "parentClass": "min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200",
+      "rect": {
+        "x": 1241.375,
+        "y": 832,
+        "width": 110.625,
+        "height": 44
+      }
+    },
+    {
+      "viewport": "mobile",
+      "connected": true,
+      "inSlot": false,
+      "parentId": "",
+      "parentClass": "min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200",
+      "rect": {
+        "x": 267.375,
+        "y": 724,
+        "width": 110.625,
+        "height": 44
+      }
+    }
+  ],
+  "livePillComputedColors": [
+    {
+      "viewport": "desktop",
+      "text": "LIVE",
+      "color": "rgb(15, 17, 23)",
+      "background": "rgb(239, 68, 68)",
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s",
+        "paused": false,
+        "currentTime": 0.696117,
+        "readyState": 3,
+        "errorCode": null
+      }
+    },
+    {
+      "viewport": "mobile",
+      "text": "LIVE",
+      "color": "rgb(15, 17, 23)",
+      "background": "rgb(239, 68, 68)",
+      "media": {
+        "src": "https://broadcast.classichits109.com/70s-90s",
+        "paused": false,
+        "currentTime": 1.982726,
+        "readyState": 3,
+        "errorCode": null
+      }
+    }
+  ],
+  "pageErrors": []
+}

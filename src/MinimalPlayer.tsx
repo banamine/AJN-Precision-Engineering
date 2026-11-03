@@ -4,7 +4,7 @@ import { attachPlayTimeline } from "./utils/playTimeline";
 import { createProgressWatchdog } from "./utils/progressWatchdog";
 import { bufferGaugeMetadata, createBufferGauge, type BufferGaugeSnapshot } from "./utils/bufferGauge";
 import { playerKeyAction, seekDelta } from "./utils/playerKeys";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { bridgeSrc, corsModeFor, NO_METER_MARK, RESOLVED_MARK, podcastAllowsMeter, liveRadioAllowsMeter } from "./utils/mediaRoute";
 import Hls from "hls.js";
 import { getBufferSamples, reportBufferSample, reportTelemetry } from "./telemetry";
@@ -59,6 +59,8 @@ interface MinimalPlayerProps {
   onSelectUpcoming?: (program: Program) => void;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
+  /** Optional in-player content; rendered inside the fullscreen stage. */
+  overlaySlot?: ReactNode;
 }
 
 const TV_NEWS_SLICE_SEC = 300;
@@ -112,7 +114,7 @@ const PRELUDE_BACKDROP: BackdropSource = {
   poster: `${import.meta.env.BASE_URL}media/prelude-loop-poster.jpg`,
 };
 
-export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite }: MinimalPlayerProps) {
+export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite, overlaySlot }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSavedPositionRef = useRef(0);
@@ -1268,6 +1270,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           <div ref={audioHostRef} data-testid="audio-host" className="absolute left-0 top-0 h-0 w-0 overflow-hidden" />
         </div>
       )}
+      {overlaySlot}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
       <WaitingNotes status={statusText} onRetry={onRetry} archive={typeof src === "string" && src.includes("/api/archive/proxy")} />
       {/^(Failed to load|Unavailable)/.test(statusText) && (onRetry || onBackToGuide) && (

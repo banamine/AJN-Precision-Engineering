@@ -1,0 +1,68 @@
+AJN PLAYER PAGE CAPTIONS LAYOUT — COMMAND EVIDENCE
+Worktree: /home/runner/workspace/.local/player-split-captions-layout
+Branch: fix/player-split-captions-layout
+Base: 0d935f394f52827d9a31c71d00ed942cc14ed7fa
+Archive network requests: 0
+
+Environment:
+  node --version -> v22.23.4
+  npm --version -> 10.9.9
+  npm ci -> exit 0
+
+Typecheck:
+  NET_GUARD=block NODE_OPTIONS=--max-old-space-size=1500 npx tsc --noEmit
+  stdout: empty
+  exit: 0
+
+Production build:
+  NET_GUARD=block npm run build
+  vite v6.4.3 building for production...
+  ✓ 1910 modules transformed.
+  dist/index.html 3.04 kB
+  dist/assets/index-Dt4FknQM.css 169.07 kB
+  dist/assets/PoliceChaseReel-CTvfOKZ8.js 6.72 kB
+  dist/assets/NewsCubePage-DRkxwfDa.js 498.53 kB
+  dist/assets/cloudBackend-Ds57hfvW.js 696.45 kB
+  dist/assets/index-BuMjbNbj.js 1,679.55 kB
+  (!) Existing advisory: some chunks exceed 500 kB after minification.
+  ✓ built in 19.16s
+  dist/server.cjs 29.2mb; dist/server.cjs.map 41.5mb
+  ⚡ Done in 1759ms
+  exit: 0
+
+Caption suite:
+  NET_GUARD=block npm run test:captions
+  test-caption-strip-output: caption strip state markup, News output baseline,
+    test IDs, and radio label: all passed
+  test-captions.ts: 20 checks passed
+  Chromium synthetic layout matrix: 63/63 scenarios/viewports passed
+  Video scenarios: no document scroll; audio Player route preserves normal flow
+    (expected overflow is labeled AUDIO FLOW, not clipped)
+  browser JavaScript errors: 0
+  Archive requests: 0
+  external attempt blocked: fonts.googleapis.com/css2 (pre-existing page font)
+  Full 63-row geometry table: REPORT.md
+  exit: 0
+
+Radio UI suite:
+  NET_GUARD=block npm run test:radio-ui
+  audio ASR offline service, error paths, JSON route shape and relative-to-absolute
+    math: all passed
+  radio caption pure fixture logic: all passed
+  test-radio-accents: ok (9 configured stations)
+  test-radio-groups: ok (9 stations)
+  test-station-banner-render: ok house,tv,circle-play,newspaper,radio,history,
+    bookmark,folder-archive,search
+  exit: 0
+
+Audio light-guide regression:
+  PUPPETEER_EXECUTABLE_PATH=/repl/tools/bin/chromium NET_GUARD=block
+    node test-audio-light-guide.mjs
+  phone and desktop passed; archiveRequests=0; externalRequests=0
+  exit: 0
+
+Additional test attempted:
+  npm run test:guide-ui
+  four aired-time checks passed; unchanged test-classic-light-guide.mjs then timed
+    out waiting for [data-channel-row-loading="demo-channel-060"].
+  This test and src/EpgGuide.tsx were not changed.

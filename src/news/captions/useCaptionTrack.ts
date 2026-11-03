@@ -31,6 +31,8 @@ export interface CaptionTrackAdapter {
   positionOffset?: number;
   kind?: CaptionKind;
   label?: string;
+  /** Maximum already-loaded prior cues exposed for the TV News sidebar. Does not fetch extra slices. */
+  historyLimit?: number;
   errorReason?: (status: number, body: CaptionApiBody | null) => string;
   retryAfterSeconds?: (body: CaptionApiBody | null, header: string | null) => number;
   /** News keeps its existing cool-down behavior; radio marks a 429 slice as attempted once. */
@@ -55,6 +57,7 @@ export function useCaptionTrack(archivePath: string | undefined, getVideo: () =>
       : null,
     getMedia: getVideo,
     positionOffset: clipStart,
+    historyLimit: 200,
     errorReason: (status, body) => String(body?.error ?? `plan HTTP ${status}`),
   });
 }
@@ -165,7 +168,7 @@ export function useCaptionTrackAdapter(adapter: CaptionTrackAdapter): CaptionSta
       const missing = wanted.find((s) => !store.current.has(s) && !failedSlices.has(s));
       if (missing !== undefined && !media.paused) void fetchSlice(missing);
       const kind = currentAdapter.kind ?? plan.kind as CaptionKind;
-      const { current: activeCue, before } = visibleLines(store.current.cues(), position, kind);
+      const { current: activeCue, before } = visibleLines(store.current.cues(), position, kind, currentAdapter.historyLimit ?? 4);
       const currentFailed = failedSlices.get(wanted[0]);
       if (currentFailed && !store.current.has(wanted[0])) { show({ phase: "error", reason: currentFailed }); return; }
       show({ phase: "ready", kind, label: String(currentAdapter.label ?? plan.label ?? ""), current: activeCue, before, waiting: !store.current.has(wanted[0]) });

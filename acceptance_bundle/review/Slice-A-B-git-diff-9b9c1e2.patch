@@ -1,0 +1,922 @@
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -10,6 +10,7 @@
+ import { NewsTabs as RumbleNewsWall } from './components/NewsTabs';
+ import { RadioView } from './components/RadioView';
+ import { DevModeView } from './components/DevModeView';
++import { WatchLaterView } from './components/WatchLaterView';
+ import { MiniPlayerDock } from './components/MiniPlayerDock';
+ import { RadioDock } from './components/RadioDock';
+ import { SyncedVideoPip } from './components/SyncedVideoPip';
+@@ -19,6 +20,7 @@
+ import { HistoryView } from './components/HistoryView';
+ import { HistoryEntry, loadHistory, saveHistory, recordPlay, updateHistoryProgress, removeHistoryEntry } from './utils/historyStore';
+ import { FavoriteMedia, loadMediaFavorites, saveMediaFavorites, toggleFavorite, isFavorite as isMediaFavorite } from './utils/mediaFavorites';
++import { addWatchLater, isInWatchLater, loadWatchLater, progressAction, removeWatchLater, saveWatchLater, type WatchLaterItem } from './utils/watchLater';
+ import { useRadioFavorites, toggleRadioFavorite } from './utils/radioFavorites';
+ import { useCloudSync } from './hooks/useCloudSync';
+ import { buildSuggestCandidates, addRecentSearch, loadRecentSearches, saveRecentSearches } from './utils/suggest';
+@@ -70,6 +72,7 @@
+     case 'search': return 'search';
+     case 'today': return 'today';
+     case 'history': return 'history';
++    case 'watch-later': return 'watch-later';
+     case 'news':
+     case 'bannedvideo': return 'news';
+     case 'news-cube': return 'news-cube';
+@@ -143,6 +146,7 @@
+   recentlyPlayedRef.current = recentlyPlayed;
+   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
+   const [favorites, setFavorites] = useState<FavoriteMedia[]>(() => loadMediaFavorites());
++  const [watchLaterEntries, setWatchLaterEntries] = useState<WatchLaterItem[]>(() => loadWatchLater());
+   const [recentSearches, setRecentSearches] = useState<string[]>(() => loadRecentSearches());
+ 
+   // History is written at most once a second: playback progress updates it every few seconds.
+@@ -151,6 +155,7 @@
+     return () => window.clearTimeout(t);
+   }, [history]);
+   useEffect(() => { saveMediaFavorites(favorites); }, [favorites]);
++  useEffect(() => { saveWatchLater(watchLaterEntries); }, [watchLaterEntries]);
+   useEffect(() => { saveRecentSearches(recentSearches); }, [recentSearches]);
+   useEffect(() => {
+     const flush = () => saveHistory(history);
+@@ -263,11 +268,26 @@
+     handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds, bufferMetadata);
+   }, [handlePlayProgram]);
+ 
+-  const updateRecentlyPlayedProgress = useCallback((itemId: string, positionSeconds: number) => {
++  const updateRecentlyPlayedProgress = useCallback((itemId: string, positionSeconds: number, durationSeconds?: number) => {
+     if (!Number.isFinite(positionSeconds) || positionSeconds < 0) return;
+     setRecentlyPlayed((items) => items.map((item) => item.id === itemId ? { ...item, progressSeconds: positionSeconds, updatedAt: Date.now() } : item));
+     setHistory((h) => updateHistoryProgress(h, itemId, positionSeconds));
+-  }, []);
++    if (!nowPlaying || mediaIdentity(nowPlaying) !== itemId) return;
++    setWatchLaterEntries((items) => {
++      const saved = isInWatchLater(items, itemId);
++      const action = progressAction(positionSeconds, durationSeconds ?? 0, saved);
++      if (action === 'remove') return removeWatchLater(items, itemId);
++      if (action !== 'add' && action !== 'update') return items;
++      const existing = items.find((item) => item.id === itemId);
++      if (existing && Math.floor(existing.progressSeconds) === Math.floor(positionSeconds)
++        && existing.durationSeconds === durationSeconds) return items;
++      return addWatchLater(items, itemId, nowPlaying, Date.now(), {
++        reason: 'auto-half',
++        progressSeconds: positionSeconds,
++        durationSeconds,
++      }).list;
++    });
++  }, [nowPlaying]);
+ 
+   const resumeRecentlyPlayed = useCallback((item: RecentlyPlayedItem) => {
+     setNowPlaying(item);
+@@ -290,6 +310,19 @@
+     if (typeof window !== 'undefined') window.location.hash = '#player';
+   }, []);
+   const nowPlayingId = nowPlaying ? mediaIdentity(nowPlaying) : null;
++  const toggleNowPlayingWatchLater = useCallback(() => {
++    if (!nowPlaying || !nowPlayingId) return;
++    if (isInWatchLater(watchLaterEntries, nowPlayingId)) {
++      setWatchLaterEntries(removeWatchLater(watchLaterEntries, nowPlayingId));
++      return;
++    }
++    const progressSeconds = recentlyPlayedRef.current.find((item) => item.id === nowPlayingId)?.progressSeconds ?? 0;
++    const added = addWatchLater(watchLaterEntries, nowPlayingId, nowPlaying, Date.now(), {
++      reason: 'manual',
++      progressSeconds,
++    });
++    setWatchLaterEntries(added.list);
++  }, [nowPlaying, nowPlayingId, watchLaterEntries]);
+   const radioFavs = useRadioFavorites();
+   const radioStationId = nowPlaying?.channelId && nowPlaying.channelId.startsWith('radio:') ? nowPlaying.channelId : null;
+   const nowPlayingIsFavorite = radioStationId ? radioFavs.has(radioStationId) : (nowPlayingId ? isMediaFavorite(favorites, nowPlayingId) : false);
+@@ -334,11 +367,11 @@
+             hidden={destination !== 'player'}
+             className={`w-full ${destination === 'player' ? 'view-fade-in' : ''}`}
+           >
+-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
++            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} isWatchLater={nowPlayingId ? isInWatchLater(watchLaterEntries, nowPlayingId) : false} onToggleWatchLater={toggleNowPlayingWatchLater} />
+           </div>
+         ) : destination === 'player' && (
+           <div key="view-player" className="view-fade-in w-full">
+-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
++            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} isWatchLater={nowPlayingId ? isInWatchLater(watchLaterEntries, nowPlayingId) : false} onToggleWatchLater={toggleNowPlayingWatchLater} />
+           </div>
+         )}
+         {destination === 'today' && (
+@@ -394,6 +427,17 @@
+             />
+           </div>
+         )}
++        {destination === 'watch-later' && (
++          <div key="view-watch-later" className="view-fade-in w-full">
++            <WatchLaterView
++              entries={watchLaterEntries}
++              onPlay={playSaved}
++              onRemove={(id) => setWatchLaterEntries((items) => removeWatchLater(items, id))}
++              onClear={() => setWatchLaterEntries([])}
++              onNavigate={navigateTo}
++            />
++          </div>
++        )}
+         {destination === 'dev' && (
+           <div key="view-dev" className="view-fade-in w-full">
+             <DevModeView onNavigate={navigateTo} />
+--- a/src/components/Navigation.tsx
++++ b/src/components/Navigation.tsx
+@@ -40,26 +40,25 @@
+ }
+ 
+ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
+-  { id: 'home', label: 'Home', icon: Home, description: 'Live broadcast & featured feeds' },
+-  { id: 'tv-guide', label: 'TV Guide', icon: Tv, description: '24-hour program schedule grid' },
++  { id: 'home', label: 'Discover', icon: Home, description: 'Live broadcast & featured feeds' },
++  { id: 'tv-guide', label: 'Live TV Guide', icon: Tv, description: '24-hour program schedule grid' },
+   { id: 'player', label: 'Player', icon: PlayCircle, description: 'Active broadcast monitor' },
+   { id: 'news', label: 'News', icon: Newspaper, description: 'Rumble, YouTube & Banned Video walls' },
+   { id: 'radio', label: 'AJN Radio', icon: Radio, description: 'AJN Radio & Exclusive episodes' },
+   { id: 'history', label: 'History', icon: HistoryIcon, description: 'Everything you have played' },
+-  { id: 'library', label: 'Library', icon: FolderArchive, description: 'Curated archives & vaults' },
++  { id: 'library', label: 'Archive Vault', icon: FolderArchive, description: 'Curated archives & vaults' },
+   { id: 'search', label: 'Search', icon: Search, description: 'TV News search' },
+   { id: 'watch-later', label: 'Watch Later', icon: Bookmark, description: 'Saved, and half-played, to finish later' },
+ ];
+ 
+ const DESKTOP_PRIMARY: NavItemConfig[] = [
+-  { ...PRIMARY_DESTINATIONS[0], label: 'Live' },
+-  { ...PRIMARY_DESTINATIONS[1], label: 'Guide' },
++  PRIMARY_DESTINATIONS[0],
++  PRIMARY_DESTINATIONS[1],
+   PRIMARY_DESTINATIONS[2],
+   PRIMARY_DESTINATIONS[3],
+-  PRIMARY_DESTINATIONS[5],
+-  PRIMARY_DESTINATIONS[8], // Watch Later sits right after History
+ ];
+-// Mobile bar keeps the same order, with Watch Later next to History.
++const MY_LIBRARY_ITEMS: NavItemConfig[] = [PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8]];
++// Keep all existing destinations directly reachable on mobile.
+ const MOBILE_DESTINATIONS: NavItemConfig[] = [0, 1, 2, 3, 4, 5, 8, 6, 7].map((i) => PRIMARY_DESTINATIONS[i]);
+ const VAULT_ITEMS: NavItemConfig[] = [
+   PRIMARY_DESTINATIONS[4],
+@@ -91,6 +90,10 @@
+   const vaultRef = useRef<HTMLDivElement>(null);
+   const closeVault = React.useCallback(() => setVaultOpen(false), []);
+   useDismiss(vaultOpen, closeVault, vaultRef);
++  const [myLibraryOpen, setMyLibraryOpen] = useState(false);
++  const myLibraryRef = useRef<HTMLDivElement>(null);
++  const closeMyLibrary = React.useCallback(() => setMyLibraryOpen(false), []);
++  useDismiss(myLibraryOpen, closeMyLibrary, myLibraryRef);
+ 
+   const [searchOpen, setSearchOpen] = useState(false);
+   const [searchText, setSearchText] = useState('');
+@@ -123,14 +126,16 @@
+     if (!q) setSearchOpen(false);
+   };
+   const pickSuggestion = (text: string) => { setSearchText(text); if (onSearch) onSearch(text); else onNavigate('search'); };
+-  const vaultActive = VAULT_ITEMS.some((v) => v.id === currentDestination);
++  const activeDestination = currentDestination === 'today' ? 'tv-guide' : currentDestination === 'player' ? null : currentDestination;
++  const vaultActive = VAULT_ITEMS.some((v) => v.id === activeDestination);
++  const myLibraryActive = MY_LIBRARY_ITEMS.some((item) => item.id === activeDestination);
+ 
+   return (
+     <>
+       {/* ── Desktop / Tablet Header Navigation Bar ──────────────────────────────── */}
+       <header
+         id="canonical-app-header"
+-        className="sticky top-0 z-40 w-full border-b border-neutral-800/80 bg-neutral-950/90 backdrop-blur-md"
++        className="ajn-redesign-surface ajn-redesign-nav sticky top-0 z-40 w-full border-b border-neutral-800/80 bg-neutral-950/90 backdrop-blur-md"
+       >
+         <div className="mx-auto flex h-14 lg:h-[52px] w-full max-w-7xl 2xl:max-w-[1600px] items-center justify-between px-3 sm:px-6 lg:px-8">
+           {/* Brand & Badge */}
+@@ -140,18 +145,14 @@
+               id="brand-logo-btn"
+               onClick={() => onNavigate('home')}
+               title="AJN Precision Broadcast Engine - Return to Home"
+-              className="flex items-center gap-2 sm:gap-2.5 rounded-lg text-left transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 min-h-[44px] min-w-[44px] py-1 px-1 -ml-1 cursor-pointer touch-manipulation"
++              className="flex min-h-[44px] min-w-[44px] items-center gap-2 sm:gap-2.5 rounded-lg px-1 py-1 text-left transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] -ml-1 cursor-pointer touch-manipulation"
+             >
+-              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25">
++              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] text-[var(--ajn-accent)]">
+                 <Radio className="h-4 w-4 sm:h-5 sm:w-5 motion-safe:animate-pulse" />
+               </div>
+               <div className="hidden 2xl:flex flex-col min-w-0">
+-                <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-100 truncate">
+-                  AJN Precision
+-                </span>
+-                <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider sm:tracking-widest text-neutral-400 truncate">
+-                  Broadcast Engine
+-                </span>
++                <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-100 truncate">AJN Precision</span>
++                <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider sm:tracking-widest text-neutral-400 truncate">Broadcast Engine</span>
+               </div>
+             </button>
+           </div>
+@@ -164,7 +165,7 @@
+           >
+             {DESKTOP_PRIMARY.map((item) => {
+               const Icon = item.icon;
+-              const isActive = (currentDestination === 'today' ? 'tv-guide' : currentDestination) === item.id;
++              const isActive = activeDestination === item.id;
+               const hasBadge = item.id === 'player' && nowPlaying;
+ 
+               return (
+@@ -176,15 +177,15 @@
+                   aria-current={isActive ? 'page' : undefined}
+                   aria-label={item.label}
+                   title={item.label}
+-                  className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
++                  className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
+                     isActive
+-                      ? 'bg-neutral-800/90 text-sky-400 shadow-inner border border-neutral-700/80'
++                      ? 'ajn-nav-item-active'
+                       : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
+                   }`}
+                 >
+                   <Icon
+                     className={`h-4 w-4 transition-transform group-hover:scale-105 ${
+-                      isActive ? 'text-sky-400' : 'text-neutral-400'
++                      isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'
+                     }`}
+                   />
+                   <span className="hidden xl:inline">{item.label}</span>
+@@ -198,25 +199,64 @@
+                   )}
+ 
+                   {isActive && (
+-                    <span className="absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-sky-400" />
++                    <span className="ajn-nav-underline absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />
+                   )}
+                 </button>
+               );
+             })}
++            <div ref={myLibraryRef} className="relative">
++              <button
++                type="button"
++                id="nav-link-my-library"
++                aria-haspopup="menu"
++                aria-expanded={myLibraryOpen}
++                aria-current={myLibraryActive ? 'page' : undefined}
++                onClick={() => setMyLibraryOpen((open) => !open)}
++                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${myLibraryActive ? 'ajn-nav-item-active' : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100'}`}
++              >
++                <Bookmark className={`h-4 w-4 ${myLibraryActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
++                <span className="hidden xl:inline">My Library</span>
++                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${myLibraryOpen ? 'rotate-180' : ''}`} />
++                {myLibraryActive && <span className="ajn-nav-underline absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />}
++              </button>
++              {myLibraryOpen && (
++                <div role="menu" aria-label="My Library" className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
++                  {MY_LIBRARY_ITEMS.map((item) => {
++                    const Icon = item.icon;
++                    const isActive = activeDestination === item.id;
++                    return (
++                      <button
++                        key={item.id}
++                        id={`nav-link-${item.id}`}
++                        role="menuitem"
++                        type="button"
++                        onClick={() => { setMyLibraryOpen(false); onNavigate(item.id); }}
++                        aria-current={isActive ? 'page' : undefined}
++                        className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'}`}
++                      >
++                        <Icon className={`h-4 w-4 ${isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
++                        <span className="flex flex-col"><span className="font-medium">{item.label}</span><span className="text-[10px] text-neutral-500">{item.description}</span></span>
++                      </button>
++                    );
++                  })}
++                </div>
++              )}
++            </div>
+             <div ref={vaultRef} className="relative">
+               <button
+                 type="button"
+                 id="nav-link-vault"
+                 aria-haspopup="menu"
+                 aria-expanded={vaultOpen}
++                aria-current={vaultActive ? 'page' : undefined}
+                 onClick={() => setVaultOpen((o) => !o)}
+-                className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
++                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
+                   vaultActive
+-                    ? 'bg-neutral-800/90 text-sky-400 shadow-inner border border-neutral-700/80'
++                    ? 'ajn-nav-item-active'
+                     : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
+                 }`}
+               >
+-                <FolderArchive className={`h-4 w-4 ${vaultActive ? 'text-sky-400' : 'text-neutral-400'}`} />
++                <FolderArchive className={`h-4 w-4 ${vaultActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
+                 <span className="hidden xl:inline">Vault</span>
+                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${vaultOpen ? 'rotate-180' : ''}`} />
+               </button>
+@@ -231,9 +271,9 @@
+                         role="menuitem"
+                         type="button"
+                         onClick={() => { setVaultOpen(false); onNavigate(item.id); }}
+-                        aria-current={currentDestination === item.id ? 'page' : undefined}
+-                        className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+-                          currentDestination === item.id ? 'text-sky-400' : 'text-neutral-200'
++                        aria-current={activeDestination === item.id ? 'page' : undefined}
++                        className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${
++                          activeDestination === item.id ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'
+                         }`}
+                       >
+                         <Icon className="h-4 w-4 text-neutral-400" />
+@@ -255,7 +295,7 @@
+               onClick={openAppearance}
+               aria-label="Open appearance settings"
+               title="Appearance settings"
+-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 text-neutral-200 transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
++              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 text-neutral-200 transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
+             >
+               <Settings2 className="h-5 w-5" aria-hidden="true" />
+             </button>
+@@ -265,7 +305,7 @@
+               id="header-search"
+               onSubmit={submitSearch}
+               className={`relative hidden md:flex items-center rounded-lg border bg-neutral-900/80 backdrop-blur-md transition-all duration-200 ${
+-                searchOpen ? 'w-64 border-sky-500/50' : `w-10 border-neutral-800 ${currentDestination === 'search' ? 'text-sky-400' : ''}`
++                searchOpen ? 'w-64 border-[var(--ajn-accent)]' : `w-10 border-neutral-800 ${activeDestination === 'search' ? 'text-[var(--ajn-accent)]' : ''}`
+               }`}
+             >
+               <button
+@@ -273,9 +313,9 @@
+                 id="nav-link-search"
+                 aria-label="Search (/ or Ctrl+K)"
+                 title="Search ( / or Ctrl+K )"
+-                aria-current={currentDestination === 'search' ? 'page' : undefined}
++                aria-current={activeDestination === 'search' ? 'page' : undefined}
+                 onClick={() => { setSearchOpen(true); window.setTimeout(() => searchInputRef.current?.focus(), 0); }}
+-                className="flex h-9 w-10 shrink-0 items-center justify-center text-neutral-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
++                className="flex h-11 w-11 shrink-0 items-center justify-center text-neutral-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
+               >
+                 <Search className="h-4 w-4" />
+               </button>
+@@ -293,7 +333,7 @@
+                 className="min-w-0 flex-1 bg-transparent pr-1 text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none"
+               />
+               {searchOpen && searchText && (
+-                <button type="button" aria-label="Clear search" onClick={() => { setSearchText(''); searchInputRef.current?.focus(); }} className="mr-1 flex h-6 w-6 items-center justify-center text-neutral-400 hover:text-white">
++                <button type="button" aria-label="Clear search" onClick={() => { setSearchText(''); searchInputRef.current?.focus(); }} className="mr-1 flex h-11 w-11 items-center justify-center text-neutral-400 hover:text-white">
+                   <X className="h-3.5 w-3.5" />
+                 </button>
+               )}
+@@ -303,7 +343,7 @@
+                 type="button"
+                 id="header-now-playing-pill"
+                 onClick={() => onNavigate('player')}
+-                className="hidden xl:flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
++                className="hidden xl:flex min-h-[44px] items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
+                 title={`Now Playing: ${nowPlaying.title}`}
+               >
+                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
+@@ -322,11 +362,11 @@
+         role="navigation"
+         aria-label="Mobile Navigation"
+         id="mobile-bottom-nav"
+-        className="fixed bottom-0 inset-x-0 z-40 flex h-14 sm:h-16 w-full items-stretch justify-around border-t border-neutral-800/90 bg-neutral-950/95 backdrop-blur-lg md:hidden px-1 sm:px-2 pb-safe select-none"
++        className="ajn-redesign-surface ajn-redesign-nav fixed bottom-0 inset-x-0 z-40 flex h-14 sm:h-16 w-full items-stretch justify-around border-t border-neutral-800/90 bg-neutral-950/95 backdrop-blur-lg md:hidden px-1 sm:px-2 pb-safe select-none"
+       >
+         {MOBILE_DESTINATIONS.map((item) => {
+           const Icon = item.icon;
+-          const isActive = (currentDestination === 'today' ? 'tv-guide' : currentDestination) === item.id;
++          const isActive = activeDestination === item.id;
+           const hasBadge = item.id === 'player' && nowPlaying;
+ 
+           return (
+@@ -337,12 +377,12 @@
+               onClick={() => onNavigate(item.id)}
+               aria-current={isActive ? 'page' : undefined}
+               aria-label={`${item.label} (${item.description})`}
+-              className={`relative flex-1 min-w-0 min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-0.5 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer touch-manipulation ${
+-                isActive ? 'text-sky-400 font-semibold' : 'text-neutral-400 hover:text-neutral-200'
++              className={`relative min-w-[44px] min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-2 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer touch-manipulation ${
++                isActive ? 'ajn-nav-item-active font-semibold' : 'text-neutral-400 hover:text-neutral-200'
+               }`}
+             >
+               <div className="relative flex items-center justify-center">
+-                <Icon className={`h-[18px] w-[18px] sm:h-5 sm:w-5 transition-transform ${isActive ? 'text-sky-400 scale-105' : 'text-neutral-400'}`} />
++                <Icon className={`h-[18px] w-[18px] sm:h-5 sm:w-5 transition-transform ${isActive ? 'text-[var(--ajn-accent)] scale-105' : 'text-neutral-400'}`} />
+                 {hasBadge && (
+                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                     <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+@@ -350,11 +390,11 @@
+                   </span>
+                 )}
+               </div>
+-              <span className="text-[10px] sm:text-[11px] leading-tight tracking-tight truncate max-w-full px-0.5 font-medium">
+-                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Radio' : item.id === 'watch-later' ? 'Later' : item.label}
++              <span className="whitespace-nowrap text-[10px] sm:text-[11px] leading-tight tracking-tight px-0.5 font-medium">
++                {item.id === 'tv-guide' ? 'Guide' : item.id === 'radio' ? 'Radio' : item.id === 'watch-later' ? 'Later' : item.id === 'library' ? 'Vault' : item.label}
+               </span>
+               {isActive && (
+-                <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 sm:w-8 rounded-full bg-sky-400" />
++                <span className="ajn-nav-underline absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 sm:w-8 rounded-full" />
+               )}
+             </button>
+           );
+--- a/src/components/MiniPlayerDock.tsx
++++ b/src/components/MiniPlayerDock.tsx
+@@ -1,7 +1,7 @@
++import { useEffect, useState } from 'react';
+ import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX } from 'lucide-react';
+ import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
+-import { AvSyncControls } from './AvSyncControls';
+-import { usePersistentMedia } from '../hooks/usePersistentMedia';
++import { findPersistentMedia, usePersistentMedia } from '../hooks/usePersistentMedia';
+ import { useStationTheme } from '../utils/stationArt';
+ import { StationIcon } from './StationBanner';
+ 
+@@ -14,6 +14,23 @@
+   onNavigate?: (destination: Destination) => void;
+ }
+ 
++type DockPlaybackStatus = 'playing' | 'paused' | 'buffering' | 'failed';
++
++const isLiveDockItem = (item: NowPlayingMedia) =>
++  Boolean(item.isLive)
++  || String(item.channelId ?? '').startsWith('radio:')
++  || String(item.programId ?? '').includes(':live:');
++
++const formatDockTime = (seconds: number) => {
++  const whole = Math.max(0, Math.floor(seconds));
++  const hours = Math.floor(whole / 3600);
++  const minutes = Math.floor((whole % 3600) / 60);
++  const remainder = whole % 60;
++  return hours
++    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
++    : `${minutes}:${String(remainder).padStart(2, '0')}`;
++};
++
+ export function MiniPlayerDock({
+   nowPlaying,
+   onOpenFullPlayer,
+@@ -22,14 +39,70 @@
+   onNavigate,
+ }: MiniPlayerDockProps) {
+   // The real player stays mounted (hidden) in #persistent-player; the dock drives it through the shared hook.
+-  const { paused, muted, toggle: togglePlay, toggleMute } = usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
++  const { paused, muted, currentTime, duration, toggle: togglePlay, toggleMute, seek } =
++    usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
++  const [playbackStatus, setPlaybackStatus] = useState<DockPlaybackStatus>('paused');
++  const [volume, setVolume] = useState(1);
++  const [volumeOpen, setVolumeOpen] = useState(false);
+   const isAudio = nowPlaying.mediaType === 'audio';
++  const isLive = isLiveDockItem(nowPlaying);
++  const canSeek = !isLive && Number.isFinite(duration) && duration > 0;
+   const theme = useStationTheme(nowPlaying.channelId, nowPlaying.title); // live radio: the station's logo and colours
++
++  // Read status and volume from the existing authoritative media element; do not create another player.
++  useEffect(() => {
++    let media: HTMLMediaElement | null = null;
++    let waiting = false;
++    const read = () => {
++      if (!media) {
++        setPlaybackStatus('paused');
++        return;
++      }
++      const nextVolume = Number.isFinite(media.volume) ? media.volume : 1;
++      setVolume((previous) => previous === nextVolume ? previous : nextVolume);
++      const nextStatus: DockPlaybackStatus = media.error
++        ? 'failed'
++        : media.paused
++          ? 'paused'
++          : waiting || media.readyState < HTMLMediaElement.HAVE_FUTURE_DATA
++            ? 'buffering'
++            : 'playing';
++      setPlaybackStatus((previous) => previous === nextStatus ? previous : nextStatus);
++    };
++    const onWaiting = () => { waiting = true; read(); };
++    const onReady = () => { waiting = false; read(); };
++    const onError = () => setPlaybackStatus('failed');
++    const events: Array<[keyof HTMLMediaElementEventMap, EventListener]> = [
++      ['play', onReady], ['playing', onReady], ['canplay', onReady], ['loadeddata', onReady],
++      ['waiting', onWaiting], ['stalled', onWaiting], ['pause', read], ['error', onError],
++      ['emptied', read], ['volumechange', read],
++    ];
++    const detach = () => {
++      if (media) for (const [name, handler] of events) media.removeEventListener(name, handler);
++    };
++    const attach = () => {
++      const next = findPersistentMedia(nowPlaying.mediaType);
++      if (next !== media) {
++        detach();
++        media = next;
++        if (media) for (const [name, handler] of events) media.addEventListener(name, handler);
++      }
++      read();
++    };
++    attach();
++    const timer = window.setInterval(attach, 250);
++    return () => { window.clearInterval(timer); detach(); };
++  }, [nowPlaying.mediaType, nowPlaying.src]);
++
++  // The paired-media choices remain available in the full player; this 64px dock keeps only its specified controls.
++  void onPlayProgram;
++  void onNavigate;
++
+   return (
+     <aside
+       id="persistent-mini-player"
+       aria-label="Active Broadcast Mini Player"
+-      className="fixed flex-wrap bottom-[4.25rem] sm:bottom-20 md:bottom-6 left-2 right-2 sm:left-auto sm:right-6 sm:w-96 max-w-md z-50 flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-neutral-700/80 bg-neutral-900/95 p-2 sm:p-3 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200"
++      className="ajn-redesign-surface ajn-dock fixed box-border bottom-[calc(4.25rem+env(safe-area-inset-bottom))] sm:bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 left-1 right-1 sm:left-auto sm:right-6 sm:w-[calc(100vw-3rem)] sm:max-w-[960px] z-50 flex flex-nowrap items-center gap-1 sm:gap-2 rounded-xl border bg-neutral-900/95 p-1 sm:px-2 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200"
+     >
+       {/* Icon / Thumbnail */}
+       <button
+@@ -37,84 +110,143 @@
+         onClick={onOpenFullPlayer}
+         aria-label={`Open full player: ${nowPlaying.title}`}
+         title="Click to open full player"
+-        className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/30 transition hover:scale-105 active:scale-95 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
++        className="ajn-dock-control relative flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg border transition hover:scale-105 active:scale-95 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2"
+       >
+         {theme ? <StationIcon theme={theme} size={44} className="!rounded-lg" /> : isAudio ? <Radio className="h-5 w-5" /> : <Tv className="h-5 w-5" />}
+-        <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+-        </span>
+       </button>
+ 
+-      {/* Stream Titles */}
+-      <button
+-        type="button"
+-        onClick={onOpenFullPlayer}
+-        aria-label={`Open full player: ${nowPlaying.title}`}
+-        title={`Open full player: ${nowPlaying.title}`}
+-        className="flex flex-col justify-center min-w-0 flex-1 text-left cursor-pointer min-h-[44px] py-0.5 px-1 rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 active:opacity-80 transition-opacity"
+-      >
+-        <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-sky-400 truncate leading-tight">
+-          {nowPlaying.subtitle || 'Active Broadcast'}
+-        </span>
+-        <span className="text-xs sm:text-xs font-semibold text-neutral-100 truncate hover:text-sky-300 transition leading-tight">
++      <div className="relative flex h-12 min-w-0 flex-1 flex-col justify-center px-0.5">
++        <span title={nowPlaying.title} className="truncate text-[11px] font-semibold leading-tight text-neutral-100">
+           {nowPlaying.title}
+         </span>
+-      </button>
++        {canSeek ? (
++          <div className="relative mt-0.5 flex h-6 min-w-0 flex-col justify-end">
++            <div className="mb-0.5 flex min-w-0 items-center justify-between gap-1 font-mono text-[8px] leading-none text-neutral-400">
++              <span>{formatDockTime(currentTime)}</span>
++              <span>{formatDockTime(duration)}</span>
++            </div>
++            <input
++              type="range"
++              min={0}
++              max={duration}
++              step={1}
++              value={Math.min(currentTime, duration)}
++              onChange={(event) => seek(Number(event.currentTarget.value))}
++              aria-label={`Seek ${nowPlaying.title}`}
++              className="ajn-dock-seek w-full accent-[var(--ajn-accent)]"
++            />
++          </div>
++        ) : (
++          <span className="truncate text-[9px] leading-tight text-neutral-400">
++            {nowPlaying.subtitle || 'Active broadcast'}
++          </span>
++        )}
++      </div>
++
++      <span
++        data-testid="dock-status"
++        data-status={playbackStatus}
++        role="status"
++        className={`shrink-0 rounded-full border px-1.5 py-1 font-mono text-[8px] font-bold uppercase leading-none tracking-wide ${
++          isLive && playbackStatus === 'playing'
++            ? 'ajn-dock-status-live'
++            : playbackStatus === 'failed'
++              ? 'border-red-700/70 bg-red-950/60 text-red-200'
++              : playbackStatus === 'buffering'
++                ? 'border-amber-700/60 bg-amber-950/50 text-amber-200'
++                : 'border-[var(--ajn-line)] bg-[var(--ajn-base)] text-neutral-300'
++        }`}
++      >
++        {isLive && playbackStatus === 'playing' ? 'LIVE' : playbackStatus}
++      </span>
+ 
+       {/* Actions */}
+-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
++      <div className="relative flex shrink-0 items-center gap-0.5 sm:gap-1">
+         <button
+           type="button"
+           id="mini-player-toggle-btn"
+           onClick={togglePlay}
+-          aria-label={paused ? `Play ${nowPlaying.title}` : `Pause ${nowPlaying.title}`}
+-          title={paused ? 'Play' : 'Pause'}
+-          className="flex h-10 w-10 sm:h-8 sm:w-8 min-h-[44px] min-w-[42px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded-lg bg-neutral-800 text-neutral-100 transition hover:bg-neutral-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 cursor-pointer touch-manipulation"
++          aria-label={playbackStatus === 'failed' ? `Retry ${nowPlaying.title}` : paused ? `Play ${nowPlaying.title}` : `Pause ${nowPlaying.title}`}
++          title={playbackStatus === 'failed' ? 'Retry' : paused ? 'Play' : 'Pause'}
++          className="ajn-dock-control flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation"
+         >
+-          {paused ? <Play className="h-4 w-4 fill-current ml-0.5" /> : <Pause className="h-4 w-4" />}
++          {paused || playbackStatus === 'failed' ? <Play className="ml-0.5 h-4 w-4 fill-current" /> : <Pause className="h-4 w-4" />}
+         </button>
+         <button
+           type="button"
+-          id="mini-player-mute-btn"
+-          data-testid="mute-button"
+-          data-muted={muted ? "true" : "false"}
+-          onClick={toggleMute}
+-          aria-label={muted ? "Muted — click to unmute" : "Unmuted — click to mute"}
+-          aria-pressed={muted}
+-          title={muted ? "Muted — click to unmute" : "Mute"}
+-          className={`flex h-10 w-10 sm:h-8 sm:w-8 min-h-[44px] min-w-[42px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded-lg bg-neutral-800 text-neutral-100 transition hover:bg-neutral-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 cursor-pointer touch-manipulation relative ${
+-            muted ? "mute-indicator-ring text-red-200 bg-red-950/50" : ""
+-          }`}
++          id="mini-player-volume-btn"
++          onClick={() => setVolumeOpen((open) => !open)}
++          aria-label={muted ? 'Open volume controls (muted)' : 'Open volume controls'}
++          aria-expanded={volumeOpen}
++          aria-controls="mini-player-volume-popover"
++          title="Mute and volume controls"
++          className="ajn-dock-control flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation"
+         >
+-          {muted ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
+-          <span className="sr-only">{muted ? "Muted" : "Unmuted"}</span>
++          {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+         </button>
++        {volumeOpen && (
++          <div
++            id="mini-player-volume-popover"
++            role="group"
++            aria-label="Mute and volume controls"
++            className="ajn-dock-volume-popover absolute bottom-[calc(100%+8px)] z-[51] flex items-center gap-2 rounded-xl p-2 shadow-xl"
++            style={{ right: 'calc(100% - 48px)' }}
++          >
++            <button
++              type="button"
++              id="mini-player-mute-btn"
++              data-testid="mute-button"
++              data-muted={muted ? 'true' : 'false'}
++              onClick={toggleMute}
++              aria-label={muted ? 'Unmute' : 'Mute'}
++              aria-pressed={muted}
++              className="ajn-dock-control flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg"
++            >
++              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
++            </button>
++            <label className="flex min-h-[44px] items-center gap-2 px-1 text-[10px] font-mono text-neutral-300">
++              <span className="sr-only">Volume</span>
++              <input
++                type="range"
++                min={0}
++                max={1}
++                step={0.05}
++                value={volume}
++                onChange={(event) => {
++                  const nextVolume = Number(event.currentTarget.value);
++                  const media = findPersistentMedia(nowPlaying.mediaType);
++                  if (media) media.volume = nextVolume;
++                  setVolume(nextVolume);
++                }}
++                aria-label="Volume"
++                className="w-24 accent-[var(--ajn-accent)]"
++              />
++              <span>{Math.round(volume * 100)}%</span>
++            </label>
++          </div>
++        )}
+         <button
+           type="button"
+           id="mini-player-expand-btn"
+           onClick={onOpenFullPlayer}
+           aria-label="Open Full Player"
+           title="Open Full Player"
+-          className="flex h-10 w-10 sm:h-8 sm:w-8 min-h-[44px] min-w-[42px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded-lg bg-sky-600 text-white transition hover:bg-sky-500 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 cursor-pointer touch-manipulation"
++          className="ajn-dock-expand flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation"
+         >
+           <Maximize2 className="h-4 w-4" />
+         </button>
+-
++        <div id="radio-dock-slot" data-testid="dock-radio-slot" className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center" />
+         <button
+           type="button"
+           id="mini-player-close-btn"
+           onClick={onDismiss}
+           aria-label="Stop and Dismiss Mini Player"
+           title="Stop / Dismiss"
+-          className="flex h-10 w-10 sm:h-8 sm:w-8 min-h-[44px] min-w-[42px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-neutral-800 hover:text-neutral-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 cursor-pointer touch-manipulation"
++          className="ajn-dock-control flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation"
+         >
+           <X className="h-4 w-4" />
+         </button>
+       </div>
+-      <div className="w-full basis-full px-1 empty:hidden">
+-        <AvSyncControls nowPlaying={nowPlaying} onPlay={onPlayProgram} onNavigate={onNavigate} variant="compact" />
+-      </div>
+     </aside>
+   );
+ }
+--- a/src/components/RadioDock.tsx
++++ b/src/components/RadioDock.tsx
+@@ -1,4 +1,5 @@
+-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
++import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
++import { createPortal } from 'react-dom';
+ import { Radio, X, ChevronDown, Play, Pause, Volume2, VolumeX, Maximize2, Expand, Shrink } from 'lucide-react';
+ import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
+ import { usePersistentMedia } from '../hooks/usePersistentMedia';
+@@ -37,6 +38,7 @@
+   const [menuOpen, setMenuOpen] = useState<boolean>(false); // long-press quick menu: switch station without leaving the page
+   const [recents, setRecents] = useState<RecentStation[]>([]);
+   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; size: number }>>([]);
++  const [dockButtonHost, setDockButtonHost] = useState<HTMLElement | null>(null);
+   const btnFaded = useIdleFade(btnHold || menuOpen, 12000);
+   const rippleId = useRef(0);
+   const pressTimer = useRef<number | null>(null);
+@@ -44,6 +46,10 @@
+   const pressFired = useRef(false); // the long press already opened the menu: swallow the click that follows the release
+   const menuRef = useRef<HTMLDivElement>(null);
+ 
++  useLayoutEffect(() => {
++    setDockButtonHost(miniPlayerShowing ? document.getElementById('radio-dock-slot') : null);
++  }, [miniPlayerShowing]);
++
+   const show = useCallback(() => { setMenuOpen(false); setOpen(true); setEverOpened(true); }, []);
+   const hide = useCallback(() => { setOpen(false); setFull(false); }, []);
+ 
+@@ -162,32 +168,32 @@
+     closeMenu();
+     onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId);
+   };
+-  const menuLift = miniPlayerShowing ? 'bottom-[12.5rem] sm:bottom-[13.5rem] md:bottom-[9.5rem]' : 'bottom-[8.5rem] sm:bottom-[9.25rem] md:bottom-[5.25rem]';
++  const menuLift = miniPlayerShowing ? 'bottom-[8.75rem] sm:bottom-[9.5rem] md:bottom-24' : 'bottom-[8.5rem] sm:bottom-[9.25rem] md:bottom-[5.25rem]';
+ 
+-  // The button rides above the bottom nav (phone) and above the mini player when it is showing.
++  // The existing Radio button is portaled into the single mini-player bar when that bar is visible.
+   const lift = miniPlayerShowing ? 'bottom-[9.5rem] sm:bottom-[10.5rem] md:bottom-[6.5rem]' : 'bottom-[4.75rem] sm:bottom-[5.5rem] md:bottom-6';
++  const radioButton = !open ? (
++    <button type="button" id="radio-dock-button" data-testid="radio-dock-button" onClick={onBtnClick} aria-expanded={false} aria-controls="radio-dock-panel" aria-haspopup="menu"
++      onPointerDown={onBtnPointerDown} onPointerMove={onBtnPointerMove} onPointerUp={cancelPress} onPointerCancel={cancelPress}
++      onContextMenu={(e) => { e.preventDefault(); cancelPress(); pressFired.current = false; openMenu(); }}
++      onPointerEnter={(e) => { if (e.pointerType === 'mouse') setBtnHold(true); }} onPointerLeave={() => { setBtnHold(false); cancelPress(); }}
++      onFocus={(e) => setBtnHold(e.currentTarget.matches(':focus-visible'))} onBlur={() => setBtnHold(false)}
++      title="Live Radio: tap to open, press and hold for recent stations"
++      className={dockButtonHost
++        ? `ajn-redesign-surface ajn-radio-dock-inline relative flex h-11 w-11 min-h-[44px] min-w-[44px] select-none items-center justify-center overflow-hidden rounded-lg transition active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 ${btnHold ? 'ring-1 ring-[var(--ajn-accent)]' : ''}`
++        : `ajn-redesign-surface fixed right-3 sm:right-6 ${lift} z-[45] flex min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] px-4 text-sm font-extrabold uppercase tracking-wider text-[var(--ajn-accent)] shadow-lg transition-[opacity,transform] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:border-[var(--ajn-accent)] active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]`}>
++      {ripples.map((r) => (
++        <span key={r.id} aria-hidden="true" data-testid="radio-ripple" className="ajn-ripple" style={{ left: r.x - r.size / 2, top: r.y - r.size / 2, width: r.size, height: r.size }} />
++      ))}
++      <Radio className={dockButtonHost ? 'relative h-5 w-5' : 'relative h-5 w-5'} aria-hidden="true" />
++      <span className={dockButtonHost ? 'sr-only' : 'relative'}>Radio</span>
++      {live && <span data-testid="radio-live-dot" role="img" aria-label="Radio is playing" className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-[var(--ajn-live)]" />}
++    </button>
++  ) : null;
+ 
+   return (
+     <>
+-      {!open && (
+-        <button type="button" id="radio-dock-button" data-testid="radio-dock-button" onClick={onBtnClick} aria-expanded={false} aria-controls="radio-dock-panel" aria-haspopup="menu"
+-          onPointerDown={onBtnPointerDown} onPointerMove={onBtnPointerMove} onPointerUp={cancelPress} onPointerCancel={cancelPress}
+-          onContextMenu={(e) => { e.preventDefault(); cancelPress(); pressFired.current = false; openMenu(); }}
+-          // Mouse only (touch taps emulate mouseenter and never send mouseleave), and keyboard focus only (the panel hands focus back to this button when it closes).
+-          onPointerEnter={(e) => { if (e.pointerType === 'mouse') setBtnHold(true); }} onPointerLeave={() => { setBtnHold(false); cancelPress(); }}
+-          onFocus={(e) => setBtnHold(e.currentTarget.matches(':focus-visible'))} onBlur={() => setBtnHold(false)}
+-          title="Live Radio: tap to open, press and hold for recent stations"
+-          className={`fixed right-3 sm:right-6 ${lift} z-[45] flex min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full bg-gradient-to-br from-orange-500 to-red-600 px-4 text-sm font-extrabold uppercase tracking-wider text-white shadow-lg shadow-red-900/50 ring-1 ring-white/20 transition-[opacity,transform,background-color] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:from-orange-400 hover:to-red-500 active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white`}>
+-          {ripples.map((r) => (
+-            <span key={r.id} aria-hidden="true" data-testid="radio-ripple" className="ajn-ripple" style={{ left: r.x - r.size / 2, top: r.y - r.size / 2, width: r.size, height: r.size }} />
+-          ))}
+-          <Radio className="relative h-5 w-5" aria-hidden="true" />
+-          <span className="relative">Radio</span>
+-          {live && (
+-            <span data-testid="radio-live-dot" role="img" aria-label="Radio is playing" className="ajn-live-dot relative h-2.5 w-2.5 rounded-full bg-emerald-300" />
+-          )}
+-        </button>
+-      )}
++      {radioButton && (dockButtonHost ? createPortal(radioButton, dockButtonHost) : radioButton)}
+ 
+       {menuOpen && !open && (
+         <div ref={menuRef} role="menu" aria-label="Recent radio stations" data-testid="radio-quick-menu"
+--- a/src/components/ajn-platform-redesign/theme.css
++++ b/src/components/ajn-platform-redesign/theme.css
+@@ -194,3 +194,128 @@
+ .ajn-audit-findings li.is-bad { border-left-color: #d4604a; }
+ .ajn-audit-export { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #484848; border-radius: 10px; background: #1a1a1a; color: #f3f3f3; padding: 0 14px; cursor: pointer; font: 600 12px 'Plus Jakarta Sans', sans-serif; }
+ .ajn-audit-export:disabled { opacity: .5; cursor: not-allowed; }
++
++/*
++ * Redesign slice A–B tokens are scoped to navigation and the two dock controls.
++ * The appearance provider's existing --ajn-accent remains unchanged everywhere else.
++ */
++.ajn-platform-shell .ajn-redesign-surface {
++  --ajn-base: #0F1117;
++  --ajn-card-2: #181B24;
++  --ajn-line: #282D3D;
++  --ajn-accent: #E06D3B;
++  --ajn-accent-hover: #F97316;
++  --ajn-live: #EF4444;
++  --ajn-on-accent: #0F1117;
++}
++
++.ajn-platform-shell .ajn-redesign-surface:where(.ajn-redesign-nav) {
++  background: var(--ajn-base) !important;
++  border-color: var(--ajn-line) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface.ajn-dock {
++  min-height: 64px;
++  height: 64px;
++  background: var(--ajn-card-2) !important;
++  border-color: var(--ajn-line) !important;
++  color: var(--ajn-text);
++}
++
++.ajn-platform-shell .ajn-redesign-surface :where(button, a, input):focus-visible {
++  outline-color: var(--ajn-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-nav-item-active {
++  background: transparent !important;
++  border-color: transparent !important;
++  box-shadow: none !important;
++  color: var(--ajn-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-nav-item-active :where(svg, span) {
++  color: var(--ajn-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-nav-underline {
++  background: var(--ajn-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-dock-control {
++  border: 1px solid var(--ajn-line);
++  background: var(--ajn-base) !important;
++  color: var(--ajn-text) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-dock-control:hover {
++  border-color: var(--ajn-accent) !important;
++  color: var(--ajn-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-dock-expand {
++  border-color: var(--ajn-accent) !important;
++  background: var(--ajn-accent) !important;
++  color: var(--ajn-on-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-dock-expand :where(svg, span) {
++  color: var(--ajn-on-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-dock-status-live {
++  border-color: var(--ajn-live) !important;
++  background: var(--ajn-live) !important;
++  color: var(--ajn-on-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-radio-dock-inline {
++  min-width: 44px;
++  min-height: 44px;
++  border: 1px solid var(--ajn-line);
++  background: var(--ajn-base) !important;
++  color: var(--ajn-accent) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-radio-dock-inline:hover {
++  border-color: var(--ajn-accent) !important;
++  background: var(--ajn-card-2) !important;
++}
++
++.ajn-platform-shell .ajn-redesign-surface .ajn-dock-volume-popover {
++  border: 1px solid var(--ajn-line);
++  background: var(--ajn-card-2);
++}
++
++@media (max-width: 767px) {
++  .ajn-platform-shell #mobile-bottom-nav {
++    justify-content: flex-start;
++    overflow-x: auto;
++    overscroll-behavior-x: contain;
++    scrollbar-width: none;
++  }
++
++  .ajn-platform-shell #mobile-bottom-nav::-webkit-scrollbar { display: none; }
++  .ajn-platform-shell #mobile-bottom-nav > button {
++    flex: 0 0 auto;
++    width: max-content;
++    min-width: 44px;
++    scroll-snap-align: start;
++  }
++}
++
++@media (pointer: coarse) {
++  .ajn-platform-shell .ajn-redesign-surface :where(button, a[role="button"], input[type="range"]) {
++    min-width: 44px;
++    min-height: 44px;
++  }
++
++  .ajn-platform-shell #mobile-bottom-nav {
++    justify-content: flex-start;
++    overflow-x: auto;
++    overscroll-behavior-x: contain;
++    scrollbar-width: none;
++  }
++
++  .ajn-platform-shell #mobile-bottom-nav::-webkit-scrollbar { display: none; }
++  .ajn-platform-shell #mobile-bottom-nav > button { flex: 0 0 auto; width: max-content; min-width: 44px; }
++}

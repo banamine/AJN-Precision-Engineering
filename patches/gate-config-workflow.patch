@@ -1,0 +1,207 @@
+--- a/tools/catalog-gate.mjs	2026-11-03 06:46:02.226606211 -0700
++++ b/tools/catalog-gate.mjs	2026-11-03 06:46:02.228291711 -0700
+@@ -80,11 +80,24 @@
+   const removedAudio = [...baseAudio.keys()].filter((id) => !headAudio.has(id));
+   const modifiedAudio = [...headAudio.entries()].filter(([id, a]) => baseAudio.has(id) && JSON.stringify(baseAudio.get(id)) !== JSON.stringify(a)).map(([id]) => id);
+ 
++  // Concert pools (src/data/concertPoolsManifest.json, tools/build-concert-library.py): pools are channels, concerts are the units inside them.
++  const cr = { maxNewConcerts: 100, maxNewConcertTracks: 1500, ...(config.concertPools ?? {}) };
++  const flatConcerts = (m) => { const out = new Map(); for (const pool of m?.pools ?? []) for (const c of pool.concerts ?? []) out.set(c.id, { pool: pool.id, c }); return out; };
++  const baseConcerts = flatConcerts(base.concerts); const headConcerts = flatConcerts(head.concerts);
++  const addedConcerts = [...headConcerts.keys()].filter((id) => !baseConcerts.has(id));
++  const removedConcerts = [...baseConcerts.keys()].filter((id) => !headConcerts.has(id));
++  const movedConcerts = [...headConcerts].filter(([id, v]) => baseConcerts.has(id) && baseConcerts.get(id).pool !== v.pool).map(([id]) => id);
++  const modifiedConcerts = [...headConcerts].filter(([id, v]) => baseConcerts.has(id) && baseConcerts.get(id).pool === v.pool && JSON.stringify(baseConcerts.get(id).c) !== JSON.stringify(v.c)).map(([id]) => id);
++  const addedConcertTracks = addedConcerts.reduce((n, id) => n + (headConcerts.get(id).c.tracks?.length ?? 0), 0);
++  const basePools = new Set((base.concerts?.pools ?? []).map((p) => p.id)); const headPools = new Set((head.concerts?.pools ?? []).map((p) => p.id));
++  const addedPools = [...headPools].filter((id) => !basePools.has(id)); const removedPools = [...basePools].filter((id) => !headPools.has(id));
++
+   const notDeferred = addedChannels.filter((c) => c.guideId === 'classic-tv' && c.deferLightRows !== true).map((c) => c.id);
+ 
+   const changed = addedChannels.length || removedChannels.length || renamedChannels.length || movedChannels.length
+     || addedRows || removedRows || addedDocs || removedDocs || addedAudio.length || removedAudio.length
+-    || modifiedRows || modifiedDocs || movedDocs || modifiedAudio.length;
++    || modifiedRows || modifiedDocs || movedDocs || modifiedAudio.length
++    || addedConcerts.length || removedConcerts.length || movedConcerts.length || modifiedConcerts.length || addedPools.length || removedPools.length;
+ 
+   if (!rules.allowRemovals) {
+     if (removedChannels.length) review.push(`${removedChannels.length} channel(s) removed: ${removedChannels.map((c) => c.id).slice(0, 10).join(', ')}`);
+@@ -102,6 +115,15 @@
+   if (addedRows > rules.maxNewRows) review.push(`${addedRows} new rows > limit ${rules.maxNewRows}`);
+   if (addedDocs > rules.maxNewDocumentaryEntries) review.push(`${addedDocs} new documentary entries > limit ${rules.maxNewDocumentaryEntries}`);
+   if (addedAudio.length > rules.maxNewAudioChannels) review.push(`${addedAudio.length} new audio channels > limit ${rules.maxNewAudioChannels}`);
++  if (!rules.allowRemovals) {
++    if (removedConcerts.length) review.push(`${removedConcerts.length} concert(s) removed: ${removedConcerts.slice(0, 10).join(', ')}`);
++    if (removedPools.length) review.push(`${removedPools.length} concert pool channel(s) removed: ${removedPools.join(', ')}`);
++  }
++  if (movedConcerts.length) review.push(`${movedConcerts.length} concert(s) moved to another genre pool`);
++  if (modifiedConcerts.length > rules.maxModifiedEntries) review.push(`${modifiedConcerts.length} existing concerts changed (tracks/art/title) > limit ${rules.maxModifiedEntries}`);
++  if (addedConcerts.length > cr.maxNewConcerts) review.push(`${addedConcerts.length} new concerts > limit ${cr.maxNewConcerts}`);
++  if (addedConcertTracks > cr.maxNewConcertTracks) review.push(`${addedConcertTracks} new concert tracks > limit ${cr.maxNewConcertTracks}`);
++  if (addedPools.length) review.push(`${addedPools.length} new concert pool channel(s) (${addedPools.join(', ')}): station numbers after them shift`);
+   if (rules.requireDeferredClassicChannels && notDeferred.length) review.push(`new Classic TV channel(s) not lazy-loaded: ${notDeferred.join(', ')}`);
+ 
+   if (changed) {
+@@ -140,6 +162,8 @@
+       addedRows, removedRows, addedDocs, removedDocs, newDocGroups: newDocGroups.length,
+       addedAudio: addedAudio.length, removedAudio: removedAudio.length,
+       modifiedRows, modifiedDocs, movedDocs, modifiedAudio: modifiedAudio.length,
++      addedConcerts: addedConcerts.length, removedConcerts: removedConcerts.length, movedConcerts: movedConcerts.length, modifiedConcerts: modifiedConcerts.length,
++      addedConcertTracks, addedPools: addedPools.length, removedPools: removedPools.length,
+     },
+     addedChannels: addedChannels.map((c) => ({ id: c.id, guideId: c.guideId, group: c.group, name: c.name, rows: c.rows?.length ?? 0, deferLightRows: c.deferLightRows === true })),
+     removedChannels: removedChannels.map((c) => ({ id: c.id, name: c.name, rows: c.rows?.length ?? 0 })),
+@@ -162,6 +186,8 @@
+     `| rows | ${c.addedRows} | ${c.removedRows} |`,
+     `| documentary entries | ${c.addedDocs} | ${c.removedDocs} |`,
+     `| audio channels | ${c.addedAudio} | ${c.removedAudio} |`,
++    `| concerts (${c.addedConcertTracks ?? 0} new tracks) | ${c.addedConcerts ?? 0} | ${c.removedConcerts ?? 0} |`,
++    `| concert pool channels | ${c.addedPools ?? 0} | ${c.removedPools ?? 0} |`,
+     '',
+     `Renamed: ${c.renamedChannels} · Moved: ${c.movedChannels} · New documentary groups: ${c.newDocGroups}`,
+     `Changed in place: ${c.modifiedRows} rows · ${c.modifiedDocs} documentary entries · ${c.movedDocs} documentary entries moved · ${c.modifiedAudio} audio channels`,
+--- a/test-catalog-gate.mjs	2026-11-03 06:46:02.245687733 -0700
++++ b/test-catalog-gate.mjs	2026-11-03 06:46:02.247306083 -0700
+@@ -57,6 +57,40 @@
+ assert.equal(evaluate(base, add, null, config, okProbe).verdict, 'block');
+ assert.equal(evaluate(base, add, { ...okMeasure, classicFullGzipBytes: 40_000_000 }, config, okProbe).verdict, 'block');
+ 
++// Concert pools (src/data/concertPoolsManifest.json): the gate must SEE them (config.dataFiles.concerts) and bound them.
++assert.equal(config.dataFiles.concerts, 'src/data/concertPoolsManifest.json', 'concert manifest is registered with the gate');
++{
++  const tr = (n) => Array.from({ length: n }, (_, i) => ({ f: `${i + 1}.mp3`, t: `T${i + 1}`, d: 200, n: i + 1 }));
++  const concert = (id, tracks = 3) => ({ id, title: id, date: '1976-01-01', art: 'a.jpg', thumb: 'a_t.jpg', tracks: tr(tracks) });
++  const pools = (spec) => ({ schema: 'ajn.concertPools.v1', source: '@x', pools: Object.entries(spec).map(([id, cs]) => ({ id, name: id, group: 'Live Concerts', genre: id, concerts: cs })) });
++  const withC = (c) => ({ ...clone(base), concerts: c });
++  const b0 = withC(pools({ 'concert-pool-rock': [concert('r1'), concert('r2')], 'concert-pool-jazz-blues': [concert('j1')] }));
++  assert.equal(evaluate(b0, clone(b0), okMeasure, config).verdict, 'none', 'unchanged concerts -> none');
++  // legacy base without a concerts key + head with pools: everything is new, new pools -> review
++  let c = evaluate(base, withC(pools({ 'concert-pool-rock': [concert('r1'), concert('r2')] })), okMeasure, config, okProbe);
++  assert.equal(c.verdict, 'review'); assert.equal(c.counts.addedConcerts, 2); assert.equal(c.counts.addedConcertTracks, 6); assert.equal(c.counts.addedPools, 1);
++  assert.match(c.reasons.join(' '), /new concert pool channel/);
++  // more concerts in EXISTING pools, within limits -> auto
++  const h1 = clone(b0); h1.concerts.pools[0].concerts.push(concert('r3'), concert('r4'));
++  c = evaluate(b0, h1, okMeasure, config, okProbe); assert.equal(c.verdict, 'auto', c.reasons.join('; ')); assert.equal(c.counts.addedConcerts, 2);
++  // limits
++  const big = clone(b0); for (let i = 0; i < config.concertPools.maxNewConcerts + 1; i++) big.concerts.pools[0].concerts.push(concert(`n${i}`, 1));
++  assert.match(evaluate(b0, big, okMeasure, config, okProbe).reasons.join(' '), /new concerts > limit/);
++  const fat = clone(b0); fat.concerts.pools[0].concerts.push(concert('fat', config.concertPools.maxNewConcertTracks + 1));
++  assert.match(evaluate(b0, fat, okMeasure, config, okProbe).reasons.join(' '), /new concert tracks > limit/);
++  // removals / genre moves -> review; a small in-place edit alone is allowed
++  const rm = clone(b0); rm.concerts.pools[0].concerts.pop();
++  assert.match(evaluate(b0, rm, okMeasure, config, okProbe).reasons.join(' '), /concert\(s\) removed/);
++  const mv = clone(b0); mv.concerts.pools[1].concerts.push(mv.concerts.pools[0].concerts.pop());
++  c = evaluate(b0, mv, okMeasure, config, okProbe); assert.equal(c.verdict, 'review'); assert.equal(c.counts.movedConcerts, 1); assert.match(c.reasons.join(' '), /moved to another genre pool/);
++  const rmPool = clone(b0); rmPool.concerts.pools.pop(); assert.match(evaluate(b0, rmPool, okMeasure, config, okProbe).reasons.join(' '), /pool channel\(s\) removed/);
++  const ed = clone(b0); ed.concerts.pools[0].concerts[0].title = 'fixed typo';
++  c = evaluate(b0, ed, okMeasure, config, okProbe); assert.equal(c.verdict, 'auto', c.reasons.join('; ')); assert.equal(c.counts.modifiedConcerts, 1);
++  // a changed concert manifest alone still requires a probe result (same rule as every other change)
++  assert.match(evaluate(b0, h1, okMeasure, config, null).reasons.join(' '), /playability probe did not run/);
++  assert.match(summaryMarkdown(evaluate(b0, h1, okMeasure, config, okProbe)), /concerts \(\d+ new tracks\)/);
++}
++
+ // Summary renders the verdict and counts
+ const md = summaryMarkdown(evaluate(base, add, okMeasure, config, okProbe));
+ assert.match(md, /Catalog refresh: \*\*AUTO\*\*/);
+--- a/config/catalog-refresh.json	2026-11-03 06:46:02.259007903 -0700
++++ b/config/catalog-refresh.json	2026-11-03 06:46:02.260886712 -0700
+@@ -23,12 +23,27 @@
+       "enabled": false,
+       "account": "@seamac",
+       "status": "pending Replit discovery (claude/GO_REPLIT_ARCHIVE_LIST_REFRESH_DISCOVERY_2026-10-28.txt); needs its own builder section and owner category decisions"
++    },
++    "paris-portland": {
++      "enabled": false,
++      "builder": "tools/build-concert-library.py",
++      "account": "@paris-portland",
++      "subject": "live concert",
++      "languages": [
++        "eng",
++        "english"
++      ],
++      "includeMissingLanguage": true,
++      "minTrackSeconds": 30,
++      "maxUnclassifiedShare": 0.45,
++      "note": "Pooled genre channels (Live Concerts: <genre>) in the audio-podcasts guide via src/data/concertPoolsManifest.json. Fail-closed: --discover is read-only; enabled=true is required to write the manifest. Overrides: config/concert-genre-overrides.json. Staged backfill: --limit 25, 100, then all."
+     }
+   },
+   "dataFiles": {
+     "extra": "src/data/extraChannelsManifest.json",
+     "docs": "src/data/documentariesManifest.json",
+-    "audio": "src/data/archiveAudioChannels.json"
++    "audio": "src/data/archiveAudioChannels.json",
++    "concerts": "src/data/concertPoolsManifest.json"
+   },
+   "autoMerge": {
+     "maxNewChannels": 20,
+@@ -70,5 +85,10 @@
+         "autoMergeMax": 5.4
+       }
+     }
++  },
++  "concertPools": {
++    "maxNewConcerts": 100,
++    "maxNewConcertTracks": 1500,
++    "note": "Gate rules for src/data/concertPoolsManifest.json (tools/build-concert-library.py). Any new pool channel or genre move goes to review; removals use autoMerge.allowRemovals."
+   }
+ }
+--- a/.github/workflows/ajn-catalog-refresh.yml	2026-11-03 06:46:02.274762431 -0700
++++ b/.github/workflows/ajn-catalog-refresh.yml	2026-11-03 06:46:02.276591075 -0700
+@@ -28,6 +28,8 @@
+       - tools/catalog-measure.mts
+       - tools/catalog-probe.mjs
+       - tools/build-infobattalion-lists.py
++      - tools/build-concert-library.py
++      - config/concert-genre-overrides.json
+       - config/catalog-refresh.json
+       - config/catalog-overrides.json
+ 
+@@ -84,6 +86,20 @@
+           mkdir -p .catalog-cache
+           python tools/build-infobattalion-lists.py --cache .catalog-cache --fetch
+ 
++      # Live-concert pools (@paris-portland). Exit 2 = source disabled in config (fail-closed, skipped); any other failure is shown, never hidden:
++      # the step is marked failed, a warning is written to the run summary, and the previously committed manifest stays untouched.
++      - name: Rebuild concert pools
++        id: concerts
++        continue-on-error: true
++        timeout-minutes: 120
++        run: |
++          set +e
++          python tools/build-concert-library.py --cache .catalog-cache/concerts
++          rc=$?
++          if [ "$rc" = "2" ]; then echo "Concert pools: source disabled in config; skipped." >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
++          if [ "$rc" != "0" ]; then echo "::warning::Concert pool rebuild failed (exit $rc: 3=Unclassified share over limit, 4=incomplete fetch, 5=empty). Manifest NOT updated." ; echo "**Concert pool rebuild FAILED (exit $rc); manifest not updated.** See reports/concert-discovery in the artifact." >> "$GITHUB_STEP_SUMMARY"; fi
++          exit $rc
++
+       # Every NEW file gets a real 1 KB Range request; anything that does not answer with media is removed here.
+       - name: Playability probe of new files
+         timeout-minutes: 150
+@@ -104,6 +120,8 @@
+         run: |
+           node test-catalog-gate.mjs
+           python -m unittest test_infobattalion_builder -q
++          python tools/test_concert_library.py
++          npx tsx test-concert-pools.ts
+           npx tsx test-infobattalion-lists.ts
+           npx tsx test-classic-light-schedule.ts
+ 
+@@ -118,6 +136,9 @@
+             catalog-report.json
+             catalog-summary.md
+             reports/infobattalion-lists.json
++            reports/concert-discovery/summary.md
++            reports/concert-discovery/needs-decision.json
++            reports/concert-discovery/unclassified-for-review.csv
+             .catalog-cache/request-ledger.jsonl
+           if-no-files-found: ignore
+ 
+@@ -130,7 +151,7 @@
+           git config user.name "ajn-catalog-bot"
+           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+           git checkout -b "$branch"
+-          git add src/data/extraChannelsManifest.json src/data/documentariesManifest.json src/data/archiveAudioChannels.json reports/infobattalion-lists.json
++          git add src/data/extraChannelsManifest.json src/data/documentariesManifest.json src/data/archiveAudioChannels.json src/data/concertPoolsManifest.json reports/infobattalion-lists.json
+           git commit -m "Catalog refresh $(date -u +%Y-%m-%d): ${{ steps.gate.outputs.verdict }}"
+           git push origin "$branch"
+           gh label create "catalog:auto" --color 0E8A16 --description "Catalog gate: safe to auto-merge after CI" --force

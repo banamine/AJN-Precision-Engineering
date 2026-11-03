@@ -9,6 +9,8 @@ import { runSources } from './server/sources/runner';
 import { buildRushChannel, buildOtrChannel, buildArchiveItemChannel, type ArchiveAudioChannelSource } from './server/audioChannels';
 import { getInfowarsDiagnostics, INFOWARS_CHANNEL_ID } from './server/infowarsRadio';
 import archiveAudioChannelsJson from './src/data/archiveAudioChannels.json';
+import { concertPoolTasks, type ConcertPoolManifest } from './server/concertPools';
+import concertPoolsJson from './src/data/concertPoolsManifest.json';
 import { getPodcastChannels } from './server/podcasts';
 import { getLiveRadioChannels } from './server/liveRadio';
 import { windowByHour } from './server/scheduleWindow';
@@ -495,6 +497,7 @@ function audioTasks(guideId:string,now:Date):AudioTask[]{
     {id:'old-time-radio',name:'Old-Time Radio',group:'Old-Time Radio',mins:30,maxSlots:120,loopDay:false,build:()=>buildOtrChannel(guideId,now)},
     ...itemTasks.filter(x=>x.id===INFOWARS_CHANNEL_ID),
     ...itemTasks.filter(x=>x.id!==INFOWARS_CHANNEL_ID),
+    ...concertPoolTasks(concertPoolsJson as ConcertPoolManifest,guideId,now),
   ];
 }
 /** Turn whatever has resolved into channels. Pending ones are explicit "loading" rows; failed ones are explicit upstream_error rows. */

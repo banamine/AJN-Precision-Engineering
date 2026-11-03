@@ -1,0 +1,15 @@
+--- a/guideRegistry.ts
++++ b/guideRegistry.ts
+@@ -10,4 +10,6 @@
+ import { getInfowarsDiagnostics, INFOWARS_CHANNEL_ID } from './server/infowarsRadio';
+ import archiveAudioChannelsJson from './src/data/archiveAudioChannels.json';
++import { concertPoolTasks, type ConcertPoolManifest } from './server/concertPools';
++import concertPoolsJson from './src/data/concertPoolsManifest.json';
+ import { getPodcastChannels } from './server/podcasts';
+ import { getLiveRadioChannels } from './server/liveRadio';
+@@ -496,4 +498,5 @@
+     ...itemTasks.filter(x=>x.id===INFOWARS_CHANNEL_ID),
+     ...itemTasks.filter(x=>x.id!==INFOWARS_CHANNEL_ID),
++    ...concertPoolTasks(concertPoolsJson as ConcertPoolManifest,guideId,now),
+   ];
+ }

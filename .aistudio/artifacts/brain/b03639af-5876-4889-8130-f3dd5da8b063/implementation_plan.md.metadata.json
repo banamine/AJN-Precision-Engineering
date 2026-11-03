@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for TV Guide button geometry and badge wrapping fix in theme.css, scoping the button exemptions to fine-pointer devices and maintaining vertical centering and 11px text floor.",
-  "updatedAt":  "2026-10-30T08:26:54.799696098Z",
-  "requestFeedback":  true,
-  "userFacing":  true
+  "summary": "Revised implementation plan honoring the user's directive to preserve the radio deck, place instant search and genre pills directly under the deck, move 'Full shows by day' below the Listen-back list, and use exclusively real data sources (live feeds, saved presets, and catalog show days).",
+  "updatedAt": "2026-11-03T18:58:52.060573420Z",
+  "requestFeedback": true,
+  "userFacing": true
 }

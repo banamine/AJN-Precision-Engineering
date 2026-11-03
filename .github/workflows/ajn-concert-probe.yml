@@ -1,0 +1,40 @@
+name: AJN concert playability probe
+# Slow, resumable background check that every concert track is really playable on archive.org.
+# Each run probes the next batch (cursor persisted via cache); ~9 nights cover all ~13.7k tracks, then it wraps.
+# Results: artifact concert-probe + job summary. It never edits the manifest; failures are reported for a human decision.
+on:
+  schedule: [{ cron: '41 9 * * *' }]
+  workflow_dispatch:
+    inputs:
+      batch: { description: 'tracks to probe this run', default: '1500' }
+permissions: { contents: read }
+concurrency: { group: concert-probe, cancel-in-progress: false }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Restore probe cursor
+        uses: actions/cache/restore@v4
+        with:
+          path: .catalog-cache/concert-probe-state.json
+          key: concert-probe-state-${{ github.run_id }}
+          restore-keys: concert-probe-state-
+      - name: Probe next batch
+        run: node tools/probe-concert-tracks.mjs --batch "${{ github.event.inputs.batch || '1500' }}"
+      - name: Summary
+        if: always()
+        run: |
+          [ -f reports/concert-probe.json ] && node -e "const r=require('./reports/concert-probe.json');console.log('## Concert probe\n- probed this run: '+r.probedThisRun+'\n- failed this run: '+r.failedThisRun+'\n- open failures overall: '+r.openFailures+'\n- cursor '+r.coverage.cursor+'/'+r.totalTracks+' (cycles done: '+r.coverage.completedCycles+')')" >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Save probe cursor
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .catalog-cache/concert-probe-state.json
+          key: concert-probe-state-${{ github.run_id }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: concert-probe, path: reports/concert-probe.json, if-no-files-found: ignore }
