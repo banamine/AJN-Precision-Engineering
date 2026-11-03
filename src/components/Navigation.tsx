@@ -54,15 +54,15 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
 const DESKTOP_PRIMARY: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[0],
   PRIMARY_DESTINATIONS[1],
-  PRIMARY_DESTINATIONS[2],
-  PRIMARY_DESTINATIONS[3],
+  PRIMARY_DESTINATIONS[6],
 ];
 const MY_LIBRARY_ITEMS: NavItemConfig[] = [PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8]];
 // Keep all existing destinations directly reachable on mobile.
 const MOBILE_DESTINATIONS: NavItemConfig[] = [0, 1, 2, 3, 4, 5, 8, 6, 7].map((i) => PRIMARY_DESTINATIONS[i]);
 const VAULT_ITEMS: NavItemConfig[] = [
+  PRIMARY_DESTINATIONS[2],
+  PRIMARY_DESTINATIONS[3],
   PRIMARY_DESTINATIONS[4],
-  PRIMARY_DESTINATIONS[6],
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
 ];
 
@@ -256,12 +256,12 @@ export function Navigation({
                     : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
                 }`}
               >
-                <FolderArchive className={`h-4 w-4 ${vaultActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
-                <span className="hidden xl:inline">Vault</span>
+                <Box className={`h-4 w-4 ${vaultActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
+                <span className="hidden xl:inline">More</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${vaultOpen ? 'rotate-180' : ''}`} />
               </button>
               {vaultOpen && (
-                <div role="menu" aria-label="Vault" className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
+                <div role="menu" aria-label="More" className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
                   {VAULT_ITEMS.map((item) => {
                     const Icon = item.icon;
                     return (

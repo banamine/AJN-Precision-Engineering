@@ -9,9 +9,11 @@ import { filterEntries, formatClock, isPlayingEntry, neighbour, showChips, showI
 import { dayKindLabel, groupShowDays, planFullShow, type FullShowMode, type ShowDay } from '../utils/ajnShowGroups';
 import { startShowQueue } from '../utils/showQueue';
 import { FullShowStatus } from './FullShowStatus';
+import { RadioPresetsBar } from './RadioPresetsBar';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
 import { useDigest } from '../hooks/useDigest';
 import { DailyBriefing, NewsTicker } from './DailyBriefing';
+import { RadioSpectrum } from './RadioSpectrum';
 import '../radio.css';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -146,6 +148,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   const playingEntry = useMemo(() => everyEntry.find(entry => isPlayingEntry(entry, nowPlaying?.programId)) ?? null, [everyEntry, nowPlaying?.programId]);
   const playingHere = playingEntry !== null && entries.includes(playingEntry);
   const progressById = useMemo(() => new Map(recentlyPlayed.map(item => [item.programId ?? item.id, item.progressSeconds])), [recentlyPlayed]);
+  const liveStation = nowPlaying?.channelId?.startsWith('radio:') ? nowPlaying : null; // a live station, not an AJN archive episode
   const liveMedia = usePersistentMedia(nowPlaying?.mediaType, nowPlaying ? `${nowPlaying.src}|${nowPlaying.mediaType}` : undefined, Boolean(nowPlaying));
 
   const update = (patch: Partial<RadioFilter>) => { setFilter(current => ({ ...current, ...patch })); setVisible(PAGE_SIZE); };
@@ -186,6 +189,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   const label = AJN_CHANNEL_LABELS[channel];
   const page = shown.slice(0, visible);
 
+  useEffect(() => { document.body.dataset.ajnPage = 'radio'; return () => { delete document.body.dataset.ajnPage; }; }, []);
   return (
     <div className="ajr" id="ajn-radio-view">
       <header className="ajr-topbar">
@@ -194,6 +198,11 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
       </header>
       <NewsTicker news={news} />
 
+      <section className="ajr-live" aria-label="Live radio presets" data-testid="radio-page-live">
+        <div className="ajr-label">LIVE RADIO · YOUR PRESETS</div>
+        <RadioPresetsBar defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
+        <RadioSpectrum className="mt-3" playing={liveStation !== null && liveMedia.attached && !liveMedia.paused} />
+      </section>
       <section className="ajr-hero">
         <div>
           <div className="ajr-eyebrow"><i />AJN AUDIO · DAILY NEWS</div>

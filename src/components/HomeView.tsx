@@ -77,11 +77,11 @@ function FullShowShortcuts({ onPlayProgram, className = '', testId }: { onPlayPr
         <button key={s.showSlug} type="button" data-testid={`shortcut-${s.showSlug}`}
           onClick={() => onPlayProgram(s.url, s.title, `Full show · ${s.showName} · ${s.dateLabel}`, 'audio', 'ajn-radio', 'ajn-radio', s.id)}
           aria-label={`Play full show: ${s.showName}, ${s.dateLabel}${s.dayKind === 'special' ? ', special broadcast' : ''}`}
-          className="ajn-primary-action group flex items-center gap-3 rounded-2xl p-2.5 pr-4 text-left ring-2 ring-[var(--ajn-accent)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/45 ring-1 ring-white/25"><Play className="ml-0.5 h-5 w-5 fill-current" /></span>
+          className="group flex items-center gap-3 rounded-2xl border border-[var(--ajn-accent)]/60 bg-[var(--ajn-card)]/80 p-2.5 pr-4 text-left text-[var(--ajn-text)] backdrop-blur-md transition hover:border-[var(--ajn-accent)] hover:bg-[var(--ajn-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--ajn-accent)] text-[#0F1117]"><Play className="ml-0.5 h-5 w-5 fill-current" /></span>
           <span className="flex min-w-0 flex-col">
             <span className="truncate text-[11px] font-black uppercase tracking-wider">{s.showName} · FULL SHOW</span>
-            <span className="truncate text-xs font-extrabold text-white drop-shadow">{s.dateLabel}{s.dayKind === 'special' ? ' · SPECIAL' : ''}</span>
+            <span className="truncate text-xs font-semibold text-neutral-300">{s.dateLabel}{s.dayKind === 'special' ? ' · SPECIAL' : ''}</span>
           </span>
         </button>
       ))}
@@ -203,7 +203,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           <FullShowShortcuts onPlayProgram={onPlayProgram} testId="full-show-shortcuts-overlay" />
         </div>
 
-        <div className="relative z-10 min-h-[330px] flex flex-col justify-end p-6 sm:p-8 lg:p-10">
+        <div className="relative z-10 min-h-[330px] flex flex-col justify-end p-6 pt-28 sm:p-8 sm:pt-28 lg:p-10 lg:pt-28">
           <div className="max-w-3xl space-y-4">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/20">
