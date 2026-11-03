@@ -26,7 +26,9 @@ const blockedTvg = new Set((seedJson.blocked ?? []).map((b) => b.tvgId.toLowerCa
 
 type Rec = LiveNewsRecord & { auto?: boolean };
 let records: Rec[] = validateLiveNews(seedJson.channels ?? []).valid;
-const fails = new Map<string, { fails: number; reason?: string; lastOk?: string }>();
+const fails = new Map<string, { fails: number; reason?: string; lastOk?: string; timeouts?: number }>();
+/** Slow is not dead: timeouts alone hide a channel only after this many checks in a row (real failures: LIVE_NEWS_OFFLINE_AFTER_FAILS). */
+export const LIVE_NEWS_OFFLINE_AFTER_TIMEOUTS = 4;
 let fetchImpl: typeof fetch | undefined;
 
 export const liveNewsStatus = {
@@ -42,7 +44,7 @@ export function setLiveNewsFetchForTests(f?: typeof fetch) {
 }
 
 const isHls = (u: string) => /^https:\/\/[^\s]+\.m3u8(\?|$)/i.test(u);
-const hiddenUrl = (u: string) => (fails.get(u)?.fails ?? 0) >= LIVE_NEWS_OFFLINE_AFTER_FAILS;
+const hiddenUrl = (u: string) => { const f = fails.get(u); return (f?.fails ?? 0) >= LIVE_NEWS_OFFLINE_AFTER_FAILS || (f?.timeouts ?? 0) >= LIVE_NEWS_OFFLINE_AFTER_TIMEOUTS; };
 
 /** The channels Cable TV should show right now (offline ones left out). */
 export function currentLiveNews(): LiveNewsRecord[] { return records.filter((r) => !hiddenUrl(r.url)); }
@@ -152,7 +154,9 @@ export async function checkLiveNews(urls?: string[], full = true): Promise<{ che
     const applied = !(full && list.length >= 10 && failed / list.length > 0.8); // most failing = our network, not theirs
     if (applied) for (const [u, r] of results) {
       const e = fails.get(u) ?? { fails: 0 };
-      if (r.ok) { e.fails = 0; e.reason = undefined; e.lastOk = new Date().toISOString(); } else { e.fails++; e.reason = r.reason; }
+      if (r.ok) { e.fails = 0; e.timeouts = 0; e.reason = undefined; e.lastOk = new Date().toISOString(); }
+      else if (r.reason === 'timeout') { e.timeouts = (e.timeouts ?? 0) + 1; e.reason = r.reason; }
+      else { e.fails++; e.timeouts = 0; e.reason = r.reason; }
       fails.set(u, e);
     }
     if (full) { liveNewsStatus.checkSkipped = !applied; liveNewsStatus.lastCheck = new Date().toISOString(); }
