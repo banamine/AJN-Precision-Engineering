@@ -234,7 +234,7 @@ const [query, setQuery] = useState<string>('');
       {/* ── Search Header & Description ──────────────────────────────────── */}
       <div className="space-y-1 border-b border-neutral-800 pb-5">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600/10 text-sky-400 border border-sky-500/40">
             <Search className="h-4 w-4" />
           </div>
           <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-50">
@@ -263,7 +263,7 @@ const [query, setQuery] = useState<string>('');
               autoComplete="off"
               value={query}
               placeholder="Search broadcast topics, speakers, or events..."
-              className="w-full rounded-xl border border-neutral-700 bg-neutral-950 pl-10 pr-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              className="w-full rounded-xl border border-neutral-700 bg-neutral-950 pl-10 pr-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:border-sky-500/40 focus:outline-none focus:ring-1 focus:ring-sky-500"
               onChange={(event) => {
                 const nextQuery = event.target.value;
                 setQuery(nextQuery);
@@ -359,7 +359,7 @@ const [query, setQuery] = useState<string>('');
                 setSelectedNetwork(e.target.value);
                 executeSearch(query, e.target.value, true);
               }}
-              className="rounded-xl border border-neutral-700 bg-neutral-950 px-3.5 py-2.5 text-xs font-medium text-neutral-200 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+              className="rounded-xl border border-neutral-700 bg-neutral-950 px-3.5 py-2.5 text-xs font-medium text-neutral-200 focus:border-sky-500/40 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
             >
               {NETWORKS.map((n) => (
                 <option key={n.id} value={n.id}>
@@ -371,7 +371,7 @@ const [query, setQuery] = useState<string>('');
             <button
               type="submit"
               id="execute-search-btn"
-              className="flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-purple-600/20 transition hover:bg-purple-500 active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-black/40 transition hover:bg-sky-600 active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -386,7 +386,7 @@ const [query, setQuery] = useState<string>('');
         {/* Suggestion Chips */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
           <span className="text-[11px] text-neutral-500 mr-1 flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-purple-400" /> Topics:
+            <Sparkles className="h-3 w-3 text-sky-400" /> Topics:
           </span>
           {SUGGESTIONS.map((s, idx) => (
             <button
@@ -397,7 +397,7 @@ const [query, setQuery] = useState<string>('');
                 onRecordSearch?.(s);
                 executeSearch(s, selectedNetwork, true);
               }}
-              className="rounded-md border border-neutral-800 bg-neutral-950/80 px-2.5 py-1 text-[11px] text-neutral-400 transition hover:border-purple-500/50 hover:text-purple-300 cursor-pointer"
+              className="rounded-md border border-neutral-800 bg-neutral-950/80 px-2.5 py-1 text-[11px] text-neutral-400 transition hover:border-sky-500/40 hover:text-sky-400 cursor-pointer"
             >
               {s}
             </button>
@@ -409,9 +409,9 @@ const [query, setQuery] = useState<string>('');
       {/* ── Search Status & Results Count ─────────────────────────────────── */}
       {hasSearched && !loading && (
         <div className="flex items-center justify-between text-xs text-neutral-400 px-1">
-          <h2 ref={searchHeadingRef} tabIndex={-1} data-testid="search-results-heading" className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400">
+          <h2 ref={searchHeadingRef} tabIndex={-1} data-testid="search-results-heading" className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">
             {error ? 'Search results unavailable.' : <>Found <strong className="text-neutral-200">{total}</strong> broadcast results in{' '}
-              <strong className="text-purple-300">{NETWORKS.find((n) => n.id === selectedNetwork)?.name}</strong></>}
+              <strong className="text-sky-400">{NETWORKS.find((n) => n.id === selectedNetwork)?.name}</strong></>}
           </h2>
           {!error && lastQuery && <span>Query: &ldquo;{lastQuery}&rdquo;</span>}
         </div>
@@ -437,17 +437,17 @@ const [query, setQuery] = useState<string>('');
       
       {/* ── Channel Builder Panel ────────────────────────────────────────── */}
       {hasSearched && !loading && (
-        <div className="rounded-xl border border-purple-800/50 bg-purple-900/10 p-5 mt-4 space-y-4">
+        <div className="rounded-xl border border-sky-500/40 bg-sky-500/10 p-5 mt-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-purple-200">Archive Discovery</h3>
-              <p className="text-xs text-purple-400/80 mt-1">Convert these search results into a curated 24/7 channel.</p>
+              <h3 className="text-sm font-semibold text-sky-400">Archive Discovery</h3>
+              <p className="text-xs text-sky-400 mt-1">Convert these search results into a curated 24/7 channel.</p>
             </div>
             <button
               type="button"
               onClick={handleBuildChannel}
               disabled={buildStatus === 'building' || items.length === 0}
-              className="flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-purple-600/20 transition hover:bg-purple-500 active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-black/40 transition hover:bg-sky-600 active:scale-95 disabled:opacity-50"
             >
               {buildStatus === 'building' ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {buildStatus === 'building' ? 'Building...' : 'Create 24/7 Channel'}
@@ -482,7 +482,7 @@ const [query, setQuery] = useState<string>('');
 {/* ── Results Grid ─────────────────────────────────────────────────── */}
       {loading ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-16 text-center space-y-3">
-          <RefreshCw className="mx-auto h-8 w-8 text-purple-400 animate-spin" />
+          <RefreshCw className="mx-auto h-8 w-8 text-sky-400 animate-spin" />
           <p className="text-xs text-neutral-400 font-medium">Searching Library TV News collections...</p>
         </div>
       ) : items.length > 0 ? (
@@ -493,7 +493,7 @@ const [query, setQuery] = useState<string>('');
             return (
               <div
                 key={item.identifier}
-                className="group flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5 transition hover:border-purple-500/40 hover:bg-neutral-900"
+                className="group flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5 transition hover:border-sky-500/40 hover:bg-neutral-900"
               >
                 <div className="space-y-3">
                   {/* Top metadata tags */}
@@ -509,7 +509,7 @@ const [query, setQuery] = useState<string>('');
 
                   {/* Title & Description */}
                   <div>
-                    <h3 className="text-sm font-semibold text-neutral-100 group-hover:text-purple-300 transition line-clamp-2">
+                    <h3 className="text-sm font-semibold text-neutral-100 group-hover:text-sky-400 transition line-clamp-2">
                       {item.title || item.program}
                     </h3>
                     <p className="mt-1.5 text-xs text-neutral-400 line-clamp-3 leading-relaxed">
@@ -533,7 +533,7 @@ const [query, setQuery] = useState<string>('');
                         `${item.network} • ${item.date}`
                       )
                     }
-                    className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-500 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 cursor-pointer"
+                    className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer"
                   >
                     <Play className="h-3 w-3 fill-current" />
                     Watch Broadcast

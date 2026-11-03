@@ -319,3 +319,18 @@
   .ajn-platform-shell #mobile-bottom-nav::-webkit-scrollbar { display: none; }
   .ajn-platform-shell #mobile-bottom-nav > button { flex: 0 0 auto; width: max-content; min-width: 44px; }
 }
+
+
+/* Remaining blue/teal guide tints -> copper (TV Guide rows, chips, buttons) */
+.ajn-platform-shell :where([class~="bg-sky-500/15"], [class~="bg-sky-500/20"], [class~="hover:bg-sky-500/30"], [class~="bg-sky-950/60"], [class~="bg-sky-950/50"], [class~="bg-sky-950/40"], [class~="bg-sky-900/70"]) {
+  background-color: rgba(224, 109, 59, 0.14) !important;
+}
+.ajn-platform-shell :where([class~="border-sky-500/60"], [class~="border-sky-600/70"], [class~="border-sky-800/60"]) {
+  border-color: rgba(224, 109, 59, 0.55) !important;
+}
+.ajn-platform-shell :where([class~="text-sky-100"], [class~="text-sky-300"], [class~="text-sky-400"], [class~="text-sky-200"]) {
+  color: #F4A27D !important;
+}
+.ajn-platform-shell :where([class~="bg-sky-300"], [class~="bg-sky-400"]) {
+  background-color: var(--ajn-accent) !important;
+}
