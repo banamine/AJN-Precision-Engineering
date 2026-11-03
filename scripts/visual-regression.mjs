@@ -35,7 +35,9 @@ export const PAGES = [
   ['dev', '#dev'],
 ];
 
-const IMAGE_WAIT_MS = 25_000;
+// Images come from remote hosts through a concurrency-limited queue; CI is slower than a dev box.
+const ONLY = (process.env.AJN_VISUAL_PAGES || '').split(',').map((x) => x.trim()).filter(Boolean);
+const IMAGE_WAIT_MS = 75_000;
 
 async function settleImages(page) {
   // 1. Lazy images below the fold never start loading in a fullPage capture: make them eager.
@@ -55,7 +57,7 @@ async function settleImages(page) {
   //    `src` after it is near the viewport AND wins a slot in a browser-wide, concurrency-limited
   //    thumbnail queue, so right after scrolling many <img> have NO src yet and count as `complete`.
   //    "Everything complete" is therefore not enough: wait until nothing is pending and the number of
-  //    loaded images has stopped growing for ~1.2 s, capped at IMAGE_WAIT_MS.
+  //    loaded images has stopped growing for ~2.5 s, capped at IMAGE_WAIT_MS.
   const deadline = Date.now() + IMAGE_WAIT_MS;
   let last = '';
   let stableSince = Date.now();
@@ -65,10 +67,11 @@ async function settleImages(page) {
       const pending = imgs.filter((i) => (i.currentSrc || i.getAttribute('src')) && !i.complete).length;
       const loaded = imgs.filter((i) => i.complete && i.naturalWidth > 0).length;
       const noSrc = imgs.filter((i) => !(i.currentSrc || i.getAttribute('src'))).length;
-      return `${pending}/${loaded}/${noSrc}`;
+      // Page height is part of the signature: guide rows / cards that are still being added also mean "not settled".
+      return `${pending}/${loaded}/${noSrc}/${document.documentElement.scrollHeight}`;
     });
     if (sig !== last) { last = sig; stableSince = Date.now(); }
-    else if (last.startsWith('0/') && Date.now() - stableSince >= 1200) break;
+    else if (last.startsWith('0/') && Date.now() - stableSince >= 2500) break;
     await new Promise((r) => setTimeout(r, 300));
   }
 }
@@ -88,7 +91,7 @@ async function main() {
       if (req.resourceType() === 'image') failedImages.push(`${req.failure()?.errorText || 'failed'} ${req.url()}`);
     });
 
-    for (const [name, hash] of PAGES) {
+    for (const [name, hash] of PAGES.filter(([n]) => !ONLY.length || ONLY.includes(n))) {
       failedImages = [];
       // The app streams media and polls, so the network never goes fully idle.
       // Navigate to about:blank first so a hash-only change still does a real page load.
@@ -119,9 +122,10 @@ async function main() {
     await browser.close();
   }
   await writeFile(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
+  const expected = ONLY.length ? PAGES.filter(([n]) => ONLY.includes(n)).length : PAGES.length;
   const total = Object.keys(report.pages).length;
-  console.log(`[visual] captured ${total}/${PAGES.length} pages into ${OUT}`);
-  if (total !== PAGES.length) process.exit(1);
+  console.log(`[visual] captured ${total}/${expected} pages into ${OUT}`);
+  if (total !== expected) process.exit(1);
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });
