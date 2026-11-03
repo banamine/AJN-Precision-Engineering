@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { Radio, X, ChevronDown, Play, Pause, Volume2, VolumeX, Maximize2, Expand, Shrink } from 'lucide-react';
 import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
@@ -37,12 +38,17 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
   const [menuOpen, setMenuOpen] = useState<boolean>(false); // long-press quick menu: switch station without leaving the page
   const [recents, setRecents] = useState<RecentStation[]>([]);
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; size: number }>>([]);
+  const [dockButtonHost, setDockButtonHost] = useState<HTMLElement | null>(null);
   const btnFaded = useIdleFade(btnHold || menuOpen, 12000);
   const rippleId = useRef(0);
   const pressTimer = useRef<number | null>(null);
   const pressStart = useRef<{ x: number; y: number } | null>(null);
   const pressFired = useRef(false); // the long press already opened the menu: swallow the click that follows the release
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    setDockButtonHost(miniPlayerShowing ? document.getElementById('radio-dock-slot') : null);
+  }, [miniPlayerShowing]);
 
   const show = useCallback(() => { setMenuOpen(false); setOpen(true); setEverOpened(true); }, []);
   const hide = useCallback(() => { setOpen(false); setFull(false); }, []);
@@ -162,32 +168,32 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
     closeMenu();
     onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId);
   };
-  const menuLift = miniPlayerShowing ? 'bottom-[12.5rem] sm:bottom-[13.5rem] md:bottom-[9.5rem]' : 'bottom-[8.5rem] sm:bottom-[9.25rem] md:bottom-[5.25rem]';
+  const menuLift = miniPlayerShowing ? 'bottom-[8.75rem] sm:bottom-[9.5rem] md:bottom-24' : 'bottom-[8.5rem] sm:bottom-[9.25rem] md:bottom-[5.25rem]';
 
-  // The button rides above the bottom nav (phone) and above the mini player when it is showing.
+  // The existing Radio button is portaled into the single mini-player bar when that bar is visible.
   const lift = miniPlayerShowing ? 'bottom-[9.5rem] sm:bottom-[10.5rem] md:bottom-[6.5rem]' : 'bottom-[4.75rem] sm:bottom-[5.5rem] md:bottom-6';
+  const radioButton = !open ? (
+    <button type="button" id="radio-dock-button" data-testid="radio-dock-button" onClick={onBtnClick} aria-expanded={false} aria-controls="radio-dock-panel" aria-haspopup="menu"
+      onPointerDown={onBtnPointerDown} onPointerMove={onBtnPointerMove} onPointerUp={cancelPress} onPointerCancel={cancelPress}
+      onContextMenu={(e) => { e.preventDefault(); cancelPress(); pressFired.current = false; openMenu(); }}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') setBtnHold(true); }} onPointerLeave={() => { setBtnHold(false); cancelPress(); }}
+      onFocus={(e) => setBtnHold(e.currentTarget.matches(':focus-visible'))} onBlur={() => setBtnHold(false)}
+      title="Live Radio: tap to open, press and hold for recent stations"
+      className={dockButtonHost
+        ? `ajn-redesign-surface ajn-radio-dock-inline relative flex h-11 w-11 min-h-[44px] min-w-[44px] select-none items-center justify-center overflow-hidden rounded-lg transition active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 ${btnHold ? 'ring-1 ring-[var(--ajn-accent)]' : ''}`
+        : `ajn-redesign-surface fixed right-3 sm:right-6 ${lift} z-[45] flex min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] px-4 text-sm font-extrabold uppercase tracking-wider text-[var(--ajn-accent)] shadow-lg transition-[opacity,transform] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:border-[var(--ajn-accent)] active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]`}>
+      {ripples.map((r) => (
+        <span key={r.id} aria-hidden="true" data-testid="radio-ripple" className="ajn-ripple" style={{ left: r.x - r.size / 2, top: r.y - r.size / 2, width: r.size, height: r.size }} />
+      ))}
+      <Radio className={dockButtonHost ? 'relative h-5 w-5' : 'relative h-5 w-5'} aria-hidden="true" />
+      <span className={dockButtonHost ? 'sr-only' : 'relative'}>Radio</span>
+      {live && <span data-testid="radio-live-dot" role="img" aria-label="Radio is playing" className="ajn-live-dot absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-emerald-300 motion-reduce:animate-none" />}
+    </button>
+  ) : null;
 
   return (
     <>
-      {!open && (
-        <button type="button" id="radio-dock-button" data-testid="radio-dock-button" onClick={onBtnClick} aria-expanded={false} aria-controls="radio-dock-panel" aria-haspopup="menu"
-          onPointerDown={onBtnPointerDown} onPointerMove={onBtnPointerMove} onPointerUp={cancelPress} onPointerCancel={cancelPress}
-          onContextMenu={(e) => { e.preventDefault(); cancelPress(); pressFired.current = false; openMenu(); }}
-          // Mouse only (touch taps emulate mouseenter and never send mouseleave), and keyboard focus only (the panel hands focus back to this button when it closes).
-          onPointerEnter={(e) => { if (e.pointerType === 'mouse') setBtnHold(true); }} onPointerLeave={() => { setBtnHold(false); cancelPress(); }}
-          onFocus={(e) => setBtnHold(e.currentTarget.matches(':focus-visible'))} onBlur={() => setBtnHold(false)}
-          title="Live Radio: tap to open, press and hold for recent stations"
-          className={`fixed right-3 sm:right-6 ${lift} z-[45] flex min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full bg-gradient-to-br from-orange-500 to-red-600 px-4 text-sm font-extrabold uppercase tracking-wider text-white shadow-lg shadow-red-900/50 ring-1 ring-white/20 transition-[opacity,transform,background-color] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:from-orange-400 hover:to-red-500 active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white`}>
-          {ripples.map((r) => (
-            <span key={r.id} aria-hidden="true" data-testid="radio-ripple" className="ajn-ripple" style={{ left: r.x - r.size / 2, top: r.y - r.size / 2, width: r.size, height: r.size }} />
-          ))}
-          <Radio className="relative h-5 w-5" aria-hidden="true" />
-          <span className="relative">Radio</span>
-          {live && (
-            <span data-testid="radio-live-dot" role="img" aria-label="Radio is playing" className="ajn-live-dot relative h-2.5 w-2.5 rounded-full bg-emerald-300" />
-          )}
-        </button>
-      )}
+      {radioButton && (dockButtonHost ? createPortal(radioButton, dockButtonHost) : radioButton)}
 
       {menuOpen && !open && (
         <div ref={menuRef} role="menu" aria-label="Recent radio stations" data-testid="radio-quick-menu"

@@ -13,6 +13,8 @@ export interface PersistentMediaState {
   attached: boolean;
   /** Current playback mute state */
   muted: boolean;
+  /** True after the attached media element reports a playback error. */
+  failed: boolean;
 }
 
 export interface PersistentMedia extends PersistentMediaState {
@@ -27,8 +29,17 @@ export function findPersistentMedia(mediaType?: MediaType): HTMLMediaElement | n
   return mediaType === 'audio' ? audio() ?? video() : video() ?? audio();
 }
 
-const EVENTS = ['play', 'pause', 'timeupdate', 'durationchange', 'loadedmetadata', 'ended', 'emptied', 'volumechange'] as const;
-const IDLE: PersistentMediaState = { paused: true, currentTime: 0, duration: 0, attached: false, muted: false };
+export function togglePersistentMedia(media: HTMLMediaElement): void {
+  if (media.paused) {
+    if (media.error) media.load();
+    void media.play().catch(() => {});
+  } else {
+    media.pause();
+  }
+}
+
+const EVENTS = ['play', 'pause', 'timeupdate', 'durationchange', 'loadedmetadata', 'ended', 'emptied', 'volumechange', 'error', 'loadstart', 'playing'] as const;
+const IDLE: PersistentMediaState = { paused: true, currentTime: 0, duration: 0, attached: false, muted: false, failed: false };
 
 /** `sourceKey` should change whenever a different item is loaded (the element is replaced when the source changes). */
 export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: string | undefined, enabled = true): PersistentMedia {
@@ -40,9 +51,9 @@ export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: 
     let media: HTMLMediaElement | null = null;
     const read = () => {
       const next: PersistentMediaState = media
-        ? { paused: media.paused, currentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0, duration: Number.isFinite(media.duration) ? media.duration : 0, attached: true, muted: Boolean(media.muted) }
+        ? { paused: media.paused, currentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0, duration: Number.isFinite(media.duration) ? media.duration : 0, attached: true, muted: Boolean(media.muted), failed: Boolean(media.error) }
         : IDLE;
-      setState(prev => (prev.paused === next.paused && Math.floor(prev.currentTime) === Math.floor(next.currentTime) && prev.duration === next.duration && prev.attached === next.attached && prev.muted === next.muted ? prev : next));
+      setState(prev => (prev.paused === next.paused && Math.floor(prev.currentTime) === Math.floor(next.currentTime) && prev.duration === next.duration && prev.attached === next.attached && prev.muted === next.muted && prev.failed === next.failed ? prev : next));
     };
     const detach = () => { if (media) for (const e of EVENTS) media.removeEventListener(e, read); };
     const attach = () => {
@@ -61,7 +72,7 @@ export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: 
   const toggle = useCallback(() => {
     const media = mediaRef.current ?? findPersistentMedia(mediaType);
     if (!media) return;
-    if (media.paused) void media.play().catch(() => {}); else media.pause();
+    togglePersistentMedia(media);
   }, [mediaType]);
   const seek = useCallback((seconds: number) => {
     const media = mediaRef.current ?? findPersistentMedia(mediaType);

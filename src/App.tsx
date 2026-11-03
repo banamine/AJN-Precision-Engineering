@@ -10,6 +10,7 @@ import { SearchView } from './components/SearchView';
 import { NewsTabs as RumbleNewsWall } from './components/NewsTabs';
 import { RadioView } from './components/RadioView';
 import { DevModeView } from './components/DevModeView';
+import { WatchLaterView } from './components/WatchLaterView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
 import { RadioDock } from './components/RadioDock';
 import { SyncedVideoPip } from './components/SyncedVideoPip';
@@ -19,6 +20,7 @@ import { bridgeSrc } from './utils/mediaRoute';
 import { HistoryView } from './components/HistoryView';
 import { HistoryEntry, loadHistory, saveHistory, recordPlay, updateHistoryProgress, removeHistoryEntry } from './utils/historyStore';
 import { FavoriteMedia, loadMediaFavorites, saveMediaFavorites, toggleFavorite, isFavorite as isMediaFavorite } from './utils/mediaFavorites';
+import { addWatchLater, isInWatchLater, loadWatchLater, progressAction, removeWatchLater, saveWatchLater, type WatchLaterItem } from './utils/watchLater';
 import { useRadioFavorites, toggleRadioFavorite } from './utils/radioFavorites';
 import { useCloudSync } from './hooks/useCloudSync';
 import { buildSuggestCandidates, addRecentSearch, loadRecentSearches, saveRecentSearches } from './utils/suggest';
@@ -70,6 +72,7 @@ function getDestinationFromHash(): Destination {
     case 'search': return 'search';
     case 'today': return 'today';
     case 'history': return 'history';
+    case 'watch-later': return 'watch-later';
     case 'news':
     case 'bannedvideo': return 'news';
     case 'news-cube': return 'news-cube';
@@ -143,6 +146,7 @@ export default function App() {
   recentlyPlayedRef.current = recentlyPlayed;
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [favorites, setFavorites] = useState<FavoriteMedia[]>(() => loadMediaFavorites());
+  const [watchLaterEntries, setWatchLaterEntries] = useState<WatchLaterItem[]>(() => loadWatchLater());
   const [recentSearches, setRecentSearches] = useState<string[]>(() => loadRecentSearches());
 
   // History is written at most once a second: playback progress updates it every few seconds.
@@ -151,6 +155,7 @@ export default function App() {
     return () => window.clearTimeout(t);
   }, [history]);
   useEffect(() => { saveMediaFavorites(favorites); }, [favorites]);
+  useEffect(() => { saveWatchLater(watchLaterEntries); }, [watchLaterEntries]);
   useEffect(() => { saveRecentSearches(recentSearches); }, [recentSearches]);
   useEffect(() => {
     const flush = () => saveHistory(history);
@@ -263,11 +268,26 @@ export default function App() {
     handlePlayProgram(archivePath, title, subtitle || 'Live EPG Schedule', mediaType, channelId, guideId, programId, sourceId, assetId, startAtSeconds, bufferMetadata);
   }, [handlePlayProgram]);
 
-  const updateRecentlyPlayedProgress = useCallback((itemId: string, positionSeconds: number) => {
+  const updateRecentlyPlayedProgress = useCallback((itemId: string, positionSeconds: number, durationSeconds?: number) => {
     if (!Number.isFinite(positionSeconds) || positionSeconds < 0) return;
     setRecentlyPlayed((items) => items.map((item) => item.id === itemId ? { ...item, progressSeconds: positionSeconds, updatedAt: Date.now() } : item));
     setHistory((h) => updateHistoryProgress(h, itemId, positionSeconds));
-  }, []);
+    if (!nowPlaying || mediaIdentity(nowPlaying) !== itemId) return;
+    setWatchLaterEntries((items) => {
+      const saved = isInWatchLater(items, itemId);
+      const action = progressAction(positionSeconds, durationSeconds ?? 0, saved);
+      if (action === 'remove') return removeWatchLater(items, itemId);
+      if (action !== 'add' && action !== 'update') return items;
+      const existing = items.find((item) => item.id === itemId);
+      if (existing && Math.floor(existing.progressSeconds) === Math.floor(positionSeconds)
+        && existing.durationSeconds === durationSeconds) return items;
+      return addWatchLater(items, itemId, nowPlaying, Date.now(), {
+        reason: 'auto-half',
+        progressSeconds: positionSeconds,
+        durationSeconds,
+      }).list;
+    });
+  }, [nowPlaying]);
 
   const resumeRecentlyPlayed = useCallback((item: RecentlyPlayedItem) => {
     setNowPlaying(item);
@@ -290,6 +310,19 @@ export default function App() {
     if (typeof window !== 'undefined') window.location.hash = '#player';
   }, []);
   const nowPlayingId = nowPlaying ? mediaIdentity(nowPlaying) : null;
+  const toggleNowPlayingWatchLater = useCallback(() => {
+    if (!nowPlaying || !nowPlayingId) return;
+    if (isInWatchLater(watchLaterEntries, nowPlayingId)) {
+      setWatchLaterEntries(removeWatchLater(watchLaterEntries, nowPlayingId));
+      return;
+    }
+    const progressSeconds = recentlyPlayedRef.current.find((item) => item.id === nowPlayingId)?.progressSeconds ?? 0;
+    const added = addWatchLater(watchLaterEntries, nowPlayingId, nowPlaying, Date.now(), {
+      reason: 'manual',
+      progressSeconds,
+    });
+    setWatchLaterEntries(added.list);
+  }, [nowPlaying, nowPlayingId, watchLaterEntries]);
   const radioFavs = useRadioFavorites();
   const radioStationId = nowPlaying?.channelId && nowPlaying.channelId.startsWith('radio:') ? nowPlaying.channelId : null;
   const nowPlayingIsFavorite = radioStationId ? radioFavs.has(radioStationId) : (nowPlayingId ? isMediaFavorite(favorites, nowPlayingId) : false);
@@ -334,11 +367,11 @@ export default function App() {
             hidden={destination !== 'player'}
             className={`w-full ${destination === 'player' ? 'view-fade-in' : ''}`}
           >
-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} isWatchLater={nowPlayingId ? isInWatchLater(watchLaterEntries, nowPlayingId) : false} onToggleWatchLater={toggleNowPlayingWatchLater} />
           </div>
         ) : destination === 'player' && (
           <div key="view-player" className="view-fade-in w-full">
-            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} />
+            <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} isWatchLater={nowPlayingId ? isInWatchLater(watchLaterEntries, nowPlayingId) : false} onToggleWatchLater={toggleNowPlayingWatchLater} />
           </div>
         )}
         {destination === 'today' && (
@@ -391,6 +424,17 @@ export default function App() {
               onClear={() => { sync.noteHistoryCleared(); setHistory([]); }}
               sync={sync}
               isFavorite={(id) => isMediaFavorite(favorites, id)}
+            />
+          </div>
+        )}
+        {destination === 'watch-later' && (
+          <div key="view-watch-later" className="view-fade-in w-full">
+            <WatchLaterView
+              entries={watchLaterEntries}
+              onPlay={playSaved}
+              onRemove={(id) => setWatchLaterEntries((items) => removeWatchLater(items, id))}
+              onClear={() => setWatchLaterEntries([])}
+              onNavigate={navigateTo}
             />
           </div>
         )}

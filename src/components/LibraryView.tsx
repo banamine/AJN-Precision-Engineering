@@ -107,7 +107,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-500" aria-hidden="true" />
           <input type="search" id="library-filter-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search the library…" aria-label="Search the library"
-            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/90 pl-9 pr-3.5 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/90 pl-9 pr-3.5 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-[var(--ajn-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--ajn-accent)]" />
         </div>
       </div>
 
@@ -115,18 +115,18 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
 
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" id="lib-cat-btn-all" onClick={() => { setCategory(''); setShowId(''); setDecade(null); setShowFavorites(false); }}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium ${!category && !showFavorites ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
+          className={`rounded-full px-4 py-1.5 text-xs font-medium ${!category && !showFavorites ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
           All {heat ? `(${allTotal})` : ''}
         </button>
         {heat?.map((c) => (
           <button key={c.categoryId} type="button" id={`lib-cat-btn-${c.categoryId}`} disabled={c.total === 0}
             onClick={() => { setCategory(c.categoryId); setShowId(''); setDecade(null); setShowFavorites(false); }}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-40 ${category === c.categoryId && !showFavorites ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
+            className={`rounded-full px-4 py-1.5 text-xs font-medium disabled:opacity-40 ${category === c.categoryId && !showFavorites ? 'bg-emerald-500 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
             {c.categoryId === 'soaps' && <Tv className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />}{c.label} ({c.total})
           </button>
         ))}
         <button type="button" id="lib-favorites-btn" aria-pressed={showFavorites} onClick={() => setShowFavorites((v) => !v)}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${showFavorites ? 'bg-amber-400 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
+          className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium ${showFavorites ? 'bg-amber-400 text-neutral-950 font-semibold' : 'border border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:text-neutral-200'}`}>
           <Star className={`h-3.5 w-3.5 ${showFavorites ? 'fill-current' : ''}`} aria-hidden="true" /> Favorites ({favoriteIds.size})
         </button>
       </div>
@@ -135,7 +135,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
         <label className="flex max-w-sm flex-col gap-1 text-xs text-neutral-400">
           Show
           <select value={showId} onChange={(e) => setShowId(e.target.value)} aria-label="Filter nker150 collection by show"
-            className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-neutral-100 focus:border-emerald-500 focus:outline-none">
+            className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-neutral-100 focus:border-[var(--ajn-accent)] focus:outline-none">
             <option value="">All verified shows</option>
             {nker150Shows.map((show) => <option key={show.id} value={show.id}>{show.label}</option>)}
           </select>
@@ -212,7 +212,10 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
             return (
               <div key={item.id} className="group flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-4 transition hover:border-neutral-700 hover:bg-neutral-900">
                 <div className="space-y-2">
-                  <Thumb className="mb-1 aspect-video w-full rounded-lg text-lg" title={item.title} showUnavailableLabel={item.categoryIds.includes('soaps')} input={{ identifier: item.identifier, path: item.path, category: item.categoryIds[0], mediaType: item.mediaType, channelId: item.channelId, guideId: item.guideId }} />
+                  <div className="relative mb-1">
+                    <Thumb className="aspect-video w-full rounded-lg text-lg" title={item.title} showUnavailableLabel={item.categoryIds.includes('soaps')} input={{ identifier: item.identifier, path: item.path, category: item.categoryIds[0], mediaType: item.mediaType, channelId: item.channelId, guideId: item.guideId }} />
+                    <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 ring-1 ring-white/30"><Play className="ml-0.5 h-5 w-5 fill-white text-white" /></span></span>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{item.categoryIds.includes('soaps') ? <Tv className="h-3.5 w-3.5" /> : isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{item.kindBadge ?? (isAudio ? 'Audio' : 'Video')}{item.format && item.format !== 'none' ? ` · ${item.format}` : ''}</span>
                     <span className="flex items-center gap-1">
@@ -237,7 +240,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                 </div>
                 <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-xs text-neutral-500" title={item.durEst ? 'Estimated length' : undefined}><Clock className="h-3.5 w-3.5" aria-hidden="true" />{fmtDur(item.dur, item.durEst) || '—'}{item.availability === 'verified' ? ' · checked' : ''}</span>
-                  <button type="button" id={`play-lib-item-${item.id}`} onClick={() => play(item)} className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+                  <button type="button" id={`play-lib-item-${item.id}`} onClick={() => play(item)} className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">
                     <Play className="h-3 w-3 fill-current" aria-hidden="true" />{isAudio ? 'Listen' : 'Watch'}
                   </button>
                 </div>
@@ -323,7 +326,7 @@ function AllMyChildrenSeries({
                     {episode.subtitle && <div className="mt-1 line-clamp-2 text-[11px] text-neutral-500">{episode.subtitle}</div>}
                   </div>
                   <button type="button" onClick={playFirst} aria-label={`${hasOrderedParts ? 'Play all parts in order' : 'Play'}: ${episode.episodeTitle}`}
-                    className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
+                    className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">
                     <Play className="h-3 w-3 fill-current" aria-hidden="true" />{hasOrderedParts ? 'Play all in order' : 'Play'}
                   </button>
                 </div>
@@ -336,7 +339,7 @@ function AllMyChildrenSeries({
                       return <div key={`${part.identifier}/${part.file}`} className="flex items-center justify-between gap-2 text-[10px] text-neutral-400">
                         <span className="min-w-0 break-all"><strong className="font-medium text-neutral-300">{label}</strong> · {part.file} · {fmtDur(part.durationSeconds, false)}</span>
                         <button type="button" onClick={() => play({ ...episode, path: part.path, title: `${episode.episodeTitle} · ${label}` })}
-                          className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-neutral-200 hover:border-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
+                          className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-neutral-200 hover:border-[var(--ajn-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">
                           Play part
                         </button>
                       </div>;
