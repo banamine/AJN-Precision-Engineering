@@ -34,6 +34,8 @@ export const STATION_CHANNELS: StationChannelConfig[] = [
   { id: 'radio:ch109-summertime-hits', name: 'Summertime Hits', shortTag: 'Summer', accentColor: '#EAB308', themeColor: '#392D05', textClass: 'text-yellow-400', iconEmoji: '☀️', category: 'Pop' },
   { id: 'radio:ch109-one-hit-wonders', name: 'One Hit Wonders', shortTag: '1-Hit', accentColor: '#6366F1', themeColor: '#1B1D4A', textClass: 'text-indigo-400', iconEmoji: '🌟', category: 'Hits' },
   { id: 'radio:ch109-christmas', name: 'Christmas', shortTag: 'Holiday', accentColor: '#10B981', themeColor: '#06301F', textClass: 'text-emerald-400', iconEmoji: '🎄', category: 'Holiday' },
+  { id: 'radio:ajn-alex-jones-show', name: 'Alex Jones Show', shortTag: 'AJN Live', accentColor: '#3B82F6', themeColor: '#0F2547', textClass: 'text-blue-400', iconEmoji: '🎙️', category: 'Talk' },
+  { id: 'radio:ajn-infowars-live-aac', name: 'Infowars Live AAC', shortTag: 'Infowars', accentColor: '#EC4899', themeColor: '#3F0F2A', textClass: 'text-pink-400', iconEmoji: '📡', category: 'Talk' },
 ];
 
 export interface StationTheme {

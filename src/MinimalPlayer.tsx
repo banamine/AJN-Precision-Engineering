@@ -103,10 +103,10 @@ function bufferLine(snapshot: BufferGaugeSnapshot, active: boolean): string {
   return snapshot.kbps === null ? base : `${base} · needs ~${(snapshot.kbps / 1000).toFixed(1)} Mbit/s`;
 }
 
-// Session-wide sound choice: once the user unmutes, every later program
-// (including scheduler auto-advance, which remounts this player) stays unmuted
-// until the app is closed or reloaded.
-let sessionUnmuted = false;
+// Session-wide sound choice. Sound is ON by default (cold start is NOT muted).
+// It becomes muted only when the user mutes it, and that choice then holds for every later
+// program (including scheduler auto-advance, which remounts this player) until the app reloads.
+let sessionUnmuted = true;
 
 const PRELUDE_BACKDROP: BackdropSource = {
   kind: "mp4",
@@ -124,8 +124,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const mediaResumeKeyRef = useRef<string | null>(null);
   const playingReportedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  // Autoplay starts muted on every app load. Once the user unmutes, keep that
-  // choice for the rest of this app session; a reload intentionally resets it.
+  // Sound is on at app load. Once the user mutes, keep that choice for the rest
+  // of this app session; a reload intentionally resets it.
   const [isMuted, setIsMuted] = useState(() => !sessionUnmuted);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -418,13 +418,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         if (!media.paused) fx().reportPlaying();
       } catch (error) {
         if ((error as DOMException)?.name === "AbortError") return;
-        // Unmuted autoplay refused (no user gesture yet in this tab): play muted
-        // rather than stall the schedule. The session preference is unchanged.
-        if (!media.muted && (error as DOMException)?.name === 'NotAllowedError') {
-          media.muted = true;
-          setIsMuted(true);
-          try { await media.play(); if (!media.paused) { fx().reportPlaying(); return; } } catch { /* fall through */ }
-        }
         // Autoplay may still be blocked by the browser. Keep the real error
         // available in the console; the normal Play control remains usable.
         console.warn("[AJN PLAYBACK] autoplay blocked", {

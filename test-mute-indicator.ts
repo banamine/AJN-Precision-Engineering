@@ -28,12 +28,12 @@ assert.ok(miniPlayer.includes('data-testid="mute-button"'), 'MiniPlayerDock must
 assert.ok(miniPlayer.includes('mute-indicator-ring'), 'MiniPlayerDock must apply mute-indicator-ring when muted');
 assert.ok(miniPlayer.includes('aria-label={muted ? "Muted — click to unmute" : "Unmuted — click to mute"}'), 'MiniPlayerDock must have accessible aria-label');
 
-// 4. Check MinimalPlayer.tsx starts muted on fresh launch and handles user interaction unmuting
+// 4. Check MinimalPlayer.tsx starts UNMUTED on fresh launch and only mutes on user action
 const mp = readFileSync('src/MinimalPlayer.tsx', 'utf8');
-assert.ok(mp.includes('let sessionUnmuted = false;'), 'MinimalPlayer must initialize sessionUnmuted to false for fresh launch');
+assert.ok(mp.includes('let sessionUnmuted = true;'), 'MinimalPlayer must initialize sessionUnmuted to true: cold start is not muted');
+assert.ok(!mp.includes('play muted'), 'MinimalPlayer must not silently fall back to muted autoplay');
 assert.ok(mp.includes('const [isMuted, setIsMuted] = useState(() => !sessionUnmuted);'), 'MinimalPlayer must initialize isMuted based on !sessionUnmuted');
 assert.ok(mp.includes('volumechange'), 'MinimalPlayer must listen to volumechange to keep indicator matching playback state');
-assert.ok(mp.includes('onUserInteraction'), 'MinimalPlayer must listen for user interaction to unmute playback on launch');
 assert.ok(mp.includes('sessionUnmuted = true;'), 'MinimalPlayer must update sessionUnmuted to true upon unmuting');
 
 // 5. Check usePersistentMedia.ts provides muted state and volumechange tracking

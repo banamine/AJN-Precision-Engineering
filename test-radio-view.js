@@ -106,9 +106,9 @@ try {
   const oldest = await titles();
   check(oldest[0].includes('Sunday Night Live') && oldest[oldest.length - 1].includes('Hour 2'), 'oldest first reverses the order');
   await page.select('.ajr-select select', 'newest');
-  await page.type('.ajr-search input', 'hour 1');
+  await page.type('label.ajr-search:has(input[aria-label="Search episodes by title"]) input', 'hour 1');
   check((await titles()).length === 2, 'title search narrows the list');
-  await domClick('.ajr-search button');
+  await domClick('label.ajr-search:has(input[aria-label="Search episodes by title"]) button');
   check((await titles()).length === 4, 'clearing the search restores the list');
   await clickText('.ajr-tab', 'AJN Exclusive');
   check((await titles()).length === 1, 'AJN Exclusive tab shows the Special');

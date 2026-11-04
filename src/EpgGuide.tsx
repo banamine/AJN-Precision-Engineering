@@ -24,6 +24,8 @@ import { ajnArtFor } from './utils/ajnArt';
 const DEFAULT_VIEW_WIDTH_PX = 960; // used until the real width is measured (and in server-side tests)
 const CHANNEL_COLUMN_WIDTH_PX = 272;
 const ROW_HEIGHT_PX = 68;
+/** Blocks narrower than this show only title + time; the synopsis stays available to screen readers (aria-description) so nothing collapses into "Get up early. Get ah...". */
+export const DESCRIPTION_MIN_BLOCK_PX = 240;
 /** Audio stations get more vertical room so station numbers, thumbnails and track blocks do not touch. */
 export const AUDIO_ROW_HEIGHT_PX = 84;
 
@@ -121,6 +123,7 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
       type="button"
       id={`epg-prog-${channel.id}-${idx}`}
       title={displayProgramTitle}
+      aria-description={program.description && width < DESCRIPTION_MIN_BLOCK_PX ? program.description : undefined}
       aria-label={`${displayProgramTitle}, ${displayChannelName}${aired ? `, ${aired.label}` : ''}`}
       onClick={() => {
         onRequestFullRows?.();
@@ -186,7 +189,7 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
         )}
         <span className="relative z-10 truncate font-semibold text-neutral-100 group-hover:text-white">{displayProgramTitle}</span>
       </span>
-      {program.description && (
+      {program.description && width >= DESCRIPTION_MIN_BLOCK_PX && (
         <span className="relative z-10 truncate text-[10px] text-neutral-400">{program.description}</span>
       )}
       {aired && (
