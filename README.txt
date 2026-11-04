@@ -1,1 +1,1 @@
-test-radio-view.js: the episode-search steps now target the episode search box (aria-label "Search episodes by title") instead of the first .ajr-search, which became the Listen deck search. Test-only change. Drop into repo root, push.
+src/EpgGuide.tsx: program blocks narrower than 240px no longer show the synopsis line (title + time only); the synopsis stays available via aria-description. One-file change. Nothing else touched: window sizing, station column and tests unchanged.
