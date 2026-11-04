@@ -10,7 +10,10 @@ import { safeFetch, readTextCapped, anyPublicHost, PLAYLIST_MAX_BYTES } from './
 export type Health = 'ok' | 'offline' | 'unknown';
 interface Entry { fails: number; lastCheck: number; lastOk?: number; reason?: string; /** Consecutive timeouts: slow is not dead, so they are counted apart from real failures. */ timeouts?: number }
 const state = new Map<string, Entry>();
-export const liveHealthStats = { runs: 0, lastRun: null as string | null, running: false, checked: 0, ok: 0, offline: 0, offlineReasons: {} as Record<string, number>, skippedRun: false };
+/** Identifies this server process: several Cloud Run instances each keep their own health memory. */
+const INSTANCE_ID = Math.random().toString(36).slice(2, 8);
+const STARTED_AT = new Date().toISOString();
+export const liveHealthStats = { instance: INSTANCE_ID, startedAt: STARTED_AT, runs: 0, lastRun: null as string | null, running: false, checked: 0, ok: 0, offline: 0, offlineReasons: {} as Record<string, number>, skippedRun: false };
 
 let fetchImpl: typeof fetch | undefined;
 export function setLiveHealthFetchForTests(f?: typeof fetch) { fetchImpl = f; state.clear(); Object.assign(liveHealthStats, { runs: 0, lastRun: null, running: false, checked: 0, ok: 0, offline: 0, offlineReasons: {}, skippedRun: false }); }
@@ -86,6 +89,15 @@ export async function runHealthCheck(urls: string[], concurrency = 24, full = tr
     liveHealthStats.ok = liveHealthStats.checked - liveHealthStats.offline;
     return { checked: unique.length, ok: unique.length - failed, failed, applied };
   } finally { liveHealthStats.running = false; }
+}
+
+/** Cold-start seed: URLs known offline from a previous verified run (committed file). The instance's own
+ *  full check overwrites each one (ok clears it), so a seed can only hide a channel until the first pass finishes. */
+export function seedKnownOffline(urls: string[]): number {
+  let n = 0;
+  for (const u of urls) if (!state.has(u)) { state.set(u, { fails: OFFLINE_AFTER_FAILS, lastCheck: 0, reason: 'seeded: offline in last verified run' }); n++; }
+  if (n) { liveHealthStats.checked = state.size; liveHealthStats.offline = [...state.values()].filter(isOffline).length; liveHealthStats.ok = liveHealthStats.checked - liveHealthStats.offline; }
+  return n;
 }
 
 /** Failed URLs that are not yet offline (need a confirming second check). */

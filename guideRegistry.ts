@@ -313,7 +313,8 @@ import { ADDITIVE_CLASSIC_CHANNELS, archiveItemPathKey, buildArchiveItemGuideCha
 
 import { getDiscoveryChannels, DISCOVERY_GUIDE_ID } from './server/discoveryChannels';
 import { liveTvContract, LIVE_REFRESH_MS, resetLiveTvLastGoodForTests } from './server/sources/liveTv';
-import { healthOf, runHealthCheck, pendingRechecks, liveHealthStats } from './server/liveHealth';
+import { healthOf, runHealthCheck, pendingRechecks, liveHealthStats, seedKnownOffline } from './server/liveHealth';
+import knownOffline from './server/data/liveTvKnownOffline.json' with { type: 'json' };
 import { getPlutoEpg, plutoIdOf, setPlutoEpgFetchForTests, type EpgSlot } from './server/sources/plutoEpg';
 import { getLiveNewsChannels } from './server/liveNewsChannels';
 import { mergeLiveTvNews } from './server/liveNewsMerge';
@@ -349,6 +350,8 @@ async function refreshLiveTv(guideId:string):Promise<void>{
 let healthTimer:ReturnType<typeof setTimeout>|undefined;
 export let liveHealthAuto=typeof process!=='undefined'&&process.env?.NODE_ENV!=='test'&&process.env?.LIVE_HEALTH!=='off';
 export function setLiveHealthAutoForTests(on:boolean){liveHealthAuto=on;}
+// A cold instance starts with the last verified offline list, so it never serves the unfiltered list while its own first pass runs.
+if(liveHealthAuto)seedKnownOffline((knownOffline as {urls:string[]}).urls);
 function scheduleLiveHealth(data:ScheduleChannel[]){
   if(!liveHealthAuto||liveFetch)return;
   const urls=data.map(ch=>ch.programs[0]?.mediaUrl).filter((u):u is string=>!!u);
@@ -361,7 +364,7 @@ function scheduleLiveHealth(data:ScheduleChannel[]){
       const again=pendingRechecks();
       if(again.length)healthTimer=setTimeout(()=>{void runHealthCheck(again,24,false).then(x=>console.log(`[AJN] live health recheck: ${x.failed}/${x.checked} still failing -> offline`));},3*60_000);
     }catch(e:any){console.warn('[AJN] live health failed:',e?.message);}
-  },30_000);
+  },10_000);
   (healthTimer as any)?.unref?.();
 }
 
