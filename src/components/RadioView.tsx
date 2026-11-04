@@ -10,6 +10,7 @@ import { dayKindLabel, groupShowDays, planFullShow, type FullShowMode, type Show
 import { clearShowQueue, startShowQueue } from '../utils/showQueue';
 import { buildMusicItems, buildPodcastItems, interleaveByShow, loadConcertItems, loadSpokenItems, type ListenItem, type SpokenCatalog } from '../utils/listenCatalog';
 import { ListenBrowser } from './ListenBrowser';
+import { useListenDeck } from '../hooks/useListenDeck';
 import { FullShowStatus } from './FullShowStatus';
 import { RadioPresetsBar } from './RadioPresetsBar';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
@@ -186,45 +187,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
     }));
   };
 
-  const music = useMemo(() => buildMusicItems().items, []);
-  const archivedPodcastEps = useMemo(() => buildPodcastItems(), []);
-  const [spoken, setSpoken] = useState<SpokenCatalog | null>(null);
-  const [spokenError, setSpokenError] = useState<string | null>(null);
-  const spokenAsked = useRef(false);
-  const loadSpoken = useCallback(() => {
-    if (spokenAsked.current) return;
-    spokenAsked.current = true;
-    loadSpokenItems().then(setSpoken).catch((e: unknown) => { spokenAsked.current = false; setSpokenError(e instanceof Error ? e.message : 'could not load the podcast list'); });
-  }, []);
-  const podcastEps = useMemo(() => interleaveByShow([...archivedPodcastEps, ...(spoken?.items ?? [])]), [archivedPodcastEps, spoken]);
-  const [concerts, setConcerts] = useState<ListenItem[] | null>(null);
-  const [concertsError, setConcertsError] = useState<string | null>(null);
-  const concertsAsked = useRef(false);
-  const loadConcerts = useCallback(() => {
-    if (concertsAsked.current) return;
-    concertsAsked.current = true;
-    loadConcertItems().then(setConcerts).catch((e: unknown) => { concertsAsked.current = false; setConcertsError(e instanceof Error ? e.message : 'could not load the concert list'); });
-  }, []);
-  /** Plays every real file of an item in order (one queue); a single file plays on its own. */
-  const playItem = useCallback((item: ListenItem) => {
-    const files = item.tracks();
-    if (files.length === 0) return;
-    if (files.length === 1) {
-      clearShowQueue();
-      onPlayProgram(files[0].src, files[0].title, item.subtitle, 'audio', item.channelId, item.guideId, files[0].programId);
-      return;
-    }
-    const first = startShowQueue({ mode: 'audio', items: files, missingHours: [], singleFile: false, playable: true }, item.title);
-    if (first) onPlayProgram(first.src, first.title, item.title, 'audio', item.channelId, item.guideId, first.programId);
-  }, [onPlayProgram]);
-  const presetFor = useCallback((item: ListenItem) => {
-    const first = item.tracks()[0];
-    return first ? { itemId: item.id, title: item.title, subtitle: item.subtitle, src: first.src, channelId: item.channelId, guideId: item.guideId, programId: first.programId } : null;
-  }, []);
-  const toDeck = useCallback((list: readonly ListenItem[]) => list.map((item) => ({ id: item.id, title: item.title, subtitle: item.subtitle, play: () => playItem(item), preset: presetFor(item) ?? { itemId: item.id, title: item.title, src: '' } })), [playItem, presetFor]);
-  const deckSources = useMemo(() => ({
-    music: toDeck(music), podcasts: toDeck(podcastEps), concerts: concerts ? toDeck(concerts) : null, loadConcerts, concertsError, loadSpoken,
-  }), [music, podcastEps, concerts, concertsError, toDeck, loadConcerts]);
+  const { music, podcastEps, spoken, spokenError, loadSpoken, concerts, concertsError, loadConcerts, playItem, presetFor, deckSources } = useListenDeck(onPlayProgram);
 
   const show = showChips(entries);
   const type = typeChips(entries);

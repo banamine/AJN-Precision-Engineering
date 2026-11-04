@@ -9,6 +9,7 @@ import { readRecentStations, recordRecentStation, type RecentStation } from '../
 import { LiveRadioDirectory, type LiveRadioItem } from './LiveRadioDirectory';
 import { RadioPresetsBar } from './RadioPresetsBar';
 import { RadioStationGroup } from './RadioStationGroup';
+import { useListenDeck } from '../hooks/useListenDeck';
 import { useStationTheme } from '../utils/stationArt';
 import { stationGradient } from '../utils/radioAccents';
 
@@ -95,6 +96,8 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
   const station = isStation(nowPlaying) ? nowPlaying : null;
   const media = usePersistentMedia('audio', station ? `${station.src}|audio` : undefined, Boolean(station));
   const live = Boolean(station) && media.attached && !media.paused;
+  const anyMedia = usePersistentMedia(nowPlaying?.mediaType, nowPlaying ? `${nowPlaying.src}|${nowPlaying.mediaType}` : undefined, Boolean(nowPlaying));
+  const listen = useListenDeck(onPlay, everOpened); // Archive Music / Concerts / Podcasts lists for the deck tabs; built only once the drawer has been opened
   const theme = useStationTheme(station?.channelId, station?.title); // the playing station's colours, or null
   const art = station && tuned && tuned.id === station.channelId ? tuned : null;
   const nowLogo = art?.logo ?? (station && presetTuned && presetTuned.id === station.channelId ? presetTuned.logo : undefined);
@@ -275,7 +278,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
 
         {/* One scrolling body under the title bar and Now playing row: on a short window the presets, station group and directory scroll together instead of squeezing the directory to nothing or scrolling the title bar out of view. */}
         <div data-testid="radio-dock-body" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <RadioPresetsBar station={station} wide={full} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
+          <RadioPresetsBar deckSources={listen.deckSources} nowPlaying={nowPlaying} playingNow={anyMedia.attached && !anyMedia.paused} station={station} wide={full} info={art ? { number: art.number, logo: art.logo, corsVerified: art.corsVerified } : null} live={live} onPlay={onPlay}
             onPresetTuned={(id, logo) => setPresetTuned({ id, logo })} />
 
           <RadioStationGroup onPlay={onPlay} onTuned={setTuned} activeId={station?.channelId} />

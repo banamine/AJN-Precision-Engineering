@@ -38,6 +38,8 @@ export interface DeckSources {
   loadConcerts?: () => void;
   loadSpoken?: () => void;
   concertsError?: string | null;
+  /** Podcasts: a one-line status (loading more / list unavailable / N feeds unreadable). */
+  podcastsNote?: string;
 }
 
 interface RadioPresetsBarProps {
@@ -70,6 +72,41 @@ function initialsOf(name: string): string {
   const first = letters[0] ?? '?';
   return (first.length >= 2 ? first.slice(0, 2) : first + (letters[1]?.[0] ?? '')).toUpperCase();
 }
+/** Pick-from-the-list panel for Archive Music, Live Concerts and Podcasts (Live Radio has its own station picker). Search narrows the list; a tap plays. */
+function DeckPicker({ label, items, note, playingItem, onPick }: { label: string; items: DeckItem[]; note?: string; playingItem: (it: DeckItem) => boolean; onPick: (it: DeckItem) => void }): ReactElement {
+  const [q, setQ] = useState('');
+  const needle = q.trim().toLowerCase();
+  const hits = needle ? items.filter((it) => `${it.title} ${it.subtitle ?? ''}`.toLowerCase().includes(needle)) : items;
+  const MAX = 60;
+  return (
+    <div data-testid="radio-deck-picker" className="relative mt-4 rounded-2xl border border-white/15 bg-black/30 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-300">Choose from {label}</span>
+        <span className="text-[11px] text-neutral-400">{items.length ? `${needle ? `${hits.length} of ` : ''}${items.length}` : ''}</span>
+      </div>
+      <input data-testid="radio-deck-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${label.toLowerCase()}`} aria-label={`Search ${label}`}
+        className="mt-2 min-h-[40px] w-full rounded-lg border border-white/20 bg-black/40 px-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]" />
+      {note ? <p className="mt-2 text-xs text-orange-200">{note}</p> : null}
+      <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto overscroll-contain pr-1" aria-label={`${label} list`}>
+        {hits.slice(0, MAX).map((it) => {
+          const on = playingItem(it);
+          return (
+            <li key={it.id}>
+              <button type="button" data-testid="radio-deck-pick" aria-current={on ? 'true' : undefined} onClick={() => onPick(it)}
+                className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-left touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${on ? 'border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border-white/10 bg-white/5 text-neutral-100 hover:border-[#E06D3B]/60'}`}>
+                <span aria-hidden="true" className={`text-xs ${on ? 'text-[#F9A56D]' : 'text-neutral-500'}`}>{on ? '▶' : '•'}</span>
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{it.title}</span>{it.subtitle ? <span className="block truncate text-[11px] text-neutral-400">{it.subtitle}</span> : null}</span>
+              </button>
+            </li>
+          );
+        })}
+        {!hits.length ? <li className="px-1 py-3 text-xs text-neutral-400">{items.length ? 'Nothing matches that search.' : (note ?? 'Nothing loaded yet.')}</li> : null}
+        {hits.length > MAX ? <li className="px-1 py-2 text-[11px] text-neutral-400">Showing the first {MAX} of {hits.length}. Type in the search box to narrow.</li> : null}
+      </ul>
+    </div>
+  );
+}
+
 /** The head unit switches to one column whenever ITS OWN box is narrower than 640 px (the desktop dock drawer is ~430 px wide even on a wide screen, so a viewport breakpoint squeezes it). */
 const narrowObservers = new WeakMap<Element, ResizeObserver>();
 function observeNarrow(el: HTMLElement | null): void {
@@ -520,6 +557,11 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             </div>
           );
         })()}
+        {mode !== 'live' && (
+          <DeckPicker label={bankLabel} items={modeItems} playingItem={playingItem}
+            note={audioBank === 'concerts' ? (deckSources?.concertsError ?? (!deckSources?.concerts ? 'Loading concerts…' : undefined)) : audioBank === 'podcasts' ? deckSources?.podcastsNote : undefined}
+            onPick={(it) => { it.play(); setKnobAngle((a) => a + 36); say(`Playing ${it.title}`); }} />
+        )}
         <div className="relative mt-3 flex justify-end">
           <button type="button" data-testid="radio-view-wall" onClick={() => setView('wall')} className="cursor-pointer rounded-md px-2 py-1 text-[11px] text-neutral-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">Show wall view</button>
         </div>
