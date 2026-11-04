@@ -756,7 +756,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
 
   if (isAudioPage) {
     return (
-      <div className="space-y-4">
+      <div data-testid="player-audio-page" className="h-full min-h-0 space-y-4 overflow-y-auto overscroll-contain pb-24">
         {playerMetadata}
         <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
         {playbackFailure}

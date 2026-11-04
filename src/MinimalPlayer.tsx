@@ -22,7 +22,7 @@ import { PreludeBackdropVideo, type BackdropSource } from "./components/PreludeB
 import { useFolderArt } from "./utils/useFolderArt";
 import { usePersistentFlag } from "./utils/persistentFlag";
 import { useFrameCapture } from "./utils/useFrameCapture";
-import { archiveIdentifierFromPath } from "./utils/thumbnail";
+import { archiveIdentifierFromPath, archiveItemArtFor } from "./utils/thumbnail";
 import { isLiveRadioPlayback } from "./utils/isLiveRadioPlayback";
 import { RadioBriefingPlayerOverlay } from "./components/RadioBriefingPlayerOverlay";
 import { attachArchiveVideoPrefetch, type VideoPrefetchTarget } from "./utils/videoPrefetch";
@@ -174,7 +174,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const audioHostRef = useRef<HTMLDivElement>(null);
   const [repeatOne, setRepeatOne] = useState(false);
   const folderArt = useFolderArt(nowPlaying?.archivePath, mediaType !== "video");
-  const artUrl = folderArt[0]?.url ?? nowPlaying?.thumbnailUrl;
+  // Cover order: folder art, the item's own thumbnail, then the Archive item's cover (audio only). A cover that fails to load is dropped, so the placeholder shows instead of a broken image.
+  const itemArt = useMemo(() => (mediaType === "video" ? null : archiveItemArtFor(nowPlaying?.archivePath ?? activeSrc)), [mediaType, nowPlaying?.archivePath, activeSrc]);
+  const [failedArt, setFailedArt] = useState<string | null>(null);
+  const artCandidate = folderArt[0]?.url ?? nowPlaying?.thumbnailUrl ?? itemArt ?? undefined;
+  const artUrl = artCandidate && artCandidate !== failedArt ? artCandidate : undefined;
   const archiveTrack = useMemo(
     () => cleanArchiveMusicFilename(nowPlaying?.archivePath ?? activeSrc),
     [nowPlaying?.archivePath, activeSrc],
@@ -1214,7 +1218,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
               <div className="relative z-[2] mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8">
                 <div data-testid="audio-art" className="relative flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900 shadow-[0_0_45px_rgba(34,211,238,0.24)] ring-2 ring-cyan-200/70 sm:h-52 sm:w-52">
                   {artUrl
-                    ? <img src={artUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" />
+                    ? <img src={artUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" onError={() => setFailedArt(artUrl)} />
                     : <span aria-label="Archive music artwork unavailable" role="img" className="text-6xl text-cyan-200/40">♫</span>}
                   <MiniEqVisualizer analyser={analyserNode} analyzerState={analyzerState} isPlaying={isPlaying} enabled={miniEqOn} hasImage={Boolean(artUrl)} />
                 </div>
@@ -1320,6 +1324,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         diagnosticsOpen={diagnosticsOpen}
         onToggleDiagnostics={() => setDiagnosticsOpen((v) => !v)}
         thumbnailUrl={radioBriefingOn ? undefined : artUrl}
+        onThumbnailError={() => setFailedArt(artUrl ?? null)}
         onPrev={onPrev}
         onNext={onNext}
         repeatOne={repeatOne}

@@ -57,6 +57,7 @@ interface PlayerChromeProps {
   onToggleDiagnostics: () => void;
   /** Audio bar only. */
   thumbnailUrl?: string;
+  onThumbnailError?: () => void;
   onPrev?: () => void;
   onNext?: () => void;
   repeatOne?: boolean;
@@ -292,7 +293,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
         {/* left: thumbnail + title/artist */}
         <div className="flex min-w-0 items-center gap-3">
           {p.thumbnailUrl
-            ? <img src={p.thumbnailUrl} alt="" data-testid="audio-bar-thumb" className="h-11 w-11 shrink-0 rounded-md object-cover ring-1 ring-white/10" />
+            ? <img src={p.thumbnailUrl} alt="" onError={p.onThumbnailError} data-testid="audio-bar-thumb" className="h-11 w-11 shrink-0 rounded-md object-cover ring-1 ring-white/10" />
             : <div aria-hidden="true" data-testid="audio-bar-placeholder" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-neutral-800 text-sm font-bold text-neutral-300 ring-1 ring-white/10">{(p.title || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() || "♪"}</div>}
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold text-neutral-100" data-testid="audio-bar-title">{p.title || "Untitled"}</div>

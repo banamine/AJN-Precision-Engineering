@@ -60,6 +60,13 @@ const encodePath = (p: string) => p.split('/').map(encodeURIComponent).join('/')
 export function archiveItemImageUrl(identifier: string): string { return `${ARCHIVE_IMG_BASE}${encodeURIComponent(identifier)}`; }
 export function archiveFrameUrl(identifier: string, frameFile: string): string { return `${DOWNLOAD_BASE}${encodeURIComponent(identifier)}/${encodePath(frameFile)}`; }
 
+/** The Archive item's own cover for any reference that carries an identifier (/download/<id>/..., archive.org URL, proxy path).
+ *  Null when there is no identifier, or the item is known to have no real cover (musicNoArt.json): never a guess. */
+export function archiveItemArtFor(ref?: string | null): string | null {
+  const id = archiveIdentifierFromPath(ref);
+  return id && !NO_ART.has(id) ? archiveItemImageUrl(id) : null;
+}
+
 /** Small local images shipped in public/thumbs (192x105 JPEG, about 9 KB each). */
 export function backupThumb(i: Pick<ThumbInput, 'guideId' | 'category' | 'mediaType' | 'channelId'> = {}): string {
   const ch = String(i.channelId ?? '').toLowerCase();

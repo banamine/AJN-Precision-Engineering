@@ -70,6 +70,17 @@ function initialsOf(name: string): string {
   const first = letters[0] ?? '?';
   return (first.length >= 2 ? first.slice(0, 2) : first + (letters[1]?.[0] ?? '')).toUpperCase();
 }
+/** The head unit switches to one column whenever ITS OWN box is narrower than 640 px (the desktop dock drawer is ~430 px wide even on a wide screen, so a viewport breakpoint squeezes it). */
+const narrowObservers = new WeakMap<Element, ResizeObserver>();
+function observeNarrow(el: HTMLElement | null): void {
+  if (!el || narrowObservers.has(el)) return;
+  const apply = (): void => { el.dataset.narrow = el.clientWidth < 640 ? '1' : '0'; };
+  apply();
+  if (typeof ResizeObserver === 'undefined') return;
+  const ro = new ResizeObserver(apply);
+  ro.observe(el);
+  narrowObservers.set(el, ro);
+}
 function tileColor(id: string, name?: string): string {
   return getStationTheme(id, name).color;
 }
@@ -304,10 +315,11 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const nowLogo = playing ? (info?.logo ?? getStationArt(playing.channelId)) : undefined;
           const accent = nowTheme?.accentColor ?? '#E06D3B';
           const curItem = mode === 'live' ? undefined : modeItems.find((x) => playingItem(x));
-          const lampOn = mode === 'live' ? live : Boolean(playingNow && curItem);
+          const lampOn = mode === 'live' ? (live || Boolean(playingNow && nowPlaying?.title)) : Boolean(playingNow && curItem);
           const loadingConcerts = audioBank === 'concerts' && !deckSources?.concerts && !deckSources?.concertsError;
-          const line2 = mode === 'live' ? (preview ?? playing?.title ?? 'No station') : (preview ?? curItem?.title ?? (loadingConcerts ? 'Loading concerts…' : modeItems.length ? `${bankLabel}` : (deckSources?.concertsError && audioBank === 'concerts' ? 'Concerts unavailable' : 'Nothing loaded')));
-          const line3 = mode === 'live' ? (preview ? '' : (playing?.subtitle ?? (playing ? '' : 'Pick a station or press a preset'))) : (deckSources?.concertsError && audioBank === 'concerts' && !modeItems.length ? deckSources.concertsError : curItem?.subtitle ?? `${modeItems.length} to choose from · keys are your saved ${bankLabel.toLowerCase()}`);
+          const line2 = mode === 'live' ? (preview ?? playing?.title ?? (playingNow ? nowPlaying?.title : undefined) ?? 'No station') : (preview ?? curItem?.title ?? (loadingConcerts ? 'Loading concerts…' : modeItems.length ? `${bankLabel}` : (deckSources?.concertsError && audioBank === 'concerts' ? 'Concerts unavailable' : 'Nothing loaded')));
+          const line3Base = mode === 'live' ? (preview ? '' : (playing?.subtitle ?? (playing ? '' : (playingNow && nowPlaying?.title ? 'Not a live station. Pick one below or press a preset' : 'Pick a station or press a preset')))) : (deckSources?.concertsError && audioBank === 'concerts' && !modeItems.length ? deckSources.concertsError : curItem?.subtitle ?? `${modeItems.length} to choose from · keys are your saved ${bankLabel.toLowerCase()}`);
+          const line3 = status || line3Base;
           const glassKey = 'relative flex h-16 min-w-0 flex-1 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
           const keyBg = { background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.45)' } as const;
           const modeBtn = (label: string, key: 'live' | 'archive' | 'podcasts') => {
@@ -320,7 +332,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           };
           const volAngle = -135 + vol * 270;
           return (
-            <div className="relative grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[minmax(0,1fr)_270px] md:gap-x-8">
+            <div ref={observeNarrow} data-testid="radio-head-unit-grid" className="relative grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[minmax(0,1fr)_270px] md:gap-x-8">
               <div className="space-y-4 md:col-start-1 md:row-start-1">
                 <div data-testid="radio-head-unit-lcd" className="flex min-h-[112px] items-stretch gap-3 rounded-2xl p-4"
                   style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
@@ -328,7 +340,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                     <div className="flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-300">
                       <span className="min-w-0 truncate">AJN-1 · {mode === 'live' ? (bank === 'presets' ? 'My presets' : 'Recent') : browse ? `${bankLabel} · browse` : `${bankLabel} · my keys`}</span>
                       <span data-testid="radio-head-unit-lamp" className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-black tracking-wider ${lampOn ? 'border-red-400/70 bg-red-500/15 text-red-200' : 'border-white/20 bg-white/5 text-neutral-300'}`} style={lampOn ? { boxShadow: '0 0 14px rgba(239,68,68,0.55)' } : undefined}>
-                        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${lampOn ? 'bg-red-400 animate-pulse motion-reduce:animate-none' : 'bg-neutral-500'}`} />{mode === 'live' ? (live ? 'ON AIR' : 'OFF AIR') : (lampOn ? 'PLAYING' : 'STOPPED')}
+                        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${lampOn ? 'bg-red-400 animate-pulse motion-reduce:animate-none' : 'bg-neutral-500'}`} />{mode === 'live' ? (live ? 'ON AIR' : (playingNow && nowPlaying?.title ? 'PLAYING' : 'OFF AIR')) : (lampOn ? 'PLAYING' : 'STOPPED')}
                       </span>
                     </div>
                     <p className="truncate text-2xl font-semibold leading-tight text-white sm:text-[28px]">{line2}</p>
@@ -611,7 +623,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
       </div>
       )}
       <p data-testid="radio-presets-status" role="status" aria-live="polite" className={`px-3 pb-2 text-[11px] text-orange-200 ${status ? '' : 'sr-only'}`}>{status || 'Radio presets. Tap to tune; press and hold to save the playing station.'}</p>
-      <style>{`@keyframes ajnPresetFill{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}@media (prefers-reduced-motion:reduce){[data-testid="radio-preset-hold"]{animation:none!important}}`}</style>
+      <style>{`[data-narrow="1"]{grid-template-columns:minmax(0,1fr)!important}[data-narrow="1"]>*{grid-column:1!important;grid-row:auto!important}[data-testid^="radio-"]:focus-visible{outline:2px solid #F97316!important;outline-offset:3px}@keyframes ajnPresetFill{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}@media (prefers-reduced-motion:reduce){[data-testid="radio-preset-hold"]{animation:none!important}}`}</style>
       {menu !== null && (
         <div ref={menuRef} role="menu" aria-label={`Preset ${menu} options`} data-testid="radio-preset-menu"
           className="absolute left-3 top-full z-[5] w-56 overflow-hidden rounded-xl border border-red-700/70 bg-neutral-950 text-neutral-100 shadow-2xl">
