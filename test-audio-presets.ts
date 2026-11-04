@@ -69,3 +69,28 @@ console.log('[audio-presets+listen-catalog] PASS');
   assert.equal(mixed.length, 8);
   console.log('[interleaveByShow] PASS');
 }
+
+// Freshness: publish dates come only from real feed episodes, newest first, honest relative labels
+{
+  const { buildSpokenItems, orderPodcasts, freshness } = await import('./src/utils/listenCatalog.ts');
+  const NOW = Date.parse('2026-11-03T20:00:00');           // local time
+  const ago = (ms: number) => new Date(NOW - ms).toISOString();
+  const pr = (id: string, pub: string | undefined, extra: object = {}) => ({ id, title: id, mediaUrl: `https://x/${id}.mp3`, metadata: { airedUtc: pub, podcast: true, ...extra } });
+  const cat = buildSpokenItems([
+    { id: 'a', name: 'Show A', group: 'Podcast', programs: [pr('a-old', ago(5 * 86400000)), pr('a-new', ago(3600000))] },
+    { id: 'b', name: 'Show B', group: 'Podcast', programs: [pr('b-mid', ago(30 * 3600000)), pr('b-arch', undefined, { backCatalog: true })] },
+    { id: 'c', name: 'Talk', group: 'Talk Radio', programs: [{ id: 'c1', title: 'c1', mediaUrl: 'https://x/c1.mp3', metadata: { airedUtc: ago(0) } }] },
+  ] as any);
+  const by = (id: string) => cat.items.find((i) => i.id === `spoken-${id}`)!;
+  assert.ok(by('a-new').publishedAt && by('b-mid').publishedAt);
+  assert.equal(by('b-arch').publishedAt, undefined, 'Archive back-catalog has no publish date');
+  assert.equal(by('c1').publishedAt, undefined, 'talk radio slot times are not publish dates');
+  const ordered = orderPodcasts(cat.items).map((i) => i.title);
+  assert.deepEqual(ordered.slice(0, 3), ['a-new', 'b-mid', 'a-old'], 'newest published first across shows');
+  assert.ok(ordered.indexOf('b-arch') > 2 && ordered.indexOf('c1') > 2, 'undated items follow the dated ones');
+  assert.deepEqual(freshness(NOW - 3600000, NOW), { today: true, age: '1 h ago' });
+  assert.deepEqual(freshness(NOW - 30 * 3600000, NOW), { today: false, age: 'yesterday' });
+  assert.deepEqual(freshness(NOW - 5 * 86400000, NOW), { today: false, age: '5 days ago' });
+  assert.equal(freshness(undefined, NOW), null);
+  console.log('[freshness] PASS');
+}

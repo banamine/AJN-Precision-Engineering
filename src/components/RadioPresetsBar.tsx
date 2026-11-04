@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
 import { Search } from 'lucide-react';
+import { FreshnessTag } from './FreshnessTag';
+import { freshness } from '../utils/listenCatalog';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import {
@@ -29,7 +31,7 @@ export function readPresetView(storage?: { getItem(key: string): string | null }
 /** What the dock knows about the station that is playing right now (the directory record, when the station was picked there). */
 export interface PresetSourceInfo { number?: number; logo?: string; corsVerified?: boolean }
 
-export interface DeckItem { id: string; title: string; subtitle?: string; play: () => void; /** What a preset key stores for this item. */ preset: AudioPresetInput }
+export interface DeckItem { id: string; title: string; subtitle?: string; /** Publish time (epoch ms) of a dated podcast episode. */ publishedAt?: number; play: () => void; /** What a preset key stores for this item. */ preset: AudioPresetInput }
 export interface DeckSources {
   music: DeckItem[];
   /** null until the concert catalog has loaded (it is fetched on demand). */
@@ -78,6 +80,11 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
   const needle = q.trim().toLowerCase();
   const hits = needle ? items.filter((it) => `${it.title} ${it.subtitle ?? ''}`.toLowerCase().includes(needle)) : items;
   const MAX = 60;
+  const playingOne = items.find(playingItem);
+  const listRef = useRef<HTMLUListElement>(null);
+  // Show exactly which card is loaded: keep it in the list even beyond the first page, and scroll it into view.
+  const shown = (() => { const head = hits.slice(0, MAX); return playingOne && hits.includes(playingOne) && !head.includes(playingOne) ? [playingOne, ...head] : head; })();
+  useEffect(() => { listRef.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' }); }, [playingOne?.id]);
   return (
     <div data-testid="radio-deck-picker" className="relative mt-4 rounded-2xl border border-white/15 bg-black/30 p-3">
       <div className="flex items-center justify-between gap-2">
@@ -87,8 +94,8 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
       <input data-testid="radio-deck-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${label.toLowerCase()}`} aria-label={`Search ${label}`}
         className="mt-2 min-h-[40px] w-full rounded-lg border border-white/20 bg-black/40 px-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]" />
       {note ? <p className="mt-2 text-xs text-orange-200">{note}</p> : null}
-      <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto overscroll-contain pr-1" aria-label={`${label} list`}>
-        {hits.slice(0, MAX).map((it) => {
+      <ul ref={listRef} className="mt-2 max-h-64 space-y-1 overflow-y-auto overscroll-contain pr-1" aria-label={`${label} list`}>
+        {shown.map((it) => {
           const on = playingItem(it);
           return (
             <li key={it.id}>
@@ -96,6 +103,7 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
                 className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-left touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${on ? 'border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border-white/10 bg-white/5 text-neutral-100 hover:border-[#E06D3B]/60'}`}>
                 <span aria-hidden="true" className={`text-xs ${on ? 'text-[#F9A56D]' : 'text-neutral-500'}`}>{on ? '▶' : '•'}</span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{it.title}</span>{it.subtitle ? <span className="block truncate text-[11px] text-neutral-400">{it.subtitle}</span> : null}</span>
+                <FreshnessTag publishedAt={it.publishedAt} />
               </button>
             </li>
           );
@@ -355,7 +363,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const lampOn = mode === 'live' ? (live || Boolean(playingNow && nowPlaying?.title)) : Boolean(playingNow && curItem);
           const loadingConcerts = audioBank === 'concerts' && !deckSources?.concerts && !deckSources?.concertsError;
           const line2 = mode === 'live' ? (preview ?? playing?.title ?? (playingNow ? nowPlaying?.title : undefined) ?? 'No station') : (preview ?? curItem?.title ?? (loadingConcerts ? 'Loading concerts…' : modeItems.length ? `${bankLabel}` : (deckSources?.concertsError && audioBank === 'concerts' ? 'Concerts unavailable' : 'Nothing loaded')));
-          const line3Base = mode === 'live' ? (preview ? '' : (playing?.subtitle ?? (playing ? '' : (playingNow && nowPlaying?.title ? 'Not a live station. Pick one below or press a preset' : 'Pick a station or press a preset')))) : (deckSources?.concertsError && audioBank === 'concerts' && !modeItems.length ? deckSources.concertsError : curItem?.subtitle ?? `${modeItems.length} to choose from · keys are your saved ${bankLabel.toLowerCase()}`);
+          const line3Base = mode === 'live' ? (preview ? '' : (playing?.subtitle ?? (playing ? '' : (playingNow && nowPlaying?.title ? 'Not a live station. Pick one below or press a preset' : 'Pick a station or press a preset')))) : (deckSources?.concertsError && audioBank === 'concerts' && !modeItems.length ? deckSources.concertsError : (curItem?.subtitle ? `${curItem.subtitle}${freshness(curItem.publishedAt) ? ` · published ${freshness(curItem.publishedAt)!.age}` : ''}` : undefined) ?? `${modeItems.length} to choose from · keys are your saved ${bankLabel.toLowerCase()}`);
           const line3 = status || line3Base;
           const glassKey = 'relative flex h-16 min-w-0 flex-1 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
           const keyBg = { background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.45)' } as const;

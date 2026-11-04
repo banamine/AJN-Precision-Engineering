@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { PlayProgramCallback } from '../types';
 import { clearShowQueue, startShowQueue } from '../utils/showQueue';
-import { buildMusicItems, buildPodcastItems, interleaveByShow, loadConcertItems, loadSpokenItems, type ListenItem, type SpokenCatalog } from '../utils/listenCatalog';
+import { buildMusicItems, buildPodcastItems, orderPodcasts, loadConcertItems, loadSpokenItems, type ListenItem, type SpokenCatalog } from '../utils/listenCatalog';
 
 /** The Listen lists (Archive Music, Live Concerts, Podcasts) and the play/preset adapters the radio deck needs.
  *  Shared by the Radio page and the RADIO drawer so both can pick from the same real lists. `enabled=false` builds nothing (the drawer has not been opened yet). */
@@ -16,7 +16,7 @@ export function useListenDeck(onPlayProgram: PlayProgramCallback, enabled = true
     spokenAsked.current = true;
     loadSpokenItems().then(setSpoken).catch((e: unknown) => { spokenAsked.current = false; setSpokenError(e instanceof Error ? e.message : 'could not load the podcast list'); });
   }, []);
-  const podcastEps = useMemo(() => interleaveByShow([...archivedPodcastEps, ...(spoken?.items ?? [])]), [archivedPodcastEps, spoken]);
+  const podcastEps = useMemo(() => orderPodcasts([...archivedPodcastEps, ...(spoken?.items ?? [])]), [archivedPodcastEps, spoken]);
   const [concerts, setConcerts] = useState<ListenItem[] | null>(null);
   const [concertsError, setConcertsError] = useState<string | null>(null);
   const concertsAsked = useRef(false);
@@ -41,7 +41,7 @@ export function useListenDeck(onPlayProgram: PlayProgramCallback, enabled = true
     const first = item.tracks()[0];
     return first ? { itemId: item.id, title: item.title, subtitle: item.subtitle, src: first.src, channelId: item.channelId, guideId: item.guideId, programId: first.programId } : null;
   }, []);
-  const toDeck = useCallback((list: readonly ListenItem[]) => list.map((item) => ({ id: item.id, title: item.title, subtitle: item.subtitle, play: () => playItem(item), preset: presetFor(item) ?? { itemId: item.id, title: item.title, src: '' } })), [playItem, presetFor]);
+  const toDeck = useCallback((list: readonly ListenItem[]) => list.map((item) => ({ id: item.id, title: item.title, subtitle: item.subtitle, publishedAt: item.publishedAt, play: () => playItem(item), preset: presetFor(item) ?? { itemId: item.id, title: item.title, src: '' } })), [playItem, presetFor]);
   const podcastsNote = spokenError ? `Podcast list unavailable: ${spokenError}` : !spoken ? (enabled ? 'Loading more podcasts…' : undefined)
     : spoken.feedsDown.length ? `${spoken.feedsDown.length} podcast feed${spoken.feedsDown.length === 1 ? '' : 's'} could not be read by the server` : undefined;
   const deckSources = useMemo(() => ({

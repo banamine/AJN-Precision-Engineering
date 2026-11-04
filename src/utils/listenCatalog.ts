@@ -20,6 +20,8 @@ export interface ListenItem {
   /** The real files, in play order, as archive paths (/download/<item>/<file>). Empty = nothing playable. */
   tracks: () => PlanItem[];
   trackCount: number;
+  /** When the episode was PUBLISHED (epoch ms, parsed on the server from the feed's pubDate). Only set for dated podcast episodes; never invented. */
+  publishedAt?: number;
 }
 
 const MAX_TRACKS = 300;
@@ -90,7 +92,7 @@ export function filterListenItems(items: readonly ListenItem[], query: string, g
 }
 export const listenGenres = (items: readonly ListenItem[]): string[] => [...new Set(items.map((i) => i.genre))].sort((a, b) => a.localeCompare(b));
 
-interface SpokenProgram { id: string; title: string; mediaUrl?: string; description?: string }
+interface SpokenProgram { id: string; title: string; mediaUrl?: string; description?: string; metadata?: { airedUtc?: string; podcast?: boolean; backCatalog?: boolean } }
 interface SpokenChannel { id: string; name: string; group?: string; sourceStatus?: string; sourceError?: string; programs?: SpokenProgram[] }
 const SPOKEN_GROUPS = new Set(['Podcast', 'Talk Radio', 'Old-Time Radio']);
 export interface SpokenCatalog { items: ListenItem[]; feedsDown: { name: string; reason: string }[] }
@@ -105,7 +107,10 @@ export function buildSpokenItems(channels: readonly SpokenChannel[]): SpokenCata
     if (ch.group === 'Podcast' && progs.length === 0) { feedsDown.push({ name: ch.name, reason: ch.sourceError ?? ch.sourceStatus ?? 'no episodes' }); continue; }
     for (const pr of progs) {
       const id = `spoken-${pr.id}`;
+      // Only a real feed episode carries a publish date. Talk-radio / old-time-radio rows and Archive back-catalog have none (their slot times are not air dates).
+      const pub = ch.group === 'Podcast' && pr.metadata?.podcast && !pr.metadata?.backCatalog ? Date.parse(pr.metadata?.airedUtc ?? '') : NaN;
       items.push({ id, bank: 'podcasts', title: pr.title, subtitle: ch.name, genre: ch.group, channelId: ch.id, guideId: 'audio-podcasts', trackCount: 1,
+        ...(Number.isFinite(pub) && pub > Date.UTC(2000, 0, 1) ? { publishedAt: pub } : {}),
         tracks: () => [{ src: pr.mediaUrl as string, mediaType: 'audio' as const, programId: pr.id, title: pr.title, partNo: 1, totalParts: 1 }] });
     }
   }
@@ -128,4 +133,26 @@ export function interleaveByShow(items: ListenItem[]): ListenItem[] {
   const out: ListenItem[] = [];
   for (let i = 0; out.length < items.length; i++) for (const l of lists) if (i < l.length) out.push(l[i]);
   return out;
+}
+
+/** Newest published episode first across every show (index 0 is the newest release); items with no publish date follow, taking turns by show. */
+export function orderPodcasts(items: ListenItem[]): ListenItem[] {
+  const dated = items.filter((i) => typeof i.publishedAt === 'number').sort((a, b) => (b.publishedAt as number) - (a.publishedAt as number));
+  return [...dated, ...interleaveByShow(items.filter((i) => typeof i.publishedAt !== 'number'))];
+}
+
+export interface Freshness { today: boolean; age: string }
+/** "Today" is the listener's own calendar day. `age` is a relative label such as "2 h ago", "yesterday", "4 days ago". */
+export function freshness(publishedAt: number | undefined, now: number = Date.now()): Freshness | null {
+  if (typeof publishedAt !== 'number' || !Number.isFinite(publishedAt)) return null;
+  const d = new Date(publishedAt), n = new Date(now);
+  const today = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  const mins = Math.max(0, Math.round((now - publishedAt) / 60000));
+  if (mins < 60) return { today, age: `${mins} min ago` };
+  if (mins < 24 * 60) return { today, age: `${Math.round(mins / 60)} h ago` };
+  const midnight = (x: Date): number => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((midnight(n) - midnight(d)) / 86_400_000);
+  if (days <= 1) return { today, age: 'yesterday' };
+  if (days < 30) return { today, age: `${days} days ago` };
+  return { today, age: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) };
 }

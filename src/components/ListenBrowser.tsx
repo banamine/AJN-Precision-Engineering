@@ -1,3 +1,4 @@
+import { FreshnessTag } from './FreshnessTag';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Play, Search, X } from 'lucide-react';
 import { filterListenItems, listenGenres, type ListenItem } from '../utils/listenCatalog';
@@ -82,7 +83,7 @@ export function ListenBrowser({ music, concerts, podcasts, concertsError, loadCo
               <button type="button" aria-label={`Play ${item.title}`} data-testid="listen-play" onClick={() => onPlay(item)} className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-[#E06D3B] text-[#0F1117] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"><Play size={16} fill="currentColor" /></button>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-white">{item.title}</div>
-                <div className="truncate text-xs text-neutral-400">{item.subtitle}{saved.length ? ` · on key ${saved.join(', ')}` : ''}</div>
+                <div className="flex items-center gap-2 text-xs text-neutral-400"><span className="min-w-0 truncate">{item.subtitle}{saved.length ? ` · on key ${saved.join(', ')}` : ''}</span><FreshnessTag publishedAt={item.publishedAt} /></div>
               </div>
               <div className="flex items-center gap-1" role="group" aria-label={`Save ${item.title} to a key`}>
                 <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Save to key</span>
