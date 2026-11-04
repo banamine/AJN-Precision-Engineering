@@ -274,8 +274,12 @@ app.get('/api/schedule',async(req,res)=>{
    return res.status(400).json({error:'now must be a UTC ISO date at or after 2026-01-01',channels:[]});
   }
  }
+ // Reject malformed audio light requests before loading the potentially expensive schedule cache.
+ if(req.query.light==='1'&&guideId==='audio-podcasts'&&localHourAt(Date.now(),req.query.tz)===null){
+  return res.status(400).json({error:'tz must be Date#getTimezoneOffset() in minutes'});
+ }
  try{
-  // The Classic guide is ~15 MB of JSON; Cloud Run does not compress, so gzip here (browsers always send Accept-Encoding: gzip).
+   // Full schedules can exceed 28 MiB; force gzip before Cloud Run's 32 MiB HTTP/1 response ceiling.
   // Optional ?channel=<id>: only that channel (the player needs just its own list to pick the next program; the whole guide can be tens of MB).
   const requestedChannel=typeof req.query.channel==='string'&&req.query.channel?req.query.channel:null;
   const only=guideId==='movies-classics-vault'&&requestedChannel
