@@ -176,9 +176,10 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const folderArt = useFolderArt(nowPlaying?.archivePath, mediaType !== "video");
   // Cover order: folder art, the item's own thumbnail, then the Archive item's cover (audio only). A cover that fails to load is dropped, so the placeholder shows instead of a broken image.
   const itemArt = useMemo(() => (mediaType === "video" ? null : archiveItemArtFor(nowPlaying?.archivePath ?? activeSrc)), [mediaType, nowPlaying?.archivePath, activeSrc]);
-  const [failedArt, setFailedArt] = useState<string | null>(null);
-  const artCandidate = folderArt[0]?.url ?? nowPlaying?.thumbnailUrl ?? itemArt ?? undefined;
-  const artUrl = artCandidate && artCandidate !== failedArt ? artCandidate : undefined;
+  // Every candidate that fails to load is remembered, and the NEXT one is tried (the chain used to stop at the first failure).
+  const [failedArts, setFailedArts] = useState<string[]>([]);
+  const artUrl = [folderArt[0]?.url, nowPlaying?.thumbnailUrl, itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
+  const markArtFailed = (u?: string | null): void => { if (u) setFailedArts((prev) => (prev.includes(u) ? prev : [...prev, u])); };
   const archiveTrack = useMemo(
     () => cleanArchiveMusicFilename(nowPlaying?.archivePath ?? activeSrc),
     [nowPlaying?.archivePath, activeSrc],
@@ -1218,7 +1219,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
               <div className="relative z-[2] mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8">
                 <div data-testid="audio-art" className="relative flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900 shadow-[0_0_45px_rgba(34,211,238,0.24)] ring-2 ring-cyan-200/70 sm:h-52 sm:w-52">
                   {artUrl
-                    ? <img src={artUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" onError={() => setFailedArt(artUrl)} />
+                    ? <img src={artUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" onError={() => markArtFailed(artUrl)} />
                     : <span aria-label="Archive music artwork unavailable" role="img" className="text-6xl text-cyan-200/40">♫</span>}
                   <MiniEqVisualizer analyser={analyserNode} analyzerState={analyzerState} isPlaying={isPlaying} enabled={miniEqOn} hasImage={Boolean(artUrl)} />
                 </div>
@@ -1324,7 +1325,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         diagnosticsOpen={diagnosticsOpen}
         onToggleDiagnostics={() => setDiagnosticsOpen((v) => !v)}
         thumbnailUrl={radioBriefingOn ? undefined : artUrl}
-        onThumbnailError={() => setFailedArt(artUrl ?? null)}
+        onThumbnailError={() => markArtFailed(artUrl)}
         onPrev={onPrev}
         onNext={onNext}
         repeatOne={repeatOne}

@@ -623,7 +623,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
       </div>
       )}
       <p data-testid="radio-presets-status" role="status" aria-live="polite" className={`px-3 pb-2 text-[11px] text-orange-200 ${status ? '' : 'sr-only'}`}>{status || 'Radio presets. Tap to tune; press and hold to save the playing station.'}</p>
-      <style>{`[data-narrow="1"]{grid-template-columns:minmax(0,1fr)!important}[data-narrow="1"]>*{grid-column:1!important;grid-row:auto!important}[data-testid^="radio-"]:focus-visible{outline:2px solid #F97316!important;outline-offset:3px}@keyframes ajnPresetFill{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}@media (prefers-reduced-motion:reduce){[data-testid="radio-preset-hold"]{animation:none!important}}`}</style>
+      <style>{`[data-narrow="1"]{grid-template-columns:minmax(0,1fr)!important}[data-narrow="1"]>*{grid-column:1!important;grid-row:auto!important}[data-testid^="radio-"]:focus-visible{outline:2px solid #F97316!important;outline-offset:3px}[data-testid="radio-volume-knob"]:focus-visible,[data-testid="radio-bank-select"]:focus-visible,[data-testid="radio-head-unit-knob"]:focus-visible{outline:3px solid #fff!important;outline-offset:-5px}@keyframes ajnPresetFill{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}@media (prefers-reduced-motion:reduce){[data-testid="radio-preset-hold"]{animation:none!important}}`}</style>
       {menu !== null && (
         <div ref={menuRef} role="menu" aria-label={`Preset ${menu} options`} data-testid="radio-preset-menu"
           className="absolute left-3 top-full z-[5] w-56 overflow-hidden rounded-xl border border-red-700/70 bg-neutral-950 text-neutral-100 shadow-2xl">

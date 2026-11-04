@@ -58,3 +58,14 @@ const okFetch = (async () => new Response(JSON.stringify(live))) as unknown as t
 assert.equal((await loadSpokenItems(okFetch)).items.length, sp.items.length);
 await assert.rejects(() => loadSpokenItems((async () => new Response('x', { status: 502 })) as unknown as typeof fetch), /HTTP 502/);
 console.log('[audio-presets+listen-catalog] PASS');
+
+// Podcasts list opens with many shows (round-robin), order inside each show kept
+{
+  const { interleaveByShow } = await import('./src/utils/listenCatalog.ts');
+  const mkI = (show: string, n: number) => ({ id: `${show}${n}`, bank: 'podcasts', title: `${show} ${n}`, subtitle: show, genre: 'Podcast', channelId: show, guideId: 'g', tracks: () => [], trackCount: 1 }) as any;
+  const mixed = interleaveByShow([...Array.from({ length: 5 }, (_, i) => mkI('Quash', i)), mkI('A', 0), mkI('A', 1), mkI('B', 0)]);
+  assert.deepEqual(mixed.slice(0, 3).map((x: any) => x.subtitle), ['Quash', 'A', 'B']);
+  assert.deepEqual(mixed.filter((x: any) => x.subtitle === 'Quash').map((x: any) => x.title), ['Quash 0', 'Quash 1', 'Quash 2', 'Quash 3', 'Quash 4']);
+  assert.equal(mixed.length, 8);
+  console.log('[interleaveByShow] PASS');
+}

@@ -1,0 +1,12 @@
+{
+  "_note": "Streams verified DEAD upstream on 2026-11-03: the master playlist answers 200 but every variant playlist answers 404 (curl and a real browser). Cloud Run's own health probe still passes them (edge difference), so the automatic health check cannot hide them. Remove an entry when the upstream is back.",
+  "verifiedAt": "2026-11-03",
+  "urls": [
+    "https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master.m3u8",
+    "https://abcnews-streams.akamaized.net/hls/live/2023562/abcnewshudson3/master.m3u8",
+    "https://abcnews-streams.akamaized.net/hls/live/2023563/abcnewshudson4/master.m3u8",
+    "https://abcnews-streams.akamaized.net/hls/live/2023565/abcnewshudson6/master.m3u8",
+    "https://abcnews-streams.akamaized.net/hls/live/2023566/abcnewshudson7/master.m3u8",
+    "https://abcnews-streams.akamaized.net/hls/live/2023567/abcnewshudson8/master.m3u8"
+  ]
+}

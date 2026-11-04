@@ -118,3 +118,14 @@ export async function loadSpokenItems(fetchImpl: typeof fetch = fetch): Promise<
   const data = (await res.json()) as { channels?: SpokenChannel[] };
   return buildSpokenItems(data.channels ?? []);
 }
+
+
+/** Round-robin by show so a list opens with many different shows, not 40 episodes of the first one. Order inside each show is kept. */
+export function interleaveByShow(items: ListenItem[]): ListenItem[] {
+  const byShow = new Map<string, ListenItem[]>();
+  for (const it of items) { const k = it.subtitle || it.genre || it.channelId; const list = byShow.get(k); if (list) list.push(it); else byShow.set(k, [it]); }
+  const lists = [...byShow.values()];
+  const out: ListenItem[] = [];
+  for (let i = 0; out.length < items.length; i++) for (const l of lists) if (i < l.length) out.push(l[i]);
+  return out;
+}

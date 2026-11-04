@@ -315,6 +315,8 @@ import { getDiscoveryChannels, DISCOVERY_GUIDE_ID } from './server/discoveryChan
 import { liveTvContract, LIVE_REFRESH_MS, resetLiveTvLastGoodForTests } from './server/sources/liveTv';
 import { healthOf, runHealthCheck, pendingRechecks, liveHealthStats, seedKnownOffline } from './server/liveHealth';
 import knownOffline from './server/data/liveTvKnownOffline.json' with { type: 'json' };
+import knownDead from './server/data/liveTvKnownDead.json' with { type: 'json' };
+const KNOWN_DEAD_URLS=new Set<string>((knownDead as {urls:string[]}).urls);
 import { getPlutoEpg, plutoIdOf, setPlutoEpgFetchForTests, type EpgSlot } from './server/sources/plutoEpg';
 import { getLiveNewsChannels } from './server/liveNewsChannels';
 import { mergeLiveTvNews } from './server/liveNewsMerge';
@@ -388,14 +390,14 @@ async function decorateLive(data:ScheduleChannel[]):Promise<ScheduleChannel[]>{
   const out:ScheduleChannel[]=[];
   for(const ch of data){
     const url=ch.programs[0]?.mediaUrl;
-    if(url&&healthOf(url)==='offline')continue;
+    if(url&&(KNOWN_DEAD_URLS.has(url)||healthOf(url)==='offline'))continue;
     const id=url?plutoIdOf(url):null;
     const slots=id?epg.get(id):undefined;
     out.push(slots?.length?{...ch,programs:plutoPrograms(ch,slots)}:ch);
   }
   return out;
 }
-export function liveTvHealthSummary(){return {...liveHealthStats,hidden:liveHealthStats.offline,liveNews:liveNewsSummary(),foxClips:foxClipsSummary()};}
+export function liveTvHealthSummary(){return {...liveHealthStats,hidden:liveHealthStats.offline+KNOWN_DEAD_URLS.size,knownDead:KNOWN_DEAD_URLS.size,liveNews:liveNewsSummary(),foxClips:foxClipsSummary()};}
 
 async function getLiveTvChannels(guideId:string):Promise<ScheduleChannel[]>{
   if(!liveCache){await refreshLiveTv(guideId);return decorateLive(liveCache!.data);}

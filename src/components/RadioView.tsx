@@ -8,7 +8,7 @@ import { AJN_CHANNEL_LABELS, formatAirDate, type AjnChannel } from '../utils/ajn
 import { filterEntries, formatClock, isPlayingEntry, neighbour, showChips, showInitials, showKey, showLabel, typeChips, typeKey, typeLabel, type RadioFilter, type RadioSort } from '../utils/ajnRadioBrowse';
 import { dayKindLabel, groupShowDays, planFullShow, type FullShowMode, type ShowDay } from '../utils/ajnShowGroups';
 import { clearShowQueue, startShowQueue } from '../utils/showQueue';
-import { buildMusicItems, buildPodcastItems, loadConcertItems, loadSpokenItems, type ListenItem, type SpokenCatalog } from '../utils/listenCatalog';
+import { buildMusicItems, buildPodcastItems, interleaveByShow, loadConcertItems, loadSpokenItems, type ListenItem, type SpokenCatalog } from '../utils/listenCatalog';
 import { ListenBrowser } from './ListenBrowser';
 import { FullShowStatus } from './FullShowStatus';
 import { RadioPresetsBar } from './RadioPresetsBar';
@@ -196,7 +196,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
     spokenAsked.current = true;
     loadSpokenItems().then(setSpoken).catch((e: unknown) => { spokenAsked.current = false; setSpokenError(e instanceof Error ? e.message : 'could not load the podcast list'); });
   }, []);
-  const podcastEps = useMemo(() => [...archivedPodcastEps, ...(spoken?.items ?? [])], [archivedPodcastEps, spoken]);
+  const podcastEps = useMemo(() => interleaveByShow([...archivedPodcastEps, ...(spoken?.items ?? [])]), [archivedPodcastEps, spoken]);
   const [concerts, setConcerts] = useState<ListenItem[] | null>(null);
   const [concertsError, setConcertsError] = useState<string | null>(null);
   const concertsAsked = useRef(false);
