@@ -19,7 +19,7 @@ on:
       service:
         description: Cloud Run service name
         required: false
-        default: ajn-precision-engineering-v2
+        default: ajn-precision-engineering
         type: string
 
 permissions:
@@ -32,12 +32,12 @@ concurrency:
 
 env:
   GCP_REGION: ${{ inputs.region || vars.GCP_REGION || 'us-west2' }}
-  GCP_SERVICE: ${{ inputs.service || vars.GCP_CLOUD_RUN_SERVICE || 'ajn-precision-engineering-v2' }}
+  GCP_SERVICE: ${{ inputs.service || vars.GCP_CLOUD_RUN_SERVICE || 'ajn-precision-engineering' }}
 
 jobs:
   deploy:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
-    name: Build and deploy to Cloud Run
+    name: Verify live Cloud Run service
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -105,12 +105,8 @@ jobs:
       - name: Production build
         run: npm run build
 
-      - name: Deploy exact source to Cloud Run
-        env:
-          GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
-        run: |
-          set -euo pipefail
-          gcloud run deploy "${GCP_SERVICE}" --project "${GCP_PROJECT_ID}" --region "${GCP_REGION}" --platform managed --allow-unauthenticated --timeout 3600 --execution-environment gen1 --quiet --container app-container --memory 3Gi --source .
+      # No deploy step on purpose: the live service is published from Google AI Studio.
+      # This workflow only checks the live service; it never creates or replaces a Cloud Run service.
 
       - name: Verify deployed revision
         env:
