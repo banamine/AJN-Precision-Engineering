@@ -8,7 +8,7 @@ import { AJN_CHANNEL_LABELS, formatAirDate, type AjnChannel } from '../utils/ajn
 import { filterEntries, formatClock, isPlayingEntry, neighbour, showChips, showInitials, showKey, showLabel, typeChips, typeKey, typeLabel, type RadioFilter, type RadioSort } from '../utils/ajnRadioBrowse';
 import { dayKindLabel, groupShowDays, planFullShow, type FullShowMode, type ShowDay } from '../utils/ajnShowGroups';
 import { clearShowQueue, startShowQueue } from '../utils/showQueue';
-import { buildMusicItems, buildPodcastItems, loadConcertItems, type ListenItem } from '../utils/listenCatalog';
+import { buildMusicItems, buildPodcastItems, loadConcertItems, loadSpokenItems, type ListenItem, type SpokenCatalog } from '../utils/listenCatalog';
 import { ListenBrowser } from './ListenBrowser';
 import { FullShowStatus } from './FullShowStatus';
 import { RadioPresetsBar } from './RadioPresetsBar';
@@ -187,7 +187,16 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   };
 
   const music = useMemo(() => buildMusicItems().items, []);
-  const podcastEps = useMemo(() => buildPodcastItems(), []);
+  const archivedPodcastEps = useMemo(() => buildPodcastItems(), []);
+  const [spoken, setSpoken] = useState<SpokenCatalog | null>(null);
+  const [spokenError, setSpokenError] = useState<string | null>(null);
+  const spokenAsked = useRef(false);
+  const loadSpoken = useCallback(() => {
+    if (spokenAsked.current) return;
+    spokenAsked.current = true;
+    loadSpokenItems().then(setSpoken).catch((e: unknown) => { spokenAsked.current = false; setSpokenError(e instanceof Error ? e.message : 'could not load the podcast list'); });
+  }, []);
+  const podcastEps = useMemo(() => [...archivedPodcastEps, ...(spoken?.items ?? [])], [archivedPodcastEps, spoken]);
   const [concerts, setConcerts] = useState<ListenItem[] | null>(null);
   const [concertsError, setConcertsError] = useState<string | null>(null);
   const concertsAsked = useRef(false);
@@ -214,7 +223,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   }, []);
   const toDeck = useCallback((list: readonly ListenItem[]) => list.map((item) => ({ id: item.id, title: item.title, subtitle: item.subtitle, play: () => playItem(item), preset: presetFor(item) ?? { itemId: item.id, title: item.title, src: '' } })), [playItem, presetFor]);
   const deckSources = useMemo(() => ({
-    music: toDeck(music), podcasts: toDeck(podcastEps), concerts: concerts ? toDeck(concerts) : null, loadConcerts, concertsError,
+    music: toDeck(music), podcasts: toDeck(podcastEps), concerts: concerts ? toDeck(concerts) : null, loadConcerts, concertsError, loadSpoken,
   }), [music, podcastEps, concerts, concertsError, toDeck, loadConcerts]);
 
   const show = showChips(entries);
@@ -239,7 +248,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
 
-      <ListenBrowser music={music} concerts={concerts} podcasts={podcastEps} concertsError={concertsError} loadConcerts={loadConcerts} playingProgramId={nowPlaying?.programId} onPlay={playItem} presetFor={presetFor} />
+      <ListenBrowser music={music} concerts={concerts} podcasts={podcastEps} concertsError={concertsError} loadConcerts={loadConcerts} spokenLoaded={spoken !== null} spokenError={spokenError} feedsDown={spoken?.feedsDown ?? []} loadSpoken={loadSpoken} playingProgramId={nowPlaying?.programId} onPlay={playItem} presetFor={presetFor} />
 
       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>

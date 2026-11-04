@@ -1,7 +1,7 @@
 // Audio preset banks (Archive Music / Concerts / Podcasts) and the Listen catalog: pure-function checks.
 import assert from 'node:assert/strict';
 import { AUDIO_PRESETS_KEY, clearAudioPreset, loadAudioPresets, saveAudioPreset } from './src/utils/audioPresets.ts';
-import { buildMusicItems, buildPodcastItems, filterListenItems, listenGenres, loadConcertItems } from './src/utils/listenCatalog.ts';
+import { buildMusicItems, buildPodcastItems, buildSpokenItems, filterListenItems, listenGenres, loadConcertItems, loadSpokenItems } from './src/utils/listenCatalog.ts';
 
 const mem: Record<string, string> = {};
 const st = { getItem: (k: string) => mem[k] ?? null, setItem: (k: string, v: string) => { mem[k] = v; } };
@@ -43,4 +43,18 @@ assert.ok(concerts.every((c) => c.tracks().every((x) => !/[ #?]/.test(x.src))), 
 assert.ok(filterListenItems(concerts, 'coltrane', '').length >= 1);
 assert.ok(filterListenItems(concerts, '', 'Rock').every((c) => c.genre === 'Rock'));
 assert.ok(listenGenres(concerts).includes('Jazz & Blues'));
+// Podcasts bank from the server's Audio & Podcasts guide (real response saved from the live site).
+import { readFileSync } from 'node:fs';
+const live = JSON.parse(readFileSync(new URL('./test-fixtures/audio-podcasts-light.json', import.meta.url), 'utf8')) as { channels: any[] };
+const sp = buildSpokenItems(live.channels);
+assert.ok(sp.items.length > 300, `spoken items ${sp.items.length}`);
+assert.equal(new Set(sp.items.map((i) => i.id)).size, sp.items.length, 'spoken ids are unique');
+assert.ok(sp.items.every((i) => i.bank === 'podcasts' && i.tracks().length === 1 && i.tracks()[0].src.length > 0));
+assert.ok(sp.items.some((i) => i.genre === 'Talk Radio') && sp.items.some((i) => i.genre === 'Old-Time Radio') && sp.items.some((i) => i.genre === 'Podcast'));
+assert.ok(sp.feedsDown.length >= 1 && sp.feedsDown.every((f) => f.name && f.reason), 'feeds the server could not read are reported, not faked');
+assert.ok(!sp.items.some((i) => sp.feedsDown.some((f) => f.name === i.subtitle)), 'a down feed contributes no fake episodes');
+assert.ok(!sp.items.some((i) => i.genre === 'Music' || i.genre === 'Live Concerts'));
+const okFetch = (async () => new Response(JSON.stringify(live))) as unknown as typeof fetch;
+assert.equal((await loadSpokenItems(okFetch)).items.length, sp.items.length);
+await assert.rejects(() => loadSpokenItems((async () => new Response('x', { status: 502 })) as unknown as typeof fetch), /HTTP 502/);
 console.log('[audio-presets+listen-catalog] PASS');

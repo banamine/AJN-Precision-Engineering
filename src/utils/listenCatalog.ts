@@ -89,3 +89,32 @@ export function filterListenItems(items: readonly ListenItem[], query: string, g
   return items.filter((i) => (!genre || i.genre === genre) && (!q || i.title.toLowerCase().includes(q) || i.subtitle.toLowerCase().includes(q)));
 }
 export const listenGenres = (items: readonly ListenItem[]): string[] => [...new Set(items.map((i) => i.genre))].sort((a, b) => a.localeCompare(b));
+
+interface SpokenProgram { id: string; title: string; mediaUrl?: string; description?: string }
+interface SpokenChannel { id: string; name: string; group?: string; sourceStatus?: string; sourceError?: string; programs?: SpokenProgram[] }
+const SPOKEN_GROUPS = new Set(['Podcast', 'Talk Radio', 'Old-Time Radio']);
+export interface SpokenCatalog { items: ListenItem[]; feedsDown: { name: string; reason: string }[] }
+/** Pure: the Podcasts bank from the server's Audio & Podcasts guide (live podcast feeds, talk radio, old-time radio).
+ *  A feed the server could not read is reported in feedsDown, never faked. Programs without a media URL are left out. */
+export function buildSpokenItems(channels: readonly SpokenChannel[]): SpokenCatalog {
+  const items: ListenItem[] = [];
+  const feedsDown: { name: string; reason: string }[] = [];
+  for (const ch of channels) {
+    if (!ch.group || !SPOKEN_GROUPS.has(ch.group)) continue;
+    const progs = (ch.programs ?? []).filter((p) => p.mediaUrl && p.title);
+    if (ch.group === 'Podcast' && progs.length === 0) { feedsDown.push({ name: ch.name, reason: ch.sourceError ?? ch.sourceStatus ?? 'no episodes' }); continue; }
+    for (const pr of progs) {
+      const id = `spoken-${pr.id}`;
+      items.push({ id, bank: 'podcasts', title: pr.title, subtitle: ch.name, genre: ch.group, channelId: ch.id, guideId: 'audio-podcasts', trackCount: 1,
+        tracks: () => [{ src: pr.mediaUrl as string, mediaType: 'audio' as const, programId: pr.id, title: pr.title, partNo: 1, totalParts: 1 }] });
+    }
+  }
+  return { items, feedsDown };
+}
+/** Loaded on demand (the guide response is several MB): live podcast feeds + talk radio + old-time radio. */
+export async function loadSpokenItems(fetchImpl: typeof fetch = fetch): Promise<SpokenCatalog> {
+  const res = await fetchImpl(`/api/schedule?guide=audio-podcasts&light=1&tz=${new Date().getTimezoneOffset()}`);
+  if (!res.ok) throw new Error(`podcast list HTTP ${res.status}`);
+  const data = (await res.json()) as { channels?: SpokenChannel[] };
+  return buildSpokenItems(data.channels ?? []);
+}

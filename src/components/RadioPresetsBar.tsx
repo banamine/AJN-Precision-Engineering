@@ -36,6 +36,7 @@ export interface DeckSources {
   concerts: DeckItem[] | null;
   podcasts: DeckItem[];
   loadConcerts?: () => void;
+  loadSpoken?: () => void;
   concertsError?: string | null;
 }
 
@@ -313,7 +314,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             const selected = mode === key;
             return (
               <button key={key} type="button" data-testid={`radio-mode-${key}`} aria-pressed={selected}
-                onClick={() => { setMode(key); setListPage(0); setBrowse(false); setStoreArmed(false); if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.(); say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts'); }}
+                onClick={() => { setMode(key); setListPage(0); setBrowse(false); setStoreArmed(false); if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.(); if (key === 'podcasts') deckSources?.loadSpoken?.(); say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts'); }}
                 className={`min-h-[44px] flex-1 cursor-pointer rounded-lg px-3 text-sm font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${selected ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-transparent text-neutral-300 hover:text-white'}`}>{label}</button>
             );
           };

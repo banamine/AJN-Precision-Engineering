@@ -15,6 +15,10 @@ interface Props {
   podcasts: readonly ListenItem[];
   concertsError?: string | null;
   loadConcerts: () => void;
+  spokenLoaded?: boolean;
+  spokenError?: string | null;
+  feedsDown?: readonly { name: string; reason: string }[];
+  loadSpoken?: () => void;
   playingProgramId?: string;
   onPlay: (item: ListenItem) => void;
   /** First file of an item, as stored on a key. */
@@ -22,13 +26,14 @@ interface Props {
 }
 
 /** Search + genre pills over every playable catalog, with one-tap "save to key 1–5" on each result. */
-export function ListenBrowser({ music, concerts, podcasts, concertsError, loadConcerts, playingProgramId, onPlay, presetFor }: Props): ReactElement {
+export function ListenBrowser({ music, concerts, podcasts, concertsError, loadConcerts, spokenLoaded = true, spokenError = null, feedsDown = [], loadSpoken, playingProgramId, onPlay, presetFor }: Props): ReactElement {
   const [tab, setTab] = useState<Tab>('all');
   const [query, setQuery] = useState('');
   const [genre, setGenre] = useState('');
   const [note, setNote] = useState('');
   const banks = useAudioPresets();
   useEffect(() => { if (tab === 'all' || tab === 'concerts') loadConcerts(); }, [tab, loadConcerts]);
+  useEffect(() => { if (tab === 'all' || tab === 'podcasts') loadSpoken?.(); }, [tab, loadSpoken]);
 
   const pool = useMemo<readonly ListenItem[]>(() => {
     if (tab === 'music') return music;
@@ -40,7 +45,7 @@ export function ListenBrowser({ music, concerts, podcasts, concertsError, loadCo
   const results = useMemo(() => filterListenItems(pool, query, genre), [pool, query, genre]);
   const waitingForConcerts = (tab === 'concerts' || tab === 'all') && !concerts && !concertsError;
 
-  const pick = (next: Tab): void => { setTab(next); setGenre(''); if (next === 'concerts' || next === 'all') loadConcerts(); };
+  const pick = (next: Tab): void => { setTab(next); setGenre(''); if (next === 'concerts' || next === 'all') loadConcerts(); if (next === 'podcasts' || next === 'all') loadSpoken?.(); };
   const save = (item: ListenItem, slot: number): void => {
     const p = presetFor(item);
     if (!p) { setNote(`${item.title} has no playable files.`); return; }
@@ -66,7 +71,7 @@ export function ListenBrowser({ music, concerts, podcasts, concertsError, loadCo
         </div>
       )}
       <p className="ajr-status" role="status" aria-live="polite" data-testid="listen-count">
-        {waitingForConcerts ? 'Loading concerts… ' : ''}{concertsError && (tab === 'concerts' || tab === 'all') ? `Concerts unavailable: ${concertsError}. ` : ''}{results.length} result{results.length === 1 ? '' : 's'}{results.length > MAX_ROWS ? ` · showing the first ${MAX_ROWS}, search to narrow` : ''}{note ? ` · ${note}` : ''}
+        {waitingForConcerts ? 'Loading concerts… ' : ''}{(tab === 'podcasts' || tab === 'all') && !spokenLoaded && !spokenError ? 'Loading podcasts… ' : ''}{spokenError && (tab === 'podcasts' || tab === 'all') ? `Podcast list unavailable: ${spokenError}. ` : ''}{feedsDown.length > 0 && (tab === 'podcasts' || tab === 'all') ? `${feedsDown.length} podcast feed${feedsDown.length === 1 ? '' : 's'} could not be read by the server (${feedsDown.slice(0, 3).map((f) => f.name).join(', ')}${feedsDown.length > 3 ? '…' : ''}). ` : ''}{concertsError && (tab === 'concerts' || tab === 'all') ? `Concerts unavailable: ${concertsError}. ` : ''}{results.length} result{results.length === 1 ? '' : 's'}{results.length > MAX_ROWS ? ` · showing the first ${MAX_ROWS}, search to narrow` : ''}{note ? ` · ${note}` : ''}
       </p>
       <ul className="m-0 grid list-none gap-2 p-0" aria-label="Results">
         {results.slice(0, MAX_ROWS).map((item) => {
