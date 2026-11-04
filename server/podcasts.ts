@@ -7,6 +7,7 @@
  *  - Failure is explicit: wrong feed (title mismatch), no playable episodes, upstream error. The last good
  *    episode list is kept (status 'degraded'); an empty result is never cached as success. */
 import type { Program, ScheduleChannel } from '../src/types';
+import { layoutFreshFirstStack } from './podcastStack';
 import { safeFetch, anyPublicHost } from './safeFetch';
 import sourcesJson from '../src/data/podcastSources.json';
 import archiveEpisodesJson from '../src/data/podcastArchiveEpisodes.json';
@@ -234,6 +235,19 @@ export function buildPodcastChannels(guideId: string, now: Date, layout: (p: Pro
       sourceStatus: stalenessOf(state, now)?.stale ? 'stale' : state.status === 'ok' ? 'ok' : 'partial',
       sourceError: [stalenessOf(state, now)?.stale ? `Feed inactive: last episode ${formatPublished(stalenessOf(state, now)!.newestAt)} (${stalenessOf(state, now)!.ageDays} days ago)` : '', state.error].filter(Boolean).join('; ') || undefined,
       rejected: state.rejected.length ? state.rejected : undefined });
+  }
+  // One 24/7 network channel over ALL shows: today's episodes first (shows taking turns), then yesterday, T-2 ... then Archive
+  // back-catalog; see server/podcastStack.ts. Its own group so the per-show Listen/Podcast lists do not list every episode twice.
+  const all: Program[] = [];
+  for (const source of PODCAST_SOURCES.filter((s) => s.enabled)) {
+    const state = cache.get(source.id);
+    if (!state?.episodes.length) continue;
+    const named = (p: Program): Program => ({ ...p, title: `${source.name}: ${p.title}` });
+    all.push(...toPrograms(state, guideId, now).map(named), ...archivePrograms(source, guideId).map(named));
+  }
+  if (all.length) {
+    out.push({ id: 'pod-network-247', guideId, name: 'AJN Podcasts 24/7 · Fresh first', mediaType: 'audio' as const, group: 'Podcast Network',
+      programs: layoutFreshFirstStack(all, now, { defaultMinutes: 45 }), sourceStatus: 'ok' } as ScheduleChannel);
   }
   return out;
 }
