@@ -12,6 +12,7 @@ interface TvGuideViewProps {
   /** Opens the Today list page. */
   onNavigate?: (dest: Destination) => void;
   active?: boolean;
+  playingChannelId?: string | null;
 }
 
 const AJN_RESOURCE_GUIDE: Guide = {
@@ -28,7 +29,7 @@ const GUIDE_SHORT_NAMES: Record<string, string> = {
   'live-tv': 'Live TV', 'movies-classics-vault': 'Movies', 'old-british-tv': 'British TV', 'ajn-archive-special-feeds': 'AJN Feeds',
 };
 
-export function TvGuideView({ onSelectProgram, onNavigate, active = true }: TvGuideViewProps) {
+export function TvGuideView({ onSelectProgram, onNavigate, active = true, playingChannelId = null }: TvGuideViewProps) {
   const [guides, setGuides] = useState<Guide[]>([
     {
       id: 'cable-tv',
@@ -140,7 +141,7 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true }: TvGu
       ) : (
         <div className="space-y-4">
           <div className="overflow-hidden rounded-xl shadow-2xl border border-neutral-800">
-            <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} active={active} />
+            <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} active={active} playingChannelId={playingChannelId} />
           </div>
           {selectedGuideId === 'audio-podcasts' && <RushEpisodePicker onPlay={onSelectProgram} />}
           {selectedGuideId === 'live-tv' && <LiveHealthNote />}

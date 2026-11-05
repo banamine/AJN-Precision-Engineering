@@ -96,6 +96,7 @@ interface EpgGuideProps {
   active?: boolean;
   /** Called with archive path, title, channel name, and mediaType when a program block is clicked. */
   onSelectProgram?: PlayProgramCallback;
+  playingChannelId?: string | null;
 }
 
 /** Also used by hermetic render/click tests; no player or browser dependencies. */
@@ -205,7 +206,7 @@ export function EpgProgramBlock({ program, channel, guideId, idx, isLive, left, 
   );
 }
 
-export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active = true }: EpgGuideProps) {
+export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active = true, playingChannelId = null }: EpgGuideProps) {
   const rowH = guideId === 'audio-podcasts' ? AUDIO_ROW_HEIGHT_PX : ROW_HEIGHT_PX;
   const [nowHour, setNowHour] = useState(currentHourFraction());
   const [channels, setChannels] = useState<ScheduleChannel[] | null>(() => cachedGuideChannels(guideId));
@@ -821,7 +822,8 @@ export default function EpgGuide({ guideId = 'cable-tv', onSelectProgram, active
                 data-highlight={channel.highlight}
                 data-channel-id={channel.id}
                 data-epg-channel-row
-                className={`flex flex-col justify-center border-b border-neutral-800 px-3.5 ${flashId === channel.id ? 'bg-amber-500/15 ring-2 ring-inset ring-amber-400/70 ' : ''}${channel.highlight === 'must-listen' ? 'border-l-4 border-l-fuchsia-400 bg-gradient-to-r from-fuchsia-500/20 via-fuchsia-500/5 to-transparent' : ''}`}
+                aria-current={playingChannelId === channel.id ? 'true' : undefined}
+                className={`flex flex-col justify-center border-b border-neutral-800 px-3.5 ${flashId === channel.id ? 'bg-amber-500/15 ring-2 ring-inset ring-amber-400/70 ' : ''}${playingChannelId === channel.id && flashId !== channel.id ? 'bg-emerald-500/10 ring-1 ring-inset ring-emerald-400/60 border-l-4 border-l-emerald-400 ' : ''}${channel.highlight === 'must-listen' && playingChannelId !== channel.id ? 'border-l-4 border-l-fuchsia-400 bg-gradient-to-r from-fuchsia-500/20 via-fuchsia-500/5 to-transparent' : ''}`}
                 style={{ height: rowH }}
               >
                 <div className="flex min-w-0 items-center gap-2">

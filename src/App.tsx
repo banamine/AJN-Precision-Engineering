@@ -375,7 +375,7 @@ export default function App() {
         )}
         {hasVisitedTvGuide && (
           <div key="view-tv-guide" hidden={destination !== 'tv-guide'} className="view-fade-in w-full">
-            <TvGuideView onSelectProgram={handleEpgSelect} onNavigate={navigateTo} active={destination === 'tv-guide'} />
+            <TvGuideView onSelectProgram={handleEpgSelect} onNavigate={navigateTo} active={destination === 'tv-guide'} playingChannelId={nowPlaying?.channelId ?? null} />
           </div>
         )}
         {/* The player stays mounted while you browse other pages, so audio keeps
