@@ -20,7 +20,9 @@ const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' })
 
 /** Alphabetical by display name (numbers compare numerically: "Channel 2" < "Channel 10"); id breaks ties so order is deterministic. */
 export function sortChannelsAlpha(channels: readonly ScheduleChannel[]): ScheduleChannel[] {
-  return [...channels].sort((a, b) => collator.compare(sortKey(a.name), sortKey(b.name)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  // The scheduled Classic Network channel is pinned to the top of the lineup (station 1); everything else is alphabetical.
+  const pinned = (c: ScheduleChannel) => (c.id === 'classic-network' ? 0 : 1);
+  return [...channels].sort((a, b) => pinned(a) - pinned(b) || collator.compare(sortKey(a.name), sortKey(b.name)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
 /** Sequential station numbers 1..N over the WHOLE guide in alphabetical order. Filtering/searching never renumbers:

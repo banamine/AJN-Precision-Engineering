@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { buildCatalog, episodeCode } from './tools/build-classic-network-catalog.mts';
+assert.deepEqual(episodeCode('Death Valley Days S02 E02 Little Washington.mp4'), { season: 2, episode: 2 });
+assert.deepEqual(episodeCode('Taxi 1x05.mp4'), { season: 1, episode: 5 });
+const row = { id: 'asset', identifier: 'TaxiS02E08TheGreatRace', file: 'Taxi S02E11.mp4', durationSeconds: 1500 };
+const a = buildCatalog([row]);
+assert.equal(a.catalog.assets[0].episodeKey, 'taxi:s02e11');
+assert.equal(buildCatalog([{ ...row, private: true }]).catalog.assets.length, 0);
+assert.equal(buildCatalog([{ ...row, durationSeconds: null }]).catalog.assets.length, 0);
+assert.equal(buildCatalog([{ ...row, file: 'The Hogan Family S01E01.mp4' }]).catalog.assets.length, 0);
+assert.equal(buildCatalog([{ ...row, file: 'The Odd Couple (1968).mp4' }]).catalog.assets.length, 0);
+const two = buildCatalog([row, { ...row, id: 'derivative', file: 'Taxi S02E11.ia.mp4' }]);
+assert.equal(two.catalog.assets.length, 1); assert.equal(two.catalog.assets[0].assetId, 'derivative');
+assert.equal(buildCatalog([{ ...row, durationEstimated: true }]).catalog.assets.length, 0);
+assert.deepEqual(buildCatalog([row]), buildCatalog([row]));
+console.log('CLASSIC_NETWORK_CATALOG_PASS assertions=11');

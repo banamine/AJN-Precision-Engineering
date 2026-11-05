@@ -14,13 +14,13 @@ export interface TuneResult {
   /** True when the offset is exact; false when we could not map the clock to a position (plays from the start). */
   exact: boolean;
   /** Why no offset was applied, when startAtSeconds is undefined. */
-  reason?: "live-stream" | "just-started" | "unknown-segment-length";
+  reason?: "live-stream" | "just-started" | "unknown-segment-length" | "ended" | "invalid-schedule";
 }
 
 /** Live feeds have no fixed timeline to seek into: join them where they are. */
 export function isLiveStream(program: Program): boolean {
   const meta = (program.metadata ?? {}) as Record<string, unknown>;
-  return program.sourceClass === "m3u_live" || meta.isLive === true || meta.epg === "utc";
+  return program.sourceClass === "m3u_live" || meta.isLive === true || (meta.epg === "utc" && meta.scheduledVod !== true);
 }
 
 /** The programme whose [start, end) contains nowHour, or null (a gap / empty row). */
@@ -45,9 +45,18 @@ export function programPath(program: Program): string {
 }
 
 /** Resolve the media reference and start offset for joining `program` at `nowHour`. */
-export function tuneIn(program: Program, sHour: number, eHour: number, nowHour: number): TuneResult {
+export function tuneIn(program: Program, sHour: number, eHour: number, nowHour: number, nowMs = Date.now()): TuneResult {
   const basePath = programPath(program);
   if (isLiveStream(program)) return { path: basePath, exact: true, reason: "live-stream" };
+  if (program.metadata?.scheduledVod === true && program.metadata.epg === 'utc') {
+    const start = Date.parse(program.startTimeUtc ?? ''), end = Date.parse(program.endTimeUtc ?? '');
+    const duration = Number(program.metadata.durationSeconds);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || !Number.isFinite(duration) || duration <= 0)
+      return { path: basePath, exact: false, reason: 'invalid-schedule' };
+    if (nowMs >= end) return { path: basePath, startAtSeconds: duration, exact: false, reason: 'ended' };
+    const at = Math.min(Math.max(0, (nowMs - start) / 1000), Math.max(0, duration - 0.001));
+    return at > 0 ? { path: basePath, startAtSeconds: at, exact: true } : { path: basePath, exact: true, reason: 'just-started' };
+  }
   const total = Math.max(0, (eHour - sHour) * 3600);
   const elapsed = Math.min(total, Math.max(0, (nowHour - sHour) * 3600));
   const segs: any[] = Array.isArray(program.metadata?.segments) ? (program.metadata!.segments as any[]) : [];

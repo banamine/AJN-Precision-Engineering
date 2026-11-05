@@ -1,0 +1,39 @@
+{
+  "physicalStarts": 218,
+  "results": 218,
+  "http200": 218,
+  "redirects": 0,
+  "minStartGapMs": 1550.1,
+  "budget": 1800,
+  "remainingBudget": 1582,
+  "extraManifestDeltaRows": {
+    "added": 1366,
+    "removed": 0,
+    "changedShared": 0,
+    "byGroup": {
+      "Movies": 19,
+      "Cartoons": 465,
+      "Classic TV": 882,
+      "Documentaries": 0
+    }
+  },
+  "sourceListCandidateCounters": {
+    "documentaries": {
+      "candidateIds": 29,
+      "candidateRows": 645
+    },
+    "cartoons": {
+      "candidateIds": 0,
+      "candidateRows": 0
+    },
+    "tv": {
+      "candidateIds": 0,
+      "candidateRows": 0
+    },
+    "movies": {
+      "candidateIds": 0,
+      "candidateRows": 0
+    }
+  },
+  "note": "The Documentary candidate counters are not a net manifest delta; documentariesManifest.json had no net diff."
+}

@@ -436,6 +436,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       }
     };
 
+    const initialSeekAbort = new AbortController();
+    let initialSeekTimer: number | undefined;
+    let initialSeekFailed = false;
     const onLoadedMetadata = () => {
       clearStart();
       // Live streams have no fixed duration: never offer a resume position.
@@ -449,9 +452,40 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       } else if (instance && startAtConsumedRef.current !== instance) {
         startAtConsumedRef.current = instance;
         const liveItem = String(instance.programId ?? "").includes(":live:") || String(instance.channelId ?? "").startsWith("radio:");
-        const startAt = liveItem ? null : clampStart(instance.startAtSeconds, media.duration);
+        const requested = instance.startAtSeconds;
+        const startAt = liveItem ? null : clampStart(requested, media.duration);
+        if (!liveItem && typeof requested === 'number' && requested > 0 && Number.isFinite(media.duration) && requested >= media.duration) {
+          initialSeekFailed = true; media.pause();
+          setStatusText("Unavailable — Start position is past the end of this file");
+          return;
+        }
         if (startAt !== null) {
-          try { media.currentTime = startAt; switched = true; } catch { /* element not seekable yet: fall through to normal start */ }
+          switched = true;
+          const fail = (reason: string) => {
+            initialSeekFailed = true; media.pause();
+            window.clearTimeout(initialSeekTimer);
+            initialSeekAbort.abort();
+            setStatusText(`Unavailable — Could not seek to the scheduled start: ${reason}`);
+          };
+          const signal = initialSeekAbort.signal;
+          const seek = () => {
+            if (signal.aborted) return;
+            try {
+              if (!media.seekable.length) return;
+              media.addEventListener('seeked', () => {
+                if (Math.abs(media.currentTime - startAt) > 2) { fail('the media did not reach the requested position'); return; }
+                window.clearTimeout(initialSeekTimer); initialSeekAbort.abort();
+                setStatusText('Ready');
+                void attemptAutoplay();
+              }, { once: true, signal });
+              media.currentTime = startAt;
+            } catch (error) { fail(error instanceof Error ? error.message : 'the browser rejected the seek'); }
+          };
+          initialSeekTimer = window.setTimeout(() => fail('the media was not seekable within 8 seconds'), 8000);
+          media.addEventListener('canplay', seek, { once: true, signal });
+          media.addEventListener('progress', seek, { signal });
+          seek();
+          return;
         }
       }
       const saved = !switched && Number.isFinite(media.duration) ? fx().readResumePosition() : null;
@@ -463,6 +497,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       void attemptAutoplay();
     };
     const onCanPlay = () => {
+      if (initialSeekFailed || (initialSeekTimer !== undefined && !initialSeekAbort.signal.aborted)) return;
       waitingForDataRef.current = false;
       clearStart();
       if (media.paused) {
@@ -805,6 +840,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     }
 
     return () => {
+      initialSeekAbort.abort();
+      window.clearTimeout(initialSeekTimer);
       if (progressTimer !== null) window.clearInterval(progressTimer);
       if (retryTimer !== null) window.clearTimeout(retryTimer);
       clearSlow();

@@ -1,6 +1,31 @@
-# Rollback — J2 Live NTD supplement
-
-1. Remove `server/data/liveTvPinned.json` and `testFixtures/liveTvPinned.ts`.
-2. Restore `server/sources/liveTv.ts`, `test-live-tv.ts`, `test-live-tv-api-server.ts`, and `test-live-health.ts` from the J1 base.
-3. Restore `tools/ajn-verify/run.mjs`, `tools/ajn-verify/registry.json`, and `tools/ajn-verify/self-test.mjs` from the J1 verify-kit ZIP. This also restores the prior `verifykit:self-test` baseline hash.
-4. Remove `REVIEW/REPORT.md`, `UPLOAD_ORDER.txt`, `ROLLBACK.txt`, and `SHA256SUMS.txt` if these delivery-only files were copied into a working tree.
+Rollback base: d33c54ac059f752b1a394adc4b877d337e92a426
+Restore listed paths from this commit. Paths marked NOT PRESENT must be removed.
+70adbe1c20d74b5e07e12c26980fe324779958e443ff6e341ab7b3354edbbff8  .gitignore
+NOT PRESENT AT BASE  config/classic-networks.json
+NOT PRESENT AT BASE  docs/CLASSIC_NETWORK.md
+e74d05926510f0e67094834421941e6ab231c53038077e373ed9b9bbbf091980  guideRegistry.ts
+NOT PRESENT AT BASE  optional/classic-network-publication-check.yml
+NOT PRESENT AT BASE  server/classicNetwork.ts
+NOT PRESENT AT BASE  server/classicNetworkPublication.ts
+c2e04bdaeec27e445329d36cf21aec1c65df774d95a397494e142f31723e70e1  server/classicUpcoming.ts
+af929b38ee37d05bfdaab5f125a35d2eae5198bc105c8e873d1d3f4383fdba6d  server/libraryIndex.ts
+c8b4215e0e215e3044a5f39bbd08c220c93cee6c8978bc66ecb0ce3de9682aa6  src/MinimalPlayer.tsx
+NOT PRESENT AT BASE  src/data/classicMoviesCatalog.json
+NOT PRESENT AT BASE  src/data/classicMoviesPublication.json
+NOT PRESENT AT BASE  src/data/classicNetworkCatalog.json
+NOT PRESENT AT BASE  src/data/classicNetworkPublication.json
+c19c81a072f970cda2cb798fb05f1d9c13d77644baedb35d63352916277d9288  src/data/extraChannelsManifest.json
+99f514a5b86ac0bcf3ab9a031597a7228b3d2883ac196415df38f65080332f84  src/guide/liveTune.ts
+NOT PRESENT AT BASE  test-classic-movies-network.ts
+NOT PRESENT AT BASE  test-classic-network-catalog.ts
+NOT PRESENT AT BASE  test-classic-network-compiler.ts
+NOT PRESENT AT BASE  test-classic-network-isolation.ts
+NOT PRESENT AT BASE  test-classic-network-live-tune.ts
+NOT PRESENT AT BASE  test-classic-network-publication.ts
+NOT PRESENT AT BASE  test-classic-network-upcoming.ts
+edb03aa5c8dc74c1ff007694ed7130b303425ee0c2a03684b61b4f977568f6ae  test-classic-upcoming.ts
+86c1ac2b3c0f1a881f6744c4cc39998c5c964bd880c51a7896da0b0c4187c6fb  test_infobattalion_builder.py
+NOT PRESENT AT BASE  tools/build-classic-network-catalog.mts
+225de7dc4aea901425d39c9437c6a29b3f6fa7f22962f41e034c752b86a3b285  tools/build-infobattalion-lists.py
+NOT PRESENT AT BASE  tools/check-classic-network-publication.mjs
+NOT PRESENT AT BASE  tools/compile-classic-network.mts

@@ -1,0 +1,49 @@
+{
+  "stationZone": "America/Los_Angeles",
+  "originMonday": "2026-11-02",
+  "horizonDays": 60,
+  "activeFrom": "2026-11-05T00:00:00 America/Los_Angeles",
+  "repeatGapHours": 168,
+  "networks": {
+    "classic-movies": {
+      "id": "classic-movies",
+      "name": "AJN Classic Movies",
+      "guideId": "movies-classics-vault",
+      "owner": "banamine",
+      "catalogRef": "src/data/classicMoviesCatalog.json",
+      "includeChannels": ["mx-movies-classics-list", "classic-cinema", "mx-filmography", "mx-atlas-taggart"],
+      "seed": "ajn-classic-movies-v1-2026-11-09",
+      "pools": {"cinema": {"series": ["movies"], "rotateEveryWeeks": 1, "offset": 0}},
+      "lineup": [{"start": "00:00", "end": "24:00", "pool": "cinema"}]
+    },
+    "classic-network": {
+      "id": "classic-network",
+      "name": "AJN Classic TV",
+      "guideId": "classic-tv",
+      "owner": "banamine",
+      "catalogRef": "src/data/classicNetworkCatalog.json",
+      "pools": {
+        "danger": {"series": ["danger-man"], "rotateEveryWeeks": 1, "offset": 0},
+        "dyke": {"series": ["dick-van-dyke"], "rotateEveryWeeks": 1, "offset": 0},
+        "smart": {"series": ["get-smart"], "rotateEveryWeeks": 1, "offset": 0},
+        "benson": {"series": ["benson"], "rotateEveryWeeks": 1, "offset": 0},
+        "taxi": {"series": ["taxi"], "rotateEveryWeeks": 1, "offset": 0},
+        "hogan": {"series": ["hogans-heroes"], "rotateEveryWeeks": 1, "offset": 0}
+      },
+      "lineup": [
+        {"start": "00:00", "end": "04:00", "pool": "danger"},
+        {"start": "04:00", "end": "05:45", "pool": "dyke"},
+        {"start": "05:45", "end": "09:45", "pool": "smart"},
+        {"start": "09:45", "end": "12:45", "pool": "benson"},
+        {"start": "12:45", "end": "16:30", "pool": "taxi"},
+        {"start": "16:30", "end": "20:30", "pool": "hogan"},
+        {"start": "20:30", "end": "21:00", "pool": "smart"},
+        {"start": "21:00", "end": "21:30", "pool": "benson"},
+        {"start": "21:30", "end": "22:00", "pool": "taxi"},
+        {"start": "22:00", "end": "22:30", "pool": "hogan"},
+        {"start": "22:30", "end": "23:00", "pool": "danger"},
+        {"start": "23:00", "end": "24:00", "pool": "benson"}
+      ]
+    }
+  }
+}

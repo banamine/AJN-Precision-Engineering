@@ -22,6 +22,25 @@ def _load(fn):
     s = importlib.util.spec_from_file_location(fn.replace("-", "_"), os.path.join(here, fn + ".py")); m = importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
 org = _load("build-organizer-manifest"); xc = _load("build-extra-channels-manifest")
 UA = {"User-Agent": "AJN-Precision-Engineering infobattalion catalog builder/1.0"}
+EMAIL_VALUE = re.compile(r"\b[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+
+def redact_contacts(value):
+    """Keep cached Archive JSON useful without persisting uploader contact data."""
+    if isinstance(value, dict):
+        return {key: redact_contacts(item) for key, item in value.items()
+                if "email" not in str(key).lower() and "uploader" not in str(key).lower()}
+    if isinstance(value, list):
+        return [redact_contacts(item) for item in value]
+    if isinstance(value, str):
+        return EMAIL_VALUE.sub("[redacted]", value)
+    return value
+
+def redact_json_body(body):
+    try:
+        return json.dumps(redact_contacts(json.loads(body)), ensure_ascii=False,
+                          separators=(",", ":")).encode("utf-8")
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return body
 
 class ArchiveFetchStopped(RuntimeError):
     pass
@@ -32,7 +51,7 @@ class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 class ArchiveClient:
     """Serialize Archive request starts and keep a local physical-request ledger."""
-    def __init__(self, interval=1.55, opener=None, clock=None, sleeper=None):
+    def __init__(self, interval=1.55, opener=None, clock=None, sleeper=None, max_starts=300):
         self.interval = interval
         self.opener = opener or urllib.request.build_opener(NoRedirectHandler()).open
         self.clock = clock or time.monotonic
@@ -41,6 +60,8 @@ class ArchiveClient:
         self._ledger_lock = threading.Lock()
         self._last_start = None
         self._stopped = False
+        self._physical_starts = 0
+        self.max_starts = max_starts
         self.ledger_path = None
 
     def _ledger(self, record):
@@ -53,14 +74,45 @@ class ArchiveClient:
         with self._start_lock:
             if self._stopped:
                 raise ArchiveFetchStopped("Archive requests stopped after a rate-limit/service response")
+            if self._physical_starts >= self.max_starts:
+                self._stopped = True
+                raise ArchiveFetchStopped(f"Archive start cap reached ({self.max_starts})")
             now = self.clock()
             if self._last_start is not None:
                 wait = self.interval - (now - self._last_start)
                 if wait > 0: self.sleeper(wait)
             started = self.clock()
             self._last_start = started
+            self._physical_starts += 1
             self._ledger({"event": "start", "startedMonotonic": started, "url": url, "attempt": attempt})
             return started
+
+    def restore_ledger_state(self, ledger_path, wall_now=None):
+        """Resume without resetting the Archive request cap or pacing history."""
+        starts = []
+        try:
+            with open(ledger_path, encoding="utf-8") as ledger:
+                for line in ledger:
+                    record = json.loads(line)
+                    if record.get("event") == "start":
+                        starts.append(record)
+        except FileNotFoundError:
+            starts = []
+        except (OSError, json.JSONDecodeError) as error:
+            raise ArchiveFetchStopped(f"Cannot safely resume unreadable Archive ledger: {error}") from error
+        self._physical_starts = len(starts)
+        if self._physical_starts >= self.max_starts:
+            self._stopped = True
+            raise ArchiveFetchStopped(f"Cannot resume: the {self.max_starts}-start Archive cap is already reached")
+        if starts:
+            try:
+                last_start = datetime.fromisoformat(starts[-1]["recordedAt"]).timestamp()
+            except (KeyError, ValueError) as error:
+                self._stopped = True
+                raise ArchiveFetchStopped("Cannot safely resume: the last ledger start has no valid timestamp") from error
+            now_wall = wall_now if wall_now is not None else time.time()
+            elapsed = max(0.0, now_wall - last_start)
+            self._last_start = self.clock() - elapsed
 
     def get(self, url):
         for attempt in range(1, 5):
@@ -70,13 +122,19 @@ class ArchiveClient:
                 req = urllib.request.Request(target, headers=UA)
                 try:
                     with self.opener(req, timeout=120) as response:
-                        body = response.read()
+                        body = redact_json_body(response.read())
                         status = getattr(response, "status", 200)
                     self._ledger({"event": "result", "startedMonotonic": started, "url": target, "attempt": attempt,
                                   "redirectHops": hop, "status": status})
                     return body
                 except urllib.error.HTTPError as error:
                     retry_after = error.headers.get("Retry-After") if error.headers else None
+                    if error.code in (403, 429, 503):
+                        with self._start_lock:
+                            self._stopped = True
+                        raise ArchiveFetchStopped(
+                            f"Archive returned HTTP {error.code}; stopping immediately without retry"
+                        ) from error
                     if error.code in (301, 302, 303, 307, 308):
                         location = error.headers.get("Location") if error.headers else None
                         redirect = urllib.parse.urljoin(target, location or "")
@@ -124,6 +182,25 @@ class ArchiveClient:
             else:
                 raise ArchiveFetchStopped("Archive redirect limit exceeded")
         raise RuntimeError("Archive request attempts exhausted")
+
+def load_owner_lists(cache_path, *, fetch=False, resume=False, fetcher=None):
+    """Use the saved owner-list snapshot when resuming; never re-fetch it."""
+    if resume and not os.path.isfile(cache_path):
+        raise ArchiveFetchStopped("Cannot resume: cached owner-list response is missing")
+    if (fetch and not resume) or not os.path.isfile(cache_path):
+        if fetcher is None:
+            raise ArchiveFetchStopped("Cannot fetch owner lists without the Archive client")
+        payload = fetcher("https://archive.org/services/users/@infobattalion/lists")
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        tmp_path = cache_path + ".tmp"
+        with open(tmp_path, "wb") as cached:
+            cached.write(payload)
+        os.replace(tmp_path, cache_path)
+    try:
+        with open(cache_path, encoding="utf-8") as cached:
+            return json.load(cached)
+    except (OSError, json.JSONDecodeError) as error:
+        raise ArchiveFetchStopped(f"Cannot use cached owner-list response: {error}") from error
 
 ARCHIVE = ArchiveClient()
 
@@ -284,6 +361,30 @@ def upsert_channel_preserving_position(channels, replacement):
     channels.append(replacement)
     return len(channels) - 1
 
+def merge_manifest_rows_additively(existing_rows, proposed_rows):
+    """Keep every existing file row and append only unseen identifier/file pairs."""
+    merged = list(existing_rows)
+    def row_key(row):
+        identifier = str(row.get("identifier") or "").strip().lower()
+        filename = str(row.get("file") or "").strip()
+        if identifier and filename:
+            return identifier, filename
+        return identifier, filename, json.dumps(row, sort_keys=True, separators=(",", ":"))
+    seen = {row_key(row) for row in merged}
+    for row in proposed_rows:
+        key = row_key(row)
+        if key not in seen:
+            seen.add(key)
+            merged.append(row)
+    return merged
+
+def archive_file_from_url(url, identifier):
+    path = urllib.parse.urlsplit(str(url or "")).path
+    marker = "/download/" + str(identifier or "") + "/"
+    if not identifier or marker not in path:
+        return ""
+    return urllib.parse.unquote(path.split(marker, 1)[1])
+
 def filter_list5_movie_rows(rows, keep_short=False):
     """Hold the existing duration/title-filtered rows unless the owner opts in."""
     included, held = [], []
@@ -359,10 +460,26 @@ def cartoon_channels(shows):
                          "group": "Cartoons", "rows": singles})
     return channels, rejected
 
+ADDITIVE_LIST_IDS = (1, 3, 4, 5)
+
+def parse_list_selection(value):
+    """Parse one comma-separated additive owner-list selection."""
+    try:
+        values = [int(part) for part in value.split(",") if part]
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("lists must be comma-separated integers") from error
+    if not values or len(values) != len(set(values)):
+        raise argparse.ArgumentTypeError("lists must be non-empty and contain no duplicates")
+    if any(value not in ADDITIVE_LIST_IDS for value in values):
+        raise argparse.ArgumentTypeError("only additive owner lists 1,3,4,5 are supported")
+    return values
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--cache", required=True); ap.add_argument("--fetch", action="store_true")
-    ap.add_argument("--lists", nargs="+", type=int, choices=(5,), default=None,
-                    help="process only owner list 5 (Movies Classics), preserving all other generated guides")
+    ap.add_argument("--resume-cached-run", action="store_true",
+                    help="resume this run from its cached owner-list response and shared request ledger")
+    ap.add_argument("--lists", nargs="+", type=parse_list_selection, default=None,
+                    help="additively process selected comma-separated owner lists 1,3,4,5")
     ap.add_argument("--keep-short", action="store_true",
                     help="include list-5 rows under 45 minutes or with TV-style titles; default is to report and hold them")
     ap.add_argument("--extra", default="src/data/extraChannelsManifest.json"); ap.add_argument("--docs", default="src/data/documentariesManifest.json")
@@ -370,18 +487,25 @@ def main():
     ap.add_argument("--existing-classic", default=None, help="saved /api/schedule?guide=classic-tv JSON, used to skip shows that already have a channel")
     ap.add_argument("--config", default="config/catalog-refresh.json"); ap.add_argument("--overrides", default="config/catalog-overrides.json")
     a = ap.parse_args()
-    if a.keep_short and not a.lists:
+    if a.resume_cached_run and not a.fetch:
+        ap.error("--resume-cached-run requires --fetch")
+    selected_list_ids = {list_id for group in (a.lists or []) for list_id in group}
+    if a.keep_short and selected_list_ids != {5}:
         ap.error("--keep-short requires --lists 5")
     enabled = source_switches(json.load(open(os.path.join(root, a.config))) if os.path.exists(os.path.join(root, a.config)) else {})
     if a.lists:
-        enabled = {name: value and name == "movies" for name, value in enabled.items()}
+        list_name_by_id = {1: "documentary", 2: "music", 3: "cartoons", 4: "tv", 5: "movies", 6: "nwt", 10: "otr"}
+        selected_names = {list_name_by_id[list_id] for list_id in selected_list_ids}
+        enabled = {name: value and name in selected_names for name, value in enabled.items()}
     overrides = load_overrides(os.path.join(root, a.overrides))
     print("[sources] enabled:", ", ".join(n for n, v in enabled.items() if v) or "none", "| disabled:", ", ".join(n for n, v in enabled.items() if not v) or "none")
     os.makedirs(os.path.join(a.cache, "meta"), exist_ok=True)
     ARCHIVE.ledger_path = os.path.join(a.cache, "request-ledger.jsonl")
+    if a.resume_cached_run:
+        ARCHIVE.restore_ledger_state(ARCHIVE.ledger_path)
     lf = os.path.join(a.cache, "lists.json")
-    if a.fetch or not os.path.exists(lf): json.dump(jget("https://archive.org/services/users/@infobattalion/lists"), open(lf, "w"))
-    L = {l["id"]: l for l in json.load(open(lf))["value"]}
+    owner_lists = load_owner_lists(lf, fetch=a.fetch, resume=a.resume_cached_run, fetcher=ARCHIVE.get)
+    L = {l["id"]: l for l in owner_lists["value"]}
     def items_file(name, fn):
         f = os.path.join(a.cache, name + ".items.json")
         if a.fetch or not os.path.exists(f): json.dump(fn(), open(f, "w"))
@@ -446,22 +570,36 @@ def main():
             ids = [i for i in ids if not inapp(i)]
         def cache_path(i):
             return os.path.join(a.cache, "meta", org.md5id(i) + ".json")
+        metadata_requests = sum(not os.path.exists(cache_path(ident)) for ident in ids)
+        starts_left = ARCHIVE.max_starts - ARCHIVE._physical_starts
+        if metadata_requests > starts_left:
+            raise ArchiveFetchStopped(
+                f"Part A needs {metadata_requests} uncached metadata requests but only {starts_left} Archive starts remain; manifests unchanged"
+            )
         def one(i):
             f = cache_path(i)
             if not os.path.exists(f):
-                org.http_get("https://archive.org/metadata/" + urllib.parse.quote(i, safe=""), f)
+                body = ARCHIVE.get("https://archive.org/metadata/" + urllib.parse.quote(i, safe=""))
+                os.makedirs(os.path.dirname(f), exist_ok=True)
+                with open(f + ".tmp", "wb") as cached:
+                    cached.write(body)
+                os.replace(f + ".tmp", f)
         for pos, ident in enumerate(ids):
             try:
                 one(ident)
-            except (ArchiveFetchStopped, urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError):
+            except urllib.error.HTTPError as error:
+                if error.code in (404, 410):
+                    os.makedirs(os.path.dirname(cache_path(ident)), exist_ok=True)
+                    with open(cache_path(ident), "w", encoding="utf-8") as marker:
+                        json.dump({"__ajn_status": "NOT_FOUND"}, marker)
+                    continue
                 ARCHIVE._stopped = True
-                for pending in ids[pos:]:
-                    path = cache_path(pending)
-                    if not os.path.exists(path):
-                        os.makedirs(os.path.dirname(path), exist_ok=True)
-                        with open(path, "w", encoding="utf-8") as marker:
-                            json.dump({"__ajn_status": "ARCHIVE_BUSY"}, marker)
-                break
+                raise ArchiveFetchStopped(f"metadata request failed HTTP {error.code}; preserving all current manifests") from error
+            except (ArchiveFetchStopped, urllib.error.URLError, TimeoutError, OSError) as error:
+                ARCHIVE._stopped = True
+                raise ArchiveFetchStopped(
+                    f"metadata fetch interrupted at {pos + 1}/{len(ids)}; preserving all current manifests"
+                ) from error
     existing = set()
     if a.existing_classic and os.path.exists(a.existing_classic):
         existing = {norm(c["name"]) for c in json.load(open(a.existing_classic))["channels"]}
@@ -508,10 +646,41 @@ def main():
         if videos and all(private(f) or number(f.get("length")) < 30 or number(f.get("size")) < 100000 for f in videos):
             return "TOO_SHORT"
         return "NO_PLAYABLE_FILE"
+    existing_file_keys = set()
+    extra_rows_seeded = False
+    documentary_rows_seeded = False
     def record_rows(name, rows):
+        nonlocal extra_rows_seeded, documentary_rows_seeded
         stats = list_stats[name]
-        stats["added_rows"] += len(rows)
-        stats["added_ids"].update(r["identifier"] for r in rows)
+        if not a.lists:
+            stats["added_rows"] += len(rows)
+            stats["added_ids"].update(r["identifier"] for r in rows)
+            return
+        if not extra_rows_seeded:
+            for channel in chans:
+                for old_row in channel.get("rows", []):
+                    key = (str(old_row.get("identifier") or "").strip().lower(),
+                           str(old_row.get("file") or "").strip())
+                    if key[0] and key[1]:
+                        existing_file_keys.add(key)
+            extra_rows_seeded = True
+        if name == "documentary" and not documentary_rows_seeded:
+            for old_row in docs:
+                identifier = old_row.get("id")
+                filename = archive_file_from_url(old_row.get("u"), identifier)
+                if identifier and filename:
+                    existing_file_keys.add((str(identifier).strip().lower(), filename))
+            documentary_rows_seeded = True
+        new_rows = []
+        for row in rows:
+            key = (str(row.get("identifier") or "").strip().lower(),
+                   str(row.get("file") or "").strip())
+            if not key[0] or not key[1] or key in existing_file_keys:
+                continue
+            existing_file_keys.add(key)
+            new_rows.append(row)
+        stats["added_rows"] += len(new_rows)
+        stats["added_ids"].update(r["identifier"] for r in new_rows)
     claimed = set()
     def pick_new(name):
         out = []
@@ -558,6 +727,10 @@ def main():
         chans = [c for c in extra["channels"] if not generated_channel(c)]
     def add(guide, cid, name, group, rows, note="", defer_light_rows=False):
         if not rows: return
+        if a.lists:
+            previous = next((channel for channel in chans if channel.get("id") == cid), None)
+            if previous:
+                rows = merge_manifest_rows_additively(previous.get("rows", []), rows)
         defer = should_defer_light_rows(cid, previous_channel_ids, previously_deferred, defer_light_rows)
         upsert_channel_preserving_position(chans, manifest_channel(guide, cid, name, group, rows, defer))
         claimed.update(r["identifier"].lower() for r in rows)

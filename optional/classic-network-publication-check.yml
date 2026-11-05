@@ -1,0 +1,39 @@
+name: Optional Classic network horizon observer
+# INACTIVE: the owner must choose to copy this into .github/workflows/.
+on:
+  schedule:
+    - cron: '20 14 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea9 # v7
+        with:
+          script: |
+            const fs = require('fs');
+            const config = JSON.parse(fs.readFileSync('config/classic-networks.json', 'utf8'));
+            const problems = [];
+            for (const id of Object.keys(config.networks)) {
+              const file = id === 'classic-network' ? 'classicNetworkPublication' : 'classicMoviesPublication';
+              try {
+                const p = JSON.parse(fs.readFileSync(`src/data/${file}.json`, 'utf8'));
+                const hours = (p.coveredUntilUtcMs - Date.now()) / 3600000;
+                if (!Number.isFinite(hours) || hours <= 336) problems.push(`${id}: ${hours <= 72 ? 'critical' : 'warning'}; ${hours} hours remaining`);
+              } catch (e) { problems.push(`${id}: critical; ${e.message}`); }
+            }
+            const prefix = 'Classic network schedule:';
+            const issues = await github.paginate(github.rest.issues.listForRepo, { ...context.repo, state: 'open', creator: 'github-actions[bot]' });
+            const existing = issues.find(i => i.title.startsWith(prefix) && !i.pull_request);
+            if (problems.length) {
+              const body = problems.join('\n\n') + '\n\nChecks committed artifacts only, NOT the active Cloud Run image. A dead checker cannot report its own death. Renew and publish manually.';
+              const title = `${prefix} ${problems.some(p => p.includes('critical')) ? 'critical' : 'warning'}`;
+              if (existing) await github.rest.issues.update({ ...context.repo, issue_number: existing.number, title, body });
+              else await github.rest.issues.create({ ...context.repo, title, body });
+            } else if (existing) {
+              await github.rest.issues.update({ ...context.repo, issue_number: existing.number, state: 'closed' });
+            }

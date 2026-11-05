@@ -1,4 +1,5 @@
 import { notWebPlayableVideo, unplayableReason } from './server/sources/archiveLinks';
+import { classicNetworkChannel, classicMoviesChannel } from './server/classicNetworkPublication';
 import audioGroupOverrides from './src/data/audioGroupOverrides.json';
 import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
@@ -1060,7 +1061,7 @@ async function getScheduleForGuideRaw(guideId='cable-tv',movieNow?:Date):Promise
       names.add(normShowName(name));
       return name===channel.name?channel:{...channel,name};
     });
-    return [...classic,...additions];
+    return [classicNetworkChannel(),...classic,...additions];
   }
   if(guideId==='audio-podcasts'){
     const [existing,catalog,podcasts,liveRadio]=await Promise.all([
@@ -1079,7 +1080,7 @@ async function getScheduleForGuideRaw(guideId='cable-tv',movieNow?:Date):Promise
   }
   if(guideId==='movies-classics-vault'){
     const programs=getCanonicalPrograms().filter((program)=>program.guideId===guideId && program.channelId==='classic-cinema');
-    return [{
+    return [classicMoviesChannel(),{
       id:'classic-cinema',
       guideId,
       name:'Cinema Classics Vault',

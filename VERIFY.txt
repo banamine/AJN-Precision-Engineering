@@ -1,0 +1,19 @@
+Offline verification — Node 22.23.4
+PASS: NODE_OPTIONS=--max-old-space-size=4096 npx tsc --noEmit (exit 0; no diagnostics)
+PASS: NET_GUARD=block npm run build (exit 0; Vite 6.4.3)
+PASS: python -m unittest test_infobattalion_builder (34 tests, exit 0; non-fatal ResourceWarnings)
+PASS focused tests (all exit 0):
+- test-classic-network-catalog.ts: CLASSIC_NETWORK_CATALOG_PASS assertions=11
+- test-classic-network-compiler.ts: CLASSIC_NETWORK_COMPILER_PASS cases=33 networks=2 (synthetic offline fixtures)
+- test-classic-network-isolation.ts: CLASSIC_NETWORK_ISOLATION_PASS cases=8
+- test-classic-network-live-tune.ts: CLASSIC_NETWORK_LIVE_TUNE_PASS assertions=6
+- test-classic-network-publication.ts: CLASSIC_NETWORK_PUBLICATION_PASS assertions=10
+- test-classic-network-upcoming.ts: exit 0
+- test-classic-light-schedule.ts: PASS; includes 2 MiB budget case
+- test-classic-movies-network.ts: CLASSIC_MOVIES_NETWORK_PASS cases=12 (synthetic offline fixtures)
+- test-classic-upcoming.ts: CLASSIC_NETWORK_UPCOMING_PASS cases=11
+- test-infobattalion-lists.ts: exit 0
+- test-library-index.ts: library index regression: all passed
+PASS offline additive rerun (--lists 1,3,4,5): Extra Channels manifest SHA-256 unchanged at 34d0e072610ccd6ab888ff29550ef6f8fd92b1f053e9c7ef960ad7fd7296555e; actual net delta 0 added / 0 removed. The rerun's Documentary candidate counter remained 29 / 645 and is not a net-delta metric.
+
+Local API, NET_GUARD=block: /api/health 200 (465 bytes); /api/archive/status 200 (253 bytes); /api/schedule?guide=classic-tv 200 (35,408,571 decoded bytes; 3,186,894 gzip bytes; 375 channels / 29,635 programs); light=1&tz=480 200 (1,008,686 bytes; 375 channels / 741 programs; below 2 MiB).

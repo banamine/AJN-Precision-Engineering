@@ -1,54 +1,17 @@
-AJN PLAYER PAGE CAPTIONS LAYOUT — LOCAL DROP-IN
+PARTIAL — OWNER REVIEW ONLY
+AJN Classic Network / InfoBattalion cumulative drop-in
 
-Base required:
-  origin/main 0d935f394f52827d9a31c71d00ed942cc14ed7fa
+Base: d33c54ac059f752b1a394adc4b877d337e92a426
+Branch: feat/classic-network-2026-11-04
+Local HEAD: 0470512f11ec148566a42cea3d5a090baa50289b
 
-This package contains the three locally verified commits from branch
-fix/player-split-captions-layout. It has NOT been pushed, merged, or deployed.
-Apply only to the stated base; review REPORT.md and the synthetic screenshots.
+This package contains the 29 feature files changed from the stated base. Test files are under tests/ to keep them separate; UPLOAD_ORDER.txt maps each to its repository-root destination. The workspace-only .replit and .replitignore files, caches, and raw metadata dumps are excluded. No remote branch was updated; no PR, merge, or deployment was created.
 
-Changed repository files:
-  package.json
-  src/App.tsx
-  src/MinimalPlayer.tsx
-  src/components/PlayerView.tsx
-  src/components/SubtitleToggle.tsx
-  src/index.css
-  src/news/captions/CaptionPanel.tsx
-  src/news/captions/CaptionStrip.tsx
-  src/news/captions/useCaptionTrack.ts
-  test-player-captions-layout.html
-  test-player-captions-layout.mjs
-  test-player-captions-layout.tsx
+Apply/copy files in UPLOAD_ORDER.txt. Preserve existing Extra Channels rows; do not run a pruning refresh. Manifests and compiled publications are placed last. See ROLLBACK.txt for the base SHA-256 of each source path, VERIFY.txt for offline checks, and REPORT.md for evidence and limits.
 
-The useCaptionTrack history bound is up to 200 already-loaded TV News cues,
-following the owner's approval. It introduces no new request or second player.
-MinimalPlayer only receives the optional overlaySlot prop.
-Only video on the Player route is height-constrained; audio playback retains
-the existing document-flow layout.
-
-Apply by copying these repository-relative files over the matching files in a
-clean checkout of the required base. Then run:
-  npm ci
-  NODE_OPTIONS=--max-old-space-size=1500 npx tsc --noEmit
-  npm run build
-  NET_GUARD=block npm run test:captions
-  NET_GUARD=block npm run test:radio-ui
-
-Evidence: typecheck/build passed; caption checks passed (20 unit checks and
-63 synthetic viewport/scenario combinations); radio UI checks passed. The
-browser fixture uses invented caption cues and no media bytes. No Archive
-requests were made. This is not proof of real playback or device behavior.
-
-Screenshots are in screenshots/ and show synthetic fixtures, not production
-media playback. The full measurements and limitations are in REPORT.md.
-Command outputs are summarized in VERIFICATION_OUTPUT.txt.
-
-Local commits:
-  ddac707c0219f055b0115778b096355315042288  layout and caption sidebar
-  36d8616571582ce13eb4484621eadcc2a2b7e25a  optional caption overlay
-  13e511b1122fb113cfcc6379bb32359894dbd8e8  browser tests and audio-flow regression
-
-Rollback: revert those three commits in reverse order; commands are at the end
-of REPORT.md. No workflow, server, proxy, playback engine, guide, telemetry,
-or package lockfile was changed.
+PARTIAL STATUS
+- The Classic Network schedule compiles 611 distinct episode keys into 3,186 occurrences, beginning 2026-11-05 00:00 America/Los_Angeles. Its compiled-horizon minimum repeat gap is 168.943 h with no gap below 168 h.
+- Classic Movies publication contains 844 occurrences.
+- The actual Extra Channels delta is +1,366 rows and no removals or changed shared rows. Documentary candidates (29 IDs / 645 rows) did not create a net Documentary-manifest change; do not treat candidate counters as additions.
+- No new item has a verified live playback result. Rights remain for owner review. Do not present this as production-approved or playback-verified.
+- The 218 Archive physical starts were from the earlier owner-authorized refresh; no Archive request was made during this offline build, verification, or packaging. Minimum gap was 1,550.1 ms; cap was 1,800.

@@ -1,0 +1,2 @@
+Intentionally excluded from the Builder payload: Replit's committed test files (not in this zip; ask Replit's export), STATE.md, screenshots, package.json/lockfiles (unchanged), reports/, caches, secrets.
+tests/ is NOT part of the app; do not upload it to Builder (it is for running in PowerShell or for review).
