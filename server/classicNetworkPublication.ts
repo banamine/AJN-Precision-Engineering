@@ -40,7 +40,8 @@ export function createPublicationReader(value: unknown) {
 const classic = createPublicationReader(bakedClassic);
 const movies = createPublicationReader(bakedMovies);
 function networkChannel(reader: ReturnType<typeof createPublicationReader>, id: string, name: string, guideId: string, group: string, nowMs: number): ScheduleChannel {
-  const window = reader.getWindow(nowMs);
+  // Include the previous 24 h so the guide grid shows today's earlier blocks (other rows show a full day); ahead stays 48 h.
+  const window = reader.getWindow(nowMs, 48 * HOUR, 24 * HOUR);
   return { id, name, guideId, group,
     mediaType: 'video', programs: window.programs, sourceStatus: window.error ? 'unavailable' : 'ok', ...(window.error ? { sourceError: window.error } : {}) };
 }
