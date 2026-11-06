@@ -134,6 +134,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [resumePosition, setResumePosition] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [resumePromptFading, setResumePromptFading] = useState(false);
+  const [seekFallbackTarget, setSeekFallbackTarget] = useState<number | null>(null);
 
   const isVideo = mediaType === "video";
   const radioBriefingOn = isLiveRadioPlayback(mediaType, nowPlaying);
@@ -377,6 +378,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     setIsPlaying(false);
     setResumePosition(null);
     setShowResumePrompt(false);
+    setSeekFallbackTarget(null);
     setAutoplayBlocked(false);
     restoreHandledRef.current = false;
     playingReportedRef.current = false;
@@ -461,30 +463,60 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         }
         if (startAt !== null) {
           switched = true;
-          const fail = (reason: string) => {
-            initialSeekFailed = true; media.pause();
+          // The element must be allowed to fetch data while we wait (it is created with preload="metadata").
+          if (media.preload !== "auto") media.preload = "auto";
+          const describeSeekable = () =>
+            media.seekable.length ? [media.seekable.start(0), media.seekable.end(media.seekable.length - 1)] : [];
+          const gateInfo = () => ({
+            targetOffset: startAt,
+            duration: media.duration,
+            readyState: media.readyState,
+            networkState: media.networkState,
+            seekable: describeSeekable(),
+            preload: media.preload,
+          });
+          const signal = initialSeekAbort.signal;
+          let seekIssued = false;
+          const finishOk = () => {
             window.clearTimeout(initialSeekTimer);
             initialSeekAbort.abort();
-            setStatusText(`Unavailable — Could not seek to the scheduled start: ${reason}`);
+            setSeekFallbackTarget(null);
+            setStatusText("Ready");
+            void attemptAutoplay();
           };
-          const signal = initialSeekAbort.signal;
-          const seek = () => {
-            if (signal.aborted) return;
+          // Honest fallback: NOT terminal, does NOT pause. Plays from the beginning and says so.
+          const fallbackToStart = (reason: string) => {
+            console.info("[SeekGate] Timeout, falling back to start", { ...gateInfo(), reason });
+            window.clearTimeout(initialSeekTimer);
+            initialSeekAbort.abort();
+            try { media.currentTime = 0; } catch { /* element will start from 0 anyway */ }
+            setSeekFallbackTarget(startAt);
+            setStatusText("Live position unavailable; playing from beginning");
+            void attemptAutoplay();
+          };
+          const issueSeek = () => {
+            if (signal.aborted || seekIssued) return;
+            if (media.readyState < 1) return; // HAVE_METADATA: currentTime may be set even if seekable is still empty
+            seekIssued = true;
+            console.info("[SeekGate] Attempting seek", gateInfo());
             try {
-              if (!media.seekable.length) return;
-              media.addEventListener('seeked', () => {
-                if (Math.abs(media.currentTime - startAt) > 2) { fail('the media did not reach the requested position'); return; }
-                window.clearTimeout(initialSeekTimer); initialSeekAbort.abort();
-                setStatusText('Ready');
-                void attemptAutoplay();
+              media.addEventListener("seeked", () => {
+                if (Math.abs(media.currentTime - startAt) > 2) {
+                  console.info("[SeekGate] Seeked to wrong position", { ...gateInfo(), currentTime: media.currentTime });
+                  fallbackToStart("the media did not reach the requested position");
+                  return;
+                }
+                console.info("[SeekGate] Seek ok", { ...gateInfo(), currentTime: media.currentTime });
+                finishOk();
               }, { once: true, signal });
               media.currentTime = startAt;
-            } catch (error) { fail(error instanceof Error ? error.message : 'the browser rejected the seek'); }
+            } catch (error) {
+              fallbackToStart(error instanceof Error ? error.message : "the browser rejected the seek");
+            }
           };
-          initialSeekTimer = window.setTimeout(() => fail('the media was not seekable within 8 seconds'), 8000);
-          media.addEventListener('canplay', seek, { once: true, signal });
-          media.addEventListener('progress', seek, { signal });
-          seek();
+          initialSeekTimer = window.setTimeout(() => fallbackToStart("no seeked event within 20 seconds"), 20000);
+          setStatusText("Jumping to scheduled position…");
+          issueSeek(); // immediate attempt: do not idle waiting for canplay/progress
           return;
         }
       }
@@ -1308,6 +1340,22 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       {overlaySlot}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
       <WaitingNotes status={statusText} onRetry={onRetry} archive={typeof src === "string" && src.includes("/api/archive/proxy")} />
+      {seekFallbackTarget !== null && (
+        <div className="mt-2 flex items-center gap-2 text-sm">
+          <span>Live position unavailable; playing from beginning.</span>
+          <button
+            type="button"
+            data-testid="seek-retry-live"
+            className="rounded bg-white px-3 py-1.5 font-semibold text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+            onClick={() => {
+              const m = mediaRef.current; // use the same element ref the component already uses; if it is named differently, use that name
+              if (!m) return;
+              console.info("[SeekGate] Manual Retry Live Jump", { target: seekFallbackTarget, readyState: m.readyState, networkState: m.networkState });
+              try { m.currentTime = seekFallbackTarget; setSeekFallbackTarget(null); setStatusText("Ready"); } catch { /* stays visible */ }
+            }}
+          >Retry Live Jump</button>
+        </div>
+      )}
       {/^(Failed to load|Unavailable)/.test(statusText) && (onRetry || onBackToGuide) && (
         <div role="alert" data-testid="playback-recovery" className="absolute inset-x-3 bottom-14 z-30 flex flex-wrap items-center gap-2 rounded-lg bg-black/85 p-3 text-xs text-white shadow-lg sm:bottom-16">
           <span className="min-w-0 flex-1 basis-40">{statusText}</span>
