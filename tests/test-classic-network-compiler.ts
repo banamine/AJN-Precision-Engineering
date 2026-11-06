@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { assertRepeat, HOUR, dayBounds, localInstant, poolSeries, compileNetwork, publicationHash,
-  type NetworkSettings, type NetworkConfig, type NetworkCatalog } from './server/classicNetwork';
+  type NetworkSettings, type NetworkConfig, type NetworkCatalog } from '../server/classicNetwork';
 let cases = 0;
 function record(name: string, f: () => void) { f(); cases++; console.log(`PASS ${name}`); }
 export const fixtureNetwork: NetworkConfig = { id: 'classic-network', name: 'SYNTHETIC', guideId: 'classic-tv',

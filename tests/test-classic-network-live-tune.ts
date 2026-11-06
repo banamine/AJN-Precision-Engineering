@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { tuneIn, isLiveStream } from './src/guide/liveTune';
-import type { Program } from './src/types';
+import { tuneIn, isLiveStream } from '../src/guide/liveTune';
+import type { Program } from '../src/types';
 const now = Date.parse('2026-11-04T08:10:00Z');
 const p: Program = { id: 'fixture', guideId: 'classic-tv', channelId: 'classic-network', title: 'SYNTHETIC',
   mediaType: 'video', mediaUrl: '/fixture.webm', startTime: 0, endTime: 1,

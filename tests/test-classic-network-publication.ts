@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { compileNetwork, HOUR, publicationHash } from './server/classicNetwork';
-import { createPublicationReader, validatePublication } from './server/classicNetworkPublication';
+import { compileNetwork, HOUR, publicationHash } from '../server/classicNetwork';
+import { createPublicationReader, validatePublication } from '../server/classicNetworkPublication';
 import { fixtureSettings, fixtureNetwork, fixtureCatalog } from './test-classic-network-compiler';
 const p = compileNetwork(fixtureSettings, fixtureNetwork, fixtureCatalog);
 assert.equal(validatePublication(p).revision, p.revision);

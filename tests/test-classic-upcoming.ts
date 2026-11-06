@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { getScheduleForGuide } from './guideRegistry';
-import { MAX_CHANNELS, MAX_PAYLOAD_BYTES, MAX_STALE_MS, PER_CHANNEL, WINDOW_HOURS, buildClassicUpcoming, createClassicUpcoming, type UpcomingBody } from './server/classicUpcoming';
+import { getScheduleForGuide } from '../guideRegistry';
+import { MAX_CHANNELS, MAX_PAYLOAD_BYTES, MAX_STALE_MS, PER_CHANNEL, WINDOW_HOURS, buildClassicUpcoming, createClassicUpcoming, type UpcomingBody } from '../server/classicUpcoming';
 
 const channels = await getScheduleForGuide('classic-tv', new Date('2026-10-14T12:00:00Z'));
 assert.ok(channels.length > 200, 'real Classic schedule loaded');

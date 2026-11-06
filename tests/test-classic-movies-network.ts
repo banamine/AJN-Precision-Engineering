@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { buildCatalog, movieIdentity, orderMovies, assertMovieCycle, movieVaultRows, episodeDisplayTitle } from './tools/build-classic-network-catalog.mts';
-import { compileNetwork, HOUR, type NetworkConfig, type NetworkSettings } from './server/classicNetwork';
+import { buildCatalog, movieIdentity, orderMovies, assertMovieCycle, movieVaultRows, episodeDisplayTitle } from '../tools/build-classic-network-catalog.mts';
+import { compileNetwork, HOUR, type NetworkConfig, type NetworkSettings } from '../server/classicNetwork';
 
 let cases = 0;
 function check(name: string, f: () => void) { f(); cases++; console.log(`PASS ${name}`); }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { buildClassicUpcoming, createClassicUpcoming, MAX_PAYLOAD_BYTES } from './server/classicUpcoming';
-import type { ScheduleChannel, Program } from './src/types';
+import { buildClassicUpcoming, createClassicUpcoming, MAX_PAYLOAD_BYTES } from '../server/classicUpcoming';
+import type { ScheduleChannel, Program } from '../src/types';
 const now = Date.parse('2026-11-01T08:10:00Z');
 const program = (id: string, s: number, e: number): Program => ({ id, title: id, guideId: 'classic-tv', channelId: 'classic-network',
   startTime: 0, endTime: 1, startTimeUtc: new Date(s).toISOString(), endTimeUtc: new Date(e).toISOString(),

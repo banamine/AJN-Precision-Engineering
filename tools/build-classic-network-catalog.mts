@@ -43,6 +43,32 @@ export function episodeDisplayTitle(file: string, fallback: string): string {
     .replace(/^\d{1,4}[\s._-]+/, '').replace(/[._-]+/g, ' ').replace(/\s+/g, ' ').trim();
   return cleaned || fallback;
 }
+export const SHOW_NAMES: Record<string, string> = {
+  'hogans-heroes': "Hogan's Heroes",
+  taxi: 'Taxi',
+  benson: 'Benson',
+  'get-smart': 'Get Smart',
+  'odd-couple': 'The Odd Couple',
+  'dick-van-dyke': 'The Dick Van Dyke Show',
+  'danger-man': 'Danger Man',
+  'death-valley-days': 'Death Valley Days',
+};
+export function cleanTitle(show: string, file: string, code: { season: number; episode: number } | null): string {
+  const showName = SHOW_NAMES[show] ?? show;
+  if (code) {
+    const epStr = `S${String(code.season).padStart(2, '0')}E${String(code.episode).padStart(2, '0')}`;
+    const base = episodeDisplayTitle(file, '');
+    const rx = SHOWS[show] ? new RegExp(`^${SHOWS[show].source}[\\s._-]*`, 'i') : new RegExp(`^${showName}[\\s._-]*`, 'i');
+    const extra = base.replace(rx, '').replace(/s\d{1,2}[\s._-]*e\d{1,3}/i, '').replace(/^[\s—–-]+/, '').trim();
+    return extra ? `${showName} ${epStr} — ${extra}` : `${showName} ${epStr}`;
+  }
+  const seriesFolder = /Series[ ._-]*(\d+)/i.exec(file)?.[1];
+  const epTitle = episodeDisplayTitle(file, '');
+  if (seriesFolder) {
+    return `${showName} (Series ${seriesFolder}) — ${epTitle}`;
+  }
+  return epTitle ? `${showName} — ${epTitle}` : showName;
+}
 /** The FILE name must itself name the show (wrong-show rows such as "Cagney & Lacey ... Taxi-Cab Murders" matched on context only). */
 export function fileNamesShow(show: string, file: string, identifier: string): boolean {
   if (show === 'danger-man') return /danger[ ._-]*man|secret[ ._-]*agent/i.test(identifier);
