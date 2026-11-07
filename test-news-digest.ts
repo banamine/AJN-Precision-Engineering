@@ -73,7 +73,7 @@ const mk = () => createDigestStore({ url: 'https://pages.example/d/data.json', f
 
 let store = mk();
 let s = await store.get();
-assert.deepEqual([s.status, s.error, s.digest?.top.length, s.fetchedAt !== null], ['ok', null, 2, true]);
+assert.deepEqual([s.status, s.error, s.digest?.top.length, s.fetchedAt !== null], ['ok', null, 3, true]);
 await store.get(); assert.equal(calls, 1, 'within the TTL: served from memory');
 const parallel = mk(); calls = 0;
 await Promise.all([parallel.get(), parallel.get(), parallel.get()]); assert.equal(calls, 1, 'concurrent callers share one fetch');
@@ -81,7 +81,7 @@ await Promise.all([parallel.get(), parallel.get(), parallel.get()]); assert.equa
 clock += 900_001; mode = '500'; calls = 0;
 s = await store.get();
 assert.equal(s.status, 'error'); assert.match(s.error!, /HTTP 500/);
-assert.equal(s.digest?.top.length, 2, 'a failed refresh keeps the last good digest');
+assert.equal(s.digest?.top.length, 3, 'a failed refresh keeps the last good digest');
 await store.get(); assert.equal(calls, 1, 'failure is retried after the short backoff, not on every request');
 clock += 60_001; mode = 'ok'; s = await store.get();
 assert.deepEqual([s.status, s.error], ['ok', null], 'recovers on the next attempt');
