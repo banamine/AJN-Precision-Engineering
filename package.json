@@ -117,13 +117,15 @@
     "test:live-hls": "node tools/checks/live-hls-probe.cjs",
     "test:catalog-gate": "node test-catalog-gate.mjs",
     "catalog:measure": "tsx tools/catalog-measure.mts",
-    "catalog:gate": "node tools/catalog-gate.mjs --base origin/main"
+    "catalog:gate": "node tools/catalog-gate.mjs --base origin/main",
+    "test:news-normalize": "tsx src/news-normalize/normalize.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
+    "entities": "^6.0.0",
     "express": "^4.21.2",
     "firebase": "^13.0.0",
     "hls.js": "^1.7.3",
