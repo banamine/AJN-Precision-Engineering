@@ -15,10 +15,11 @@ const doc = {
 const d = parseNewsDigest(doc);
 assert.equal(d.date, '2026-10-04');
 assert.equal(d.updatedAt, '2026-10-04T11:46:10.466135+00:00');
-assert.deepEqual(d.top.map(i => i.id), ['a', 'c'], 'http:// and url-less stories are dropped');
+assert.deepEqual(d.top.map(i => i.id), ['a', 'b', 'c'], 'http:// stories are kept (owner decision P2); url-less stories are dropped');
+assert.equal(d.top[1].url, 'http://insecure.example/x', 'http article link is not rewritten to https');
 assert.equal(d.top[0].title, 'Kyiv & bridge', 'double-encoded entities decoded');
 assert.equal(d.top[0].excerpt, 'An & excerpt with markup', 'markup stripped, entities decoded');
-assert.equal(d.top[1].imageUrl, null, 'non-https image is dropped, not rendered');
+assert.equal(d.top[2].imageUrl, null, 'non-https image is dropped, not rendered');
 assert.equal(d.top[0].imageUrl, 'https://img.example/a.jpg');
 assert.deepEqual(d.bySource.map(g => g.source).sort(), ['BBC World News', 'Reuters Top News']);
 assert.deepEqual(d.bySource.find(g => g.source === 'Reuters Top News')!.items.map(i => i.id), ['f', 'e'], 'newest first inside a source');

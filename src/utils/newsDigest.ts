@@ -1,6 +1,9 @@
 // Daily News Digest (banamine/Daily-News-Digest-): pure parsing + freshness. No I/O, no clock unless passed in.
 // Shared by the server (server/newsDigest.ts) and the Radio view. The digest is HEADLINES AND LINKS, never playable media.
 
+import { decodeField } from '../news-normalize/decode';
+import { parseArticleUrl, parseImageUrl } from '../news-normalize/url';
+
 export interface DigestItem { id: string; title: string; url: string; source: string; excerpt: string | null; publishedAt: string | null; imageUrl: string | null }
 export interface BriefingBlock { headline: string; source: string | null; summary: string | null; theme: string | null }
 export interface Digest {
@@ -22,27 +25,23 @@ export const decodeEntities = (value: string): string => value.replace(/&(#x[0-9
   if (body[0] === '#') { const code = body[1].toLowerCase() === 'x' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10); return Number.isFinite(code) && code > 0 && code < 0x110000 ? String.fromCodePoint(code) : match; }
   return NAMED[body.toLowerCase()] ?? match;
 });
+// Text and URL rules live in src/news-normalize (one implementation). Feeds are often multi-encoded and may carry markup; over the 4-pass limit the field is withheld (null).
+const DIGEST_TEXT = { format: 'multi-encoded', markup: true } as const;
 const clean = (value: unknown, max: number): string | null => {
-  if (typeof value !== 'string') return null;
-  // Feeds are often double or triple encoded (`&lt;a href=...&gt;` decodes to a real tag), so tags are stripped AFTER every decode pass, not only before.
-  let text = value.replace(/<[^>]*>/g, ' ');
-  for (let pass = 0; pass < 4; pass++) { const next = decodeEntities(text).replace(/<[^>]*>/g, ' '); if (next === text) break; text = next; }
-  text = text.replace(/\s+/g, ' ').trim();
+  const text = decodeField(value, DIGEST_TEXT).text;
   return text ? text.slice(0, max) : null;
-};
-const httpsUrl = (value: unknown): string | null => {
-  try { const url = new URL(String(value)); return url.protocol === 'https:' ? url.toString() : null; } catch { return null; }
 };
 
 function toItem(raw: Record<string, unknown>): DigestItem | null {
   const title = clean(raw.headline ?? raw.title, 300);
-  const url = httpsUrl(raw.url ?? raw.link);
-  if (!title || !url) return null; // a headline without a working https link is not shown
+  const parsedUrl = parseArticleUrl(raw.url ?? raw.link);
+  const url = parsedUrl.ok ? parsedUrl.url : null;
+  if (!title || !url) return null; // a headline without a working http(s) link is not shown
   const published = typeof raw.published === 'string' ? new Date(raw.published) : null;
   return {
     id: String(raw.id ?? url), title, url, source: clean(raw.feedName ?? raw.feed ?? raw.author, 80) ?? 'News',
     excerpt: clean(raw.excerpt ?? raw.summary, 400), publishedAt: published && !Number.isNaN(published.getTime()) ? published.toISOString() : null,
-    imageUrl: httpsUrl(raw.imageUrl),
+    imageUrl: parseImageUrl(raw.imageUrl),
   };
 }
 

@@ -1,0 +1,41 @@
+READ THIS FILE FIRST. Everything is in this one zip; the files below are already in place under their repo paths (src/..., package.json, etc.).
+GOOGLE BUILDER - INSTALL NEWS NORMALIZER (Stage 1 + Stage 2). Direct file edits only. RUN: lines are commands to execute.
+Do not refactor, "improve", or touch any file not named here. Do not run any command not listed.
+
+STEP 1 - COPY FILES from ajn-news-normalize-stage1plus2-dropin.zip into the repo root, overwriting:
+  src/news-normalize/types.ts, decode.ts, url.ts, date.ts, normalize.ts, index.ts, normalize.test.ts   (new)
+  src/utils/newsDigest.ts      (replaces)
+  test-news-digest.ts          (replaces)
+  package.json, package-lock.json (see 1a)
+1a. package.json / package-lock.json: if the repo's package.json differs from the zip's ONLY by the new lines, take the zip's two files.
+    If the repo's package.json has OTHER changes the zip lacks, do NOT overwrite either file. Instead edit package.json by hand:
+      add  "entities": "^6.0.0"  to "dependencies" (keep alphabetical order)
+      add  "test:news-normalize": "tsx src/news-normalize/normalize.test.ts"  to "scripts"
+    then RUN: npm install   (this updates the lockfile). Report which path you took.
+
+STEP 2 - RUN these in order; after each, paste the exact command, exit code, and last 25 lines:
+  RUN: npm ci
+  RUN: npm run test:news-normalize
+  RUN: npm run test:news-digest
+  RUN: npm run test:news-cube-adapter
+  RUN: npm run test:ajn-rss-canonical
+
+WHAT TO LOOK FOR, AND THE ONLY ALLOWED CORRECTIONS
+ A. npm ci fails "lock file out of sync": do 1a fallback (hand-edit package.json, RUN: npm install), then RUN: npm ci again. Nothing else.
+ B. test:news-normalize must end with "19 tests passed".
+    - "Cannot find module 'entities'": npm ci did not install it; RUN: npm install entities@^6.0.0 then re-run.
+    - Import error ending in ".ts": repo import style mismatch. In src/news-normalize/*.ts ONLY, change relative imports to extensionless ('./decode' not './decode.ts'). No other change.
+    - An assertion failure: STOP. Paste the full error. Do not edit tests or logic.
+ C. test:news-digest must pass. The ONLY intentional test changes are in test-news-digest.ts: line ~18 expects ids ['a','b','c'] and a new assertion that the http URL is unchanged; image assertion uses d.top[2]. If it fails anywhere else, STOP and paste the full error. Do not edit.
+ D. test:news-cube-adapter and test:ajn-rss-canonical must pass exactly as before (these files were NOT changed). If either fails, STOP, paste the error, and say whether it also fails with Stage 2 files removed (git stash is NOT allowed; just report).
+ E. Type errors shown anywhere in News Normalizer files (no `any`, strict): paste them; fix only an obvious missing import path inside src/news-normalize/*.
+
+STEP 3 - VERIFY NOTHING ELSE CHANGED
+  RUN: git status --short
+  Expected changed/new files ONLY: src/news-normalize/ (new), src/utils/newsDigest.ts, test-news-digest.ts, package.json, package-lock.json.
+  Anything else listed: report it, do not revert it.
+  RUN: git diff --stat
+
+REPORT FORMAT (exactly)
+  TASK / DID (commands) / FACTS (exit codes, "N tests passed", files changed) / ERRORS (all, in order, full text) / NOT DONE AND WHY / NEED FROM OWNER
+Do not commit or push. Do not say "all tests pass" unless all four test commands above ran and exited 0.
