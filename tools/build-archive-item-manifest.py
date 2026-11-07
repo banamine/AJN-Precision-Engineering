@@ -108,7 +108,47 @@ def parse_len(v):
 
 def slug(s): return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:60] or "x"
 def ext_of(n): return n.rsplit(".", 1)[-1].lower() if "." in n.rsplit("/", 1)[-1] else ""
-def stem_key(n): return re.sub(r"\.(ia\.)?(mp4|mp3|opus|webm|m4a)$", "", n, flags=re.I)
+def stem_key(n): return re.sub(r"\.(ia\.)?(mp4|mp3|opus|webm|m4a|mkv)$", "", n, flags=re.I)
+
+ROOT = Path(__file__).resolve().parent.parent
+MKV_VERIFIED_PATH = ROOT / "src" / "data" / "mkvCodecVerified.json"
+MKV_VERIFIED = {}
+if MKV_VERIFIED_PATH.is_file():
+    try:
+        with open(MKV_VERIFIED_PATH, "r", encoding="utf-8") as _f:
+            _d = json.load(_f)
+            if isinstance(_d, dict) and "files" in _d:
+                MKV_VERIFIED = _d["files"]
+    except Exception as _e:
+        print(f"Warning: could not load {MKV_VERIFIED_PATH}: {_e}")
+
+def mkv_entry(ident, name):
+    key = f"/download/{ident}/{name}"
+    return MKV_VERIFIED.get(key)
+
+def is_verified_mkv(ident, name):
+    entry = mkv_entry(ident, name)
+    if not entry:
+        return False
+    return (
+        entry.get("status") == "verified"
+        and bool(entry.get("browserPlayable"))
+        and bool(entry.get("hasCues"))
+    )
+
+def mkv_exclusion_reason(ident, name):
+    entry = mkv_entry(ident, name)
+    if not entry:
+        return ".mkv not yet codec-verified"
+    if entry.get("status") != "verified":
+        r = entry.get("reason")
+        return f".mkv unverified: {r}" if r else ".mkv not yet codec-verified"
+    if not entry.get("browserPlayable"):
+        r = entry.get("reason", "unplayable codec")
+        return f".mkv rejected: {r}"
+    if not entry.get("hasCues"):
+        return ".mkv rejected: no seek index (Cues)"
+    return None
 def core_segments(path):
     segs = path.split("/")
     i = 0
@@ -185,6 +225,7 @@ def main():
     # group playable candidates by logical stem
     groups = collections.defaultdict(list)
     nonplay_av = collections.defaultdict(list)
+    item_id = meta.get("metadata", {}).get("identifier", ITEM)
     for f in files:
         n, src = f["name"], f.get("source")
         if n.startswith(pre): continue
@@ -192,6 +233,10 @@ def main():
         if src not in ("original", "derivative"):
             continue
         if e in PLAY_EXT:
+            if CYR.search(n) or RU.search(n):
+                exclude(n, "russian: Cyrillic name or Russian-hosted/Russian-language marker"); continue
+            groups[stem_key(n)].append(f)
+        elif e == "mkv" and src == "original" and is_verified_mkv(item_id, n):
             if CYR.search(n) or RU.search(n):
                 exclude(n, "russian: Cyrillic name or Russian-hosted/Russian-language marker"); continue
             groups[stem_key(n)].append(f)
@@ -205,13 +250,19 @@ def main():
         if k not in groups and not any(CYR.search(x["name"]) or RU.search(x["name"]) for x in v):
             for x in v:
                 if x.get("source") == "original":
-                    exclude(x["name"], f"no browser-playable derivative for .{ext_of(x['name'])}")
+                    ext = ext_of(x["name"])
+                    if ext == "mkv":
+                        reason = mkv_exclusion_reason(item_id, x["name"]) or "no browser-playable derivative for .mkv"
+                        exclude(x["name"], reason)
+                    else:
+                        exclude(x["name"], f"no browser-playable derivative for .{ext}")
 
     def rank(f):
         n = f["name"].lower()
         if n.endswith(".ia.mp4"): return 0
         if n.endswith(".mp4") and f.get("source") == "derivative": return 1
         if n.endswith(".mp4"): return 2
+        if n.endswith(".mkv"): return 2.5
         if n.endswith(".opus") or n.endswith(".webm"): return 3
         return 4  # mp3 / m4a
     chosen = []

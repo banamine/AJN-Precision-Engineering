@@ -9,9 +9,13 @@ import urllib.error
 from unittest import mock
 
 
+_tools_dir = os.path.join(os.path.dirname(__file__), "tools")
+if not os.path.isdir(_tools_dir):
+    _tools_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tools")
+
 SPEC = importlib.util.spec_from_file_location(
     "infobattalion_builder",
-    os.path.join(os.path.dirname(__file__), "tools", "build-infobattalion-lists.py"),
+    os.path.join(_tools_dir, "build-infobattalion-lists.py"),
 )
 builder = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(builder)
@@ -386,6 +390,46 @@ class AdditiveListSelectionTests(unittest.TestCase):
             client.get("https://archive.org/metadata/fixture")
         self.assertEqual(calls, [])
 
+    def test_get_range_contract(self):
+        # 1. Asserts Range header is sent and no more than (end-start+1) bytes read
+        headers_sent = {}
+        class RangeResponse(io.BytesIO):
+            status = 206
+            def __enter__(self): return self
+            def __exit__(self, *_): self.close()
+
+        def opener(req, **_):
+            headers_sent.update(req.headers)
+            return RangeResponse(b"0123456789EXTRA")
+
+        client = builder.ArchiveClient(opener=opener)
+        body = client.get_range("https://archive.org/download/item/file.mkv", 0, 9)
+        self.assertEqual(headers_sent.get("Range"), "bytes=0-9")
+        self.assertEqual(body, b"0123456789")
+        self.assertEqual(len(body), 10)
+
+        # 2. Asserts a 200 answer raises RuntimeError
+        class OkResponse(io.BytesIO):
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *_): self.close()
+
+        client_200 = builder.ArchiveClient(opener=lambda req, **_: OkResponse(b"all data"))
+        with self.assertRaises(RuntimeError) as ctx:
+            client_200.get_range("https://archive.org/download/item/file.mkv", 0, 9)
+        self.assertIn("expected 206, got 200", str(ctx.exception))
+
+        # 3. Asserts a 302 to a non-archive host raises ArchiveFetchStopped
+        def redirect_opener(req, **_):
+            raise urllib.error.HTTPError(
+                req.full_url, 302, "Found",
+                {"Location": "https://malicious.com/file.mkv"}, None
+            )
+
+        client_redirect = builder.ArchiveClient(opener=redirect_opener)
+        with self.assertRaises(builder.ArchiveFetchStopped):
+            client_redirect.get_range("https://archive.org/download/item/file.mkv", 0, 9)
+
 
 class List5IntegrationTests(unittest.TestCase):
     def test_partial_list5_build_only_fetches_new_ids_and_preserves_other_data(self):
@@ -525,11 +569,17 @@ class SourceSwitchTests(unittest.TestCase):
 
     def test_repo_config_enables_current_sources(self):
         import json
-        sw = builder.source_switches(json.load(open(os.path.join(os.path.dirname(__file__), "config", "catalog-refresh.json"))))
+        cfg_dir = os.path.join(os.path.dirname(__file__), "config")
+        if not os.path.isdir(cfg_dir):
+            cfg_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config")
+        sw = builder.source_switches(json.load(open(os.path.join(cfg_dir, "catalog-refresh.json"))))
         self.assertTrue(all(sw.values()), sw)
 
     def test_overrides_validate(self):
         import json, tempfile
+        cfg_dir = os.path.join(os.path.dirname(__file__), "config")
+        if not os.path.isdir(cfg_dir):
+            cfg_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config")
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
             json.dump({"items": {"Some_Item": "tv"}}, f)
         self.assertEqual(builder.load_overrides(f.name), {"some_item": "tv"})
@@ -537,7 +587,7 @@ class SourceSwitchTests(unittest.TestCase):
             json.dump({"items": {"x": "documentary"}}, f)
         with self.assertRaises(ValueError):
             builder.load_overrides(f.name)
-        self.assertEqual(builder.load_overrides(os.path.join(os.path.dirname(__file__), "config", "catalog-overrides.json")), {})
+        self.assertEqual(builder.load_overrides(os.path.join(cfg_dir, "catalog-overrides.json")), {})
 
 
 class MovieListClassificationTests(unittest.TestCase):

@@ -22,6 +22,33 @@ Rules (each is enforced here, not hoped for):
 import argparse, hashlib, json, os, re, sys, urllib.parse, urllib.request
 from collections import Counter, defaultdict
 
+here = os.path.dirname(os.path.abspath(__file__))
+root = os.path.dirname(here)
+
+MKV_VERIFIED_PATH = os.path.join(root, "src", "data", "mkvCodecVerified.json")
+MKV_VERIFIED = {}
+if os.path.isfile(MKV_VERIFIED_PATH):
+    try:
+        with open(MKV_VERIFIED_PATH, "r", encoding="utf-8") as _f:
+            _d = json.load(_f)
+            if isinstance(_d, dict) and "files" in _d:
+                MKV_VERIFIED = _d["files"]
+    except Exception as _e:
+        print(f"Warning: could not load {MKV_VERIFIED_PATH}: {_e}")
+else:
+    print(f"Warning: {MKV_VERIFIED_PATH} missing; using empty verified mkv table")
+
+def is_verified_mkv(ident, name):
+    key = f"/download/{ident}/{name}"
+    entry = MKV_VERIFIED.get(key)
+    if not entry:
+        return False
+    return (
+        entry.get("status") == "verified"
+        and bool(entry.get("browserPlayable"))
+        and bool(entry.get("hasCues"))
+    )
+
 BASE = "https://archive.org/download/daily-highlights/M3U%20Organizer%20Output/"
 FOLDERS = ["Classic TV", "TV", "Movies", "Mixed", "Music"]
 CLASSIC_FOLDERS = ["Classic TV", "TV"]            # priority order: first folder wins on duplicates
@@ -380,6 +407,7 @@ def resolve(ident, path, meta):
         else:
             d = files.get(stem + ".mp4")
             if d and not d["priv"] and d["src"] == "derivative": pick = d
+            elif ext == "mkv" and is_verified_mkv(it["id"], f["name"]): pick = f
     else:
         if ext in AUDIO_OK: pick = f
         else:

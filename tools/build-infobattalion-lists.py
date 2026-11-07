@@ -183,6 +183,80 @@ class ArchiveClient:
                 raise ArchiveFetchStopped("Archive redirect limit exceeded")
         raise RuntimeError("Archive request attempts exhausted")
 
+    def get_range(self, url, start, end):
+        max_bytes = end - start + 1
+        headers = dict(UA)
+        headers["Range"] = f"bytes={start}-{end}"
+        for attempt in range(1, 5):
+            target = url
+            for hop in range(6):
+                started = self._start(target, attempt)
+                req = urllib.request.Request(target, headers=headers)
+                try:
+                    with self.opener(req, timeout=120) as response:
+                        status = getattr(response, "status", getattr(response, "code", 200))
+                        if status != 206:
+                            raise RuntimeError(f"expected 206, got {status}")
+                        body = response.read(max_bytes)
+                    self._ledger({"event": "result", "startedMonotonic": started, "url": target, "attempt": attempt,
+                                  "redirectHops": hop, "status": status, "range": f"{start}-{end}", "bytes": len(body)})
+                    return body
+                except urllib.error.HTTPError as error:
+                    retry_after = error.headers.get("Retry-After") if error.headers else None
+                    if error.code in (403, 429, 503):
+                        with self._start_lock:
+                            self._stopped = True
+                        raise ArchiveFetchStopped(
+                            f"Archive returned HTTP {error.code}; stopping immediately without retry"
+                        ) from error
+                    if error.code in (301, 302, 303, 307, 308):
+                        location = error.headers.get("Location") if error.headers else None
+                        redirect = urllib.parse.urljoin(target, location or "")
+                        parts = urllib.parse.urlsplit(redirect)
+                        if not location or parts.scheme != "https" or not (parts.hostname == "archive.org" or (parts.hostname or "").endswith(".archive.org")):
+                            self._ledger({"event": "result", "startedMonotonic": started, "url": target, "attempt": attempt,
+                                          "status": error.code, "redirectBlocked": redirect})
+                            raise ArchiveFetchStopped("Archive redirect missing or outside HTTPS Archive hosts")
+                        self._ledger({"event": "redirect", "startedMonotonic": started, "from": target, "to": redirect,
+                                      "attempt": attempt, "hop": hop + 1, "status": error.code})
+                        target = redirect
+                        continue
+                    self._ledger({"event": "result", "startedMonotonic": started, "url": target, "attempt": attempt,
+                                  "status": error.code, "retryAfter": retry_after})
+                    if error.code in (429, 503) or retry_after:
+                        if attempt < 4:
+                            wait_seconds = self.interval
+                            if retry_after:
+                                try:
+                                    wait_seconds = max(0.0, float(retry_after))
+                                except ValueError:
+                                    try:
+                                        retry_at = email.utils.parsedate_to_datetime(retry_after)
+                                        if retry_at.tzinfo is None:
+                                            retry_at = retry_at.replace(tzinfo=timezone.utc)
+                                        wait_seconds = max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
+                                    except (TypeError, ValueError, OverflowError):
+                                        wait_seconds = self.interval
+                            wait_seconds = min(60.0, max(self.interval, wait_seconds))
+                            self._ledger({"event": "retry_wait", "startedMonotonic": started, "url": target,
+                                          "attempt": attempt, "waitSeconds": wait_seconds, "retryAfter": retry_after})
+                            self.sleeper(wait_seconds)
+                            break
+                        with self._start_lock:
+                            self._stopped = True
+                        raise ArchiveFetchStopped(f"Archive returned HTTP {error.code}; Retry-After={retry_after or 'none'}; retry cap reached") from error
+                    if error.code >= 500 and attempt < 3:
+                        break
+                    raise
+                except (urllib.error.URLError, TimeoutError, OSError) as error:
+                    self._ledger({"event": "result", "startedMonotonic": started, "url": target, "attempt": attempt,
+                                  "status": "network_error", "error": type(error).__name__})
+                    if attempt == 3: raise
+                    break
+            else:
+                raise ArchiveFetchStopped("Archive redirect limit exceeded")
+        raise RuntimeError("Archive request attempts exhausted")
+
 def load_owner_lists(cache_path, *, fetch=False, resume=False, fetcher=None):
     """Use the saved owner-list snapshot when resuming; never re-fetch it."""
     if resume and not os.path.isfile(cache_path):
