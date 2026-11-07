@@ -1,15 +1,9 @@
 import assert from 'node:assert';
 import { setMockVerifiedData, mkvVerdict } from './server/sources/mkvVerified';
-import { mediaExtension } from './server/sources/archiveLinks';
+import { notWebPlayableVideo } from './server/sources/archiveLinks';
 
-const WEB_VIDEO = /\.(mp4|m4v|webm|ogv|m3u8)$/i;
-
-function testNotWebPlayableVideo(pathOrUrl: string | undefined): string | null {
-  const ext = mediaExtension(pathOrUrl);
-  if (!ext) return 'no media file (folder or page link)';
-  if (ext === 'mkv') return mkvVerdict(pathOrUrl);
-  return WEB_VIDEO.test(`.${ext}`) ? null : `.${ext} is not browser-playable`;
-}
+// Tests the REAL admission function used by guides (not a copy of its logic).
+const testNotWebPlayableVideo = notWebPlayableVideo;
 
 console.log('Running test-mkv-admission.ts...');
 

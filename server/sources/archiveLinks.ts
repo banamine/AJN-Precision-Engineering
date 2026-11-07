@@ -1,6 +1,7 @@
 // Archive links are used exactly as given. The only transformation is dropping
 // the https://archive.org origin so the path can go through /api/archive/proxy.
 import { buildArchiveProxyUrl } from '../../src/utils/archivePlayback';
+import { mkvVerdict } from './mkvVerified';
 
 const ARCHIVE_DOWNLOAD = /^https?:\/\/(?:www\.)?archive\.org(\/download\/.+)$/i;
 
@@ -32,9 +33,11 @@ export function unplayableReason(pathOrUrl: string | undefined): Unplayable | nu
   return ARCHIVE_MEMBER.test(path) ? 'UNPLAYABLE_ARCHIVE_MEMBER' : null;
 }
 
-/** Video containers Chrome/Safari/Firefox can demux. Everything else (.avi, .mkv, .mpg, .mov, .m3u, .nfo,
+/** Video containers Chrome/Safari/Firefox can demux. Everything else (.avi, .mpg, .mov, .m3u, .nfo,
  *  bare folder links) fails with MEDIA_ERR_SRC_NOT_SUPPORTED (code 4), so it must never be admitted to a
- *  guide. Only `.mov` is arguable (H.264 .mov sometimes plays), but it is not verified, so it is rejected. */
+ *  guide. Only `.mov` is arguable (H.264 .mov sometimes plays), but it is not verified, so it is rejected.
+ *  `.mkv` is admitted only when src/data/mkvCodecVerified.json lists it as verified H.264 + AAC/MP3/Opus/Vorbis
+ *  with a seek index (see server/sources/mkvVerified.ts); every other .mkv gets an explicit reason. */
 const WEB_VIDEO = /\.(mp4|m4v|webm|ogv|m3u8)$/i;
 /** Extension of a media path or URL, ignoring query/hash and unwrapping /api/archive/proxy?path=. */
 export function mediaExtension(pathOrUrl: string | undefined): string {
@@ -49,5 +52,6 @@ export function mediaExtension(pathOrUrl: string | undefined): string {
 export function notWebPlayableVideo(pathOrUrl: string | undefined): string | null {
   const ext = mediaExtension(pathOrUrl);
   if (!ext) return 'no media file (folder or page link)';
+  if (ext === 'mkv') return mkvVerdict(pathOrUrl);
   return WEB_VIDEO.test(`.${ext}`) ? null : `.${ext} is not browser-playable`;
 }
