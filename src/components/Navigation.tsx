@@ -361,7 +361,7 @@ export function Navigation({
                 type="button"
                 id="header-now-playing-pill"
                 onClick={() => onNavigate('player')}
-                className="hidden xl:flex min-h-[44px] items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
+                className="hidden 2xl:flex min-h-[44px] items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 py-1 pl-2.5 pr-3 text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white"
                 title={`Now Playing: ${nowPlaying.title}`}
               >
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />

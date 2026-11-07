@@ -110,7 +110,7 @@ export function StatusIndicatorsView({ indicators, newsSnapshot, onPlayProgram, 
   const phoneIconOnly = (ind: ServiceIndicator) => ind.tone === 'neutral' || (crowded && ind.id !== 'network');
 
   return (
-    <div ref={rootRef} className="flex min-w-0 items-center gap-1.5" data-testid="status-indicators" role="group" aria-label="Service status">
+    <div ref={rootRef} className="flex shrink-0 items-center gap-1.5" data-testid="status-indicators" role="group" aria-label="Service status">
       {indicators.map((ind) => {
         const tone = TONE_CLASS[ind.tone];
         const reportId = `${uid}-${ind.id}-report`;
