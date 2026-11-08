@@ -14,3 +14,10 @@ It never uploads anywhere.
 GitHub: Actions -> `ajn-zipmember-stage` -> Run workflow. Reports are kept as a private-to-viewers artifact.
 **This repository is public**: the episodes themselves are only kept as an artifact when you tick `keep_media`
 (anyone signed in to GitHub could then download them). Default is reports only.
+
+
+## Drive setup (one time, on your PC)
+1. Install rclone (https://rclone.org/downloads/), then run `rclone config`: new remote named `gdrive`, type `drive`, scope full access, sign in with the Google account that owns the folder.
+2. Open the config file shown by `rclone config file`, copy ALL of it.
+3. GitHub repo -> Settings -> Secrets and variables -> Actions -> New repository secret, name `RCLONE_CONF`, paste it.
+4. Run the `ajn-zipmember-stage` workflow; `to_drive` is on by default. Files land in the Drive folder as `<item>/<zip>/<episode>.mp4`. Nothing goes to Archive.
