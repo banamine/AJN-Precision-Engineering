@@ -6,10 +6,13 @@ import { normalizeProgramIdentity, normalizeAssetIdentity, normalizeSourceIdenti
 import { SERIES_CONFIG, type SeriesConfig } from './series-config';
 import type { Manifest } from './series-parse';
 import manifestFile from '../src/data/seriesManifests.json';
+import { ZIPMEMBER_SERIES, zipmemberManifests } from './zipmember-series';
 
-const manifests = (manifestFile as unknown as { series: Record<string, Manifest> }).series ?? {};
+const fileManifests = (manifestFile as unknown as { series: Record<string, Manifest> }).series ?? {};
+/* Zip-member shows (Babylon 5, SHIELD, DS9, Stargate Atlantis) appear only when data/zipmember-fastcopies.json has verified entries. */
+const manifests: Record<string, Manifest> = { ...fileManifests, ...zipmemberManifests() };
 
-export const seriesChannels = (): SeriesConfig[] => SERIES_CONFIG.filter((c) => (manifests[c.key]?.episodes.length ?? 0) > 0);
+export const seriesChannels = (): SeriesConfig[] => [...SERIES_CONFIG, ...ZIPMEMBER_SERIES].filter((c) => (manifests[c.key]?.episodes.length ?? 0) > 0);
 export const getSeriesManifest = (key: string): Manifest | undefined => manifests[key];
 
 const pad = (n: number) => String(n).padStart(2, '0');
