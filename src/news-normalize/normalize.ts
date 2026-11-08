@@ -46,7 +46,7 @@ export function normalizeRaw(raw: RawItem, config: SourceConfig): NormalizeResul
 
   const rawUrl = pick(raw, 'url', 'link');
   const parsed = parseArticleUrl(rawUrl);
-  if (!parsed.ok) {
+  if (parsed.ok === false) {
     diagnostics.push({ code: `url-${parsed.reason}`, field: 'url' });
     return { ok: false, reason: `url-${parsed.reason}`, diagnostics };
   }
