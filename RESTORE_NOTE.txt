@@ -1,0 +1,3 @@
+Exact copies of these 5 files from the AI Studio export taken at 4:17 AM, before any of my changes.
+Upload all 5, keep paths. server.ts must be 58543 bytes, src/MinimalPlayer.tsx 77816.
+The stray folder patches/ can stay; it is not used by the app.

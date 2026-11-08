@@ -1,0 +1,46 @@
+--- a/server.ts	2026-11-08 04:32:31.028438624 -0700
++++ b/server.ts	2026-11-08 04:32:51.964196422 -0700
+@@ -470,6 +470,8 @@
+ }
+ const proxyImageCache = new Map<string, CachedProxyImage>();
+ const MAX_IMAGE_CACHE_ENTRIES = 300;
++const MAX_IMAGE_CACHE_BYTES = 48 * 1024 * 1024; // total heap held by cached images
++const MAX_IMAGE_CACHE_ITEM_BYTES = 4 * 1024 * 1024; // one larger image is served but not cached
+ const IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+ 
+ registerFolderArtRoute(app);
+@@ -756,17 +758,24 @@
+           if (value) chunks.push(Buffer.from(value));
+         }
+         const fullBuffer = Buffer.concat(chunks);
+-        if (proxyImageCache.size >= MAX_IMAGE_CACHE_ENTRIES) {
+-          const oldestKey = proxyImageCache.keys().next().value;
+-          if (oldestKey) proxyImageCache.delete(oldestKey);
++        if (fullBuffer.length <= MAX_IMAGE_CACHE_ITEM_BYTES) {
++          proxyImageCache.delete(v.cleanPath); // re-insert at the newest position
++          let cachedBytes = 0;
++          for (const entry of proxyImageCache.values()) cachedBytes += entry.buffer.length;
++          while (proxyImageCache.size > 0 && (proxyImageCache.size >= MAX_IMAGE_CACHE_ENTRIES || cachedBytes + fullBuffer.length > MAX_IMAGE_CACHE_BYTES)) {
++            const oldestKey = proxyImageCache.keys().next().value;
++            if (oldestKey === undefined) break;
++            cachedBytes -= proxyImageCache.get(oldestKey)?.buffer.length ?? 0;
++            proxyImageCache.delete(oldestKey);
++          }
++          proxyImageCache.set(v.cleanPath, {
++            contentType: contentType || 'image/jpeg',
++            buffer: fullBuffer,
++            etag: etag ?? undefined,
++            lastModified: lastModified ?? undefined,
++            expires: Date.now() + IMAGE_CACHE_TTL_MS,
++          });
+         }
+-        proxyImageCache.set(v.cleanPath, {
+-          contentType: contentType || 'image/jpeg',
+-          buffer: fullBuffer,
+-          etag: etag ?? undefined,
+-          lastModified: lastModified ?? undefined,
+-          expires: Date.now() + IMAGE_CACHE_TTL_MS,
+-        });
+         return res.end(fullBuffer);
+       } catch (streamErr: any) {
+         if (!upstreamAbort.signal.aborted) console.error('[Archive Proxy Image Stream Error]', proxyRequestId, streamErr?.message);
