@@ -1,18 +1,12 @@
 import { cleanAjnDisplayTitle } from "../utils/ajnTitleNormalizer";
-import { localHours } from "./groupProgramsForGrid";
+import { withLocalHours, type ProgramHourInput } from "./programHours";
 import { formatHour } from "./todayList";
 
-export interface ProgramLike {
+export interface ProgramLike extends ProgramHourInput {
   id: string;
   title: string;
   channelId?: string;
   guideId?: string;
-  startTime?: number;
-  endTime?: number;
-  startHour?: number;
-  endHour?: number;
-  startTimeUtc?: string;
-  endTimeUtc?: string;
   duration?: number;
   description?: string;
   archivePath?: string;
@@ -20,7 +14,6 @@ export interface ProgramLike {
   mediaType?: "video" | "audio";
   sourceId?: string;
   assetId?: string;
-  metadata?: Record<string, unknown>;
 }
 
 export interface Entry {
@@ -60,8 +53,18 @@ export function extractSeasonEpisode(program: ProgramLike): string | null {
     }
     const sRaw = meta.season ?? meta.seasonNumber;
     const eRaw = meta.episode ?? meta.episodeNumber;
-    const sNum = typeof sRaw === "number" ? sRaw : typeof sRaw === "string" && /^\d+$/.test(sRaw.trim()) ? Number(sRaw.trim()) : NaN;
-    const eNum = typeof eRaw === "number" ? eRaw : typeof eRaw === "string" && /^\d+$/.test(eRaw.trim()) ? Number(eRaw.trim()) : NaN;
+    const sNum =
+      typeof sRaw === "number"
+        ? sRaw
+        : typeof sRaw === "string" && /^\d+$/.test(sRaw.trim())
+          ? Number(sRaw.trim())
+          : NaN;
+    const eNum =
+      typeof eRaw === "number"
+        ? eRaw
+        : typeof eRaw === "string" && /^\d+$/.test(eRaw.trim())
+          ? Number(eRaw.trim())
+          : NaN;
     if (Number.isInteger(sNum) && sNum > 0 && Number.isInteger(eNum) && eNum > 0) {
       return `S${String(sNum).padStart(2, "0")}E${String(eNum).padStart(2, "0")}`;
     }
@@ -84,7 +87,6 @@ function resolveProgramHours(program: ProgramLike, nowMs: number, nowHour: numbe
     const midMs = midnight.getTime();
     const sHour = (startMs - midMs) / 3_600_000;
     const eHour = (endMs - midMs) / 3_600_000;
-    // Skip UTC entries that do not touch the current local day [0, 24]
     if (eHour <= 0 || sHour >= 24) return null;
     return { sHour, eHour };
   }
@@ -93,7 +95,7 @@ function resolveProgramHours(program: ProgramLike, nowMs: number, nowHour: numbe
   const hasExplicitEnd = typeof program.endHour === "number" || typeof program.endTime === "number";
   if (!hasExplicitStart && !hasExplicitEnd) return null;
 
-  const base = localHours(program as Parameters<typeof localHours>[0]);
+  const base = withLocalHours(program, nowMs);
   const rawStart = base.sHour;
   const rawEnd = base.eHour;
   if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd)) return null;
@@ -112,7 +114,7 @@ function resolveProgramHours(program: ProgramLike, nowMs: number, nowHour: numbe
 
 /**
  * Splits a channel's programs into past, now, and upcoming relative to nowMs.
- * Uses the same hour fields as localHours in groupProgramsForGrid.ts.
+ * Uses withLocalHours from programHours.ts (same fields as localHours in groupProgramsForGrid.ts).
  */
 export function buildRundown(programs: readonly ProgramLike[], nowMs: number): RundownResult {
   const safeNowMs = Number.isFinite(nowMs) ? nowMs : Date.now();

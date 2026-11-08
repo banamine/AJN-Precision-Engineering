@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { buildLiveKey } from "./src/guide/programHours";
 import { buildRundown, nextUp, type ProgramLike } from "./src/guide/rundown";
 
 function localTimeMs(hours: number, minutes = 0, seconds = 0): number {
@@ -111,4 +112,21 @@ const samplePrograms: ProgramLike[] = [
   assert.deepEqual(nextUp(samplePrograms, localTimeMs(7, 0), 0), []);
 }
 
-console.log("[rundown] PASS — before-first, mid-program, gap (now=null), after-last, midnight crossing, empty list, nextUp count>available");
+// 8. buildLiveKey fallback when program has no id
+{
+  assert.equal(buildLiveKey("ch-1", null), null);
+  assert.equal(
+    buildLiveKey("ch-1", { program: { id: "prog-99", title: "News" }, sHour: 14 }),
+    "prog-99:14",
+  );
+  assert.equal(
+    buildLiveKey("ch-1", { program: { id: "", title: "Untitled Show" }, sHour: 14.5 }),
+    "ch-1:14.5:Untitled Show",
+  );
+  assert.equal(
+    buildLiveKey("ch-1", { program: { title: "No Id Show" }, sHour: 9 }),
+    "ch-1:9:No Id Show",
+  );
+}
+
+console.log("[rundown] PASS — before-first, mid-program, gap (now=null), after-last, midnight crossing, empty list, nextUp count>available, liveKey fallback");

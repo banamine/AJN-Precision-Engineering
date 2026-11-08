@@ -12,7 +12,7 @@ import { FOCUS_EVENT, peekChannelFocus, takeChannelFocus } from "./guide/focusRe
 import { buildFallbackShowInfo } from "./showinfo/fallback";
 import { clearScheduleCache, getCachedChannelRows, getCachedLightSchedule, getCachedSchedule, isStale, isValidAudioLightSchedule, setCachedChannelRows, setCachedLightSchedule, setCachedSchedule } from "./guide/scheduleCache";
 import { channelSchedulePool } from "./guide/channelSchedulePool";
-import { groupProgramsForGrid, isMusicChannel, type GridBlock } from "./guide/groupProgramsForGrid";
+import { groupProgramsForGrid, isMusicChannel, type GridBlock, type GridItem } from "./guide/groupProgramsForGrid";
 import { BlockCell, NowPlayingLine, TrackDrawer } from "./guide/BlockCell";
 import { findLiveProgram, tuneIn, mediaTypeFor, isLiveStream, type LiveItem } from "./guide/liveTune";
 import { getNewsFreshness, newsFreshnessBanner, newsTimelineLabel } from "./guide/newsFreshness";
@@ -20,11 +20,25 @@ import { computeWindow, panBy, intersects, clipToWindow, redLineLeft, type TimeW
 import { loadLastView, saveLastView, VALID_DESTINATIONS } from "./nav/lastView";
 import { loadFilterPrefs, saveFilterPrefs } from "./guide/filterPrefs";
 import { ajnArtFor } from "./utils/ajnArt";
+import {
+  buildLiveKey,
+  buildProgramLiveKey,
+  currentHourFraction,
+  hourLabel,
+  withLocalHours,
+} from "./guide/programHours";
 import { AUDIO_ROW_HEIGHT_PX, buildHeightPrefixSums, computeRowWindow, ROW_HEIGHT_PX } from "./guide/virtualRows";
 import { ChannelRundown } from "./guide/ChannelRundown";
 import { ChannelRoster } from "./guide/ChannelRoster";
 
 export { ROW_HEIGHT_PX, AUDIO_ROW_HEIGHT_PX } from "./guide/virtualRows";
+export {
+  buildLiveKey,
+  buildProgramLiveKey,
+  currentHourFraction,
+  hourLabel,
+  withLocalHours,
+} from "./guide/programHours";
 
 const DEFAULT_VIEW_WIDTH_PX = 960; // used until the real width is measured (and in server-side tests)
 const DEFAULT_VIEWPORT_HEIGHT_PX = 800;
@@ -37,25 +51,6 @@ export const DESCRIPTION_MIN_BLOCK_PX = 240;
 
 export type GuideViewMode = "grid" | "roster" | "channel";
 export type GuideDayOption = "yesterday" | "today" | "tomorrow";
-
-function hourLabel(hour: number): string {
-  const h = Math.floor(hour) % 24;
-  const period = h < 12 ? "AM" : "PM";
-  const display = h % 12 === 0 ? 12 : h % 12;
-  return `${display}${period}`;
-}
-
-/** Grid hours for a program. Listings timed in UTC (Live TV from Pluto) are
- *  placed in the viewer's local day and clipped to it; others use their hours. */
-export function withLocalHours(program: Program): { program: Program; sHour: number; eHour: number } {
-  if (program.metadata?.epg === "utc" && program.startTimeUtc && program.endTimeUtc) {
-    const midnight = new Date();
-    midnight.setHours(0, 0, 0, 0);
-    const h = (iso: string) => (Date.parse(iso) - midnight.getTime()) / 3_600_000;
-    return { program, sHour: Math.max(0, h(program.startTimeUtc)), eHour: Math.min(24, h(program.endTimeUtc)) };
-  }
-  return { program, sHour: program.startHour ?? program.startTime ?? 0, eHour: program.endHour ?? program.endTime ?? 24 };
-}
 
 /** True when every program is date-only (no air slot): the channel lives in the Library, not on the grid. */
 function isLibraryOnlyChannel(channel: ScheduleChannel): boolean {
@@ -87,11 +82,6 @@ function airedTimeLabel(program: Program): { label: string; tooltip: string } | 
   };
 }
 
-export function currentHourFraction(): number {
-  const now = new Date();
-  return now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-}
-
 function cachedGuideChannels(guideId: string): ScheduleChannel[] | null {
   if (guideId === "classic-tv" || guideId === "audio-podcasts") {
     return getCachedLightSchedule(guideId)?.channels ?? getCachedSchedule(guideId)?.channels ?? null;
@@ -103,11 +93,6 @@ function isScheduleChannel(value: unknown): value is ScheduleChannel {
   if (typeof value !== "object" || value === null) return false;
   const record = value as Record<string, unknown>;
   return typeof record.id === "string" && typeof record.name === "string" && Array.isArray(record.programs);
-}
-
-function computeLiveKey(item: LiveItem | null): string | null {
-  if (!item) return null;
-  return `${item.program.id}:${item.sHour}`;
 }
 
 interface EpgGuideProps {
@@ -292,201 +277,200 @@ interface MemoStationRowProps {
   guideId: string;
   rowH: number;
   stationNumber: number;
-  liveItem: LiveItem | null;
   liveKey: string | null;
-  groupedRow: ReturnType<typeof groupProgramsForGrid> | undefined;
-  nowHour: number;
+  liveTitle: string | undefined;
+  liveThumbPath: string | null;
+  isMusicRow: boolean;
+  liveTrackItem: GridItem | null;
+  playingChannelId: string | null;
   isFlashing: boolean;
-  isPlaying: boolean;
   matchedShowTitle: string | undefined;
   playNowStatus: "loading" | "load-error" | "no-current" | undefined;
-  onPlayLive: (channel: ScheduleChannel, item: LiveItem | null) => void;
+  onPlayLiveChannel: (channel: ScheduleChannel) => void;
 }
 
-const MemoStationRow = memo(
-  function MemoStationRow({
-    channel,
-    guideId,
-    rowH,
-    stationNumber,
-    liveItem,
-    groupedRow,
-    nowHour,
-    isFlashing,
-    isPlaying,
-    matchedShowTitle,
-    playNowStatus,
-    onPlayLive,
-  }: MemoStationRowProps) {
-    const isAudio = channel.mediaType === "audio" || guideId === "audio-podcasts";
-    const displayChannelName = cleanAjnDisplayTitle(channel.name);
-    const newsFreshness =
-      guideId === "cable-tv" && channel.group?.toLowerCase() === "news"
-        ? getNewsFreshness(channel.programs, Date.now())
-        : null;
-    const newsFreshnessMessage = newsFreshness ? newsFreshnessBanner(newsFreshness) : null;
-    const liveTitle = liveItem ? cleanAjnDisplayTitle(liveItem.program.title) : undefined;
-    const canPlayNow = Boolean(liveItem) || channel.hasCurrentProgram === true;
-    const playNowLoading = playNowStatus === "loading";
+/**
+ * Memoized using plain React.memo with ordinary shallow prop comparison.
+ * Replaces raw nowHour with liveKey + derived live metadata so 30s ticks
+ * only re-render rows whose live program actually changed.
+ */
+const MemoStationRow = memo(function MemoStationRow({
+  channel,
+  guideId,
+  rowH,
+  stationNumber,
+  liveKey,
+  liveTitle,
+  liveThumbPath,
+  isMusicRow,
+  liveTrackItem,
+  playingChannelId,
+  isFlashing,
+  matchedShowTitle,
+  playNowStatus,
+  onPlayLiveChannel,
+}: MemoStationRowProps) {
+  const isAudio = channel.mediaType === "audio" || guideId === "audio-podcasts";
+  const isPlaying = playingChannelId === channel.id;
+  const displayChannelName = cleanAjnDisplayTitle(channel.name);
+  const newsFreshness =
+    guideId === "cable-tv" && channel.group?.toLowerCase() === "news"
+      ? getNewsFreshness(channel.programs, Date.now())
+      : null;
+  const newsFreshnessMessage = newsFreshness ? newsFreshnessBanner(newsFreshness) : null;
+  const hasLiveProgram = liveKey !== null;
+  const canPlayNow = hasLiveProgram || channel.hasCurrentProgram === true;
+  const playNowLoading = playNowStatus === "loading";
+  const trackNowHour = liveTrackItem ? (liveTrackItem.sHour + liveTrackItem.eHour) / 2 : 0;
 
-    return (
-      <div
-        data-highlight={channel.highlight}
-        data-channel-id={channel.id}
-        data-epg-channel-row
-        aria-current={isPlaying ? "true" : undefined}
-        className={`flex flex-col justify-center border-b border-neutral-800 px-3.5 ${
-          isFlashing ? "bg-amber-500/15 ring-2 ring-inset ring-amber-400/70 " : ""
-        }${isPlaying && !isFlashing ? "bg-emerald-500/10 ring-1 ring-inset ring-emerald-400/60 border-l-4 border-l-emerald-400 " : ""}${
-          channel.highlight === "must-listen" && !isPlaying
-            ? "border-l-4 border-l-fuchsia-400 bg-gradient-to-r from-fuchsia-500/20 via-fuchsia-500/5 to-transparent"
-            : ""
-        }`}
-        style={{ height: rowH }}
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            data-testid="station-number"
-            title={`Station ${stationNumber}`}
-            className="w-8 shrink-0 text-right font-mono text-[11px] font-semibold tabular-nums text-neutral-400"
-          >
-            {stationLabel(stationNumber)}
-          </span>
-          <ChannelLogo
-            logo={channel.logo}
-            name={displayChannelName}
-            fallback={
-              <LazyThumb
-                title={channel.name}
-                input={{
-                  path:
-                    liveItem?.program.archivePath ??
-                    liveItem?.program.mediaUrl ??
-                    channel.programs[0]?.archivePath ??
-                    channel.programs[0]?.mediaUrl ??
-                    null,
-                  guideId,
-                  channelId: channel.id,
-                  category: channel.group ?? null,
+  return (
+    <div
+      data-highlight={channel.highlight}
+      data-channel-id={channel.id}
+      data-epg-channel-row
+      data-live-key={liveKey ?? ""}
+      aria-current={isPlaying ? "true" : undefined}
+      className={`flex flex-col justify-center border-b border-neutral-800 px-3.5 ${
+        isFlashing ? "bg-amber-500/15 ring-2 ring-inset ring-amber-400/70 " : ""
+      }${isPlaying && !isFlashing ? "bg-emerald-500/10 ring-1 ring-inset ring-emerald-400/60 border-l-4 border-l-emerald-400 " : ""}${
+        channel.highlight === "must-listen" && !isPlaying
+          ? "border-l-4 border-l-fuchsia-400 bg-gradient-to-r from-fuchsia-500/20 via-fuchsia-500/5 to-transparent"
+          : ""
+      }`}
+      style={{ height: rowH }}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <span
+          data-testid="station-number"
+          title={`Station ${stationNumber}`}
+          className="w-8 shrink-0 text-right font-mono text-[11px] font-semibold tabular-nums text-neutral-400"
+        >
+          {stationLabel(stationNumber)}
+        </span>
+        <ChannelLogo
+          logo={channel.logo}
+          name={displayChannelName}
+          fallback={
+            <LazyThumb
+              title={channel.name}
+              input={{
+                path:
+                  liveThumbPath ??
+                  channel.programs[0]?.archivePath ??
+                  channel.programs[0]?.mediaUrl ??
+                  null,
+                guideId,
+                channelId: channel.id,
+                category: channel.group ?? null,
+                mediaType: channel.mediaType,
+                name: channel.name,
+                placeholder: ajnArtFor({
+                  show: `${channel.name} ${channel.group ?? ""}`,
                   mediaType: channel.mediaType,
-                  name: channel.name,
-                  placeholder: ajnArtFor({
-                    show: `${channel.name} ${channel.group ?? ""}`,
-                    mediaType: channel.mediaType,
-                    onlyAjn: true,
-                  }),
-                }}
-              />
-            }
-          />
-          <span className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-100" title={displayChannelName}>
-            {displayChannelName}
-          </span>
-          <button
-            type="button"
-            data-play-live={channel.id}
-            disabled={!canPlayNow || playNowLoading}
-            onClick={() => {
-              onPlayLive(channel, liveItem);
-            }}
-            title={
-              playNowLoading
-                ? `Loading the current program for ${displayChannelName}`
-                : liveItem
-                  ? `Play ${liveTitle} from the red line (${displayChannelName})`
-                  : canPlayNow
-                    ? `Load and play the current program on ${displayChannelName}`
-                    : `${displayChannelName}: nothing scheduled right now`
-            }
-            aria-label={
-              playNowLoading
-                ? `Loading ${displayChannelName} now`
-                : liveItem
-                  ? `Play ${displayChannelName} now: ${liveTitle}`
-                  : canPlayNow
-                    ? `Load and play ${displayChannelName} now`
-                    : `${displayChannelName}: nothing on air now`
-            }
-            aria-busy={playNowLoading}
-            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${
-              canPlayNow
-                ? (isAudio
-                    ? "border-amber-500/50 bg-amber-500/15 text-amber-300 hover:bg-amber-500/30"
-                    : "border-sky-500/50 bg-sky-500/15 text-sky-300 hover:bg-sky-500/30") + " cursor-pointer"
-                : "border-neutral-800 text-neutral-600 cursor-not-allowed"
-            }`}
-          >
-            <Play className="h-3 w-3 fill-current" />
-          </button>
-          {channel.id !== "item-unsorted" && (
-            <ShowInfoButton channelId={channel.id} title={displayChannelName} fallback={buildFallbackShowInfo(channel)} />
-          )}
-        </div>
-        {matchedShowTitle !== undefined && (
-          <span
-            data-testid="matched-show"
-            className="mt-0.5 truncate pl-10 text-[10px] text-sky-300"
-            title={cleanAjnDisplayTitle(matchedShowTitle)}
-          >
-            ↳ {cleanAjnDisplayTitle(matchedShowTitle)}
-          </span>
-        )}
-        <div className="mt-1 flex items-center gap-1.5 pl-10">
-          {channel.highlight === "must-listen" && (
-            <span
-              data-testid="must-listen-badge"
-              className="shrink-0 rounded bg-fuchsia-500 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wider text-white shadow shadow-fuchsia-500/40"
-            >
-              ★ Must listen
-            </span>
-          )}
-          <span className="truncate font-mono text-[10px] text-neutral-400" title={channel.group || undefined}>
-            {channel.group || (isAudio ? "Audio Stream" : "Video Feed")}
-          </span>
-        </div>
-        {newsFreshnessMessage && channel.programs.length > 0 && (
-          <span
-            data-testid="news-stale-banner"
-            title={newsFreshnessMessage}
-            className={`mt-0.5 truncate pl-10 text-[9px] font-medium ${
-              newsFreshness?.state === "stale" ? "text-amber-300" : "text-neutral-400"
-            }`}
-          >
-            {newsFreshnessMessage}
-          </span>
-        )}
-        {groupedRow !== undefined && (
-          <NowPlayingLine channelId={channel.id} item={groupedRow.liveItem ?? null} nowHour={nowHour} />
+                  onlyAjn: true,
+                }),
+              }}
+            />
+          }
+        />
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-100" title={displayChannelName}>
+          {displayChannelName}
+        </span>
+        <button
+          type="button"
+          data-play-live={channel.id}
+          disabled={!canPlayNow || playNowLoading}
+          onClick={() => {
+            onPlayLiveChannel(channel);
+          }}
+          title={
+            playNowLoading
+              ? `Loading the current program for ${displayChannelName}`
+              : hasLiveProgram && liveTitle
+                ? `Play ${liveTitle} from the red line (${displayChannelName})`
+                : canPlayNow
+                  ? `Load and play the current program on ${displayChannelName}`
+                  : `${displayChannelName}: nothing scheduled right now`
+          }
+          aria-label={
+            playNowLoading
+              ? `Loading ${displayChannelName} now`
+              : hasLiveProgram && liveTitle
+                ? `Play ${displayChannelName} now: ${liveTitle}`
+                : canPlayNow
+                  ? `Load and play ${displayChannelName} now`
+                  : `${displayChannelName}: nothing on air now`
+          }
+          aria-busy={playNowLoading}
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${
+            canPlayNow
+              ? (isAudio
+                  ? "border-amber-500/50 bg-amber-500/15 text-amber-300 hover:bg-amber-500/30"
+                  : "border-sky-500/50 bg-sky-500/15 text-sky-300 hover:bg-sky-500/30") + " cursor-pointer"
+              : "border-neutral-800 text-neutral-600 cursor-not-allowed"
+          }`}
+        >
+          <Play className="h-3 w-3 fill-current" />
+        </button>
+        {channel.id !== "item-unsorted" && (
+          <ShowInfoButton channelId={channel.id} title={displayChannelName} fallback={buildFallbackShowInfo(channel)} />
         )}
       </div>
-    );
-  },
-  (prev, next) =>
-    prev.channel === next.channel &&
-    prev.guideId === next.guideId &&
-    prev.rowH === next.rowH &&
-    prev.stationNumber === next.stationNumber &&
-    prev.liveKey === next.liveKey &&
-    prev.isFlashing === next.isFlashing &&
-    prev.isPlaying === next.isPlaying &&
-    prev.matchedShowTitle === next.matchedShowTitle &&
-    prev.playNowStatus === next.playNowStatus &&
-    prev.onPlayLive === next.onPlayLive,
-);
+      {matchedShowTitle !== undefined && (
+        <span
+          data-testid="matched-show"
+          className="mt-0.5 truncate pl-10 text-[10px] text-sky-300"
+          title={cleanAjnDisplayTitle(matchedShowTitle)}
+        >
+          ↳ {cleanAjnDisplayTitle(matchedShowTitle)}
+        </span>
+      )}
+      <div className="mt-1 flex items-center gap-1.5 pl-10">
+        {channel.highlight === "must-listen" && (
+          <span
+            data-testid="must-listen-badge"
+            className="shrink-0 rounded bg-fuchsia-500 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wider text-white shadow shadow-fuchsia-500/40"
+          >
+            ★ Must listen
+          </span>
+        )}
+        <span className="truncate font-mono text-[10px] text-neutral-400" title={channel.group || undefined}>
+          {channel.group || (isAudio ? "Audio Stream" : "Video Feed")}
+        </span>
+      </div>
+      {newsFreshnessMessage && channel.programs.length > 0 && (
+        <span
+          data-testid="news-stale-banner"
+          title={newsFreshnessMessage}
+          className={`mt-0.5 truncate pl-10 text-[9px] font-medium ${
+            newsFreshness?.state === "stale" ? "text-amber-300" : "text-neutral-400"
+          }`}
+        >
+          {newsFreshnessMessage}
+        </span>
+      )}
+      {isMusicRow && (
+        <NowPlayingLine channelId={channel.id} item={liveTrackItem} nowHour={trackNowHour} />
+      )}
+    </div>
+  );
+});
 
 interface MemoTimelineRowProps {
   channel: ScheduleChannel;
   guideId: string;
   rowH: number;
-  win: TimeWindow;
+  winStartHour: number;
+  winEndHour: number;
+  winHours: number;
   pxPerHour: number;
   viewWidth: number;
-  nowHour: number;
   liveKey: string | null;
   groupedRow: ReturnType<typeof groupProgramsForGrid> | undefined;
   hourMarkers: readonly number[];
   channelRowStatus: "loading" | "error" | undefined;
   playNowStatus: "loading" | "load-error" | "no-current" | undefined;
+  playingChannelId: string | null;
   onSelectProgram?: PlayProgramCallback;
   onEnsureChannelRows: (channelId: string, explicitRetry?: boolean) => Promise<ScheduleChannel | null>;
   onRetryPlayLive: (channel: ScheduleChannel) => void;
@@ -494,209 +478,205 @@ interface MemoTimelineRowProps {
   onAiredTimeVisibilityChange: (target: HTMLButtonElement, label: string | null) => void;
 }
 
-const MemoTimelineRow = memo(
-  function MemoTimelineRow({
-    channel,
-    guideId,
-    rowH,
-    win,
-    pxPerHour,
-    viewWidth,
-    nowHour,
-    groupedRow,
-    hourMarkers,
-    channelRowStatus,
-    playNowStatus,
-    onSelectProgram,
-    onEnsureChannelRows,
-    onRetryPlayLive,
-    onOpenDrawer,
-    onAiredTimeVisibilityChange,
-  }: MemoTimelineRowProps) {
-    const isBlocks = Boolean(groupedRow) && groupedRow?.mode !== "programs";
-    const playNowLoading = playNowStatus === "loading";
+/**
+ * Memoized using plain React.memo with ordinary shallow prop comparison.
+ * Receives liveKey + window primitives + hydration/playNow/playingChannelId state
+ * without raw nowHour so 30s ticks only re-render rows whose live program changed.
+ */
+const MemoTimelineRow = memo(function MemoTimelineRow({
+  channel,
+  guideId,
+  rowH,
+  winStartHour,
+  winEndHour,
+  winHours,
+  pxPerHour,
+  viewWidth,
+  liveKey,
+  groupedRow,
+  hourMarkers,
+  channelRowStatus,
+  playNowStatus,
+  onSelectProgram,
+  onEnsureChannelRows,
+  onRetryPlayLive,
+  onOpenDrawer,
+  onAiredTimeVisibilityChange,
+}: MemoTimelineRowProps) {
+  const isBlocks = Boolean(groupedRow) && groupedRow?.mode !== "programs";
+  const playNowLoading = playNowStatus === "loading";
+  const win: TimeWindow = useMemo(
+    () => ({ startHour: winStartHour, endHour: winEndHour, hours: winHours, pxPerHour }),
+    [winStartHour, winEndHour, winHours, pxPerHour],
+  );
+  const blockNowHour = groupedRow?.liveItem ? (groupedRow.liveItem.sHour + groupedRow.liveItem.eHour) / 2 : 0;
 
-    return (
-      <div
-        className="relative border-b border-neutral-800/80"
-        style={{ height: rowH }}
-        {...(groupedRow
-          ? {
-              role: "group",
-              "aria-label": `${channel.name}, ${
-                groupedRow.mode === "programs" ? groupedRow.items.length : groupedRow.cells.length
-              } ${
-                groupedRow.mode === "programs"
-                  ? "tracks"
-                  : groupedRow.mode === "radio"
-                    ? "daily block"
-                    : "hourly blocks"
-              }`,
-              "data-music-row": channel.id,
-              "data-music-channel": channel.id,
-              "data-now-program-id": groupedRow.liveItem?.program.id ?? "",
-            }
-          : {})}
-      >
-        {hourMarkers
-          .filter((h) => h + 1 > win.startHour && h < win.endHour)
-          .map((h) => (
-            <div
-              key={h}
-              className="pointer-events-none absolute top-0 h-full border-r border-neutral-800/40"
-              style={{ left: h * pxPerHour, width: pxPerHour }}
-            />
-          ))}
+  return (
+    <div
+      className="relative border-b border-neutral-800/80"
+      style={{ height: rowH }}
+      data-live-key={liveKey ?? ""}
+      {...(groupedRow
+        ? {
+            role: "group",
+            "aria-label": `${channel.name}, ${
+              groupedRow.mode === "programs" ? groupedRow.items.length : groupedRow.cells.length
+            } ${
+              groupedRow.mode === "programs"
+                ? "tracks"
+                : groupedRow.mode === "radio"
+                  ? "daily block"
+                  : "hourly blocks"
+            }`,
+            "data-music-row": channel.id,
+            "data-music-channel": channel.id,
+            "data-now-program-id": groupedRow.liveItem?.program.id ?? "",
+          }
+        : {})}
+    >
+      {hourMarkers
+        .filter((h) => h + 1 > winStartHour && h < winEndHour)
+        .map((h) => (
+          <div
+            key={h}
+            className="pointer-events-none absolute top-0 h-full border-r border-neutral-800/40"
+            style={{ left: h * pxPerHour, width: pxPerHour }}
+          />
+        ))}
 
-        {channel.programs.length === 0 ? (
-          <div
-            className="absolute inset-y-0 flex items-center gap-2 bg-neutral-900/30 px-4 text-xs font-medium italic text-neutral-500"
-            style={{ left: win.startHour * pxPerHour, width: viewWidth }}
-          >
-            {channel.sourceError ? (
-              `Unavailable — ${channel.sourceError}`
-            ) : channel.sourceStatus === "restricted" ? (
-              "Restricted by Archive"
-            ) : channel.programsComplete === false && (channel.programCount ?? 0) > 0 ? (
-              <>
-                <span>Schedule is loaded on demand ({(channel.programCount ?? 0).toLocaleString()} programs).</span>
-                <button
-                  type="button"
-                  data-load-episodes={channel.id}
-                  onClick={() => {
-                    void onEnsureChannelRows(channel.id);
-                  }}
-                  className="shrink-0 rounded border border-sky-600/70 bg-sky-950/60 px-2 py-1 text-[11px] font-semibold not-italic text-sky-100 hover:bg-sky-900/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300"
-                >
-                  Load episodes
-                </button>
-              </>
-            ) : channel.programCount ? (
-              "No programs in the current window"
-            ) : (
-              "No programs available"
-            )}
-          </div>
-        ) : isLibraryOnlyChannel(channel) ? (
-          <div
-            data-library-only={channel.id}
-            className="absolute inset-y-0 flex items-center whitespace-nowrap bg-neutral-900/30 px-4 text-xs font-medium italic text-neutral-400"
-            style={{ left: win.startHour * pxPerHour, width: viewWidth }}
-          >
-            Library only - open Library &gt; {channel.group ?? "Library"}
-          </div>
-        ) : isBlocks && groupedRow ? (
-          groupedRow.cells
-            .filter((b) => intersects(b.startHour, b.endHour, win))
-            .map((b) => (
-              <span key={b.id} className="contents">
-                <BlockCell
+      {channel.programs.length === 0 ? (
+        <div
+          className="absolute inset-y-0 flex items-center gap-2 bg-neutral-900/30 px-4 text-xs font-medium italic text-neutral-500"
+          style={{ left: winStartHour * pxPerHour, width: viewWidth }}
+        >
+          {channel.sourceError ? (
+            `Unavailable — ${channel.sourceError}`
+          ) : channel.sourceStatus === "restricted" ? (
+            "Restricted by Archive"
+          ) : channel.programsComplete === false && (channel.programCount ?? 0) > 0 ? (
+            <>
+              <span>Schedule is loaded on demand ({(channel.programCount ?? 0).toLocaleString()} programs).</span>
+              <button
+                type="button"
+                data-load-episodes={channel.id}
+                onClick={() => {
+                  void onEnsureChannelRows(channel.id);
+                }}
+                className="shrink-0 rounded border border-sky-600/70 bg-sky-950/60 px-2 py-1 text-[11px] font-semibold not-italic text-sky-100 hover:bg-sky-900/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300"
+              >
+                Load episodes
+              </button>
+            </>
+          ) : channel.programCount ? (
+            "No programs in the current window"
+          ) : (
+            "No programs available"
+          )}
+        </div>
+      ) : isLibraryOnlyChannel(channel) ? (
+        <div
+          data-library-only={channel.id}
+          className="absolute inset-y-0 flex items-center whitespace-nowrap bg-neutral-900/30 px-4 text-xs font-medium italic text-neutral-400"
+          style={{ left: winStartHour * pxPerHour, width: viewWidth }}
+        >
+          Library only - open Library &gt; {channel.group ?? "Library"}
+        </div>
+      ) : isBlocks && groupedRow ? (
+        groupedRow.cells
+          .filter((b) => intersects(b.startHour, b.endHour, win))
+          .map((b) => (
+            <span key={b.id} className="contents">
+              <BlockCell
+                channel={channel}
+                block={b}
+                nowHour={blockNowHour}
+                pxPerHour={pxPerHour}
+                onOpen={(block, opener) => {
+                  void onEnsureChannelRows(channel.id);
+                  onOpenDrawer(channel, block, opener);
+                }}
+              />
+            </span>
+          ))
+      ) : (
+        channel.programs
+          .map((p) => withLocalHours(p))
+          .filter((p) => p.sHour < 24 && p.eHour > 0)
+          .map(({ program, sHour, eHour }, idx) => ({ program, sHour, eHour, idx }))
+          .filter((p) => intersects(p.sHour, p.eHour, win))
+          .map(({ program, sHour, eHour, idx }) => {
+            const progKey = buildProgramLiveKey(channel.id, program, sHour);
+            const isLive = liveKey !== null && progKey === liveKey;
+            const clip = clipToWindow(sHour, eHour, win);
+            return (
+              <span key={`${program.id}-${idx}`} className="contents">
+                <EpgProgramBlock
+                  program={program}
                   channel={channel}
-                  block={b}
-                  nowHour={nowHour}
-                  pxPerHour={pxPerHour}
-                  onOpen={(block, opener) => {
+                  guideId={guideId}
+                  idx={idx}
+                  isLive={isLive}
+                  left={clip.s * pxPerHour}
+                  width={(clip.e - clip.s) * pxPerHour}
+                  onSelectProgram={onSelectProgram}
+                  tune={{ sHour, eHour, nowHour: currentHourFraction }}
+                  onRequestFullRows={() => {
                     void onEnsureChannelRows(channel.id);
-                    onOpenDrawer(channel, block, opener);
                   }}
+                  onAiredTimeVisibilityChange={onAiredTimeVisibilityChange}
                 />
               </span>
-            ))
-        ) : (
-          channel.programs
-            .map((p) => withLocalHours(p))
-            .filter((p) => p.sHour < 24 && p.eHour > 0)
-            .map(({ program, sHour, eHour }, idx) => ({ program, sHour, eHour, idx }))
-            .filter((p) => intersects(p.sHour, p.eHour, win))
-            .map(({ program, sHour, eHour, idx }) => {
-              const isLive = nowHour >= sHour && nowHour < eHour;
-              const clip = clipToWindow(sHour, eHour, win);
-              return (
-                <span key={`${program.id}-${idx}`} className="contents">
-                  <EpgProgramBlock
-                    program={program}
-                    channel={channel}
-                    guideId={guideId}
-                    idx={idx}
-                    isLive={isLive}
-                    left={clip.s * pxPerHour}
-                    width={(clip.e - clip.s) * pxPerHour}
-                    onSelectProgram={onSelectProgram}
-                    tune={{ sHour, eHour, nowHour: currentHourFraction }}
-                    onRequestFullRows={() => {
-                      void onEnsureChannelRows(channel.id);
-                    }}
-                    onAiredTimeVisibilityChange={onAiredTimeVisibilityChange}
-                  />
-                </span>
-              );
-            })
-        )}
-        {((channel.programsComplete === false && channelRowStatus === "loading") || playNowLoading) && (
-          <div
-            role="status"
-            data-channel-row-loading={channel.id}
-            className="absolute right-2 top-1 z-30 inline-flex items-center gap-1 rounded border border-sky-700/60 bg-neutral-950/95 px-2 py-1 text-[10px] text-sky-200"
+            );
+          })
+      )}
+      {((channel.programsComplete === false && channelRowStatus === "loading") || playNowLoading) && (
+        <div
+          role="status"
+          data-channel-row-loading={channel.id}
+          className="absolute right-2 top-1 z-30 inline-flex items-center gap-1 rounded border border-sky-700/60 bg-neutral-950/95 px-2 py-1 text-[10px] text-sky-200"
+        >
+          <span className="h-2 w-2 animate-pulse rounded-full bg-sky-300" />
+          {playNowLoading ? "Loading current program…" : "Loading full schedule…"}
+        </div>
+      )}
+      {(channelRowStatus === "error" || playNowStatus === "load-error") && (
+        <div
+          role="alert"
+          data-channel-row-error={channel.id}
+          className="absolute right-2 top-1 z-30 inline-flex items-center gap-1.5 rounded border border-amber-700/70 bg-neutral-950/95 px-2 py-1 text-[10px] text-amber-200"
+        >
+          <CircleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
+          <span>{playNowStatus === "load-error" ? "Could not load the current program." : "Full schedule unavailable."}</span>
+          <button
+            type="button"
+            onClick={() => {
+              if (playNowStatus === "load-error") {
+                onRetryPlayLive(channel);
+              } else {
+                void onEnsureChannelRows(channel.id, true);
+              }
+            }}
+            data-retry-channel={channel.id}
+            data-play-live-retry={playNowStatus === "load-error" ? channel.id : undefined}
+            className="rounded border border-amber-600/70 px-1.5 py-0.5 font-semibold hover:bg-amber-900/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200"
           >
-            <span className="h-2 w-2 animate-pulse rounded-full bg-sky-300" />
-            {playNowLoading ? "Loading current program…" : "Loading full schedule…"}
-          </div>
-        )}
-        {(channelRowStatus === "error" || playNowStatus === "load-error") && (
-          <div
-            role="alert"
-            data-channel-row-error={channel.id}
-            className="absolute right-2 top-1 z-30 inline-flex items-center gap-1.5 rounded border border-amber-700/70 bg-neutral-950/95 px-2 py-1 text-[10px] text-amber-200"
-          >
-            <CircleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span>{playNowStatus === "load-error" ? "Could not load the current program." : "Full schedule unavailable."}</span>
-            <button
-              type="button"
-              onClick={() => {
-                if (playNowStatus === "load-error") {
-                  onRetryPlayLive(channel);
-                } else {
-                  void onEnsureChannelRows(channel.id, true);
-                }
-              }}
-              data-retry-channel={channel.id}
-              data-play-live-retry={playNowStatus === "load-error" ? channel.id : undefined}
-              className="rounded border border-amber-600/70 px-1.5 py-0.5 font-semibold hover:bg-amber-900/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200"
-            >
-              {playNowStatus === "load-error" ? "Retry play" : "Retry"}
-            </button>
-          </div>
-        )}
-        {playNowStatus === "no-current" && (
-          <div
-            role="alert"
-            data-play-live-no-current={channel.id}
-            className="absolute right-2 top-1 z-30 inline-flex items-center gap-1.5 rounded border border-amber-700/70 bg-neutral-950/95 px-2 py-1 text-[10px] text-amber-200"
-          >
-            <CircleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span>No current program was found in the full schedule.</span>
-          </div>
-        )}
-      </div>
-    );
-  },
-  (prev, next) =>
-    prev.channel === next.channel &&
-    prev.guideId === next.guideId &&
-    prev.rowH === next.rowH &&
-    prev.win.startHour === next.win.startHour &&
-    prev.win.endHour === next.win.endHour &&
-    prev.pxPerHour === next.pxPerHour &&
-    prev.viewWidth === next.viewWidth &&
-    prev.liveKey === next.liveKey &&
-    prev.channelRowStatus === next.channelRowStatus &&
-    prev.playNowStatus === next.playNowStatus &&
-    prev.onSelectProgram === next.onSelectProgram &&
-    prev.onEnsureChannelRows === next.onEnsureChannelRows &&
-    prev.onRetryPlayLive === next.onRetryPlayLive &&
-    prev.onOpenDrawer === next.onOpenDrawer &&
-    prev.onAiredTimeVisibilityChange === next.onAiredTimeVisibilityChange,
-);
+            {playNowStatus === "load-error" ? "Retry play" : "Retry"}
+          </button>
+        </div>
+      )}
+      {playNowStatus === "no-current" && (
+        <div
+          role="alert"
+          data-play-live-no-current={channel.id}
+          className="absolute right-2 top-1 z-30 inline-flex items-center gap-1.5 rounded border border-amber-700/70 bg-neutral-950/95 px-2 py-1 text-[10px] text-amber-200"
+        >
+          <CircleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
+          <span>No current program was found in the full schedule.</span>
+        </div>
+      )}
+    </div>
+  );
+});
 
 export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active = true, playingChannelId = null }: EpgGuideProps) {
   const rowH = guideId === "audio-podcasts" ? AUDIO_ROW_HEIGHT_PX : ROW_HEIGHT_PX;
@@ -766,7 +746,7 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
   const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasChannels = channels !== null;
 
-  // Vertical virtualization scroll state (throttled to animation frames)
+  // Vertical virtualization scroll state reading window scroll relative to rowsBodyRef (throttled via requestAnimationFrame)
   const [scrollTop, setScrollTop] = useState<number>(() => Math.max(0, savedView?.scrollY ?? 0));
   const [viewportHeight, setViewportHeight] = useState<number>(() =>
     typeof window !== "undefined" && window.innerHeight > 0 ? window.innerHeight : DEFAULT_VIEWPORT_HEIGHT_PX,
@@ -1330,11 +1310,40 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
   );
 
   const [drawer, setDrawer] = useState<{ channel: ScheduleChannel; block: GridBlock; opener: HTMLElement } | null>(null);
+
+  // Cache grouped music channel layouts by (channel, pxPerHour, liveKey) so their reference
+  // stays stable across 30s nowHour ticks unless the active track or pxPerHour changes.
+  const groupedCacheRef = useRef(
+    new Map<
+      string,
+      {
+        channel: ScheduleChannel;
+        pxPerHour: number;
+        liveKey: string | null;
+        value: ReturnType<typeof groupProgramsForGrid>;
+      }
+    >(),
+  );
   const grouped = useMemo(() => {
     const m = new Map<string, ReturnType<typeof groupProgramsForGrid>>();
-    for (const c of visible) if (isMusicChannel(c)) m.set(c.id, groupProgramsForGrid(c, pxPerHour, nowHour));
+    for (const c of visible) {
+      if (!isMusicChannel(c)) continue;
+      const live = findLiveProgram(c, nowHour);
+      const lk = buildLiveKey(c.id, live);
+      const prev = groupedCacheRef.current.get(c.id);
+      if (prev && prev.channel === c && prev.pxPerHour === pxPerHour && prev.liveKey === lk) {
+        m.set(c.id, prev.value);
+      } else {
+        const computed = groupProgramsForGrid(c, pxPerHour, nowHour);
+        groupedCacheRef.current.set(c.id, { channel: c, pxPerHour, liveKey: lk, value: computed });
+        m.set(c.id, computed);
+      }
+    }
     return m;
   }, [visible, nowHour, pxPerHour]);
+
+  const groupedRef = useRef(grouped);
+  groupedRef.current = grouped;
 
   // Exact track-boundary refresh for music rows (in addition to the 30s tick).
   useEffect(() => {
@@ -1412,6 +1421,14 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
 
   const handlePlayLive = useCallback(
     (channel: ScheduleChannel, item: LiveItem | null) => {
+      void playLive(channel, item);
+    },
+    [playLive],
+  );
+
+  const handlePlayLiveChannel = useCallback(
+    (channel: ScheduleChannel) => {
+      const item = groupedRef.current.get(channel.id)?.liveItem ?? findLiveProgram(channel, currentHourFraction());
       void playLive(channel, item);
     },
     [playLive],
@@ -1741,7 +1758,9 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
             {visible.map((channel) => {
               const g = grouped.get(channel.id);
               const liveItem: LiveItem | null = g?.liveItem ?? findLiveProgram(channel, nowHour);
-              const liveKey = computeLiveKey(liveItem);
+              const liveKey = buildLiveKey(channel.id, liveItem);
+              const liveTitle = liveItem ? cleanAjnDisplayTitle(liveItem.program.title) : undefined;
+              const liveThumbPath = liveItem?.program.archivePath ?? liveItem?.program.mediaUrl ?? null;
               return (
                 <MemoStationRow
                   key={channel.id}
@@ -1749,15 +1768,16 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
                   guideId={guideId}
                   rowH={rowH}
                   stationNumber={stationOf.get(channel.id) ?? 0}
-                  liveItem={liveItem}
                   liveKey={liveKey}
-                  groupedRow={g}
-                  nowHour={nowHour}
+                  liveTitle={liveTitle}
+                  liveThumbPath={liveThumbPath}
+                  isMusicRow={g !== undefined}
+                  liveTrackItem={g?.liveItem ?? null}
+                  playingChannelId={playingChannelId}
                   isFlashing={flashId === channel.id}
-                  isPlaying={playingChannelId === channel.id}
                   matchedShowTitle={filtered.matchedShow.get(channel.id)}
                   playNowStatus={playNowState[channel.id]}
-                  onPlayLive={handlePlayLive}
+                  onPlayLiveChannel={handlePlayLiveChannel}
                 />
               );
             })}
@@ -1793,22 +1813,24 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
                 {visible.map((channel) => {
                   const g = grouped.get(channel.id);
                   const liveItem: LiveItem | null = g?.liveItem ?? findLiveProgram(channel, nowHour);
-                  const liveKey = computeLiveKey(liveItem);
+                  const liveKey = buildLiveKey(channel.id, liveItem);
                   return (
                     <MemoTimelineRow
                       key={channel.id}
                       channel={channel}
                       guideId={guideId}
                       rowH={rowH}
-                      win={win}
+                      winStartHour={win.startHour}
+                      winEndHour={win.endHour}
+                      winHours={win.hours}
                       pxPerHour={pxPerHour}
                       viewWidth={viewWidth}
-                      nowHour={nowHour}
                       liveKey={liveKey}
                       groupedRow={g}
                       hourMarkers={hourMarkers}
                       channelRowStatus={channelRowState[channel.id]}
                       playNowStatus={playNowState[channel.id]}
+                      playingChannelId={playingChannelId}
                       onSelectProgram={onSelectProgram}
                       onEnsureChannelRows={ensureChannelRows}
                       onRetryPlayLive={handleRetryPlayLive}

@@ -1,6 +1,6 @@
 {
-  "summary":  "Updated implementation plan incorporating the completed Phase 0 repository evaluation (F1-F7, G1, G2), the gated Option A + TODAY_ONLY decision, Phase 1 pure virtualization and rundown helpers with unit tests, Phase 2 EPG row windowing and 30-second tick isolation, Phase 3A in-guide Grid | Roster | Channel views and honest Today-only date control, and V1-V4 verification reporting.",
-  "updatedAt":  "2026-11-08T14:44:21.460087406Z",
+  "summary":  "Revised implementation plan incorporating plain React.memo shallow comparison (no custom comparator, replacing raw nowHour with liveKey with channelId+startHour+title fallback), extracting shared hour helpers into src/guide/programHours.ts with re-exports in src/EpgGuide.tsx, and adding scroll-container and test-file audit requirements to the final report.",
+  "updatedAt":  "2026-11-08T17:06:16.653074036Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

@@ -164,17 +164,15 @@ async function runViewport(viewport) {
   await page.click('[data-testid="epg-search-clear"]');
   await page.waitForFunction(() => document.querySelector('[data-testid="epg-result-count"]')?.textContent?.includes('80 channels'));
 
-  await page.$$eval('button', (buttons) => {
-    const button = buttons.find((candidate) => candidate.textContent?.includes('Load more'));
-    button?.click();
-  });
-
+  await page.evaluate(() => window.scrollTo(0, 47 * 68));
   await page.waitForSelector('[data-epg-channel-row][data-channel-id="demo-channel-048"]');
   await page.$eval('[data-epg-channel-row][data-channel-id="demo-channel-048"]', (element) => element.scrollIntoView({ block: 'center' }));
   await waitForNodeCondition(() => routeCounts.get(`${viewport.name}:demo-channel-048`) === 1, `${viewport.name} channel 048 request`);
   const channel048Count = routeCounts.get(`${viewport.name}:demo-channel-048`) ?? 0;
   assert.equal(channel048Count, 1, `${viewport.name}: visible channel fetches once`);
 
+  await page.evaluate(() => window.scrollTo(0, 59 * 68));
+  await page.waitForSelector('[data-epg-channel-row][data-channel-id="demo-channel-060"]');
   await page.$eval('[data-epg-channel-row][data-channel-id="demo-channel-060"]', (element) => element.scrollIntoView({ block: 'center' }));
   await page.click('[data-play-live="demo-channel-060"]');
   await waitForNodeCondition(() => routeCounts.get(`${viewport.name}:demo-channel-060`) === 1, `${viewport.name} channel 060 request`);
@@ -185,6 +183,8 @@ async function runViewport(viewport) {
   const noCurrentText = await page.$eval('[data-play-live-no-current="demo-channel-060"]', (element) => element.textContent ?? '');
   assert.match(noCurrentText, /No current program was found/, `${viewport.name}: missing current item is reported explicitly`);
 
+  await page.evaluate(() => window.scrollTo(0, 49 * 68));
+  await page.waitForSelector('[data-epg-channel-row][data-channel-id="demo-channel-050"]');
   await page.$eval('[data-epg-channel-row][data-channel-id="demo-channel-050"]', (element) => element.scrollIntoView({ block: 'center' }));
   try {
     await page.waitForSelector('[data-channel-row-error="demo-channel-050"]');
