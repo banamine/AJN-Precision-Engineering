@@ -22,6 +22,15 @@ on:
         description: 'Episodes to build (0 = all)'
         required: false
         default: '1'
+      to_drive:
+        description: 'Copy built episodes to your Google Drive folder (needs the RCLONE_CONF secret)'
+        type: boolean
+        required: false
+        default: true
+      drive_folder_id:
+        description: 'Google Drive folder id to copy into'
+        required: false
+        default: '1AsF3nPqeR3ha2lEcOV7DDz-T_L1dIorD'
       keep_media:
         description: 'Keep the built .mp4 files as a downloadable artifact (repo is public!)'
         type: boolean
@@ -51,6 +60,17 @@ jobs:
         run: |
           python test_workbench_v2.py
           python test_workbench_v2_extra.py
+      - name: Drive preflight (fail fast, before any download)
+        if: inputs.to_drive
+        env:
+          RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
+          FOLDER: ${{ inputs.drive_folder_id }}
+        run: |
+          if [ -z "$RCLONE_CONF" ]; then echo "::error::to_drive is on but the RCLONE_CONF secret is not set. See tools/zip-workbench/README.md (Drive setup)."; exit 1; fi
+          curl -fsSL https://rclone.org/install.sh | sudo bash >/dev/null
+          printf '%s' "$RCLONE_CONF" > "$RUNNER_TEMP/rclone.conf"
+          rclone --config "$RUNNER_TEMP/rclone.conf" lsd gdrive: --drive-root-folder-id "$FOLDER" >/dev/null
+          echo "Drive folder reachable."
       - name: Prepare large output disk
         run: |
           sudo mkdir -p /mnt/ajn-out
@@ -64,6 +84,17 @@ jobs:
         run: |
           if [ -n "$PLAYLIST" ]; then SRC=(--playlist "$PLAYLIST"); else SRC=(--item "$ITEM"); fi
           python tools/zip-workbench/AJN_Zip_Workbench_v2.pyw --headless "${SRC[@]}" --out /mnt/ajn-out --limit "$LIMIT" --pause 3
+      - name: Copy built episodes to Drive
+        if: inputs.to_drive && success()
+        env:
+          FOLDER: ${{ inputs.drive_folder_id }}
+        run: |
+          rclone --config "$RUNNER_TEMP/rclone.conf" copy /mnt/ajn-out gdrive: --drive-root-folder-id "$FOLDER" --exclude "runs/**" --checksum --stats-one-line -v
+          rclone --config "$RUNNER_TEMP/rclone.conf" check /mnt/ajn-out gdrive: --drive-root-folder-id "$FOLDER" --exclude "runs/**" --one-way
+          echo "### Copied to Drive and verified" >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove Drive credentials
+        if: always() && inputs.to_drive
+        run: rm -f "$RUNNER_TEMP/rclone.conf"
       - name: Keep reports
         if: always()
         uses: actions/upload-artifact@v4
