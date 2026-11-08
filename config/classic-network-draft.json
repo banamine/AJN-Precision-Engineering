@@ -20,11 +20,11 @@
       "endWith": "hogans-heroes"
     },
     "cartoons-pre1960": {
-      "series": ["popeye", "woody-woodpecker", "norman-mccabe", "noveltoons"],
+      "series": ["popeye", "woody-woodpecker", "norman-mccabe", "noveltoons", "beary-family"],
       "targetRatio": 0.60
     },
     "cartoons-inera": {
-      "series": ["underdog", "ant-and-aardvark", "beary-family", "ducktales", "talespin", "darkwing-duck"],
+      "series": ["underdog", "ant-and-aardvark", "ducktales", "talespin", "darkwing-duck"],
       "targetRatio": 0.40
     },
     "weekend-westerns": {
@@ -32,7 +32,7 @@
       "countPerNight": 2
     },
     "sunday-mystery": {
-      "series": ["sherlock-holmes-1954", "ironside", "colonel-march", "murder-she-wrote"],
+      "series": ["sherlock-holmes-1954", "ironside", "murder-she-wrote"],
       "countPerNight": 2
     }
   }

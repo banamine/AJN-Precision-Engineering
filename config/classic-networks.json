@@ -23,16 +23,16 @@
       "owner": "banamine",
       "catalogRef": "src/data/classicNetworkCatalog.json",
       "pools": {
-        "danger": {"series": ["danger-man"], "rotateEveryWeeks": 1, "offset": 0},
-        "dyke": {"series": ["dick-van-dyke"], "rotateEveryWeeks": 1, "offset": 0},
+        "overnight": {"series": ["mister-ed"], "rotateEveryWeeks": 1, "offset": 0},
+        "early": {"series": ["the-jeffersons"], "rotateEveryWeeks": 1, "offset": 0},
         "smart": {"series": ["get-smart"], "rotateEveryWeeks": 1, "offset": 0},
         "benson": {"series": ["benson"], "rotateEveryWeeks": 1, "offset": 0},
         "taxi": {"series": ["taxi"], "rotateEveryWeeks": 1, "offset": 0},
         "hogan": {"series": ["hogans-heroes"], "rotateEveryWeeks": 1, "offset": 0}
       },
       "lineup": [
-        {"start": "00:00", "end": "04:00", "pool": "danger"},
-        {"start": "04:00", "end": "05:45", "pool": "dyke"},
+        {"start": "00:00", "end": "04:00", "pool": "overnight"},
+        {"start": "04:00", "end": "05:45", "pool": "early"},
         {"start": "05:45", "end": "09:45", "pool": "smart"},
         {"start": "09:45", "end": "12:45", "pool": "benson"},
         {"start": "12:45", "end": "16:30", "pool": "taxi"},
@@ -41,7 +41,7 @@
         {"start": "21:00", "end": "21:30", "pool": "benson"},
         {"start": "21:30", "end": "22:00", "pool": "taxi"},
         {"start": "22:00", "end": "22:30", "pool": "hogan"},
-        {"start": "22:30", "end": "23:00", "pool": "danger"},
+        {"start": "22:30", "end": "23:00", "pool": "overnight"},
         {"start": "23:00", "end": "24:00", "pool": "benson"}
       ]
     }

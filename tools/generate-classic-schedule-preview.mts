@@ -162,6 +162,140 @@ function scheduleAsset(asset: NetworkAsset, start: number): Program {
   return program;
 }
 
+
+const MIN = 60 * 1000;
+const CLOSE_TOLERANCE_MS = 27 * MIN; // one episode: episodes are about 25 min, so the close lands 0 to 27 min after midnight without padding
+
+interface Eligible { asset: NetworkAsset; idx: number }
+
+/** Next assets of a show, in cursor order, that already satisfy the 168 h gate at `now`. */
+function eligibleAssets(show: string, now: number, limit: number): Eligible[] {
+  const list = byShow.get(show);
+  if (!list || !list.length) throw new Error(`Empty catalog for show: ${show}`);
+  const startIdx = cursors.get(show) ?? 0;
+  const out: Eligible[] = [];
+  for (let offset = 0; offset < list.length && out.length < limit; offset++) {
+    const idx = (startIdx + offset) % list.length;
+    const prev = lastStarts.get(list[idx].episodeKey);
+    if (prev === undefined || (now - prev) >= gapMs) out.push({ asset: list[idx], idx });
+  }
+  return out;
+}
+
+function findHoganClose(remaining: number, pool: Eligible[], preferred: number): Eligible[] | null {
+  if (remaining < 10 * MIN) return null;
+  const sizes = [preferred, 3, 2, 1].filter((v, i, arr) => arr.indexOf(v) === i);
+  for (const size of sizes) {
+    const pick = (start: number, chosen: Eligible[]): Eligible[] | null => {
+      if (chosen.length === size) {
+        const total = chosen.reduce((sum, e) => sum + Math.round(e.asset.durationSeconds * 1000), 0);
+        return total >= remaining && total - remaining <= CLOSE_TOLERANCE_MS ? chosen : null;
+      }
+      for (let i = start; i < pool.length; i++) {
+        const found = pick(i + 1, [...chosen, pool[i]]);
+        if (found) return found;
+      }
+      return null;
+    };
+    const chosen = pick(0, []);
+    if (chosen) return chosen;
+  }
+  return null;
+}
+
+/**
+ * Close the station day with a Hogan's Heroes run of 1-3 episodes whose total runtime ends
+ * within 27 minutes after midnight. Returns false when no combination fits.
+ */
+function closeWithHogans(midnight: number, preferred: number): boolean {
+  const pool = eligibleAssets('hogans-heroes', currentMs, 12);
+  const chosen = findHoganClose(midnight - currentMs, pool, preferred);
+  if (!chosen) return false;
+  for (const e of chosen) {
+    scheduleAsset(e.asset, currentMs);
+    currentMs += Math.round(e.asset.durationSeconds * 1000);
+  }
+  cursors.set('hogans-heroes', (chosen[chosen.length - 1].idx + 1) % (byShow.get('hogans-heroes')!.length));
+  return true;
+}
+
+
+interface PrimeStep { show: string; asset: NetworkAsset; idx: number }
+
+function tailRun(): { show: string; count: number } {
+  const last = programs[programs.length - 1];
+  const show = String(last?.metadata?.show ?? '');
+  let count = 0;
+  for (let i = programs.length - 1; i >= 0 && String(programs[i].metadata?.show) === show; i--) count++;
+  return { show, count };
+}
+
+/** Up to 4 M*A*S*H/Taxi episodes (run cap 3 respected) after which a Hogan's close fits within tolerance. */
+function planPrimeBeforeClose(remaining: number, hoganPool: Eligible[], preferred: number, firstShow: string): PrimeStep[] | null {
+  const shows = [firstShow, firstShow === 'mash' ? 'taxi' : 'mash'];
+  const tail = tailRun();
+  const search = (left: number, depth: number, prior: PrimeStep[], at: number): PrimeStep[] | null => {
+    if (prior.length && findHoganClose(left, hoganPool, preferred)) return prior;
+    if (depth === 0) return null;
+    for (const show of shows) {
+      const lastShow = prior.length ? prior[prior.length - 1].show : tail.show;
+      const run = prior.length ? prior.filter(p => p.show === show).length + (tail.show === show ? tail.count : 0) : (tail.show === show ? tail.count : 0);
+      if (show === lastShow && run >= 3) continue;
+      for (const cand of eligibleAssets(show, at, 6)) {
+        if (prior.some(p => p.asset.episodeKey === cand.asset.episodeKey)) continue;
+        const dur = Math.round(cand.asset.durationSeconds * 1000);
+        if (left - dur < 10 * MIN) continue;
+        const found = search(left - dur, depth - 1, [...prior, { show, asset: cand.asset, idx: cand.idx }], at + dur);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+  for (let depth = 0; depth <= 4; depth++) {
+    const found = search(remaining, depth, [], currentMs);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Evening prime: alternating M*A*S*H / Taxi runs of 1-3 (length from the date, never the same
+ * series back to back across runs), then a closing Hogan's Heroes run that ends at midnight.
+ */
+function fillPrimeToMidnight(dayStr: string, dayIndex: number, midnight: number): void {
+  const prime = ['mash', 'taxi'];
+  let primeIdx = dayIndex % 2;
+  let runIdx = 0;
+  const playPrime = (show: string): void => {
+    const asset = getNextAsset(show, currentMs);
+    scheduleAsset(asset, currentMs);
+    currentMs += Math.round(asset.durationSeconds * 1000);
+  };
+  for (let guard = 0; guard < 60; guard++) {
+    const remaining = midnight - currentMs;
+    if (remaining <= 170 * MIN) {
+      if (closeWithHogans(midnight, 1 + ((dayIndex + 1) % 3))) return;
+      if (remaining <= 30 * MIN) throw new Error(`Cannot close ${dayStr} with Hogan's Heroes within 27 minutes after midnight (remaining ${Math.round(remaining / MIN)} min)`);
+      // No Hogan's combination fits yet: search up to 4 prime episodes that leave a fitting Hogan's close.
+      const hoganPool = eligibleAssets('hogans-heroes', currentMs, 14);
+      const preferred = 1 + ((dayIndex + 1) % 3);
+      const plan = planPrimeBeforeClose(remaining, hoganPool, preferred, prime[primeIdx % prime.length]);
+      if (!plan) throw new Error(`Cannot close ${dayStr} with Hogan's Heroes within 27 minutes after midnight (remaining ${Math.round(remaining / MIN)} min)`);
+      for (const step of plan) {
+        scheduleAsset(step.asset, currentMs);
+        currentMs += Math.round(step.asset.durationSeconds * 1000);
+        cursors.set(step.show, (step.idx + 1) % byShow.get(step.show)!.length);
+        primeIdx++;
+      }
+      continue;
+    }
+    const show = prime[primeIdx++ % prime.length];
+    const runLength = 1 + ((dayIndex + runIdx++) % 3);
+    for (let i = 0; i < runLength && midnight - currentMs > 170 * MIN; i++) playPrime(show);
+  }
+  throw new Error(`Evening fill did not converge for ${dayStr}`);
+}
+
 // 14 Station Days loop
 for (let dayOffset = 0; dayOffset < config.horizonDays; dayOffset++) {
   const dayStr = addDays(config.originMonday, dayOffset);
@@ -219,7 +353,7 @@ for (let dayOffset = 0; dayOffset < config.horizonDays; dayOffset++) {
 
   // 4. Evening (18:00 - 24:00)
   if (isSunday) {
-    // Sunday: 2 Mystery Wheel episodes, then 2 Westerns, then prime runs ending with Hogan's (max 3)
+    // Sunday: 2 Mystery Wheel episodes, 2 Westerns, then prime runs closing with Hogan's at midnight
     for (let i = 0; i < 2; i++) {
       const show = mysteryShows[mysteryIdx % mysteryShows.length];
       mysteryIdx++;
@@ -234,24 +368,8 @@ for (let dayOffset = 0; dayOffset < config.horizonDays; dayOffset++) {
       scheduleAsset(asset, currentMs);
       currentMs += Math.round(asset.durationSeconds * 1000);
     }
-    // Mid-evening prime run of M*A*S*H or Taxi (1-2 episodes) if time permits
-    if ((nextDayMs - currentMs) > 85 * 60 * 1000) {
-      for (let i = 0; i < 2; i++) {
-        const asset = getNextAsset('mash', currentMs);
-        scheduleAsset(asset, currentMs);
-        currentMs += Math.round(asset.durationSeconds * 1000);
-      }
-    }
-    // Closing run: Hogan's Heroes (runs up to 3) until midnight
-    let hoganCount = 0;
-    while (currentMs < nextDayMs && hoganCount < 3) {
-      const hoganAsset = getNextAsset('hogans-heroes', currentMs);
-      scheduleAsset(hoganAsset, currentMs);
-      currentMs += Math.round(hoganAsset.durationSeconds * 1000);
-      hoganCount++;
-    }
-  } else if (dayOfWeek === 6) { // Saturday
-    // Saturday: 2 Western episodes, then prime alternating runs ending with Hogan's (max 3)
+  } else if (dayOfWeek === 6) {
+    // Saturday: 2 Westerns, then prime runs closing with Hogan's at midnight
     for (let i = 0; i < 2; i++) {
       const show = westernShows[westernIdx % westernShows.length];
       westernIdx++;
@@ -259,55 +377,9 @@ for (let dayOffset = 0; dayOffset < config.horizonDays; dayOffset++) {
       scheduleAsset(asset, currentMs);
       currentMs += Math.round(asset.durationSeconds * 1000);
     }
-    // Prime runs of M*A*S*H and Taxi (2 episodes each) before closing Hogan's run
-    for (let i = 0; i < 2; i++) {
-      const asset = getNextAsset('mash', currentMs);
-      scheduleAsset(asset, currentMs);
-      currentMs += Math.round(asset.durationSeconds * 1000);
-    }
-    if ((nextDayMs - currentMs) > 85 * 60 * 1000) {
-      for (let i = 0; i < 2; i++) {
-        const asset = getNextAsset('taxi', currentMs);
-        scheduleAsset(asset, currentMs);
-        currentMs += Math.round(asset.durationSeconds * 1000);
-      }
-    }
-    // Closing run of Hogan's Heroes (runs up to 3) ending at midnight
-    let hoganCount = 0;
-    while (currentMs < nextDayMs && hoganCount < 3) {
-      const hoganAsset = getNextAsset('hogans-heroes', currentMs);
-      scheduleAsset(hoganAsset, currentMs);
-      currentMs += Math.round(hoganAsset.durationSeconds * 1000);
-      hoganCount++;
-    }
-  } else {
-    // Weeknight (Mon-Fri 18:00 - 24:00):
-    // Alternating runs of M*A*S*H, Taxi (runs of 2), ending with Hogan's Heroes (max 3) before midnight.
-    const weeknightShows = ['mash', 'taxi'];
-    let wnIdx = 0;
-    while (currentMs < nextDayMs) {
-      const remainingMs = nextDayMs - currentMs;
-      // When <= 85 min remain before midnight, enter Hogan's closing run
-      if (remainingMs <= 85 * 60 * 1000) {
-        let hoganCount = 0;
-        while (currentMs < nextDayMs && hoganCount < 3) {
-          const asset = getNextAsset('hogans-heroes', currentMs);
-          scheduleAsset(asset, currentMs);
-          currentMs += Math.round(asset.durationSeconds * 1000);
-          hoganCount++;
-        }
-        break;
-      }
-      const show = weeknightShows[wnIdx % weeknightShows.length];
-      wnIdx++;
-      for (let i = 0; i < 2; i++) {
-        if (currentMs >= nextDayMs) break;
-        const asset = getNextAsset(show, currentMs);
-        scheduleAsset(asset, currentMs);
-        currentMs += Math.round(asset.durationSeconds * 1000);
-      }
-    }
   }
+  // Every night (weeknights, Saturday, Sunday): M*A*S*H/Taxi runs of 1-3, then Hogan's close at midnight.
+  fillPrimeToMidnight(dayStr, dayOffset, nextDayMs);
 }
 
 // Verification of results

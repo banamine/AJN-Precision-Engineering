@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import type { Program } from '../src/types';
-import { zonedParts, dateKey, HOUR } from '../server/classicNetwork';
+import { zonedParts, dateKey, HOUR, addDays, localInstant, compileNetwork } from '../server/classicNetwork';
+import type { NetworkCatalog, NetworkSettings } from '../server/classicNetwork';
 
 interface PreviewManifest {
   networkId: string;
@@ -167,8 +168,9 @@ for (const [day, dayPrograms] of byDay.entries()) {
 console.log('✓ Weekday daytime passed: all daytime airings are single episodes rotating across shows');
 
 // 7. Weekend morning cartoon airtime ratio (60% ± 5% pre-1960)
-const pre1960Shows = new Set(['popeye', 'woody-woodpecker', 'norman-mccabe', 'noveltoons']);
-const inEraShows = new Set(['underdog', 'ant-and-aardvark', 'beary-family', 'ducktales', 'talespin', 'darkwing-duck']);
+const draftPools = (JSON.parse(fs.readFileSync('config/classic-network-draft.json', 'utf8')) as { pools: Record<string, { series: string[] }> }).pools;
+const pre1960Shows = new Set(draftPools['cartoons-pre1960'].series);
+const inEraShows = new Set(draftPools['cartoons-inera'].series);
 
 let totalPre1960Sec = 0;
 let totalInEraSec = 0;
@@ -201,7 +203,7 @@ console.log('✓ Weekend cartoon airtime ratio passed: strictly within 60% ± 5%
 
 // 8. Westerns & Mystery Wheel daypart bounds
 const westernShows = new Set(['wanted-dead-or-alive', 'the-loner', 'hondo', 'death-valley-days']);
-const mysteryShows = new Set(['sherlock-holmes-1954', 'ironside', 'colonel-march', 'murder-she-wrote']);
+const mysteryShows = new Set(['sherlock-holmes-1954', 'ironside', 'colonel-march', 'murder-she-wrote']); // colonel-march kept so a stray airing is still bounded
 
 for (const p of programs) {
   const show = String(p.metadata?.show);
@@ -223,6 +225,50 @@ for (const p of programs) {
   }
 }
 console.log('✓ Daypart segregation passed: Westerns on weekend evenings only, Mystery on Sunday evenings only');
+
+
+// 9. Every night (Mon-Sun) closes with Hogan's Heroes within ~half an episode of midnight, runs capped at 3
+const MIDNIGHT_TOLERANCE_MS = 27 * 60 * 1000;
+assert.equal(byDay.size, 14, `Preview must cover 14 station days (found ${byDay.size})`);
+for (const [day, dayPrograms] of byDay.entries()) {
+  const evening = dayPrograms.filter(p => zonedParts(Date.parse(p.startTimeUtc!), zone).hour >= 18);
+  assert.ok(evening.length > 0, `${day} must have evening programs`);
+  const last = evening[evening.length - 1];
+  assert.equal(last.metadata?.show, 'hogans-heroes', `${day} must end with Hogan's Heroes (found ${String(last.metadata?.show)})`);
+  const midnight = localInstant(addDays(day, 1), '00:00', zone);
+  const endMs = Date.parse(last.endTimeUtc!);
+  assert.ok(endMs >= midnight && endMs - midnight <= MIDNIGHT_TOLERANCE_MS, `${day} must end 0 to 27 min after midnight (off by ${Math.round((endMs - midnight) / 60000)} min)`);
+  let run = 0; let runShow = '';
+  for (const p of evening) {
+    const show = String(p.metadata?.show);
+    run = show === runShow ? run + 1 : 1; runShow = show;
+    assert.ok(run <= 3, `${day} evening run of ${show} exceeds 3`);
+  }
+}
+const lastProgram = programs[programs.length - 1];
+const horizonEnd = localInstant(addDays(manifest.originMonday, manifest.horizonDays), '00:00', zone);
+assert.ok(Date.parse(lastProgram.endTimeUtc!) - horizonEnd >= 0 && Date.parse(lastProgram.endTimeUtc!) - horizonEnd <= MIDNIGHT_TOLERANCE_MS, 'Preview must cover the full 14 days');
+console.log('✓ Every night passed: Hogan\'s closes 0 to 27 min after midnight, runs capped at 3, 14 days covered');
+
+// 10. Every pool series exists in the catalog; the live config compiles
+const catalog = JSON.parse(fs.readFileSync('src/data/classicNetworkCatalog.json', 'utf8')) as NetworkCatalog;
+const catalogShows = new Set(catalog.assets.map(a => a.show));
+const draft = JSON.parse(fs.readFileSync('config/classic-network-draft.json', 'utf8')) as { pools: Record<string, { series: string[] }> };
+for (const [poolName, pool] of Object.entries(draft.pools)) {
+  for (const show of pool.series) assert.ok(catalogShows.has(show), `Draft pool ${poolName} uses "${show}", which is not in the catalog`);
+}
+const liveSettings = JSON.parse(fs.readFileSync('config/classic-networks.json', 'utf8')) as NetworkSettings;
+const liveNetwork = liveSettings.networks['classic-network'];
+for (const [poolName, pool] of Object.entries(liveNetwork.pools)) {
+  for (const show of pool.series) assert.ok(catalogShows.has(show), `Live pool ${poolName} uses "${show}", which is not in the catalog`);
+}
+const compiled = compileNetwork(liveSettings, liveNetwork, catalog);
+assert.ok(compiled.programs.length > 0, 'Live classic-network config must compile to a non-empty publication');
+for (const banned of ['danger-man', 'colonel-march']) {
+  assert.ok(!JSON.stringify(draft).includes(banned) && !JSON.stringify(liveNetwork).includes(banned), `${banned} must not be configured`);
+}
+assert.ok(draft.pools['cartoons-pre1960'].series.includes('beary-family'), 'beary-family belongs in the pre-1960 pool');
+console.log('✓ Config passed: all pool shows exist in the catalog and the live config compiles');
 
 console.log('\n========================================');
 console.log('CLASSIC_NETWORK_SCHEDULE_RULES_PASS (all 8 owner decisions validated)');
