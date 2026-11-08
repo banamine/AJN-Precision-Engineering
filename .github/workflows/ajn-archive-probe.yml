@@ -1,0 +1,95 @@
+name: ajn-archive-probe
+
+# Read-only Archive.org index probe. Nothing is committed or pushed; reports are a workflow artifact.
+# The repo and its artifacts are PUBLIC: the uploader email secret must never reach an output file.
+on:
+  workflow_dispatch:
+    inputs:
+      only_items:
+        description: "Optional comma-separated Archive identifiers (targeted run, skips account discovery)"
+        required: false
+        default: ""
+      verify_playable:
+        description: "1-byte ranged GET per admitted file"
+        type: boolean
+        default: false
+      max_list_id:
+        description: "Highest custom list id to probe"
+        required: false
+        default: "50"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Self-tests (offline)
+        run: |
+          python -I tools/archive-probe/archive_probe.py --self-test --output-dir "$RUNNER_TEMP/selftest"
+          python -I tools/archive-probe/probe_diff.py --self-test
+
+      - name: Probe (read-only)
+        id: probe
+        env:
+          ARCHIVE_UPLOADER_EMAILS: ${{ secrets.ARCHIVE_UPLOADER_EMAILS }}
+          ONLY_ITEMS: ${{ inputs.only_items }}
+          VERIFY: ${{ inputs.verify_playable }}
+          MAX_LIST_ID: ${{ inputs.max_list_id }}
+        run: |
+          args=(--output-dir reports/probe --max-list-id "${MAX_LIST_ID:-50}")
+          if [ -n "$ONLY_ITEMS" ]; then args+=(--items "$ONLY_ITEMS"); fi
+          if [ "$VERIFY" = "true" ]; then args+=(--verify-playable); fi
+          set +e
+          python tools/archive-probe/archive_probe.py "${args[@]}"
+          code=$?
+          echo "probe_exit=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Diff against app manifests
+        run: python tools/archive-probe/probe_diff.py --index reports/probe/library_index.json --repo . --out reports/probe/probe_diff.json
+
+      - name: Leak check (uploader email must not appear in any report)
+        env:
+          ARCHIVE_UPLOADER_EMAILS: ${{ secrets.ARCHIVE_UPLOADER_EMAILS }}
+        run: |
+          python - <<'PY'
+          import os, pathlib, sys, urllib.parse
+          emails = [e.strip().lower() for e in os.environ.get("ARCHIVE_UPLOADER_EMAILS", "").split(",") if e.strip()]
+          bad = []
+          for p in pathlib.Path("reports/probe").rglob("*"):
+              if p.is_file():
+                  text = p.read_text(encoding="utf-8", errors="ignore").lower()
+                  if any(e in text or urllib.parse.quote(e) in text for e in emails):
+                      bad.append(str(p))
+          if bad:
+              for b in bad:
+                  print("LEAK", b)
+              sys.exit(1)
+          print("no leak" if emails else "no secret configured; leak check trivially passed")
+          PY
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ajn-archive-probe
+          path: reports/probe/
+          retention-days: 14
+
+      - name: Fail the job if the probe itself failed
+        if: steps.probe.outputs.probe_exit != '0'
+        run: |
+          echo "probe exited with code ${{ steps.probe.outputs.probe_exit }} (2=no lists/uploads, 3=metadata errors, 4=nothing admitted)"
+          exit 1
