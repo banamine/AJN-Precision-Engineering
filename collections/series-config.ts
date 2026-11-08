@@ -22,41 +22,6 @@ export interface SeriesConfig {
 
 import { LIST4_BATCH1 } from './series-config-list4';
 
-export const ZIPMEMBER_SERIES_CONFIG: SeriesConfig[] = [
-  {
-    key: 'sc-babylon-5',
-    channelId: 'sc-babylon-5',
-    name: 'Babylon 5',
-    series: 'Babylon 5',
-    group: 'Classic TV',
-    items: [],
-  },
-  {
-    key: 'sc-agents-of-shield',
-    channelId: 'sc-agents-of-shield',
-    name: "Marvel's Agents of S.H.I.E.L.D.",
-    series: "Marvel's Agents of S.H.I.E.L.D.",
-    group: 'Classic TV',
-    items: [],
-  },
-  {
-    key: 'sc-star-trek-ds9',
-    channelId: 'sc-star-trek-ds9',
-    name: 'Star Trek: Deep Space Nine',
-    series: 'Star Trek: Deep Space Nine',
-    group: 'Classic TV',
-    items: [],
-  },
-  {
-    key: 'sc-stargate-atlantis',
-    channelId: 'sc-stargate-atlantis',
-    name: 'Stargate Atlantis',
-    series: 'Stargate Atlantis',
-    group: 'Classic TV',
-    items: [],
-  },
-];
-
 export const SERIES_CONFIG: SeriesConfig[] = [
   {
     key: 'taxi', channelId: 'classic-series-taxi', name: 'Taxi — All Seasons', series: 'Taxi', group: 'Classic TV',
@@ -73,5 +38,4 @@ export const SERIES_CONFIG: SeriesConfig[] = [
     items: [{ identifier: 'hogans-heroes-s-01-e-01-the-informer_202509' }],
   },
   ...LIST4_BATCH1,
-  ...ZIPMEMBER_SERIES_CONFIG,
 ];
