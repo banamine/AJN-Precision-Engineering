@@ -24,15 +24,18 @@ assert.equal(new Set(wormwood.map((program) => program.assetId)).size, 6, 'Wormw
 assert.ok(getAllGuides().some((guide) => guide.id === MOVIES_CLASSICS_GUIDE_ID), 'Movies Classics guide must be registered');
 
 const schedule = await getScheduleForGuide(MOVIES_CLASSICS_GUIDE_ID, new Date('2026-10-07T12:00:00Z'));
-assert.equal(schedule[0].id, MOVIES_CLASSICS_CHANNEL_ID, 'curated Cinema Classics Vault is listed first');
-assert.ok(schedule.slice(1).every((c) => c.id.startsWith('mx-')), 'only the extra mx-* user channels follow it');
-assert.equal(schedule[0].id, MOVIES_CLASSICS_CHANNEL_ID);
-assert.equal(schedule[0].guideId, MOVIES_CLASSICS_GUIDE_ID);
-assert.equal(schedule[0].programs.length, 15, 'Movies Classics rotates only the films that start within this UTC day');
-assert.equal(schedule[0].programs[0].startHour, 0);
-assert.equal(schedule[0].programs.at(-1).endHour, 24, 'Last movie is clipped at midnight');
-assert.equal(new Set(schedule[0].programs.map(p => p.assetId)).size, 15, 'No film repeats within this day');
-assert.ok(schedule[0].programs.every((program) => program.sourceClass === 'archive_org'));
+// The compiled AJN Classic Movies network (classic-movies) is published first; the curated Vault follows it.
+const vaultIndex = schedule.findIndex((c) => c.id === MOVIES_CLASSICS_CHANNEL_ID);
+assert.equal(schedule[0].id, 'classic-movies', 'compiled Classic Movies network is listed first');
+assert.equal(vaultIndex, 1, 'curated Cinema Classics Vault is listed immediately after it');
+assert.ok(schedule.slice(2).every((c) => c.id.startsWith('mx-')), 'only the extra mx-* user channels follow the Vault');
+const vault = schedule[vaultIndex];
+assert.equal(vault.guideId, MOVIES_CLASSICS_GUIDE_ID);
+assert.equal(vault.programs.length, 15, 'Movies Classics rotates only the films that start within this UTC day');
+assert.equal(vault.programs[0].startHour, 0);
+assert.equal(vault.programs.at(-1).endHour, 24, 'Last movie is clipped at midnight');
+assert.equal(new Set(vault.programs.map(p => p.assetId)).size, 15, 'No film repeats within this day');
+assert.ok(vault.programs.every((program) => program.sourceClass === 'archive_org'));
 
 const canonicalMovies = getCanonicalPrograms().filter((program) => program.channelId === MOVIES_CLASSICS_CHANNEL_ID);
 assert.equal(canonicalMovies.length, 34, 'Registry must hydrate all 34 bounded Movies Classics Programs');
