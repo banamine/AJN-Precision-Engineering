@@ -6,7 +6,7 @@ Requires ffprobe for all runs and ffmpeg for copy-remux mode.
 No upload API; a Drive-synced destination may be synced by Drive desktop.
 
 No-window mode (used by GitHub Actions; needs no tkinter):
-  python AJN_Zip_Workbench_v2.pyw --headless --item <archive-id> [--item ...] --out <folder> [--limit N] [--pause S] [--no-remux]
+  python AJN_Zip_Workbench_v2.pyw --headless (--item <archive-id> | --playlist file.m3u) [...] --out <folder> [--limit N] [--pause S] [--no-remux]
   exit code 0 = completed, 1 = completed with failures, 2 = cancelled, 3 = failed
 """
 import csv, datetime as dt, json, os, queue, re, shutil, subprocess, sys, threading, time
@@ -55,6 +55,26 @@ def list_members(item, log):
             out.append({"zip": z, "name": urllib.parse.unquote(h.rsplit("/", 1)[-1]), "url": url})
     out.sort(key=lambda m: m["name"])
     log(f"{item}: {len(out)} .mp4 member(s)")
+    return out
+
+
+def members_from_playlist(path):
+    """Read an .m3u of archive.org zip-member links -> {item: [member, ...]} (no network, no Archive listing page)."""
+    out, bad = {}, 0
+    for line in Path(path).read_text(encoding="utf-8-sig", errors="replace").splitlines():
+        u = line.strip()
+        if not u or u.startswith("#"):
+            continue
+        m = re.match(r"https?://archive\.org/download/([^/]+)/([^/]+\.zip)/([^/?#]+\.mp4)$", u, re.I)
+        if not m:
+            bad += 1
+            continue
+        item, z, name = (urllib.parse.unquote(x) for x in m.groups())
+        out.setdefault(item, []).append({"zip": z, "name": name, "url": u})
+    for v in out.values():
+        v.sort(key=lambda x: x["name"])
+    if not out:
+        raise ValueError(f"{path}: no archive.org zip-member .mp4 links found ({bad} other line(s))")
     return out
 
 
@@ -385,7 +405,7 @@ def run_job(cfg, emit, cancel):
             for item in cfg['items']:
                 if cancel.is_set(): break
                 try:
-                    members = list_members(item,log)
+                    members = cfg.get('members', {}).get(item) or list_members(item,log)
                     plan.extend((item,m) for m in (members[:cfg['limit']] if cfg['limit'] else members))
                 except Exception as error:
                     log(f'Listing failed {item}: {error}')
@@ -736,7 +756,8 @@ def headless(argv):
     import argparse, signal
     ap = argparse.ArgumentParser(prog="AJN_Zip_Workbench_v2.pyw --headless")
     ap.add_argument("--headless", action="store_true")
-    ap.add_argument("--item", action="append", required=True, help="Archive item id or link (repeatable)")
+    ap.add_argument("--item", action="append", default=[], help="Archive item id or link (repeatable)")
+    ap.add_argument("--playlist", action="append", default=[], help=".m3u of zip-member links (repeatable); no Archive listing needed")
     ap.add_argument("--out", required=True)
     ap.add_argument("--limit", type=int, default=1, help="episodes per item, 0 = all")
     ap.add_argument("--pause", type=int, default=5)
@@ -746,10 +767,19 @@ def headless(argv):
         print("Invalid settings: limit must be 0..999 and pause 0..120", file=sys.stderr)
         return 3
     items = list(dict.fromkeys(x for x in (parse_item(i) for i in a.item) if x))
+    members = {}
+    for pl in a.playlist:
+        try:
+            for k, v in members_from_playlist(pl).items():
+                members.setdefault(k, []).extend(v)
+        except (OSError, ValueError) as e:
+            print(f"Playlist error: {e}", file=sys.stderr)
+            return 3
+    items = list(dict.fromkeys(items + list(members)))
     if not items:
-        print("No valid --item given", file=sys.stderr)
+        print("Give at least one --item or --playlist", file=sys.stderr)
         return 3
-    cfg = {"items": items, "out": a.out, "remux": not a.no_remux, "limit": a.limit, "pause": a.pause}
+    cfg = {"members": members, "items": items, "out": a.out, "remux": not a.no_remux, "limit": a.limit, "pause": a.pause}
     cancel = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
         try:

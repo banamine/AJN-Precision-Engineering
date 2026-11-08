@@ -10,10 +10,14 @@ name: ajn-zipmember-stage
 on:
   workflow_dispatch:
     inputs:
+      playlist:
+        description: 'Playlist file committed in this repo (preferred; no Archive listing page needed)'
+        required: false
+        default: 'data/zip-playlists/stargate-atlantis-s05-2008-eng-cc1-captions.m3u'
       item:
-        description: 'Archive identifier (or link), e.g. stargate-atlantis-s05-2008-eng-cc1-captions'
-        required: true
-        default: 'stargate-atlantis-s05-2008-eng-cc1-captions'
+        description: 'Archive identifier (only used if playlist is empty)'
+        required: false
+        default: ''
       limit:
         description: 'Episodes to build (0 = all)'
         required: false
@@ -55,8 +59,11 @@ jobs:
       - name: Build files (no upload)
         env:
           ITEM: ${{ inputs.item }}
+          PLAYLIST: ${{ inputs.playlist }}
           LIMIT: ${{ inputs.limit }}
-        run: python tools/zip-workbench/AJN_Zip_Workbench_v2.pyw --headless --item "$ITEM" --out /mnt/ajn-out --limit "$LIMIT" --pause 3
+        run: |
+          if [ -n "$PLAYLIST" ]; then SRC=(--playlist "$PLAYLIST"); else SRC=(--item "$ITEM"); fi
+          python tools/zip-workbench/AJN_Zip_Workbench_v2.pyw --headless "${SRC[@]}" --out /mnt/ajn-out --limit "$LIMIT" --pause 3
       - name: Keep reports
         if: always()
         uses: actions/upload-artifact@v4

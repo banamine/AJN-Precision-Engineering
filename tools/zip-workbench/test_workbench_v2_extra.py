@@ -86,6 +86,23 @@ class Extra(unittest.TestCase):
             self.assertEqual(w.headless(['--headless', '--out', str(Path(self.tmp.name) / 'out3'), '--item', 'item']), 3)
         self.assertEqual(w.headless(['--headless', '--out', str(self.out), '--item', 'item', '--limit', '5000']), 3)
 
+    def test_08_playlist_input_needs_no_archive_listing(self):
+        pl = Path(self.tmp.name) / 'show s01.m3u'
+        base = 'https://archive.org/download/show-s01/Show%20S01E01-02.zip/'
+        pl.write_text('#EXTM3U\n#EXTINF:-1,x\n' + base + 'Show%20S01E02.mp4\n#EXTINF:-1,y\n' + base + 'Show%20S01E01.mp4\n', encoding='utf-8')
+        got = w.members_from_playlist(pl)
+        self.assertEqual(list(got), ['show-s01'])
+        self.assertEqual([m['name'] for m in got['show-s01']], ['Show S01E01.mp4', 'Show S01E02.mp4'])
+        self.assertEqual(got['show-s01'][0]['zip'], 'Show S01E01-02.zip')
+        with patch.object(w, 'list_members', side_effect=AssertionError('listing page must not be used')), \
+             patch.object(w, 'download', side_effect=self.fake_download):
+            code = w.headless(['--headless', '--out', str(self.out), '--limit', '0', '--pause', '0', '--playlist', str(pl)])
+        self.assertEqual(code, 0)
+        self.assertTrue((self.out / 'show-s01' / 'Show S01E01-02' / 'Show S01E02.mp4').exists())
+        bad = Path(self.tmp.name) / 'bad.m3u'
+        bad.write_text('#EXTM3U\nhttps://example.com/a.mp4\n', encoding='utf-8')
+        self.assertEqual(w.headless(['--headless', '--out', str(self.out), '--playlist', str(bad)]), 3)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
