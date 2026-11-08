@@ -1,0 +1,39 @@
+{
+  "stationZone": "America/Los_Angeles",
+  "originMonday": "2026-11-09",
+  "horizonDays": 14,
+  "activeFrom": "2026-11-09T00:00:00 America/Los_Angeles",
+  "repeatGapHours": 168,
+  "pools": {
+    "overnight": {
+      "series": ["mister-ed", "get-smart", "benson", "good-times", "the-jeffersons", "archie-bunkers-place", "chico-and-the-man"],
+      "mode": "variety-single"
+    },
+    "daytime-single": {
+      "series": ["get-smart", "benson", "dick-van-dyke", "the-jeffersons", "good-times", "mister-ed", "chico-and-the-man", "archie-bunkers-place", "major-dad"],
+      "mode": "variety-single"
+    },
+    "prime-runs": {
+      "series": ["mash", "taxi", "hogans-heroes"],
+      "runMin": 1,
+      "runMax": 3,
+      "endWith": "hogans-heroes"
+    },
+    "cartoons-pre1960": {
+      "series": ["popeye", "woody-woodpecker", "norman-mccabe", "noveltoons"],
+      "targetRatio": 0.60
+    },
+    "cartoons-inera": {
+      "series": ["underdog", "ant-and-aardvark", "beary-family", "ducktales", "talespin", "darkwing-duck"],
+      "targetRatio": 0.40
+    },
+    "weekend-westerns": {
+      "series": ["wanted-dead-or-alive", "the-loner", "hondo"],
+      "countPerNight": 2
+    },
+    "sunday-mystery": {
+      "series": ["sherlock-holmes-1954", "ironside", "colonel-march", "murder-she-wrote"],
+      "countPerNight": 2
+    }
+  }
+}

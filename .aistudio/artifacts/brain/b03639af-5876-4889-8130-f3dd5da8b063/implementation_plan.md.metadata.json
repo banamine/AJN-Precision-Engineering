@@ -1,6 +1,6 @@
 {
-  "summary": "Revised implementation plan honoring the user's directive to preserve the radio deck, place instant search and genre pills directly under the deck, move 'Full shows by day' below the Listen-back list, and use exclusively real data sources (live feeds, saved presets, and catalog show days).",
-  "updatedAt": "2026-11-03T18:58:52.060573420Z",
-  "requestFeedback": true,
-  "userFacing": true
+  "summary":  "Revised implementation plan incorporating all review feedback: evidence-first manifest IDs from read-only probe, dynamic weeknight run model (1-3 episodes alternating, ending with Hogan's), daytime many-shows pool, explicit channel ID exclusion list, cartoon airtime duration metric (60/40), and test harness specifications in tests/ with ../ imports.",
+  "updatedAt":  "2026-11-08T03:37:12.786327640Z",
+  "requestFeedback":  true,
+  "userFacing":  true
 }

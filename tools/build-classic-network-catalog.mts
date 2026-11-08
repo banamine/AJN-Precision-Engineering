@@ -6,19 +6,146 @@ import { digest, type NetworkAsset, type NetworkCatalog } from '../server/classi
 
 type Row = Record<string, unknown>;
 export interface Exclusion { file: string; id: string; reason: string; evidence: string }
+
+export const EXCLUDED_CHANNEL_IDS = new Set<string>([
+  // Soaps
+  'allmychildren', 'allmychildren-channel', 'tvx-soap-ch309', 'soap',
+  // Standalone British shows
+  'danger-man',
+  'l4-2017-the-saint-movie-1080p-spanish-or-english',
+  'l4-s-01-e-01-murder-in-monmartre-1',
+  'tvx-granada-series-sherlock-holmes',
+  'l4-fawlty-towers-complete-series-1975',
+  'l4-the-prisoner-complete-series-1967',
+  'l4-the-prisoner-complete-series-2009',
+  'l4-it-aint-half-hot-mum-s-06-e-04-the-dhobi-wallahs',
+  'l4-the-secret-service-1969',
+  'l4-the-baron-1966-series',
+  'l4-the-protectors',
+  'l4-the-buccaneers-s-01-e-01-blackbeard',
+  // Crossover shows (began <= 1995 but ran later)
+  'star-trek-voyager',
+  'cx-x-men-the-animated-series-ai-upscale',
+  'cx-gargoyles-ai-upscale',
+  'cx-reboot-with-subtitles-and-mkv',
+  'cx-spider-man-the-animated-series-complete-1994-series-ai-upsca',
+  'cx-beavis-and-butt-head-1992-present-final',
+  'cx-teknoman-upscale',
+]);
+
+export const HELD_CHANNEL_IDS = new Set<string>([
+  'burns-and-allen',
+  'l4-gunsmoke-s-01-e-01-matt-gets-it-202509',
+  'l4-bitchute-barnaby-jones-2022',
+  'cx-dilbert-the-dvd-iso-ntsc',
+  'cx-chadam-2010',
+  'cx-toon-in-with-me-season-1-2021',
+  'cx-pantheon-season-1-2',
+  'cx-gravity-falls-the-5-1-rcvr',
+  'cx-spider-man-unlimited-1999-2001-complete',
+  'cx-death-note-complete-2006-2007',
+  'cx-time-squad',
+  'cx-ed-edd-n-eddy-all-episodes-and-specials',
+]);
+
 export const SHOWS: Record<string, RegExp> = {
+  // Prime Staple Sitcoms
   'hogans-heroes': /hogan'?s[ ._-]*heroes/i,
-  taxi: /\btaxi\b/i, benson: /\bbenson\b/i, 'get-smart': /get[ ._-]+smart/i,
-  'odd-couple': /odd[ ._-]+couple/i, 'dick-van-dyke': /dick[ ._-]+van[ ._-]+dyke/i,
-  'danger-man': /danger[ ._-]+man|secret[ ._-]+agent/i,
+  taxi: /\btaxi\b/i,
+  mash: /\bm\*?a\*?s\*?h\b/i,
+
+  // Daytime Comedies
+  benson: /\bbenson\b/i,
+  'get-smart': /get[ ._-]+smart/i,
+  'dick-van-dyke': /dick[ ._-]+van[ ._-]+dyke/i,
+  'the-jeffersons': /the[ ._-]+jeffersons/i,
+  'good-times': /good[ ._-]+times/i,
+  'mister-ed': /mister[ ._-]+ed/i,
+  'chico-and-the-man': /chico[ ._&+-]*(?:and|&|the)?[ ._&+-]*man/i,
+  'archie-bunkers-place': /archie[ ._-]+bunker/i,
+  'major-dad': /major[ ._-]+dad/i,
+  'operation-petticoat': /operation[ ._-]+petticoat/i,
+
+  // Weekend Morning Cartoons: Pre-1960
+  popeye: /popeye/i,
+  buddy: /buddy[ ._-]+full/i,
+  'norman-mccabe': /norman[ ._-]+mccabe/i,
+  noveltoons: /noveltoons/i,
+  'disney-rarities': /disney[ ._-]+rarities/i,
+  'classic-cartoons': /classic[ ._-]+cartoons/i,
+  'woody-woodpecker': /woody[ ._-]+woodpecker/i,
+
+  // Weekend Morning Cartoons: In-Era (1960-1995)
+  underdog: /underdog/i,
+  'ant-and-aardvark': /ant[ ._-]+and[ ._-]+(?:the[ ._-]+)?aardvark/i,
+  'beary-family': /beary[ ._-]+family/i,
+  ducktales: /ducktales/i,
+  talespin: /talespin/i,
+  'darkwing-duck': /darkwing[ ._-]+duck/i,
+
+  // Weekend Evening Westerns
   'death-valley-days': /death[ ._-]+valley[ ._-]+days/i,
+  'wanted-dead-or-alive': /wanted[ ._-]+dead[ ._-]+or[ ._-]+alive/i,
+  'the-loner': /the[ ._-]+loner/i,
+  hondo: /hondo/i,
+
+  // Sunday Mystery Wheel
+  'sherlock-holmes-1954': /the[ ._-]+adventures[ ._-]+of[ ._-]+sherlock[ ._-]+holmes/i,
+  ironside: /ironside/i,
+  'colonel-march': /colonel[ ._-]+march/i,
+  'murder-she-wrote': /murder[ ,._-]+she[ ,._-]+wrote/i,
+
+  // Retained legacy keys for test suite
+  'odd-couple': /odd[ ._-]+couple/i,
+  'danger-man': /danger[ ._-]+man|secret[ ._-]+agent/i,
 };
+
+export const SHOW_NAMES: Record<string, string> = {
+  'hogans-heroes': "Hogan's Heroes",
+  taxi: 'Taxi',
+  mash: 'M*A*S*H',
+  benson: 'Benson',
+  'get-smart': 'Get Smart',
+  'dick-van-dyke': 'The Dick Van Dyke Show',
+  'the-jeffersons': 'The Jeffersons',
+  'good-times': 'Good Times',
+  'mister-ed': 'Mister Ed',
+  'chico-and-the-man': 'Chico and the Man',
+  'archie-bunkers-place': "Archie Bunker's Place",
+  'major-dad': 'Major Dad',
+  'operation-petticoat': 'Operation Petticoat',
+  popeye: 'Popeye The Sailor',
+  buddy: 'Buddy (Looney Tunes)',
+  'norman-mccabe': 'Norman McCabe Classics',
+  noveltoons: 'Noveltoons Classics',
+  'disney-rarities': 'Disney Rarities',
+  'classic-cartoons': 'Classic Cartoons',
+  'woody-woodpecker': 'Woody Woodpecker & Friends',
+  underdog: 'The Underdog Show',
+  'ant-and-aardvark': 'The Ant and the Aardvark',
+  'beary-family': 'The Beary Family',
+  ducktales: 'DuckTales',
+  talespin: 'TaleSpin',
+  'darkwing-duck': 'Darkwing Duck',
+  'death-valley-days': 'Death Valley Days',
+  'wanted-dead-or-alive': 'Wanted: Dead or Alive',
+  'the-loner': 'The Loner',
+  hondo: 'Hondo',
+  'sherlock-holmes-1954': 'The Adventures of Sherlock Holmes (1954)',
+  ironside: 'Ironside',
+  'colonel-march': 'Colonel March of Scotland Yard',
+  'murder-she-wrote': 'Murder, She Wrote',
+  'odd-couple': 'The Odd Couple',
+  'danger-man': 'Danger Man',
+};
+
 export function episodeCode(text: string): { season: number; episode: number } | null {
   const m = /S(\d{1,2})[\s._-]*E(\d{1,3})/i.exec(text)
     ?? /(?:^|[\s/._-])(\d{1,2})x(\d{1,3})(?=\D|$)/i.exec(text)
     ?? /Season[\s._-]+(\d{1,2})[\s._-]+Episode[\s._-]+(\d{1,3})/i.exec(text);
   return m ? { season: Number(m[1]), episode: Number(m[2]) } : null;
 }
+
 export function collectRows(value: unknown, context: Row = {}, out: Row[] = []): Row[] {
   if (Array.isArray(value)) { value.forEach(v => collectRows(v, context, out)); return out; }
   if (!value || typeof value !== 'object') return out;
@@ -35,7 +162,9 @@ export function collectRows(value: unknown, context: Row = {}, out: Row[] = []):
   for (const v of Object.values(r)) if (v && typeof v === 'object') collectRows(v, next, out);
   return out;
 }
+
 function fileOf(r: Row): string { return String(r.file ?? r.fileName ?? r.path ?? ''); }
+
 export function episodeDisplayTitle(file: string, fallback: string): string {
   let name = file.split('/').pop() || fallback;
   try { name = decodeURIComponent(name); } catch { /* Preserve malformed legacy file labels verbatim. */ }
@@ -43,16 +172,7 @@ export function episodeDisplayTitle(file: string, fallback: string): string {
     .replace(/^\d{1,4}[\s._-]+/, '').replace(/[._-]+/g, ' ').replace(/\s+/g, ' ').trim();
   return cleaned || fallback;
 }
-export const SHOW_NAMES: Record<string, string> = {
-  'hogans-heroes': "Hogan's Heroes",
-  taxi: 'Taxi',
-  benson: 'Benson',
-  'get-smart': 'Get Smart',
-  'odd-couple': 'The Odd Couple',
-  'dick-van-dyke': 'The Dick Van Dyke Show',
-  'danger-man': 'Danger Man',
-  'death-valley-days': 'Death Valley Days',
-};
+
 export function cleanTitle(show: string, file: string, code: { season: number; episode: number } | null): string {
   const showName = SHOW_NAMES[show] ?? show;
   if (code) {
@@ -69,24 +189,46 @@ export function cleanTitle(show: string, file: string, code: { season: number; e
   }
   return epTitle ? `${showName} — ${epTitle}` : showName;
 }
+
 /** The FILE name must itself name the show (wrong-show rows such as "Cagney & Lacey ... Taxi-Cab Murders" matched on context only). */
 export function fileNamesShow(show: string, file: string, identifier: string): boolean {
   if (show === 'danger-man') return /danger[ ._-]*man|secret[ ._-]*agent/i.test(identifier);
   if (show === 'odd-couple') return /odd[ ._-]+couple/i.test(file);
+  if (show === 'mash') return /mash/i.test(file) || /mash/i.test(identifier);
+  if (show === 'popeye') return /popeye/i.test(file) || /popeye/i.test(identifier);
   const base = (file.split('/').pop() ?? file).replace(/^[\d\s._-]+/, '').replace(/^the[ ._-]+/i, '');
-  return new RegExp(`^(?:${SHOWS[show].source})`, 'i').test(base);
+  if (SHOWS[show] && new RegExp(`^(?:${SHOWS[show].source})`, 'i').test(base)) return true;
+  return SHOWS[show] ? (SHOWS[show].test(base) || SHOWS[show].test(identifier)) : false;
 }
+
 function reject(excluded: Exclusion[], r: Row, reason: string): void {
   excluded.push({ file: fileOf(r), id: String(r.identifier ?? ''), reason, evidence: String(r.title ?? r.channelName ?? '') });
 }
+
 export function buildCatalog(rows: Row[], movie = false, includeChannels: string[] = []): {
-  catalog: NetworkCatalog; excluded: Exclusion[]; sameFileMultipleKeys: string[]; reviewFlags: Exclusion[];
+  catalog: NetworkCatalog; excluded: Exclusion[]; sameFileMultipleKeys: string[]; reviewFlags: Exclusion[]; heldRows: Row[];
 } {
   const excluded: Exclusion[] = [], chosen = new Map<string, { asset: NetworkAsset; rank: number; bytes: number }>();
   const reviewFlags: Exclusion[] = [];
+  const heldRows: Row[] = [];
+
   for (const r of rows) {
     const file = fileOf(r), id = String(r.identifier ?? ''), title = String(r.title ?? path.basename(file));
-    const context = `${r.channelName ?? ''} ${r.series ?? ''} ${title} ${file}`;
+    const chId = String(r.channelId ?? '');
+    const context = `${r.channelName ?? ''} ${r.series ?? ''} ${title} ${file} ${chId} ${id}`;
+
+    // 1. Explicit owner blacklist
+    if (EXCLUDED_CHANNEL_IDS.has(chId) || EXCLUDED_CHANNEL_IDS.has(id)) {
+      reject(excluded, r, 'owner_blacklisted_exclusion');
+      continue;
+    }
+
+    // 2. Explicit held inventory
+    if (HELD_CHANNEL_IDS.has(chId) || HELD_CHANNEL_IDS.has(id) || /burns[ ._-]*and[ ._-]*allen/i.test(context)) {
+      heldRows.push({ ...r, reason: 'held_pending_verification' });
+      continue;
+    }
+
     const show = Object.keys(SHOWS).find(k => SHOWS[k].test(context));
     if (!movie && !show) continue;
     if (movie && !includeChannels.includes(String(r.channelId))) { reject(excluded, r, 'channel_not_in_owner_allowlist'); continue; }
@@ -95,11 +237,24 @@ export function buildCatalog(rows: Row[], movie = false, includeChannels: string
     if (!Number.isFinite(duration) || duration <= 0) { reject(excluded, r, 'missing_real_duration'); continue; }
     if (!id || !/\.mp4$/i.test(file)) { reject(excluded, r, 'no_mp4_or_identifier'); continue; }
     if (movie && (duration < 3600 || duration > 14400)) { reject(excluded, r, 'outside_60_240_minutes'); continue; }
+    if (!movie && show === 'danger-man') {
+      reject(excluded, r, 'british_shows_out_of_rotation');
+      continue;
+    }
     if (!movie && show === 'odd-couple' && (!file.startsWith('VOM/The Odd Couple S01-S05 (1970-)/') || /Xtras|1968/i.test(file))) {
       reject(excluded, r, 'outside_odd_couple_episode_prefix'); continue;
     }
+    if (!movie && show === 'taxi' && (/taxi[ ._-]*driver|yakuza|lloyde/i.test(context) || duration > 3600)) {
+      reject(excluded, r, 'wrong_show_or_movie');
+      continue;
+    }
+    if (!movie && show === 'mash' && (/1970[ ._-]*1080p|bluray|hevc/i.test(context) || /scoobynatural/i.test(context))) {
+      reject(excluded, r, 'wrong_show_or_movie');
+      continue;
+    }
     if (!movie && show === 'hogans-heroes' && /hogan[ ._-]+family/i.test(file)) { reject(excluded, r, 'wrong_show'); continue; }
     if (!movie && show && !fileNamesShow(show, file, id)) { reject(excluded, r, 'file_name_does_not_name_show'); continue; }
+
     const code = episodeCode(file);
     let episodeKey: string;
     if (movie) {
@@ -114,12 +269,26 @@ export function buildCatalog(rows: Row[], movie = false, includeChannels: string
     } else if (code) {
       episodeKey = `${show}:s${String(code.season).padStart(2, '0')}e${String(code.episode).padStart(2, '0')}`;
     } else {
-      // Existing Danger Man filenames explicitly number their running order; never use the item id.
       const order = show === 'danger-man' ? /(?:^|\/)(\d{1,3})[ ._-]+/.exec(file) : null;
-      if (!order) { reject(excluded, r, 'unresolved_episode_order'); continue; }
-      const seriesFolder = /Series[ ._-]*(\d+)/i.exec(file)?.[1] ?? '0';
-      episodeKey = `${show}:o${String(Number(seriesFolder) * 1000 + Number(order[1])).padStart(5, '0')}`;
+      if (order) {
+        const seriesFolder = /Series[ ._-]*(\d+)/i.exec(file)?.[1] ?? '0';
+        episodeKey = `${show}:o${String(Number(seriesFolder) * 1000 + Number(order[1])).padStart(5, '0')}`;
+      } else {
+        const yearEp = /(?:^|[\s/._-])(19\d\d)[eE](\d{1,3})(?=\D|$)/.exec(file);
+        if (yearEp) {
+          episodeKey = `${show}:y${yearEp[1]}e${yearEp[2].padStart(2, '0')}`;
+        } else {
+          const numMatch = /(?:^|[\s/._-])(\d{1,4})(?=\D|$)/.exec(path.basename(file));
+          if (numMatch) {
+            episodeKey = `${show}:o${numMatch[1].padStart(4, '0')}`;
+          } else {
+            const baseClean = path.basename(file).replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            episodeKey = `${show}:${baseClean}`;
+          }
+        }
+      }
     }
+
     const encoded = file.split('/').map(encodeURIComponent).join('/');
     const archivePath = `/download/${encodeURIComponent(id)}/${encoded}`;
     const asset: NetworkAsset = {
@@ -138,12 +307,14 @@ export function buildCatalog(rows: Row[], movie = false, includeChannels: string
       else { reject(excluded, r, 'duplicate_episode_rendition'); old.asset.sources = sources; }
     }
   }
+
   const assets = [...chosen.values()].map(v => v.asset).sort((a, b) => a.show.localeCompare(b.show) || a.episodeKey.localeCompare(b.episodeKey, 'en', { numeric: true }));
   const paths = new Map<string, Set<string>>();
   for (const a of assets) { const keys = paths.get(a.archivePath) ?? new Set<string>(); keys.add(a.episodeKey); paths.set(a.archivePath, keys); }
   return { catalog: { schema: 1, assets }, excluded,
-    sameFileMultipleKeys: [...paths].filter(([, keys]) => keys.size > 1).map(([p]) => p), reviewFlags };
+    sameFileMultipleKeys: [...paths].filter(([, keys]) => keys.size > 1).map(([p]) => p), reviewFlags, heldRows };
 }
+
 export function movieIdentity(title: string, yearField: unknown, id: string, file: string): string | null {
   let name = title.replace(/\.mp4$/i, '').replace(/\b(?:1080p|720p|480p|mp4|ia|bluray|dvdrip)\b/gi, '').trim();
   const declared = /^(?:18|19|20)\d{2}$/.exec(String(yearField ?? ''))?.[0];
@@ -157,16 +328,19 @@ export function movieIdentity(title: string, yearField: unknown, id: string, fil
   if (!normalized || /^(?:movie|film|video|untitled|unknown)(?:-?\d+)?$/.test(normalized)) return null;
   return `movie:${year ? `${normalized}:${year}` : `${id}:${file}`}`;
 }
+
 export function orderMovies(assets: NetworkAsset[], seed: string): NetworkAsset[] {
   if (!seed) throw new Error('Movies seed is required');
   const hashes = new Map(assets.map(a => [a.episodeKey, createHash('sha256').update(seed + a.episodeKey).digest('hex')]));
   return [...assets].sort((a, b) => hashes.get(a.episodeKey)!.localeCompare(hashes.get(b.episodeKey)!) || a.episodeKey.localeCompare(b.episodeKey));
 }
+
 export function assertMovieCycle(assets: NetworkAsset[]): number {
   const seconds = assets.reduce((n, a) => n + a.durationSeconds, 0);
   if (seconds <= 168 * 3600) throw new Error('Movies full cycle must exceed 168 real hours');
   return seconds;
 }
+
 export function movieVaultRows(items: Array<Record<string, unknown>>): Row[] {
   return items.flatMap(item => (Array.isArray(item.files) ? item.files : []).map(f => ({
     ...f, identifier: item.identifier, title: item.title, year: item.year, file: f.name,
@@ -175,10 +349,12 @@ export function movieVaultRows(items: Array<Record<string, unknown>>): Row[] {
     private: item.private, is_dark: item.is_dark, restricted: item.restricted,
   })));
 }
+
 export function readAppRows(): Row[] {
   const files = ['extraChannelsManifest', 'seriesManifests', 'organizerShowsManifest', 'archiveShowSourcesManifest', 'archiveItemManifest.guide'];
   return files.flatMap(f => collectRows(JSON.parse(fs.readFileSync(`src/data/${f}.json`, 'utf8')) as unknown));
 }
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const movie = process.argv.includes('--movies');
   let includes: string[] = [], seed = '';
@@ -199,9 +375,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   fs.writeFileSync(`src/data/${file}.json`, `${JSON.stringify(result.catalog, null, 2)}\n`);
   fs.mkdirSync('reports/classic-network', { recursive: true });
   fs.writeFileSync(`reports/classic-network/${file}-exclusions.json`, `${JSON.stringify({ excluded: result.excluded, sameFileMultipleKeys: result.sameFileMultipleKeys, reviewFlags: result.reviewFlags }, null, 2)}\n`);
+  if (!movie) {
+    fs.writeFileSync('reports/classic-network/held-inventory.json', `${JSON.stringify(result.heldRows, null, 2)}\n`);
+  }
   const table = [...new Set(result.catalog.assets.map(a => a.show))].map(show => {
     const a = result.catalog.assets.filter(v => v.show === show), seconds = a.reduce((s, v) => s + v.durationSeconds, 0);
     return { show, distinctEpisodes: a.length, totalHours: seconds / 3600, meanSeconds: seconds / a.length, maxAiringsPerDay: Math.floor(a.length / 7) };
   });
-  console.log(JSON.stringify({ catalog: file, table, excluded: result.excluded.length, sameFileMultipleKeys: result.sameFileMultipleKeys }, null, 2));
+  console.log(JSON.stringify({ catalog: file, table, excluded: result.excluded.length, sameFileMultipleKeys: result.sameFileMultipleKeys, held: result.heldRows?.length ?? 0 }, null, 2));
 }
