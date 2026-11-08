@@ -1,0 +1,78 @@
+name: ajn-zipmember-stage
+
+# Builds seekable (fast-start) copies of Archive.org zip-member episodes ON GITHUB, with no window and
+# no upload anywhere. Uses tools/zip-workbench/AJN_Zip_Workbench_v2.pyw --headless (same code as the desktop app).
+# Default output: reports only (summary.txt, run-log.csv, playlist.csv, workbench.log).
+# The episodes themselves are kept as an artifact ONLY if keep_media is ticked. This repository is PUBLIC, so
+# anyone signed in to GitHub could download that artifact: decide that deliberately.
+# Run: Actions tab -> ajn-zipmember-stage -> Run workflow. Start with limit = 1.
+
+on:
+  workflow_dispatch:
+    inputs:
+      item:
+        description: 'Archive identifier (or link), e.g. stargate-atlantis-s05-2008-eng-cc1-captions'
+        required: true
+        default: 'stargate-atlantis-s05-2008-eng-cc1-captions'
+      limit:
+        description: 'Episodes to build (0 = all)'
+        required: false
+        default: '1'
+      keep_media:
+        description: 'Keep the built .mp4 files as a downloadable artifact (repo is public!)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ajn-zipmember-stage
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Self-tests (must pass before any download)
+        working-directory: tools/zip-workbench
+        run: |
+          python test_workbench_v2.py
+          python test_workbench_v2_extra.py
+      - name: Prepare large output disk
+        run: |
+          sudo mkdir -p /mnt/ajn-out
+          sudo chown "$USER" /mnt/ajn-out
+          df -h / /mnt
+      - name: Build files (no upload)
+        env:
+          ITEM: ${{ inputs.item }}
+          LIMIT: ${{ inputs.limit }}
+        run: python tools/zip-workbench/AJN_Zip_Workbench_v2.pyw --headless --item "$ITEM" --out /mnt/ajn-out --limit "$LIMIT" --pause 3
+      - name: Keep reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zip-workbench-reports-${{ github.run_id }}
+          path: /mnt/ajn-out/runs
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Keep built episodes (only if keep_media)
+        if: always() && inputs.keep_media
+        uses: actions/upload-artifact@v4
+        with:
+          name: zip-workbench-media-${{ github.run_id }}
+          path: |
+            /mnt/ajn-out
+            !/mnt/ajn-out/runs/**
+          retention-days: 3
+          compression-level: 0
+          if-no-files-found: warn
