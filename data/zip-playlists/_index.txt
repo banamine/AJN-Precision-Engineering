@@ -1,0 +1,29 @@
+ARCHIVE PLAYLISTS - generated 2026-11-07 05:37 - links only, no video downloaded
+PLAYABLE column: DIRECT = plain file link; ZIP-MEMBER = file inside a .zip (Archive blocks seeking, AJN player cannot play it until a fast-start copy exists); MKV/OTHER = not browser-safe MP4; PRIVATE/ERROR = skipped
+
+LINKS    PLAYABLE     ITEM                                                         FILE
+22       ZIP-MEMBER   marvels-agents-of-shield-s05-2017-eng-cc1-captions           Marvels Agents of Shield S05 (2017) Eng cc1 Captions
+22       ZIP-MEMBER   marvels-agents-of-shield-s03-2015-eng-cc1-captions           Marvels Agents of Shield S03 (2015) Eng cc1 Captions
+13       ZIP-MEMBER   marvels-agents-of-shield-s07-2020-eng-cc1-captions           Marvels Agents of Shield S07 (2020) Eng cc1 Captions
+22       ZIP-MEMBER   babylon-5-S05-1998-eng-cc1-captions-for-deaf-and-hearing-impaired Babylon 5 S05 (1998) Eng cc1 Captions For Deaf and Hearing Impaired
+20       ZIP-MEMBER   stargate-atlantis-s03-2006-eng-cc1-captions                  Stargate Atlantis S03 (2006) Eng cc1 captions
+22       ZIP-MEMBER   marvels-agents-of-shield-s04-2016-eng-cc1-captions           Marvels Agents of Shield S04 (2016) Eng cc1 Captions
+22       ZIP-MEMBER   babylon-5-S03-1995-eng-cc1-captions-for-deaf-and-hearing-impaired Babylon 5 S03 (1995) Eng cc1 Captions For Deaf and Hearing Impaired
+0        NO-VIDEO     marvels-agents-of-shield-s01-2013-eng-cc1-captions           Marvels Agents of Shield S01 (2013) Eng cc1 Captions (damaged page - do not use)
+13       ZIP-MEMBER   marvels-agents-of-shield-s06-2019-eng-cc1-captions           Marvels Agents of Shield S06 (2019) Eng cc1 Captions
+20       ZIP-MEMBER   stargate-atlantis-s02-2005-eng-cc1-captions                  Stargate Atlantis S02 (2005) Eng cc1 captions
+22       ZIP-MEMBER   marvels-agents-of-shield-s01-2013-eng-cc1-captions-v2        Marvels Agents of Shield S01 (2013) Eng cc1 Captions ver-2
+19       ZIP-MEMBER   stargate-atlantis-s01-2004-eng-cc1-captions                  Stargate Atlantis S01 (2004) Eng cc1 captions
+22       ZIP-MEMBER   babylon-5-S02-1994-eng-cc1-captions-for-deaf-and-hearing-impaired Babylon 5 S02 (1994) Eng cc1 Captions For Deaf and Hearing Impaired
+20       ZIP-MEMBER   stargate-atlantis-s04-2007-eng-cc1-captions                  Stargate Atlantis S04 (2007) Eng cc1 captions
+20       ZIP-MEMBER   stargate-atlantis-s05-2008-eng-cc1-captions                  Stargate Atlantis S05 (2008) Eng cc1 captions
+22       ZIP-MEMBER   babylon-5-S04-1996-eng-cc1-captions-for-deaf-and-hearing-impaired Babylon 5 S04 (1996) Eng cc1 Captions For Deaf and Hearing Impaired
+22       ZIP-MEMBER   marvels-agents-of-shield-s02-2014-eng-cc1-captions           Marvels Agents of Shield S02 (2014) Eng cc1 Captions
+23       ZIP-MEMBER   babylon-5-S01-1994-eng-cc1-captions-for-deaf-and-hearing-impaired Babylon 5 S01 (1994) Eng cc1 Captions For Deaf and Hearing Impaired
+26       ZIP-MEMBER   star-trek-ds9-1994-s03-eng-cc1-captions                      Star Trek DS9 (1994) S03 Eng cc1 Captions
+26       ZIP-MEMBER   star-trek-ds9-1997-s06-eng-cc1-captions                      Star Trek DS9 (1997) S06 Eng cc1 Captions
+19       ZIP-MEMBER   star-trek-ds9-1993-s01-eng-cc1-captions                      Star Trek DS9 (1993) S01 Eng cc1 Captions
+25       ZIP-MEMBER   star-trek-ds9-1995-s04-eng-cc1-captions                      Star Trek DS9 (1995) S04 Eng cc1 Captions
+26       ZIP-MEMBER   star-trek-ds9-1993-s02-eng-cc1-captions                      Star Trek DS9 (1993) S02 Eng cc1 Captions
+26       ZIP-MEMBER   star-trek-ds9-1996-s05-eng-cc1-captions                      Star Trek DS9 (1996) S05 Eng cc1 Captions
+25       ZIP-MEMBER   star-trek-ds9-1998-s07-eng-cc1-captions                      Star Trek DS9 (1998) S07 Eng cc1 Captions
