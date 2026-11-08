@@ -1,0 +1,40 @@
+name: ajn-zipmember-sync
+
+# Step 2 of 2. After ajn-zipmember-remux has uploaded fast-start copies to YOUR Archive account,
+# this reads their manifest.json, checks every file answers a byte-range request with 206, and opens a
+# pull request that adds the passing entries to data/zipmember-fastcopies.json. Merging that PR makes the
+# channel appear in the Classic TV guide. Nothing is stored on GitHub except that small JSON list.
+
+on:
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'Comma-separated Archive identifiers made by ajn-zipmember-remux, e.g. stargate-atlantis-s05-2008-eng-cc1-captions-faststart'
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Merge verified entries
+        run: python3 scripts/zipmember_sync.py --targets "${{ inputs.targets }}" --out data/zipmember-fastcopies.json
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/zipmember-fastcopies.json; then echo "No new verified entries; nothing to do."; exit 0; fi
+          BR="data/zipmember-fastcopies-${GITHUB_RUN_ID}"
+          git config user.name "ajn-zipmember-sync"; git config user.email "actions@users.noreply.github.com"
+          git checkout -b "$BR"; git add data/zipmember-fastcopies.json
+          git commit -m "data: add verified zip-member fast-start copies"
+          git push origin "$BR"
+          gh pr create --base "${{ github.event.repository.default_branch }}" --head "$BR" \
+            --title "Add verified zip-member fast-start copies" \
+            --body "Entries passed the 206 byte-range check. Merge to show the channel(s) in the Classic TV guide."

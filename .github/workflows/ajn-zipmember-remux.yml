@@ -1,0 +1,132 @@
+name: ajn-zipmember-remux
+
+# Converts Archive.org zip-member MP4s (index at the END, no Range support) into
+# fast-start MP4s (stream copy, NO re-encode) and uploads them to YOUR Archive.org account.
+# Nothing is stored on GitHub. Needs two repo secrets: IA_ACCESS_KEY and IA_SECRET_KEY
+# (get them at https://archive.org/account/s3.php while logged in as @infobattalion).
+# Run: Actions tab -> ajn-zipmember-remux -> Run workflow -> item = SOURCE Archive identifier.
+# Output: new Archive item <item>-faststart (or the 'target' you give): one .mp4 per episode + manifest.json.
+# Safe to re-run: episodes already in the target item are skipped. Does not touch app code.
+
+on:
+  workflow_dispatch:
+    inputs:
+      item:
+        description: 'Archive identifier, e.g. stargate-atlantis-s05-2008-eng-cc1-captions'
+        required: true
+      target:
+        description: 'Archive identifier to upload to (blank = <item>-faststart)'
+        required: false
+        default: ''
+      limit:
+        description: 'Max episodes to convert this run (0 = all)'
+        required: false
+        default: '0'
+
+permissions:
+  contents: read
+
+jobs:
+  remux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg jq && pip install -q internetarchive
+      - name: Convert zip members
+        env:
+          IA_ACCESS_KEY: ${{ secrets.IA_ACCESS_KEY }}
+          IA_SECRET_KEY: ${{ secrets.IA_SECRET_KEY }}
+          ITEM: ${{ inputs.item }}
+          TARGET_IN: ${{ inputs.target }}
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          set -euo pipefail
+          [[ "$ITEM" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "bad item id"; exit 2; }
+          [[ "$LIMIT" =~ ^[0-9]+$ ]] || LIMIT=0
+          [ -n "$IA_ACCESS_KEY" ] && [ -n "$IA_SECRET_KEY" ] || { echo "::error::Missing repo secrets IA_ACCESS_KEY / IA_SECRET_KEY"; exit 4; }
+          TARGET="${TARGET_IN:-$ITEM-faststart}"
+          [[ "$TARGET" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "bad target id"; exit 2; }
+          ia configure --access-key "$IA_ACCESS_KEY" --secret-key "$IA_SECRET_KEY" >/dev/null
+          mkdir -p work out prev
+          EXISTING=$(ia list "$TARGET" 2>/dev/null || true)
+          curl -fsSL --retry 3 "https://archive.org/download/$TARGET/manifest.json" -o prev/manifest.json 2>/dev/null \
+            && jq -e 'type=="array"' prev/manifest.json >/dev/null 2>&1 || echo '[]' > prev/manifest.json
+          echo '[]' > new.json
+          FIRST_NEW=""
+          curl -fsS --retry 3 "https://archive.org/metadata/$ITEM" -o meta.json
+          mapfile -t ZIPS < <(jq -r '.files[] | select(.name|endswith(".zip")) | .name' meta.json | sort)
+          [ "${#ZIPS[@]}" -gt 0 ] || { echo "no zip files in item"; exit 3; }
+          done_count=0; fail_count=0
+          for Z in "${ZIPS[@]}"; do
+            ZE=$(jq -rn --arg s "$Z" '$s|@uri')
+            curl -fsSL --retry 3 "https://archive.org/download/$ITEM/$ZE/" -o list.html
+            grep -oE 'href="//archive\.org/download/[^"]+\.mp4"' list.html | sed 's/^href="//; s/"$//' | sort -u > members.txt || true
+            [ -s members.txt ] || { echo "::error::no .mp4 members found in zip: $Z"; fail_count=$((fail_count+1)); continue; }
+            while read -r H; do
+              [ -n "$H" ] || continue
+              if [ "$LIMIT" -gt 0 ] && [ "$done_count" -ge "$LIMIT" ]; then break 2; fi
+              URL="https:$H"
+              NAME=$(python3 -c 'import sys,urllib.parse as u;print(u.unquote(sys.argv[1].rsplit("/",1)[1]))' "$H")
+              SAFE=$(printf '%s' "$NAME" | tr ' ' '_')
+              if printf '%s\n' "$EXISTING" | grep -qxF "$SAFE"; then echo "skip (done): $SAFE"; continue; fi
+              echo "::group::$SAFE"
+              rm -f work/raw.mp4 "out/$SAFE"
+              if ! curl -fL --retry 5 --retry-delay 15 --connect-timeout 30 -sS -o work/raw.mp4 "$URL"; then
+                echo "::error::download failed: $NAME"; fail_count=$((fail_count+1)); echo "::endgroup::"; continue; fi
+              RAWDUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 work/raw.mp4 || echo 0)
+              if ! ffmpeg -hide_banner -loglevel error -nostdin -y -i work/raw.mp4 -map 0:v:0 -map 0:a:0 \
+                   -map_chapters -1 -dn -sn -c copy -movflags +faststart -f mp4 "out/$SAFE"; then
+                echo "::error::ffmpeg failed: $NAME"; fail_count=$((fail_count+1)); echo "::endgroup::"; continue; fi
+              CODECS=$(ffprobe -v error -show_entries stream=codec_name -of csv=p=0 "out/$SAFE" | sort | tr '\n' '+')
+              DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "out/$SAFE" || echo 0)
+              MOOVFIRST=$(python3 - "out/$SAFE" <<'PY'
+          import struct, sys
+          f = open(sys.argv[1], 'rb'); pos = 0
+          for _ in range(40):
+              f.seek(pos); h = f.read(16)
+              if len(h) < 8: print("no"); break
+              size, typ = struct.unpack(">I4s", h[:8])
+              if typ == b"moov": print("yes"); break
+              if typ == b"mdat": print("no"); break
+              if size == 1: size = struct.unpack(">Q", h[8:16])[0]
+              if size < 8: print("no"); break
+              pos += size
+          else: print("no")
+          PY
+              )
+              OK=$(python3 -c 'import sys;print("yes" if abs(float(sys.argv[1])-float(sys.argv[2]))<=2 and float(sys.argv[1])>0 else "no")' "$DUR" "$RAWDUR")
+              if [ "$CODECS" != "aac+h264+" ] || [ "$OK" != "yes" ] || [ "$MOOVFIRST" != "yes" ]; then
+                echo "::error::verify failed for $NAME: codecs=$CODECS dur=$DUR raw=$RAWDUR moovFirst=$MOOVFIRST"
+                fail_count=$((fail_count+1)); echo "::endgroup::"; continue; fi
+              if [ -z "$EXISTING" ] && [ "$done_count" -eq 0 ]; then
+                ia upload "$TARGET" "out/$SAFE" --retries 5 --no-derive \
+                  --metadata="mediatype:movies" --metadata="collection:opensource_movies" \
+                  --metadata="title:$ITEM (fast-start MP4 copies)" \
+                  --metadata="description:Stream-copied (no re-encode) fast-start copies of zip members from https://archive.org/details/$ITEM"
+              else
+                ia upload "$TARGET" "out/$SAFE" --retries 5 --no-derive
+              fi
+              [ -n "$FIRST_NEW" ] || FIRST_NEW="$SAFE"
+              BYTES=$(stat -c %s "out/$SAFE")
+              jq --arg n "$SAFE" --arg o "$NAME" --arg u "https://archive.org/download/$TARGET/$SAFE" \
+                 --argjson b "$BYTES" --argjson d "$DUR" --arg src "$URL" \
+                 '. + [{name:$n, original:$o, url:$u, bytes:$b, durationSec:$d, source:$src}]' new.json > new.tmp && mv new.tmp new.json
+              rm -f work/raw.mp4 "out/$SAFE"; done_count=$((done_count+1))
+              echo "OK $SAFE bytes=$BYTES dur=$DUR"; echo "::endgroup::"
+            done < members.txt
+          done
+          jq -s '(.[0] + .[1]) | unique_by(.name)' prev/manifest.json new.json > manifest.json
+          ia upload "$TARGET" manifest.json --retries 5 --no-derive
+          echo "Converted: $done_count   Failed: $fail_count"
+          if [ -n "$FIRST_NEW" ]; then
+            echo "Checking Range support on the uploaded file (Archive may need a few minutes to publish it)..."
+            CODE=000
+            for i in $(seq 1 15); do
+              CODE=$(curl -sL -r 0-1023 -o /dev/null -w '%{http_code}' "https://archive.org/download/$TARGET/$FIRST_NEW" || echo 000)
+              [ "$CODE" = "206" ] && break; sleep 60
+            done
+            echo "Range check on $FIRST_NEW: HTTP $CODE (want 206)"
+            [ "$CODE" = "206" ] || { echo "::error::uploaded file did not answer a byte-range request with 206"; exit 5; }
+          fi
+          [ "$fail_count" -eq 0 ]
