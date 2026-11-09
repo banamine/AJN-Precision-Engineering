@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { evaluate, summaryMarkdown } from './tools/catalog-gate.mjs';
-import { newTargets, judge, applyFailures, probe, rowUrl } from './tools/catalog-probe.mjs';
+import { newTargets, judge, applyFailures, probe, rowUrl, freshCache } from './tools/catalog-probe.mjs';
 
 const config = JSON.parse(readFileSync('config/catalog-refresh.json', 'utf8'));
 const row = (identifier, file = 'a.mp4') => ({ id: `${identifier}-${file}`, identifier, file, title: identifier, bytes: 1, durationSeconds: 1200, thumb: null });
@@ -102,6 +102,33 @@ const redirecting = async (url, init) => {
 };
 result = await probe([targets[0]], { fetchImpl: redirecting, sleep: async () => { sleeps++; } });
 assert.equal(result.ok, 1); assert.equal(hops.length, 2); assert.equal(result.requests, 2); assert.equal(sleeps, 1, 'the redirect hop waited its turn');
+
+// Time budget + resumable cache: the probe stops cleanly, reports the rest as unprobed, and a second run
+// skips what the first one verified (and what definitively failed) without any network request.
+{
+  const ts = [0, 1, 2, 3].map((i) => ({ kind: 'row', channelId: 'c', key: `i${i}/f.mp4`, url: `https://archive.org/download/i${i}/f.mp4` }));
+  let clock = 0;
+  let net = 0;
+  const answerFor = (url) => (url.includes('/i1/') ? new Response('x', { status: 404, headers: { 'content-type': 'text/html' } }) : new Response('x', { status: 206, headers: { 'content-type': 'video/mp4' } }));
+  const fetchCounting = async (url) => { net++; clock += 60_000; return answerFor(url); };
+  const cache = new Map();
+  const first = await probe(ts, { fetchImpl: fetchCounting, sleep: async () => {}, cache, budgetMs: 2 * 60_000, now: () => clock });
+  assert.equal(first.probed, 2); assert.equal(first.unprobed, 2); assert.equal(first.budgetStop.index, 2); assert.equal(first.stoppedAt, null);
+  assert.equal(first.ok, 1); assert.equal(first.failed.length, 1); assert.equal(cache.size, 2, 'both definitive answers are remembered');
+  assert.match(evaluate(base, add, okMeasure, config, { ...okProbe, probed: 2, unprobed: 2, budgetStop: first.budgetStop }).reasons.join(' '), /not probed.*time budget reached/);
+  net = 0;
+  const second = await probe(ts, { fetchImpl: fetchCounting, sleep: async () => {}, cache, budgetMs: 10 * 60_000, now: () => clock });
+  assert.equal(second.cached, 2); assert.equal(net, 2, 'only the two unseen rows hit the network'); assert.equal(second.unprobed, 0); assert.equal(second.budgetStop, null);
+  assert.equal(second.ok, 3); assert.equal(second.failed.length, 1); assert.match(second.failed[0].reason, /HTTP 404 \(cached\)/);
+  // timeouts / network errors are not remembered
+  const flaky = new Map();
+  await probe([ts[0]], { fetchImpl: async () => { throw new Error('boom'); }, sleep: async () => {}, cache: flaky, now: () => clock });
+  assert.equal(flaky.size, 0);
+  // freshness: ok entries live 30 days, failures 7
+  const day = 86_400_000;
+  const fresh = freshCache({ entries: { a: { ok: true, t: 0 }, b: { ok: false, t: 0 }, c: { ok: true, t: 31 * day }, bad: null } }, 10 * day);
+  assert.deepEqual([...fresh.keys()].sort(), ['a', 'c'].filter((k) => k !== 'b'));
+}
 
 // In-place changes to existing entries are seen
 const edited = clone(base); edited.extra.channels[0].rows[0].title = 'New title';

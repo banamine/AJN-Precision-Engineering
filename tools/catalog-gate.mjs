@@ -107,7 +107,7 @@ export function evaluate(base, head, measure, config, probe = null) {
   if (changed) {
     if (!probe) review.push('playability probe did not run');
     else {
-      if (probe.unprobed > 0) review.push(`${probe.unprobed} new row(s) not probed${probe.stoppedAt ? ` (Archive answered HTTP ${probe.stoppedAt.status})` : ''}`);
+      if (probe.unprobed > 0) review.push(`${probe.unprobed} new row(s) not probed${probe.stoppedAt ? ` (Archive answered HTTP ${probe.stoppedAt.status})` : ''}${probe.budgetStop ? ' (time budget reached; the next run continues from the probe cache)' : ''}`);
       const rate = probe.probed ? probe.failed.length / probe.probed : 0;
       if (rate > rules.maxProbeFailureRate) review.push(`${probe.failed.length}/${probe.probed} new rows failed the playability probe (removed); rate above ${rules.maxProbeFailureRate}`);
     }
