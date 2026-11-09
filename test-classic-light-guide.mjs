@@ -111,7 +111,10 @@ async function waitForNodeCondition(predicate, label, timeoutMs = 10_000) {
 
 async function runViewport(viewport) {
   resetForViewport(viewport.name);
-  const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+  // Fresh browser context per viewport: the guide persists/restores its last scroll position in
+  // localStorage, so a shared profile makes the second run open scrolled (rows 001.. unmounted).
+  const context = await browser.createBrowserContext();
+  const page = await context.newPage();
   const pageErrors = [];
   const consoleErrors = [];
   const failedRequests = [];
@@ -225,6 +228,7 @@ async function runViewport(viewport) {
     externalRequests: externalRequests,
   };
   await page.close();
+  await context.close();
   return result;
 }
 
