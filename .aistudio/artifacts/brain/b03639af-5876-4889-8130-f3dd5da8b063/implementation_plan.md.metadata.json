@@ -1,6 +1,6 @@
 {
-  "summary":  "Revised implementation plan incorporating plain React.memo shallow comparison (no custom comparator, replacing raw nowHour with liveKey with channelId+startHour+title fallback), extracting shared hour helpers into src/guide/programHours.ts with re-exports in src/EpgGuide.tsx, and adding scroll-container and test-file audit requirements to the final report.",
-  "updatedAt":  "2026-11-08T17:06:16.653074036Z",
+  "summary":  "Revised implementation plan incorporating the _stop_case(self, code, retry_after) helper and the three immediate-stop tests for HTTP 429, 503, and 403.",
+  "updatedAt":  "2026-11-09T09:13:52.392359810Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

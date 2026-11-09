@@ -113,44 +113,41 @@ class InfobattalionBuilderTests(unittest.TestCase):
             self.assertEqual(client.get("https://archive.org/test"), b"{}")
         self.assertEqual(starts, [0.0, 1.55, 3.1])
 
-    def test_rate_limit_retries_three_times_with_pacing_and_honors_retry_after(self):
+    def _stop_case(self, code, retry_after):
         clock = FakeClock()
-        attempts = []
+        calls = []
         headers = email.message.Message()
-        headers["Retry-After"] = "2"
+        headers["Retry-After"] = retry_after
 
         def opener(_request, timeout):
-            attempts.append(timeout)
+            calls.append(timeout)
             raise urllib.error.HTTPError(
-                "https://archive.org/test", 429, "rate limited", headers, None
+                "https://archive.org/test", code, "stop", headers, None
             )
 
         client = builder.ArchiveClient(
             opener=opener, clock=clock.now, sleeper=clock.sleep
         )
-        with self.assertRaises(builder.ArchiveFetchStopped):
+        with self.assertRaises(builder.ArchiveFetchStopped) as ctx:
             client.get("https://archive.org/test")
-        self.assertEqual(attempts, [120, 120, 120, 120])
-        self.assertEqual(clock.value, 6.0)
-        self.assertTrue(client._stopped)
+        self.assertIn(f"HTTP {code}", str(ctx.exception))
+        self.assertIn("stopping immediately", str(ctx.exception))
+        self.assertEqual(calls, [120])
+        self.assertEqual(clock.value, 0.0)
+        self.assertIs(client._stopped, True)
+        return client, calls
 
-    def test_retry_after_is_capped_at_sixty_seconds(self):
-        clock = FakeClock()
-        headers = email.message.Message()
-        headers["Retry-After"] = "300"
-
-        def opener(_request, timeout):
-            raise urllib.error.HTTPError(
-                "https://archive.org/test", 503, "unavailable", headers, None
-            )
-
-        client = builder.ArchiveClient(
-            opener=opener, clock=clock.now, sleeper=clock.sleep
-        )
+    def test_429_stops_immediately_without_retry(self):
+        client, calls = self._stop_case(429, "2")
         with self.assertRaises(builder.ArchiveFetchStopped):
-            client.get("https://archive.org/test")
-        self.assertEqual(clock.value, 180.0)
-        self.assertTrue(client._stopped)
+            client.get("https://archive.org/other")
+        self.assertEqual(calls, [120])
+
+    def test_503_stops_immediately_and_ignores_retry_after(self):
+        self._stop_case(503, "300")
+
+    def test_403_stops_immediately_without_retry(self):
+        self._stop_case(403, "1")
 
     def test_list5_upsert_keeps_original_channel_position(self):
         channels = [
