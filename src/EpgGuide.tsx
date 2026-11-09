@@ -1129,11 +1129,8 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
 
   // Row virtualization via computeRowWindow (overscan = 3)
   const rowHeights = useMemo(
-    () =>
-      filtered.rows.map(({ channel }) =>
-        channel.mediaType === "audio" || guideId === "audio-podcasts" ? AUDIO_ROW_HEIGHT_PX : ROW_HEIGHT_PX,
-      ),
-    [filtered.rows, guideId],
+    () => filtered.rows.map(() => rowH),
+    [filtered.rows, rowH],
   );
   const rowPrefixSums = useMemo(() => buildHeightPrefixSums(rowHeights), [rowHeights]);
   const totalRowsHeight = rowPrefixSums[rowHeights.length] ?? 0;

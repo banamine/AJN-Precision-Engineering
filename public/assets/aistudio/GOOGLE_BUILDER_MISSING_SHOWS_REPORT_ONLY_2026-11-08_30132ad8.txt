@@ -1,0 +1,75 @@
+GOOGLE BUILDER: REPORT ONLY. DO NOT EDIT, FIX, CREATE, RENAME, DELETE OR RUN ANYTHING.
+
+PURPOSE
+Six classic shows have too few or no episodes in the Classic Network catalog. I need to know exactly where the problem is for each one. You are only the eyes on your copy of the project. Report what is in the files. Do not suggest or make fixes.
+
+HARD RULES (all apply)
+1. READ ONLY. Do not modify any file. Do not create files. Do not run the app, tests, builds, npm, or any script. Do not install anything.
+2. Do not call archive.org or any network. Use only files in your workspace.
+3. Do not search outside the files listed below. Do not browse other folders "to be thorough".
+4. If a file is not in your workspace, write "FILE MISSING: <path>" and move on. Never guess.
+5. If a name is not found, write "NOT FOUND in: <list every file you searched>". Never write just "not found".
+6. Answer in ONE reply, in the exact format at the bottom. No other text, no suggestions, no plans.
+7. Quote values exactly as they appear. Do not summarize or paraphrase file names, identifiers or numbers.
+
+FILES TO SEARCH (these paths only, case-insensitive text search)
+  A. src/data/extraChannelsManifest.json
+  B. src/data/seriesManifests.json
+  C. src/data/organizerShowsManifest.json
+  D. src/data/archiveShowSourcesManifest.json
+  E. src/data/archiveItemManifest.guide.json
+  F. src/data/classicSnapshot.json
+  G. src/data/showInfo.json
+  H. reports/infobattalion-lists.json   (look especially inside the lists named: dark, excluded, needs_decision, skipped_in_app, lists, channels)
+  I. reports/needs-decision.json
+  J. reports/unclassified-for-review.csv
+  K. reports/summary.md
+  L. m3u_files/ (every file in that folder)
+  M. json_files/all m3u.json
+
+NAMES TO SEARCH (each of these spellings)
+  1. "Rockford"  (also "Rockford Files")
+  2. "Death Valley Days"  (ignore "Riders of Death Valley", that is a 1941 film; list it separately if seen)
+  3. "All in the Family"  (also "All In The Family"; ignore "Archie Bunker's Place" and the Home Improvement episode titled "All In The Family"; list those separately if seen)
+  4. "Perry Mason"  (ignore the Land of the Lost episode "Move Over, Perry Mason"; list it separately if seen)
+  5. "Odd Couple"  (see extra questions below)
+  6. "Beverly Hillbillies"  (see extra questions below)
+
+WHAT TO REPORT FOR EVERY NAME, FOR EVERY FILE A to M
+  - number of matches in that file (0 is a valid answer)
+  - for the first 3 matches only: the full object or CSV line, copied exactly, trimmed to these fields if present: channelId, channelName, identifier, file, title, durationSeconds, private, is_dark, restricted, reason
+
+EXTRA QUESTIONS
+
+ODD COUPLE
+  E1. In src/data/archiveItemManifest.guide.json, how many rows contain "Odd Couple" in the file name? Give the identifier of the item(s) they belong to.
+  E2. For 5 of those rows, copy the file name and the exact value of durationSeconds. If the key durationSeconds is absent, write "durationSeconds: ABSENT". If it is 0 or null, write that exactly.
+  E3. How many of those rows have a real durationSeconds greater than 0, and how many do not?
+
+BEVERLY HILLBILLIES
+  B1. In src/data/extraChannelsManifest.json find the channel named "THE BEVERLY HILLBILLIES SEASON 2". Give its id and guideId and the number of rows.
+  B2. For its first 5 rows, copy file, title (if present), identifier, durationSeconds exactly.
+  B3. Do any of its rows contain a season/episode code or episode title in the file name or title? Answer yes or no, with one example if yes.
+  B4. Does the name "Beverly Hillbillies" appear in any other channel or file in the list above? List each file and match count.
+
+ROCKFORD, DEATH VALLEY DAYS, ALL IN THE FAMILY, PERRY MASON
+  R1. For each of these four names, state in one line: FOUND in <files and counts> or NOT FOUND in <all files searched>.
+  R2. If any of the four appears inside reports/infobattalion-lists.json under dark, excluded, needs_decision or skipped_in_app, say which list and copy the entry exactly. These lists are where items that were deliberately held back would be, so this is important.
+
+ALSO REPORT (two lines only)
+  V1. Which version of the project you are looking at, if visible (last commit hash or message, or "not visible").
+  V2. The total number of files you could not find from the list A to M.
+
+OUTPUT FORMAT (use exactly this, nothing else)
+
+SUMMARY TABLE
+| Name | Total matches across A-M | Files with matches | Verdict (FOUND / NOT FOUND / ONLY IN IGNORED CONTEXT) |
+(one row per name, 6 rows)
+
+DETAIL
+Name 1 ... Name 6, each with the per-file counts and the first 3 matches, as specified.
+
+EXTRA QUESTIONS
+E1, E2, E3, B1, B2, B3, B4, R1, R2, V1, V2 with answers.
+
+END. Make no changes of any kind.
