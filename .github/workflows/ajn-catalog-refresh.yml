@@ -86,10 +86,27 @@ jobs:
           # about 4,053 on 2026-11-04) and crashed 'Measure payloads'; additive mode keeps every existing row and only adds new ones.
           python tools/build-infobattalion-lists.py --cache .catalog-cache --fetch --lists 1,3,4,5
 
+      # Probe results persist between runs (separate from the metadata cache, and saved even when a later step fails),
+      # so a large batch drains over several nightly runs instead of timing out.
+      - name: Restore probe cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .catalog-probe-cache
+          key: catalog-probe-${{ github.run_id }}
+          restore-keys: catalog-probe-
+
       # Every NEW file gets a real 1 KB Range request; anything that does not answer with media is removed here.
+      # Stops cleanly at 140 min (step limit 150); rows not reached are reported as unprobed and sent to review.
       - name: Playability probe of new files
         timeout-minutes: 150
-        run: node tools/catalog-probe.mjs --base origin/main --out catalog-probe.json
+        run: node tools/catalog-probe.mjs --base origin/main --out catalog-probe.json --cache .catalog-probe-cache/probe-results.json --budget-minutes 140
+
+      - name: Save probe cache
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: .catalog-probe-cache
+          key: catalog-probe-${{ github.run_id }}
 
       - name: Measure payloads
         run: npx tsx tools/catalog-measure.mts catalog-measure.json
