@@ -37,7 +37,7 @@ const formatDockTime = (seconds: number) => {
     : `${minutes}:${String(remainder).padStart(2, '0')}`;
 };
 
-const DOCK_SHELL = "ajn-redesign-surface ajn-dock !h-auto fixed box-border bottom-[calc(4.25rem+env(safe-area-inset-bottom))] sm:bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-0 left-1 right-1 sm:left-auto sm:right-6 sm:w-[calc(100vw-3rem)] sm:max-w-[960px] md:left-0 md:right-0 md:w-full md:max-w-none md:rounded-none md:border-x-0 md:border-b-0 md:px-6 md:py-2 z-50 flex flex-col items-stretch gap-1 rounded-xl border bg-neutral-900/95 p-1 sm:px-2 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200";
+const DOCK_SHELL = "ajn-redesign-surface ajn-dock !h-auto fixed box-border bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 left-1 right-1 sm:left-auto sm:right-6 sm:w-[calc(100vw-3rem)] sm:max-w-[960px] md:left-0 md:right-0 md:w-full md:max-w-none md:rounded-none md:border-x-0 md:border-b-0 md:px-6 md:py-2 z-50 flex flex-col items-stretch gap-1 rounded-xl border bg-neutral-900/95 p-1 sm:px-2 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200";
 
 /** The same bottom bar when nothing is playing, so the Radio button always lives in the dock. Play starts the first saved preset; with no presets it opens Radio. */
 export function IdleDock({ onPlayProgram }: { onPlayProgram?: PlayProgramCallback }) {
@@ -326,11 +326,11 @@ export function MiniPlayerDock({
       {isRadio && (
         <div data-testid="dock-stepper" className="flex w-full basis-full items-center gap-2 px-1 pb-1 md:hidden">
           <button type="button" data-testid="dock-prev" aria-label="Previous station" onClick={() => stepStation(-1)}
-            className="ajn-dock-control flex !min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
+            className="ajn-dock-control flex h-12 w-12 !min-h-[48px] !min-w-[48px] shrink-0 flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
             <ChevronLeft className="h-4 w-4" aria-hidden="true" /><span>Prev</span>
           </button>
           <button type="button" data-testid="dock-next" aria-label="Next station" onClick={() => stepStation(1)}
-            className="ajn-dock-control flex !min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
+            className="ajn-dock-control flex h-12 w-12 !min-h-[48px] !min-w-[48px] shrink-0 flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
             <span>Next</span><ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>

@@ -196,7 +196,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
   useEffect(() => { document.body.dataset.ajnPage = 'radio'; return () => { delete document.body.dataset.ajnPage; }; }, []);
   return (
-    <div className="ajr" id="ajn-radio-view">
+    <div className="ajr pb-[17rem] md:pb-[12rem]" id="ajn-radio-view">
       <header className="ajr-topbar">
         <span className="ajr-brand"><span className="ajr-brand-icon"><AudioLines size={17} /></span><span>ajn<span className="ajr-brand-light">radio</span></span><span className="ajr-brand-dot">.</span></span>
         <button type="button" className="ajr-refresh" onClick={() => void load()} disabled={loading}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> REFRESH</button>

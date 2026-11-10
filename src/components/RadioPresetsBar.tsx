@@ -6,8 +6,9 @@ import { freshness } from '../utils/listenCatalog';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import { findPersistentMedia } from '../hooks/usePersistentMedia';
+import { SourcePrism3D, type AudioSourceType } from './SourcePrism3D';
 import {
-  RADIO_PRESET_SLOTS, clearRadioPreset, pickAdjacentStation, saveRadioPreset, useRadioPresets,
+  DEFAULT_RADIO_PRESETS, RADIO_PRESET_SLOTS, clearRadioPreset, pickAdjacentStation, saveRadioPreset, useRadioPresets,
   type RadioPreset, type RadioPresetInput, type RadioPresetMap, type RadioPresetSlot,
 } from '../utils/radioPresets';
 import { getStationTheme } from '../utils/radioAccents';
@@ -380,13 +381,25 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const line3 = status || line3Base;
           const glassKey = 'relative flex h-20 min-w-0 flex-1 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
           const keyBg = { background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.45)' } as const;
-          const modeBtn = (label: string, key: 'live' | 'archive' | 'podcasts') => {
-            const selected = mode === key;
-            return (
-              <button key={key} type="button" data-testid={`radio-mode-${key}`} aria-pressed={selected}
-                onClick={() => { setMode(key); setListPage(0); setBrowse(false); setStoreArmed(false); if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.(); if (key === 'podcasts') deckSources?.loadSpoken?.(); say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts'); }}
-                className={`!min-h-[48px] flex-1 cursor-pointer rounded-lg px-3 text-sm font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${selected ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-transparent text-neutral-300 hover:text-white'}`}>{label}</button>
-            );
+          const selectSource = (src: AudioSourceType) => {
+            const key: 'live' | 'archive' | 'podcasts' = src === 'radio' ? 'live' : src === 'music' ? 'archive' : 'podcasts';
+            setMode(key);
+            setListPage(0);
+            setBrowse(false);
+            setStoreArmed(false);
+            if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.();
+            if (key === 'podcasts') deckSources?.loadSpoken?.();
+            say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts');
+          };
+          const playPrismStation = (channelId: string) => {
+            const normalizedId = channelId === 'radio:infowars-live-aac'
+              ? 'radio:ajn-infowars-live-aac'
+              : channelId === 'radio:ch109-classic-rock'
+                ? 'radio:ch109-classic-rock-109'
+                : channelId;
+            const found = RADIO_PRESET_SLOTS.map((n) => presets[n]).find((p) => p?.channelId === channelId || p?.channelId === normalizedId)
+              ?? RADIO_PRESET_SLOTS.map((n) => DEFAULT_RADIO_PRESETS[n]).find((p) => p?.channelId === channelId || p?.channelId === normalizedId);
+            if (found) tune(found);
           };
           const volAngle = -135 + vol * 270;
           return (
@@ -410,9 +423,12 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                     </div>
                   ) : null}
                 </div>
-                <div role="group" aria-label="Radio source" className="flex gap-1 rounded-xl p-1" style={{ background: 'rgba(15,17,23,0.45)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  {modeBtn('Live Radio', 'live')}{modeBtn('Archive Music', 'archive')}{modeBtn('Podcasts', 'podcasts')}
-                </div>
+                <SourcePrism3D
+                  activeSource={mode === 'live' ? 'radio' : mode === 'archive' ? 'music' : 'podcasts'}
+                  onSelectSource={selectSource}
+                  nowPlaying={nowPlaying ?? station}
+                  onPlayStation={playPrismStation}
+                />
                 {mode === 'archive' && (
                   <div role="group" aria-label="Archive source" className="flex gap-1">
                     {([['music', 'Music channels'], ['concerts', 'Live concerts']] as const).map(([k, text]) => (

@@ -1,6 +1,6 @@
 {
-  "summary":  "Plan to fix the head-unit spectrum analyzer so it animates whenever any audio is playing across Live Radio, Archive Music, Live Concerts, and Podcasts while preserving direct playback and the Spectrum unavailable fallback for non-CORS feeds.",
-  "updatedAt":  "2026-11-10T12:35:07.579978167Z",
+  "summary":  "Revised implementation plan for Entry 024: mounting SourcePrism3D directly inside RadioPresetsBar in place of the static 3-button source selector, enforcing !min-h-[48px] !min-w-[48px] h-12 w-12 shrink-0 and bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 in MiniPlayerDock, and setting pb-[17rem] md:pb-[12rem] scroll clearance in TvGuideView and RadioView.",
+  "updatedAt":  "2026-11-10T19:31:37.440180551Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
