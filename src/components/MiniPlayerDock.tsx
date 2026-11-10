@@ -212,7 +212,7 @@ export function MiniPlayerDock({
       {/* Transport: Prev / Play / Next sit in the middle of the bar on desktop; on a phone only Play shows here and Prev / Next are the row below */}
       <div className="flex shrink-0 items-center gap-0.5 md:flex-1 md:justify-center md:gap-3">
         {isRadio && (
-          <button type="button" data-testid="dock-prev-round" aria-label="Previous station" title="Previous station" onClick={() => stepStation(-1)} className="ajn-dock-control hidden h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--ajn-line)] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer md:flex">
+          <button type="button" data-testid="dock-prev-round" aria-label="Previous station" title="Previous station" onClick={() => stepStation(-1)} style={{ minWidth: '48px', minHeight: '48px' }} className="ajn-dock-control hidden h-12 w-12 !min-h-[48px] !min-w-[48px] shrink-0 items-center justify-center rounded-full border border-[var(--ajn-line)] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer md:flex">
             <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
           </button>
         )}
@@ -222,10 +222,10 @@ export function MiniPlayerDock({
           onClick={togglePlay}
           aria-label={playbackStatus === 'failed' ? `Retry ${nowPlaying.title}` : paused ? `Play ${nowPlaying.title}` : `Pause ${nowPlaying.title}`}
           title={playbackStatus === 'failed' ? 'Retry' : paused ? 'Play' : 'Pause'}
-          className={`ajn-dock-control flex h-11 min-h-[44px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation ${
+          className={`ajn-dock-control flex h-12 !min-h-[48px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation ${
             playbackStatus === 'failed'
               ? 'min-w-[56px] gap-1 bg-amber-700 px-1 text-white hover:bg-amber-600 sm:min-w-[68px] sm:gap-1.5 sm:px-2'
-              : 'w-11 min-w-[44px] md:h-12 md:w-12 md:rounded-full md:!bg-[var(--ajn-accent)] md:!text-white'
+              : 'w-12 !min-w-[48px] md:h-12 md:w-12 md:rounded-full md:!bg-[var(--ajn-accent)] md:!text-white'
           }`}
         >
           {playbackStatus === 'failed'
@@ -235,7 +235,7 @@ export function MiniPlayerDock({
               : <Pause className="h-4 w-4" />}
         </button>
         {isRadio && (
-          <button type="button" data-testid="dock-next-round" aria-label="Next station" title="Next station" onClick={() => stepStation(1)} className="ajn-dock-control hidden h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--ajn-line)] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer md:flex">
+          <button type="button" data-testid="dock-next-round" aria-label="Next station" title="Next station" onClick={() => stepStation(1)} style={{ minWidth: '48px', minHeight: '48px' }} className="ajn-dock-control hidden h-12 w-12 !min-h-[48px] !min-w-[48px] shrink-0 items-center justify-center rounded-full border border-[var(--ajn-line)] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer md:flex">
             <ChevronsRight className="h-5 w-5" aria-hidden="true" />
           </button>
         )}
@@ -325,11 +325,11 @@ export function MiniPlayerDock({
       </div>
       {isRadio && (
         <div data-testid="dock-stepper" className="flex w-full basis-full items-center gap-2 px-1 pb-1 md:hidden">
-          <button type="button" data-testid="dock-prev" aria-label="Previous station" onClick={() => stepStation(-1)}
+          <button type="button" data-testid="dock-prev" aria-label="Previous station" onClick={() => stepStation(-1)} style={{ minWidth: '48px', minHeight: '48px' }}
             className="ajn-dock-control flex h-12 w-12 !min-h-[48px] !min-w-[48px] shrink-0 flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
             <ChevronLeft className="h-4 w-4" aria-hidden="true" /><span>Prev</span>
           </button>
-          <button type="button" data-testid="dock-next" aria-label="Next station" onClick={() => stepStation(1)}
+          <button type="button" data-testid="dock-next" aria-label="Next station" onClick={() => stepStation(1)} style={{ minWidth: '48px', minHeight: '48px' }}
             className="ajn-dock-control flex h-12 w-12 !min-h-[48px] !min-w-[48px] shrink-0 flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
             <span>Next</span><ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>

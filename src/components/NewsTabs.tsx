@@ -58,7 +58,7 @@ export function NewsTabs() {
   };
 
   return (
-    <section className="w-full" data-testid="news-tabs">
+    <section className="w-full pb-32 md:pb-28" data-testid="news-tabs">
       <div className="mb-4 flex gap-2 border-b border-neutral-800" role="tablist" aria-label="News source">
         {NEWS_TABS.map((tab) => {
           const Icon = tab.icon;

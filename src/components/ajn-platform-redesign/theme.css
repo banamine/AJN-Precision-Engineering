@@ -334,3 +334,18 @@
 .ajn-platform-shell :where([class~="bg-sky-300"], [class~="bg-sky-400"]) {
   background-color: var(--ajn-accent) !important;
 }
+
+.ajn-platform-shell :is(
+  [data-testid="dock-prev"],
+  [data-testid="dock-next"],
+  [data-testid="dock-prev-round"],
+  [data-testid="dock-next-round"],
+  [data-testid="radio-head-unit-prev"],
+  [data-testid="radio-head-unit-next"],
+  [data-testid="source-prism-prev"],
+  [data-testid="source-prism-next"]
+) {
+  min-width: 48px !important;
+  min-height: 48px !important;
+}
+

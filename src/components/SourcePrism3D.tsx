@@ -116,7 +116,8 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
               aria-selected={activeSource === src}
               aria-pressed={activeSource === src}
               onClick={() => selectByIndex(i)}
-              className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${
+              style={{ minHeight: '48px', minWidth: '48px' }}
+              className={`h-12 !min-h-[48px] !min-w-[48px] px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeSource === src
                   ? 'bg-[#E06D3B] text-black'
                   : 'bg-[#181B24] text-slate-300 border border-white/10 hover:text-white'
@@ -127,8 +128,26 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
           ))}
         </div>
         <div className="flex items-center gap-1.5">
-          <button type="button" aria-label="Previous source" onClick={() => step(-1)} className="min-h-[36px] min-w-[36px] rounded-lg bg-[#181B24] border border-white/15 text-[#E06D3B]">‹</button>
-          <button type="button" aria-label="Next source" onClick={() => step(1)} className="min-h-[36px] min-w-[36px] rounded-lg bg-[#181B24] border border-white/15 text-[#E06D3B]">›</button>
+          <button
+            type="button"
+            data-testid="source-prism-prev"
+            aria-label="Previous source"
+            onClick={() => step(-1)}
+            style={{ minWidth: '48px', minHeight: '48px' }}
+            className="w-12 h-12 !min-h-[48px] !min-w-[48px] rounded-lg bg-[#181B24] border border-white/15 text-[#E06D3B] flex items-center justify-center"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            data-testid="source-prism-next"
+            aria-label="Next source"
+            onClick={() => step(1)}
+            style={{ minWidth: '48px', minHeight: '48px' }}
+            className="w-12 h-12 !min-h-[48px] !min-w-[48px] rounded-lg bg-[#181B24] border border-white/15 text-[#E06D3B] flex items-center justify-center"
+          >
+            ›
+          </button>
         </div>
       </div>
 
@@ -139,11 +158,12 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
         onPointerMove={handlePointerMove}
         onPointerUp={finishDrag}
         onPointerLeave={finishDrag}
-        className="w-full h-[340px] sm:h-[260px] overflow-hidden rounded-2xl relative touch-pan-y"
+        className="w-full h-[340px] lg:h-[260px] overflow-hidden rounded-2xl relative touch-pan-y"
         style={{ perspective: '900px' }}
       >
         <div
-          className="w-full h-full relative"
+          data-testid="source-prism-cylinder"
+          className="w-full h-[340px] lg:h-[260px] relative"
           style={{
             transformStyle: 'preserve-3d',
             transition: isDragging ? 'none' : 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -154,7 +174,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
           <div
             role="tabpanel"
             aria-hidden={activeSource !== 'radio'}
-            className={`absolute inset-0 w-full h-full rounded-2xl p-4 flex flex-col justify-between overflow-hidden border border-[#E06D3B]/45 bg-[#181B24]/95 ${
+            className={`absolute inset-0 w-full h-full rounded-2xl p-3 sm:p-4 flex flex-col justify-between overflow-hidden border border-[#E06D3B]/45 bg-[#181B24]/95 ${
               activeSource === 'radio' ? 'pointer-events-auto' : 'pointer-events-none'
             }`}
             style={{
@@ -163,17 +183,18 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
               background: 'linear-gradient(135deg, rgba(224, 109, 59, 0.18), rgba(15, 17, 23, 0.96))',
             }}
           >
-            <div className="h-9 flex items-center justify-between shrink-0">
+            <div className="h-8 flex items-center justify-between shrink-0">
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E06D3B] text-black">LIVE RADIO</span>
               <span className="text-[10px] font-mono text-emerald-400">{isLiveRadio ? '● ON AIR' : 'STANDBY'}</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5 my-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-1 sm:gap-1.5 my-auto">
               {FACTORY_RADIO_PRESETS.map((st) => (
                 <button
                   key={st.channelId}
                   type="button"
                   onClick={() => onPlayStation?.(st.channelId)}
-                  className={`min-h-[44px] sm:min-h-[56px] px-3 py-1.5 rounded-xl border text-left flex sm:flex-col items-center sm:items-start justify-between ${
+                  style={{ minHeight: '48px', minWidth: '48px' }}
+                  className={`!min-h-[48px] !min-w-[48px] lg:!min-h-[56px] px-3 py-1 rounded-xl border text-left flex lg:flex-col items-center lg:items-start justify-between ${
                     nowPlaying?.channelId === st.channelId
                       ? 'bg-[#E06D3B]/20 border-[#E06D3B] text-white'
                       : 'bg-[#0F1117]/80 border-white/10 text-slate-200'
@@ -184,7 +205,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
                 </button>
               ))}
             </div>
-            <div className="text-[10px] font-mono text-slate-400 border-t border-white/10 pt-1.5">P01–P05 Live Edge</div>
+            <div className="text-[10px] font-mono text-slate-400 border-t border-white/10 pt-1">P01–P05 Live Edge</div>
           </div>
 
           {/* Facet 1: Archive Music */}

@@ -4,7 +4,7 @@
 
 .ajr{--station:#E06D3B;--station-glow:#E06D3B40;--station-bright:#F97316;--muted:#87928a;--line:rgba(229,239,228,.13);--mono:'DM Mono',ui-monospace,monospace;--rec:#43e08a;--live:#ff4d45;
   font-family:'Manrope',system-ui,sans-serif;color:#edf1e9;background:radial-gradient(ellipse at 69% 18%,rgba(224,109,59,.16),transparent 42%),#0F1117;
-  border:1px solid var(--line);padding:0 clamp(16px,4vw,56px);overflow:hidden;position:relative;-webkit-font-smoothing:antialiased}
+  border:1px solid var(--line);padding:0 clamp(16px,4vw,56px) 8rem;overflow:hidden;position:relative;-webkit-font-smoothing:antialiased}
 .ajr *{box-sizing:border-box}
 :where(.ajr) button{font:inherit;color:inherit;cursor:pointer}
 :where(.ajr) a{color:inherit;text-decoration:none}
@@ -86,7 +86,7 @@
 .ajr-seek:disabled{cursor:default;opacity:.5}
 .ajr-seek:focus-visible{outline:2px solid var(--station);outline-offset:3px}
 .ajr-controls{display:flex;align-items:center;gap:12px}
-.ajr-skip{width:29px;height:32px;display:grid;place-items:center;border:0;background:none;color:#b7c0b8}
+.ajr-skip{width:48px;height:48px;min-width:48px;min-height:48px;display:grid;place-items:center;border:0;background:none;color:#b7c0b8}
 .ajr-skip:hover:not(:disabled){color:var(--station)}
 .ajr-skip:disabled{opacity:.3;cursor:default}
 .ajr-play{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#dc2626 0%,#ea580c 55%,#f97316 100%);color:#86efac;border:2px solid #fb923c;display:grid;place-items:center;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 16px rgba(154,52,18,.55)}

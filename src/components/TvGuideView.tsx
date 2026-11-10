@@ -89,7 +89,7 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true, playin
   });
 
   return (
-    <div className="space-y-6 pb-[17rem] md:pb-[12rem]">
+    <div className="space-y-6 pb-32 !pb-[18rem] md:!pb-[12rem]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-800 pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
