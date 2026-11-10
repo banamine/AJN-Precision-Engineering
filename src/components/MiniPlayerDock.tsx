@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX, RefreshCw } from 'lucide-react';
+import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
 import { AvSyncControls } from './AvSyncControls';
 import { findPersistentMedia, usePersistentMedia } from '../hooks/usePersistentMedia';
 import { useStationTheme } from '../utils/stationArt';
 import { StationIcon } from './StationBanner';
+import { listRadioPresets, pickAdjacentStation } from '../utils/radioPresets';
+import { registerLiveRadioMeter } from '../utils/mediaRoute';
+import { requestRadioDock } from '../utils/radioDock';
+import { bufferAheadSeconds, dockStatusLabel, isReconnecting } from '../utils/bufferAhead';
 
 interface MiniPlayerDockProps {
   nowPlaying: NowPlayingMedia;
@@ -44,11 +48,21 @@ export function MiniPlayerDock({
     usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
   const [playbackStatus, setPlaybackStatus] = useState<DockPlaybackStatus>('paused');
   const [volume, setVolume] = useState(1);
+  const [aheadSeconds, setAheadSeconds] = useState(0);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [volumeOpen, setVolumeOpen] = useState(false);
   const isAudio = nowPlaying.mediaType === 'audio';
   const isLive = isLiveDockItem(nowPlaying);
   const canSeek = !isLive && Number.isFinite(duration) && duration > 0;
   const theme = useStationTheme(nowPlaying.channelId, nowPlaying.title); // live radio: the station's logo and colours
+  const isRadio = String(nowPlaying.channelId ?? '').startsWith('radio:');
+  // Prev / Next walk the saved radio presets with the same helper the tuning knob uses.
+  const stepStation = (dir: 1 | -1) => {
+    const next = pickAdjacentStation(listRadioPresets(), nowPlaying.channelId, dir);
+    if (!next || !onPlayProgram) return;
+    if (next.corsVerified) registerLiveRadioMeter(next.channelId);
+    onPlayProgram(next.src, next.title, next.subtitle, 'audio', next.channelId, next.guideId ?? 'audio-podcasts', next.programId);
+  };
 
   // Read status and volume from the existing authoritative media element; do not create another player.
   useEffect(() => {
@@ -59,6 +73,10 @@ export function MiniPlayerDock({
         setPlaybackStatus('paused');
         return;
       }
+      const ahead = Math.floor(bufferAheadSeconds(media));
+      setAheadSeconds((previous) => previous === ahead ? previous : ahead);
+      const attempt = Number(media.dataset.reconnect) || 0;
+      setReconnectAttempt((previous) => previous === attempt ? previous : attempt);
       const nextVolume = Number.isFinite(media.volume) ? media.volume : 1;
       setVolume((previous) => previous === nextVolume ? previous : nextVolume);
       const nextStatus: DockPlaybackStatus = media.error
@@ -146,7 +164,9 @@ export function MiniPlayerDock({
         data-status={playbackStatus}
         role="status"
         className={`shrink-0 rounded-full border px-1.5 py-1 font-mono text-[8px] font-bold uppercase leading-none tracking-wide ${
-          isLive && playbackStatus === 'playing'
+          isReconnecting(playbackStatus, reconnectAttempt)
+            ? 'border-amber-700/60 bg-amber-950/50 text-amber-200'
+            : isLive && playbackStatus === 'playing'
             ? 'ajn-dock-status-live'
             : playbackStatus === 'failed'
               ? 'border-red-700/70 bg-red-950/60 text-red-200'
@@ -155,7 +175,7 @@ export function MiniPlayerDock({
                 : 'border-[var(--ajn-line)] bg-[var(--ajn-base)] text-neutral-300'
         }`}
       >
-        {isLive && playbackStatus === 'playing' ? 'LIVE' : playbackStatus}
+        {dockStatusLabel(playbackStatus, isLive, aheadSeconds, reconnectAttempt)}
       </span>
 
       {/* Actions */}
@@ -234,9 +254,9 @@ export function MiniPlayerDock({
         <button
           type="button"
           id="mini-player-expand-btn"
-          onClick={onOpenFullPlayer}
-          aria-label="Open Full Player"
-          title="Open Full Player"
+          onClick={isRadio ? () => requestRadioDock('open') : onOpenFullPlayer}
+          aria-label={isRadio ? 'Open Radio' : 'Open Full Player'}
+          title={isRadio ? 'Open Radio' : 'Open Full Player'}
           className="ajn-dock-expand flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation"
         >
           <Maximize2 className="h-4 w-4" />
@@ -254,6 +274,18 @@ export function MiniPlayerDock({
         </button>
       </div>
       </div>
+      {isRadio && (
+        <div data-testid="dock-stepper" className="flex w-full basis-full items-center gap-2 px-1 pb-1">
+          <button type="button" data-testid="dock-prev" aria-label="Previous station" onClick={() => stepStation(-1)}
+            className="ajn-dock-control flex min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" /><span>Prev</span>
+          </button>
+          <button type="button" data-testid="dock-next" aria-label="Next station" onClick={() => stepStation(1)}
+            className="ajn-dock-control flex min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
+            <span>Next</span><ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <div className="w-full basis-full px-1 empty:hidden">
         <AvSyncControls nowPlaying={nowPlaying} onPlay={onPlayProgram} onNavigate={onNavigate} variant="compact" />
       </div>

@@ -5,7 +5,7 @@ import { freshness } from '../utils/listenCatalog';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import {
-  RADIO_PRESET_SLOTS, clearRadioPreset, saveRadioPreset, useRadioPresets,
+  RADIO_PRESET_SLOTS, clearRadioPreset, pickAdjacentStation, saveRadioPreset, useRadioPresets,
   type RadioPreset, type RadioPresetInput, type RadioPresetMap, type RadioPresetSlot,
 } from '../utils/radioPresets';
 import { getStationTheme } from '../utils/radioAccents';
@@ -100,7 +100,7 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
           return (
             <li key={it.id}>
               <button type="button" data-testid="radio-deck-pick" aria-current={on ? 'true' : undefined} onClick={() => onPick(it)}
-                className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-left touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${on ? 'border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border-white/10 bg-white/5 text-neutral-100 hover:border-[#E06D3B]/60'}`}>
+                className={`flex min-h-[48px] w-full cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-left touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${on ? 'border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border-white/10 bg-white/5 text-neutral-100 hover:border-[#E06D3B]/60'}`}>
                 <span aria-hidden="true" className={`text-xs ${on ? 'text-[#F9A56D]' : 'text-neutral-500'}`}>{on ? '▶' : '•'}</span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{it.title}</span>{it.subtitle ? <span className="block truncate text-[11px] text-neutral-400">{it.subtitle}</span> : null}</span>
                 <FreshnessTag publishedAt={it.publishedAt} />
@@ -241,8 +241,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
       ? RADIO_PRESET_SLOTS.map((n) => presets[n]).filter((p): p is RadioPreset => Boolean(p)).map((p) => ({ channelId: p.channelId, title: p.title, go: () => tune(p) }))
       : recents.map((r) => ({ channelId: r.channelId, title: r.title, go: () => tuneRecent(r) }));
     if (!list.length) { say(bank === 'presets' ? 'No presets saved yet. Play a station, then press and hold a key.' : 'No recent stations yet.'); return; }
-    const i = list.findIndex((x) => x.channelId === playing?.channelId);
-    const next = list[i < 0 ? (dir > 0 ? 0 : list.length - 1) : (i + dir + list.length) % list.length];
+    const next = pickAdjacentStation(list, playing?.channelId, dir)!;
     setKnobAngle((a) => a + dir * 36);
     next.go();
     say(`Tuned ${next.title}`);
@@ -372,7 +371,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             return (
               <button key={key} type="button" data-testid={`radio-mode-${key}`} aria-pressed={selected}
                 onClick={() => { setMode(key); setListPage(0); setBrowse(false); setStoreArmed(false); if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.(); if (key === 'podcasts') deckSources?.loadSpoken?.(); say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts'); }}
-                className={`min-h-[44px] flex-1 cursor-pointer rounded-lg px-3 text-sm font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${selected ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-transparent text-neutral-300 hover:text-white'}`}>{label}</button>
+                className={`min-h-[48px] flex-1 cursor-pointer rounded-lg px-3 text-sm font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${selected ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-transparent text-neutral-300 hover:text-white'}`}>{label}</button>
             );
           };
           const volAngle = -135 + vol * 270;
@@ -524,7 +523,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                     })}
                   </div>
                   )}
-                  <div className="flex h-11 w-full shrink-0 overflow-hidden rounded-xl border border-white/25 sm:h-auto sm:w-[104px]" style={keyBg}>
+                  <div className="flex h-12 w-full shrink-0 overflow-hidden rounded-xl border border-white/25 sm:h-auto sm:w-[104px]" style={keyBg}>
                     <button type="button" data-testid="radio-preset-bank" aria-label={`Bank: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`}
                       onClick={() => { if (mode === 'live') openBank(bank === 'presets' ? 'recent' : 'presets'); else if (!browse) { setBrowse(true); setListPage(0); say(`${bankLabel}: browsing, 5 at a time`); } else if (modeItems.length > (listPage + 1) * 5) setListPage((pg) => pg + 1); else { setBrowse(false); setListPage(0); say(`${bankLabel}: my keys`); } }}
                       className="flex-1 cursor-pointer text-[11px] font-bold tracking-wider text-neutral-100 hover:text-white touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">BANK</button>

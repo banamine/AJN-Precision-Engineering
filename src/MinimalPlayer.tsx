@@ -69,7 +69,7 @@ const RESUME_MIN_SEC = 5;
 const RESUME_SAVE_INTERVAL_MS = 5000;
 // Relaxed buffering: a slow or briefly failing Archive slice is retried in place
 // (same position) before the item is declared failed and the channel skips ahead.
-const RECOVER_DELAYS_MS = [1000, 3000, 6000];
+const RECOVER_DELAYS_MS = [1000, 2000, 4000, 8000];
 const STALL_WATCHDOG_MS = 20_000; // "Buffering…" longer than this triggers a reconnect, not a skip
 const WAIT_BUDGET_MS = 108_000; // Archive can take a long time to first byte: the wait counter and the start watchdog both run to 108 s
 const START_WATCHDOG_MS = WAIT_BUDGET_MS; // "Loading…" with no metadata after this is retried (same budget), then reported as failed
@@ -559,6 +559,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     let lastRetryPos = 0;
     const clearStall = () => { if (stallTimer !== null) { window.clearTimeout(stallTimer); stallTimer = null; } };
     let waitingOnline = false;
+    // Live streams rejoin at the live edge: a reconnect starts a fresh stream whose clock restarts at 0, so the old position must not be restored.
+    const isLiveStream = (): boolean => {
+      const item = nowPlayingRef.current;
+      return Boolean(item?.isLive) || String(item?.channelId ?? "").startsWith("radio:") || String(item?.programId ?? "").includes(":live:");
+    };
     const scheduleRecover = (reason: string): boolean => {
       if (isHls) return false;
       // Browser is offline: do not burn the retry budget on attempts that cannot succeed.
@@ -568,25 +573,27 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           waitingOnline = true;
           if (retryTimer !== null) { window.clearTimeout(retryTimer); retryTimer = null; }
           lastRetryPos = media.currentTime || lastRetryPos || 0;
-          pendingSeek = lastRetryPos > 1 ? lastRetryPos : null;
+          pendingSeek = lastRetryPos > 1 && !isLiveStream() ? lastRetryPos : null;
           reportTelemetry({ event: "playback.offline_wait", ...fx().eventMeta(), reason, positionSeconds: Math.round(lastRetryPos) });
         }
         setStatusText("Offline — will resume when the connection returns");
         return true;
       }
-      if (retries >= RECOVER_DELAYS_MS.length) return false;
+      if (retries >= RECOVER_DELAYS_MS.length) { delete media.dataset.reconnect; return false; }
       if (retryTimer !== null) return true;
       const attempt = retries + 1;
       const delay = RECOVER_DELAYS_MS[retries];
       retries = attempt;
       lastRetryPos = media.currentTime || 0;
-      pendingSeek = lastRetryPos > 1 ? lastRetryPos : null;
+      pendingSeek = lastRetryPos > 1 && !isLiveStream() ? lastRetryPos : null;
+      media.dataset.reconnect = String(attempt); // read by the mini dock: the player is retrying right now
       setStatusText(`Reconnecting… (${attempt}/${RECOVER_DELAYS_MS.length})`);
       reportTelemetry({ event: "playback.recover", ...fx().eventMeta(), reason, attempt, positionSeconds: Math.round(lastRetryPos) });
       retryTimer = window.setTimeout(() => {
         retryTimer = null;
         if (mediaRef.current !== media) return;
         media.load(); // same src: the proxy returns a fresh slice (new node if needed)
+        if (isLiveStream()) lastRetryPos = 0; // the fresh live stream counts from 0 again: measure recovery from there
         if (media.readyState < 1) armStart();
       }, delay);
       return true;
@@ -623,7 +630,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     const onProgressOk = () => {
       recordArchivePlaybackProgress(activeSrc, media.currentTime);
       clearStall();
-      if (retries > 0 && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) retries = 0;
+      if (retries > 0 && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) { retries = 0; delete media.dataset.reconnect; }
       if (slowRetried && media.currentTime > lastRetryPos + RECOVERED_AFTER_SECONDS) slowRetried = false;
     };
     const onOnline = () => {

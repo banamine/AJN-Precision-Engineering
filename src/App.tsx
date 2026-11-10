@@ -13,7 +13,6 @@ import { DevModeView } from './components/DevModeView';
 import { WatchLaterView } from './components/WatchLaterView';
 import { MiniPlayerDock } from './components/MiniPlayerDock';
 import { RadioDock } from './components/RadioDock';
-import { TuneStatusToast } from './components/TuneStatusToast';
 import { SyncedVideoPip } from './components/SyncedVideoPip';
 import { useAvSyncRecorder } from './hooks/useAvSync';
 import { toPlayableSrc } from './utils/playableSrc';
@@ -464,7 +463,6 @@ export default function App() {
           </div>
         )}
       </main>
-      <TuneStatusToast nowPlaying={nowPlaying} destination={destination} />
       <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={Boolean(nowPlaying) && destination !== 'player'} />
       <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
       {nowPlaying && destination !== 'player' && (

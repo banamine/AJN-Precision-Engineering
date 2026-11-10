@@ -51,11 +51,23 @@ function clean(slot: RadioPresetSlot, o: Record<string, unknown>): RadioPreset |
   };
 }
 
+/** Starting presets for a device that has never saved any: the two AJN live stations, then Classic Hits 109. Used only when nothing is stored; once the listener saves or clears a slot, their own choices win. */
+const FACTORY = (slot: RadioPresetSlot, channelId: string, title: string, src: string): RadioPreset => ({ slot, channelId, title, src, corsVerified: true });
+export const DEFAULT_RADIO_PRESETS: RadioPresetMap = {
+  1: FACTORY(1, 'radio:ajn-alex-jones-show', 'AJN Live - Alex Jones Show', 'https://stream.alexjones.media/alexjonesshow'),
+  2: FACTORY(2, 'radio:ajn-infowars-live-aac', 'AJN Live - Infowars Live AAC', 'https://stream.alexjones.media/stream/7/'),
+  3: FACTORY(3, 'radio:ch109-original', 'Classic Hits 109 - The Original (60s 70s 80s)', 'https://broadcast.classichits109.com/70s'),
+  4: FACTORY(4, 'radio:ch109-classic-rock-109', 'Classic Hits 109 - Classic Rock 109', 'https://broadcast.classichits109.com/cr109'),
+  5: FACTORY(5, 'radio:ch109-warm-109', 'Classic Hits 109 - Warm 109', 'https://broadcast.classichits109.com/warm109'),
+};
+
 export function loadRadioPresets(storage?: PresetStorage): RadioPresetMap {
   const s = store(storage);
   if (!s) return {};
   try {
-    const raw: unknown = JSON.parse(s.getItem(RADIO_PRESETS_KEY) ?? '[]');
+    const stored = s.getItem(RADIO_PRESETS_KEY);
+    if (stored === null) return { ...DEFAULT_RADIO_PRESETS };
+    const raw: unknown = JSON.parse(stored);
     if (!Array.isArray(raw)) return {};
     const out: RadioPresetMap = {};
     for (const r of raw) {
@@ -105,4 +117,16 @@ export function useRadioPresets(): RadioPresetMap {
     return () => { window.removeEventListener(RADIO_PRESETS_EVENT, sync); window.removeEventListener('storage', sync); };
   }, []);
   return presets;
+}
+
+/** The saved presets in key order (1 to 5), skipping empty keys. */
+export function listRadioPresets(map: RadioPresetMap = loadRadioPresets()): RadioPreset[] {
+  return RADIO_PRESET_SLOTS.map((n) => map[n]).filter((p): p is RadioPreset => Boolean(p));
+}
+
+/** The station before (-1) or after (+1) the one playing, wrapping at both ends. Nothing playing: first (+1) or last (-1). Used by the tuning knob and the dock Prev/Next so both step the same way. */
+export function pickAdjacentStation<T extends { channelId: string }>(list: T[], currentId: string | undefined, dir: 1 | -1): T | undefined {
+  if (!list.length) return undefined;
+  const i = list.findIndex((x) => x.channelId === currentId);
+  return list[i < 0 ? (dir > 0 ? 0 : list.length - 1) : (i + dir + list.length) % list.length];
 }
