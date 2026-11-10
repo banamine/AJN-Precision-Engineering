@@ -1,0 +1,14 @@
+DROP-IN FOR GOOGLE BUILDER - radio player v2
+
+This REPLACES radio-revamp.zip. Upload only this one.
+
+1. Unzip.
+2. Upload these files into Google Builder, keeping the same folders. Say yes to overwrite:
+   src/App.tsx
+   src/components/MiniPlayerDock.tsx
+   src/components/RadioDock.tsx
+   src/components/RadioPresetsBar.tsx
+   src/components/RadioView.tsx
+   src/utils/radioPresets.ts
+   test-dock-stepper.tsx
+3. Do not upload this text file.

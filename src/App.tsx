@@ -11,7 +11,7 @@ import { NewsTabs as RumbleNewsWall } from './components/NewsTabs';
 import { RadioView } from './components/RadioView';
 import { DevModeView } from './components/DevModeView';
 import { WatchLaterView } from './components/WatchLaterView';
-import { MiniPlayerDock } from './components/MiniPlayerDock';
+import { MiniPlayerDock, IdleDock } from './components/MiniPlayerDock';
 import { RadioDock } from './components/RadioDock';
 import { SyncedVideoPip } from './components/SyncedVideoPip';
 import { useAvSyncRecorder } from './hooks/useAvSync';
@@ -359,7 +359,7 @@ export default function App() {
     <AjnAppearanceProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
-      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : nowPlaying ? 'pb-[13rem] md:pb-[10rem]' : 'pb-20 md:pb-8'}`}>
+      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : nowPlaying ? 'pb-[13rem] md:pb-[10rem]' : 'pb-36 md:pb-24'}`}>
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full">
             <HomeView
@@ -463,8 +463,9 @@ export default function App() {
           </div>
         )}
       </main>
-      <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={Boolean(nowPlaying) && destination !== 'player'} />
+      <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={destination !== 'player'} />
       <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
+      {!nowPlaying && destination !== 'player' && <IdleDock onPlayProgram={handleAdvanceProgram} />}
       {nowPlaying && destination !== 'player' && (
         <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />
       )}

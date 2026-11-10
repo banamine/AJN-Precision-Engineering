@@ -52,3 +52,11 @@ assert.match(player, /media\.dataset\.reconnect = String\(attempt\)/);
 assert.equal((player.match(/delete media\.dataset\.reconnect/g) ?? []).length, 2, 'flag removed on give-up and on recovery');
 assert.equal((player.match(/pendingSeek = lastRetryPos > 1 && !isLiveStream\(\) \? lastRetryPos : null/g) ?? []).length, 2, 'live streams skip the seek-back in both retry paths');
 console.log('dock buffer status: all checks passed');
+
+// Always-on bar: the idle dock carries the Radio slot, and the floating Radio button is gone.
+const { IdleDock } = await import('./src/components/MiniPlayerDock');
+const idle = renderToStaticMarkup(createElement(IdleDock, {}));
+assert.match(idle, /data-testid="idle-dock"/); assert.match(idle, /id="radio-dock-slot"/); assert.match(idle, /data-testid="idle-dock-play"/);
+const dockSrc = fs.readFileSync('src/components/RadioDock.tsx', 'utf-8');
+assert.match(dockSrc, /radioButton && dockButtonHost && createPortal\(radioButton, dockButtonHost\)/, 'Radio button renders only inside the dock');
+console.log('always-on dock: all checks passed');

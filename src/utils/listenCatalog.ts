@@ -103,7 +103,14 @@ export function buildSpokenItems(channels: readonly SpokenChannel[]): SpokenCata
   const feedsDown: { name: string; reason: string }[] = [];
   for (const ch of channels) {
     if (!ch.group || !SPOKEN_GROUPS.has(ch.group)) continue;
-    const progs = (ch.programs ?? []).filter((p) => p.mediaUrl && p.title);
+    // The schedule lists every airing, so one episode can appear many times. Keep the first airing of each audio file.
+    const seenMedia = new Set<string>();
+    const progs = (ch.programs ?? []).filter((p) => {
+      if (!p.mediaUrl || !p.title) return false;
+      if (seenMedia.has(p.mediaUrl)) return false;
+      seenMedia.add(p.mediaUrl);
+      return true;
+    });
     if (ch.group === 'Podcast' && progs.length === 0) { feedsDown.push({ name: ch.name, reason: ch.sourceError ?? ch.sourceStatus ?? 'no episodes' }); continue; }
     for (const pr of progs) {
       const id = `spoken-${pr.id}`;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
 import { AvSyncControls } from './AvSyncControls';
 import { findPersistentMedia, usePersistentMedia } from '../hooks/usePersistentMedia';
@@ -35,6 +35,35 @@ const formatDockTime = (seconds: number) => {
     ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
     : `${minutes}:${String(remainder).padStart(2, '0')}`;
 };
+
+const DOCK_SHELL = "ajn-redesign-surface ajn-dock !h-auto fixed box-border bottom-[calc(4.25rem+env(safe-area-inset-bottom))] sm:bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-0 left-1 right-1 sm:left-auto sm:right-6 sm:w-[calc(100vw-3rem)] sm:max-w-[960px] md:left-0 md:right-0 md:w-full md:max-w-none md:rounded-none md:border-x-0 md:border-b-0 md:px-6 md:py-2 z-50 flex flex-col items-stretch gap-1 rounded-xl border bg-neutral-900/95 p-1 sm:px-2 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200";
+
+/** The same bottom bar when nothing is playing, so the Radio button always lives in the dock. Play starts the first saved preset; with no presets it opens Radio. */
+export function IdleDock({ onPlayProgram }: { onPlayProgram?: PlayProgramCallback }) {
+  const start = () => {
+    const first = pickAdjacentStation(listRadioPresets(), undefined, 1);
+    if (!first || !onPlayProgram) { requestRadioDock('open'); return; }
+    if (first.corsVerified) registerLiveRadioMeter(first.channelId);
+    onPlayProgram(first.src, first.title, first.subtitle, 'audio', first.channelId, first.guideId ?? 'audio-podcasts', first.programId);
+  };
+  return (
+    <aside id="persistent-mini-player" data-testid="idle-dock" aria-label="Radio dock" className={DOCK_SHELL}>
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 md:gap-3">
+        <span aria-hidden="true" className="ajn-dock-control flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border"><Radio className="h-5 w-5" /></span>
+        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-neutral-100 md:w-64 md:flex-none md:text-sm">Radio</span>
+        <div className="flex shrink-0 items-center md:flex-1 md:justify-center">
+          <button type="button" data-testid="idle-dock-play" onClick={start} aria-label="Play radio" title="Play radio"
+            className="ajn-dock-control flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation md:rounded-full md:!bg-[var(--ajn-accent)] md:!text-white">
+            <Play className="ml-0.5 h-4 w-4 fill-current" />
+          </button>
+        </div>
+        <div className="flex shrink-0 items-center md:flex-1 md:justify-end">
+          <div id="radio-dock-slot" data-testid="dock-radio-slot" className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center" />
+        </div>
+      </div>
+    </aside>
+  );
+}
 
 export function MiniPlayerDock({
   nowPlaying,
@@ -117,9 +146,9 @@ export function MiniPlayerDock({
     <aside
       id="persistent-mini-player"
       aria-label="Active Broadcast Mini Player"
-      className="ajn-redesign-surface ajn-dock fixed box-border bottom-[calc(4.25rem+env(safe-area-inset-bottom))] sm:bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 left-1 right-1 sm:left-auto sm:right-6 sm:w-[calc(100vw-3rem)] sm:max-w-[960px] z-50 flex flex-col items-stretch gap-1 rounded-xl border bg-neutral-900/95 p-1 sm:px-2 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200"
+      className={DOCK_SHELL}
     >
-      <div className="flex w-full min-w-0 flex-nowrap items-center gap-0 sm:gap-2">
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-0 sm:gap-2 md:gap-3">
       {/* Icon / Thumbnail */}
       <button
         type="button"
@@ -131,8 +160,8 @@ export function MiniPlayerDock({
         {theme ? <StationIcon theme={theme} size={44} className="!rounded-lg" /> : isAudio ? <Radio className="h-5 w-5" /> : <Tv className="h-5 w-5" />}
       </button>
 
-      <div className="relative flex h-12 min-w-0 flex-1 flex-col justify-center px-0.5">
-        <span title={nowPlaying.title} className="truncate text-[11px] font-semibold leading-tight text-neutral-100">
+      <div className="relative flex h-12 min-w-0 flex-1 flex-col justify-center px-0.5 md:w-64 md:flex-none">
+        <span title={nowPlaying.title} className="truncate text-[11px] font-semibold leading-tight text-neutral-100 md:text-sm">
           {nowPlaying.title}
         </span>
         {canSeek ? (
@@ -178,8 +207,13 @@ export function MiniPlayerDock({
         {dockStatusLabel(playbackStatus, isLive, aheadSeconds, reconnectAttempt)}
       </span>
 
-      {/* Actions */}
-      <div className="relative flex shrink-0 items-center gap-0.5 sm:gap-1">
+      {/* Transport: Prev / Play / Next sit in the middle of the bar on desktop; on a phone only Play shows here and Prev / Next are the row below */}
+      <div className="flex shrink-0 items-center gap-0.5 md:flex-1 md:justify-center md:gap-3">
+        {isRadio && (
+          <button type="button" data-testid="dock-prev-round" aria-label="Previous station" title="Previous station" onClick={() => stepStation(-1)} className="ajn-dock-control hidden h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--ajn-line)] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer md:flex">
+            <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
         <button
           type="button"
           id="mini-player-toggle-btn"
@@ -189,7 +223,7 @@ export function MiniPlayerDock({
           className={`ajn-dock-control flex h-11 min-h-[44px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation ${
             playbackStatus === 'failed'
               ? 'min-w-[56px] gap-1 bg-amber-700 px-1 text-white hover:bg-amber-600 sm:min-w-[68px] sm:gap-1.5 sm:px-2'
-              : 'w-11 min-w-[44px]'
+              : 'w-11 min-w-[44px] md:h-12 md:w-12 md:rounded-full md:!bg-[var(--ajn-accent)] md:!text-white'
           }`}
         >
           {playbackStatus === 'failed'
@@ -198,6 +232,18 @@ export function MiniPlayerDock({
               ? <Play className="ml-0.5 h-4 w-4 fill-current" />
               : <Pause className="h-4 w-4" />}
         </button>
+        {isRadio && (
+          <button type="button" data-testid="dock-next-round" aria-label="Next station" title="Next station" onClick={() => stepStation(1)} className="ajn-dock-control hidden h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--ajn-line)] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer md:flex">
+            <ChevronsRight className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="relative flex shrink-0 items-center gap-0.5 sm:gap-1">
+        <input type="range" min={0} max={1} step={0.05} value={volume} data-testid="dock-volume-inline" aria-label="Volume"
+          onChange={(event) => { const v = Number(event.currentTarget.value); const media = findPersistentMedia(nowPlaying.mediaType); if (media) media.volume = v; setVolume(v); }}
+          className="hidden w-24 accent-[var(--ajn-accent)] md:block" />
         <button
           type="button"
           id="mini-player-volume-btn"
@@ -257,8 +303,9 @@ export function MiniPlayerDock({
           onClick={isRadio ? () => requestRadioDock('open') : onOpenFullPlayer}
           aria-label={isRadio ? 'Open Radio' : 'Open Full Player'}
           title={isRadio ? 'Open Radio' : 'Open Full Player'}
-          className="ajn-dock-expand flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation"
+          className={`ajn-dock-expand flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg ${isRadio ? 'md:w-auto md:gap-2 md:border md:border-[var(--ajn-line)] md:px-3' : ''} transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation`}
         >
+          {isRadio && <span className="hidden text-xs font-semibold md:inline">Expand Deck</span>}
           <Maximize2 className="h-4 w-4" />
         </button>
         <div id="radio-dock-slot" data-testid="dock-radio-slot" className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center" />
@@ -275,7 +322,7 @@ export function MiniPlayerDock({
       </div>
       </div>
       {isRadio && (
-        <div data-testid="dock-stepper" className="flex w-full basis-full items-center gap-2 px-1 pb-1">
+        <div data-testid="dock-stepper" className="flex w-full basis-full items-center gap-2 px-1 pb-1 md:hidden">
           <button type="button" data-testid="dock-prev" aria-label="Previous station" onClick={() => stepStation(-1)}
             className="ajn-dock-control flex min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
             <ChevronLeft className="h-4 w-4" aria-hidden="true" /><span>Prev</span>

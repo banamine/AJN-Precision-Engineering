@@ -16,7 +16,6 @@ import { RadioPresetsBar } from './RadioPresetsBar';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
 import { useDigest } from '../hooks/useDigest';
 import { DailyBriefing, NewsTicker } from './DailyBriefing';
-import { RadioSpectrum } from './RadioSpectrum';
 import '../radio.css';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -206,7 +205,6 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
       <section className="ajr-live" aria-label="Live radio presets" data-testid="radio-page-live">
         <div className="ajr-label">YOUR DECK · LIVE RADIO · MUSIC · CONCERTS · PODCASTS</div>
         <RadioPresetsBar deckSources={deckSources} nowPlaying={nowPlaying} playingNow={liveMedia.attached && !liveMedia.paused} defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
-        <RadioSpectrum className="mt-3" playing={liveStation !== null && liveMedia.attached && !liveMedia.paused} />
       </section>
 
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />

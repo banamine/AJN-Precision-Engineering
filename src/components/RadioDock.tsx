@@ -49,7 +49,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
 
   useLayoutEffect(() => {
     setDockButtonHost(miniPlayerShowing ? document.getElementById('radio-dock-slot') : null);
-  }, [miniPlayerShowing]);
+  }, [miniPlayerShowing, Boolean(nowPlaying)]); // the idle bar and the playing bar are different elements: find the slot again when one replaces the other
 
   const show = useCallback(() => { setMenuOpen(false); setOpen(true); setEverOpened(true); }, []);
   const hide = useCallback(() => { setOpen(false); setFull(false); }, []);
@@ -196,7 +196,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
 
   return (
     <>
-      {radioButton && (dockButtonHost ? createPortal(radioButton, dockButtonHost) : radioButton)}
+      {radioButton && dockButtonHost && createPortal(radioButton, dockButtonHost)}
 
       {menuOpen && !open && (
         <div ref={menuRef} role="menu" aria-label="Recent radio stations" data-testid="radio-quick-menu"

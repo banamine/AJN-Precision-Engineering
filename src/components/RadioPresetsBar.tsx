@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
 import { Search } from 'lucide-react';
 import { FreshnessTag } from './FreshnessTag';
+import { RadioSpectrum } from './RadioSpectrum';
 import { freshness } from '../utils/listenCatalog';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
@@ -364,7 +365,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const line2 = mode === 'live' ? (preview ?? playing?.title ?? (playingNow ? nowPlaying?.title : undefined) ?? 'No station') : (preview ?? curItem?.title ?? (loadingConcerts ? 'Loading concerts…' : modeItems.length ? `${bankLabel}` : (deckSources?.concertsError && audioBank === 'concerts' ? 'Concerts unavailable' : 'Nothing loaded')));
           const line3Base = mode === 'live' ? (preview ? '' : (playing?.subtitle ?? (playing ? '' : (playingNow && nowPlaying?.title ? 'Not a live station. Pick one below or press a preset' : 'Pick a station or press a preset')))) : (deckSources?.concertsError && audioBank === 'concerts' && !modeItems.length ? deckSources.concertsError : (curItem?.subtitle ? `${curItem.subtitle}${freshness(curItem.publishedAt) ? ` · published ${freshness(curItem.publishedAt)!.age}` : ''}` : undefined) ?? `${modeItems.length} to choose from · keys are your saved ${bankLabel.toLowerCase()}`);
           const line3 = status || line3Base;
-          const glassKey = 'relative flex h-16 min-w-0 flex-1 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
+          const glassKey = 'relative flex h-20 min-w-0 flex-1 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
           const keyBg = { background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.45)' } as const;
           const modeBtn = (label: string, key: 'live' | 'archive' | 'podcasts') => {
             const selected = mode === key;
@@ -376,9 +377,9 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           };
           const volAngle = -135 + vol * 270;
           return (
-            <div ref={observeNarrow} data-testid="radio-head-unit-grid" className="relative grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[minmax(0,1fr)_270px] md:gap-x-8">
+            <div ref={observeNarrow} data-testid="radio-head-unit-grid" className="relative grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-2 md:gap-x-5">
               <div className="space-y-4 md:col-start-1 md:row-start-1">
-                <div data-testid="radio-head-unit-lcd" className="flex min-h-[112px] items-stretch gap-3 rounded-2xl p-4"
+                <div data-testid="radio-head-unit-lcd" className="flex min-h-[112px] items-stretch gap-3 rounded-2xl p-3.5"
                   style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
                   <div className="flex min-w-0 flex-1 flex-col justify-between gap-1">
                     <div className="flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-300">
@@ -387,7 +388,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                         <span aria-hidden="true" className={`h-2 w-2 rounded-full ${lampOn ? 'bg-red-400 animate-pulse motion-reduce:animate-none' : 'bg-neutral-500'}`} />{mode === 'live' ? (live ? 'ON AIR' : (playingNow && nowPlaying?.title ? 'PLAYING' : 'OFF AIR')) : (lampOn ? 'PLAYING' : 'STOPPED')}
                       </span>
                     </div>
-                    <p className="truncate text-2xl font-semibold leading-tight text-white sm:text-[28px]">{line2}</p>
+                    <p className="truncate text-xl font-bold leading-tight text-white sm:text-2xl">{line2}</p>
                     <p className="truncate text-sm text-neutral-300">{line3}</p>
                   </div>
                   {nowLogo && !broken.has(playing?.channelId ?? '') ? (
@@ -410,43 +411,18 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                 )}
               </div>
 
-              <div className="flex flex-col items-center gap-3 md:col-start-2 md:row-start-1 md:row-span-1">
-                <div className="relative h-[250px] w-[250px] shrink-0">
-                  <svg viewBox="0 0 200 200" aria-hidden="true" className="absolute inset-0 h-full w-full">
-                    <circle cx="100" cy="100" r="97" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.22)" />
-                    <circle cx="100" cy="100" r="74" fill="none" stroke="rgba(224,109,59,0.55)" strokeWidth="1.2" />
-                    {Array.from({ length: 20 }, (_, i) => {
-                      const a = ((i + 1) * 18 - 90) * Math.PI / 180;
-                      return <text key={i} x={100 + 85 * Math.cos(a)} y={100 + 85 * Math.sin(a) + 3} textAnchor="middle" fontSize="8.5" fontWeight="700" fill="rgba(255,255,255,0.8)">{i + 1}</text>;
-                    })}
-                    <g transform={`rotate(${knobAngle / 2} 100 100)`}><rect x="98" y="5" width="4" height="10" rx="2" fill="#F97316" /></g>
-                  </svg>
-                  <button type="button" data-testid="radio-head-unit-knob" aria-label={`Tune knob: turn or press for the next station in ${bank === 'presets' ? 'My presets' : 'Recent'}. Arrow keys step back and forward.`}
-                    onPointerDown={(e) => { knobDrag.current = { x: e.clientX, acc: 0 }; knobMoved.current = false; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* capture is optional */ } }}
-                    onPointerMove={(e) => {
-                      const d = knobDrag.current; if (!d) return;
-                      d.acc += e.clientX - d.x; d.x = e.clientX;
-                      while (Math.abs(d.acc) >= 24) { const dir = d.acc > 0 ? 1 : -1; d.acc -= dir * 24; knobMoved.current = true; turn(dir); }
-                    }}
-                    onPointerUp={() => { knobDrag.current = null; }} onPointerCancel={() => { knobDrag.current = null; }}
-                    onClick={() => { if (knobMoved.current) { knobMoved.current = false; return; } turn(1); }}
-                    onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); turn(1); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); turn(-1); } }}
-                    onWheel={(e) => { if (e.deltaY) turn(e.deltaY > 0 ? 1 : -1); }}
-                    className="absolute left-1/2 top-1/2 h-[132px] w-[132px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none select-none rounded-full p-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
-                    style={{ background: 'linear-gradient(180deg,#c9825f 0%,#E06D3B 40%,#7a3a20 100%)', boxShadow: '0 10px 26px rgba(0,0,0,0.75), 0 0 22px rgba(224,109,59,0.45), inset 0 1px 2px rgba(255,255,255,0.5)' }}>
-                    <span aria-hidden="true" className="relative block h-full w-full rounded-full transition-transform duration-150 motion-reduce:transition-none"
-                      style={{ transform: `rotate(${knobAngle}deg)`, background: 'conic-gradient(from 180deg at 50% 50%, #3b4150 0deg, #aab1bd 45deg, #3b4150 90deg, #1f2430 135deg, #aab1bd 180deg, #3b4150 225deg, #1f2430 270deg, #aab1bd 315deg, #3b4150 360deg)', boxShadow: 'inset 0 2px 3px rgba(255,255,255,0.45), inset 0 -4px 8px rgba(0,0,0,0.8)' }}>
-                      <span className="absolute left-1/2 top-1.5 h-5 w-1.5 -translate-x-1/2 rounded-full bg-amber-400" style={{ boxShadow: '0 0 10px #F97316' }} />
-                    </span>
-                  </button>
+              <div data-testid="radio-head-unit-spectrum" className="flex min-h-[112px] flex-col justify-center rounded-2xl p-4 md:col-start-2 md:row-start-1" style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+                <div className="mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                  <span className="text-[#E06D3B]">Spectrum</span>
                 </div>
-                <div className="sr-only focus-within:not-sr-only focus-within:flex focus-within:gap-2">
-                  <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => turn(-1)} className="rounded border border-white/30 px-3 py-2 text-xs text-white">Previous</button>
-                  <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => turn(1)} className="rounded border border-white/30 px-3 py-2 text-xs text-white">Next</button>
-                </div>
+                <RadioSpectrum className="!h-24" playing={live || Boolean(playingNow)} />
               </div>
 
-              <div className="space-y-2 md:col-start-1 md:row-start-2">
+              <div className="space-y-2 md:col-span-2 md:row-start-2">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                  <span className="text-neutral-400">Presets</span>
+                  <span className="text-neutral-500">01 - 05</span>
+                </div>
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row">
                   {mode !== 'live' && !browse ? (
                   <div className="grid flex-1 grid-cols-5 gap-2">
@@ -534,7 +510,48 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                 </div>
               </div>
 
-              <div className="flex items-end justify-around gap-4 md:col-start-2 md:row-start-2">
+              <div data-testid="radio-head-unit-stepper" className="flex flex-col gap-2 rounded-2xl p-3 md:col-start-1 md:row-start-3" style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Tune</span>
+                <div className="flex items-center gap-3">
+                <div className="relative h-[72px] w-[72px] shrink-0">
+                  <svg viewBox="0 0 200 200" aria-hidden="true" className="hidden">
+                    <circle cx="100" cy="100" r="97" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.22)" />
+                    <circle cx="100" cy="100" r="74" fill="none" stroke="rgba(224,109,59,0.55)" strokeWidth="1.2" />
+                    {Array.from({ length: 20 }, (_, i) => {
+                      const a = ((i + 1) * 18 - 90) * Math.PI / 180;
+                      return <text key={i} x={100 + 85 * Math.cos(a)} y={100 + 85 * Math.sin(a) + 3} textAnchor="middle" fontSize="8.5" fontWeight="700" fill="rgba(255,255,255,0.8)">{i + 1}</text>;
+                    })}
+                    <g transform={`rotate(${knobAngle / 2} 100 100)`}><rect x="98" y="5" width="4" height="10" rx="2" fill="#F97316" /></g>
+                  </svg>
+                  <button type="button" data-testid="radio-head-unit-knob" aria-label={`Tune knob: turn or press for the next station in ${bank === 'presets' ? 'My presets' : 'Recent'}. Arrow keys step back and forward.`}
+                    onPointerDown={(e) => { knobDrag.current = { x: e.clientX, acc: 0 }; knobMoved.current = false; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* capture is optional */ } }}
+                    onPointerMove={(e) => {
+                      const d = knobDrag.current; if (!d) return;
+                      d.acc += e.clientX - d.x; d.x = e.clientX;
+                      while (Math.abs(d.acc) >= 24) { const dir = d.acc > 0 ? 1 : -1; d.acc -= dir * 24; knobMoved.current = true; turn(dir); }
+                    }}
+                    onPointerUp={() => { knobDrag.current = null; }} onPointerCancel={() => { knobDrag.current = null; }}
+                    onClick={() => { if (knobMoved.current) { knobMoved.current = false; return; } turn(1); }}
+                    onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); turn(1); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); turn(-1); } }}
+                    onWheel={(e) => { if (e.deltaY) turn(e.deltaY > 0 ? 1 : -1); }}
+                    className="absolute left-1/2 top-1/2 h-[64px] w-[64px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none select-none rounded-full p-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
+                    style={{ background: 'linear-gradient(180deg,#c9825f 0%,#E06D3B 40%,#7a3a20 100%)', boxShadow: '0 10px 26px rgba(0,0,0,0.75), 0 0 22px rgba(224,109,59,0.45), inset 0 1px 2px rgba(255,255,255,0.5)' }}>
+                    <span aria-hidden="true" className="relative block h-full w-full rounded-full transition-transform duration-150 motion-reduce:transition-none"
+                      style={{ transform: `rotate(${knobAngle}deg)`, background: 'conic-gradient(from 180deg at 50% 50%, #3b4150 0deg, #aab1bd 45deg, #3b4150 90deg, #1f2430 135deg, #aab1bd 180deg, #3b4150 225deg, #1f2430 270deg, #aab1bd 315deg, #3b4150 360deg)', boxShadow: 'inset 0 2px 3px rgba(255,255,255,0.45), inset 0 -4px 8px rgba(0,0,0,0.8)' }}>
+                      <span className="absolute left-1/2 top-1 h-3 w-1 -translate-x-1/2 rounded-full bg-amber-400" style={{ boxShadow: '0 0 10px #F97316' }} />
+                    </span>
+                  </button>
+                </div>
+                <div className="flex min-w-0 flex-1 gap-2">
+                  <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => turn(-1)} style={keyBg} className="flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-white/25 text-xs font-bold uppercase tracking-wider text-neutral-100 hover:text-white active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"><span aria-hidden="true">‹</span> Prev</button>
+                  <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => turn(1)} style={keyBg} className="flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-white/25 text-xs font-bold uppercase tracking-wider text-neutral-100 hover:text-white active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">Next <span aria-hidden="true">›</span></button>
+                </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 rounded-2xl p-3 md:col-start-2 md:row-start-3" style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Volume</span>
+                <div className="flex items-center justify-around gap-4">
                 <div className="flex flex-col items-center gap-1.5">
                   <button type="button" role="slider" data-testid="radio-volume-knob" aria-label="Volume" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(vol * 100)} aria-disabled={!hasPlayer}
                     onPointerDown={(e) => { volDrag.current = e.clientX; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* optional */ } }}
@@ -548,8 +565,9 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                       <span className="absolute left-1/2 top-1 h-3 w-1 -translate-x-1/2 rounded-full bg-amber-400" />
                     </span>
                   </button>
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-300">Volume</span>
                 </div>
+                <input type="range" min={0} max={1} step={0.05} value={vol} data-testid="radio-volume-slider" aria-label="Volume" disabled={!hasPlayer}
+                  onChange={(e) => setVolume(Number(e.currentTarget.value))} className="min-w-0 flex-1 accent-[#E06D3B]" />
                 <div className="flex flex-col items-center gap-1.5">
                   <button type="button" data-testid="radio-bank-select" aria-label={`Bank select: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`} onClick={() => { if (mode === 'live') openBank(bank === 'presets' ? 'recent' : 'presets'); else if (!browse) { setBrowse(true); setListPage(0); } else if (modeItems.length > (listPage + 1) * 5) setListPage((pg) => pg + 1); else { setBrowse(false); setListPage(0); } }}
                     className="relative h-16 w-16 cursor-pointer rounded-full p-1.5 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
@@ -559,6 +577,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                     </span>
                   </button>
                   <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-300">Bank select</span>
+                </div>
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 {
-  "summary":  "Revised implementation plan for GO_BUILD_TEAM — CLASSIC TV EPG ADMIN DECISIONS DEPLOY, incorporating exact line locations for 'your local 24-hour day' (TodayView.tsx:163), client + server M*A*S*H asterisk normalization (channelIndex.ts + classicScheduleSearch.ts + normalize.ts), first-10-line file headers, and the corrected local Claude Code prompt + draft PR template.",
-  "updatedAt":  "2026-11-10T03:32:38.888467138Z",
+  "summary":  "Plan to fix the head-unit spectrum analyzer so it animates whenever any audio is playing across Live Radio, Archive Music, Live Concerts, and Podcasts while preserving direct playback and the Spectrum unavailable fallback for non-CORS feeds.",
+  "updatedAt":  "2026-11-10T12:35:07.579978167Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

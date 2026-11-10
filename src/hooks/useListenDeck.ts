@@ -16,7 +16,16 @@ export function useListenDeck(onPlayProgram: PlayProgramCallback, enabled = true
     spokenAsked.current = true;
     loadSpokenItems().then(setSpoken).catch((e: unknown) => { spokenAsked.current = false; setSpokenError(e instanceof Error ? e.message : 'could not load the podcast list'); });
   }, []);
-  const podcastEps = useMemo(() => orderPodcasts([...archivedPodcastEps, ...(spoken?.items ?? [])]), [archivedPodcastEps, spoken]);
+  const podcastEps = useMemo(() => {
+    // Archived episodes and server feed episodes can describe the same episode; never list one twice.
+    const seen = new Set<string>();
+    const merged = [...archivedPodcastEps, ...(spoken?.items ?? [])].filter((i) => {
+      if (seen.has(i.id)) return false;
+      seen.add(i.id);
+      return true;
+    });
+    return orderPodcasts(merged);
+  }, [archivedPodcastEps, spoken]);
   const [concerts, setConcerts] = useState<ListenItem[] | null>(null);
   const [concertsError, setConcertsError] = useState<string | null>(null);
   const concertsAsked = useRef(false);
