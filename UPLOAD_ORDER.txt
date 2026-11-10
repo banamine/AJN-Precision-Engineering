@@ -1,37 +1,43 @@
-UPLOAD ORDER — copy these repository paths; do not use git add -A.
-1. .gitignore
-2. config/classic-networks.json
-3. docs/CLASSIC_NETWORK.md
-4. guideRegistry.ts
-5. optional/classic-network-publication-check.yml
-6. server/classicNetwork.ts
-7. server/classicNetworkPublication.ts
-8. server/classicUpcoming.ts
-9. server/libraryIndex.ts
-10. src/MinimalPlayer.tsx
-11. src/guide/liveTune.ts
-12. tools/build-classic-network-catalog.mts
-13. tools/build-infobattalion-lists.py
-14. tools/check-classic-network-publication.mjs
-15. tools/compile-classic-network.mts
-15b. src/guide/channelIndex.ts  (Claude pin fix)
+APPLY ORDER — feat/colorized-films-page2-2026-11-09
+====================================================
 
-Tests (stored under tests/; copy to repository root):
-16. tests/test-classic-movies-network.ts -> test-classic-movies-network.ts
-17. tests/test-classic-network-catalog.ts -> test-classic-network-catalog.ts
-18. tests/test-classic-network-compiler.ts -> test-classic-network-compiler.ts
-19. tests/test-classic-network-isolation.ts -> test-classic-network-isolation.ts
-20. tests/test-classic-network-live-tune.ts -> test-classic-network-live-tune.ts
-21. tests/test-classic-network-publication.ts -> test-classic-network-publication.ts
-22. tests/test-classic-network-upcoming.ts -> test-classic-network-upcoming.ts
-23. tests/test-classic-upcoming.ts -> test-classic-upcoming.ts
-24. tests/test_infobattalion_builder.py -> test_infobattalion_builder.py
+Step 1  Confirm base commit
+        git log --oneline -1
+        Expected: e86d2c1 ...  (2026-11-07 movie refresh)
+        If not on e86d2c1, do NOT proceed — notify owner.
 
-Catalog/publication data last (large Extra Channels manifest last):
-25. src/data/classicMoviesCatalog.json
-26. src/data/classicMoviesPublication.json
-27. src/data/classicNetworkCatalog.json
-28. src/data/classicNetworkPublication.json
-29. src/data/extraChannelsManifest.json
+Step 2  Create branch
+        git checkout -b feat/colorized-films-page2-2026-11-09
 
-NOTE: see ZIP2_1_CHANGES.md. Do not apply screenshots/, reports/, tests/.
+Step 3  Run the account builder for a_colorized_generation
+        node tools/build-archive-accounts.js --account a_colorized_generation --fetch
+        OR
+        python tools/build-archive-accounts.py --account a_colorized_generation --fetch
+
+        Flags:
+          --fetch   forces a fresh page listing (bypasses cache)
+
+        Expected console output includes:
+          "a_colorized_generation: X items fetched"   (X ≥ 100)
+          "clx- channels added: N"                    (N > 0)
+          "held (film_under_45_minutes): 0"           (all 27 are ≥ 45 min)
+          "reports/archive-accounts.json updated"
+
+Step 4  Verify (see VERIFY.txt for full checklist)
+
+Step 5  Commit
+        git add reports/archive-accounts.json
+        git commit -m "feat: add 27 colorized films from @a_colorized_generation page 2
+
+        Runs build-archive-accounts for the a_colorized_generation account,
+        admitting 27 new colorized films to the movies-classics-vault guide
+        via the clx- colorized route. All 27 items are ≥ 45 min runtime.
+        Additive only — 0 existing rows removed or changed.
+
+        Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+        Claude-Session: https://claude.ai/code/session_016pQw6j5nkewrMESRqEnV9Z"
+
+Step 6  Open DRAFT PR only — do NOT merge or deploy
+        Target: main
+        Title:  feat: add 27 colorized films from @a_colorized_generation page 2
+        Body:   Reference this ZIP and VERIFY.txt results.

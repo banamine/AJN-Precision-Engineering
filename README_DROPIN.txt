@@ -1,17 +1,42 @@
-PARTIAL — OWNER REVIEW ONLY
-AJN Classic Network / InfoBattalion cumulative drop-in
+AJN COLORIZED FILMS PAGE 2 — DROP-IN ZIP
+Branch:  feat/colorized-films-page2-2026-11-09
+Base:    e86d2c1 (2026-11-07 movie refresh)
+Built:   2026-11-09
+By:      Claude Sonnet 4.6 / AJN Engineering Repair session
 
-Base: d33c54ac059f752b1a394adc4b877d337e92a426
-Branch: feat/classic-network-2026-11-04
-Local HEAD: 0470512f11ec148566a42cea3d5a090baa50289b
+WHAT THIS ZIP CONTAINS
+  ITEMS.csv          — 27 new Archive identifiers to admit to the colorized route
+  UPLOAD_ORDER.txt   — Apply order for build team
+  ROLLBACK.txt       — How to undo
+  VERIFY.txt         — Post-apply checks the build team must run
+  README_DROPIN.txt  — This file
 
-This package contains the 29 feature files changed from the stated base. Test files are under tests/ to keep them separate; UPLOAD_ORDER.txt maps each to its repository-root destination. The workspace-only .replit and .replitignore files, caches, and raw metadata dumps are excluded. No remote branch was updated; no PR, merge, or deployment was created.
+WHAT THE BUILD TEAM MUST DO
+  1. Checkout branch feat/colorized-films-page2-2026-11-09 from e86d2c1
+  2. Run: node tools/build-archive-accounts.js --account a_colorized_generation --fetch
+     (or python tools/build-archive-accounts.py --account a_colorized_generation --fetch)
+     This regenerates reports/archive-accounts.json with the 27 new items admitted.
+  3. Verify VERIFY.txt checks pass.
+  4. Open draft PR only — do NOT merge or deploy.
 
-Apply/copy files in UPLOAD_ORDER.txt. Preserve existing Extra Channels rows; do not run a pruning refresh. Manifests and compiled publications are placed last. See ROLLBACK.txt for the base SHA-256 of each source path, VERIFY.txt for offline checks, and REPORT.md for evidence and limits.
+HARD RULES (non-negotiable)
+  - Additive only: 0 existing rows removed or changed
+  - No new npm dependencies
+  - Node 22
+  - Movies guide payload must stay under 3 MB — STOP and report if exceeded
+  - Archive proxy unchanged (bounded 206 slices ≤ 8 MiB, Cloud Run limit 32 MiB)
+  - No Math.random, no fake telemetry, no silent fallbacks
+  - Never commit secrets
+  - Uploader email never stored in any output file
 
-PARTIAL STATUS
-- The Classic Network schedule compiles 611 distinct episode keys into 3,186 occurrences, beginning 2026-11-05 00:00 America/Los_Angeles. Its compiled-horizon minimum repeat gap is 168.943 h with no gap below 168 h.
-- Classic Movies publication contains 844 occurrences.
-- The actual Extra Channels delta is +1,366 rows and no removals or changed shared rows. Documentary candidates (29 IDs / 645 rows) did not create a net Documentary-manifest change; do not treat candidate counters as additions.
-- No new item has a verified live playback result. Rights remain for owner review. Do not present this as production-approved or playback-verified.
-- The 218 Archive physical starts were from the earlier owner-authorized refresh; no Archive request was made during this offline build, verification, or packaging. Minimum gap was 1,550.1 ms; cap was 1,800.
+ACCOUNT CONFIG (already in config/archive-accounts.json — NO CHANGES NEEDED)
+  account:  a_colorized_generation
+  prefix:   clx-
+  route:    colorized
+  expected: 127
+  filter:   null
+
+BASELINE CATALOG STATE (from 2026-11-07 refresh, commit e86d2c1)
+  Total assets:          7,057
+  Playlist entries:        858
+  Spotlight pool:          536
