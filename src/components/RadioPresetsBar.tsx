@@ -157,18 +157,26 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   const [hasPlayer, setHasPlayer] = useState(false);
   const volDrag = useRef<number | null>(null);
   useEffect(() => {
-    const media = document.getElementById('persistent-player') as HTMLMediaElement | null;
-    setHasPlayer(Boolean(media));
+    const findMedia = (): HTMLMediaElement | null => {
+      const nested = document.querySelector<HTMLMediaElement>('#persistent-player audio, #persistent-player video');
+      if (nested && typeof nested.volume === 'number') return nested;
+      const el = document.getElementById('persistent-player') as HTMLMediaElement | null;
+      return el && typeof el.volume === 'number' && Number.isFinite(el.volume) ? el : null;
+    };
+    const media = findMedia();
+    setHasPlayer(Boolean(media || document.getElementById('persistent-player')));
     if (!media) return undefined;
-    setVol(media.volume);
-    const onVol = () => setVol(media.volume);
-    media.addEventListener('volumechange', onVol);
-    return () => media.removeEventListener('volumechange', onVol);
-  }, []);
+    const readVol = () => setVol(typeof media.volume === 'number' && Number.isFinite(media.volume) ? media.volume : 1);
+    readVol();
+    media.addEventListener('volumechange', readVol);
+    return () => media.removeEventListener('volumechange', readVol);
+  }, [nowPlaying?.src, nowPlaying?.mediaType, station?.src]);
   const setVolume = useCallback((next: number) => {
-    const clamped = Math.min(1, Math.max(0, next));
-    const media = document.getElementById('persistent-player') as HTMLMediaElement | null;
-    if (media) media.volume = clamped;
+    const safeNext = Number.isFinite(next) ? next : 1;
+    const clamped = Math.min(1, Math.max(0, safeNext));
+    const media = document.querySelector<HTMLMediaElement>('#persistent-player audio, #persistent-player video')
+      ?? (document.getElementById('persistent-player') as HTMLMediaElement | null);
+    if (media && 'volume' in media) media.volume = clamped;
     setVol(clamped);
   }, []);
   const knobDrag = useRef<{ x: number; acc: number } | null>(null);
@@ -566,7 +574,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                     </span>
                   </button>
                 </div>
-                <input type="range" min={0} max={1} step={0.05} value={vol} data-testid="radio-volume-slider" aria-label="Volume" disabled={!hasPlayer}
+                <input type="range" min={0} max={1} step={0.05} value={Number.isFinite(vol) ? vol : 1} data-testid="radio-volume-slider" aria-label="Volume" disabled={!hasPlayer}
                   onChange={(e) => setVolume(Number(e.currentTarget.value))} className="min-w-0 flex-1 accent-[#E06D3B]" />
                 <div className="flex flex-col items-center gap-1.5">
                   <button type="button" data-testid="radio-bank-select" aria-label={`Bank select: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`} onClick={() => { if (mode === 'live') openBank(bank === 'presets' ? 'recent' : 'presets'); else if (!browse) { setBrowse(true); setListPage(0); } else if (modeItems.length > (listPage + 1) * 5) setListPage((pg) => pg + 1); else { setBrowse(false); setListPage(0); } }}
