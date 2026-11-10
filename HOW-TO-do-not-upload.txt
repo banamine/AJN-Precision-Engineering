@@ -1,14 +1,18 @@
-DROP-IN FOR GOOGLE BUILDER - radio player v2
+DROP-IN FOR GOOGLE BUILDER - Rumble shortcut + Rush podcast + podcast grouping
 
-This REPLACES radio-revamp.zip. Upload only this one.
+This REPLACES podcast-groups.zip. Upload only this one.
 
 1. Unzip.
-2. Upload these files into Google Builder, keeping the same folders. Say yes to overwrite:
+2. Upload these 11 files into Google Builder, keeping the same folders. Say yes to overwrite:
    src/App.tsx
    src/components/MiniPlayerDock.tsx
-   src/components/RadioDock.tsx
-   src/components/RadioPresetsBar.tsx
    src/components/RadioView.tsx
-   src/utils/radioPresets.ts
-   test-dock-stepper.tsx
+   src/components/NewsTabs.tsx
+   src/components/RumbleLiveBadge.tsx
+   src/data/podcastSources.json
+   src/utils/listenCatalog.ts
+   src/hooks/useListenDeck.ts
+   package.json
+   test-rumble-badge.tsx
+   test-podcast-grouping.tsx
 3. Do not upload this text file.

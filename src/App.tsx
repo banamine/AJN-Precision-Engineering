@@ -74,6 +74,7 @@ function getDestinationFromHash(): Destination {
     case 'history': return 'history';
     case 'watch-later': return 'watch-later';
     case 'news':
+    case 'rumble':
     case 'bannedvideo': return 'news';
     case 'news-cube': return 'news-cube';
     case 'radio':

@@ -11,6 +11,7 @@ import { clearShowQueue, startShowQueue } from '../utils/showQueue';
 import { buildMusicItems, buildPodcastItems, interleaveByShow, loadConcertItems, loadSpokenItems, type ListenItem, type SpokenCatalog } from '../utils/listenCatalog';
 import { ListenBrowser } from './ListenBrowser';
 import { useListenDeck } from '../hooks/useListenDeck';
+import { RumbleLiveBadge } from './RumbleLiveBadge';
 import { FullShowStatus } from './FullShowStatus';
 import { RadioPresetsBar } from './RadioPresetsBar';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
@@ -83,7 +84,7 @@ function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onPlayPr
       <FullShowStatus className="col-span-full" />
       <div className="ajr-now-art" aria-hidden="true"><div className="ajr-art-sun" /><div className="ajr-art-horizon" /><span className="ajr-art-index">AJN{playingEntry ? ` — ${showInitials(playingEntry)}` : ''}</span></div>
       <div>
-        <div className="ajr-label"><span className={`ajr-eq ${nowPlaying && !media.paused ? 'on' : ''}`} aria-hidden="true"><i /><i /><i /></span>NOW PLAYING</div>
+        <div className="ajr-label"><span className={`ajr-eq ${nowPlaying && !media.paused ? 'on' : ''}`} aria-hidden="true"><i /><i /><i /></span>NOW PLAYING<RumbleLiveBadge nowPlaying={nowPlaying} onNavigate={onNavigate} className="ml-2 align-middle" /></div>
         <div className="ajr-track-title" data-testid="radio-now-title">{nowPlaying ? nowPlaying.title : 'Nothing playing'}</div>
         <div className="ajr-track-sub">{nowPlaying ? (playingEntry ? `${showLabel(showKey(playingEntry))} · ${AJN_CHANNEL_LABELS[playingEntry.channel]}` : nowPlaying.subtitle ?? 'Active broadcast') : 'Press Listen on any episode below. Playback continues when you leave this page.'}</div>
         <div className="ajr-progress">

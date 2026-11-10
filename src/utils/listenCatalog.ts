@@ -112,6 +112,29 @@ export function buildSpokenItems(channels: readonly SpokenChannel[]): SpokenCata
       return true;
     });
     if (ch.group === 'Podcast' && progs.length === 0) { feedsDown.push({ name: ch.name, reason: ch.sourceError ?? ch.sourceStatus ?? 'no episodes' }); continue; }
+    // A daily podcast airs several editions a day. Show one box per programme whose tracks are that day's
+    // editions, oldest first, so one press plays the whole day in order (the same shape Archive Music uses).
+    const airedAt = (pr: SpokenProgram): number => {
+      const at = ch.group === 'Podcast' && pr.metadata?.podcast && !pr.metadata?.backCatalog ? Date.parse(pr.metadata?.airedUtc ?? '') : NaN;
+      return Number.isFinite(at) && at > Date.UTC(2000, 0, 1) ? at : NaN;
+    };
+    const dated = progs.map((pr) => ({ pr, at: airedAt(pr) })).filter((x) => Number.isFinite(x.at));
+    if (ch.group === 'Podcast' && dated.length > 0) {
+      const dayOf = (ms: number): number => { const d = new Date(ms); return d.getFullYear() * 10000 + d.getMonth() * 100 + d.getDate(); };
+      const newest = Math.max(...dated.map((x) => x.at));
+      const editions = dated.filter((x) => dayOf(x.at) === dayOf(newest)).sort((a, b) => a.at - b.at);
+      const parts: PlanItem[] = editions.map((x, i) => ({
+        src: x.pr.mediaUrl as string, mediaType: 'audio' as const, programId: x.pr.id,
+        title: x.pr.title, partNo: i + 1, totalParts: editions.length,
+      }));
+      items.push({
+        id: `spoken-show-${ch.id}`, bank: 'podcasts', title: ch.name,
+        subtitle: `${editions.length} edition${editions.length === 1 ? '' : 's'}`,
+        genre: ch.group, channelId: ch.id, guideId: 'audio-podcasts',
+        trackCount: editions.length, publishedAt: newest, tracks: () => parts,
+      });
+      continue;
+    }
     for (const pr of progs) {
       const id = `spoken-${pr.id}`;
       // Only a real feed episode carries a publish date. Talk-radio / old-time-radio rows and Archive back-catalog have none (their slot times are not air dates).

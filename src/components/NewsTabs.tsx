@@ -20,7 +20,7 @@ export interface NewsTabConfig {
 }
 
 export const NEWS_TABS: readonly NewsTabConfig[] = [
-  { id: "rumble", label: "Rumble", boundary: "Rumble wall", render: () => <RumbleNewsWall /> },
+  { id: "rumble", label: "Rumble", boundary: "Rumble wall", hash: "rumble", render: () => <RumbleNewsWall /> },
   { id: "youtube", label: "YouTube", boundary: "YouTube wall", render: () => <YoutubeWall /> },
   { id: "bannedvideo", label: "BANNED VIDEO", boundary: "Banned Video wall", icon: Ban, hash: "bannedvideo", render: () => <BannedVideoWall /> },
 ];

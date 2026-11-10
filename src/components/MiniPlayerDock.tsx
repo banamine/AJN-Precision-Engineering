@@ -9,6 +9,7 @@ import { listRadioPresets, pickAdjacentStation } from '../utils/radioPresets';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import { requestRadioDock } from '../utils/radioDock';
 import { bufferAheadSeconds, dockStatusLabel, isReconnecting } from '../utils/bufferAhead';
+import { RumbleLiveBadge } from './RumbleLiveBadge';
 
 interface MiniPlayerDockProps {
   nowPlaying: NowPlayingMedia;
@@ -182,8 +183,9 @@ export function MiniPlayerDock({
             />
           </div>
         ) : (
-          <span className="truncate text-[9px] leading-tight text-neutral-400">
-            {nowPlaying.subtitle || 'Active broadcast'}
+          <span className="flex min-w-0 items-center gap-1.5 text-[9px] leading-tight text-neutral-400">
+            <span className="truncate">{nowPlaying.subtitle || 'Active broadcast'}</span>
+            <RumbleLiveBadge nowPlaying={nowPlaying} onNavigate={onNavigate} />
           </span>
         )}
       </div>
