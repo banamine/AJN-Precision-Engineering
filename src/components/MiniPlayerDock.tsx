@@ -54,7 +54,7 @@ export function IdleDock({ onPlayProgram }: { onPlayProgram?: PlayProgramCallbac
         <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-neutral-100 md:w-64 md:flex-none md:text-sm">Radio</span>
         <div className="flex shrink-0 items-center md:flex-1 md:justify-center">
           <button type="button" data-testid="idle-dock-play" onClick={start} aria-label="Play radio" title="Play radio"
-            className="ajn-dock-control flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation md:rounded-full md:!bg-[var(--ajn-accent)] md:!text-white">
+            className="ajn-dock-control flex h-12 w-12 !min-h-[48px] !min-w-[48px] items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation md:rounded-full md:!bg-[var(--ajn-accent)] md:!text-white">
             <Play className="ml-0.5 h-4 w-4 fill-current" />
           </button>
         </div>
@@ -326,11 +326,11 @@ export function MiniPlayerDock({
       {isRadio && (
         <div data-testid="dock-stepper" className="flex w-full basis-full items-center gap-2 px-1 pb-1 md:hidden">
           <button type="button" data-testid="dock-prev" aria-label="Previous station" onClick={() => stepStation(-1)}
-            className="ajn-dock-control flex min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
+            className="ajn-dock-control flex !min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
             <ChevronLeft className="h-4 w-4" aria-hidden="true" /><span>Prev</span>
           </button>
           <button type="button" data-testid="dock-next" aria-label="Next station" onClick={() => stepStation(1)}
-            className="ajn-dock-control flex min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
+            className="ajn-dock-control flex !min-h-[48px] flex-1 items-center border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] justify-center gap-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation">
             <span>Next</span><ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>

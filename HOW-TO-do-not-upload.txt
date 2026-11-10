@@ -1,18 +1,14 @@
-DROP-IN FOR GOOGLE BUILDER - Rumble shortcut + Rush podcast + podcast grouping
+DROP-IN FOR GOOGLE BUILDER - 48px touch targets + spectrum honesty
 
-This REPLACES podcast-groups.zip. Upload only this one.
+Apply on top of rumble-rush.zip.
 
 1. Unzip.
-2. Upload these 11 files into Google Builder, keeping the same folders. Say yes to overwrite:
-   src/App.tsx
+2. Upload these 7 files into Google Builder, keeping the same folders. Say yes to overwrite:
    src/components/MiniPlayerDock.tsx
-   src/components/RadioView.tsx
-   src/components/NewsTabs.tsx
-   src/components/RumbleLiveBadge.tsx
-   src/data/podcastSources.json
-   src/utils/listenCatalog.ts
-   src/hooks/useListenDeck.ts
+   src/components/RadioPresetsBar.tsx
+   src/components/RadioDock.tsx
+   src/components/Navigation.tsx
+   src/components/ArchiveMusicSpectrum.tsx
    package.json
-   test-rumble-badge.tsx
-   test-podcast-grouping.tsx
+   test-touch-targets.tsx
 3. Do not upload this text file.

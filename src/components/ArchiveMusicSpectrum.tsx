@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { binFrequencies, hasSignal, type AnalyzerState } from "./AudioVisualizerOverlay";
 
 const BAR_COUNT = 72;
@@ -83,12 +83,22 @@ export function ArchiveMusicSpectrum({ analyser, isPlaying, analyzerState }: Arc
     };
   }, [analyser, analyzerState, isPlaying]);
 
+  // Audio is playing but nothing reaches the analyser (a source the browser will not let us read).
+  // Short silences inside a track are normal, so only say so once it has stayed silent.
+  const [noSignal, setNoSignal] = useState(false);
+  useEffect(() => {
+    if (!isPlaying || !analyser || analyzerState !== "idle") { setNoSignal(false); return undefined; }
+    const id = window.setTimeout(() => setNoSignal(true), 2000);
+    return () => window.clearTimeout(id);
+  }, [isPlaying, analyser, analyzerState]);
+
+  const unavailable = !analyser || analyzerState === "unavailable";
   return (
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" data-testid="archive-music-spectrum">
       <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 h-full w-full opacity-70" />
-      {(!analyser || analyzerState === "unavailable") && (
-        <span className="absolute bottom-4 left-1/2 z-[1] -translate-x-1/2 rounded-full border border-slate-600 bg-slate-950/90 px-3 py-1.5 text-xs font-medium text-slate-200">
-          Spectrum unavailable
+      {(unavailable || noSignal) && (
+        <span data-testid="spectrum-note" className="absolute bottom-4 left-1/2 z-[1] -translate-x-1/2 rounded-full border border-slate-600 bg-slate-950/90 px-3 py-1.5 text-xs font-medium text-slate-200">
+          {unavailable ? "Spectrum unavailable" : "No signal from this source"}
         </span>
       )}
     </div>

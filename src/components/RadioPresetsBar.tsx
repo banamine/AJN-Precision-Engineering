@@ -101,7 +101,7 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
           return (
             <li key={it.id}>
               <button type="button" data-testid="radio-deck-pick" aria-current={on ? 'true' : undefined} onClick={() => onPick(it)}
-                className={`flex min-h-[48px] w-full cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-left touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${on ? 'border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border-white/10 bg-white/5 text-neutral-100 hover:border-[#E06D3B]/60'}`}>
+                className={`flex !min-h-[48px] w-full cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-left touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${on ? 'border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border-white/10 bg-white/5 text-neutral-100 hover:border-[#E06D3B]/60'}`}>
                 <span aria-hidden="true" className={`text-xs ${on ? 'text-[#F9A56D]' : 'text-neutral-500'}`}>{on ? '▶' : '•'}</span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{it.title}</span>{it.subtitle ? <span className="block truncate text-[11px] text-neutral-400">{it.subtitle}</span> : null}</span>
                 <FreshnessTag publishedAt={it.publishedAt} />
@@ -372,7 +372,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             return (
               <button key={key} type="button" data-testid={`radio-mode-${key}`} aria-pressed={selected}
                 onClick={() => { setMode(key); setListPage(0); setBrowse(false); setStoreArmed(false); if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.(); if (key === 'podcasts') deckSources?.loadSpoken?.(); say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts'); }}
-                className={`min-h-[48px] flex-1 cursor-pointer rounded-lg px-3 text-sm font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${selected ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-transparent text-neutral-300 hover:text-white'}`}>{label}</button>
+                className={`!min-h-[48px] flex-1 cursor-pointer rounded-lg px-3 text-sm font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${selected ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-transparent text-neutral-300 hover:text-white'}`}>{label}</button>
             );
           };
           const volAngle = -135 + vol * 270;
@@ -543,8 +543,8 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                   </button>
                 </div>
                 <div className="flex min-w-0 flex-1 gap-2">
-                  <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => turn(-1)} style={keyBg} className="flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-white/25 text-xs font-bold uppercase tracking-wider text-neutral-100 hover:text-white active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"><span aria-hidden="true">‹</span> Prev</button>
-                  <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => turn(1)} style={keyBg} className="flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-white/25 text-xs font-bold uppercase tracking-wider text-neutral-100 hover:text-white active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">Next <span aria-hidden="true">›</span></button>
+                  <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => turn(-1)} style={keyBg} className="flex !min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-white/25 text-xs font-bold uppercase tracking-wider text-neutral-100 hover:text-white active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"><span aria-hidden="true">‹</span> Prev</button>
+                  <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => turn(1)} style={keyBg} className="flex !min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-white/25 text-xs font-bold uppercase tracking-wider text-neutral-100 hover:text-white active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">Next <span aria-hidden="true">›</span></button>
                 </div>
                 </div>
               </div>

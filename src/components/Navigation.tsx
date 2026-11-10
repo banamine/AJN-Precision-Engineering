@@ -395,7 +395,7 @@ export function Navigation({
               onClick={() => onNavigate(item.id)}
               aria-current={isActive ? 'page' : undefined}
               aria-label={`${item.label} (${item.description})`}
-              className={`relative min-w-[44px] min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-2 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer touch-manipulation ${
+              className={`relative min-w-[44px] !min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-2 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer touch-manipulation ${
                 isActive ? 'ajn-nav-item-active font-semibold' : 'text-neutral-400 hover:text-neutral-200'
               }`}
             >
@@ -420,7 +420,7 @@ export function Navigation({
         <div ref={mobileMoreRef} className="relative flex h-full">
           <button type="button" id="mobile-nav-more" aria-haspopup="menu" aria-expanded={mobileMoreOpen} aria-label="More destinations"
             onClick={() => setMobileMoreOpen((o) => !o)}
-            className={`relative min-w-[44px] min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-3 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer touch-manipulation ${MOBILE_MORE_ITEMS.some((m) => m.id === activeDestination) || mobileMoreOpen ? 'ajn-nav-item-active font-semibold' : 'text-neutral-400 hover:text-neutral-200'}`}>
+            className={`relative min-w-[44px] !min-h-[48px] h-full flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-1 px-3 text-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer touch-manipulation ${MOBILE_MORE_ITEMS.some((m) => m.id === activeDestination) || mobileMoreOpen ? 'ajn-nav-item-active font-semibold' : 'text-neutral-400 hover:text-neutral-200'}`}>
             <Box className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
             <span className="whitespace-nowrap text-[10px] sm:text-[11px] leading-tight font-medium">More</span>
           </button>

@@ -103,7 +103,7 @@
     "test:honeymooners": "tsx test-honeymooners-order.ts",
     "test:classic-radio": "tsx test-classic-radio-theatre.ts",
     "test:channels-2": "tsx test-live-news-merge.ts && tsx test-amc-phase2.ts && tsx test-infowars-radio.ts && tsx test-live-news-channels.ts",
-    "test:radio-ui": "tsx test-rumble-badge.tsx && tsx test-podcast-grouping.tsx && tsx test-dock-stepper.tsx && tsx test-audio-asr.ts && tsx test-radio-caption-track.ts && tsx test-caption-strip-output.tsx && tsx test-radio-accents.ts && tsx test-radio-groups.ts && tsx test-station-banner-render.tsx",
+    "test:radio-ui": "tsx test-touch-targets.tsx && tsx test-rumble-badge.tsx && tsx test-podcast-grouping.tsx && tsx test-dock-stepper.tsx && tsx test-audio-asr.ts && tsx test-radio-caption-track.ts && tsx test-caption-strip-output.tsx && tsx test-radio-accents.ts && tsx test-radio-groups.ts && tsx test-station-banner-render.tsx",
     "test:player-lane": "tsx test-video-prefetch.ts && tsx test-video-prefetch-local.mjs && tsx test-thumbnail-lane-stall.ts && tsx test-thumbnail-lane.mjs",
     "test:archive-subtitles": "tsx test-archive-subtitles.ts && tsx test-archive-retry-wait.ts",
     "test:captions": "tsx test-caption-strip-output.tsx && tsx test-captions.ts && node test-player-captions-layout.mjs",
