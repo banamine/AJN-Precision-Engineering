@@ -6,9 +6,9 @@ export interface NumberedChannel { channel: ScheduleChannel; station: number }
 export interface CategoryCount { id: string; label: string; count: number }
 export const ALL_CATEGORIES = 'all';
 
-/** Lowercase, accent-free, whitespace-collapsed. */
+/** Lowercase, accent-free, asterisk-free, whitespace-collapsed. */
 export function fold(s: string): string {
-  return String(s ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  return String(s ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/\*/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 /** Sort key: leading article dropped so "The Odd Couple" files under O. */

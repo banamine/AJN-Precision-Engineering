@@ -1654,7 +1654,7 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
         </div>
 
         <span className="mr-auto text-[11px] text-neutral-400">
-          {hourLabel(win.startHour)} – {hourLabel(win.endHour)} · follows the red line
+          {hourLabel(win.startHour)} – {hourLabel(win.endHour)} (PT) · follows the red line
         </span>
 
         {viewMode === "grid" && selectedDay === "today" && (

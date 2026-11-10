@@ -40,6 +40,14 @@ assert.deepEqual(q('radio', 'news').rows, [], 'category and query combine');
 assert.deepEqual(q('   ').rows.length, 7, 'blank query = everything');
 assert.deepEqual(q('nonsense-xyz').rows, []);
 assert.equal(fold('  Éclair   TV '), 'eclair tv');
+assert.equal(fold('M*A*S*H'), 'mash', 'asterisks stripped so MASH matches M*A*S*H');
+{
+  const mashList = numberChannels([ch('ch148', 'Other Show', 'Classic TV', ['Monster Mash']), ch('ch209', 'M*A*S*H', 'Classic TV', ['Pilot'])]);
+  const mashIndex = buildSearchIndex(mashList);
+  const mashFiltered = filterChannels(mashList, mashIndex, 'MASH', ALL_CATEGORIES);
+  assert.ok(mashFiltered.rows.some((r) => r.channel.id === 'ch209'), 'searching MASH matches M*A*S*H channel');
+  assert.equal(mashFiltered.matchedShow.has('ch209'), false, 'M*A*S*H matches as a primary channel name hit, not only a show hit');
+}
 
 // 5. Scale: 1,500 channels x 130 programs indexes and filters well inside a frame budget.
 const big = Array.from({ length: 1500 }, (_, i) => ch('x' + i, 'Channel ' + ((i * 7919) % 1500), i % 2 ? 'Classic TV' : 'Movies', Array.from({ length: 130 }, (_, k) => `Show ${i}-${k}`)));

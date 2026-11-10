@@ -160,7 +160,7 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-500/25 bg-sky-500/10 text-sky-400"><ListChecks className="h-4 w-4" /></div>
             <h1 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">Today's Programs</h1>
           </div>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-neutral-400"><CalendarDays className="h-3.5 w-3.5" />{dateLabel} · your local 24-hour day, 12:00 AM to 11:59 PM</p>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-neutral-400"><CalendarDays className="h-3.5 w-3.5" />{dateLabel} · your local 24-hour day, 12:00 AM to 11:59 PM (PT)</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => void load(guideId, true)} className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"><RefreshCw className="h-3.5 w-3.5" />Refresh</button>

@@ -2,6 +2,7 @@ export function joinedKey(s: string): string {
   return String(s ?? '')
     .normalize('NFKD')
     .replace(/\p{M}/gu, '')
+    .replace(/\*/g, '')
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/['"’‘“”`]/g, '')

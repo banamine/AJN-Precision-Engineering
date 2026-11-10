@@ -82,6 +82,7 @@ export const SHOWS: Record<string, RegExp> = {
   ducktales: /ducktales/i,
   talespin: /talespin/i,
   'darkwing-duck': /darkwing[ ._-]+duck/i,
+  'all-dogs-go-to-heaven': /all[ ._-]+dogs[ ._-]+go[ ._-]+to[ ._-]+heaven/i,
 
   // Weekend Evening Westerns
   'death-valley-days': /death[ ._-]+valley[ ._-]+days/i,
@@ -127,6 +128,7 @@ export const SHOW_NAMES: Record<string, string> = {
   ducktales: 'DuckTales',
   talespin: 'TaleSpin',
   'darkwing-duck': 'Darkwing Duck',
+  'all-dogs-go-to-heaven': 'All Dogs Go to Heaven',
   'death-valley-days': 'Death Valley Days',
   'wanted-dead-or-alive': 'Wanted: Dead or Alive',
   'the-loner': 'The Loner',
