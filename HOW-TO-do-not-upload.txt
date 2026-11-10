@@ -1,6 +1,7 @@
-DROP-IN FOR GOOGLE BUILDER - 48px touch targets + spectrum honesty
+DROP-IN FOR GOOGLE BUILDER v2 - 48px targets, spectrum honesty, volume fix
 
-Apply on top of rumble-rush.zip.
+IMPORTANT: this overwrites Google Builder's own edit to RadioPresetsBar.tsx.
+That is intended - the same bug is fixed here using the app's existing helper.
 
 1. Unzip.
 2. Upload these 7 files into Google Builder, keeping the same folders. Say yes to overwrite:
