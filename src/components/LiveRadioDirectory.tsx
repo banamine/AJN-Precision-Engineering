@@ -188,8 +188,7 @@ export function LiveRadioDirectory({ onPlay, onTuned, compact = false, wide = fa
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   const filtering = Boolean(debounced || country || region || city || genre || favoritesOnly || vizOnly);
   const field = 'rounded-lg border border-neutral-700 bg-neutral-900 px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400';
-  const chip = (on: boolean): string => `shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
-    on ? 'border-amber-400/60 bg-amber-500/20 text-amber-100' : 'border-neutral-700 text-neutral-300 hover:bg-neutral-800'}`;
+  const chip = (on: boolean): string => `ck-key ck-key--sm shrink-0 text-[11px] ${on ? 'is-latched' : ''}`;
   const selLocal = selected ? localTimeLabel(selected.timeZone, now) : null;
 
   return (
@@ -252,14 +251,14 @@ export function LiveRadioDirectory({ onPlay, onTuned, compact = false, wide = fa
         {error && (
           <div role="alert" data-testid="live-radio-error" className="rounded-lg border border-red-900/60 bg-red-950/30 p-4 text-sm text-red-200">
             Could not load stations ({error}).
-            <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="ml-3 rounded border border-red-800 px-2 py-0.5 text-xs hover:bg-red-900/40 cursor-pointer">Retry</button>
+            <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="ck-key ck-key--sm ml-3">Retry</button>
           </div>
         )}
 
         {!error && data && data.items.length === 0 && !loading && (
           <div role="status" data-testid="live-radio-empty" className="p-8 text-center text-sm text-neutral-400">
             {filtering ? 'No stations match.' : 'No live radio stations loaded yet.'}
-            {filtering && <button type="button" onClick={clearFilters} className="ml-3 rounded border border-neutral-700 px-2 py-0.5 text-xs text-neutral-200 hover:bg-neutral-800 cursor-pointer">Clear filters</button>}
+            {filtering && <button type="button" onClick={clearFilters} className="ck-key ck-key--sm ml-3">Clear filters</button>}
           </div>
         )}
 
@@ -288,7 +287,7 @@ export function LiveRadioDirectory({ onPlay, onTuned, compact = false, wide = fa
                   </button>
                   {s.corsVerified && <span title="Audio visualizer available" aria-label="Visualizer available" className="absolute left-1.5 top-1.5 rounded bg-sky-500/20 px-1 text-[9px] font-bold text-sky-300">▮▮</span>}
                   <button type="button" aria-pressed={fav} aria-label={`${fav ? 'Remove' : 'Add'} ${s.name} ${fav ? 'from' : 'to'} favorites`} onClick={() => toggleFavorite(s.id)}
-                    className={`absolute right-1 top-1 h-6 w-6 rounded-full text-xs cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${fav ? 'text-amber-300' : 'text-neutral-500 hover:text-neutral-200'}`}>{fav ? '♥' : '♡'}</button>
+                    className={`ck-key ck-key--icon !absolute right-1 top-1 !min-h-[44px] !min-w-[44px] text-xs ${fav ? '!text-amber-300' : ''}`}>{fav ? '♥' : '♡'}</button>
                 </li>
               );
             })}
@@ -300,9 +299,9 @@ export function LiveRadioDirectory({ onPlay, onTuned, compact = false, wide = fa
         <span className="text-[11px] text-neutral-500">{compact ? 'A silent station may be offline.' : 'Checked by a server probe, not a play test: a silent station may be offline.'}</span>
         {data && data.total > data.pageSize && (
           <nav aria-label="Pages" className="flex items-center gap-2">
-            <button type="button" disabled={data.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page" className="rounded border border-neutral-700 px-2 py-0.5 hover:bg-neutral-800 disabled:opacity-40 cursor-pointer">‹</button>
+            <button type="button" disabled={data.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page" className="ck-key ck-key--icon">‹</button>
             <span className="tabular-nums">{data.page} / {pages}</span>
-            <button type="button" disabled={data.page >= pages} onClick={() => setPage((p) => Math.min(pages, p + 1))} aria-label="Next page" className="rounded border border-neutral-700 px-2 py-0.5 hover:bg-neutral-800 disabled:opacity-40 cursor-pointer">›</button>
+            <button type="button" disabled={data.page >= pages} onClick={() => setPage((p) => Math.min(pages, p + 1))} aria-label="Next page" className="ck-key ck-key--icon">›</button>
           </nav>
         )}
       </div>

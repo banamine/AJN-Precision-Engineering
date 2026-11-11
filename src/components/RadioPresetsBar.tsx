@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKe
 import { Search } from 'lucide-react';
 import { FreshnessTag } from './FreshnessTag';
 import { RadioSpectrum } from './RadioSpectrum';
+import { LiveSongDeck } from './LiveSongDeck';
 import { ScheduleDeck } from './ScheduleDeck';
 import { freshness } from '../utils/listenCatalog';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
@@ -104,7 +105,7 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
           return (
             <li key={it.id}>
               <button type="button" data-testid="radio-deck-pick" aria-current={on ? 'true' : undefined} onClick={() => onPick(it)}
-                className={`flex !min-h-[48px] w-full cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-left touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${on ? 'border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border-white/10 bg-white/5 text-neutral-100 hover:border-[#E06D3B]/60'}`}>
+                className="ck-key ck-key--row !min-h-[48px] gap-2 rounded-lg !py-1.5">
                 <span aria-hidden="true" className={`text-xs ${on ? 'text-[#F9A56D]' : 'text-neutral-500'}`}>{on ? '▶' : '•'}</span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{it.title}</span>{it.subtitle ? <span className="block truncate text-[11px] text-neutral-400">{it.subtitle}</span> : null}</span>
                 <FreshnessTag publishedAt={it.publishedAt} />
@@ -355,12 +356,12 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
       <div role="group" aria-label="Radio preset banks" className="flex items-center gap-1 px-3 pt-2">
         {([['presets', 'My presets'], ['recent', 'Recent']] as const).map(([id, text]) => (
           <button key={id} type="button" data-testid={`radio-bank-${id}`} aria-pressed={bank === id} onClick={() => openBank(id)}
-            className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${bank === id ? 'bg-neutral-800 text-orange-300' : 'text-neutral-400 hover:text-neutral-200'}`}>{text}</button>
+            className="ck-key ck-key--sm">{text}</button>
         ))}
         <div role="group" aria-label="Preset view" className="ml-auto flex items-center gap-1">
           {([['wall', 'Wall'], ['unit', 'Head unit']] as const).map(([id, text]) => (
             <button key={id} type="button" data-testid={`radio-view-${id}`} aria-pressed={view === id} onClick={() => setView(id)}
-              className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${view === id ? 'bg-neutral-800 text-orange-300' : 'text-neutral-400 hover:text-neutral-200'}`}>{text}</button>
+              className="ck-key ck-key--sm">{text}</button>
           ))}
         </div>
       </div>
@@ -453,21 +454,18 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                     {([['music', 'Music channels'], ['concerts', 'Live concerts'], ['fm', 'FM broadcasts']] as const).map(([k, text]) => (
                       <button key={k} type="button" data-testid={`radio-sub-${k}`} aria-pressed={sub === k}
                         onClick={() => { setSub(k); setListPage(0); setBrowse(false); setStoreArmed(false); if (k === 'concerts') deckSources?.loadConcerts?.(); }}
-                        className={`min-h-[36px] cursor-pointer rounded-full px-3 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${sub === k ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-white/15 text-neutral-300 hover:text-white'}`}>{text}</button>
+                        className="ck-key ck-key--sm">{text}</button>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div data-testid="radio-head-unit-spectrum" className={`flex min-h-[112px] flex-col rounded-2xl p-4 md:col-start-2 md:row-start-1 ${mode !== 'live' ? '' : 'justify-center'}`} style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+              <div data-testid="radio-head-unit-spectrum" className={`flex min-h-[112px] flex-col rounded-2xl p-4 md:col-start-2 md:row-start-1 `} style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
                 {mode !== 'live' ? (
                   <ScheduleDeck bank={mode === 'podcasts' ? 'podcasts' : sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} />
-                ) : (<>
-                <div className="mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                  <span className="text-[#E06D3B]">Spectrum</span>
-                </div>
-                <RadioSpectrum className="!h-24" playing={live || Boolean(playingNow)} />
-                </>)}
+                ) : (
+                  <LiveSongDeck stationId={playing?.channelId} stationTitle={playing?.title} playing={live || Boolean(playingNow)} />
+                )}
               </div>
 
               <div className="space-y-2 md:col-span-2 md:row-start-2">
@@ -546,13 +544,13 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                     })}
                   </div>
                   )}
-                  <div className="flex h-12 w-full shrink-0 overflow-hidden rounded-xl border border-white/25 sm:h-auto sm:w-[104px]" style={keyBg}>
+                  <div className="flex h-12 w-full shrink-0 gap-2 sm:h-auto sm:w-[136px]">
                     <button type="button" data-testid="radio-preset-bank" aria-label={`Bank: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`}
                       onClick={() => { if (mode === 'live') openBank(bank === 'presets' ? 'recent' : 'presets'); else if (!browse) { setBrowse(true); setListPage(0); say(`${bankLabel}: browsing, 5 at a time`); } else if (modeItems.length > (listPage + 1) * 5) setListPage((pg) => pg + 1); else { setBrowse(false); setListPage(0); say(`${bankLabel}: my keys`); } }}
-                      className="flex-1 h-12 !min-h-[48px] !min-w-[48px] cursor-pointer text-[11px] font-bold tracking-wider text-neutral-100 hover:text-white touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">BANK</button>
+                      className="ck-key ck-key--sm h-12 flex-1 text-[11px] font-bold tracking-wider">BANK</button>
                     <button type="button" data-testid="radio-preset-store" aria-pressed={storeArmed} aria-label="Store: press, then a preset key, to save the playing station"
                       onClick={() => { if (mode === 'live' && !playing) { say('Play a station first, then press Store and a preset key.'); return; } if (mode !== 'live' && browse) { setBrowse(false); } setStoreArmed((v) => !v); say(storeArmed ? 'Store cancelled' : 'Store armed: press a preset key'); }}
-                      className={`flex-1 h-12 !min-h-[48px] !min-w-[48px] cursor-pointer border-l border-white/20 text-[11px] font-bold tracking-wider touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${storeArmed ? 'bg-[#E06D3B] text-[#0F1117]' : 'text-neutral-100 hover:text-white'}`}>STORE</button>
+                      className="ck-key ck-key--sm h-12 flex-1 text-[11px] font-bold tracking-wider">STORE</button>
                   </div>
                 </div>
               </div>
@@ -590,8 +588,8 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                   </button>
                 </div>
                 <div className="flex min-w-0 flex-1 gap-2">
-                  <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => turn(-1)} style={{ ...keyBg, minWidth: '48px', minHeight: '48px' }} className="flex h-12 w-12 !min-h-[48px] !min-w-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-white/25 text-xs font-bold uppercase tracking-wider text-neutral-100 hover:text-white active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"><span aria-hidden="true">‹</span> Prev</button>
-                  <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => turn(1)} style={{ ...keyBg, minWidth: '48px', minHeight: '48px' }} className="flex h-12 w-12 !min-h-[48px] !min-w-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-white/25 text-xs font-bold uppercase tracking-wider text-neutral-100 hover:text-white active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">Next <span aria-hidden="true">›</span></button>
+                  <button type="button" data-testid="radio-head-unit-prev" aria-label="Previous station" onClick={() => turn(-1)} className="ck-key h-12 w-12 flex-1 text-xs font-bold uppercase tracking-wider"><span aria-hidden="true">‹</span> Prev</button>
+                  <button type="button" data-testid="radio-head-unit-next" aria-label="Next station" onClick={() => turn(1)} className="ck-key h-12 w-12 flex-1 text-xs font-bold uppercase tracking-wider">Next <span aria-hidden="true">›</span></button>
                 </div>
                 </div>
               </div>
@@ -636,7 +634,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             onPick={(it) => { it.play(); setKnobAngle((a) => a + 36); say(`Playing ${it.title}`); }} />
         )}
         <div className="relative mt-3 flex justify-end">
-          <button type="button" data-testid="radio-view-wall" onClick={() => setView('wall')} className="cursor-pointer rounded-md px-2 py-1 text-[11px] text-neutral-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">Show wall view</button>
+          <button type="button" data-testid="radio-view-wall" onClick={() => setView('wall')} className="ck-key ck-key--sm text-[11px]">Show wall view</button>
         </div>
       </div>
       ) : bank === 'presets' ? (
@@ -646,12 +644,12 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const active = Boolean(p && playing && p.channelId === playing.channelId);
           const isHolding = holding === slot;
           const theme = p ? getStationTheme(p.channelId, p.title, p.logo ?? getStationArt(p.channelId)) : null;
-          const base = 'relative flex h-[112px] min-w-0 select-none flex-col overflow-hidden rounded-xl text-left transition-transform active:scale-95 motion-reduce:transition-none cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400';
+          const base = 'ck-key !flex h-[112px] min-w-0 !flex-col !items-stretch !justify-start overflow-hidden !p-0 !pt-2 text-left';
           const tone = !p
-            ? 'border border-dashed border-neutral-700/60 bg-neutral-900/40 text-neutral-400 hover:border-neutral-500 hover:bg-neutral-900'
+            ? 'ck-key--empty border-dashed text-neutral-400'
             : active
-              ? 'border border-orange-500 bg-orange-500/15 text-white'
-              : 'border border-neutral-700/80 bg-neutral-900/90 text-neutral-100 shadow-sm hover:border-orange-500/60';
+              ? 'is-latched border-orange-500 text-white'
+              : 'text-neutral-100';
           const label = p
             ? `Preset ${slot}: ${p.title}${p.number ? `, station ${p.number}` : ''}${active ? (live ? ', playing now' : ', current station') : ''}. Tap to tune. Press and hold, or Shift+Enter, to replace it with the playing station.`
             : `Preset ${slot}, empty. Press and hold, or Shift+Enter, to save the playing station here.`;
@@ -698,7 +696,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
         {!wide && (
           <button type="button" data-testid="radio-all-stations"
             onClick={() => document.querySelector<HTMLElement>('[data-testid="live-radio-search"]')?.focus()}
-            className="flex h-[112px] min-w-0 cursor-pointer select-none flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-neutral-700/60 bg-neutral-900/30 px-2 text-center text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400">
+            className="ck-key ck-key--empty !flex h-[112px] min-w-0 !flex-col text-center text-neutral-400">
             <Search className="h-5 w-5" aria-hidden="true" />
             <span className="text-xs font-semibold">All stations</span>
           </button>
@@ -718,7 +716,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
               aria-label={`${r.title}${isNow ? (live ? ', playing now' : ', current station') : ''}. Tap to tune.`}
               onClick={() => tuneRecent(r)}
               style={isNow ? { boxShadow: `0 0 0 2px ${color}` } : { borderColor: `${color}50` }}
-              className={`relative flex h-[112px] min-w-0 cursor-pointer select-none flex-col overflow-hidden rounded-xl border text-left active:scale-95 motion-reduce:transition-none touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${isNow ? 'border-orange-500 bg-orange-500/15 text-white' : 'border-neutral-700/80 bg-neutral-900/90 text-neutral-100 hover:border-orange-500/60'}`}>
+              className={`ck-key !flex h-[112px] min-w-0 !flex-col !items-stretch !justify-start overflow-hidden !p-0 !pt-2 text-left ${isNow ? 'is-latched border-orange-500 text-white' : 'text-neutral-100'}`}>
               <span className="relative flex h-[72px] w-full shrink-0 items-center justify-center overflow-hidden" style={{ background: `${color}33` }}>
                 {showLogo ? (
                   <img src={logoSrc} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false}
@@ -744,10 +742,10 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           className="absolute left-3 top-full z-[5] w-56 overflow-hidden rounded-xl border border-red-700/70 bg-neutral-950 text-neutral-100 shadow-2xl">
           <button type="button" role="menuitem" data-testid="radio-preset-menu-assign" disabled={!playing}
             onClick={() => { assign(menu); setMenu(null); }}
-            className="block w-full cursor-pointer px-3 py-2.5 text-left text-sm hover:bg-neutral-800 focus:bg-neutral-800 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 touch-manipulation">Assign playing station</button>
+            className="ck-key ck-key--row ck-key--sm !rounded-none text-sm">Assign playing station</button>
           <button type="button" role="menuitem" data-testid="radio-preset-menu-clear" disabled={!presets[menu]}
             onClick={() => { const n = menu; clearRadioPreset(n); say(`Preset ${n} cleared`); setMenu(null); }}
-            className="block w-full cursor-pointer border-t border-neutral-800 px-3 py-2.5 text-left text-sm hover:bg-neutral-800 focus:bg-neutral-800 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 touch-manipulation">Clear preset</button>
+            className="ck-key ck-key--row ck-key--sm !rounded-none text-sm">Clear preset</button>
         </div>
       )}
     </div>

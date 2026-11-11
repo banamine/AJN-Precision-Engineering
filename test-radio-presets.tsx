@@ -71,7 +71,7 @@ assert.match(html, /src="https:\/\/l\.example\/a\.png"/);
 // preset 2 matches the playing station: active styling + one live dot, preset 1 is not active
 assert.equal((html.match(/radio-preset-live/g) ?? []).length, 1);
 assert.match(html, /aria-current="true"/); assert.equal((html.match(/aria-current="true"/g) ?? []).length, 1);
-assert.match(html, /border-orange-500 bg-orange-500\/15/);
+assert.match(html, /is-latched border-orange-500/);
 // paused: still marked current, no live dot
 html = renderToStaticMarkup(createElement(RadioPresetsBar, { station: playingNow, live: false, onPlay: noop }));
 assert.doesNotMatch(html, /radio-preset-live/); assert.match(html, /current station/);

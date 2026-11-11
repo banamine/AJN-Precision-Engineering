@@ -183,8 +183,8 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
       onFocus={(e) => setBtnHold(e.currentTarget.matches(':focus-visible'))} onBlur={() => setBtnHold(false)}
       title="Live Radio: tap to open, press and hold for recent stations"
       className={dockButtonHost
-        ? `ajn-redesign-surface ajn-radio-dock-inline relative flex h-11 w-11 min-h-[44px] min-w-[44px] select-none items-center justify-center overflow-hidden rounded-lg transition active:scale-95 touch-manipulation focus:outline-none focus-visible:ring-2 ${btnHold ? 'ring-1 ring-[var(--ajn-accent)]' : ''}`
-        : `ajn-redesign-surface fixed right-3 sm:right-6 ${lift} z-[45] flex !min-h-[48px] select-none items-center gap-2 overflow-hidden rounded-full border border-[var(--ajn-line)] bg-[var(--ajn-card-2)] px-4 text-sm font-extrabold uppercase tracking-wider text-[var(--ajn-accent)] shadow-lg transition-[opacity,transform] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:border-[var(--ajn-accent)] active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]`}>
+        ? `ajn-redesign-surface ajn-radio-dock-inline ck-key ck-key--icon h-11 w-11 select-none overflow-hidden ${btnHold ? 'ring-1 ring-[var(--ajn-accent)]' : ''}`
+        : `ajn-redesign-surface ck-key !fixed right-3 sm:right-6 ${lift} z-[45] !min-h-[48px] select-none gap-2 overflow-hidden !rounded-full px-4 text-sm font-extrabold uppercase tracking-wider !text-[var(--ajn-accent)] transition-[opacity,transform] duration-700 motion-reduce:duration-0 ${btnFaded ? 'opacity-0 pointer-events-none' : 'opacity-100'} hover:border-[var(--ajn-accent)] active:scale-95 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]`}>
       {ripples.map((r) => (
         <span key={r.id} aria-hidden="true" data-testid="radio-ripple" className="ajn-ripple" style={{ left: r.x - r.size / 2, top: r.y - r.size / 2, width: r.size, height: r.size }} />
       ))}
@@ -208,7 +208,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
             const current = r.channelId === stationId;
             return (
               <button key={r.channelId} type="button" role="menuitem" data-testid="radio-quick-item" aria-current={current ? 'true' : undefined} onClick={() => switchTo(r)}
-                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left hover:bg-neutral-800 focus:bg-neutral-800 focus:outline-none touch-manipulation">
+                className="ck-key ck-key--row !rounded-none gap-2 !py-2.5">
                 <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${current ? 'bg-emerald-300' : 'bg-neutral-700'}`} />
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{r.title}</span>{r.subtitle && <span className="block truncate text-[11px] text-neutral-400">{r.subtitle}</span>}</span>
                 {current && <span className="shrink-0 text-[10px] font-bold uppercase text-emerald-300">{live ? 'Playing' : 'Current'}</span>}
@@ -216,7 +216,7 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
             );
           })}
           <button type="button" role="menuitem" data-testid="radio-quick-open" onClick={show}
-            className="flex w-full cursor-pointer items-center gap-2 border-t border-neutral-800 px-3 py-2.5 text-left text-sm text-orange-200 hover:bg-neutral-800 focus:bg-neutral-800 focus:outline-none touch-manipulation">
+            className="ck-key ck-key--row !rounded-none gap-2 !py-2.5 text-sm !text-orange-200">
             <Radio className="h-4 w-4" aria-hidden="true" /> Open full Radio
           </button>
         </div>
@@ -233,15 +233,15 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
             <p className="truncate text-[10px] leading-tight text-orange-100">US + Canada · plays while you browse</p>
           </div>
           <button type="button" data-testid="radio-dock-full" onClick={() => setFull((f) => !f)} aria-pressed={full} aria-label={full ? 'Exit full screen' : 'Full screen'} title={full ? 'Exit full screen' : 'Full screen: see more stations'}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation">
+            className="ck-key ck-key--icon">
             {full ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
           </button>
           <button type="button" onClick={hide} aria-label="Minimise radio (keeps playing)" title="Minimise (keeps playing)"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation">
+            className="ck-key ck-key--icon">
             <ChevronDown className="h-5 w-5" />
           </button>
           <button type="button" data-testid="radio-dock-close" onClick={hide} aria-label="Close radio panel" title="Close"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation">
+            className="ck-key ck-key--icon">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -259,15 +259,15 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
                 <p className="truncate text-xs text-neutral-400">{live ? 'Playing' : media.attached ? 'Paused' : 'Loading…'}{station.subtitle ? ` · ${station.subtitle}` : ''}</p>
               </div>
               <button type="button" onClick={media.toggle} disabled={!media.attached} aria-label={media.paused ? 'Play' : 'Pause'}
-                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-white disabled:opacity-40 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation">
+                className="ck-key ck-key--icon h-12 w-12 shrink-0 !rounded-full !text-[#F9A56D]">
                 {media.paused ? <Play className="ml-0.5 h-5 w-5 fill-current" /> : <Pause className="h-5 w-5" />}
               </button>
               <button type="button" onClick={media.toggleMute} disabled={!media.attached} aria-pressed={media.muted} aria-label={media.muted ? 'Unmute' : 'Mute'}
-                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-neutral-800 text-neutral-100 hover:bg-neutral-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 touch-manipulation">
+                className="ck-key ck-key--icon shrink-0">
                 {media.muted ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
               </button>
               <button type="button" onClick={() => { hide(); onNavigate('player'); }} aria-label="Open the full player (visualizer)" title="Full player and visualizer"
-                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-neutral-800 text-neutral-100 hover:bg-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 touch-manipulation">
+                className="ck-key ck-key--icon shrink-0">
                 <Maximize2 className="h-4 w-4" />
               </button>
             </>
