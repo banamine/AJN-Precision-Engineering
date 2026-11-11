@@ -17,6 +17,7 @@ import { RadioPresetsBar } from './RadioPresetsBar';
 import { usePersistentMedia } from '../hooks/usePersistentMedia';
 import { useDigest } from '../hooks/useDigest';
 import { DailyBriefing, NewsTicker } from './DailyBriefing';
+import { DEFAULT_DRAWER_PREFS, PREVIEW_COUNT, latestResumable, nextDrawerStage, readRadioDrawerPrefs, stageLimit, toggleDrawer, writeRadioDrawerPrefs, type DrawerStage, type RadioDrawerPrefs } from '../utils/radioDrawers';
 import '../radio.css';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -179,6 +180,8 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
     else setFilter(NO_FILTER);
     const list = playingHere ? entries : playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive;
     setVisible(Math.max(PAGE_SIZE, list.indexOf(playingEntry) + 1));
+    // The card must be on screen to scroll to: a closed or Top-4 drawer opens as far as this episode needs.
+    if (list.indexOf(playingEntry) >= PREVIEW_COUNT) setStage('listenStage', 'full'); else if (prefs.listenStage === 'closed') setStage('listenStage', 'preview');
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const card = gridRef.current?.querySelector<HTMLElement>('[aria-current="true"]');
       if (!card) return;
@@ -188,13 +191,59 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   };
 
   const { music, podcastEps, spoken, spokenError, loadSpoken, concerts, concertsError, loadConcerts, playItem, presetFor, deckSources } = useListenDeck(onPlayProgram);
-  const [findOpen, setFindOpen] = useState(false);
+  const [prefs, setPrefs] = useState<RadioDrawerPrefs>(() => readRadioDrawerPrefs());
+  useEffect(() => { writeRadioDrawerPrefs(prefs); }, [prefs]);
+  const setStage = (key: 'listenStage' | 'fullShowsStage' | 'briefingStage', stage: DrawerStage) => setPrefs((p) => ({ ...p, [key]: stage }));
+  const findOpen = prefs.findOpen;
+  const listenOpen = prefs.listenStage !== 'closed';
+  const setFindOpen = (fn: (open: boolean) => boolean) => setPrefs((p) => ({ ...p, findOpen: fn(p.findOpen) }));
+  const resumable = useMemo(() => latestResumable(recentlyPlayed, everyEntry), [recentlyPlayed, everyEntry]);
+  const latestDay = showDays[0] ?? null;
+  const latestAudio = latestDay ? planFullShow(latestDay, 'audio') : null;
+  const latestVideo = latestDay ? planFullShow(latestDay, 'video') : null;
   const [listenBackOpen, setListenBackOpen] = useState(false);
+
+  const renderCard = (entry: RadioEntry) => {
+    const playing = isPlayingEntry(entry, nowPlaying?.programId);
+    const saved = progressById.get(entry.id) ?? progressById.get(`${entry.id}:video`) ?? 0;
+    const fraction = playing && liveMedia.duration > 0 ? Math.min(1, liveMedia.currentTime / liveMedia.duration) : 0;
+    return (
+      <li key={entry.id} className={`ajr-card ${playing ? 'playing' : ''}`} data-testid="radio-entry">
+        <button type="button" className="ajr-card-open" aria-current={playing ? 'true' : undefined} onClick={() => playEntry(entry)}>
+          <span className="ajr-cover" data-show={showKey(entry)} aria-hidden="true"><span>AJN<br />{showInitials(entry) === 'AJN' ? 'AUDIO' : showInitials(entry)}</span><Headphones size={20} /></span>
+          <span className="ajr-card-meta">
+            <span className="ajr-label">{showLabel(showKey(entry)).toUpperCase()} · {typeLabel(typeKey(entry)).toUpperCase()}</span>
+            <strong>{entry.title}</strong>
+            {entry.airDate && !entry.needsReview ? <small>Aired {formatAirDate(entry.airDate)}</small> : <small className="warn">Date not verified from filename</small>}
+            <span className="ajr-card-play"><Play size={14} fill="currentColor" /> {playing ? (liveMedia.paused ? 'PAUSED' : 'PLAYING') : 'LISTEN TO EPISODE'}{!playing && saved >= 5 && <span className="ajr-card-resume">RESUME {formatClock(saved)}</span>}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="ajr-fullshow-btn"
+          aria-label={`Play full show: ${entry.title}`}
+          title="Play Full Show (High-Visibility Drive Mode)"
+          onClick={(e) => {
+            e.stopPropagation();
+            const day = entry.airDate && entry.classified.showSlug ? dayByKey.get(`${entry.airDate}|${entry.classified.showSlug}`) : undefined;
+            if (day) playFullShow(day, 'audio'); else playEntry(entry);
+          }}
+        >
+          <span className="ajr-fullshow-icon">
+            <Play size={16} fill="currentColor" />
+          </span>
+          <span className="ajr-fullshow-text">FULL SHOW</span>
+        </button>
+        {entry.videoUrl && <button type="button" className="ajr-video" aria-label={`Watch video: ${entry.title}`} onClick={() => playVideo(entry)}><Tv size={12} /> VIDEO</button>}
+        {fraction > 0 && <span className="ajr-bar" role="progressbar" aria-label="Played so far" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)}><i style={{ width: `${Math.round(fraction * 100)}%` }} /></span>}
+      </li>
+    );
+  };
 
   const show = showChips(entries);
   const type = typeChips(entries);
   const label = AJN_CHANNEL_LABELS[channel];
-  const page = shown.slice(0, visible);
+  const page = prefs.listenStage === 'preview' ? shown.slice(0, PREVIEW_COUNT) : shown.slice(0, visible);
 
   useEffect(() => { document.body.dataset.ajnPage = 'radio'; return () => { delete document.body.dataset.ajnPage; }; }, []);
   return (
@@ -212,9 +261,18 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
       {!listenBackOpen && (<>
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
+      <div role="group" aria-label="Radio drawers" data-testid="radio-drawer-master" className="ajr-section flex flex-wrap items-center gap-2">
+        <span className="ajr-label" data-testid="radio-drawer-status">Drawers · Find &amp; save {prefs.findOpen ? 'open' : 'closed'} · Listen back {prefs.listenStage} · Full shows {prefs.fullShowsStage} · Briefing {prefs.briefingStage}</span>
+        <button type="button" className="ck-key ck-key--sm" data-testid="drawers-collapse-all" aria-pressed={!prefs.findOpen && prefs.listenStage === 'closed' && prefs.fullShowsStage === 'closed' && prefs.briefingStage === 'closed'}
+          onClick={() => setPrefs({ findOpen: false, listenStage: 'closed', fullShowsStage: 'closed', briefingStage: 'closed' })}>Collapse all</button>
+        <button type="button" className="ck-key ck-key--sm" data-testid="drawers-preview-all" aria-pressed={prefs.listenStage === 'preview' && prefs.fullShowsStage === 'preview' && prefs.briefingStage === 'preview'}
+          onClick={() => setPrefs((p) => ({ ...p, listenStage: 'preview', fullShowsStage: 'preview', briefingStage: 'preview' }))}>Preview top {PREVIEW_COUNT}</button>
+        <button type="button" className="ck-key ck-key--sm" data-testid="drawers-expand-all" aria-pressed={prefs.listenStage === 'full' && prefs.fullShowsStage === 'full' && prefs.briefingStage === 'full'}
+          onClick={() => setPrefs((p) => ({ ...p, listenStage: 'full', fullShowsStage: 'full', briefingStage: 'full' }))}>Expand all</button>
+      </div>
 
       <section className="ajr-section" aria-label="Find and save drawer" data-testid="find-drawer">
-        <button type="button" className="ck-key" data-testid="find-drawer-toggle" aria-expanded={findOpen} aria-controls="ajr-find" onClick={() => setFindOpen((o) => !o)}>
+        <button type="button" className={`ck-key${findOpen ? ' is-latched' : ''}`} data-testid="find-drawer-toggle" aria-expanded={findOpen} aria-controls="ajr-find" onClick={() => setFindOpen((o) => !o)}>
           {findOpen ? 'Hide' : 'Find & save'} · {music.length.toLocaleString()} music · {podcastEps.length.toLocaleString()} podcast episodes{concerts ? ` · ${concerts.length.toLocaleString()} concerts` : ''}
         </button>
         {findOpen && (
@@ -224,7 +282,28 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>
+        <div className="mb-3 flex flex-wrap items-center gap-2" data-testid="listen-drawer-bar">
+          <button type="button" className={`ck-key${listenOpen ? ' is-latched' : ''}`} data-testid="listen-archive-toggle" aria-expanded={listenOpen} aria-controls="ajr-listen-body"
+            onClick={() => setStage('listenStage', toggleDrawer(prefs.listenStage))}>
+            {listenOpen ? 'Hide' : 'Show'} Listen back · {catalog.radio.length} AJN Radio · {catalog.exclusive.length} Exclusive
+          </button>
+          {listenOpen && shown.length > PREVIEW_COUNT && (
+            <button type="button" className="ck-key ck-key--sm" data-testid="listen-stage-toggle" onClick={() => setStage('listenStage', nextDrawerStage(prefs.listenStage))}>
+              {prefs.listenStage === 'preview' ? `Full archive (${shown.length})` : `Top ${PREVIEW_COUNT} only`}
+            </button>
+          )}
+          {resumable && (
+            <button type="button" className="ck-key ck-key--sm" data-testid="drawer-quick-resume"
+              onClick={() => (resumable.video && resumable.entry.videoUrl ? playVideo(resumable.entry) : playEntry(resumable.entry))}>
+              Resume · {resumable.entry.title} ({formatClock(resumable.seconds)})
+            </button>
+          )}
+        </div>
         {error && <p className="ajr-status ajr-status-error" role="alert">{error}</p>}
+        {!listenOpen && playingEntry && (
+          <div data-testid="listen-pinned"><div className="ajr-label mb-1">PINNED · NOW PLAYING</div><ul className="ajr-grid">{renderCard(playingEntry)}</ul></div>
+        )}
+        {listenOpen && (<div id="ajr-listen-body">
         {loading && items.length === 0 && !error && <p className="ajr-status" role="status">Loading AJN feeds…</p>}
         <div className="ajr-tabs" role="tablist" aria-label="AJN channels">
           {CHANNELS.map(id => <button key={id} type="button" role="tab" aria-selected={channel === id} className={`ajr-tab ${channel === id ? 'selected' : ''}`} onClick={() => selectChannel(id)}><Headphones size={14} /><span>{AJN_CHANNEL_LABELS[id]}</span><small>{(id === 'ajn-radio' ? catalog.radio : catalog.exclusive).length}</small></button>)}
@@ -251,49 +330,36 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
         {entries.length === 0 && !loading && <div className="ajr-empty">No {label} episodes in the current feeds.</div>}
         {entries.length > 0 && shown.length === 0 && <p className="ajr-status" role="status">No episodes match these filters.</p>}
         <ul className="ajr-grid" ref={gridRef}>
-          {page.map(entry => {
-            const playing = isPlayingEntry(entry, nowPlaying?.programId);
-            const saved = progressById.get(entry.id) ?? progressById.get(`${entry.id}:video`) ?? 0;
-            const fraction = playing && liveMedia.duration > 0 ? Math.min(1, liveMedia.currentTime / liveMedia.duration) : 0;
-            return (
-              <li key={entry.id} className={`ajr-card ${playing ? 'playing' : ''}`} data-testid="radio-entry">
-                <button type="button" className="ajr-card-open" aria-current={playing ? 'true' : undefined} onClick={() => playEntry(entry)}>
-                  <span className="ajr-cover" data-show={showKey(entry)} aria-hidden="true"><span>AJN<br />{showInitials(entry) === 'AJN' ? 'AUDIO' : showInitials(entry)}</span><Headphones size={20} /></span>
-                  <span className="ajr-card-meta">
-                    <span className="ajr-label">{showLabel(showKey(entry)).toUpperCase()} · {typeLabel(typeKey(entry)).toUpperCase()}</span>
-                    <strong>{entry.title}</strong>
-                    {entry.airDate && !entry.needsReview ? <small>Aired {formatAirDate(entry.airDate)}</small> : <small className="warn">Date not verified from filename</small>}
-                    <span className="ajr-card-play"><Play size={14} fill="currentColor" /> {playing ? (liveMedia.paused ? 'PAUSED' : 'PLAYING') : 'LISTEN TO EPISODE'}{!playing && saved >= 5 && <span className="ajr-card-resume">RESUME {formatClock(saved)}</span>}</span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="ajr-fullshow-btn"
-                  aria-label={`Play full show: ${entry.title}`}
-                  title="Play Full Show (High-Visibility Drive Mode)"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const day = entry.airDate && entry.classified.showSlug ? dayByKey.get(`${entry.airDate}|${entry.classified.showSlug}`) : undefined;
-                    if (day) playFullShow(day, 'audio'); else playEntry(entry);
-                  }}
-                >
-                  <span className="ajr-fullshow-icon">
-                    <Play size={16} fill="currentColor" />
-                  </span>
-                  <span className="ajr-fullshow-text">FULL SHOW</span>
-                </button>
-                {entry.videoUrl && <button type="button" className="ajr-video" aria-label={`Watch video: ${entry.title}`} onClick={() => playVideo(entry)}><Tv size={12} /> VIDEO</button>}
-                {fraction > 0 && <span className="ajr-bar" role="progressbar" aria-label="Played so far" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)}><i style={{ width: `${Math.round(fraction * 100)}%` }} /></span>}
-              </li>
-            );
-          })}
+          {page.map(renderCard)}
         </ul>
-        {shown.length > visible && <button type="button" className="ajr-more" onClick={() => setVisible(count => count + PAGE_SIZE)}>MORE FROM {label.toUpperCase()} <ArrowDownRight size={14} /></button>}
-        <FullShowDays days={showDays.slice(0, 12)} onPlay={playFullShow} />
+        </div>)}
+        {listenOpen && prefs.listenStage === 'full' && shown.length > visible && <button type="button" className="ajr-more" onClick={() => setVisible(count => count + PAGE_SIZE)}>MORE FROM {label.toUpperCase()} <ArrowDownRight size={14} /></button>}
+        {showDays.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-2" data-testid="full-shows-bar">
+            <button type="button" className={`ck-key${prefs.fullShowsStage !== 'closed' ? ' is-latched' : ''}`} data-testid="full-shows-drawer-toggle" aria-expanded={prefs.fullShowsStage !== 'closed'}
+              onClick={() => setStage('fullShowsStage', toggleDrawer(prefs.fullShowsStage))}>
+              {prefs.fullShowsStage === 'closed' ? 'Show' : 'Hide'} Full shows by day · {showDays.length}
+            </button>
+            {prefs.fullShowsStage !== 'closed' && showDays.length > PREVIEW_COUNT && (
+              <button type="button" className="ck-key ck-key--sm" data-testid="full-shows-stage-toggle" onClick={() => setStage('fullShowsStage', nextDrawerStage(prefs.fullShowsStage))}>
+                {prefs.fullShowsStage === 'preview' ? `All ${Math.min(showDays.length, 12)} days` : `Top ${PREVIEW_COUNT} days`}
+              </button>
+            )}
+            {latestDay && latestAudio?.playable && (
+              <button type="button" className="ck-key ck-key--sm" data-testid="drawer-quick-fullshow" onClick={() => playFullShow(latestDay, 'audio')}>
+                Play latest full show · {latestDay.showName} ({formatAirDate(latestDay.airDate)})
+              </button>
+            )}
+            {latestDay && latestVideo?.playable && (
+              <button type="button" className="ck-key ck-key--sm" data-testid="drawer-quick-fullshow-video" onClick={() => playFullShow(latestDay, 'video')}>Latest video</button>
+            )}
+          </div>
+        )}
+        <FullShowDays days={showDays.slice(0, Math.min(12, stageLimit(prefs.fullShowsStage, 12)))} onPlay={playFullShow} />
       </section>
       </>)}
 
-      <DailyBriefing news={news} />
+      <DailyBriefing news={news} stage={prefs.briefingStage} onStageChange={(next) => setStage('briefingStage', next)} />
 
       <section className="ajr-hero">
         <div>
