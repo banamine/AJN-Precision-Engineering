@@ -23,7 +23,7 @@ export const isSyncable = (nowPlaying: NowPlayingMedia | null | undefined): nowP
   Boolean(nowPlaying && nowPlaying.channelId === AJN_SYNC_CHANNEL && nowPlaying.programId && (nowPlaying.mediaType === 'audio' || nowPlaying.mediaType === 'video'));
 
 let catalogCache: { at: number; promise: Promise<RadioEntry[]> } | null = null;
-function loadEntries(): Promise<RadioEntry[]> {
+export function loadEntries(): Promise<RadioEntry[]> {
   if (catalogCache && Date.now() - catalogCache.at < CATALOG_TTL_MS) return catalogCache.promise;
   const promise = loadAjnFeeds(new AbortController().signal)
     .then(({ items }) => { const c = buildRadioCatalog(items.filter(i => i.url).map(i => ({ id: i.id, title: i.title, url: i.url!, mediaType: i.mediaType, publishedAt: i.publishedAt }))); return [...c.radio, ...c.exclusive]; })

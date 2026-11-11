@@ -2,8 +2,8 @@
 // this muted <video> follows its play/pause/seek and is nudged back whenever it drifts. It never makes sound,
 // never creates an AudioContext, and is removed when the episode changes.
 import { useEffect, useRef, useState } from 'react';
-import { Maximize2, PictureInPicture2, X } from 'lucide-react';
-import { usePip, pipStore } from '../utils/avSyncPip';
+import { GripHorizontal, Maximize2, PictureInPicture2, X } from 'lucide-react';
+import { usePip, pipStore, clampPipPos, readPipPos, PIP_POS_KEY, type PipPos } from '../utils/avSyncPip';
 import { findPersistentMedia } from '../hooks/usePersistentMedia';
 import { bridgeSrc } from '../utils/mediaRoute';
 import { needsDriftCorrection } from '../utils/avSync';
@@ -17,6 +17,35 @@ export function SyncedVideoPip({ nowPlaying, onPlay, onNavigate }: { nowPlaying:
   const { hardSwitch } = useAvSwitch(nowPlaying, onPlay, onNavigate);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const boxRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+  const [pos, setPos] = useState<PipPos | null>(() => { try { return typeof localStorage === 'undefined' ? null : readPipPos(localStorage); } catch { return null; } });
+  const place = (next: PipPos): void => {
+    const box = boxRef.current; if (!box) return;
+    const r = box.getBoundingClientRect();
+    const clamped = clampPipPos(next, { w: r.width, h: r.height }, { w: window.innerWidth, h: window.innerHeight });
+    setPos(clamped);
+    try { localStorage.setItem(PIP_POS_KEY, JSON.stringify(clamped)); } catch { /* storage unavailable: position lasts this visit */ }
+  };
+  const onDragStart = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    const r = boxRef.current?.getBoundingClientRect(); if (!r) return;
+    dragRef.current = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onDragMove = (e: React.PointerEvent<HTMLDivElement>): void => { const d = dragRef.current; if (d) place({ x: e.clientX - d.dx, y: e.clientY - d.dy }); };
+  const onDragEnd = (e: React.PointerEvent<HTMLDivElement>): void => { dragRef.current = null; try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* not captured */ } };
+  const onHandleKey = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    const step = e.shiftKey ? 48 : 16; const r = boxRef.current?.getBoundingClientRect(); if (!r) return;
+    const move: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+    const m = move[e.key]; if (!m) return;
+    e.preventDefault(); place({ x: r.left + m[0], y: r.top + m[1] });
+  };
+  useEffect(() => {
+    if (!pos) return;
+    const onResize = (): void => { const r = boxRef.current?.getBoundingClientRect(); if (r) setPos(clampPipPos(pos, { w: r.width, h: r.height }, { w: window.innerWidth, h: window.innerHeight })); };
+    window.addEventListener('resize', onResize); return () => window.removeEventListener('resize', onResize);
+  }, [pos]);
   const active = Boolean(pip && nowPlaying?.mediaType === 'audio');
   const src = pip ? bridgeSrc(pip.src) : undefined;
 
@@ -63,12 +92,14 @@ export function SyncedVideoPip({ nowPlaying, onPlay, onNavigate }: { nowPlaying:
   if (!active || !pip || !src) return null;
   const canNativePip = typeof document !== 'undefined' && document.pictureInPictureEnabled === true;
   return (
-    <aside id="synced-video-pip" data-testid="synced-video-pip" aria-label={`Mini video: ${pip.title}`}
-      className="fixed z-50 right-2 sm:right-6 bottom-[13.5rem] sm:bottom-[14.5rem] md:bottom-[10rem] w-56 sm:w-72 overflow-hidden rounded-xl border border-neutral-700/80 bg-black shadow-2xl">
+    <aside ref={boxRef} id="synced-video-pip" data-testid="synced-video-pip" aria-label={`Mini video: ${pip.title}`}
+      style={pos ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' } : undefined}
+      className={`fixed z-50 ${pos ? '' : 'right-2 sm:right-6 bottom-[13.5rem] sm:bottom-[14.5rem] md:bottom-[10rem]'} w-56 sm:w-72 overflow-hidden rounded-xl border border-[#E06D3B]/70 bg-black shadow-2xl`}>
       <video ref={videoRef} key={src} src={src} muted playsInline preload="auto" className="block aspect-video w-full bg-black" aria-label="Synced video (sound plays from the audio player)" />
       {error && <p role="alert" className="absolute inset-x-0 top-0 bg-red-950/90 px-2 py-1 text-[11px] text-red-200">{error}</p>}
-      <div className="flex items-center justify-between gap-1 bg-neutral-900/95 px-2 py-1">
-        <span className="truncate text-[10px] font-mono uppercase tracking-wider text-neutral-400">Video · audio leads</span>
+      <div data-testid="synced-video-pip-handle" role="group" tabIndex={0} aria-label="Move mini video. Drag, or use the arrow keys." title="Drag to move" onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd} onKeyDown={onHandleKey}
+        style={{ touchAction: 'none' }} className="flex cursor-grab items-center justify-between gap-1 bg-neutral-900/95 px-2 py-1 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E06D3B]">
+        <span className="flex min-w-0 items-center gap-1 truncate text-[10px] font-mono uppercase tracking-wider text-neutral-300"><GripHorizontal className="h-3.5 w-3.5 shrink-0 text-[#E06D3B]" aria-hidden="true" />Video · drag to move</span>
         <span className="flex items-center gap-1">
           {canNativePip && <button type="button" aria-label="Pop video out of the page" title="Pop out" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={() => { void videoRef.current?.requestPictureInPicture().catch(() => {}); }}><PictureInPicture2 className="h-3.5 w-3.5" /></button>}
           <button type="button" aria-label="Switch main player to video" title="Make video the main player" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={hardSwitch}><Maximize2 className="h-3.5 w-3.5" /></button>

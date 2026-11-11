@@ -188,7 +188,7 @@
 
 /* Parallel Audio/Video Sync buttons (Now Playing panel) */
 .ajr .ajr-sync { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
-.ajr .ajr-sync-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 999px; border: 1px solid #E06D3B; background: transparent; color: #E06D3B; font: 600 11px/1 'DM Mono', ui-monospace, monospace; letter-spacing: .08em; cursor: pointer; }
+.ajr .ajr-sync-btn { display: inline-flex; align-items: center; gap: 5px; padding: 10px 14px; min-height: 44px; border-radius: 999px; border: 1px solid #E06D3B; background: rgba(224,109,59,.22); box-shadow: 0 0 0 1px rgba(224,109,59,.35), 0 0 14px rgba(224,109,59,.35); color: #FFD2B8; font: 600 11px/1 'DM Mono', ui-monospace, monospace; letter-spacing: .08em; cursor: pointer; }
 .ajr .ajr-sync-btn:hover { background: #E06D3B; color: #0F1117; }
 .ajr .ajr-sync-btn[aria-pressed="true"] { background: #E06D3B; color: #0F1117; }
 .ajr .ajr-sync-btn:focus-visible { outline: 2px solid #edf1e9; outline-offset: 2px; }

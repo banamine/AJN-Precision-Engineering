@@ -189,6 +189,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
   const { music, podcastEps, spoken, spokenError, loadSpoken, concerts, concertsError, loadConcerts, playItem, presetFor, deckSources } = useListenDeck(onPlayProgram);
   const [findOpen, setFindOpen] = useState(false);
+  const [listenBackOpen, setListenBackOpen] = useState(false);
 
   const show = showChips(entries);
   const type = typeChips(entries);
@@ -206,9 +207,10 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
       <section className="ajr-live" aria-label="Live radio presets" data-testid="radio-page-live">
         <div className="ajr-label">YOUR DECK · LIVE RADIO · MUSIC · CONCERTS · PODCASTS</div>
-        <RadioPresetsBar deckSources={deckSources} nowPlaying={nowPlaying} playingNow={liveMedia.attached && !liveMedia.paused} defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
+        <RadioPresetsBar onNavigate={onNavigate} onListenBackChange={setListenBackOpen} deckSources={deckSources} nowPlaying={nowPlaying} playingNow={liveMedia.attached && !liveMedia.paused} defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
       </section>
 
+      {!listenBackOpen && (<>
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
 
       <section className="ajr-section" aria-label="Find and save drawer" data-testid="find-drawer">
@@ -289,6 +291,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
         {shown.length > visible && <button type="button" className="ajr-more" onClick={() => setVisible(count => count + PAGE_SIZE)}>MORE FROM {label.toUpperCase()} <ArrowDownRight size={14} /></button>}
         <FullShowDays days={showDays.slice(0, 12)} onPlay={playFullShow} />
       </section>
+      </>)}
 
       <DailyBriefing news={news} />
 

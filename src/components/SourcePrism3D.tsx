@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { NowPlayingMedia } from '../types';
 
-export type AudioSourceType = 'radio' | 'music' | 'podcasts';
+export type AudioSourceType = 'radio' | 'music' | 'podcasts' | 'listenback';
 
 export interface SourcePrism3DProps {
   activeSource: AudioSourceType;
@@ -10,12 +10,15 @@ export interface SourcePrism3DProps {
   onPlayStation?: (channelId: string) => void;
 }
 
-const SOURCE_ORDER: AudioSourceType[] = ['radio', 'music', 'podcasts'];
-const SOURCE_INDEX: Record<AudioSourceType, number> = { radio: 0, music: 1, podcasts: 2 };
+const SOURCE_ORDER: AudioSourceType[] = ['radio', 'music', 'podcasts', 'listenback'];
+const FACES = SOURCE_ORDER.length;
+const STEP_DEG = 360 / FACES;
+const SOURCE_INDEX: Record<AudioSourceType, number> = { radio: 0, music: 1, podcasts: 2, listenback: 3 };
 const MODE_TEST_ID: Record<AudioSourceType, string> = {
   radio: 'radio-mode-live',
   music: 'radio-mode-archive',
   podcasts: 'radio-mode-podcasts',
+  listenback: 'radio-mode-listenback',
 };
 
 export const FACTORY_RADIO_PRESETS = [
@@ -34,7 +37,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
 }) => {
   const sceneRef = useRef<HTMLDivElement | null>(null);
   const [prismWidth, setPrismWidth] = useState<number>(320);
-  const [baseAngle, setBaseAngle] = useState<number>(-SOURCE_INDEX[activeSource] * 120);
+  const [baseAngle, setBaseAngle] = useState<number>(-SOURCE_INDEX[activeSource] * STEP_DEG);
   const [dragDeltaX, setDragDeltaX] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const dragStartXRef = useRef<number | null>(null);
@@ -42,12 +45,12 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
   useEffect(() => {
     const targetIdx = SOURCE_INDEX[activeSource];
     setBaseAngle((prev) => {
-      const cur = (((-Math.round(prev / 120)) % 3) + 3) % 3;
+      const cur = (((-Math.round(prev / STEP_DEG)) % FACES) + FACES) % FACES;
       if (cur === targetIdx) return prev;
       let diff = targetIdx - cur;
-      if (diff > 1) diff -= 3;
-      if (diff < -1) diff += 3;
-      return prev - diff * 120;
+      if (diff > FACES / 2) diff -= FACES;
+      if (diff < -FACES / 2) diff += FACES;
+      return prev - diff * STEP_DEG;
     });
   }, [activeSource]);
 
@@ -59,21 +62,21 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  const apothemPx = Math.round((prismWidth / 3.4641) * 10) / 10;
+  const apothemPx = Math.round((prismWidth / (2 * Math.tan(Math.PI / FACES))) * 10) / 10;
   const activeIdx = SOURCE_INDEX[activeSource];
 
   const selectByIndex = (targetIdx: number) => {
-    const norm = ((targetIdx % 3) + 3) % 3;
+    const norm = ((targetIdx % FACES) + FACES) % FACES;
     let diff = norm - activeIdx;
-    if (diff > 1) diff -= 3;
-    if (diff < -1) diff += 3;
-    setBaseAngle((prev) => prev - diff * 120);
+    if (diff > FACES / 2) diff -= FACES;
+    if (diff < -FACES / 2) diff += FACES;
+    setBaseAngle((prev) => prev - diff * STEP_DEG);
     onSelectSource(SOURCE_ORDER[norm]);
   };
 
   const step = (dir: 1 | -1) => {
-    const next = (activeIdx + dir + 3) % 3;
-    setBaseAngle((prev) => prev - dir * 120);
+    const next = (activeIdx + dir + FACES) % FACES;
+    setBaseAngle((prev) => prev - dir * STEP_DEG);
     onSelectSource(SOURCE_ORDER[next]);
   };
 
@@ -107,7 +110,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
       {/* Tab Controls */}
       <div className="flex items-center justify-between gap-2 mb-2.5">
         <div role="tablist" aria-label="Radio source" className="flex items-center gap-1.5 flex-wrap">
-          {(['radio', 'music', 'podcasts'] as const).map((src, i) => (
+          {SOURCE_ORDER.map((src, i) => (
             <button
               key={src}
               type="button"
@@ -123,7 +126,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
                   : 'bg-[#181B24] text-slate-300 border border-white/10 hover:text-white'
               }`}
             >
-              {i + 1}. {src === 'radio' ? 'LIVE RADIO' : src === 'music' ? 'ARCHIVE MUSIC' : 'PODCASTS'}
+              {i + 1}. {src === 'radio' ? 'LIVE RADIO' : src === 'music' ? 'ARCHIVE MUSIC' : src === 'podcasts' ? 'PODCASTS' : 'LISTEN BACK'}
             </button>
           ))}
         </div>
@@ -217,7 +220,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
             }`}
             style={{
               backfaceVisibility: 'hidden',
-              transform: `rotateY(120deg) translateZ(${apothemPx}px)`,
+              transform: `rotateY(90deg) translateZ(${apothemPx}px)`,
               background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(15, 17, 23, 0.96))',
             }}
           >
@@ -238,7 +241,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
             }`}
             style={{
               backfaceVisibility: 'hidden',
-              transform: `rotateY(240deg) translateZ(${apothemPx}px)`,
+              transform: `rotateY(180deg) translateZ(${apothemPx}px)`,
               background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.18), rgba(15, 17, 23, 0.96))',
             }}
           >
@@ -248,6 +251,27 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
               <p className="text-xs text-slate-300 mt-1">Daily feeds from Fox News Radio, Infowars, and Rush Limbaugh.</p>
             </div>
             <span className="text-[10px] font-mono text-pink-300 border-t border-white/10 pt-1.5">Select an episode below ↓</span>
+          </div>
+
+          {/* Facet 3: Listen Back */}
+          <div
+            role="tabpanel"
+            aria-hidden={activeSource !== 'listenback'}
+            className={`absolute inset-0 w-full h-full rounded-2xl p-4 flex flex-col justify-between overflow-hidden border border-amber-500/45 bg-[#181B24]/95 ${
+              activeSource === 'listenback' ? 'pointer-events-auto' : 'pointer-events-none'
+            }`}
+            style={{
+              backfaceVisibility: 'hidden',
+              transform: `rotateY(270deg) translateZ(${apothemPx}px)`,
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(15, 17, 23, 0.96))',
+            }}
+          >
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-black w-fit">LISTEN BACK</span>
+            <div className="my-auto">
+              <h3 className="text-lg font-bold text-white">Hourly Broadcast Archives</h3>
+              <p className="text-xs text-slate-300 mt-1">Replay AJN hours; switch to the paired video at the same spot.</p>
+            </div>
+            <span className="text-[10px] font-mono text-amber-300 border-t border-white/10 pt-1.5">Select an hour on the right →</span>
           </div>
         </div>
       </div>

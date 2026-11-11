@@ -66,7 +66,7 @@ const Skeleton = ({ n = 5, h = 140 }: { n?: number; h?: number }) => (
 const Failure = ({ what, error, onRetry }: { what: string; error: string | null; onRetry: () => void }) => (
   <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-red-900/60 bg-red-950/30 px-3 py-2 text-xs text-red-200">
     {what} could not be loaded{error ? ` (${error})` : ''}.
-    <button type="button" onClick={onRetry} className="min-h-[44px] cursor-pointer rounded border border-red-700/70 px-2 text-red-100 hover:bg-red-900/40">Try again</button>
+    <button type="button" onClick={onRetry} className="ck-key ck-key--sm px-2">Try again</button>
   </div>
 );
 const textBtn = 'inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded border border-neutral-700 px-2.5 text-xs font-medium text-neutral-200 hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400';
@@ -146,7 +146,7 @@ function ClassicRow({ onPlayProgram, onNavigate }: { onPlayProgram: PlayProgramC
           <div role="tablist" aria-label="Day" className="inline-flex overflow-hidden rounded border border-neutral-700">
             {(['today', 'tomorrow'] as const).map((t) => (
               <button key={t} role="tab" type="button" aria-selected={tab === t} onClick={() => setTab(t)} data-testid={`classic-tab-${t}`}
-                className={`min-h-[44px] cursor-pointer px-4 text-xs font-medium ${tab === t ? 'bg-sky-500/20 text-sky-100' : 'text-neutral-300 hover:bg-neutral-800'}`}>{t === 'today' ? 'Today' : 'Tomorrow'}</button>
+                className={`ck-key ck-key--sm px-4 text-xs${tab === t ? ' is-latched' : ''}`}>{t === 'today' ? 'Today' : 'Tomorrow'}</button>
             ))}
           </div>
           <label className="inline-flex items-center gap-2 text-xs text-neutral-400">
