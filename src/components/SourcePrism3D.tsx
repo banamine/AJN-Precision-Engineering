@@ -120,10 +120,8 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
               aria-pressed={activeSource === src}
               onClick={() => selectByIndex(i)}
               style={{ minHeight: '48px', minWidth: '48px' }}
-              className={`h-12 !min-h-[48px] !min-w-[48px] px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${
-                activeSource === src
-                  ? 'bg-[#E06D3B] text-black'
-                  : 'bg-[#181B24] text-slate-300 border border-white/10 hover:text-white'
+              className={`ck-key ck-key--sm !min-h-[48px] !min-w-[48px] uppercase tracking-wider text-xs font-bold${
+                activeSource === src ? ' is-latched' : ''
               }`}
             >
               {i + 1}. {src === 'radio' ? 'LIVE RADIO' : src === 'music' ? 'ARCHIVE MUSIC' : src === 'podcasts' ? 'PODCASTS' : 'LISTEN BACK'}
@@ -137,7 +135,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
             aria-label="Previous source"
             onClick={() => step(-1)}
             style={{ minWidth: '48px', minHeight: '48px' }}
-            className="w-12 h-12 !min-h-[48px] !min-w-[48px] rounded-lg bg-[#181B24] border border-white/15 text-[#E06D3B] flex items-center justify-center"
+            className="ck-key ck-key--icon w-12 h-12 !min-h-[48px] !min-w-[48px] text-[#E06D3B] text-base font-bold"
           >
             ‹
           </button>
@@ -147,7 +145,7 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
             aria-label="Next source"
             onClick={() => step(1)}
             style={{ minWidth: '48px', minHeight: '48px' }}
-            className="w-12 h-12 !min-h-[48px] !min-w-[48px] rounded-lg bg-[#181B24] border border-white/15 text-[#E06D3B] flex items-center justify-center"
+            className="ck-key ck-key--icon w-12 h-12 !min-h-[48px] !min-w-[48px] text-[#E06D3B] text-base font-bold"
           >
             ›
           </button>
@@ -161,12 +159,12 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
         onPointerMove={handlePointerMove}
         onPointerUp={finishDrag}
         onPointerLeave={finishDrag}
-        className="w-full h-[340px] lg:h-[260px] overflow-hidden rounded-2xl relative touch-pan-y"
+        className="w-full h-[340px] lg:h-[290px] overflow-hidden rounded-2xl relative touch-pan-y"
         style={{ perspective: '900px' }}
       >
         <div
           data-testid="source-prism-cylinder"
-          className="w-full h-[340px] lg:h-[260px] relative"
+          className="w-full h-[340px] lg:h-[290px] relative"
           style={{
             transformStyle: 'preserve-3d',
             transition: isDragging ? 'none' : 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -190,23 +188,26 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E06D3B] text-black">LIVE RADIO</span>
               <span className="text-[10px] font-mono text-emerald-400">{isLiveRadio ? '● ON AIR' : 'STANDBY'}</span>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-1 sm:gap-1.5 my-auto">
-              {FACTORY_RADIO_PRESETS.map((st) => (
-                <button
-                  key={st.channelId}
-                  type="button"
-                  onClick={() => onPlayStation?.(st.channelId)}
-                  style={{ minHeight: '48px', minWidth: '48px' }}
-                  className={`!min-h-[48px] !min-w-[48px] lg:!min-h-[56px] px-3 py-1 rounded-xl border text-left flex lg:flex-col items-center lg:items-start justify-between ${
-                    nowPlaying?.channelId === st.channelId
-                      ? 'bg-[#E06D3B]/20 border-[#E06D3B] text-white'
-                      : 'bg-[#0F1117]/80 border-white/10 text-slate-200'
-                  }`}
-                >
-                  <span className="font-mono text-[10px] text-[#E06D3B]">{st.presetNumber}</span>
-                  <span className="text-xs font-bold truncate">{st.name}</span>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 my-auto">
+              {FACTORY_RADIO_PRESETS.map((st, index) => {
+                const isActive = nowPlaying?.channelId === st.channelId;
+                return (
+                  <button
+                    key={st.channelId}
+                    type="button"
+                    aria-pressed={isActive}
+                    aria-current={isActive ? 'true' : undefined}
+                    onClick={() => onPlayStation?.(st.channelId)}
+                    style={{ minHeight: '52px', minWidth: '48px' }}
+                    className={`ck-key w-full !min-h-[52px] !min-w-[48px] px-2.5 pt-2.5 pb-1.5 text-left !justify-start gap-2${
+                      index === FACTORY_RADIO_PRESETS.length - 1 ? ' col-span-2' : ''
+                    }${isActive ? ' is-latched' : ''}`}
+                  >
+                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/40 text-[#E06D3B] shrink-0 border border-[#E06D3B]/30">{st.presetNumber}</span>
+                    <span className="text-[11px] sm:text-xs font-bold leading-tight line-clamp-2 break-words text-left">{st.name}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="text-[10px] font-mono text-slate-400 border-t border-white/10 pt-1">P01–P05 Live Edge</div>
           </div>
