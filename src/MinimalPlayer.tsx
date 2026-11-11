@@ -12,6 +12,7 @@ import { NowPlayingMedia, MediaType } from "./types";
 import type { Program, RecentlyPlayedItem } from "./types";
 import { PlayerChrome } from "./components/PlayerChrome";
 import { WaitingNotes } from "./components/WaitingNotes";
+import { BufferJingle } from "./components/BufferJingle";
 import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
 import { releaseMediaElementAudioSource, useAudioNormalization } from "./use-audio-normalization";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
@@ -1346,6 +1347,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       )}
       {overlaySlot}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
+      <BufferJingle status={statusText} enabled={isVideo} />
       <WaitingNotes status={statusText} onRetry={onRetry} archive={typeof src === "string" && src.includes("/api/archive/proxy")} />
       {seekFallbackTarget !== null && (
         <div className="mt-2 flex items-center gap-2 text-sm">
