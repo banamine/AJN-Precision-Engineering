@@ -22,3 +22,15 @@ const prism = renderToStaticMarkup(<SourcePrism3D activeSource="listenback" onSe
 assert.match(prism, /data-testid="radio-mode-listenback"/); assert.match(prism, /4\. LISTEN BACK/); assert.match(prism, /rotateY\(270deg\)/);
 assert.equal((prism.match(/role="tabpanel"/g) ?? []).length, 4);
 console.log('prism 4 faces ok');
+import { clampPipPos, readPipPos, PIP_POS_KEY } from './src/utils/avSyncPip';
+assert.deepEqual(clampPipPos({ x: -50, y: 9999 }, { w: 288, h: 200 }, { w: 1000, h: 700 }), { x: 4, y: 496 });
+assert.deepEqual(clampPipPos({ x: 300, y: 100 }, { w: 288, h: 200 }, { w: 1000, h: 700 }), { x: 300, y: 100 });
+assert.deepEqual(clampPipPos({ x: 10, y: 10 }, { w: 2000, h: 2000 }, { w: 1000, h: 700 }), { x: 4, y: 4 });
+assert.equal(readPipPos({ getItem: () => 'nope' }), null); assert.equal(readPipPos(null), null);
+assert.deepEqual(readPipPos({ getItem: (k) => (k === PIP_POS_KEY ? '{"x":10,"y":20}' : null) }), { x: 10, y: 20 });
+assert.equal(readPipPos({ getItem: () => '{"x":"a","y":1}' }), null);
+const deckHtml = renderToStaticMarkup(<ListenBackDeckView entries={entries} error={null} videoOnly={false} page={0} playingBase={null} onToggleVideo={noop} onPage={noop} onPlay={noop} controls={<div data-testid="listen-back-controls" />} />);
+assert.match(deckHtml, /listen-back-controls/);
+import { AvSyncControls } from './src/components/AvSyncControls';
+assert.equal(renderToStaticMarkup(<AvSyncControls nowPlaying={null} onPlay={undefined} variant="deck" />), '');
+console.log('pip drag + deck controls ok');

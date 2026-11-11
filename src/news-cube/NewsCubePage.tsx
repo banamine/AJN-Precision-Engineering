@@ -5,6 +5,7 @@ import { allocateFaces, balanceBySource, filterByPublisher, type CubeArticle } f
 import { createThreeCubeRenderer, type CubeRendererFactory, type CubeRendererPort } from './cubeRenderer';
 import { createPlaybackBridge, type CubeArchiveState } from './playbackBridge';
 import { isDigestStale, useNewsCubeData } from './useNewsCubeData';
+import TvChannelStrip from './TvChannelStrip';
 
 type PlaybackBridge = ReturnType<typeof createPlaybackBridge>;
 interface NewsCubePageProps {
@@ -375,6 +376,8 @@ export default function NewsCubePage({
         </div>
       )}
       {data.loading && !data.snapshot && <p role="status" className="text-sm text-neutral-400">Loading the Daily News Digest…</p>}
+
+      {fetcher === undefined && <TvChannelStrip />}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.8fr)]">
         {!listView && (

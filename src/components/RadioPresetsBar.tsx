@@ -6,7 +6,7 @@ import { LiveSongDeck } from './LiveSongDeck';
 import { ListenBackDeck } from './ListenBackDeck';
 import { ScheduleDeck } from './ScheduleDeck';
 import { freshness } from '../utils/listenCatalog';
-import type { NowPlayingMedia, PlayProgramCallback } from '../types';
+import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import { findPersistentMedia } from '../hooks/usePersistentMedia';
 import { SourcePrism3D, type AudioSourceType } from './SourcePrism3D';
@@ -65,6 +65,10 @@ interface RadioPresetsBarProps {
   live: boolean;
   /** Plays a station WITHOUT leaving the page (same callback the directory uses). */
   onPlay: PlayProgramCallback;
+  /** Page navigation, used by Listen Back's WATCH VIDEO / Full player keys. */
+  onNavigate?: (destination: Destination) => void;
+  /** Tells the page when Listen Back is open so it can hide the panels the deck replaces. */
+  onListenBackChange?: (open: boolean) => void;
   /** Lets the dock show the preset's picture in its "now playing" strip. */
   onPresetTuned?: (channelId: string, logo?: string) => void;
   /** Full-screen dock: five tiles in one row and no "All stations" tile. */
@@ -137,7 +141,7 @@ function tileColor(id: string, name?: string): string {
 }
 
 /** Five hardware-style presets: tap to tune, press and hold (half a second) to save the station that is playing. */
-export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wide = false, initialView, defaultView = 'wall', deckSources, nowPlaying, playingNow }: RadioPresetsBarProps): ReactElement {
+export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onListenBackChange, onPresetTuned, wide = false, initialView, defaultView = 'wall', deckSources, nowPlaying, playingNow }: RadioPresetsBarProps): ReactElement {
   const presets: RadioPresetMap = useRadioPresets();
   const [status, setStatus] = useState<string>('');
   const [holding, setHolding] = useState<RadioPresetSlot | null>(null);
@@ -154,6 +158,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   const [knobAngle, setKnobAngle] = useState(0); // knob art only: turns one detent per station step
   const [mode, setMode] = useState<'live' | 'archive' | 'podcasts'>('live');
   const [listenBack, setListenBack] = useState(false);
+  useEffect(() => { onListenBackChange?.(listenBack); }, [listenBack]); // eslint-disable-line react-hooks/exhaustive-deps
   const [sub, setSub] = useState<'music' | 'concerts' | 'fm'>('music');
   const [browse, setBrowse] = useState(false); // non-live tabs: false = my saved keys, true = pages of the catalog
   const audioPresets = useAudioPresets();
@@ -466,7 +471,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
 
               <div data-testid="radio-head-unit-spectrum" className={`flex min-h-[112px] flex-col rounded-2xl p-4 md:col-start-2 md:row-start-1 `} style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
                 {listenBack ? (
-                  <ListenBackDeck onPlayProgram={onPlay} nowPlaying={nowPlaying} />
+                  <ListenBackDeck onPlayProgram={onPlay} nowPlaying={nowPlaying} onNavigate={onNavigate} />
                 ) : mode !== 'live' ? (
                   <ScheduleDeck bank={mode === 'podcasts' ? 'podcasts' : sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} />
                 ) : (

@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import type { NowPlayingMedia, PlayProgramCallback } from '../types';
+import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
+import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
+import { AvSyncControls } from './AvSyncControls';
+import { usePersistentMedia } from '../hooks/usePersistentMedia';
+import { formatClock } from '../utils/ajnRadioBrowse';
 import type { RadioEntry } from '../utils/ajnRadioCatalog';
 import { AJN_CHANNEL_LABELS } from '../utils/ajnClassify';
 import { AJN_SYNC_CHANNEL, loadEntries } from '../hooks/useAvSync';
@@ -14,8 +18,10 @@ export function lastPage(n: number, size = LB_PAGE): number { return Math.max(0,
 interface ViewProps {
   entries: readonly RadioEntry[] | null; error: string | null; videoOnly: boolean; page: number; playingBase: string | null;
   onToggleVideo: () => void; onPage: (dir: 1 | -1) => void; onPlay: (e: RadioEntry) => void;
+  /** Transport + AV Sync, supplied by the wrapper (they need the live player). Omitted in static renders. */
+  controls?: ReactElement | null;
 }
-export function ListenBackDeckView({ entries, error, videoOnly, page, playingBase, onToggleVideo, onPage, onPlay }: ViewProps): ReactElement {
+export function ListenBackDeckView({ entries, error, videoOnly, page, playingBase, onToggleVideo, onPage, onPlay, controls }: ViewProps): ReactElement {
   const shown = useMemo(() => (entries ?? []).filter((e) => !videoOnly || e.videoUrl), [entries, videoOnly]);
   const withVideo = (entries ?? []).filter((e) => e.videoUrl).length;
   const rows = pageSlice(shown, page);
@@ -48,13 +54,13 @@ export function ListenBackDeckView({ entries, error, videoOnly, page, playingBas
           <button type="button" className="ck-key ck-key--sm" disabled={page >= last} onClick={() => onPage(1)} aria-label="Older archived hours">Older ›</button>
         </div>
       )}
-      <p className="text-[10px] text-slate-500">Playing an hour starts the audio. Use the AV Sync switch to watch the paired video at the same spot.</p>
+      {controls}
     </div>
   );
 }
 
-interface Props { onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null }
-export function ListenBackDeck({ onPlayProgram, nowPlaying }: Props): ReactElement {
+interface Props { onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null; onNavigate?: (destination: Destination) => void }
+export function ListenBackDeck({ onPlayProgram, nowPlaying, onNavigate }: Props): ReactElement {
   const [entries, setEntries] = useState<RadioEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [videoOnly, setVideoOnly] = useState(false);
@@ -64,12 +70,39 @@ export function ListenBackDeck({ onPlayProgram, nowPlaying }: Props): ReactEleme
     loadEntries().then((l) => { if (live) setEntries(l); }).catch((e: unknown) => { if (live) setError(e instanceof Error ? e.message : 'could not load'); });
     return () => { live = false; };
   }, []);
-  const total = (entries ?? []).filter((e) => !videoOnly || e.videoUrl).length;
+  const shownAll = (entries ?? []).filter((e) => !videoOnly || e.videoUrl);
+  const total = shownAll.length;
+  const playingBase = nowPlaying?.channelId === AJN_SYNC_CHANNEL ? baseIdOf(nowPlaying.programId) : null;
+  const idx = playingBase ? shownAll.findIndex((e) => e.id === playingBase) : -1;
+  const older = idx >= 0 ? shownAll[idx + 1] : undefined; // list is newest first
+  const newer = idx > 0 ? shownAll[idx - 1] : undefined;
+  const play = (e: RadioEntry): void => onPlayProgram(e.audioUrl, e.title, AJN_CHANNEL_LABELS[e.channel], 'audio', AJN_SYNC_CHANNEL, AJN_SYNC_CHANNEL, e.id);
+  const media = usePersistentMedia(nowPlaying?.mediaType, nowPlaying ? `${nowPlaying.src}|${nowPlaying.mediaType}` : undefined, Boolean(nowPlaying));
+  const playingEntry = idx >= 0 ? shownAll[idx] : (entries ?? []).find((e) => e.id === playingBase);
+  const controls = (
+    <div data-testid="listen-back-controls" className="mt-auto flex flex-col gap-2 border-t border-white/10 pt-2">
+      {nowPlaying && playingBase && <div className="min-w-0 truncate text-[11px] text-slate-200" data-testid="listen-back-now">{nowPlaying.title}</div>}
+      <div className="flex items-center gap-2">
+        <button type="button" className="ck-key ck-key--icon" aria-label="Newer hour" disabled={!newer} onClick={() => newer && play(newer)}><SkipBack size={16} fill="currentColor" /></button>
+        <button type="button" className="ck-key ck-key--icon" data-testid="listen-back-play" aria-label={media.paused ? 'Play' : 'Pause'} disabled={!nowPlaying || !media.attached} onClick={media.toggle}>{media.paused ? <Play size={18} fill="currentColor" /> : <Pause size={18} fill="currentColor" />}</button>
+        <button type="button" className="ck-key ck-key--icon" aria-label="Older hour" disabled={!older} onClick={() => older && play(older)}><SkipForward size={16} fill="currentColor" /></button>
+        <span className="font-mono text-[10px] tabular-nums text-slate-300" data-testid="listen-back-elapsed">{nowPlaying ? formatClock(media.currentTime) : '0:00'}</span>
+        <input aria-label="Seek" type="range" className="min-w-0 flex-1" min={0} max={media.duration > 0 ? Math.floor(media.duration) : 1} value={media.duration > 0 ? Math.floor(media.currentTime) : 0}
+          disabled={!nowPlaying || media.duration <= 0} onChange={(ev) => media.seek(Number(ev.target.value))} />
+        <span className="font-mono text-[10px] tabular-nums text-slate-300">{media.duration > 0 ? formatClock(media.duration) : '—'}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2" data-testid="listen-back-av">
+        <AvSyncControls nowPlaying={nowPlaying} onPlay={onPlayProgram} onNavigate={onNavigate} variant="deck" />
+        {playingBase && playingEntry && !playingEntry.videoUrl && <span className="text-[11px] text-slate-400" data-testid="listen-back-no-video">No video was published for this hour.</span>}
+        {nowPlaying && onNavigate && <button type="button" className="ck-key ck-key--sm" onClick={() => onNavigate('player')}>Full player</button>}
+      </div>
+    </div>
+  );
   return (
     <ListenBackDeckView entries={entries} error={error} videoOnly={videoOnly} page={Math.min(page, lastPage(total))}
-      playingBase={nowPlaying?.channelId === AJN_SYNC_CHANNEL ? baseIdOf(nowPlaying.programId) : null}
+      playingBase={playingBase} controls={controls}
       onToggleVideo={() => { setVideoOnly((v) => !v); setPage(0); }}
       onPage={(d) => setPage((p) => Math.max(0, Math.min(lastPage(total), p + d)))}
-      onPlay={(e) => onPlayProgram(e.audioUrl, e.title, AJN_CHANNEL_LABELS[e.channel], 'audio', AJN_SYNC_CHANNEL, AJN_SYNC_CHANNEL, e.id)} />
+      onPlay={play} />
   );
 }
