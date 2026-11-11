@@ -24,3 +24,10 @@ node_modules
 credential*.json
 service-account*.json
 firebase-adminsdk*.json
+json_files
+/images
+h1
+h1-build
+acceptance_bundle
+deferred.json
+*.zip

@@ -17,3 +17,9 @@ import { readFileSync } from 'node:fs';
 const nav = readFileSync('./src/components/Navigation.tsx', 'utf8');
 assert.equal((nav.match(/id: 'dev', label: 'NEURAL TWIN'/g) ?? []).length, 2, 'Neural Twin is in the desktop More menu and the mobile More sheet');
 console.log('nav entries ok');
+// scene controls: lobe chips (All + 7), auto-orbit toggle that starts off, 460px canvas fallback
+assert.match(html, /data-testid="lobe-all"/);
+for (const l of LOBES) assert.ok(html.includes(`data-testid="lobe-${l.id}"`), `chip ${l.id}`);
+assert.match(html, /data-testid="neural-auto-orbit"[^>]*aria-pressed="false"/);
+assert.ok(html.includes('h-[460px]'), 'taller canvas');
+console.log('scene controls ok');

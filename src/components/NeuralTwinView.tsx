@@ -1,7 +1,8 @@
 /* App Health Neural Twin, inside the Engineering & Diagnostics console. Read-only: it looks at the page and the data files;
  * it never changes the player. Parts with no real signal say "Not wired" instead of showing a made-up value. */
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { LOBES, NEURONS } from '../neural/topology';
+import { EDGES, LOBES, NEURONS, type LobeId } from '../neural/topology';
+import { nodeEdges } from '../neural/sceneMath';
 import { readAll, probeDigest, captureFrame, type DigestProbe, type FrameProbe, type MediaLike, type TelemetryEnv, type Reading } from '../neural/telemetry';
 import { useJingle, jingleStore } from '../utils/jingleStore';
 import { readSharedQuery } from '../hooks/useSharedSearch';
@@ -26,6 +27,8 @@ export function NeuralTwinView() {
   const [checking, setChecking] = useState(false);
   const [frame, setFrame] = useState<{ probe: FrameProbe; dataUrl?: string } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [lobe, setLobe] = useState<LobeId | 'all'>('all');
+  const [autoOrbit, setAutoOrbit] = useState(false);
   const [concerts, setConcerts] = useState<number | null>(null);
 
   useEffect(() => { const t = window.setInterval(() => setTick((x) => x + 1), 1000); return () => window.clearInterval(t); }, []);
@@ -64,8 +67,15 @@ export function NeuralTwinView() {
           <button type="button" data-testid="neural-jingle" aria-pressed={jingle.on} onClick={() => jingleStore.setOn(!jingle.on)} className={`ck-key ck-key--sm ${jingle.on ? 'is-latched' : ''}`}>Buffer jingle {jingle.on ? 'on' : 'off'}</button>
         </div>
       </header>
-      <Suspense fallback={<div className="h-[340px] rounded-xl border border-neutral-800 p-4 text-sm text-neutral-500">Loading 3D map…</div>}>
-        <NeuralScene readings={readings} selected={selected} onSelect={setSelected} />
+      <div data-testid="neural-controls" className="flex flex-wrap items-center gap-1.5">
+        <button type="button" data-testid="lobe-all" aria-pressed={lobe === 'all'} onClick={() => setLobe('all')} className={`ck-key ck-key--sm ${lobe === 'all' ? 'is-latched' : ''}`}>All</button>
+        {LOBES.map((l) => (
+          <button key={l.id} type="button" data-testid={`lobe-${l.id}`} aria-pressed={lobe === l.id} onClick={() => setLobe(lobe === l.id ? 'all' : l.id)} className={`ck-key ck-key--sm ${lobe === l.id ? 'is-latched' : ''}`}><span aria-hidden className="mr-1 inline-block h-2 w-2 rounded-full" style={{ background: l.color }} />{l.label}</button>
+        ))}
+        <button type="button" data-testid="neural-auto-orbit" aria-pressed={autoOrbit} onClick={() => setAutoOrbit((x) => !x)} className={`ck-key ck-key--sm ml-auto ${autoOrbit ? 'is-latched' : ''}`}>Auto-orbit: {autoOrbit ? 'on' : 'off'}</button>
+      </div>
+      <Suspense fallback={<div className="h-[460px] md:h-[580px] rounded-xl border border-neutral-800 p-4 text-sm text-neutral-500">Loading 3D map…</div>}>
+        <NeuralScene readings={readings} selected={selected} onSelect={setSelected} lobe={lobe} autoOrbit={autoOrbit} />
       </Suspense>
       {sel && selReading && (
         <div data-testid="neural-inspector" className="rounded-xl border border-neutral-700 bg-neutral-950 p-3 text-sm">
@@ -73,6 +83,16 @@ export function NeuralTwinView() {
           <p className="text-xs text-neutral-400">{sel.role}</p><p className="font-mono text-[11px] text-neutral-500">{sel.file}</p>
           <p className="mt-2 text-neutral-200">{selReading.headline}</p>
           <ul className="mt-1 space-y-0.5 text-xs text-neutral-400">{selReading.details.map((d) => <li key={d}>{d}</li>)}</ul>
+          <div data-testid="neural-connections" className="mt-2 border-t border-neutral-800 pt-2">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Connections</p>
+            <ul className="space-y-0.5">
+              {nodeEdges(sel.id, EDGES).map((c) => { const other = NEURONS.find((n) => n.id === c.otherId); const src = byId.get(c.isSource ? sel.id : c.otherId); const active = src?.state === 'live' && !!src.payload; return (
+                <li key={`${c.otherId}-${c.kind}-${c.isSource}`}><button type="button" onClick={() => setSelected(c.otherId)} className="flex w-full items-center justify-between gap-2 rounded px-1.5 py-0.5 text-left text-xs hover:bg-neutral-800/60">
+                  <span className="truncate text-neutral-200">{c.isSource ? '→' : '←'} {other?.label ?? c.otherId} <span className="text-neutral-500">· {c.kind}</span></span>
+                  <span className={`shrink-0 text-[10px] ${active ? 'text-emerald-300' : 'text-neutral-500'}`}>{active ? 'active now' : 'connected'}</span>
+                </button></li>); })}
+            </ul>
+          </div>
           {sel.id === 'tracker-tv' && frame?.dataUrl && <img alt="Latest captured video frame" src={frame.dataUrl} className="mt-2 h-20 rounded border border-neutral-800" />}
         </div>
       )}

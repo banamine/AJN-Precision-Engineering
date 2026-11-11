@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { LOBES, NEURONS, EDGES, layout } from './src/neural/topology';
 import { readAll, readNeuron, aheadSeconds, probeDigest, captureFrame, type TelemetryEnv } from './src/neural/telemetry';
+import { ICONS, NEURON_ICON, iconSvg } from './src/neural/icons';
+import { fitDistance, centerOf, clampZoom, liveTagSources, nodeEdges, lobeNodes, selectionBoundingPoints, depthT } from './src/neural/sceneMath';
 
 // topology integrity
 assert.equal(LOBES.length, 7); assert.equal(NEURONS.length, 32, 'Entry 050: 32 neurons');
@@ -35,6 +37,28 @@ assert.ok(idle.every((r) => r.state !== 'live' && !r.payload), 'nothing live wit
 assert.ok(get('actor-director-graph', env()).details[0].includes('invented'));
 assert.equal(get('status-cache-payload', env()).state, 'unwired');
 assert.equal(get('github-repo-sync', env()).state, 'unwired');
+
+// scene upgrade: every part has a glyph, and the camera/label math is exact
+for (const x of NEURONS) { assert.ok(NEURON_ICON[x.id], `${x.id} has a glyph`); assert.ok(ICONS[NEURON_ICON[x.id]], `${x.id} glyph exists`); }
+assert.equal(Object.keys(NEURON_ICON).length, NEURONS.length, 'no stale glyph ids');
+assert.match(iconSvg('minimal-player'), /^<svg[^>]*viewBox="0 0 24 24"/);
+const pts = NEURONS.map((x) => pos[x.id]);
+const wide = fitDistance(pts, 50, 2), narrow = fitDistance(pts, 50, 0.6);
+assert.ok(narrow > wide, 'a narrower view needs the camera further back'); assert.ok(wide > 0 && Number.isFinite(wide));
+assert.equal(fitDistance([], 50, 1), 40); assert.ok(fitDistance([[0, 0, 0]], 50, 1) > 0, 'a lone node still frames');
+assert.equal(clampZoom(0.1, 0.35, 2.5), 0.35); assert.equal(clampZoom(9, 0.35, 2.5), 2.5); assert.equal(clampZoom(1, 0.35, 2.5), 1);
+assert.deepEqual(centerOf([[0, 0, 0], [2, 4, 6]]), [1, 2, 3]);
+const tags = liveTagSources([{ id: 'a', state: 'live', payload: 'x' }, { id: 'b', state: 'live', payload: 'x' }, { id: 'c', state: 'idle', payload: 'y' }, { id: 'd', state: 'live' }, { id: 'e', state: 'static', payload: 'z' }]);
+assert.deepEqual(tags.map((t) => t.id), ['a', 'b'], 'one tag per live node, only with a real payload');
+const digestEdges = nodeEdges('daily-digest-json', EDGES);
+assert.ok(digestEdges.some((e) => e.otherId === 'news-cube' && e.isSource && e.kind === 'headlines'));
+assert.ok(digestEdges.some((e) => e.otherId === 'github-digest-collector' && !e.isSource && e.kind === 'publish'));
+assert.equal(digestEdges.length, EDGES.filter((e) => e.from === 'daily-digest-json' || e.to === 'daily-digest-json').length);
+assert.equal(lobeNodes('all', NEURONS).length, 32); assert.deepEqual(LOBES.map((l) => lobeNodes(l.id, NEURONS).length), [5, 5, 6, 4, 5, 3, 4]);
+assert.equal(lobeNodes('news', NEURONS).every((x) => x.lobe === 'news'), true);
+const sbp = selectionBoundingPoints('daily-digest-json', EDGES, pos);
+assert.equal(sbp.length, 1 + new Set(digestEdges.map((e) => e.otherId)).size, 'the node plus each neighbour once');
+assert.ok(depthT(10, 20, 5) === 0 && depthT(40, 20, 5) === 1 && depthT(20, 20, 5) === 0.5);
 
 // digest: real fetch result is passed through, failure is reported
 (async () => {
