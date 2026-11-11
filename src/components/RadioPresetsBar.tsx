@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { FreshnessTag } from './FreshnessTag';
 import { RadioSpectrum } from './RadioSpectrum';
 import { LiveSongDeck } from './LiveSongDeck';
+import { ListenBackDeck } from './ListenBackDeck';
 import { ScheduleDeck } from './ScheduleDeck';
 import { freshness } from '../utils/listenCatalog';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
@@ -152,6 +153,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   }, []);
   const [knobAngle, setKnobAngle] = useState(0); // knob art only: turns one detent per station step
   const [mode, setMode] = useState<'live' | 'archive' | 'podcasts'>('live');
+  const [listenBack, setListenBack] = useState(false);
   const [sub, setSub] = useState<'music' | 'concerts' | 'fm'>('music');
   const [browse, setBrowse] = useState(false); // non-live tabs: false = my saved keys, true = pages of the catalog
   const audioPresets = useAudioPresets();
@@ -404,6 +406,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const selectSource = (src: AudioSourceType) => {
             const key: 'live' | 'archive' | 'podcasts' = src === 'radio' ? 'live' : src === 'music' ? 'archive' : 'podcasts';
             setMode(key);
+            setListenBack(false);
             setListPage(0);
             setBrowse(false);
             setStoreArmed(false);
@@ -449,6 +452,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                   nowPlaying={nowPlaying ?? station}
                   onPlayStation={playPrismStation}
                 />
+                <button type="button" data-testid="radio-source-listenback" aria-pressed={listenBack} onClick={() => { setListenBack((v) => !v); say(listenBack ? 'Listen Back off' : 'Listen Back: hourly broadcast archives'); }} className="ck-key ck-key--sm">Listen Back</button>
                 {mode === 'archive' && (
                   <div role="group" aria-label="Archive source" className="flex gap-1">
                     {([['music', 'Music channels'], ['concerts', 'Live concerts'], ['fm', 'FM broadcasts']] as const).map(([k, text]) => (
@@ -461,7 +465,9 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
               </div>
 
               <div data-testid="radio-head-unit-spectrum" className={`flex min-h-[112px] flex-col rounded-2xl p-4 md:col-start-2 md:row-start-1 `} style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
-                {mode !== 'live' ? (
+                {listenBack ? (
+                  <ListenBackDeck onPlayProgram={onPlay} nowPlaying={nowPlaying} />
+                ) : mode !== 'live' ? (
                   <ScheduleDeck bank={mode === 'podcasts' ? 'podcasts' : sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} />
                 ) : (
                   <LiveSongDeck stationId={playing?.channelId} stationTitle={playing?.title} playing={live || Boolean(playingNow)} />

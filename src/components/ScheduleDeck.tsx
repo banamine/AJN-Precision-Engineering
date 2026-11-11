@@ -6,6 +6,7 @@ import { buildMusicPools, loadConcertPools, loadFmPools, loadPodcastPools } from
 import { formatClock, formatDuration, formatRepeat, loopSeconds, DAY_MS, type SchedPool, type ScheduleBank } from '../utils/roundRobinSchedule';
 
 interface Props { bank: ScheduleBank; onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null; playingNow?: boolean }
+export const GENRE_KEYS_MAX = 8;
 const ROW_LABELS = ['Next', 'Later', 'Then'] as const;
 const BANK_LABEL: Record<ScheduleBank, string> = { music: 'Music channels', concerts: 'Live concerts', fm: 'FM broadcasts', podcasts: 'Podcasts' };
 
@@ -31,6 +32,10 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
   }, [pools, chosen, bank, nowPlaying?.channelId]);
 
   const c = useScheduleController(pool, onPlayProgram, nowPlaying?.programId, true);
+  // Direct-tune genre keys: pick a real pool and start it. The controller follows `pool`, so tune once it has switched.
+  const [tuneWanted, setTuneWanted] = useState<string | null>(null);
+  useEffect(() => { if (tuneWanted && pool?.id === tuneWanted) { setTuneWanted(null); c.tune(); } }, [tuneWanted, pool?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const directTune = (id: string): void => { if (pool?.id === id) c.tune(); else { setChosen((s) => ({ ...s, [bank]: id })); setTuneWanted(id); } };
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => { const id = window.setInterval(() => setNowMs(Date.now()), 1000); return () => window.clearInterval(id); }, []);
 
@@ -63,6 +68,13 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
         {c.tuned && c.mode === 'off-schedule' && <button type="button" data-testid="schedule-return-live" onClick={c.returnToLive} className="ck-key ck-key--sm is-latched">Return to live</button>}
         {!c.tuned && pool && <button type="button" data-testid="schedule-tune" onClick={c.tune} className="ck-key ck-key--sm">{c.mode === 'shuffle' ? 'Play shuffle' : 'Tune live'}</button>}
       </div>
+      {pools && pools.length > 1 && (
+        <div role="group" aria-label={`${BANK_LABEL[bank]} direct tune`} data-testid="schedule-genre-keys" className="flex flex-wrap gap-1">
+          {pools.slice(0, GENRE_KEYS_MAX).map((p) => (
+            <button key={p.id} type="button" data-testid="schedule-genre-key" aria-pressed={pool?.id === p.id && c.tuned} title={`Tune ${p.label}`} onClick={() => directTune(p.id)} className="ck-key ck-key--sm max-w-[10rem] truncate text-[11px]">{p.label}</button>
+          ))}
+        </div>
+      )}
       {!pool && <p role="status" className="text-xs text-slate-300">{loadError ? `${BANK_LABEL[bank]} unavailable: ${loadError}` : pools ? `${BANK_LABEL[bank]}: nothing to schedule yet.` : `Loading ${BANK_LABEL[bank].toLowerCase()}…`}</p>}
       {pool && !c.clockEligible && <p className="text-[11px] text-amber-300">Shuffle only · durations not in {bank === 'music' ? 'snapshot' : 'manifest'}</p>}
       {repeat && <p className="text-[11px] tabular-nums text-slate-300">{repeat}</p>}
