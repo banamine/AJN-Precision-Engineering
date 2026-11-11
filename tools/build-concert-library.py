@@ -133,7 +133,7 @@ def admission_reason(meta, listing):
 def dedupe_key(md, tracks):
     return (slug(tidy_title(md.get("title"))), str(md.get("date") or "")[:10])
 
-def build(listing, fetch_meta, cfg, overrides=None):
+def build(listing, fetch_meta, cfg, overrides=None, two_pool=None, skip_ids=frozenset()):
     """Pure pipeline over the listing hits. fetch_meta(identifier) -> metadata dict or None. Returns result dict."""
     overrides = overrides or {}
     min_s = cfg["minTrackSeconds"]; wanted = {x.lower() for x in cfg["languages"]}
@@ -143,16 +143,19 @@ def build(listing, fetch_meta, cfg, overrides=None):
     seen_key, seen_md5 = {}, {}; dups = []
     subj_tokens = collections.Counter()
     for hit in sorted(listing, key=lambda h: h["fields"]["identifier"]):
-        f = hit["fields"]; ident = f["identifier"]; funnel["account_items"] += 1
+        f = hit["fields"]; ident = f["identifier"]
+        if ident in skip_ids: continue   # two-pool additive mode: already in the manifest
+        funnel["account_items"] += 1
         subjects = [plain(s) for s in as_list(f.get("subject"))]
         row = {"identifier": ident, "title": tidy_title(f.get("title")), "date": str(f.get("date") or "")[:10],
                "language": ";".join(as_list(f.get("language"))), "subjects": ";".join(subjects), "tracks": "", "art": "", "pool": "", "decision": "", "reason": ""}
         rows.append(row)
         if str(f.get("mediatype")) != "audio": row.update(decision="reject", reason=f"mediatype {f.get('mediatype')}"); rejected[row["reason"]].append(ident); continue
-        if cfg["subject"].lower() not in [s.lower() for s in subjects]: row.update(decision="skip", reason="not live concert"); continue
+        if not two_pool and cfg["subject"].lower() not in [s.lower() for s in subjects]: row.update(decision="skip", reason="not live concert"); continue
         funnel["live_concert_subject"] += 1
         langs = [l.lower() for l in map(plain, as_list(f.get("language")))]
-        if not langs:
+        if two_pool: pass   # Entry 028/030: every language admitted (language preserved), routing by classifier
+        elif not langs:
             if not cfg["includeMissingLanguage"]:
                 row.update(decision="needs_decision", reason="language missing"); needs_decision["language_missing"].append(ident); continue
         elif not (set(langs) & wanted):
@@ -163,7 +166,7 @@ def build(listing, fetch_meta, cfg, overrides=None):
         if reason: row.update(decision="reject", reason=reason); rejected[reason].append(ident); continue
         funnel["not_restricted"] += 1
         md = meta["metadata"]; tracks, short = select_tracks(meta, min_s)
-        if not tracks: row.update(decision="reject", reason="no playable mp3"); rejected["no playable mp3"].append(ident); continue
+        if not tracks: row.update(decision="reject", reason="NO_PLAYABLE_AUDIO" if two_pool else "no playable mp3"); rejected["NO_PLAYABLE_AUDIO" if two_pool else "no playable mp3"].append(ident); continue
         funnel["playable_mp3"] += 1
         md5s = frozenset(t["md5"] for t in tracks if t.get("md5"))
         key = dedupe_key(md, tracks)
@@ -176,9 +179,12 @@ def build(listing, fetch_meta, cfg, overrides=None):
         subs = [plain(s) for s in as_list(md.get("subject"))]; subj_tokens.update(s.lower() for s in subs)
         art, thumb = pick_art(meta); creator = creator_of(md)
         pool = override_pool(overrides, ident, creator) or classify(subs, title, desc)
+        verdict = two_pool(ident, title, subs, creator, desc) if two_pool else None
+        if verdict: row.update(bucket=verdict["bucket"], bucketReason=verdict["reason"])
         row.update(decision="admit", pool=pool, tracks=len(tracks), art="yes" if art else "none", reason=f"{short} short track(s) dropped" if short else "")
         candidates.append({"id": ident, "title": title, "date": str(md.get("date") or "")[:10], "art": art, "thumb": thumb, "pool": pool, "creator": creator,
                            "rights": plain(md.get("licenseurl") or md.get("rights") or ""), "desc": desc, "subjects": subs,
+                           "bucket": verdict["bucket"] if verdict else "Live Concerts", "bucketReason": verdict["reason"] if verdict else "", "lang": ";".join(langs),
                            "tracks": [{"f": t["name"], "t": clean_track_title(t), "d": round(parse_seconds(t.get("length"))), "b": int(t["size"]) if t.get("size") else None,
                                        "n": i + 1} for i, t in enumerate(tracks)]})
     return {"funnel": funnel, "candidates": candidates, "rejected": rejected, "needs_decision": needs_decision, "duplicates": dups, "rows": rows, "subject_tokens": subj_tokens}
@@ -297,6 +303,46 @@ def write_reports(out_dir, res, manifest, gen):
     open(os.path.join(out_dir, "summary.md"), "w", encoding="utf-8").write("\n".join(lines) + "\n")
     return un / max(1, len(cands))
 
+def merge_pools(existing, new_manifest):
+    """Append new concerts to existing pools (by pool id); existing concerts are never rewritten or reordered out of place."""
+    by = {p["id"]: p for p in existing["pools"]}; seen = {c["id"] for p in existing["pools"] for c in p["concerts"]}
+    order = [p["id"] for p in existing["pools"]]
+    for np_ in new_manifest["pools"]:
+        add = [c for c in np_["concerts"] if c["id"] not in seen]
+        if not add: continue
+        if np_["id"] in by: by[np_["id"]]["concerts"] = sorted(by[np_["id"]]["concerts"] + add, key=lambda c: (c["date"], c["id"]))
+        else: by[np_["id"]] = dict(np_, concerts=add); order.append(np_["id"])
+        seen.update(c["id"] for c in add)
+    return dict(existing, pools=[by[i] for i in order])
+
+def fm_manifest(cands):
+    rows = [{"id": c["id"], "title": c["title"], "date": c["date"], "art": c["art"], "thumb": c["thumb"], "creator": c["creator"], "lang": c["lang"], "reason": c["bucketReason"],
+             "tracks": [{k: v for k, v in t.items() if v is not None} for t in c["tracks"]]} for c in sorted(cands, key=lambda c: (c["date"], c["id"]))]
+    return {"schema": "ajn.fmBroadcasts.v1", "source": ACCOUNT, "group": "FM Broadcasts", "broadcasts": rows}
+
+def run_two_pool(a, cfg, ib, listing, errors, overrides):
+    """Entry 028/030/032: additive two-pool ingest. Existing manifest concerts are skipped (never rewritten); no silent defaults - every item carries a reason."""
+    sys.path.insert(0, here); import paris_portland_classifier as ppc
+    existing = json.load(open(a.out, encoding="utf-8")); have = {c["id"] for p in existing["pools"] for c in p["concerts"]}
+    res = build(listing, make_fetcher(ib, a.cache, errors), cfg, overrides, two_pool=ppc.classify_final, skip_ids=frozenset(have))
+    os.makedirs(a.reports, exist_ok=True)
+    cols = ["identifier", "title", "language", "subjects", "tracks", "art", "pool", "bucket", "bucketReason", "decision", "reason"]
+    with open(os.path.join(a.reports, "paris-portland-two-pool.csv"), "w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore"); w.writeheader(); w.writerows(res["rows"])
+    live = [c for c in res["candidates"] if c["bucket"] == "Live Concerts"]; fm = [c for c in res["candidates"] if c["bucket"] == "FM Broadcasts"]
+    summary = {"alreadyInManifestSkipped": len(have & {h["fields"]["identifier"] for h in listing}), "newLiveConcerts": len(live), "newFmBroadcasts": len(fm),
+               "duplicatesRemoved": len(res["duplicates"]), "rejected": {k: len(v) for k, v in res["rejected"].items()}, "fetchErrors": len(errors),
+               "reasons": dict(collections.Counter(c["bucketReason"].split(":")[0] for c in res["candidates"])),
+               "auditFlagged": sorted(c["id"] for c in res["candidates"] if c["bucketReason"] == "AUDIT_REVIEW_UNVERIFIED_VENUE"),
+               "nonEnglishOrMissingLanguageAdmitted": sum(1 for c in live if not ({x.lower() for x in c["lang"].split(";")} & {"eng", "english"}))}
+    json.dump(summary, open(os.path.join(a.reports, "paris-portland-two-pool-summary.json"), "w"), indent=1)
+    print(json.dumps(summary, indent=1))
+    if errors: print("Refusing to write manifests from an incomplete fetch:", errors[:3], file=sys.stderr); return 4
+    merged = merge_pools(existing, pools_manifest(live))
+    for path, obj in ((a.out, merged), (a.fm_out, fm_manifest(fm))):
+        tmp = path + ".tmp"; json.dump(obj, open(tmp, "w", encoding="ascii"), separators=(",", ":"), ensure_ascii=True); os.replace(tmp, path); print("wrote", path)
+    return 0
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--discover", action="store_true", help="read-only: reports only, no manifest, ignores enabled flag")
@@ -309,11 +355,14 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=0, help="only the first N identifiers after sorting (staged backfill: 25, 100, all)")
     ap.add_argument("--stage-sample", type=int, default=0, help="also write a stratified N-concert staging manifest (see --stage-out); production manifest unaffected")
     ap.add_argument("--stage-out", default=os.path.join(root, "reports/concert-discovery/concertPoolsManifest.staging.json"))
+    ap.add_argument("--two-pool", action="store_true", help="Entry 028/030/032: additive Paris-Portland ingest. Classify each NEW item (tools/paris_portland_classifier.py) into Live Concerts "
+                    "(merged into --out, existing concerts untouched) or FM Broadcasts (--fm-out). Reads --listing + --cache only; no network when both are complete.")
+    ap.add_argument("--fm-out", default=os.path.join(root, "src/data/fmBroadcastChannels.json"))
     ap.add_argument("--accept-unclassified", action="store_true", help="write the manifest even when Unclassified exceeds maxUnclassifiedShare")
     a = ap.parse_args(argv)
     cfg = dict(DEFAULTS)
     with open(a.config, encoding="utf-8") as fh: cfg.update(json.load(fh).get("sources", {}).get(SOURCE_KEY, {}))
-    if not a.discover and cfg.get("enabled") is not True:
+    if not a.discover and not (a.two_pool and a.listing) and cfg.get("enabled") is not True:   # --two-pool needs an explicit saved --listing (offline), so the fail-closed network gate is not bypassed
         print(f"{SOURCE_KEY} is disabled in config (fail-closed). Run --discover, or set sources.{SOURCE_KEY}.enabled=true.", file=sys.stderr); return 2
     ib = load_infobattalion_module(); errors = []
     if a.listing:
@@ -325,6 +374,8 @@ def main(argv=None):
     overrides = {}
     if os.path.exists(a.overrides):
         with open(a.overrides, encoding="utf-8") as fh: overrides = json.load(fh)
+    if a.two_pool:
+        return run_two_pool(a, cfg, ib, listing, errors, overrides)
     res = build(listing, make_fetcher(ib, a.cache, errors), cfg, overrides)
     manifest = pools_manifest(res["candidates"])
     share = write_reports(a.reports, res, None if a.discover else manifest, datetime.now(timezone.utc).isoformat(timespec="seconds"))
