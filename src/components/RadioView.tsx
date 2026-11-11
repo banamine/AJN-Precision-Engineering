@@ -188,6 +188,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   };
 
   const { music, podcastEps, spoken, spokenError, loadSpoken, concerts, concertsError, loadConcerts, playItem, presetFor, deckSources } = useListenDeck(onPlayProgram);
+  const [findOpen, setFindOpen] = useState(false);
 
   const show = showChips(entries);
   const type = typeChips(entries);
@@ -210,7 +211,14 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
 
-      <ListenBrowser music={music} concerts={concerts} podcasts={podcastEps} concertsError={concertsError} loadConcerts={loadConcerts} spokenLoaded={spoken !== null} spokenError={spokenError} feedsDown={spoken?.feedsDown ?? []} loadSpoken={loadSpoken} playingProgramId={nowPlaying?.programId} onPlay={playItem} presetFor={presetFor} />
+      <section className="ajr-section" aria-label="Find and save drawer" data-testid="find-drawer">
+        <button type="button" className="ck-key" data-testid="find-drawer-toggle" aria-expanded={findOpen} aria-controls="ajr-find" onClick={() => setFindOpen((o) => !o)}>
+          {findOpen ? 'Hide' : 'Find & save'} · {music.length.toLocaleString()} music · {podcastEps.length.toLocaleString()} podcast episodes{concerts ? ` · ${concerts.length.toLocaleString()} concerts` : ''}
+        </button>
+        {findOpen && (
+  <ListenBrowser music={music} concerts={concerts} podcasts={podcastEps} concertsError={concertsError} loadConcerts={loadConcerts} spokenLoaded={spoken !== null} spokenError={spokenError} feedsDown={spoken?.feedsDown ?? []} loadSpoken={loadSpoken} playingProgramId={nowPlaying?.programId} onPlay={playItem} presetFor={presetFor} />
+        )}
+      </section>
 
       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>

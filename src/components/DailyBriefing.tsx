@@ -10,8 +10,10 @@ function timeLabel(iso: string | null): string {
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
+export const TICKER_MAX = 12;
+
 export function NewsTicker({ news }: { news: DigestView }) {
-  const items = (news.data?.digest.top ?? []).slice(0, 5);
+  const items = (news.data?.digest.top ?? []).slice(0, TICKER_MAX);
   if (!items.length) return null;
   const row = (suffix: string) => items.map(item => (
     <a key={`${item.id}${suffix}`} className="ajr-ticker-item" tabIndex={suffix ? -1 : undefined} href={item.url} target="_blank" rel="noopener noreferrer"><b>{item.source}</b>{item.title}</a>

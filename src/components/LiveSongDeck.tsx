@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { RadioSpectrum } from './RadioSpectrum';
+import { NewsCarousel } from './NewsCarousel';
 import { useLiveRadioNowPlaying, type LiveRadioNowPlaying } from '../hooks/useLiveRadioNowPlaying';
 
 /** Live Radio panel of the Head Unit: spectrum + the station's own song text (now playing, recently played).
@@ -52,6 +53,7 @@ export function LiveSongDeckView({ np, stationTitle, hasStation, playing, heard 
           ))}
         </ul>
       )}
+      {hasStation && (np.state === 'unsupported' || np.state === 'none' || (np.state === 'error' && !c)) && <NewsCarousel />}
       {hasStation && np.state !== 'unsupported' && <p className="text-[10px] text-slate-500">Song text comes from the station's own feed, refreshed every 30 s.</p>}
     </div>
   );
