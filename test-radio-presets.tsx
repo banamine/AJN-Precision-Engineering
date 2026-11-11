@@ -98,7 +98,7 @@ store.clear(); store.set(RADIO_PRESETS_KEY, '[]');
 let unit = renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop, initialView: 'unit' }));
 assert.equal((unit.match(/data-testid="radio-preset-[1-5]"/g) ?? []).length, 5);
 assert.equal((unit.match(/data-testid="radio-preset-bank"/g) ?? []).length, 1);
-assert.equal((unit.match(/data-testid="radio-head-unit-knob"/g) ?? []).length, 1);
+assert.equal((unit.match(/<[a-z]+\s[^>]*data-testid="radio-head-unit-knob"/g) ?? []).length, 1); // elements only: the inline <style> focus rule also names this testid
 assert.match(unit, /data-testid="radio-head-unit-prev"/);
 assert.match(unit, /data-testid="radio-head-unit-next"/);
 assert.match(unit, /AJN-1/); assert.doesNotMatch(unit, /JVC|\bCD\b|SiriusXM|Math\.random/);
@@ -106,7 +106,7 @@ assert.match(unit, /OFF AIR/); assert.doesNotMatch(unit, /ON AIR/);
 unit = renderToStaticMarkup(createElement(RadioPresetsBar, { station: playingNow, live: true, onPlay: noop, initialView: 'unit' }));
 assert.match(unit, /ON AIR/); assert.doesNotMatch(unit, /OFF AIR/); assert.match(unit, /Station b/);
 // wall is still the default
-assert.doesNotMatch(renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop })), /radio-head-unit/);
+assert.doesNotMatch(renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop })), /<[a-z]+\s[^>]*data-testid="radio-head-unit/);
 // remembered view: blocked / missing / junk storage falls back to wall
 const { readPresetView, PRESET_VIEW_KEY } = await import('./src/components/RadioPresetsBar');
 assert.equal(readPresetView({ getItem: () => 'unit' }), 'unit');
@@ -117,5 +117,5 @@ assert.equal(PRESET_VIEW_KEY, 'ajn.radio.presetView.v1');
 assert.equal(readPresetView({ getItem: () => null }, 'unit'), 'unit');
 assert.equal(readPresetView({ getItem: () => 'wall' }, 'unit'), 'wall');
 assert.equal(readPresetView({ getItem: () => { throw new Error('blocked'); } }, 'unit'), 'unit');
-assert.match(renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop, defaultView: 'unit' })), /radio-head-unit/);
+assert.match(renderToStaticMarkup(createElement(RadioPresetsBar, { station: null, live: false, onPlay: noop, defaultView: 'unit' })), /<[a-z]+\s[^>]*data-testid="radio-head-unit/);
 console.log('PASS radio presets: store rules, refusals, bad data, injectable storage, bar markup (5 slots, empty, filled, active, paused, non-radio, wall, banks, wide, head unit)');
