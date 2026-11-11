@@ -382,6 +382,24 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const line3 = status || line3Base;
           const glassKey = 'relative flex h-20 min-w-0 flex-1 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
           const keyBg = { background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.45)' } as const;
+          // Theme 4 (Entry 035): aviator cockpit latching rocker keys. Unlatched = raised; latched (playing) = pressed 3px with an amber bar.
+          const rockerKey = 'relative flex h-20 min-h-[52px] w-full min-w-[48px] flex-1 select-none flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-xl p-3 text-center touch-manipulation cursor-pointer transition-transform duration-100 active:translate-y-0.5 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
+          const rockerStyle = (latched: boolean, empty: boolean) => ({
+            background: latched ? 'linear-gradient(180deg, #0D0F14 0%, #14171F 50%, #1C212B 100%)' : 'linear-gradient(180deg, #1E232E 0%, #14171F 50%, #0D0F14 100%)',
+            border: `1px ${empty && !latched ? 'dashed' : 'solid'} ${latched ? '#E06D3B' : '#2C3444'}`,
+            boxShadow: latched ? 'inset 0 4px 8px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.5)' : '0 4px 8px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.2)',
+            transform: latched ? 'translateY(3px)' : undefined,
+          });
+          const rockerFace = (num: string, title: string, latched: boolean, empty: boolean) => (
+            <>
+              <span aria-hidden="true" className={latched ? 'mb-2 h-1 w-full rounded-full bg-amber-500 shadow-[0_0_8px_#E06D3B]' : 'mb-2 h-1 w-full rounded-full bg-slate-800'} />
+              <span aria-hidden="true" className="flex w-full items-baseline justify-between">
+                <span className={`text-lg font-semibold leading-none ${latched ? 'text-[#F9A56D]' : empty ? 'text-neutral-500' : 'text-white'}`}>{num}</span>
+                <span className={`font-mono text-[9px] leading-none ${latched ? 'text-amber-400' : 'text-slate-600'}`}>{latched ? 'LATCH' : empty ? 'EMPTY' : 'READY'}</span>
+              </span>
+              <span aria-hidden="true" className="w-full truncate text-left text-[10px] leading-none text-neutral-300">{title}</span>
+            </>
+          );
           const selectSource = (src: AudioSourceType) => {
             const key: 'live' | 'archive' | 'podcasts' = src === 'radio' ? 'live' : src === 'music' ? 'archive' : 'podcasts';
             setMode(key);
@@ -469,11 +487,9 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                           onPointerDown={onPointerDown(slot)} onPointerMove={onPointerMove} onPointerUp={cancelHold} onPointerCancel={cancelHold} onPointerLeave={cancelHold}
                           onClick={onClick(slot)} onKeyDown={onKeyDown(slot)}
                           onMouseEnter={() => ap && setPreview(ap.title)} onMouseLeave={() => setPreview(null)} onFocus={() => ap && setPreview(ap.title)} onBlur={() => setPreview(null)}
-                          style={act ? { ...keyBg, background: 'linear-gradient(180deg, rgba(224,109,59,0.30), rgba(224,109,59,0.08))' } : keyBg}
-                          className={`${glassKey} ${act ? 'border-[#E06D3B] text-white' : ap ? 'border-white/25 text-white hover:border-[#E06D3B]/70' : 'border-dashed border-white/20 text-neutral-400'}`}>
+                          style={rockerStyle(act, !ap)} className={rockerKey}>
                           {isHoldingSlot(slot) && <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-[2] rounded-xl ring-2 ring-[#E06D3B]" style={{ animation: `ajnPresetFill ${HOLD_MS}ms linear forwards`, background: 'rgba(224,109,59,0.22)' }} />}
-                          <span aria-hidden="true" className={`text-lg font-semibold leading-none ${act ? 'text-[#F9A56D]' : ''}`}>{String(slot).padStart(2, '0')}</span>
-                          <span aria-hidden="true" className="w-full truncate px-1 text-[10px] leading-none text-neutral-300">{ap?.title ?? '+'}</span>
+                          {rockerFace(String(slot).padStart(2, '0'), ap?.title ?? '+', act, !ap)}
                         </button>
                       );
                     })}
@@ -486,10 +502,8 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                       return (
                         <button key={slot} type="button" data-testid={`radio-deck-item-${slot}`} disabled={!it} aria-label={it ? `Play ${it.title}` : `Slot ${slot}, empty`} title={it?.title}
                           onClick={() => it && it.play()} onMouseEnter={() => it && setPreview(it.title)} onMouseLeave={() => setPreview(null)} onFocus={() => it && setPreview(it.title)} onBlur={() => setPreview(null)}
-                          style={act ? { ...keyBg, background: 'linear-gradient(180deg, rgba(224,109,59,0.30), rgba(224,109,59,0.08))' } : keyBg}
-                          className={`${glassKey} ${act ? 'border-[#E06D3B] text-white' : it ? 'border-white/25 text-white hover:border-[#E06D3B]/70' : 'border-dashed border-white/20 text-neutral-500'} disabled:cursor-default`}>
-                          <span aria-hidden="true" className={`text-lg font-semibold leading-none ${act ? 'text-[#F9A56D]' : ''}`}>{String(listPage * 5 + slot).padStart(2, '0')}</span>
-                          <span aria-hidden="true" className="w-full truncate px-1 text-[10px] leading-none text-neutral-300">{it?.title ?? '–'}</span>
+                          style={rockerStyle(act, !it)} className={`${rockerKey} disabled:cursor-default`}>
+                          {rockerFace(String(listPage * 5 + slot).padStart(2, '0'), it?.title ?? '–', act, !it)}
                         </button>
                       );
                     })}
@@ -502,13 +516,12 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                       const id = p?.channelId ?? r?.channelId;
                       const title = p?.title ?? r?.title;
                       const active = Boolean(id && playing && id === playing.channelId);
-                      const keyCls = `${glassKey} ${active ? 'border-[#E06D3B] text-white' : id ? 'border-white/25 text-white hover:border-[#E06D3B]/70' : 'border-dashed border-white/20 text-neutral-400'}`;
-                      const keyStyle = active ? { ...keyBg, boxShadow: '0 0 16px rgba(224,109,59,0.55), inset 0 1px 1px rgba(255,255,255,0.3)', background: 'linear-gradient(180deg, rgba(224,109,59,0.30), rgba(224,109,59,0.08))' } : keyBg;
+                      const keyCls = rockerKey;
+                      const keyStyle = rockerStyle(active, !id);
                       const body = (
                         <>
                           {isHoldingSlot(slot) && <span aria-hidden="true" data-testid="radio-preset-hold" className="pointer-events-none absolute inset-0 z-[2] rounded-xl ring-2 ring-[#E06D3B]" style={{ animation: `ajnPresetFill ${HOLD_MS}ms linear forwards`, background: 'rgba(224,109,59,0.25)' }} />}
-                          <span aria-hidden="true" className={`text-lg font-semibold leading-none ${active ? 'text-[#F9A56D]' : ''}`}>{String(slot).padStart(2, '0')}</span>
-                          <span aria-hidden="true" className="w-full truncate px-1 text-[10px] leading-none text-neutral-300">{title ?? '+'}</span>
+                          {rockerFace(String(slot).padStart(2, '0'), title ?? '+', active, !id)}
                           {active && live && <span aria-hidden="true" data-testid="radio-preset-live" className="ajn-live-dot absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse motion-reduce:animate-none" />}
                         </>
                       );
