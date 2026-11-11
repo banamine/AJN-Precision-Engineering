@@ -6,39 +6,41 @@ Total records: **3542**. An empty field means the source file does not state it 
 
 | source | records | no sub_genre | no era_decade | no synonyms | no creator | no stream_url |
 |---|---:|---:|---:|---:|---:|---:|
-| archiveAudioChannels.json | 98 | 0 | 98 | 88 | 98 | 0 |
-| concertPoolsManifest.json | 1410 | 0 | 0 | 775 | 1410 | 0 |
-| extraChannelsManifest.json | 185 | 0 | 185 | 11 | 185 | 185 |
-| fmBroadcastChannels.json | 346 | 346 | 0 | 346 | 0 | 0 |
-| libraryIndex.json | 1487 | 0 | 355 | 397 | 1487 | 0 |
-| podcastSources.json | 16 | 16 | 16 | 16 | 0 | 0 |
+| archiveAudioChannels.json | 98 | 0 | 51 | 6 | 98 | 0 |
+| concertPoolsManifest.json | 1410 | 0 | 0 | 66 | 1410 | 0 |
+| extraChannelsManifest.json | 185 | 0 | 145 | 11 | 185 | 185 |
+| fmBroadcastChannels.json | 346 | 134 | 0 | 0 | 0 | 0 |
+| libraryIndex.json | 1487 | 0 | 285 | 0 | 1487 | 0 |
+| podcastSources.json | 16 | 16 | 16 | 0 | 0 | 0 |
 
 ## By media_type
 
 | media_type | records | with synonyms | unclassified (no sub_genre AND no synonyms) |
 |---|---:|---:|---:|
 | audio | 48 | 48 | 0 |
-| audio_channel | 98 | 10 | 0 |
-| audiobook | 150 | 6 | 0 |
+| audio_channel | 98 | 92 | 0 |
+| audiobook | 150 | 150 | 0 |
 | channel | 185 | 174 | 0 |
-| fm_broadcast | 346 | 0 | 346 |
-| live_concert | 1410 | 635 | 0 |
-| old_time_radio | 138 | 24 | 0 |
-| podcast | 16 | 0 | 16 |
-| video | 1151 | 1012 | 0 |
+| fm_broadcast | 346 | 346 | 0 |
+| live_concert | 1410 | 1344 | 0 |
+| old_time_radio | 138 | 138 | 0 |
+| podcast | 16 | 16 | 0 |
+| video | 1151 | 1151 | 0 |
 
-**Records with no search synonyms at all: 1633 of 3542** (these only match by title text today).
+**Records with no search synonyms at all: 83 of 3542** (these only match by title text today).
+
+Decades filled from a single year in the title/id (era_source=title): 157. FM broadcasts with a sub_genre from their own title words: 212 of 346.
 
 ## Concert sub-genres: how many reach a thesaurus pool (0 = typing the genre word finds them only by title)
 
 | sub_genre | concerts | with synonyms |
 |---|---:|---:|
 | Rock | 592 | 592 |
-| Jazz & Blues | 470 | 14 |
-| Folk, Country & Roots | 180 | 15 |
-| Soul, Funk & Hip-Hop | 78 | 5 |
-| Unclassified | 76 | 5 |
-| World & Latin | 10 | 0 |
+| Jazz & Blues | 470 | 470 |
+| Folk, Country & Roots | 180 | 180 |
+| Soul, Funk & Hip-Hop | 78 | 78 |
+| Unclassified | 76 | 10 |
+| World & Latin | 10 | 10 |
 | Electronic | 4 | 4 |
 
 ## Integrity

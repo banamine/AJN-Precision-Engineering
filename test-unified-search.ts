@@ -16,6 +16,13 @@ assert.ok(GENRE_THESAURUS.every((g) => g.aliases.length > 0 && (g.categoryIds.le
 assert.ok(inGenrePools(resolveGenres('tv'), { categoryIds: ['classic-tv'] }, () => false));
 assert.ok(!inGenrePools(resolveGenres('tv'), { categoryIds: ['apollo'] }, () => false));
 
+// Entry 047 pools resolve and match their real categories
+assert.deepEqual(resolveGenres('Jazz').map((g) => g.id), ['jazz-blues']);
+assert.deepEqual(resolveGenres('bluegrass').map((g) => g.id), ['folk-country']);
+assert.deepEqual(resolveGenres('OTR').map((g) => g.id), ['old-time-radio']);
+assert.deepEqual(resolveGenres('movie').map((g) => g.id), ['movies']);
+assert.deepEqual(resolveGenres('audio book').map((g) => g.id), ['audiobooks']);
+assert.ok(new Set(GENRE_THESAURUS.map((g) => g.id)).size === GENRE_THESAURUS.length, 'genre ids are unique');
 // shared query storage (injectable)
 const mem = new Map<string, string>(); const st = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) };
 writeSharedQuery('star trek', st); assert.equal(mem.get(SHARED_SEARCH_KEY), 'star trek'); assert.equal(readSharedQuery(st), 'star trek');
@@ -37,5 +44,10 @@ assert.deepEqual(ids('westerns'), ['Gunsmoke Ep 1'], 'western terms');
 assert.deepEqual(ids('space'), ['Apollo 11 Highlights', 'Night of the Living Dead'], 'sci-fi pool = scifi-horror + apollo');
 assert.deepEqual(ids('maltese'), ['The Maltese Falcon'], 'plain title match unchanged');
 assert.deepEqual(ids('dance'), [], 'no pool and no title -> honest empty');
+setLibraryIndexForTests([rec('o', 'Suspense Ep 1', ['old-time-radio']), rec('p', 'Pride and Prejudice', ['audiobooks']), rec('q', 'Detour', ['classic-cinema'])]);
+// (the real nker150 records are always merged into the index, so check membership, not equality)
+assert.ok(ids('otr').includes('Suspense Ep 1') && !ids('otr').includes('Detour'));
+assert.ok(ids('audiobooks').includes('Pride and Prejudice') && !ids('audiobooks').includes('Detour'));
+assert.ok(ids('movie').includes('Detour') && !ids('movie').includes('Suspense Ep 1'));
 assert.ok(matchesQuery(['Hogans Heroes'], 'hogan'));
 console.log('unified-search ok');

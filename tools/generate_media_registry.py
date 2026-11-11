@@ -14,7 +14,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / 'src' / 'data'
 OUT_DIR = ROOT / 'tools' / 'metadata'
-COLUMNS = ['id', 'title', 'media_type', 'sub_genre', 'era_decade', 'color_format', 'creator_host_artist', 'search_synonyms', 'stream_url', 'ingest_date', 'source']
+COLUMNS = ['id', 'title', 'media_type', 'sub_genre', 'era_decade', 'era_source', 'color_format', 'creator_host_artist', 'search_synonyms', 'play_as', 'stream_url', 'ingest_date', 'source']
+# which thesaurus pool a whole media type belongs to (the manifest itself says these are FM broadcasts / podcasts)
+TYPE_POOL = {'fm_broadcast': 'fm-broadcasts', 'podcast': 'podcasts'}
+# how the app plays each kind (derived from media_type; Player for video, audio dock for audio, guide for channels)
+PLAY_AS = {'video': 'video', 'audio': 'audio', 'audiobook': 'audio', 'old_time_radio': 'audio', 'live_concert': 'audio', 'fm_broadcast': 'audio', 'audio_channel': 'audio', 'podcast': 'audio', 'channel': 'channel'}
 SYN_SEP = '|'
 
 
@@ -34,14 +38,15 @@ def load_thesaurus():
     return genres
 
 
-def synonyms(genres, category_ids, text, genre_text=''):
+def synonyms(genres, category_ids, text, genre_text='', type_pool=''):
     """Aliases of every genre pool this record belongs to: by library category id, by a pool term appearing in its own text, or because
     its stated genre IS one of the pool's words (e.g. concert genre "Rock"). Words this script adds itself are never matched against."""
     low = ' ' + re.sub(r'[^a-z0-9& ]+', ' ', text.lower()) + ' '
-    gt = re.sub(r'[^a-z0-9& ]+', ' ', genre_text.lower()).strip()
+    norm = lambda t: ' '.join(re.sub(r'[^a-z0-9& ]+', ' ', t.lower()).split())
+    gt = norm(genre_text)
     out, seen = [], set()
     for g in genres:
-        hit = any(c in g['cats'] for c in category_ids) or any((' ' + t + ' ') in low for t in g['terms']) or (gt != '' and (gt in g['aliases'] or gt == g['label'].lower()))
+        hit = any(c in g['cats'] for c in category_ids) or any((' ' + t + ' ') in low for t in g['terms']) or (gt != '' and (gt in g['aliases'] or gt == norm(g['label']))) or g['id'] == type_pool
         if hit:
             for a in [g['label'].lower()] + g['aliases']:
                 if a not in seen:
@@ -56,6 +61,20 @@ def decade_of(year):
 def year_from_date(s):
     m = re.match(r'^(\d{4})', str(s or ''))
     return int(m.group(1)) if m else None
+
+
+def year_from_text(*texts):
+    """One unambiguous 4-digit year (1900-2029) in the title or identifier; none if there are zero or several different ones (ranges, sequels)."""
+    years = {int(y) for t in texts for y in re.findall(r'(?<!\d)(19\d\d|20[0-2]\d)(?!\d)', t or '')}
+    return years.pop() if len(years) == 1 else None
+
+
+def fm_sub_genre(title, creator):
+    low = f'{title} {creator}'.lower()   # only words present in the record's own strings
+    if re.search(r'melting pot|freeform|kffp|\bffp\b', low): return 'Freeform Radio'
+    if re.search(r'jazz|blues', low): return 'Jazz Radio'
+    if re.search(r'\brock\b', low): return 'Rock Radio'
+    return ''
 
 
 def color_of(title):
@@ -90,8 +109,8 @@ def build():
     fm = load('fmBroadcastChannels.json')
     for b in fm['broadcasts']:
         first = b.get('tracks')
-        rows.append({'id': f"fm:{b['id']}", 'title': b.get('title', ''), 'media_type': 'fm_broadcast', 'sub_genre': '', 'era_decade': decade_of(year_from_date(b.get('date'))),
-                     'color_format': '', 'creator_host_artist': b.get('creator', '') or '', 'search_synonyms': synonyms(G, [], b.get('title', '')),
+        rows.append({'id': f"fm:{b['id']}", 'title': b.get('title', ''), 'media_type': 'fm_broadcast', 'sub_genre': fm_sub_genre(b.get('title', ''), b.get('creator', '') or ''), 'era_decade': decade_of(year_from_date(b.get('date'))),
+                     'color_format': '', 'creator_host_artist': b.get('creator', '') or '', 'search_synonyms': synonyms(G, [], b.get('title', ''), '', TYPE_POOL['fm_broadcast']),
                      'stream_url': dl(b['id'], ''), 'ingest_date': '', 'source': 'fmBroadcastChannels.json'})
 
     for ch in load('archiveAudioChannels.json'):
@@ -100,13 +119,20 @@ def build():
 
     for s in load('podcastSources.json')['sources']:
         rows.append({'id': f"podcast:{s['id']}", 'title': s.get('name', ''), 'media_type': 'podcast', 'sub_genre': '', 'era_decade': '', 'color_format': '', 'creator_host_artist': s.get('publisher', '') or '',
-                     'search_synonyms': synonyms(G, [], s.get('name', '')), 'stream_url': s.get('feedUrl', ''), 'ingest_date': s.get('verifiedAt', ''), 'source': 'podcastSources.json'})
+                     'search_synonyms': synonyms(G, [], s.get('name', ''), '', TYPE_POOL['podcast']), 'stream_url': s.get('feedUrl', ''), 'ingest_date': s.get('verifiedAt', ''), 'source': 'podcastSources.json'})
 
     # one record per CHANNEL (the manifest's per-episode rows are not catalog entries; there are ~tens of thousands of them)
     for ch in load('extraChannelsManifest.json')['channels']:
         cats = [ch.get('guideId', '')]
         rows.append({'id': f"channel:{ch['id']}", 'title': ch.get('name', ''), 'media_type': 'channel', 'sub_genre': ch.get('group', ''), 'era_decade': '', 'color_format': '', 'creator_host_artist': '',
                      'search_synonyms': synonyms(G, cats, f"{ch.get('name','')} {ch.get('group','')}"), 'stream_url': '', 'ingest_date': '', 'source': 'extraChannelsManifest.json'})
+    # fill: era from one unambiguous year in the title/identifier where the manifest gave none; play_as from the media type
+    for r in rows:
+        r['era_source'] = 'manifest' if r['era_decade'] else ''
+        if not r['era_decade']:
+            y = year_from_text(r['title'], r['id'] if r['source'] == 'libraryIndex.json' else '')
+            if y: r['era_decade'] = decade_of(y); r['era_source'] = 'title'
+        r['play_as'] = PLAY_AS.get(r['media_type'], '')
     return rows
 
 
@@ -129,6 +155,7 @@ def coverage(rows):
     L.append('')
     tot_unc = sum(1 for r in rows if not r['search_synonyms'])
     L.append(f'**Records with no search synonyms at all: {tot_unc} of {n}** (these only match by title text today).\n')
+    L.append(f"Decades filled from a single year in the title/id (era_source=title): {sum(1 for r in rows if r['era_source']=='title')}. FM broadcasts with a sub_genre from their own title words: {sum(1 for r in rows if r['media_type']=='fm_broadcast' and r['sub_genre'])} of {sum(1 for r in rows if r['media_type']=='fm_broadcast')}.\n")
     L.append('## Concert sub-genres: how many reach a thesaurus pool (0 = typing the genre word finds them only by title)\n')
     L.append('| sub_genre | concerts | with synonyms |'); L.append('|---|---:|---:|')
     cg = Counter(r['sub_genre'] for r in rows if r['media_type'] == 'live_concert')
