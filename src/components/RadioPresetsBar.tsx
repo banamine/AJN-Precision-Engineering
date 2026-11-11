@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKe
 import { Search } from 'lucide-react';
 import { FreshnessTag } from './FreshnessTag';
 import { RadioSpectrum } from './RadioSpectrum';
+import { ScheduleDeck } from './ScheduleDeck';
 import { freshness } from '../utils/listenCatalog';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
@@ -150,7 +151,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   }, []);
   const [knobAngle, setKnobAngle] = useState(0); // knob art only: turns one detent per station step
   const [mode, setMode] = useState<'live' | 'archive' | 'podcasts'>('live');
-  const [sub, setSub] = useState<'music' | 'concerts'>('music');
+  const [sub, setSub] = useState<'music' | 'concerts' | 'fm'>('music');
   const [browse, setBrowse] = useState(false); // non-live tabs: false = my saved keys, true = pages of the catalog
   const audioPresets = useAudioPresets();
   const [listPage, setListPage] = useState(0);
@@ -261,10 +262,10 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
     next.go();
     say(`Tuned ${next.title}`);
   }, [bank, presets, recents, playing, tune, tuneRecent, say]);
-  const audioBank: AudioBank | null = mode === 'live' ? null : mode === 'podcasts' ? 'podcasts' : sub;
+  const audioBank: AudioBank | null = mode === 'live' ? null : mode === 'podcasts' ? 'podcasts' : sub === 'fm' ? null : sub; // FM broadcasts are schedule-only: no presets/list bank
   const modeItems: DeckItem[] = audioBank === 'music' ? (deckSources?.music ?? []) : audioBank === 'concerts' ? (deckSources?.concerts ?? []) : audioBank === 'podcasts' ? (deckSources?.podcasts ?? []) : [];
   const playingItem = (it: DeckItem): boolean => Boolean(nowPlaying?.programId && nowPlaying.programId.startsWith(`${it.id}::`));
-  const bankLabel = audioBank === 'music' ? 'Archive Music' : audioBank === 'concerts' ? 'Live Concerts' : 'Podcasts';
+  const bankLabel = mode === 'archive' && sub === 'fm' ? 'FM Broadcasts' : audioBank === 'music' ? 'Archive Music' : audioBank === 'concerts' ? 'Live Concerts' : 'Podcasts';
   const turn = useCallback((dir: 1 | -1) => {
     if (mode === 'live') { stepStation(dir); return; }
     if (!modeItems.length) { say(audioBank === 'concerts' && !deckSources?.concerts ? 'Concerts are still loading…' : `${bankLabel}: nothing loaded yet.`); return; }
@@ -389,7 +390,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             setStoreArmed(false);
             if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.();
             if (key === 'podcasts') deckSources?.loadSpoken?.();
-            say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts');
+            say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : sub === 'fm' ? 'FM broadcasts' : 'music channels'}` : 'Podcasts');
           };
           const playPrismStation = (channelId: string) => {
             const normalizedId = channelId === 'radio:infowars-live-aac'
@@ -431,7 +432,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                 />
                 {mode === 'archive' && (
                   <div role="group" aria-label="Archive source" className="flex gap-1">
-                    {([['music', 'Music channels'], ['concerts', 'Live concerts']] as const).map(([k, text]) => (
+                    {([['music', 'Music channels'], ['concerts', 'Live concerts'], ['fm', 'FM broadcasts']] as const).map(([k, text]) => (
                       <button key={k} type="button" data-testid={`radio-sub-${k}`} aria-pressed={sub === k}
                         onClick={() => { setSub(k); setListPage(0); setBrowse(false); setStoreArmed(false); if (k === 'concerts') deckSources?.loadConcerts?.(); }}
                         className={`min-h-[36px] cursor-pointer rounded-full px-3 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${sub === k ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-white/15 text-neutral-300 hover:text-white'}`}>{text}</button>
@@ -440,11 +441,15 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                 )}
               </div>
 
-              <div data-testid="radio-head-unit-spectrum" className="flex min-h-[112px] flex-col justify-center rounded-2xl p-4 md:col-start-2 md:row-start-1" style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+              <div data-testid="radio-head-unit-spectrum" className={`flex min-h-[112px] flex-col rounded-2xl p-4 md:col-start-2 md:row-start-1 ${mode === 'archive' ? '' : 'justify-center'}`} style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+                {mode === 'archive' ? (
+                  <ScheduleDeck bank={sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} />
+                ) : (<>
                 <div className="mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                   <span className="text-[#E06D3B]">Spectrum</span>
                 </div>
                 <RadioSpectrum className="!h-24" playing={live || Boolean(playingNow)} />
+                </>)}
               </div>
 
               <div className="space-y-2 md:col-span-2 md:row-start-2">
@@ -612,7 +617,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             </div>
           );
         })()}
-        {mode !== 'live' && (
+        {mode !== 'live' && !(mode === 'archive' && sub === 'fm') && (
           <DeckPicker label={bankLabel} items={modeItems} playingItem={playingItem}
             note={audioBank === 'concerts' ? (deckSources?.concertsError ?? (!deckSources?.concerts ? 'Loading concerts…' : undefined)) : audioBank === 'podcasts' ? deckSources?.podcastsNote : undefined}
             onPick={(it) => { it.play(); setKnobAngle((a) => a + 36); say(`Playing ${it.title}`); }} />
