@@ -235,16 +235,16 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
                 </span>
                 <span className="tracking-wide">PLAY FULL SHOW</span>
               </button>
-              <button type="button" onClick={() => onNavigate('tv-guide')} className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/80 px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-neutral-800">
+              <button type="button" onClick={() => onNavigate('tv-guide')} className="ck-key ck-key--sm inline-flex items-center gap-2 px-4 text-sm">
                 <Tv className="h-4 w-4 text-sky-400" /> Open Guide
               </button>
               {hero.apollo ? (
               <button type="button" onClick={() => { try { sessionStorage.setItem('ajn.library.open', 'apollo'); } catch { /* storage blocked: opens on All */ } onNavigate('library'); }}
-                className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/80 px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-neutral-800">
+                className="ck-key ck-key--sm inline-flex items-center gap-2 px-4 text-sm">
                 <Rocket className="h-4 w-4 text-amber-400" aria-hidden="true" /> Apollo Mission Archive
               </button>
               ) : (
-                <button type="button" onClick={() => onNavigate('library')} className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/80 px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-neutral-800">
+                <button type="button" onClick={() => onNavigate('library')} className="ck-key ck-key--sm inline-flex items-center gap-2 px-4 text-sm">
                   <Archive className="h-4 w-4 text-amber-400" aria-hidden="true" /> Open Library
                 </button>
               )}

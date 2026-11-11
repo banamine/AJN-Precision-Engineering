@@ -99,7 +99,7 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
       {error && !guides ? (
         <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-red-900/60 bg-red-950/30 px-3 py-2 text-xs text-red-200" data-testid="live-strip-error">
           Could not load the channel list ({error}).
-          <button type="button" onClick={() => setAttempt((n) => n + 1)} className="rounded border border-red-700/70 px-2 py-0.5 text-red-100 hover:bg-red-900/40 cursor-pointer">Try again</button>
+          <button type="button" onClick={() => setAttempt((n) => n + 1)} className="ck-key ck-key--sm px-2">Try again</button>
         </div>
       ) : !guides ? (
         <div className="h-9 animate-pulse rounded-lg bg-neutral-900" aria-label="Loading categories" data-testid="live-strip-loading" />
@@ -108,14 +108,14 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
           <div role="group" aria-label="Filter live channels by category" className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]" data-testid="live-strip-chips">
             {[{ id: LIVE_ALL, label: 'All', count: rows.length, onAir: rows.filter((r) => r.onAir).length }, ...cats.slice(0, MAX_CHIPS)].map((c) => (
               <button key={c.id} type="button" aria-pressed={active === c.id} data-category={c.id} onClick={() => pick(c.id)}
-                className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${active === c.id ? 'border-sky-500/60 bg-sky-500/20 text-sky-100' : 'border-neutral-700 text-neutral-300 hover:bg-neutral-800'}`}>
+                className={`ck-key ck-key--sm shrink-0 gap-1.5 px-3 text-xs${active === c.id ? ' is-latched' : ''}`}>
                 {c.label}
                 <span className="tabular-nums text-[10px] text-neutral-400">{c.onAir > 0 ? <><span className="text-emerald-400">{c.onAir}</span>/{c.count}</> : c.count}</span>
               </button>
             ))}
             {!guides.some((g) => g.guideId === AUDIO_GUIDE) && (
               <button type="button" disabled={audioLoading} onClick={() => setAudioWanted(true)} data-testid="live-strip-load-audio"
-                className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-amber-500/50 px-3 py-1 text-xs font-medium text-amber-200 transition hover:bg-amber-500/10 disabled:cursor-wait disabled:opacity-60">
+                className="ck-key ck-key--sm ck-key--empty shrink-0 gap-1.5 px-3 text-xs disabled:cursor-wait disabled:opacity-60">
                 {audioLoading ? 'Loading audio…' : '+ Audio & Music'}
               </button>
             )}
@@ -125,7 +125,7 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
           {shown.length === 0 ? (
             <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-3 text-xs text-neutral-400" data-testid="live-strip-empty">
               No channels in this category yet.
-              <button type="button" onClick={() => pick(LIVE_ALL)} className="ml-3 rounded border border-neutral-700 px-2 py-0.5 text-neutral-200 hover:bg-neutral-800 cursor-pointer">Show all</button>
+              <button type="button" onClick={() => pick(LIVE_ALL)} className="ck-key ck-key--sm ml-3 px-2">Show all</button>
             </div>
           ) : (
             <ul className="divide-y divide-neutral-800 overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900/40" data-testid="live-strip-rows">
@@ -148,7 +148,7 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
                     <p className="truncate text-xs text-neutral-400">{r.program ? r.program.title : 'Nothing scheduled right now'}</p>
                   </div>
                   <button type="button" disabled={!r.onAir} onClick={() => play(r)} aria-label={`Play ${r.channel.name}`}
-                    className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-sky-500 px-3 text-xs font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-neutral-800 disabled:text-neutral-500">
+                    className="ck-key ck-key--sm shrink-0 gap-1 px-3 text-xs disabled:cursor-not-allowed">
                     <Play className="h-3.5 w-3.5" aria-hidden="true" /> Play
                   </button>
                 </li>
@@ -158,7 +158,7 @@ export function HomeLiveStrip({ onPlayProgram, onNavigate }: Props) {
 
           <div className="flex items-center justify-between text-xs text-neutral-500">
             <span data-testid="live-strip-count">{total === 0 ? '' : `Showing ${shown.length} of ${total} · ${onAirTotal} on air now`}</span>
-            <button type="button" onClick={openInGuide} data-testid="live-strip-open-guide" className="inline-flex cursor-pointer items-center gap-1 rounded border border-neutral-700 px-2 py-1 text-neutral-200 hover:bg-neutral-800">
+            <button type="button" onClick={openInGuide} data-testid="live-strip-open-guide" className="ck-key ck-key--sm gap-1 px-2">
               See all in Guide <ArrowRight className="h-3 w-3" aria-hidden="true" />
             </button>
           </div>

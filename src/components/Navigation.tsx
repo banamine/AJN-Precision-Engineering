@@ -195,10 +195,10 @@ export function Navigation({
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={item.label}
                   title={item.label}
-                  className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
+                  className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
                     isActive
-                      ? 'ajn-nav-item-active'
-                      : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
+                      ? 'ck-key is-latched'
+                      : 'ck-key'
                   }`}
                 >
                   <Icon
@@ -230,7 +230,7 @@ export function Navigation({
                 aria-expanded={myLibraryOpen}
                 aria-current={myLibraryActive ? 'page' : undefined}
                 onClick={() => setMyLibraryOpen((open) => !open)}
-                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${myLibraryActive ? 'ajn-nav-item-active' : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100'}`}
+                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap px-3 xl:px-3.5 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ck-key${myLibraryActive ? ' is-latched' : ''}`}
               >
                 <Bookmark className={`h-4 w-4 ${myLibraryActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
                 <span className="hidden xl:inline">My Library</span>
