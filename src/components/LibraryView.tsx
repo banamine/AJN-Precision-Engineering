@@ -3,6 +3,10 @@ import { FolderArchive, Search, Play, FileVideo, FileAudio, Clock, Star, Chevron
 import type { PlayProgramCallback } from '../types';
 import { loadFavorites, saveFavorites } from '../utils/favoritesStore';
 import { Thumb } from './Thumb';
+import { SearchScopeStrip } from './SearchScopeStrip';
+import { useSharedSearch } from '../hooks/useSharedSearch';
+import { GENRE_THESAURUS, resolveGenres, genresByPrefix, type Genre } from '../search/genreThesaurus';
+import { suggest, highlightParts, nextActiveIndex, normalizeQuery, foldText, SUGGEST_MIN_CHARS } from '../utils/suggest';
 
 interface LibraryViewProps { onPlayProgram: PlayProgramCallback }
 
@@ -30,6 +34,8 @@ type ShowOption = { id: string; label: string };
 type Page = { page: number; totalPages: number; totalItems: number; rawCount?: number; uniqueCount?: number; groupCount?: number; items: LibraryResult[] };
 
 const PAGE_SIZE = 24;
+/** Per-letter filtering: the grid refetches this soon after the last keystroke (was 300 ms; stale requests are aborted). */
+const SEARCH_DEBOUNCE_MS = 120;
 const fmtDur = (s: number, est: boolean) => !(s > 0) ? '' : `${est ? '~' : ''}${s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : `${Math.max(1, Math.round(s / 60))} min`}`;
 const decadeLabel = (d: number) => (d === 0 ? 'Undated' : `${d}s`);
 
@@ -42,8 +48,10 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [category, setCategory] = useState<string>(() => { try { const c = sessionStorage.getItem('ajn.library.open') ?? ''; sessionStorage.removeItem('ajn.library.open'); return c; } catch { return ''; } });
   const [showId, setShowId] = useState('');
   const [decade, setDecade] = useState<number | null>(null);
-  const [query, setQuery] = useState('');
-  const [debounced, setDebounced] = useState('');
+  const [query, setQuery] = useSharedSearch();
+  const [debounced, setDebounced] = useState(() => query.trim());
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Page | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,7 +62,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [openSeries, setOpenSeries] = useState<Set<string>>(() => new Set());
 
   useEffect(() => { saveFavorites(favoriteIds); }, [favoriteIds]);
-  useEffect(() => { const t = setTimeout(() => setDebounced(query.trim()), 300); return () => clearTimeout(t); }, [query]);
+  useEffect(() => { const t = setTimeout(() => setDebounced(query.trim()), SEARCH_DEBOUNCE_MS); return () => clearTimeout(t); }, [query]);
   useEffect(() => { setPage(1); }, [category, showId, decade, debounced, showFavorites]);
 
   useEffect(() => {
@@ -90,6 +98,28 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const allTotal = useMemo(() => heat ? heat.reduce((n, c) => n + c.total, 0) : 0, [heat]);
   const maxDecade = Math.max(1, ...(cat?.decades.map((d) => d.count) ?? [1]));
 
+  // Typeahead: genre rows first (with the live count once the result for exactly this text is in), then titles from the loaded page.
+  const typed = query.trim();
+  const genreRows = useMemo(() => {
+    if (normalizeQuery(typed).length < SUGGEST_MIN_CHARS) return [] as Array<{ genre: Genre; exact: boolean }>;
+    const exact = resolveGenres(typed); const seen = new Set(exact.map((g) => g.id));
+    return [...exact.map((genre) => ({ genre, exact: true })), ...genresByPrefix(typed).filter((g) => !seen.has(g.id)).map((genre) => ({ genre, exact: false }))].slice(0, 3);
+  }, [typed]);
+  const titleRows = useMemo(() => suggest(typed, (data?.items ?? []).map((r) => ({ text: r.title }))), [typed, data]);
+  const genreCount = !loading && data && debounced === typed ? data.totalItems : undefined;
+  const optionList = [...genreRows.map((g) => ({ kind: 'genre' as const, text: g.exact ? typed : (g.genre.aliases.find((al) => foldText(al).startsWith(normalizeQuery(typed))) ?? g.genre.aliases[0]), genre: g.genre, exact: g.exact })), ...titleRows.map((t) => ({ kind: 'title' as const, text: t.text }))];
+  const showSuggest = searchFocused && optionList.length > 0;
+  // Ghost completion: the best title that starts with what was typed, else the first genre word that does.
+  const ghostFull = useMemo(() => {
+    const q = normalizeQuery(typed); if (q.length < SUGGEST_MIN_CHARS || typed !== query) return '';
+    const t = titleRows.find((r) => foldText(r.text).startsWith(q));
+    const a = GENRE_THESAURUS.flatMap((g) => g.aliases).find((al) => foldText(al).startsWith(q) && foldText(al) !== q);
+    const full = t?.text ?? a ?? '';
+    return full && foldText(full).length === full.length ? full : '';
+  }, [typed, query, titleRows]);
+  const ghostRest = ghostFull ? ghostFull.slice(query.length) : '';
+  const pickSuggestion = (text: string) => { setQuery(text); setActiveSuggestion(-1); setSearchFocused(false); };
+
   const toggleFavorite = (id: string) => setFavoriteIds((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const play = (it: Item) => onPlayProgram(it.path, it.title, it.description ?? it.identifier, it.mediaType, it.channelId ?? `library-${it.categoryIds[0]}`, it.guideId ?? 'library', it.programId ?? it.id, it.sourceId, it.assetId);
   const toggleSeries = (id: string) => setOpenSeries((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -104,10 +134,46 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
           </div>
           <p className="text-xs text-neutral-400">Films, shows, radio and audiobooks from the Internet Archive — each with a checked, playable file.</p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-500" aria-hidden="true" />
-          <input type="search" id="library-filter-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search the library…" aria-label="Search the library"
-            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/90 pl-9 pr-3.5 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-[var(--ajn-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--ajn-accent)]" />
+        <div className="w-full sm:w-72">
+          <div className="relative rounded-xl bg-neutral-900/90">
+            <Search className="absolute left-3 top-2.5 z-10 h-4 w-4 text-neutral-500" aria-hidden="true" />
+            {ghostRest && (
+              <div aria-hidden="true" data-testid="library-ghost" className="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-pre rounded-xl border border-transparent pl-9 pr-3.5 text-xs">
+                <span className="invisible">{query}</span><span className="text-neutral-500">{ghostRest}</span>
+              </div>
+            )}
+            <input type="search" id="library-filter-input" role="combobox" autoComplete="off" value={query} aria-label="Search the library"
+              aria-expanded={showSuggest} aria-controls="library-suggest-list" aria-autocomplete="both"
+              aria-activedescendant={showSuggest && activeSuggestion >= 0 ? `library-suggest-${activeSuggestion}` : undefined}
+              onChange={(e) => { setQuery(e.target.value); setActiveSuggestion(-1); }}
+              onFocus={() => setSearchFocused(true)} onBlur={() => { setSearchFocused(false); setActiveSuggestion(-1); }}
+              onKeyDown={(e) => {
+                const el = e.currentTarget;
+                if ((e.key === 'Tab' || e.key === 'ArrowRight') && ghostRest && el.selectionStart === el.value.length) { e.preventDefault(); setQuery(ghostFull); return; }
+                if (!showSuggest) return;
+                const next = nextActiveIndex(e.key, activeSuggestion, optionList.length);
+                if (next !== null) { e.preventDefault(); setActiveSuggestion(next); return; }
+                if (e.key === 'Enter' && activeSuggestion >= 0) { e.preventDefault(); pickSuggestion(optionList[activeSuggestion].text); }
+                else if (e.key === 'Escape') { e.preventDefault(); setSearchFocused(false); setActiveSuggestion(-1); }
+              }}
+              placeholder="Search the library…"
+              className="relative w-full rounded-xl border border-neutral-800 bg-transparent pl-9 pr-3.5 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-[var(--ajn-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--ajn-accent)]" />
+            {showSuggest && (
+              <div id="library-suggest-list" role="listbox" aria-label="Library suggestions" data-testid="library-suggest-dropdown"
+                className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-xl border border-neutral-700 bg-neutral-950/98 p-1 shadow-xl backdrop-blur-md">
+                {optionList.map((o, i) => (
+                  <div key={`${o.kind}-${o.text}`} id={`library-suggest-${i}`} role="option" aria-selected={i === activeSuggestion} data-testid={o.kind === 'genre' ? 'library-suggest-genre' : 'library-suggest-title'}
+                    onMouseDown={(e) => e.preventDefault()} onClick={() => pickSuggestion(o.text)}
+                    className={`cursor-pointer rounded-lg px-3 py-2 text-xs ${i === activeSuggestion ? 'bg-neutral-800 text-white' : 'text-neutral-300 hover:bg-neutral-900'}`}>
+                    {o.kind === 'genre'
+                      ? <span><span className="mr-1.5 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">Genre</span>{o.genre.label}{o.exact && genreCount !== undefined ? <span className="ml-1.5 text-neutral-500">({genreCount} {genreCount === 1 ? 'result' : 'results'})</span> : null}</span>
+                      : highlightParts(o.text, typed).map((part, k) => part.match ? <mark key={k} className="bg-transparent font-bold text-emerald-300">{part.text}</mark> : <span key={k}>{part.text}</span>)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <SearchScopeStrip active="library" />
         </div>
       </div>
 

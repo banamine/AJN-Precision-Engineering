@@ -8,6 +8,7 @@
  *    NASA/NOVA, documentaries, Rush) — no extra Archive calls.
  * Items are hidden only when a file check failed twice (unavailable) or no
  * web-playable file exists (unsupported). No Node APIs at import time. */
+import { resolveGenres, inGenrePools } from '../src/search/genreThesaurus';
 import type { Program, ScheduleChannel } from '../src/types';
 import { selectPlayableFile, type LibraryAvailability, type DurationSource } from './archive/mediaSelector';
 import { matchesQuery, scoreMatch } from '../src/search/normalize';
@@ -213,7 +214,12 @@ export function queryLibrary(qy: ItemsQuery) {
   if (qy.decade !== undefined && qy.decade !== null) rows = rows.filter((r) => (qy.decade === 0 ? r.decade === undefined : r.decade === qy.decade));
   if (qy.mediaType === 'video' || qy.mediaType === 'audio') rows = rows.filter((r) => r.mediaType === qy.mediaType);
   if (qy.showId) rows = rows.filter((r) => r.showId === qy.showId);
-  if (qy.q?.trim()) rows = rows.filter((r) => matchesQuery(librarySearchFields(r), qy.q!));
+  if (qy.q?.trim()) {
+    // Entry 042 §4: a broad word ("classic movies", "dance") also matches its whole pool, in addition to title matches.
+    const genres = resolveGenres(qy.q);
+    rows = rows.filter((r) => matchesQuery(librarySearchFields(r), qy.q!)
+      || (genres.length > 0 && inGenrePools(genres, r, (term) => matchesQuery(librarySearchFields(r), term))));
+  }
   const text = String(qy.q ?? '').trim();
   const grouped0 = groupLibraryResults(rows);
   const best = (r: any): number => r.type === 'series'
@@ -234,7 +240,8 @@ export function getLibrarySeries(groupKey: string, options: { year?: number; q?:
   if (options.year === undefined) return { ...series, episodes: [] };
   const filtered = series.episodes.filter((episode) =>
     (options.year === undefined || episode.year === options.year)
-    && (!options.q?.trim() || matchesQuery(librarySearchFields(episode), options.q)));
+    && (!options.q?.trim() || matchesQuery(librarySearchFields(episode), options.q)
+      || inGenrePools(resolveGenres(options.q), episode as { categoryIds?: string[] }, (term) => matchesQuery(librarySearchFields(episode), term))));
   return { ...series, episodes: filtered, episodeCount: filtered.length };
 }
 
