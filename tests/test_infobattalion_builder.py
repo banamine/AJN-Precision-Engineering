@@ -275,6 +275,14 @@ class InAppScanTests(unittest.TestCase):
             self.assertFalse(builder.is_test_file(name), name)
 
 
+class ParseLengthTests(unittest.TestCase):
+    def test_archive_length_formats_become_seconds(self):
+        organizer = builder.org
+        for raw, expected in (("123.4", 123.4), ("02:01", 121), ("1:02:03", 3723), ("00:00", 0), ("", 0), (None, 0), ("abc", 0), ("1:x", 0)):
+            with self.subTest(raw=raw):
+                self.assertAlmostEqual(organizer.parse_length(raw), expected)
+
+
 class AdditiveListSelectionTests(unittest.TestCase):
     def test_comma_separated_selection_is_validated(self):
         self.assertEqual(builder.parse_list_selection("1,3,4,5"), [1, 3, 4, 5])
