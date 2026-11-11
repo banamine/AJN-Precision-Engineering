@@ -17,6 +17,7 @@ import { safeFetch } from './safeFetch';
 import { groupLibraryResults, findLibrarySeries, type LibrarySeries, type SeriesFile } from './library/series';
 import nker150Manifest from '../src/data/nker150Manifest.json';
 import { shouldExposeNker150Record } from './nker150Rights';
+import { catalogRecords, isCatalogRecord } from './library/catalogRecords';
 export { groupLibraryResults, findLibrarySeries };
 export type { LibrarySeries };
 
@@ -42,6 +43,9 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
   { id: 'soaps', label: 'Soap Operas', mediaType: 'video', guide: { guideId: 'classic-tv', channels: (c) => c.id === 'ajn-allmychildren-episodes' || c.id === 'ajn-allmychildren-extras' } },
   { id: 'movie-vault', label: 'Movies Classics', mediaType: 'video', guide: { guideId: 'movies-classics-vault', channels: () => true } },
   { id: 'nker150-special', label: 'nker150 Special Collection', mediaType: 'video' },
+  { id: 'concerts', label: 'Live Concerts', mediaType: 'audio' },
+  { id: 'fm-broadcasts', label: 'FM Broadcasts', mediaType: 'audio' },
+  { id: 'podcast-episodes', label: 'Podcast Episodes', mediaType: 'audio' },
 ];
 export const ITEMS_PER_SEARCH = 150;
 
@@ -189,7 +193,7 @@ function nker150Records(): IndexRecord[] {
     availability: 'verified',
   }));
 }
-function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records()]); }
+function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records(), ...catalogRecords()]); }
 const visible = (r: IndexRecord) => { const a = availability(r); return a !== 'unavailable' && a !== 'unsupported' && !!r.path; };
 function librarySearchFields(r: {
   title?: string; episodeTitle?: string; description?: string; identifier?: string; sourceFile?: string;
@@ -317,7 +321,7 @@ export async function topUpCategory(c: LibraryCategory, maxNew = 15): Promise<nu
 let timers: ReturnType<typeof setInterval>[] = [];
 let nextCat = 0;
 export function needsProbe(r: IndexRecord): boolean {
-  return !r.guideId && r.path.startsWith('/download/') && r.availability === 'unverified';
+  return !r.guideId && !isCatalogRecord(r) && r.path.startsWith('/download/') && r.availability === 'unverified';
 }
 
 export function startLibraryBackground(opts: { probeEveryMs?: number; topUpEveryMs?: number } = {}) {

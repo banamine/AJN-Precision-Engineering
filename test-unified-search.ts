@@ -37,13 +37,16 @@ setLibraryIndexForTests([
   rec('e', 'Gunsmoke Ep 1', ['educational']), rec('f', 'Apollo 11 Highlights', ['apollo']),
 ]);
 const ids = (q: string) => queryLibrary({ q, limit: 48 }).items.map((i: any) => i.title).sort();
-assert.deepEqual(ids('classic movies'), ['The Glass Key (Colorized)', 'The Maltese Falcon'], 'pool by category');
-assert.deepEqual(ids('tv'), ['Hogans Heroes S01'], 'tv pool');
-assert.deepEqual(ids('colorized'), ['The Glass Key (Colorized)'], 'term-only pool');
-assert.deepEqual(ids('westerns'), ['Gunsmoke Ep 1'], 'western terms');
-assert.deepEqual(ids('space'), ['Apollo 11 Highlights', 'Night of the Living Dead'], 'sci-fi pool = scifi-horror + apollo');
-assert.deepEqual(ids('maltese'), ['The Maltese Falcon'], 'plain title match unchanged');
-assert.deepEqual(ids('dance'), [], 'no pool and no title -> honest empty');
+// the real concert/FM/podcast catalog is always merged in; the pool assertions look only at this test's own records
+const OWN = new Set(['The Maltese Falcon', 'Night of the Living Dead', 'Hogans Heroes S01', 'The Glass Key (Colorized)', 'Gunsmoke Ep 1', 'Apollo 11 Highlights']);
+const own = (q: string) => queryLibrary({ q, limit: 48, category: undefined }).items.map((i: any) => i.title).filter((t: string) => OWN.has(t)).sort();
+assert.deepEqual(own('classic movies'), ['The Glass Key (Colorized)', 'The Maltese Falcon'], 'pool by category');
+assert.deepEqual(queryLibrary({ q: 'tv', category: 'classic-tv', limit: 48 }).items.map((i: any) => i.title), ['Hogans Heroes S01'], 'tv pool inside its own category (concert titles with TV/MTV also match by title in the full index)');
+assert.deepEqual(own('colorized'), ['The Glass Key (Colorized)'], 'term-only pool');
+assert.deepEqual(own('westerns'), ['Gunsmoke Ep 1'], 'western terms');
+assert.deepEqual(own('space'), ['Apollo 11 Highlights', 'Night of the Living Dead'], 'sci-fi pool = scifi-horror + apollo');
+assert.deepEqual(own('maltese'), ['The Maltese Falcon'], 'plain title match unchanged');
+assert.deepEqual(own('dance'), [], 'no pool and no title -> honest empty');
 setLibraryIndexForTests([rec('o', 'Suspense Ep 1', ['old-time-radio']), rec('p', 'Pride and Prejudice', ['audiobooks']), rec('q', 'Detour', ['classic-cinema'])]);
 // (the real nker150 records are always merged into the index, so check membership, not equality)
 assert.ok(ids('otr').includes('Suspense Ep 1') && !ids('otr').includes('Detour'));

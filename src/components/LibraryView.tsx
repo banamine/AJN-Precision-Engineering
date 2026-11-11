@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { startShowQueue } from '../utils/showQueue';
 import { FolderArchive, Search, Play, FileVideo, FileAudio, Clock, Star, ChevronLeft, ChevronRight, ChevronDown, Tv } from 'lucide-react';
 import type { PlayProgramCallback } from '../types';
 import { loadFavorites, saveFavorites } from '../utils/favoritesStore';
@@ -121,7 +122,17 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const pickSuggestion = (text: string) => { setQuery(text); setActiveSuggestion(-1); setSearchFocused(false); };
 
   const toggleFavorite = (id: string) => setFavoriteIds((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const play = (it: Item) => onPlayProgram(it.path, it.title, it.description ?? it.identifier, it.mediaType, it.channelId ?? `library-${it.categoryIds[0]}`, it.guideId ?? 'library', it.programId ?? it.id, it.sourceId, it.assetId);
+  const play = (it: Item) => {
+    const tracks = it.parts ?? [];
+    const isCatalog = it.categoryIds.some((c) => c === 'concerts' || c === 'fm-broadcasts');
+    if (isCatalog && tracks.length > 1) {
+      const items = tracks.map((t, i) => ({ src: t.path, mediaType: 'audio' as const, programId: t.id, title: `${it.title} · ${i + 1}/${tracks.length}`, partNo: i + 1, totalParts: tracks.length }));
+      const first = startShowQueue({ mode: 'audio', items, missingHours: [], singleFile: false, playable: true }, it.title);
+      if (first) { onPlayProgram(first.src, first.title, it.title, 'audio', `library-${it.categoryIds[0]}`, 'library', first.programId); return; }
+    }
+    playOne(it);
+  };
+  const playOne = (it: Item) => onPlayProgram(it.path, it.title, it.description ?? it.identifier, it.mediaType, it.channelId ?? `library-${it.categoryIds[0]}`, it.guideId ?? 'library', it.programId ?? it.id, it.sourceId, it.assetId);
   const toggleSeries = (id: string) => setOpenSeries((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   return (
