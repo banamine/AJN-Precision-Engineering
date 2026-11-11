@@ -80,14 +80,14 @@ export function ListenBrowser({ music, concerts, podcasts, concertsError, loadCo
           const saved = AUDIO_SLOTS.filter((n) => banks[item.bank][n]?.itemId === item.id);
           return (
             <li key={item.id} data-testid="listen-row" className={`flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 ${active ? 'border-[#E06D3B] bg-[#E06D3B]/10' : 'border-white/10 bg-white/[0.03]'}`}>
-              <button type="button" aria-label={`Play ${item.title}`} data-testid="listen-play" onClick={() => onPlay(item)} className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-[#E06D3B] text-[#0F1117] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"><Play size={16} fill="currentColor" /></button>
+              <button type="button" aria-label={`Play ${item.title}`} data-testid="listen-play" onClick={() => onPlay(item)} className="ck-key ck-key--icon h-11 w-11 shrink-0 !rounded-full !text-[#F9A56D]"><Play size={16} fill="currentColor" /></button>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-white">{item.title}</div>
                 <div className="flex items-center gap-2 text-xs text-neutral-400"><span className="min-w-0 truncate">{item.subtitle}{saved.length ? ` · on key ${saved.join(', ')}` : ''}</span><FreshnessTag publishedAt={item.publishedAt} /></div>
               </div>
               <div className="flex items-center gap-1" role="group" aria-label={`Save ${item.title} to a key`}>
                 <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Save to key</span>
-                {AUDIO_SLOTS.map((n) => <button key={n} type="button" data-testid={`listen-save-${n}`} aria-label={`Save to ${item.bank} key ${n}`} onClick={() => save(item, n)} className="h-8 w-8 cursor-pointer rounded-md border border-white/20 text-xs font-bold text-neutral-200 hover:border-[#E06D3B] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E06D3B]">{n}</button>)}
+                {AUDIO_SLOTS.map((n) => <button key={n} type="button" data-testid={`listen-save-${n}`} aria-label={`Save to ${item.bank} key ${n}`} onClick={() => save(item, n)} className="ck-key ck-key--icon text-xs font-bold">{n}</button>)}
               </div>
             </li>
           );

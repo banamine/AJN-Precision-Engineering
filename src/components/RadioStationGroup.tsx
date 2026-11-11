@@ -16,11 +16,11 @@ interface Props {
   groups?: RadioGroupDef[];
 }
 
-const backBtn = 'flex h-9 min-w-9 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-lg bg-red-600 px-2.5 text-xs font-semibold text-white shadow-sm shadow-red-950/50 hover:bg-red-500 active:bg-red-700 disabled:cursor-default disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 touch-manipulation transition-colors';
+const backBtn = 'ck-key ck-key--sm shrink-0 gap-1';
 
-const forwardBtn = 'flex h-9 min-w-9 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2.5 text-xs font-semibold text-white shadow-sm shadow-emerald-950/50 hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-default disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 touch-manipulation transition-colors';
+const forwardBtn = 'ck-key ck-key--sm shrink-0 gap-1';
 
-const groupStepBtn = 'flex h-9 min-w-9 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-lg bg-neutral-800 px-2 text-xs font-medium text-neutral-100 hover:bg-neutral-700 disabled:cursor-default disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 touch-manipulation';
+const groupStepBtn = 'ck-key ck-key--icon shrink-0 gap-1';
 
 /** One dropdown + Back / Forward for a fixed set of related stations. The choice is remembered on this device until changed. */
 export function RadioStationGroup({ onPlay, onTuned, activeId, groups = RADIO_GROUPS }: Props): ReactElement | null {
@@ -144,11 +144,9 @@ export function RadioStationGroup({ onPlay, onTuned, activeId, groups = RADIO_GR
                 aria-current={isSelected ? 'true' : undefined}
                 style={{
                   borderColor: isSelected ? theme.color : `${theme.color}40`,
-                  backgroundColor: isSelected ? theme.bgTint : 'rgba(23, 23, 23, 0.6)',
                   color: isSelected ? '#ffffff' : theme.color,
-                  boxShadow: isSelected ? `0 0 8px ${theme.color}40` : 'none',
                 }}
-                className="flex cursor-pointer items-center gap-1 rounded-md border px-1.5 py-1 text-[10px] font-semibold transition-all duration-150 hover:scale-[1.03] active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-white"
+                className="ck-key ck-key--sm gap-1 text-[10px]"
               >
                 <span aria-hidden="true" className="text-xs">{theme.iconEmoji}</span>
                 <span className="max-w-[85px] truncate">{theme.shortTag}</span>

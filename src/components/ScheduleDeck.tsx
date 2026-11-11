@@ -8,7 +8,6 @@ import { formatClock, formatDuration, formatRepeat, loopSeconds, DAY_MS, type Sc
 interface Props { bank: ScheduleBank; onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null; playingNow?: boolean }
 const ROW_LABELS = ['Next', 'Later', 'Then'] as const;
 const BANK_LABEL: Record<ScheduleBank, string> = { music: 'Music channels', concerts: 'Live concerts', fm: 'FM broadcasts', podcasts: 'Podcasts' };
-const btn = 'min-h-[40px] cursor-pointer rounded-full px-3 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
 
 /** Spectrum & 24-Hour Schedule Deck: the right-hand Head Unit panel while Archive Music is selected. */
 export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Props): ReactElement {
@@ -48,9 +47,9 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
         <span className="text-[#E06D3B]">Spectrum · 24h schedule</span>
         <div role="group" aria-label="Schedule mode" className="flex gap-1">
           <button type="button" data-testid="schedule-mode-clock" aria-pressed={c.mode !== 'shuffle'} disabled={!c.clockEligible} onClick={() => c.setMode('clock24h')}
-            className={`${btn} ${c.mode !== 'shuffle' ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-white/15 text-neutral-300'} disabled:cursor-not-allowed disabled:opacity-40`}>24h Clock</button>
+            className="ck-key ck-key--sm">24h Clock</button>
           <button type="button" data-testid="schedule-mode-shuffle" aria-pressed={c.mode === 'shuffle'} onClick={() => c.setMode('shuffle')}
-            className={`${btn} ${c.mode === 'shuffle' ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-white/15 text-neutral-300'}`}>Shuffle</button>
+            className="ck-key ck-key--sm">Shuffle</button>
         </div>
       </div>
 
@@ -61,8 +60,8 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
             {pools.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
         ) : <span className="min-w-0 flex-1 truncate">{pool?.label ?? BANK_LABEL[bank]}</span>}
-        {c.tuned && c.mode === 'off-schedule' && <button type="button" data-testid="schedule-return-live" onClick={c.returnToLive} className={`${btn} border border-[#22D3EE] text-[#22D3EE]`}>Return to live</button>}
-        {!c.tuned && pool && <button type="button" data-testid="schedule-tune" onClick={c.tune} className={`${btn} border border-[#E06D3B] bg-[#E06D3B]/15 text-white`}>{c.mode === 'shuffle' ? 'Play shuffle' : 'Tune live'}</button>}
+        {c.tuned && c.mode === 'off-schedule' && <button type="button" data-testid="schedule-return-live" onClick={c.returnToLive} className="ck-key ck-key--sm is-latched">Return to live</button>}
+        {!c.tuned && pool && <button type="button" data-testid="schedule-tune" onClick={c.tune} className="ck-key ck-key--sm">{c.mode === 'shuffle' ? 'Play shuffle' : 'Tune live'}</button>}
       </div>
       {!pool && <p role="status" className="text-xs text-slate-300">{loadError ? `${BANK_LABEL[bank]} unavailable: ${loadError}` : pools ? `${BANK_LABEL[bank]}: nothing to schedule yet.` : `Loading ${BANK_LABEL[bank].toLowerCase()}…`}</p>}
       {pool && !c.clockEligible && <p className="text-[11px] text-amber-300">Shuffle only · durations not in {bank === 'music' ? 'snapshot' : 'manifest'}</p>}
@@ -85,11 +84,11 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
       </div>
       {c.note && <p role="status" data-testid="schedule-note" className="text-[11px] text-amber-300">{c.note}</p>}
 
-      <ol aria-label="Up next" className="divide-y divide-white/10">
+      <ol aria-label="Up next" className="flex flex-col gap-1.5">
         {c.upcoming.map((r, i) => (
           <li key={`${r.track.programId}-${i}`}>
             <button type="button" data-testid={`schedule-next-${i}`} onClick={() => c.pickUpcoming(i)} disabled={r.failed}
-              className="flex min-h-[40px] w-full min-w-0 cursor-pointer items-center gap-2 rounded px-1 text-left text-xs text-slate-300 hover:text-white focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] disabled:cursor-not-allowed disabled:opacity-60">
+              className="ck-key ck-key--row ck-key--sm min-h-[44px] min-w-0 gap-2 text-xs">
               <span className="w-10 shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">{ROW_LABELS[i]}</span>
               <span className="shrink-0 font-mono tabular-nums text-[#22D3EE]">{formatClock(r.startUtcMs)}</span>
               <span className="min-w-0 flex-1 truncate">{r.failed ? `${r.track.title} · Failed to load — skipped` : r.track.title}</span>
