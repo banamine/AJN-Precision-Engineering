@@ -13,3 +13,7 @@ for (const l of LOBES) assert.ok(html.includes(l.label.replace(/&/g, '&amp;')), 
 assert.ok((html.match(/NOT WIRED/g) ?? []).length >= 15, 'unwired parts are labelled');
 assert.ok(!/Math\.random/.test(html));
 console.log('neural twin view ok');
+import { readFileSync } from 'node:fs';
+const nav = readFileSync('./src/components/Navigation.tsx', 'utf8');
+assert.equal((nav.match(/id: 'dev', label: 'NEURAL TWIN'/g) ?? []).length, 2, 'Neural Twin is in the desktop More menu and the mobile More sheet');
+console.log('nav entries ok');
