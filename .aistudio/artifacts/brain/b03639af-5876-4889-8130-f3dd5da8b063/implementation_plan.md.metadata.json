@@ -1,6 +1,6 @@
 {
-  "summary":  "Updated implementation plan incorporating all five factual repo corrections: 71/98 Music Channels clock-eligible (27 fallback to Shuffle until snapshot regeneration), raw <archiveId>::<partNo> canonical keys with no prefixes, /api/archive/proxy route path, strict non-modification of protected MinimalPlayer.tsx via usePersistentMedia/onPlayProgram, and unified 3-second VBR seek timeout.",
-  "updatedAt":  "2026-11-11T02:40:55.531441648Z",
+  "summary":  "Implementation plan for resizing the 5 Live Radio station switches inside SourcePrism3D (Facet 0) into a 2-column grid with a full-width 5th switch, enabling 2-line wrapped station names with responsive text sizing, and applying the aviator cockpit latching switch theme (ck-key) to all SourcePrism3D controls (station boxes, top source tabs, and prev/next buttons).",
+  "updatedAt":  "2026-11-11T12:34:20.590251469Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
