@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { DailyBriefing } from './src/components/DailyBriefing';
+const mk = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `s${i}`, title: `Story ${i}`, url: `https://e.x/${i}`, source: 'Reuters', publishedAt: null, excerpt: '', imageUrl: null }));
+const digest = { date: '2026-11-11', updatedAt: new Date().toISOString(), briefing: Array.from({ length: 5 }, (_, i) => ({ headline: `Note ${i}`, summary: '', source: 'AJN', theme: '' })), top: mk(12), bySource: [{ source: 'Reuters', items: mk(12) }] };
+const news: any = { phase: 'ready', error: null, data: { status: 'ok', error: null, digest } };
+const count = (h: string, t: string) => (h.match(new RegExp(`data-testid="${t}"`, 'g')) ?? []).length;
+const closed = renderToStaticMarkup(<DailyBriefing news={news} stage="closed" onStageChange={() => {}} />);
+assert.match(closed, /data-testid="daily-briefing-toggle"[^>]*aria-expanded="false"/); assert.equal(count(closed, 'briefing-block'), 0); assert.equal(count(closed, 'digest-story'), 0); assert.doesNotMatch(closed, /daily-briefing-stage/);
+const prev = renderToStaticMarkup(<DailyBriefing news={news} stage="preview" onStageChange={() => {}} />);
+assert.equal(count(prev, 'briefing-block'), 2); assert.equal(count(prev, 'digest-story'), 4); assert.match(prev, /Full briefing/);
+const full = renderToStaticMarkup(<DailyBriefing news={news} stage="full" onStageChange={() => {}} />);
+assert.equal(count(full, 'briefing-block'), 5); assert.ok(count(full, 'digest-story') > 4); assert.match(full, /Compact preview/);
+const alone = renderToStaticMarkup(<DailyBriefing news={news} />); assert.equal(count(alone, 'briefing-block'), 5, 'standalone stays fully open');
+console.log('radio-drawers view ok');
