@@ -404,6 +404,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             </>
           );
           const selectSource = (src: AudioSourceType) => {
+            if (src === 'listenback') { setListenBack(true); setBrowse(false); setStoreArmed(false); say('Listen Back: hourly broadcast archives'); return; }
             const key: 'live' | 'archive' | 'podcasts' = src === 'radio' ? 'live' : src === 'music' ? 'archive' : 'podcasts';
             setMode(key);
             setListenBack(false);
@@ -447,12 +448,11 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                   ) : null}
                 </div>
                 <SourcePrism3D
-                  activeSource={mode === 'live' ? 'radio' : mode === 'archive' ? 'music' : 'podcasts'}
+                  activeSource={listenBack ? 'listenback' : mode === 'live' ? 'radio' : mode === 'archive' ? 'music' : 'podcasts'}
                   onSelectSource={selectSource}
                   nowPlaying={nowPlaying ?? station}
                   onPlayStation={playPrismStation}
                 />
-                <button type="button" data-testid="radio-source-listenback" aria-pressed={listenBack} onClick={() => { setListenBack((v) => !v); say(listenBack ? 'Listen Back off' : 'Listen Back: hourly broadcast archives'); }} className="ck-key ck-key--sm">Listen Back</button>
                 {mode === 'archive' && (
                   <div role="group" aria-label="Archive source" className="flex gap-1">
                     {([['music', 'Music channels'], ['concerts', 'Live concerts'], ['fm', 'FM broadcasts']] as const).map(([k, text]) => (

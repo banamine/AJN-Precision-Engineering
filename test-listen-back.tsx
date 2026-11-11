@@ -17,3 +17,8 @@ const deck = renderToStaticMarkup(<ScheduleDeck bank="music" onPlayProgram={noop
 const keys = (deck.match(/data-testid="schedule-genre-key"/g) ?? []).length;
 assert.ok(keys > 1 && keys <= GENRE_KEYS_MAX, `genre keys from real pools: ${keys}`);
 console.log('genre keys ok');
+import { SourcePrism3D } from './src/components/SourcePrism3D';
+const prism = renderToStaticMarkup(<SourcePrism3D activeSource="listenback" onSelectSource={noop} />);
+assert.match(prism, /data-testid="radio-mode-listenback"/); assert.match(prism, /4\. LISTEN BACK/); assert.match(prism, /rotateY\(270deg\)/);
+assert.equal((prism.match(/role="tabpanel"/g) ?? []).length, 4);
+console.log('prism 4 faces ok');
