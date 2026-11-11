@@ -279,7 +279,9 @@ class AdditiveListSelectionTests(unittest.TestCase):
     def test_comma_separated_selection_is_validated(self):
         self.assertEqual(builder.parse_list_selection("1,3,4,5"), [1, 3, 4, 5])
         self.assertEqual(builder.parse_list_selection("5"), [5])
-        for invalid in ("", "1,1", "1,2,3", "1,x"):
+        self.assertEqual(builder.parse_list_selection("2"), [2])
+        self.assertEqual(builder.parse_list_selection("1,2,3"), [1, 2, 3])
+        for invalid in ("", "1,1", "1,6,3", "1,x"):
             with self.subTest(invalid=invalid), self.assertRaises(Exception):
                 builder.parse_list_selection(invalid)
 
