@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKe
 import { Search } from 'lucide-react';
 import { FreshnessTag } from './FreshnessTag';
 import { RadioSpectrum } from './RadioSpectrum';
+import { ScheduleDeck } from './ScheduleDeck';
 import { freshness } from '../utils/listenCatalog';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
@@ -150,7 +151,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
   }, []);
   const [knobAngle, setKnobAngle] = useState(0); // knob art only: turns one detent per station step
   const [mode, setMode] = useState<'live' | 'archive' | 'podcasts'>('live');
-  const [sub, setSub] = useState<'music' | 'concerts'>('music');
+  const [sub, setSub] = useState<'music' | 'concerts' | 'fm'>('music');
   const [browse, setBrowse] = useState(false); // non-live tabs: false = my saved keys, true = pages of the catalog
   const audioPresets = useAudioPresets();
   const [listPage, setListPage] = useState(0);
@@ -261,10 +262,10 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
     next.go();
     say(`Tuned ${next.title}`);
   }, [bank, presets, recents, playing, tune, tuneRecent, say]);
-  const audioBank: AudioBank | null = mode === 'live' ? null : mode === 'podcasts' ? 'podcasts' : sub;
+  const audioBank: AudioBank | null = mode === 'live' ? null : mode === 'podcasts' ? 'podcasts' : sub === 'fm' ? null : sub; // FM broadcasts are schedule-only: no presets/list bank
   const modeItems: DeckItem[] = audioBank === 'music' ? (deckSources?.music ?? []) : audioBank === 'concerts' ? (deckSources?.concerts ?? []) : audioBank === 'podcasts' ? (deckSources?.podcasts ?? []) : [];
   const playingItem = (it: DeckItem): boolean => Boolean(nowPlaying?.programId && nowPlaying.programId.startsWith(`${it.id}::`));
-  const bankLabel = audioBank === 'music' ? 'Archive Music' : audioBank === 'concerts' ? 'Live Concerts' : 'Podcasts';
+  const bankLabel = mode === 'archive' && sub === 'fm' ? 'FM Broadcasts' : audioBank === 'music' ? 'Archive Music' : audioBank === 'concerts' ? 'Live Concerts' : 'Podcasts';
   const turn = useCallback((dir: 1 | -1) => {
     if (mode === 'live') { stepStation(dir); return; }
     if (!modeItems.length) { say(audioBank === 'concerts' && !deckSources?.concerts ? 'Concerts are still loading…' : `${bankLabel}: nothing loaded yet.`); return; }
@@ -381,6 +382,24 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
           const line3 = status || line3Base;
           const glassKey = 'relative flex h-20 min-w-0 flex-1 select-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border text-center touch-manipulation cursor-pointer active:scale-95 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
           const keyBg = { background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.45)' } as const;
+          // Theme 4 (Entry 035): aviator cockpit latching rocker keys. Unlatched = raised; latched (playing) = pressed 3px with an amber bar.
+          const rockerKey = 'relative flex h-20 min-h-[52px] w-full min-w-[48px] flex-1 select-none flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-xl p-3 text-center touch-manipulation cursor-pointer transition-transform duration-100 active:translate-y-0.5 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
+          const rockerStyle = (latched: boolean, empty: boolean) => ({
+            background: latched ? 'linear-gradient(180deg, #0D0F14 0%, #14171F 50%, #1C212B 100%)' : 'linear-gradient(180deg, #1E232E 0%, #14171F 50%, #0D0F14 100%)',
+            border: `1px ${empty && !latched ? 'dashed' : 'solid'} ${latched ? '#E06D3B' : '#2C3444'}`,
+            boxShadow: latched ? 'inset 0 4px 8px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.5)' : '0 4px 8px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.2)',
+            transform: latched ? 'translateY(3px)' : undefined,
+          });
+          const rockerFace = (num: string, title: string, latched: boolean, empty: boolean) => (
+            <>
+              <span aria-hidden="true" className={latched ? 'mb-2 h-1 w-full rounded-full bg-amber-500 shadow-[0_0_8px_#E06D3B]' : 'mb-2 h-1 w-full rounded-full bg-slate-800'} />
+              <span aria-hidden="true" className="flex w-full items-baseline justify-between">
+                <span className={`text-lg font-semibold leading-none ${latched ? 'text-[#F9A56D]' : empty ? 'text-neutral-500' : 'text-white'}`}>{num}</span>
+                <span className={`font-mono text-[9px] leading-none ${latched ? 'text-amber-400' : 'text-slate-600'}`}>{latched ? 'LATCH' : empty ? 'EMPTY' : 'READY'}</span>
+              </span>
+              <span aria-hidden="true" className="w-full truncate text-left text-[10px] leading-none text-neutral-300">{title}</span>
+            </>
+          );
           const selectSource = (src: AudioSourceType) => {
             const key: 'live' | 'archive' | 'podcasts' = src === 'radio' ? 'live' : src === 'music' ? 'archive' : 'podcasts';
             setMode(key);
@@ -389,7 +408,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             setStoreArmed(false);
             if (key === 'archive' && sub === 'concerts') deckSources?.loadConcerts?.();
             if (key === 'podcasts') deckSources?.loadSpoken?.();
-            say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : 'music channels'}` : 'Podcasts');
+            say(key === 'live' ? 'Live Radio' : key === 'archive' ? `Archive Music: ${sub === 'concerts' ? 'live concerts' : sub === 'fm' ? 'FM broadcasts' : 'music channels'}` : 'Podcasts');
           };
           const playPrismStation = (channelId: string) => {
             const normalizedId = channelId === 'radio:infowars-live-aac'
@@ -431,7 +450,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                 />
                 {mode === 'archive' && (
                   <div role="group" aria-label="Archive source" className="flex gap-1">
-                    {([['music', 'Music channels'], ['concerts', 'Live concerts']] as const).map(([k, text]) => (
+                    {([['music', 'Music channels'], ['concerts', 'Live concerts'], ['fm', 'FM broadcasts']] as const).map(([k, text]) => (
                       <button key={k} type="button" data-testid={`radio-sub-${k}`} aria-pressed={sub === k}
                         onClick={() => { setSub(k); setListPage(0); setBrowse(false); setStoreArmed(false); if (k === 'concerts') deckSources?.loadConcerts?.(); }}
                         className={`min-h-[36px] cursor-pointer rounded-full px-3 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${sub === k ? 'border border-[#E06D3B] bg-[#E06D3B]/15 text-white' : 'border border-white/15 text-neutral-300 hover:text-white'}`}>{text}</button>
@@ -440,11 +459,15 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                 )}
               </div>
 
-              <div data-testid="radio-head-unit-spectrum" className="flex min-h-[112px] flex-col justify-center rounded-2xl p-4 md:col-start-2 md:row-start-1" style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+              <div data-testid="radio-head-unit-spectrum" className={`flex min-h-[112px] flex-col rounded-2xl p-4 md:col-start-2 md:row-start-1 ${mode !== 'live' ? '' : 'justify-center'}`} style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+                {mode !== 'live' ? (
+                  <ScheduleDeck bank={mode === 'podcasts' ? 'podcasts' : sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} />
+                ) : (<>
                 <div className="mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                   <span className="text-[#E06D3B]">Spectrum</span>
                 </div>
                 <RadioSpectrum className="!h-24" playing={live || Boolean(playingNow)} />
+                </>)}
               </div>
 
               <div className="space-y-2 md:col-span-2 md:row-start-2">
@@ -464,11 +487,9 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                           onPointerDown={onPointerDown(slot)} onPointerMove={onPointerMove} onPointerUp={cancelHold} onPointerCancel={cancelHold} onPointerLeave={cancelHold}
                           onClick={onClick(slot)} onKeyDown={onKeyDown(slot)}
                           onMouseEnter={() => ap && setPreview(ap.title)} onMouseLeave={() => setPreview(null)} onFocus={() => ap && setPreview(ap.title)} onBlur={() => setPreview(null)}
-                          style={act ? { ...keyBg, background: 'linear-gradient(180deg, rgba(224,109,59,0.30), rgba(224,109,59,0.08))' } : keyBg}
-                          className={`${glassKey} ${act ? 'border-[#E06D3B] text-white' : ap ? 'border-white/25 text-white hover:border-[#E06D3B]/70' : 'border-dashed border-white/20 text-neutral-400'}`}>
+                          style={rockerStyle(act, !ap)} className={rockerKey}>
                           {isHoldingSlot(slot) && <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-[2] rounded-xl ring-2 ring-[#E06D3B]" style={{ animation: `ajnPresetFill ${HOLD_MS}ms linear forwards`, background: 'rgba(224,109,59,0.22)' }} />}
-                          <span aria-hidden="true" className={`text-lg font-semibold leading-none ${act ? 'text-[#F9A56D]' : ''}`}>{String(slot).padStart(2, '0')}</span>
-                          <span aria-hidden="true" className="w-full truncate px-1 text-[10px] leading-none text-neutral-300">{ap?.title ?? '+'}</span>
+                          {rockerFace(String(slot).padStart(2, '0'), ap?.title ?? '+', act, !ap)}
                         </button>
                       );
                     })}
@@ -481,10 +502,8 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                       return (
                         <button key={slot} type="button" data-testid={`radio-deck-item-${slot}`} disabled={!it} aria-label={it ? `Play ${it.title}` : `Slot ${slot}, empty`} title={it?.title}
                           onClick={() => it && it.play()} onMouseEnter={() => it && setPreview(it.title)} onMouseLeave={() => setPreview(null)} onFocus={() => it && setPreview(it.title)} onBlur={() => setPreview(null)}
-                          style={act ? { ...keyBg, background: 'linear-gradient(180deg, rgba(224,109,59,0.30), rgba(224,109,59,0.08))' } : keyBg}
-                          className={`${glassKey} ${act ? 'border-[#E06D3B] text-white' : it ? 'border-white/25 text-white hover:border-[#E06D3B]/70' : 'border-dashed border-white/20 text-neutral-500'} disabled:cursor-default`}>
-                          <span aria-hidden="true" className={`text-lg font-semibold leading-none ${act ? 'text-[#F9A56D]' : ''}`}>{String(listPage * 5 + slot).padStart(2, '0')}</span>
-                          <span aria-hidden="true" className="w-full truncate px-1 text-[10px] leading-none text-neutral-300">{it?.title ?? '–'}</span>
+                          style={rockerStyle(act, !it)} className={`${rockerKey} disabled:cursor-default`}>
+                          {rockerFace(String(listPage * 5 + slot).padStart(2, '0'), it?.title ?? '–', act, !it)}
                         </button>
                       );
                     })}
@@ -497,13 +516,12 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                       const id = p?.channelId ?? r?.channelId;
                       const title = p?.title ?? r?.title;
                       const active = Boolean(id && playing && id === playing.channelId);
-                      const keyCls = `${glassKey} ${active ? 'border-[#E06D3B] text-white' : id ? 'border-white/25 text-white hover:border-[#E06D3B]/70' : 'border-dashed border-white/20 text-neutral-400'}`;
-                      const keyStyle = active ? { ...keyBg, boxShadow: '0 0 16px rgba(224,109,59,0.55), inset 0 1px 1px rgba(255,255,255,0.3)', background: 'linear-gradient(180deg, rgba(224,109,59,0.30), rgba(224,109,59,0.08))' } : keyBg;
+                      const keyCls = rockerKey;
+                      const keyStyle = rockerStyle(active, !id);
                       const body = (
                         <>
                           {isHoldingSlot(slot) && <span aria-hidden="true" data-testid="radio-preset-hold" className="pointer-events-none absolute inset-0 z-[2] rounded-xl ring-2 ring-[#E06D3B]" style={{ animation: `ajnPresetFill ${HOLD_MS}ms linear forwards`, background: 'rgba(224,109,59,0.25)' }} />}
-                          <span aria-hidden="true" className={`text-lg font-semibold leading-none ${active ? 'text-[#F9A56D]' : ''}`}>{String(slot).padStart(2, '0')}</span>
-                          <span aria-hidden="true" className="w-full truncate px-1 text-[10px] leading-none text-neutral-300">{title ?? '+'}</span>
+                          {rockerFace(String(slot).padStart(2, '0'), title ?? '+', active, !id)}
                           {active && live && <span aria-hidden="true" data-testid="radio-preset-live" className="ajn-live-dot absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse motion-reduce:animate-none" />}
                         </>
                       );
@@ -612,7 +630,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
             </div>
           );
         })()}
-        {mode !== 'live' && (
+        {mode !== 'live' && !(mode === 'archive' && sub === 'fm') && (
           <DeckPicker label={bankLabel} items={modeItems} playingItem={playingItem}
             note={audioBank === 'concerts' ? (deckSources?.concertsError ?? (!deckSources?.concerts ? 'Loading concerts…' : undefined)) : audioBank === 'podcasts' ? deckSources?.podcastsNote : undefined}
             onPick={(it) => { it.play(); setKnobAngle((a) => a + 36); say(`Playing ${it.title}`); }} />

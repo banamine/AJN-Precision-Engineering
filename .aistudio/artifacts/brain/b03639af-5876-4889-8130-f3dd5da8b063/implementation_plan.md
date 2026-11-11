@@ -1,111 +1,154 @@
-# AJN Interactive Browser Audit — Touch Target, SourcePrism3D & Dock Clearance Repairs
+# 24-Hour Continuous Round-Robin Schedule & Spectrum Deck (Final Specification)
 
-This plan addresses the remaining audit items from the live browser inspection across AJN TV Guide, AJN Radio, and AJN Rumble: enforcing strict $\ge 48 \times 48\text{px}$ touch targets across all dock, head-unit, and prism stepper controls (Item 1), aligning the 3D Source Prism cylinder test ID and responsive `340px` mobile / `260px` desktop height contract (Item 11), and expanding mobile bottom scroll padding so the fixed audio dock never obscures bottom cards or footers at `390px` (Item 2).
+This plan upgrades the right-hand Spectrum panel of the Radio Head Unit into a unified **Spectrum & 24-Hour Broadcast Schedule Deck** for **Music Channels**, **Live Concerts**, and **FM Broadcasts**, pairing a real-duration 24-hour round-robin engine (supporting both UTC-synced 24h Broadcast Clock mode and On-Demand Shuffle mode) with the existing Web Audio spectrum backdrop and an integrated **Now Playing + Next 3 Upcoming Tracks** readout.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> All three repair scopes have been aligned with your confirmed selections. Review the architectural summary below and click **Proceed** to apply the changes.
+> This specification incorporates all six live-play fixes plus all five factual repository corrections so implementation aligns with the existing codebase and protected-file rules.
 
-- **Confirmed Decision 1 — Strict $48 \times 48\text{px}$ Minimum Touch Targets on All Steppers (Audit Item 1)**:
-  - Enforce explicit `!min-w-[48px] !min-h-[48px] w-12 h-12` sizing on `dock-prev`, `dock-next`, `dock-prev-round`, and `dock-next-round` in the persistent mini-player dock, on `radio-head-unit-prev` and `radio-head-unit-next` in the Radio head unit, and on the previous/next source stepper buttons inside the 3D Source Prism.
-  - Using `!`-prefixed pixel minimums (`!min-w-[48px] !min-h-[48px]`) ensures the global `44px` shell floor in the platform theme stylesheet and any root `rem` scaling cannot shrink these buttons below `48×48px`.
-- **Confirmed Decision 2 — `SourcePrism3D` Cylinder Test ID & Responsive Height Alignment (Audit Item 11)**:
-  - Tag the rotating 3D cylinder element with `data-testid="source-prism-cylinder"` and apply `h-[340px] lg:h-[260px]` to both the 3D scene viewport and the cylinder container, leaving the outer `[data-testid="source-prism-3d"]` section free to house the top source tab bar without clipping or crowding.
-- **Confirmed Decision 3 — Mobile & Desktop Bottom Scroll Clearance (Audit Item 2)**:
-  - Increase bottom scroll clearance on both the root `<main id="canonical-main-viewport">` wrapper and the AJN Radio / TV Guide containers (`pb-[18rem] md:pb-[12rem]` during active playback and `pb-44 md:pb-32` when idle) so the fixed `72–80px` dock, its mobile radio stepper row, and the mobile bottom navigation bar cleanly clear all bottom-most cards and footers at `390px` and `1280px`.
+- **Fix 1 & Repo Correction 1 — Real Durations Only (71/98 Music Channels + All Concerts + All FM Broadcasts)**:
+  - Zero estimated or hash-derived durations are used anywhere.
+  - **Live Concerts** (14,529 tracks / ~1,734 hours) and **FM Broadcasts** (346 broadcasts / 1,467 tracks) carry baked `d` durations on every track and are 100% eligible for **24h Clock Mode**.
+  - **Music Channels**: 71 of the 98 channels currently have real `durationSeconds` in the `2026-10-12` audio item snapshot and are immediately eligible for **24h Clock Mode**. The remaining **27 channels** (including the 26 recently added from List 2) are absent from the current snapshot and therefore run in **Shuffle Mode** with an honest notice (`Shuffle only · durations not in snapshot`) until the snapshot is regenerated.
+- **Repo Correction 2 — Canonical Track Key Format (`<rawArchiveId>::<partNo>`, Zero Prefixes)**:
+  - Every track key uses the **raw Archive identifier + `::` + `partNo`** (`${archiveId}::${partNo}`) with **no** invented `concert-`, `fm-`, or `item-music-` prefixes, matching the exact key format used by the song library.
+  - Source and pool membership (`bank: 'music' | 'concerts' | 'fm'`, `poolId`, `channelId`) travel as separate fields on the item/slot.
+- **Fix 2 — UTC Day Seeding & Global Wall-Clock Sync**:
+  - Daily order is seeded by **UTC calendar day** (`Math.floor(Date.now() / 86_400_000)`) and pool/channel ID, and loop position is computed via `(Date.now() - utcMidnightMs) % loopDurationMs`. Every viewer in every timezone hears the exact same track at the exact same UTC instant; only `HH:MM` clock labels are formatted in the viewer's local timezone.
+- **Fix 3 & Repo Correction 4 — Separate Schedule Layer & Protected `MinimalPlayer.tsx` Boundary**:
+  - Leaves `showQueue` untouched so Full Show sessions preserve their exact behavior.
+  - **Protected Core Files**: `MinimalPlayer.tsx` (which owns `new Audio()` in its host ref) and `PlayerChrome.tsx` are **never edited**. The schedule controller drives playback strictly through the existing `onPlayProgram` callback and reads/seeks via the existing `usePersistentMedia` / `findPersistentMedia` hook interface (`seek(seconds)`, `currentTime`, `duration`, `failed`, `paused`).
+- **Fix 4 & Repo Correction 5 — Mid-Track Offset Seeking with 3-Second Verification Timeout**:
+  - When tuning into **24h Clock Mode** mid-track, the schedule controller calls `seek(targetOffsetSeconds)` once metadata loads and allows up to a **3-second timeout** (`3000ms`) for the bounded-slice VBR stream (8 MiB slice / 32 MiB cap) to settle within 3 seconds of `targetOffsetSeconds`. If the seek fails or times out after 3 seconds, playback starts cleanly from `0:00` and displays `Playing from 0:00 · mid-track seek unavailable`.
+- **Fix 5 — Clicking an Upcoming Row Enters `"Off schedule"` with `"Return to live"`**:
+  - Clicking any of the **Next 3 Upcoming** rows in Clock Mode switches the deck to **`Off schedule`**, plays that track from `0:00`, and reveals a **`Return to live`** button that re-synchronizes to the live UTC wall-clock slot and offset.
+- **Fix 6 & Repo Correction 3 — Failed Track Skip on `/api/archive/proxy`**:
+  - If a track fails to load or errors on `/api/archive/proxy` (without nested proxy paths), the controller records the failure against its `<rawArchiveId>::<partNo>` key, immediately skips to the next playable slot, and displays **`Failed to load — skipped`** in the readout.
 
 ---
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Completes the final polish pass following the 11-point interactive browser audit, eliminating sub-48px touch target failures on station/source steppers, binding the exact `340px` (mobile) / `260px` (desktop) geometry to `[data-testid="source-prism-cylinder"]`, and guaranteeing full scroll clearance above the persistent bottom dock across all routes.
-- **Target Audience / Persona**: Mobile (`390px`) and desktop (`1280px+`) listeners navigating live radio presets, archival music, syndicated podcasts, Rumble feeds, and the 139-channel broadcast grid.
-- **Key Value**: Achieves 100% pass compliance across all 11 interactive audit checks while preserving uninterrupted persistent audio playback, Web Audio spectrum honesty, and single-strip 3D source switching.
+- **What It Does**:
+  - Delivers continuous 24-hour playback and a live schedule monitor across **Music Channels** (71 clock-eligible + 27 shuffle-only until snapshot refresh), **Live Concerts** (14,529 tracks), and **FM Broadcasts** (346 broadcasts / 1,467 tracks).
+  - Reclaims the unused vertical space above and below the spectrum in the right-hand Head Unit panel by combining the existing `RadioSpectrum` -> `ArchiveMusicSpectrum` canvas (zero new Web Audio nodes) with an overlaid **On Air Now** banner and a **Next 3 Upcoming Tracks** strip.
+  - Maintains a bounded, in-memory `lastAiredLog` of `<rawArchiveId>::<partNo>` entries (rendered as clean unboxed text rows) for Step 1 library cross-referencing.
 
 ---
 
 ## 2. User Experience & Visual Design
 
-- **Key User Flows**:
-  1. **Tactile Station & Source Stepping (Item 1)**: Whether stepping presets from the persistent bottom dock (`dock-prev`, `dock-next` on mobile; `dock-prev-round`, `dock-next-round` on desktop), tuning via the Radio head-unit buttons (`radio-head-unit-prev`, `radio-head-unit-next`), or cycling prism facets (`Previous source`, `Next source`), every button presents a $\ge 48 \times 48\text{px}$ interactive hit area.
-  2. **3D Source Prism Rotation & Geometry (Item 11)**: Clicking `1. LIVE RADIO` $\rightarrow$ `2. ARCHIVE MUSIC` $\rightarrow$ `3. PODCASTS` (or dragging horizontally across the viewport) rotates `[data-testid="source-prism-cylinder"]` in exact $120^\circ$ increments (`0deg`, `-120deg`, `-240deg`) within a `340px`-tall mobile / `260px`-tall desktop 3D stage.
-  3. **Unobstructed Bottom Scroll at 390px & 1280px (Item 2)**: Scrolling to the very bottom of AJN TV Guide, AJN Radio, or AJN Rumble brings the final cards and footer links completely above the fixed bottom dock and mobile navigation bar.
+### Key User Flows
 
-- **Visual Identity & Theme**:
-  - *Aesthetic Direction*: High-contrast dark-room broadcast hardware with tactile automotive head-unit ergonomics.
-  - *Color Palette & Mood*: Deep obsidian canvas (`--ajn-base: #0F1117`, `--ajn-card-2: #181B24`, `--ajn-line: #282D3D`) paired with Copper (`--ajn-accent: #E06D3B`) for active radio controls, Cyan (`#22D3EE`) for Archive Music, and Pink (`#EC4899`) for Podcasts.
-  - *Typography & Hierarchy*: `Manrope` / `Plus Jakarta Sans` UI controls with `DM Mono` (`tabular-nums`) for preset indices (`01`–`05`), elapsed timestamps, and live status beacons.
-  - *Component Styling & Layout*: Consistent `48px` (`w-12 h-12 !min-w-[48px] !min-h-[48px]`) control geometry, `perspective: 900px` CSS 3D stage with `backface-visibility: hidden` facets, and responsive container padding that respects `env(safe-area-inset-bottom, 0px)`.
-- **Interactive Feedback & Motion**:
-  - `0.6s cubic-bezier(0.16, 1, 0.3, 1)` rotation settling on prism facet changes, immediate `active:scale-95` tactile press feedback on stepper buttons, and `prefers-reduced-motion` support across all transitions.
+1. **Selecting Archive Music (`Music channels`, `Live concerts`, or `FM broadcasts`)**:
+   - Selecting **2. ARCHIVE MUSIC** on the 3D Source Prism presents three sub-source buttons: `Music channels`, `Live concerts`, and `FM broadcasts`.
+   - The right-hand Spectrum & Schedule Deck fills the full height of Row 1 alongside the left column and displays:
+     - **Header Bar**: Source title, repeat notice whenever a single-album channel or small concert pool loops within 24 hours (e.g., `Repeats every 40m · Cycle 14` for a single album, or `Repeats every 6h 12m` for a 4-concert pool), and the **`24h Clock` | `Shuffle`** mode toggle (or `Shuffle only` notice for the 27 un-snapshotted music channels).
+     - **Spectrum Stage + Overlaid "On Air Now" Readout**: Existing `RadioSpectrum` canvas behind a dark contrast scrim (`from-black/85 via-black/45 to-black/25`), overlaid with the active track title, concert/channel subtitle, local `HH:MM – HH:MM` window, status text (`ON AIR · UTC SYNCED`, `PLAYING FROM 0:00 · SEEK UNAVAILABLE`, `OFF SCHEDULE`, or `SHUFFLE`), and a 1-second progress bar.
+     - **Next 3 Upcoming Strip**: Three single-line rows beneath the spectrum stage showing the next 3 tracks with tabular-numeral start times (`HH:MM`) and real durations (`MM:SS` or `H:MM:SS` for 3+ hour tracks).
+2. **Mid-Track Tune-In & 3-Second Seek Handshake**:
+   - Tuning into a clock-eligible channel/pool loads the active UTC slot via `onPlayProgram` and issues `seek(targetOffsetSeconds)` through the persistent media hook, waiting up to **3 seconds** for the VBR stream to settle at the target offset before falling back to `0:00` with an honest status note.
+3. **Manual Track Pick (`Off schedule`) & `Return to live`**:
+   - Clicking any of the **Next 3 Upcoming** rows plays that track from `0:00` and switches the header state to **`Off schedule`** with a **`Return to live`** button.
+   - Clicking **`Return to live`** re-evaluates `Date.now()` against the UTC day schedule and tunes back to the live slot and offset.
+4. **Track Failure Recovery**:
+   - When `usePersistentMedia` reports `failed: true` (such as a 404 from `/api/archive/proxy`), the schedule controller records the `<rawArchiveId>::<partNo>` key in `failedIds`, marks the slot as **`Failed to load — skipped`**, and immediately starts the next slot.
+
+### Visual Identity & Layout Safeguards
+
+- **Single-Line Truncation for Long Tracks (3+ Hours)**:
+  - All schedule rows use `flex items-center gap-2 min-w-0` with `truncate` on titles and `shrink-0 font-mono tabular-nums` on `HH:MM` start times and `H:MM:SS` durations (e.g., `3:14:47` for 3.2-hour broadcasts) so long durations never wrap or misalign columns.
+- **Zero-Pill Metadata**:
+  - Schedule timestamps, durations, repeat intervals, failure notices, and `lastAiredLog` rows render as unboxed text with `·` separators.
+- **1-Second Tick & Throttled Recompute**:
+  - The 1-second interval updates *only* the progress bar width and elapsed/remaining clock text; the **Next 3 Upcoming** array is recomputed *only* at track boundaries, pool selection changes, or mode switches.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1 — Enforcing `!min-w-[48px] !min-h-[48px]` Across Both Mobile & Desktop Steppers**:
-  - *Chosen Approach*: Add `!min-w-[48px] !min-h-[48px] w-12 h-12` to `dock-prev`, `dock-next`, `dock-prev-round`, `dock-next-round`, `radio-head-unit-prev`, `radio-head-unit-next`, and the 3D prism's `Previous source` / `Next source` buttons.
-  - *Why*: The global platform stylesheet sets a `44px` minimum on buttons with equal specificity, and `flex` shrinkage or root font scaling previously compressed `dock-prev-round` / `dock-next-round` to `40×40px` and `radio-head-unit-prev` / `radio-head-unit-next` to `36×42px`. Important-flagged pixel minimums guarantee a $\ge 48 \times 48\text{px}$ bounding box in `getBoundingClientRect()`.
-  - *Alternatives Considered*: Adjusting only mobile steppers, which would still fail the audit script on `dock-prev-round` and `dock-next-round`.
-- **Decision 2 — Tagging `[data-testid="source-prism-cylinder"]` with `h-[340px] lg:h-[260px]`**:
-  - *Chosen Approach*: Place `data-testid="source-prism-cylinder"` on the inner `preserve-3d` rotating container and size the 3D stage and cylinder with `h-[340px] lg:h-[260px]`, while keeping `[data-testid="source-prism-3d"]` as the outer `<section>` wrapper.
-  - *Why*: Matches the Entry 024 DOM contract (`[data-testid="source-prism-3d"]` and `[data-testid="source-prism-cylinder"]`) and ensures the 3D cylinder measures `340px` at `390px` mobile width and `260px` at `1280px` desktop width without cramping the top tab bar.
-  - *Alternatives Considered*: Constraining the outer `<section>` to `260px` total height, which would compress the 3D facets by ~48px to make room for the tab strip.
-- **Decision 3 — Unified Bottom Clearance on App Viewport & Route Containers**:
-  - *Chosen Approach*: Expand bottom padding on `#canonical-main-viewport` (`pb-[18rem] md:pb-[12rem]` when media is active; `pb-44 md:pb-32` when idle) and align the AJN Radio (`#ajn-radio-view`) and TV Guide containers (`pb-[18rem] md:pb-[12rem]`).
-  - *Why*: On `390px` viewports, the stacked mobile bottom navigation bar (`56px`), persistent mini-player dock (`72–80px`), and radio stepper bar (`52px`) occupy up to `188px` of fixed bottom screen real estate. Increasing scroll clearance ensures bottom card footers and the `.ajr-footer` bar scroll cleanly into view across `#tv-guide`, `#radio`, and `#rumble`.
+- **Decision 1: Honest Handling of the 27 Un-Snapshotted Music Channels**
+  - *Chosen Approach*: Wire `durationSeconds` from `audioItemSnapshot.json` for the 71 present Music Channels so they run in `24h Clock` mode immediately, while the 27 channels missing from the `2026-10-12` snapshot default to `Shuffle` mode with `Shuffle only · durations not in snapshot` until the snapshot is refreshed.
+  - *Why*: Avoids inventing fake durations for the 27 channels while making Clock Mode immediately available on the 71 snapshotted Music Channels, all 14,529 Concert tracks, and all 1,467 FM Broadcast tracks.
+- **Decision 2: Raw `<archiveId>::<partNo>` Keys Everywhere**
+  - *Chosen Approach*: Construct `programId` strictly as `${rawArchiveId}::${partNo}` (1-based `partNo`) across Music Channels, Live Concerts, and FM Broadcasts, storing `bank`, `poolId`, and `channelId` as separate metadata fields.
+  - *Why*: Matches `listenCatalog.ts` and the song library's exact key contract without prefix translation.
+- **Decision 3: Two-Step Rollout Isolated from Protected Player Internals**
+  - *Chosen Approach*:
+    - **Step 1**: Wire `durationSeconds` / `d` across Music, Concerts, and FM Broadcasts with raw `<archiveId>::<partNo>` keys; build the standalone schedule controller; ship the Spectrum + **Now Playing + Next 3 Upcoming** readout in **Shuffle Mode** + bounded in-memory `lastAiredLog`.
+    - **Step 2**: Enable **24h UTC Clock Mode** using `onPlayProgram` + `usePersistentMedia.seek()` with the 3-second VBR seek verification window, honest `0:00` fallback, `Off schedule` / `Return to live` controls, and `/api/archive/proxy` failure skipping.
+  - *Why*: Delivers the complete UI and catalog layer safely in Step 1 and isolates VBR range-seek verification in Step 2 without touching `MinimalPlayer.tsx`.
 
 ---
 
 ## 4. Technical Architecture & Data Strategy *(Technical Reference)*
 
-- **Architecture & Component Diagram**:
+### Architecture & Component Diagram
 
 ```
-┌────────────────────────────────────────────────────────────────────────────┐
-│                   #canonical-main-viewport (App Shell)                     │
-│        Bottom Clearance: pb-[18rem] md:pb-[12rem] (active) / pb-44         │
-├─────────────────────────────────────┬──────────────────────────────────────┤
-│           #ajn-radio-view           │         TV Guide & Rumble Views      │
-│     (pb-[18rem] md:pb-[12rem])      │      (pb-[18rem] md:pb-[12rem])      │
-│  ┌───────────────────────────────┐  │                                      │
-│  │        RadioPresetsBar        │  │                                      │
-│  │  • radio-head-unit-prev/next  │  │                                      │
-│  │    (!min-w-[48px] !min-h-[48px│  │                                      │
-│  │     h-12 min-w-12)            │  │                                      │
-│  │  ┌─────────────────────────┐  │  │                                      │
-│  │  │     SourcePrism3D       │  │  │                                      │
-│  │  │ [data-testid=           │  │  │                                      │
-│  │  │  "source-prism-3d"]     │  │  │                                      │
-│  │  │  ├─ Tab & Step Controls │  │  │                                      │
-│  │  │  │  (!min-w/h-[48px])   │  │  │                                      │
-│  │  │  └─ 3D Viewport &       │  │  │                                      │
-│  │  │     [data-testid=       │  │  │                                      │
-│  │  │      "source-prism-     │  │  │                                      │
-│  │  │       cylinder"]        │  │  │                                      │
-│  │  │     (h-[340px]          │  │  │                                      │
-│  │  │      lg:h-[260px])      │  │  │                                      │
-│  │  └─────────────────────────┘  │  │                                      │
-│  └───────────────────────────────┘  │                                      │
-└─────────────────────────────────────┴──────────────────────────────────────┘
-                                      │
-                                      ▼
-┌────────────────────────────────────────────────────────────────────────────┐
-│                  #persistent-mini-player (MiniPlayerDock)                  │
-│  • Fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 │
-│  • Desktop Transport: dock-prev-round & dock-next-round                    │
-│    (!min-w-[48px] !min-h-[48px] w-12 h-12)                                 │
-│  • Mobile Stepper Row: dock-prev & dock-next                               │
-│    (!min-w-[48px] !min-h-[48px] w-12 h-12)                                 │
-└────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        Radio Head Unit (RadioPresetsBar)                    │
+│                                                                             │
+│  ┌──────────────────────────────────┐  ┌─────────────────────────────────┐  │
+│  │ Left Column (Row 1, Col 1)       │  │ Right Column (Row 1, Col 2)     │  │
+│  │ • Head Unit LCD Display          │  │ [Spectrum & 24h Schedule Deck]  │  │
+│  │ • SourcePrism3D                  │  │                                 │  │
+│  │ • Archive Sub-Source Buttons:    │  │ ┌─────────────────────────────┐ │  │
+│  │   [Music] [Concerts] [FM Bcast]  │  │ │ Header: 24h Clock | Shuffle │ │  │
+│  └──────────────────────────────────┘  │ │ + Repeats every Xm / Return │ │  │
+│                                        │ ├─────────────────────────────┤ │  │
+│                                        │ │ Existing RadioSpectrum      │ │  │
+│                                        │ │ + Overlaid ON AIR NOW Slot  │ │  │
+│                                        │ │   <archiveId>::<partNo>     │ │  │
+│                                        │ ├─────────────────────────────┤ │  │
+│                                        │ │ Next 3 Upcoming (Throttled) │ │  │
+│                                        │ │  1. 18:27  Track A  0:03:42 │ │  │
+│                                        │ │  2. 18:31  Track B  3:14:47 │ │  │
+│                                        │ │  3. 21:45  Track C  0:04:15 │ │  │
+│                                        │ └──────────────┬──────────────┘ │  │
+│                                        └────────────────┼────────────────┘  │
+└─────────────────────────────────────────────────────────┼───────────────────┘
+                                                          │
+                                                          ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│        Schedule Controller (Separate from showQueue & MinimalPlayer)        │
+│                                                                             │
+│  • Keys: <rawArchiveId>::<partNo> (poolId / channelId / bank kept separate) │
+│  • Durations: 71/98 Music Snapshot + 14,529 Concert d + 1,467 FM d          │
+│  • UTC Clock: FNV-1a(utcDay:poolId) + (Date.now() - utcMidnight) % loopMs   │
+│  • Player Bridge: Calls onPlayProgram() + usePersistentMedia().seek()       │
+│  • Seek Timeout: 3-second verification window; falls back to 0:00 honestly  │
+│  • Failure Path: Skips failed /api/archive/proxy loads; marks row skipped   │
+│  • Aired Ledger: Bounded in-memory lastAiredLog of <rawArchiveId>::<partNo> │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Data Model & State**:
-  - All existing state contracts (`AudioSourceType`, `FACTORY_RADIO_PRESETS`, `NowPlayingMedia`, and `usePersistentMedia`) remain unchanged so zero regressions are introduced to items 3–10 of the audit.
-- **Interactive Component & State Mapping**:
-  - **MiniPlayerDock Steppers (`dock-prev`, `dock-next`, `dock-prev-round`, `dock-next-round`)**: Maintain `stepStation(-1 | 1)` handler walking `listRadioPresets()` via `pickAdjacentStation`, while enforcing `!min-h-[48px] !min-w-[48px] h-12 w-12 shrink-0` so both mobile and desktop steppers measure $\ge 48 \times 48\text{px}$.
-  - **Radio Head Unit Steppers (`radio-head-unit-prev`, `radio-head-unit-next`)**: Maintain `turn(-1 | 1)` handler stepping the active bank or deck catalog, while enforcing `!min-h-[48px] !min-w-[48px] h-12` so neither button can compress below `48×48px`.
-  - **3D Source Prism (`SourcePrism3D`)**:
-    - Tab buttons (`radio-mode-live`, `radio-mode-archive`, `radio-mode-podcasts`) and `Previous source` / `Next source` steppers enforce `!min-h-[48px] !min-w-[48px]`.
-    - The 3D viewport and inner `[data-testid="source-prism-cylinder"]` element use `h-[340px] lg:h-[260px]`, rotating via `translateZ(-${apothemPx}px) rotateY(${displayAngle}deg)` in exact $120^\circ$ increments (`0deg`, `-120deg`, `-240deg`).
+### Data Model & State
+
+- **`ScheduledTrackSlot`**:
+  - `programId`: `<rawArchiveId>::<partNo>` (no prefix)
+  - `archiveId`: Raw Archive item identifier
+  - `partNo`: 1-based track index within the Archive item
+  - `bank`: `'music' | 'concerts' | 'fm'`
+  - `poolId`: Pool or channel identifier (e.g., `concert-pool-rock`, `fm-broadcasts`, or music channel ID)
+  - `channelId` & `guideId`: Routing identifiers passed to `onPlayProgram`
+  - `title` & `subtitle`: Track title and album/concert/FM broadcast label
+  - `src`: `/download/<archiveId>/<encodedFile>` (served via `/api/archive/proxy` without nested proxy wrapping)
+  - `durationSeconds`: Verified positive duration from snapshot/manifest (`undefined` only for the 27 un-snapshotted music channels)
+  - `startUtcMs` & `endUtcMs`: Exact UTC epoch timestamps for the scheduled slot window
+  - `cycleNumber` & `loopDurationSeconds`: Used to display `Repeats every Xh Ym · Cycle N` when `loopDurationSeconds < 86_400`
+  - `status`: `'scheduled' | 'playing' | 'failed'`
+- **`RoundRobinControllerState`**:
+  - `mode`: `'clock24h' | 'shuffle' | 'off-schedule'`
+  - `clockEligible`: `boolean` (`true` for all Concerts, all FM Broadcasts, and the 71 snapshotted Music Channels; `false` for the 27 un-snapshotted Music Channels)
+  - `seekStatus`: `'synced' | 'fallback-zero' | 'pending'`
+  - `failedIds`: `ReadonlySet<string>` (`<rawArchiveId>::<partNo>`)
+  - `lastAiredLog`: Bounded in-memory list (`max 50`) of `{ programId, title, subtitle, bank, poolId, airedAtUtcMs }`
+
+### Verification Plan (Post-Build Checks)
+
+1. **Clock Sync Check**: Tune into a clock-eligible pool twice, 30 seconds apart; confirm the `nowSlot` and `currentTime` offset match the wall clock within ~1 second.
+2. **Timezone Invariance Check**: Evaluate the schedule resolver across two different timezone offsets at the same UTC epoch millisecond; confirm the exact same `<rawArchiveId>::<partNo>` and track offset are selected, with only the formatted `HH:MM` strings localized.
+3. **Failure & Off-Schedule Exit Paths**: Force a 404 track URL through `/api/archive/proxy` and verify it is skipped and marked `Failed to load — skipped`; click a `Next 3` row during `24h Clock` mode and confirm the badge switches to `Off schedule` with a working `Return to live` button.
+4. **Proxy Response Bound & Protected Files Check**: Confirm no proxied response exceeds `32 MiB`, and verify `MinimalPlayer.tsx` and all other protected core files remain untouched.

@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for resolving the interactive browser audit items across AJN Radio, AJN TV Guide, and AJN Rumble: enforcing >= 48x48px touch targets on all dock, head-unit, and 3D prism steppers; aligning SourcePrism3D cylinder testid and responsive 340px mobile / 260px desktop heights; and expanding mobile bottom scroll clearance across the main viewport and views.",
-  "updatedAt":  "2026-11-10T20:35:48.054987618Z",
+  "summary":  "Updated implementation plan incorporating all five factual repo corrections: 71/98 Music Channels clock-eligible (27 fallback to Shuffle until snapshot regeneration), raw <archiveId>::<partNo> canonical keys with no prefixes, /api/archive/proxy route path, strict non-modification of protected MinimalPlayer.tsx via usePersistentMedia/onPlayProgram, and unified 3-second VBR seek timeout.",
+  "updatedAt":  "2026-11-11T02:40:55.531441648Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
