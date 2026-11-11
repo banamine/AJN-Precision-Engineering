@@ -1,6 +1,0 @@
-{
-  "summary":  "Implementation plan for resolving the interactive browser audit items across AJN Radio, AJN TV Guide, and AJN Rumble: enforcing >= 48x48px touch targets on all dock, head-unit, and 3D prism steppers; aligning SourcePrism3D cylinder testid and responsive 340px mobile / 260px desktop heights; and expanding mobile bottom scroll clearance across the main viewport and views.",
-  "updatedAt":  "2026-11-10T20:35:48.054987618Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}

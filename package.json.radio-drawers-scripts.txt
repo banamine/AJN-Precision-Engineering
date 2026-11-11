@@ -1,0 +1,3 @@
+Add to package.json "scripts":
+    "test:radio-drawers": "tsx test-radio-drawers.ts && tsx test-radio-drawers-view.tsx",
+and append " && npm run test:radio-drawers" to the end of the "test" script.
