@@ -4,7 +4,7 @@
  * so every listener in every timezone hears the same track at the same instant. Only label formatting is timezone-aware. */
 
 export const DAY_MS = 86_400_000;
-export type ScheduleBank = 'music' | 'concerts' | 'fm';
+export type ScheduleBank = 'music' | 'concerts' | 'fm' | 'podcasts';
 
 export interface SchedTrack {
   /** `<rawArchiveId>::<partNo>` (1-based part), no prefixes. */

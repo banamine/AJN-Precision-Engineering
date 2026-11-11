@@ -64,3 +64,44 @@ export async function loadFmPools(): Promise<SchedPool[]> {
     .map((it) => ({ ...it, tracks: it.tracks.map((t) => ({ ...t, bank: 'fm' as const })) }));
   return items.length ? [{ id: 'fm-broadcasts', label: 'FM Broadcasts', bank: 'fm', items }] : [];
 }
+
+interface SpokenProg { id: string; title: string; mediaUrl?: string; metadata?: { durationSeconds?: number; durationEstimated?: boolean } }
+interface SpokenCh { id: string; name: string; group?: string; programs?: SpokenProg[] }
+const SPOKEN_POOL_GROUPS: { group: string; id: string; label: string }[] = [
+  { group: 'Podcast', id: 'spoken-all-podcasts', label: 'All podcasts' },
+  { group: 'Talk Radio', id: 'spoken-all-talk', label: 'All talk radio' },
+  { group: 'Old-Time Radio', id: 'spoken-all-otr', label: 'All old-time radio' },
+];
+/** Pure: podcast / talk-radio / old-time-radio pools from the server's Audio & Podcasts guide.
+ *  Only episodes with a REAL duration (feed or Archive metadata, never the server's 45-minute placeholder) and a media URL are scheduled;
+ *  each show is one item (episodes in the server's order), so round-robin mixes shows. Pools: one per group, then one per show. */
+export function buildSpokenPools(channels: readonly SpokenCh[]): SchedPool[] {
+  const shows: { group: string; item: SchedItem; label: string; poolId: string }[] = [];
+  for (const ch of channels) {
+    if (!ch.group || !SPOKEN_POOL_GROUPS.some((g) => g.group === ch.group)) continue;
+    const seen = new Set<string>();
+    const progs = (ch.programs ?? []).filter((p) => {
+      const d = p.metadata?.durationSeconds;
+      if (!p.mediaUrl || !p.title || seen.has(p.mediaUrl) || p.metadata?.durationEstimated || !(typeof d === 'number' && d > 0)) return false;
+      seen.add(p.mediaUrl); return true;
+    }).slice(0, MAX_TRACKS);
+    if (!progs.length) continue;
+    const poolId = `spoken-${ch.id}`;
+    const tracks: SchedTrack[] = progs.map((p, i) => ({ programId: p.id, archiveId: p.id, partNo: i + 1, bank: 'podcasts', poolId, channelId: ch.id, guideId: 'audio-podcasts',
+      title: p.title, subtitle: ch.name, src: p.mediaUrl as string, durationSeconds: realDuration(p.metadata?.durationSeconds) }));
+    shows.push({ group: ch.group, item: { id: ch.id, tracks }, label: ch.name, poolId });
+  }
+  const out: SchedPool[] = [];
+  for (const g of SPOKEN_POOL_GROUPS) {
+    const items = shows.filter((s) => s.group === g.group).map((s) => s.item);
+    if (items.length) out.push({ id: g.id, label: g.label, bank: 'podcasts', items });
+  }
+  return [...out, ...shows.sort((a, b) => a.label.localeCompare(b.label)).map((s) => ({ id: s.poolId, label: s.label, bank: 'podcasts' as const, items: [s.item] }))];
+}
+/** Loaded on demand (the guide response is several MB). */
+export async function loadPodcastPools(fetchImpl: typeof fetch = fetch): Promise<SchedPool[]> {
+  const res = await fetchImpl(`/api/schedule?guide=audio-podcasts&light=1&tz=${new Date().getTimezoneOffset()}`);
+  if (!res.ok) throw new Error(`podcast list HTTP ${res.status}`);
+  const data = (await res.json()) as { channels?: SpokenCh[] };
+  return buildSpokenPools(data.channels ?? []);
+}

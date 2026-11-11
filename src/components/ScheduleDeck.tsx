@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { RadioSpectrum } from './RadioSpectrum';
 import { useScheduleController } from '../hooks/useScheduleController';
-import { buildMusicPools, loadConcertPools, loadFmPools } from '../utils/scheduleCatalog';
+import { buildMusicPools, loadConcertPools, loadFmPools, loadPodcastPools } from '../utils/scheduleCatalog';
 import { formatClock, formatDuration, formatRepeat, loopSeconds, DAY_MS, type SchedPool, type ScheduleBank } from '../utils/roundRobinSchedule';
 
 interface Props { bank: ScheduleBank; onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null; playingNow?: boolean }
 const ROW_LABELS = ['Next', 'Later', 'Then'] as const;
-const BANK_LABEL: Record<ScheduleBank, string> = { music: 'Music channels', concerts: 'Live concerts', fm: 'FM broadcasts' };
+const BANK_LABEL: Record<ScheduleBank, string> = { music: 'Music channels', concerts: 'Live concerts', fm: 'FM broadcasts', podcasts: 'Podcasts' };
 const btn = 'min-h-[40px] cursor-pointer rounded-full px-3 text-xs font-semibold touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]';
 
 /** Spectrum & 24-Hour Schedule Deck: the right-hand Head Unit panel while Archive Music is selected. */
@@ -18,7 +18,7 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
   useEffect(() => {
     if (bank === 'music' || loaded[bank]) return;
     let alive = true; setLoadError(null);
-    (bank === 'concerts' ? loadConcertPools() : loadFmPools()).then((p) => { if (alive) setLoaded((l) => ({ ...l, [bank]: p })); })
+    (bank === 'concerts' ? loadConcertPools() : bank === 'podcasts' ? loadPodcastPools() : loadFmPools()).then((p) => { if (alive) setLoaded((l) => ({ ...l, [bank]: p })); })
       .catch((e: unknown) => { if (alive) setLoadError(e instanceof Error ? e.message : 'could not load the list'); });
     return () => { alive = false; };
   }, [bank, loaded]);

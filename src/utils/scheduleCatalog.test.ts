@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildMusicPools, loadConcertPools, loadFmPools } from './scheduleCatalog';
+import { buildMusicPools, loadConcertPools, loadFmPools, buildSpokenPools } from './scheduleCatalog';
 import { clockEligible, poolTrackCount, slotAt, slotsAfter, type SchedPool } from './roundRobinSchedule';
 
 const keyOk = (p: SchedPool) => p.items.every((i) => i.tracks.every((t, n) => t.programId === `${t.archiveId}::${n + 1}` && t.partNo === n + 1));
@@ -23,4 +23,19 @@ test('fm: 346 broadcasts, all clock-eligible, bank tagged fm', async () => {
   console.log(`fm items ${pools[0].items.length} tracks ${poolTrackCount(pools[0])}`);
   assert.equal(pools[0].items.length, 346); assert.ok(clockEligible(pools[0]) && keyOk(pools[0]));
   assert.ok(pools[0].items.every((i) => i.tracks.every((t) => t.bank === 'fm' && t.poolId === 'fm-broadcasts')));
+});
+test('podcasts: only real-duration episodes with media, one item per show, group pools first', () => {
+  const ep = (id: string, d?: number, est = false, url = `https://x/${id}.mp3`) => ({ id, title: id, mediaUrl: url, metadata: { durationSeconds: d, durationEstimated: est } });
+  const pools = buildSpokenPools([
+    { id: 'a', name: 'Show A', group: 'Podcast', programs: [ep('a1', 1800), ep('a2', 2700, true), ep('a3', undefined), ep('a1dup', 1800, false, 'https://x/a1.mp3'), ep('a4', 600)] },
+    { id: 'b', name: 'Show B', group: 'Podcast', programs: [ep('b1', 900)] },
+    { id: 'c', name: 'No durations', group: 'Podcast', programs: [ep('c1', undefined)] },
+    { id: 'o', name: 'OTR', group: 'Old-Time Radio', programs: [ep('o1', 1500)] },
+    { id: 'z', name: 'Not spoken', group: 'Music', programs: [ep('z1', 100)] },
+  ]);
+  assert.deepEqual(pools.map((p) => p.id), ['spoken-all-podcasts', 'spoken-all-otr', 'spoken-o', 'spoken-a', 'spoken-b']);
+  assert.deepEqual(pools[0].items.map((i) => i.id), ['a', 'b']);
+  assert.deepEqual(pools[3].items[0].tracks.map((t) => t.programId), ['a1', 'a4']);
+  assert.ok(pools.every((p) => clockEligible(p) && p.bank === 'podcasts'));
+  assert.ok(pools[0].items.every((i) => i.tracks.every((t) => t.guideId === 'audio-podcasts' && t.channelId === i.id)));
 });

@@ -459,9 +459,9 @@ export function RadioPresetsBar({ station, info, live, onPlay, onPresetTuned, wi
                 )}
               </div>
 
-              <div data-testid="radio-head-unit-spectrum" className={`flex min-h-[112px] flex-col rounded-2xl p-4 md:col-start-2 md:row-start-1 ${mode === 'archive' ? '' : 'justify-center'}`} style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
-                {mode === 'archive' ? (
-                  <ScheduleDeck bank={sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} />
+              <div data-testid="radio-head-unit-spectrum" className={`flex min-h-[112px] flex-col rounded-2xl p-4 md:col-start-2 md:row-start-1 ${mode !== 'live' ? '' : 'justify-center'}`} style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
+                {mode !== 'live' ? (
+                  <ScheduleDeck bank={mode === 'podcasts' ? 'podcasts' : sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} />
                 ) : (<>
                 <div className="mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                   <span className="text-[#E06D3B]">Spectrum</span>
