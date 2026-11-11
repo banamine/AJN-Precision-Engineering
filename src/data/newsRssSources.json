@@ -1,0 +1,159 @@
+{
+  "schema": "ajn.newsRssSources.v1",
+  "source": "banamine/Daily-News-Digest- server.ts defaultFeeds (rss rows) cross-checked against daily_news.py RSS_FEEDS at commit 00d2764",
+  "note": "collectedByDigest=true means daily_news.py (the hourly job that writes data.json) fetches it today; false means only the digest dashboard lists it. The scraper row (alexjoneslive.com) is not RSS and is not listed here. No feed outside the digest repo was added.",
+  "feeds": [
+    {
+      "id": "bbc-world-news",
+      "name": "BBC World News",
+      "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+      "category": "Global",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "reuters-top-news",
+      "name": "Reuters Top News",
+      "url": "https://news.google.com/rss/search?q=site:reuters.com&hl=en-US&gl=US&ceid=US:en",
+      "category": "Global",
+      "via": "google-news-search",
+      "collectedByDigest": true
+    },
+    {
+      "id": "daily-mail-uk",
+      "name": "Daily Mail UK",
+      "url": "https://www.dailymail.co.uk/news/index.rss",
+      "category": "Global",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "new-york-post",
+      "name": "New York Post",
+      "url": "https://nypost.com/feed/",
+      "category": "Global",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "associated-press-world",
+      "name": "Associated Press World",
+      "url": "https://news.google.com/rss/search?q=site:apnews.com&hl=en-US&gl=US&ceid=US:en",
+      "category": "Global",
+      "via": "google-news-search",
+      "collectedByDigest": false
+    },
+    {
+      "id": "fox-news-world",
+      "name": "Fox News World",
+      "url": "https://moxie.foxnews.com/google-publisher/world.xml",
+      "category": "Global",
+      "via": "direct",
+      "collectedByDigest": false
+    },
+    {
+      "id": "100-fed-up",
+      "name": "100% Fed Up",
+      "url": "https://100percentfedup.com/feed/",
+      "category": "Alternative",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "the-federalist",
+      "name": "The Federalist",
+      "url": "https://thefederalist.com/feed/",
+      "category": "Alternative",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "the-blaze",
+      "name": "The Blaze",
+      "url": "https://www.theblaze.com/feeds/feed.rss",
+      "category": "Alternative",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "hot-air",
+      "name": "Hot Air",
+      "url": "https://hotair.com/feed",
+      "category": "Alternative",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "judicial-watch",
+      "name": "Judicial Watch",
+      "url": "https://www.judicialwatch.org/feed/",
+      "category": "Alternative",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "american-thinker",
+      "name": "American Thinker",
+      "url": "https://www.americanthinker.com/index.xml",
+      "category": "Alternative",
+      "via": "direct",
+      "collectedByDigest": true
+    },
+    {
+      "id": "epoch-times",
+      "name": "Epoch Times",
+      "url": "https://news.google.com/rss/search?q=site:theepochtimes.com&hl=en-US&gl=US&ceid=US:en",
+      "category": "Alternative",
+      "via": "google-news-search",
+      "collectedByDigest": true
+    },
+    {
+      "id": "gateway-pundit",
+      "name": "Gateway Pundit",
+      "url": "https://news.google.com/rss/search?q=site:thegatewaypundit.com&hl=en-US&gl=US&ceid=US:en",
+      "category": "Alternative",
+      "via": "google-news-search",
+      "collectedByDigest": false
+    },
+    {
+      "id": "breitbart-news",
+      "name": "Breitbart News",
+      "url": "https://feeds.feedburner.com/breitbart",
+      "category": "Alternative",
+      "via": "direct",
+      "collectedByDigest": false
+    },
+    {
+      "id": "zerohedge",
+      "name": "ZeroHedge",
+      "url": "https://feeds.feedburner.com/zerohedge/feed",
+      "category": "Finance",
+      "via": "direct",
+      "collectedByDigest": false
+    },
+    {
+      "id": "wall-street-journal",
+      "name": "Wall Street Journal",
+      "url": "https://news.google.com/rss/search?q=site:wsj.com&hl=en-US&gl=US&ceid=US:en",
+      "category": "Finance",
+      "via": "google-news-search",
+      "collectedByDigest": false
+    },
+    {
+      "id": "techcrunch",
+      "name": "TechCrunch",
+      "url": "https://techcrunch.com/feed/",
+      "category": "Tech",
+      "via": "direct",
+      "collectedByDigest": false
+    },
+    {
+      "id": "wired-news",
+      "name": "Wired News",
+      "url": "https://www.wired.com/feed/rss",
+      "category": "Tech",
+      "via": "direct",
+      "collectedByDigest": false
+    }
+  ]
+}
