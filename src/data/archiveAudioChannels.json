@@ -623,5 +623,194 @@
   "source": "https://archive.org/details/Radio-The-Alex-Jones-Radio-Show",
   "verifiedAt": "2026-10-20",
   "maxSlots": 120
+ },
+ {
+  "id": "music-assemblage-23-light-lyrics-202609",
+  "name": "Random MP3 tunes",
+  "group": "Music",
+  "itemId": "assemblage-23-light-lyrics_202609",
+  "source": "https://archive.org/details/assemblage-23-light-lyrics_202609",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-keedy-chase-the-clouds-1991",
+  "name": "Keedy - Chase The Clouds (1991) Album",
+  "group": "Music",
+  "itemId": "keedy-chase-the-clouds-1991",
+  "source": "https://archive.org/details/keedy-chase-the-clouds-1991",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-pink-floyd-the-wall-1979-lp2",
+  "name": "Pink Floyd - The Wall (1979) LP2",
+  "group": "Music",
+  "itemId": "Pink-Floyd-The-Wall-1979-LP2",
+  "source": "https://archive.org/details/Pink-Floyd-The-Wall-1979-LP2",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-pink-floyd-the-wall-1979-lp1",
+  "name": "Pink Floyd - The Wall (1979) LP1",
+  "group": "Music",
+  "itemId": "Pink-Floyd-The-Wall-1979-LP1",
+  "source": "https://archive.org/details/Pink-Floyd-The-Wall-1979-LP1",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-09-twenty-four-hours",
+  "name": "Steamhammer - Steamhammer (Reflection) (1969)",
+  "group": "Music",
+  "itemId": "09-twenty-four-hours",
+  "source": "https://archive.org/details/09-twenty-four-hours",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-steverayvaughan-1987fmbroadcastpa",
+  "name": "Stevie Ray Vaughan SRV 1987 FM Broadcast PA",
+  "group": "Music",
+  "itemId": "SteveRayVaughan-1987FMBroadcastPA",
+  "source": "https://archive.org/details/SteveRayVaughan-1987FMBroadcastPA",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-01-dancing-madly-backwards-on-a-sea-of-air",
+  "name": "Captain Beyond - Captain Beyond (1972)",
+  "group": "Music",
+  "itemId": "01-dancing-madly-backwards-on-a-sea-of-air",
+  "source": "https://archive.org/details/01-dancing-madly-backwards-on-a-sea-of-air",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-1969woodstockcomplete1",
+  "name": "1969 Woodstock Complete",
+  "group": "Music",
+  "itemId": "1969WoodstockComplete1",
+  "source": "https://archive.org/details/1969WoodstockComplete1",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-janisjoplin220508",
+  "name": "Janis Joplin",
+  "group": "Music",
+  "itemId": "JanisJoplin220508",
+  "source": "https://archive.org/details/JanisJoplin220508",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-deep-purple-burn-1974-vinyl-rip-1st-press",
+  "name": "Deep Purple - Burn (1974) Vinyl Rip (1st Press)",
+  "group": "Music",
+  "itemId": "Deep-Purple-Burn-1974-Vinyl-Rip-1st-Press",
+  "source": "https://archive.org/details/Deep-Purple-Burn-1974-Vinyl-Rip-1st-Press",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-scorpions-world-wide-live-1985-lp2-live-vinyl-rip-20200702",
+  "name": "Scorpions - World Wide Live (1985) (LP2) Vinyl Rip",
+  "group": "Music",
+  "itemId": "scorpions-world-wide-live-1985-lp2-live-vinyl-rip_20200702",
+  "source": "https://archive.org/details/scorpions-world-wide-live-1985-lp2-live-vinyl-rip_20200702",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-scorpions-world-wide-live-1985-lp1-live-vinyl-rip",
+  "name": "Scorpions - World Wide Live (1985) (LP1) Vinyl Rip",
+  "group": "Music",
+  "itemId": "Scorpions-World-Wide-Live-1985-LP1-Live-Vinyl-Rip",
+  "source": "https://archive.org/details/Scorpions-World-Wide-Live-1985-LP1-Live-Vinyl-Rip",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-kieran-white-steamhammer-open-door-1975",
+  "name": "Kieran White (Steamhammer) - Open Door (1975)",
+  "group": "Music",
+  "itemId": "Kieran-White-Steamhammer-Open-Door-1975",
+  "source": "https://archive.org/details/Kieran-White-Steamhammer-Open-Door-1975",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-tami-neilson-chickaboom-2020",
+  "name": "Tami Neilson - Chickaboom (2020)",
+  "group": "Music",
+  "itemId": "Tami-Neilson-Chickaboom-2020",
+  "source": "https://archive.org/details/Tami-Neilson-Chickaboom-2020",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-captain-beyond-sufficiently-breathless-1973",
+  "name": "Captain Beyond - Sufficiently Breathless (1973)",
+  "group": "Music",
+  "itemId": "Captain-Beyond-Sufficiently-Breathless-1973",
+  "source": "https://archive.org/details/Captain-Beyond-Sufficiently-Breathless-1973",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-lord-sutch-and-heavy-friends-lord-sutch-and-heavy-friends-19",
+  "name": "Lord Sutch and Heavy Friends - Lord Sutch and Heavy Friends",
+  "group": "Music",
+  "itemId": "Lord-Sutch-and-Heavy-Friends-Lord-Sutch-and-Heavy-Friends-1970",
+  "source": "https://archive.org/details/Lord-Sutch-and-Heavy-Friends-Lord-Sutch-and-Heavy-Friends-1970",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-john-lennon-mind-games-1973-vinyl-rip",
+  "name": "John Lennon - Mind Games (1973) Vinyl Rip",
+  "group": "Music",
+  "itemId": "John-Lennon-Mind-Games-1973-Vinyl-Rip",
+  "source": "https://archive.org/details/John-Lennon-Mind-Games-1973-Vinyl-Rip",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-pavlovs-dog-pampered-menial-1975-vinyl-rip",
+  "name": "Pavlov's Dog - Pampered Menial (1975) Vinyl Rip",
+  "group": "Music",
+  "itemId": "pavlovs-dog-pampered-menial-1975-vinyl-rip",
+  "source": "https://archive.org/details/pavlovs-dog-pampered-menial-1975-vinyl-rip",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-jadewarrior-released-1972",
+  "name": "Jade Warrior - Released (1972)",
+  "group": "Music",
+  "itemId": "JadeWarrior-Released-1972",
+  "source": "https://archive.org/details/JadeWarrior-Released-1972",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-andrew-lloyd-webber-jesus-christ-superstar-1970-lp2",
+  "name": "Andrew Lloyd Webber - Jesus Christ Superstar (1970) LP2",
+  "group": "Music",
+  "itemId": "Andrew-Lloyd-Webber-Jesus-Christ-Superstar-1970-LP2",
+  "source": "https://archive.org/details/Andrew-Lloyd-Webber-Jesus-Christ-Superstar-1970-LP2",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
+ },
+ {
+  "id": "music-andrew-lloyd-webber-jesus-christ-superstar-1970-lp1",
+  "name": "Andrew Lloyd Webber - Jesus Christ Superstar (1970) LP1",
+  "group": "Music",
+  "itemId": "Andrew-Lloyd-Webber-Jesus-Christ-Superstar-1970-LP1",
+  "source": "https://archive.org/details/Andrew-Lloyd-Webber-Jesus-Christ-Superstar-1970-LP1",
+  "verifiedAt": "2026-10-10",
+  "maxSlots": 48
  }
 ]
