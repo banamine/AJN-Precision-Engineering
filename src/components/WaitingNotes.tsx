@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import notesJson from "../data/waitingNotes.json";
+import { JingleChip } from "./BufferJingle";
 import { createDeck, waitKindOf, type Acronym, type Note, type WaitingNotesData } from "../utils/waitingNotes";
 
 const DATA = notesJson as unknown as WaitingNotesData;
@@ -66,6 +67,7 @@ export function WaitingNotes({ status, onRetry, archive = false }: { status: str
               </>
             )}
           </p>
+          <JingleChip />
         </div>
       </div>
     </div>

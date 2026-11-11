@@ -51,3 +51,17 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { BufferJingle } from './src/components/BufferJingle';
 assert.equal(renderToStaticMarkup(<BufferJingle status="Buffering…" enabled />), '');
 console.log('buffer-jingle ok');
+import { jingleFadeMs } from './src/utils/bufferJingle';
+assert.equal(jingleFadeMs({ getItem: () => '1200' }), 1200); assert.equal(jingleFadeMs({ getItem: () => null }), 500); assert.equal(jingleFadeMs({ getItem: () => '' }), 500);
+assert.equal(jingleFadeMs({ getItem: () => 'abc' }), 500); assert.equal(jingleFadeMs({ getItem: () => '99999' }), 500); assert.equal(jingleFadeMs(null), 500); assert.equal(jingleFadeMs({ getItem: () => '0' }), 0);
+{ // onActive reports real state changes only
+  const c = clock(); const a = fakeAudio(); const seen: boolean[] = []; const j = createJingleController(a, c.timers, { onActive: (x) => seen.push(x) });
+  j.start(); c.advance(300); j.stop(); c.advance(600); assert.deepEqual(seen, [true, false]);
+  const c2 = clock(); const a2 = fakeAudio({ rejectPlay: true }); const seen2: boolean[] = []; createJingleController(a2, c2.timers, { onActive: (x) => seen2.push(x) }).start(); await Promise.resolve(); await Promise.resolve(); assert.deepEqual(seen2, [true, false], 'blocked play reports inactive');
+}
+import { jingleStore } from './src/utils/jingleStore'; import { JingleChip } from './src/components/BufferJingle';
+assert.equal(renderToStaticMarkup(<JingleChip />), '', 'no chip outside a video wait');
+jingleStore.setSupported(true); jingleStore.setPlaying(true);
+const chip = renderToStaticMarkup(<JingleChip />); assert.match(chip, /Now playing: The Quiet Between/); assert.match(chip, /Sound off/);
+jingleStore.setPlaying(false); jingleStore.setOn(false); assert.match(renderToStaticMarkup(<JingleChip />), /music off[\s\S]*Sound on/);
+console.log('jingle chip + fade override ok');
