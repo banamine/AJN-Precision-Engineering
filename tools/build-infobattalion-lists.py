@@ -534,7 +534,7 @@ def cartoon_channels(shows):
                          "group": "Cartoons", "rows": singles})
     return channels, rejected
 
-ADDITIVE_LIST_IDS = (1, 3, 4, 5)
+ADDITIVE_LIST_IDS = (1, 2, 3, 4, 5)
 
 def parse_list_selection(value):
     """Parse one comma-separated additive owner-list selection."""
@@ -545,7 +545,7 @@ def parse_list_selection(value):
     if not values or len(values) != len(set(values)):
         raise argparse.ArgumentTypeError("lists must be non-empty and contain no duplicates")
     if any(value not in ADDITIVE_LIST_IDS for value in values):
-        raise argparse.ArgumentTypeError("only additive owner lists 1,3,4,5 are supported")
+        raise argparse.ArgumentTypeError("only additive owner lists 1,2,3,4,5 are supported")
     return values
 
 def main():
@@ -553,7 +553,7 @@ def main():
     ap.add_argument("--resume-cached-run", action="store_true",
                     help="resume this run from its cached owner-list response and shared request ledger")
     ap.add_argument("--lists", nargs="+", type=parse_list_selection, default=None,
-                    help="additively process selected comma-separated owner lists 1,3,4,5")
+                    help="additively process selected comma-separated owner lists 1,2,3,4,5 (2 = Music, audio manifest only)")
     ap.add_argument("--keep-short", action="store_true",
                     help="include list-5 rows under 45 minutes or with TV-style titles; default is to report and hold them")
     ap.add_argument("--extra", default="src/data/extraChannelsManifest.json"); ap.add_argument("--docs", default="src/data/documentariesManifest.json")
@@ -966,16 +966,20 @@ def main():
         return it and it["state"] == "ok" and sum(1 for f in it["files"].values() if f["name"].lower().endswith(".mp3") and not f["priv"] and f["len"] > 0) >= 1
     for name, group, prefix in (("otr", "Old-Time Radio", "otr"), ("nwt", "New World Tyranny", "nwt-audio"), ("music", "Music", "music")):
         for i in pick_new(name):
-            if not mp3_ok(i): report["needs_decision"].setdefault(name + "_non_mp3_or_video", []).append(i); continue
+            if not mp3_ok(i):
+                report["needs_decision"].setdefault(name + "_non_mp3_or_video", []).append(i)
+                if name == "music": list_stats[name]["rejected"]["non_mp3_or_video"] = list_stats[name]["rejected"].get("non_mp3_or_video", 0) + 1
+                continue
             cid = prefix + "-" + slug(i)
             if cid in taken: continue
             taken.add(cid)
+            if name == "music": list_stats[name]["added_ids"].add(i); list_stats[name]["added_rows"] += 1
             e = {"id": cid, "name": (lambda n: n if len(re.sub(r"\W", "", n)) >= 2 else i)(cut(clean(title_of(i)))), "group": group, "itemId": i, "source": "https://archive.org/details/" + i, "verifiedAt": "2026-10-10", "_ib": 1}
             if name == "music": e["maxSlots"] = 48
             audio.append(e)
     report["channels"]["audio"] = {"new": sum(1 for x in audio if x.get("_ib"))}
     report["lists"] = {}
-    for name in ("documentary", "cartoons", "tv", "movies"):
+    for name in ("documentary", "cartoons", "tv", "movies") + (("music",) if 2 in selected_list_ids else ()):
         stats = list_stats[name]
         report["lists"][name] = {
             "members": stats["members"],
@@ -995,6 +999,10 @@ def main():
         for e in docs: e.pop("_ib", None)
         for e in audio: e.pop("_ib", None)
         json.dump(docs, open(os.path.join(root, a.docs), "w"), separators=(",", ":"), ensure_ascii=False)
+        json.dump(audio, open(os.path.join(root, a.audio), "w"), indent=1, ensure_ascii=False)
+    elif 2 in selected_list_ids:
+        # Music is audio-only: write ONLY the audio manifest (docs are never rewritten in additive mode).
+        for e in audio: e.pop("_ib", None)
         json.dump(audio, open(os.path.join(root, a.audio), "w"), indent=1, ensure_ascii=False)
     os.makedirs(os.path.dirname(os.path.join(root, a.report)), exist_ok=True)
     json.dump(report, open(os.path.join(root, a.report), "w"), indent=1)
