@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import type { TVNewsItem } from '../../channels';
 import { PlayProgramCallback } from '../types';
+import { useSharedSearch, readSharedQuery } from '../hooks/useSharedSearch';
+import { SearchScopeStrip } from './SearchScopeStrip';
 import { highlightParts, nextActiveIndex, SUGGEST_MIN_CHARS, suggest, type SuggestCandidate } from '../utils/suggest';
 import { buildEmptySearchSuggestionGroups } from '../utils/searchSuggestions';
 import { searchScrollBehavior, shouldScrollResults } from '../utils/searchScroll';
@@ -27,6 +29,8 @@ interface SearchViewProps {
   onClearRecentSearches?: () => void;
 }
 
+/** Pause after the last keystroke before the TV News search runs (a live Archive request, so longer than the library's). */
+const TYPE_SEARCH_DEBOUNCE_MS = 300;
 const NETWORKS = [
   { id: 'FOXNEWSW', name: 'Fox News' },
   { id: 'CNNW', name: 'CNN' },
@@ -79,7 +83,7 @@ export function SearchView({ onPlayProgram, externalQuery, suggestions = [], onR
       setBuildStatus('error');
     }
   };
-const [query, setQuery] = useState<string>('');
+const [query, setQuery] = useSharedSearch();
   const [selectedNetwork, setSelectedNetwork] = useState<string>('FOXNEWSW');
   const [loading, setLoading] = useState<boolean>(false);
   const [items, setItems] = useState<TVNewsItem[]>([]);
@@ -104,9 +108,11 @@ const [query, setQuery] = useState<string>('');
   const visibleSuggestionItems = isEmptyQuery ? emptySuggestionItems : typedSuggestions;
   const showSuggestions = suggestionsOpen && visibleSuggestionItems.length > 0;
 
+  const lastRunTermRef = React.useRef<string | null>(null);
   const executeSearch = useCallback(
     async (searchTerm: string, network: string, userInitiated = false) => {
       const seq = ++searchSeqRef.current;
+      lastRunTermRef.current = searchTerm;
       searchAbortRef.current?.abort();
       const controller = new AbortController();
       searchAbortRef.current = controller;
@@ -147,9 +153,18 @@ const [query, setQuery] = useState<string>('');
     firstRunRef.current = false;
     // The header search effect below owns the first load when a query was submitted.
     if (first && externalQuery && externalQuery.n > 0) return;
-    executeSearch('', selectedNetwork);
+    executeSearch(readSharedQuery(), selectedNetwork);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [executeSearch]);
+
+  // Per-keystroke population (Entry 042): results follow the text after a short pause. Runs the real Archive search, so the
+  // pause is longer than the library's and the previous request is aborted by executeSearch.
+  useEffect(() => {
+    if (lastRunTermRef.current === null || query === lastRunTermRef.current) return;
+    const t = setTimeout(() => executeSearch(query, selectedNetwork), TYPE_SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, executeSearch]);
 
   // A search typed into the header runs here, replacing the mount-time empty search.
   useEffect(() => {
@@ -382,6 +397,7 @@ const [query, setQuery] = useState<string>('');
             </button>
           </div>
         </form>
+        <SearchScopeStrip active="tvnews" />
 
         {/* Suggestion Chips */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">

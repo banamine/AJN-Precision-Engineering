@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for resizing the 5 Live Radio station switches inside SourcePrism3D (Facet 0) into a 2-column grid with a full-width 5th switch, enabling 2-line wrapped station names with responsive text sizing, and applying the aviator cockpit latching switch theme (ck-key) to all SourcePrism3D controls (station boxes, top source tabs, and prev/next buttons).",
-  "updatedAt":  "2026-11-11T12:34:20.590251469Z",
+  "summary":  "Updated implementation plan incorporating all 5 requested functional upgrades: 3-stage drawer sizing (Minimized, Top 4 Preview, Full Expanded), 1-click Play Latest Full Show and Resume buttons on drawer headers, auto-pinning the currently playing episode when Listen Back is minimized, localStorage drawer state persistence (ajn.radio.drawers.v1), and a Master Collapse All / Expand All cockpit switch bar.",
+  "updatedAt":  "2026-11-11T13:24:27.301576125Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
