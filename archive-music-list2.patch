@@ -1,0 +1,329 @@
+From 9aae23a8a0ea7ce210a44402374f630c6cdf158f Mon Sep 17 00:00:00 2001
+From: banamine <banamine@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 00:26:03 +0000
+Subject: [PATCH 1/3] tools: allow --lists 2 (Music); additive music run writes
+ archiveAudioChannels.json and reports Music stats
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016pQw6jo9R4VKCwRPz4Txqo
+---
+ tools/build-infobattalion-lists.py | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/tools/build-infobattalion-lists.py b/tools/build-infobattalion-lists.py
+index 6fd1c71..b25da1c 100644
+--- a/tools/build-infobattalion-lists.py
++++ b/tools/build-infobattalion-lists.py
+@@ -534,7 +534,7 @@ def cartoon_channels(shows):
+                          "group": "Cartoons", "rows": singles})
+     return channels, rejected
+ 
+-ADDITIVE_LIST_IDS = (1, 3, 4, 5)
++ADDITIVE_LIST_IDS = (1, 2, 3, 4, 5)
+ 
+ def parse_list_selection(value):
+     """Parse one comma-separated additive owner-list selection."""
+@@ -545,7 +545,7 @@ def parse_list_selection(value):
+     if not values or len(values) != len(set(values)):
+         raise argparse.ArgumentTypeError("lists must be non-empty and contain no duplicates")
+     if any(value not in ADDITIVE_LIST_IDS for value in values):
+-        raise argparse.ArgumentTypeError("only additive owner lists 1,3,4,5 are supported")
++        raise argparse.ArgumentTypeError("only additive owner lists 1,2,3,4,5 are supported")
+     return values
+ 
+ def main():
+@@ -553,7 +553,7 @@ def main():
+     ap.add_argument("--resume-cached-run", action="store_true",
+                     help="resume this run from its cached owner-list response and shared request ledger")
+     ap.add_argument("--lists", nargs="+", type=parse_list_selection, default=None,
+-                    help="additively process selected comma-separated owner lists 1,3,4,5")
++                    help="additively process selected comma-separated owner lists 1,2,3,4,5 (2 = Music, audio manifest only)")
+     ap.add_argument("--keep-short", action="store_true",
+                     help="include list-5 rows under 45 minutes or with TV-style titles; default is to report and hold them")
+     ap.add_argument("--extra", default="src/data/extraChannelsManifest.json"); ap.add_argument("--docs", default="src/data/documentariesManifest.json")
+@@ -966,16 +966,20 @@ def main():
+         return it and it["state"] == "ok" and sum(1 for f in it["files"].values() if f["name"].lower().endswith(".mp3") and not f["priv"] and f["len"] > 0) >= 1
+     for name, group, prefix in (("otr", "Old-Time Radio", "otr"), ("nwt", "New World Tyranny", "nwt-audio"), ("music", "Music", "music")):
+         for i in pick_new(name):
+-            if not mp3_ok(i): report["needs_decision"].setdefault(name + "_non_mp3_or_video", []).append(i); continue
++            if not mp3_ok(i):
++                report["needs_decision"].setdefault(name + "_non_mp3_or_video", []).append(i)
++                if name == "music": list_stats[name]["rejected"]["non_mp3_or_video"] = list_stats[name]["rejected"].get("non_mp3_or_video", 0) + 1
++                continue
+             cid = prefix + "-" + slug(i)
+             if cid in taken: continue
+             taken.add(cid)
++            if name == "music": list_stats[name]["added_ids"].add(i); list_stats[name]["added_rows"] += 1
+             e = {"id": cid, "name": (lambda n: n if len(re.sub(r"\W", "", n)) >= 2 else i)(cut(clean(title_of(i)))), "group": group, "itemId": i, "source": "https://archive.org/details/" + i, "verifiedAt": "2026-10-10", "_ib": 1}
+             if name == "music": e["maxSlots"] = 48
+             audio.append(e)
+     report["channels"]["audio"] = {"new": sum(1 for x in audio if x.get("_ib"))}
+     report["lists"] = {}
+-    for name in ("documentary", "cartoons", "tv", "movies"):
++    for name in ("documentary", "cartoons", "tv", "movies") + (("music",) if 2 in selected_list_ids else ()):
+         stats = list_stats[name]
+         report["lists"][name] = {
+             "members": stats["members"],
+@@ -996,6 +1000,10 @@ def main():
+         for e in audio: e.pop("_ib", None)
+         json.dump(docs, open(os.path.join(root, a.docs), "w"), separators=(",", ":"), ensure_ascii=False)
+         json.dump(audio, open(os.path.join(root, a.audio), "w"), indent=1, ensure_ascii=False)
++    elif 2 in selected_list_ids:
++        # Music is audio-only: write ONLY the audio manifest (docs are never rewritten in additive mode).
++        for e in audio: e.pop("_ib", None)
++        json.dump(audio, open(os.path.join(root, a.audio), "w"), indent=1, ensure_ascii=False)
+     os.makedirs(os.path.dirname(os.path.join(root, a.report)), exist_ok=True)
+     json.dump(report, open(os.path.join(root, a.report), "w"), indent=1)
+     print(json.dumps({"lists": report["lists"], "channels": report["channels"], "skipped": {k: len(v) for k, v in report["skipped_in_app"].items()}, "dark": {k: len(v) for k, v in report["dark"].items()},
+-- 
+2.34.1
+
+
+From 0147e4023441b96a5e6396d1fbc2e01c0d49ad2d Mon Sep 17 00:00:00 2001
+From: banamine <banamine@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 00:34:25 +0000
+Subject: [PATCH 2/3] test: list 2 is now an accepted additive selection (6
+ stays invalid)
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016pQw6jo9R4VKCwRPz4Txqo
+---
+ tests/test_infobattalion_builder.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/tests/test_infobattalion_builder.py b/tests/test_infobattalion_builder.py
+index f8c107d..653f3d6 100644
+--- a/tests/test_infobattalion_builder.py
++++ b/tests/test_infobattalion_builder.py
+@@ -279,7 +279,9 @@ class AdditiveListSelectionTests(unittest.TestCase):
+     def test_comma_separated_selection_is_validated(self):
+         self.assertEqual(builder.parse_list_selection("1,3,4,5"), [1, 3, 4, 5])
+         self.assertEqual(builder.parse_list_selection("5"), [5])
+-        for invalid in ("", "1,1", "1,2,3", "1,x"):
++        self.assertEqual(builder.parse_list_selection("2"), [2])
++        self.assertEqual(builder.parse_list_selection("1,2,3"), [1, 2, 3])
++        for invalid in ("", "1,1", "1,6,3", "1,x"):
+             with self.subTest(invalid=invalid), self.assertRaises(Exception):
+                 builder.parse_list_selection(invalid)
+ 
+-- 
+2.34.1
+
+
+From 7d2e204ea420fd5eccf924201e61f09d27490c21 Mon Sep 17 00:00:00 2001
+From: banamine <banamine@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 00:35:13 +0000
+Subject: [PATCH 3/3] data: ingest 21 new @infobattalion List 2 (Music) audio
+ items via build-infobattalion-lists.py --lists 2
+
+Generated by the tool, not hand-edited. Video-only items are rejected and not routed to video manifests in this pass.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016pQw6jo9R4VKCwRPz4Txqo
+---
+ src/data/archiveAudioChannels.json | 189 +++++++++++++++++++++++++++++
+ 1 file changed, 189 insertions(+)
+
+diff --git a/src/data/archiveAudioChannels.json b/src/data/archiveAudioChannels.json
+index 3415f13..3cefadb 100644
+--- a/src/data/archiveAudioChannels.json
++++ b/src/data/archiveAudioChannels.json
+@@ -623,5 +623,194 @@
+   "source": "https://archive.org/details/Radio-The-Alex-Jones-Radio-Show",
+   "verifiedAt": "2026-10-20",
+   "maxSlots": 120
++ },
++ {
++  "id": "music-assemblage-23-light-lyrics-202609",
++  "name": "Random MP3 tunes",
++  "group": "Music",
++  "itemId": "assemblage-23-light-lyrics_202609",
++  "source": "https://archive.org/details/assemblage-23-light-lyrics_202609",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-keedy-chase-the-clouds-1991",
++  "name": "Keedy - Chase The Clouds (1991) Album",
++  "group": "Music",
++  "itemId": "keedy-chase-the-clouds-1991",
++  "source": "https://archive.org/details/keedy-chase-the-clouds-1991",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-pink-floyd-the-wall-1979-lp2",
++  "name": "Pink Floyd - The Wall (1979) LP2",
++  "group": "Music",
++  "itemId": "Pink-Floyd-The-Wall-1979-LP2",
++  "source": "https://archive.org/details/Pink-Floyd-The-Wall-1979-LP2",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-pink-floyd-the-wall-1979-lp1",
++  "name": "Pink Floyd - The Wall (1979) LP1",
++  "group": "Music",
++  "itemId": "Pink-Floyd-The-Wall-1979-LP1",
++  "source": "https://archive.org/details/Pink-Floyd-The-Wall-1979-LP1",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-09-twenty-four-hours",
++  "name": "Steamhammer - Steamhammer (Reflection) (1969)",
++  "group": "Music",
++  "itemId": "09-twenty-four-hours",
++  "source": "https://archive.org/details/09-twenty-four-hours",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-steverayvaughan-1987fmbroadcastpa",
++  "name": "Stevie Ray Vaughan SRV 1987 FM Broadcast PA",
++  "group": "Music",
++  "itemId": "SteveRayVaughan-1987FMBroadcastPA",
++  "source": "https://archive.org/details/SteveRayVaughan-1987FMBroadcastPA",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-01-dancing-madly-backwards-on-a-sea-of-air",
++  "name": "Captain Beyond - Captain Beyond (1972)",
++  "group": "Music",
++  "itemId": "01-dancing-madly-backwards-on-a-sea-of-air",
++  "source": "https://archive.org/details/01-dancing-madly-backwards-on-a-sea-of-air",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-1969woodstockcomplete1",
++  "name": "1969 Woodstock Complete",
++  "group": "Music",
++  "itemId": "1969WoodstockComplete1",
++  "source": "https://archive.org/details/1969WoodstockComplete1",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-janisjoplin220508",
++  "name": "Janis Joplin",
++  "group": "Music",
++  "itemId": "JanisJoplin220508",
++  "source": "https://archive.org/details/JanisJoplin220508",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-deep-purple-burn-1974-vinyl-rip-1st-press",
++  "name": "Deep Purple - Burn (1974) Vinyl Rip (1st Press)",
++  "group": "Music",
++  "itemId": "Deep-Purple-Burn-1974-Vinyl-Rip-1st-Press",
++  "source": "https://archive.org/details/Deep-Purple-Burn-1974-Vinyl-Rip-1st-Press",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-scorpions-world-wide-live-1985-lp2-live-vinyl-rip-20200702",
++  "name": "Scorpions - World Wide Live (1985) (LP2) Vinyl Rip",
++  "group": "Music",
++  "itemId": "scorpions-world-wide-live-1985-lp2-live-vinyl-rip_20200702",
++  "source": "https://archive.org/details/scorpions-world-wide-live-1985-lp2-live-vinyl-rip_20200702",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-scorpions-world-wide-live-1985-lp1-live-vinyl-rip",
++  "name": "Scorpions - World Wide Live (1985) (LP1) Vinyl Rip",
++  "group": "Music",
++  "itemId": "Scorpions-World-Wide-Live-1985-LP1-Live-Vinyl-Rip",
++  "source": "https://archive.org/details/Scorpions-World-Wide-Live-1985-LP1-Live-Vinyl-Rip",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-kieran-white-steamhammer-open-door-1975",
++  "name": "Kieran White (Steamhammer) - Open Door (1975)",
++  "group": "Music",
++  "itemId": "Kieran-White-Steamhammer-Open-Door-1975",
++  "source": "https://archive.org/details/Kieran-White-Steamhammer-Open-Door-1975",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-tami-neilson-chickaboom-2020",
++  "name": "Tami Neilson - Chickaboom (2020)",
++  "group": "Music",
++  "itemId": "Tami-Neilson-Chickaboom-2020",
++  "source": "https://archive.org/details/Tami-Neilson-Chickaboom-2020",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-captain-beyond-sufficiently-breathless-1973",
++  "name": "Captain Beyond - Sufficiently Breathless (1973)",
++  "group": "Music",
++  "itemId": "Captain-Beyond-Sufficiently-Breathless-1973",
++  "source": "https://archive.org/details/Captain-Beyond-Sufficiently-Breathless-1973",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-lord-sutch-and-heavy-friends-lord-sutch-and-heavy-friends-19",
++  "name": "Lord Sutch and Heavy Friends - Lord Sutch and Heavy Friends",
++  "group": "Music",
++  "itemId": "Lord-Sutch-and-Heavy-Friends-Lord-Sutch-and-Heavy-Friends-1970",
++  "source": "https://archive.org/details/Lord-Sutch-and-Heavy-Friends-Lord-Sutch-and-Heavy-Friends-1970",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-john-lennon-mind-games-1973-vinyl-rip",
++  "name": "John Lennon - Mind Games (1973) Vinyl Rip",
++  "group": "Music",
++  "itemId": "John-Lennon-Mind-Games-1973-Vinyl-Rip",
++  "source": "https://archive.org/details/John-Lennon-Mind-Games-1973-Vinyl-Rip",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-pavlovs-dog-pampered-menial-1975-vinyl-rip",
++  "name": "Pavlov's Dog - Pampered Menial (1975) Vinyl Rip",
++  "group": "Music",
++  "itemId": "pavlovs-dog-pampered-menial-1975-vinyl-rip",
++  "source": "https://archive.org/details/pavlovs-dog-pampered-menial-1975-vinyl-rip",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-jadewarrior-released-1972",
++  "name": "Jade Warrior - Released (1972)",
++  "group": "Music",
++  "itemId": "JadeWarrior-Released-1972",
++  "source": "https://archive.org/details/JadeWarrior-Released-1972",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-andrew-lloyd-webber-jesus-christ-superstar-1970-lp2",
++  "name": "Andrew Lloyd Webber - Jesus Christ Superstar (1970) LP2",
++  "group": "Music",
++  "itemId": "Andrew-Lloyd-Webber-Jesus-Christ-Superstar-1970-LP2",
++  "source": "https://archive.org/details/Andrew-Lloyd-Webber-Jesus-Christ-Superstar-1970-LP2",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
++ },
++ {
++  "id": "music-andrew-lloyd-webber-jesus-christ-superstar-1970-lp1",
++  "name": "Andrew Lloyd Webber - Jesus Christ Superstar (1970) LP1",
++  "group": "Music",
++  "itemId": "Andrew-Lloyd-Webber-Jesus-Christ-Superstar-1970-LP1",
++  "source": "https://archive.org/details/Andrew-Lloyd-Webber-Jesus-Christ-Superstar-1970-LP1",
++  "verifiedAt": "2026-10-10",
++  "maxSlots": 48
+  }
+ ]
+\ No newline at end of file
+-- 
+2.34.1
+

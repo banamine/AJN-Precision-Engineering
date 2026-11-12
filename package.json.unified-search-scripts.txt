@@ -1,0 +1,3 @@
+Add to package.json "scripts":
+    "test:unified-search": "tsx test-unified-search.ts && tsx test-unified-search-view.tsx",
+and append " && npm run test:unified-search" to the end of the "test" script.

@@ -14,6 +14,7 @@ import {
   X,
   Box,
   Settings2,
+  Activity,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { SuggestInput } from './SuggestInput';
@@ -65,12 +66,14 @@ const MOBILE_DESTINATIONS: NavItemConfig[] = [0, 1, 4, 6].map((i) => PRIMARY_DES
 const MOBILE_MORE_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[2], PRIMARY_DESTINATIONS[3], PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8],
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
+  { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
 ];
 const VAULT_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[2],
   PRIMARY_DESTINATIONS[3],
   PRIMARY_DESTINATIONS[4],
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
+  { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
 ];
 
 function useDismiss(open: boolean, close: () => void, ref: React.RefObject<HTMLElement | null>) {

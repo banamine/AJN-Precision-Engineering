@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import {
   Terminal,
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
   Settings,
   Trash2,
 } from 'lucide-react';
+const NeuralTwinView = lazy(() => import('./NeuralTwinView').then((m) => ({ default: m.NeuralTwinView })));
 import { ProxyMonitor } from './ProxyMonitor';
 import { ProxyTester } from './ProxyTester';
 import { AudioBridgeStatus } from './AudioBridgeStatus';
@@ -97,6 +98,8 @@ export function DevModeView({ onNavigate, recentlyPlayed }: DevModeViewProps) {
           Back to Consumer App
         </button>
       </div>
+
+      <Suspense fallback={<div className="rounded-2xl border border-neutral-800 p-4 text-sm text-neutral-500">Loading App Health Neural Twin…</div>}><NeuralTwinView /></Suspense>
 
       {/* ── Telemetry Overview Cards ─────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
