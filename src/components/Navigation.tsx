@@ -15,6 +15,7 @@ import {
   Box,
   Settings2,
   Activity,
+  HelpCircle,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { SuggestInput } from './SuggestInput';
@@ -32,6 +33,8 @@ interface NavigationProps {
   suggestions?: SuggestCandidate[];
   /** Used by the News status report's "Play" buttons (opened only on click). */
   onPlayProgram?: PlayProgramCallback;
+  /** Opens the Start Guide. Omitted → no Start Guide button. */
+  onOpenStartGuide?: () => void;
 }
 
 interface NavItemConfig {
@@ -94,6 +97,7 @@ export function Navigation({
   onSearch,
   suggestions = [],
   onPlayProgram,
+  onOpenStartGuide,
 }: NavigationProps) {
   const { openAppearance } = useAjnAppearance();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
@@ -310,6 +314,18 @@ export function Navigation({
           {/* Right Header Utility: Dev Mode Access & Stream Status */}
           <div className="flex min-w-0 items-center gap-2">
             <StatusIndicators onPlayProgram={onPlayProgram} />
+            {onOpenStartGuide && (
+              <button
+                type="button"
+                id="ajn-start-guide-open"
+                onClick={onOpenStartGuide}
+                aria-label="Open the Start Guide"
+                title="Start Guide"
+                className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 text-neutral-200 transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
+              >
+                <HelpCircle className="h-5 w-5" aria-hidden="true" />
+              </button>
+            )}
             <button
               type="button"
               id="ajn-appearance-open"
@@ -440,6 +456,13 @@ export function Navigation({
                   </button>
                 );
               })}
+              {onOpenStartGuide && (
+                <button id="mobile-nav-start-guide" role="menuitem" type="button" onClick={() => { setMobileMoreOpen(false); onOpenStartGuide(); }}
+                  className="flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-neutral-200 hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">
+                  <HelpCircle className="h-4 w-4 text-neutral-400" aria-hidden="true" />
+                  <span className="font-medium">Start Guide</span>
+                </button>
+              )}
             </div>,
             document.body,
           )}

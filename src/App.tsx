@@ -13,6 +13,8 @@ import { DevModeView } from './components/DevModeView';
 import { WatchLaterView } from './components/WatchLaterView';
 import { MiniPlayerDock, IdleDock } from './components/MiniPlayerDock';
 import { RadioDock } from './components/RadioDock';
+import { StartGuide } from './startGuide/StartGuide';
+import { loadStartGuidePref, shouldAutoOpen } from './startGuide/startGuideState';
 import { SyncedVideoPip } from './components/SyncedVideoPip';
 import { useAvSyncRecorder } from './hooks/useAvSync';
 import { toPlayableSrc } from './utils/playableSrc';
@@ -135,6 +137,9 @@ function writeRecentlyPlayed(items: RecentlyPlayedItem[]): void {
 export default function App() {
   const [initialView] = useState(getInitialView);
   const [destination, setDestination] = useState<Destination>(initialView.destination);
+  const [startGuideOpen, setStartGuideOpen] = useState<boolean>(() => typeof window !== 'undefined' && shouldAutoOpen(loadStartGuidePref(), Boolean(window.location.hash)));
+  const openStartGuide = useCallback(() => setStartGuideOpen(true), []);
+  const closeStartGuide = useCallback(() => setStartGuideOpen(false), []);
   const [hasVisitedTvGuide, setHasVisitedTvGuide] = useState(initialView.destination === 'tv-guide');
   // New page = start at the top. The TV Guide restores its own saved scroll position, so leave it alone.
   useEffect(() => {
@@ -359,7 +364,7 @@ export default function App() {
   return (
     <AjnAppearanceProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
-      <Navigation currentDestination={destination} onNavigate={navigateTo} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
+      <Navigation currentDestination={destination} onNavigate={navigateTo} onOpenStartGuide={openStartGuide} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
       <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full">
@@ -465,6 +470,7 @@ export default function App() {
         )}
       </main>
       <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={destination !== 'player'} />
+      <StartGuide open={startGuideOpen} onClose={closeStartGuide} onNavigate={navigateTo} />
       <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
       {!nowPlaying && destination !== 'player' && <IdleDock onPlayProgram={handleAdvanceProgram} />}
       {nowPlaying && destination !== 'player' && (
