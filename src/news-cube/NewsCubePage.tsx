@@ -2,9 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, 
 import { Box, ChevronLeft, ChevronRight, List, RotateCw, X } from 'lucide-react';
 import { useArchiveStatus } from '../hooks/useArchiveStatus';
 import { allocateFaces, balanceBySource, filterByPublisher, type CubeArticle } from './adapter';
+import { composeFaces, tvStoriesToCubeArticles } from './tvStoryFaces';
+import { useTvStories } from './useTvStories';
 import { createThreeCubeRenderer, type CubeRendererFactory, type CubeRendererPort } from './cubeRenderer';
 import { createPlaybackBridge, type CubeArchiveState } from './playbackBridge';
 import { isDigestStale, useNewsCubeData } from './useNewsCubeData';
+import TvStoriesStatus from './TvStoriesStatus';
 
 type PlaybackBridge = ReturnType<typeof createPlaybackBridge>;
 interface NewsCubePageProps {
@@ -95,9 +98,13 @@ export default function NewsCubePage({
     () => filterByPublisher(data.snapshot?.articles ?? [], publisherFilter || null),
     [data.snapshot?.articles, publisherFilter],
   );
+  // TV caption stories (24 h ledger) fill Face 6. Disabled when a test passes its own fetcher, so tests stay offline.
+  const tvStories = useTvStories(fetcher === undefined);
   const faces = useMemo(
-    () => allocateFaces(publisherFilter ? filteredArticles : balanceBySource(filteredArticles)),
-    [filteredArticles, publisherFilter],
+    () => (publisherFilter
+      ? allocateFaces(filteredArticles)
+      : composeFaces(balanceBySource(filteredArticles), tvStoriesToCubeArticles(tvStories.payload?.stories ?? []))),
+    [filteredArticles, publisherFilter, tvStories.payload],
   );
   const currentFace = faces[activeFace] ?? faces[4];
   const activeArticles = currentFace?.articles ?? [];
@@ -376,6 +383,8 @@ export default function NewsCubePage({
       )}
       {data.loading && !data.snapshot && <p role="status" className="text-sm text-neutral-400">Loading the Daily News Digest…</p>}
 
+      {fetcher === undefined && <TvStoriesStatus payload={tvStories.payload} error={tvStories.error} loading={tvStories.loading} />}
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.8fr)]">
         {!listView && (
           <div className="space-y-3" data-testid="cube-view">
@@ -490,3 +499,4 @@ export default function NewsCubePage({
     </section>
   );
 }
+
