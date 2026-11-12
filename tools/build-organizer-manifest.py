@@ -365,6 +365,18 @@ def classify_kw(rules, row_title, rel):
     slug = re.sub(r"[^a-z0-9]+", "-", nm.lower()).strip("-")
     return ("new", slug, nm.title()) if slug else None
 
+def parse_length(value):
+    """Archive reports `length` as seconds ("123.4") for originals but as "mm:ss" / "h:mm:ss" for many derivatives
+    (e.g. VBR MP3 made from FLAC). float() on the latter gave 0, which falsely rejected whole albums. -> seconds (0 if unparseable)."""
+    s = str(value if value is not None else "").strip()
+    if not s: return 0
+    try:
+        seconds = 0.0
+        for part in s.split(":"): seconds = seconds * 60 + float(part)
+        return seconds if seconds > 0 else 0
+    except ValueError:
+        return 0
+
 class Meta:
     def __init__(self, cache, fetch):
         self.cache, self.fetch, self.mem = cache, fetch, {}
@@ -381,8 +393,7 @@ class Meta:
             self.mem[k] = {"state": "dark", "id": ident}; return self.mem[k]
         files = {}
         for x in d["files"]:
-            try: ln = float(x.get("length") or 0)
-            except ValueError: ln = 0
+            ln = parse_length(x.get("length"))
             files[x["name"].lower()] = {"name": x["name"], "src": x.get("source", ""), "priv": x.get("private") == "true",
                                        "size": int(x.get("size") or 0), "len": ln}
         self.mem[k] = {"state": "ok", "id": d.get("metadata", {}).get("identifier", ident), "files": files,

@@ -11,7 +11,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "node test.js && npm run test:epg-program-lifecycle && npm run test:archive-music-title && npm run test:mini-eq && npm run test:title-cleaner && npm run test:virtual-rows && npm run test:rundown && npm run test:schedule && npm run test:live-song-deck",
+    "test": "node test.js && npm run test:epg-program-lifecycle && npm run test:archive-music-title && npm run test:mini-eq && npm run test:title-cleaner && npm run test:virtual-rows && npm run test:rundown && npm run test:schedule && npm run test:live-song-deck && npm run test:news-carousel && npm run test:listen-back && npm run test:buffer-jingle",
     "test:schedule": "tsx src/utils/roundRobinSchedule.test.ts && tsx src/utils/scheduleCatalog.test.ts",
     "test:live-song-deck": "tsx test-live-song-deck.tsx",
     "test:virtual-rows": "tsx test-virtual-rows.ts",
@@ -122,7 +122,10 @@
     "test:catalog-gate": "node test-catalog-gate.mjs",
     "catalog:measure": "tsx tools/catalog-measure.mts",
     "catalog:gate": "node tools/catalog-gate.mjs --base origin/main",
-    "test:news-normalize": "tsx src/news-normalize/normalize.test.ts"
+    "test:news-normalize": "tsx src/news-normalize/normalize.test.ts",
+    "test:news-carousel": "tsx test-news-carousel.tsx",
+    "test:listen-back": "tsx test-listen-back.tsx",
+    "test:buffer-jingle": "tsx test-buffer-jingle.tsx"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
