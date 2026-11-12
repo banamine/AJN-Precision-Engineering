@@ -63,7 +63,7 @@ const recs = [r1, r1b,
   L.recordFromMetadata(cartoons, { identifier: 'undated', title: 'Mystery Reel' }, { files: [{ name: 'm.mp4', format: 'h.264' }] }),
   ...Array.from({ length: 30 }, (_, i) => L.recordFromMetadata(cinema, { identifier: `film${i}`, title: `Film ${String(i).padStart(2, '0')}`, year: String(1950 + i) }, meta(String(1950 + i)))),
 ];
-L.setLibraryIndexForTests(L.mergeRecords(recs));
+L.setLibraryIndexForTests(L.mergeRecords(recs), { isolate: true });
 let q = L.queryLibrary({ category: 'cartoons', page: 1, limit: 24 });
 assert.deepEqual(q.items.map((i) => i.title), ['Betty Boop', 'Popeye', 'Mystery Reel'], 'oldest first, undated last');
 assert.ok(q.items.every((i: any) => i.type === 'series' || i.playbackMode === 'vod'));

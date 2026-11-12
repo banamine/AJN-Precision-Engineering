@@ -165,7 +165,9 @@ let loaded: Promise<void> | null = null;
 const probe = new Map<string, { fails: number; status: LibraryAvailability }>();
 export const libraryIndexStats = { snapshotAt: null as string | null, searchItems: 0, guideItems: 0, refreshes: 0, lastRefresh: null as string | null, lastRefreshCategory: null as string | null, lastError: null as string | null, probed: 0, verified: 0, unavailable: 0 };
 
-export function setLibraryIndexForTests(items: IndexRecord[] | null) { searchItems = items ?? []; loaded = Promise.resolve(); guideItems = new Map(); probe.clear(); }
+let catalogRecordsEnabled = true;
+/** Test hook. `isolate: true` also drops the built-in concert/FM/podcast catalog records so a test sees only the records it supplied. */
+export function setLibraryIndexForTests(items: IndexRecord[] | null, opts: { isolate?: boolean } = {}) { searchItems = items ?? []; loaded = Promise.resolve(); guideItems = new Map(); probe.clear(); catalogRecordsEnabled = !opts.isolate; }
 
 export async function loadLibrarySnapshot(): Promise<void> {
   loaded ??= (async () => {
@@ -193,7 +195,7 @@ function nker150Records(): IndexRecord[] {
     availability: 'verified',
   }));
 }
-function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records(), ...catalogRecords()]); }
+function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records(), ...(catalogRecordsEnabled ? catalogRecords() : [])]); }
 const visible = (r: IndexRecord) => { const a = availability(r); return a !== 'unavailable' && a !== 'unsupported' && !!r.path; };
 function librarySearchFields(r: {
   title?: string; episodeTitle?: string; description?: string; identifier?: string; sourceFile?: string;
