@@ -59,6 +59,7 @@ import { registerCaptionRoutes } from './server/captions/routes.js';
 import { registerArchiveSubtitleRoutes } from './server/archiveSubtitles.js';
 import { registerAudioAsrRoutes } from './server/audioAsrRoutes';
 import { registerNowPlayingRoute } from './server/radioNowPlayingRoute.js';
+import { registerTvStoriesRoute } from './server/tvStoriesRoute.js';
 import { registerSyncPlaceholder } from './server/routes/syncPlaceholder.js';
 import { registerAffiliateListingRoute } from './server/routes/affiliateListing.js';
 
@@ -477,6 +478,7 @@ registerAffiliateListingRoute(app);
 registerArchiveSubtitleRoutes(app);
 registerAudioAsrRoutes(app);
 registerNowPlayingRoute(app);
+registerTvStoriesRoute(app);
 app.get('/api/live-radio/status', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json(getLiveRadioStatus());
