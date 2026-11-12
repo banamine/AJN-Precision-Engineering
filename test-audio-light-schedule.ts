@@ -69,4 +69,15 @@ assert.throws(() => buildAudioLightSchedule([channel('item-music-gap', 25)], 24)
 const gap = channel('item-music-gap', 30, 'audio', 'music');
 gap.programs = gap.programs.map((program) => ({ ...program, startHour: program.startHour! + 5, endHour: program.endHour! + 5 }));
 assert.throws(() => buildAudioLightSchedule([gap], 1), /has no row at local hour/);
+// music-* loop channels (Music List 2) are trimmed too, so the light podcast list stays under its 8 MiB budget.
+const loop = channel('music-demo-loop', 160, 'audio', 'music');
+const loopLight = buildAudioLightSchedule([loop, channel('music-short', 24, 'audio', 'music'), channel('music-video', 40, 'video', 'music')], 12.5);
+assert.equal(loopLight[0].programs.length, 3);
+assert.equal(loopLight[0].programCount, 160);
+assert.equal(loopLight[0].programsComplete, false);
+assert.equal(loopLight[1].programs.length, 24, 'short music-* channel remains whole');
+assert.equal(loopLight[2].programs.length, 40, 'music-* video channel remains whole');
+const loopGap = channel('music-demo-gap', 40, 'audio', 'music');
+loopGap.programs = loopGap.programs.map((program) => ({ ...program, startHour: program.startHour! + 5, endHour: program.endHour! + 5 }));
+assert.equal(buildAudioLightSchedule([loopGap], 1)[0].programs.length, 3, 'music-* loop with a gap does not 400; it ships 3 rows flagged incomplete');
 console.log('PASS audio-light-schedule: 3-row selection, wrap, identity, untouched channels, and invalid inputs');
