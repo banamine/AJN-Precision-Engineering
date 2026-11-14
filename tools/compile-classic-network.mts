@@ -7,7 +7,9 @@ try {
   const name = get('--network') ?? 'classic-network', network = settings.networks[name];
   if (!network) throw new Error(`Unknown network ${name}`);
   if (get('--active-from')) settings.activeFrom = get('--active-from')!;
-  const file = name === 'classic-network' ? 'src/data/classicNetworkPublication.json' : 'src/data/classicMoviesPublication.json';
+  const files: Record<string, string> = { 'classic-network': 'src/data/classicNetworkPublication.json', 'classic-movies': 'src/data/classicMoviesPublication.json', 'classic-westerns': 'src/data/classicWesternsPublication.json' };
+  const file = files[name];
+  if (!file) throw new Error(`No publication file for ${name}`);
   const priorPath = get('--previous');
   const previous = priorPath ? JSON.parse(fs.readFileSync(priorPath, 'utf8')) as Publication : undefined;
   // Do not destroy a last-good artifact if compilation/validation fails.

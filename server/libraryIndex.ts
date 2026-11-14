@@ -101,7 +101,7 @@ export function recordsFromGuide(cat: LibraryCategory, channels: ScheduleChannel
   const out: IndexRecord[] = [];
   const seen = new Set<string>();
   for (const ch of channels) {
-    if (ch.id === 'classic-network' || ch.id === 'classic-movies') continue;
+    if (ch.id === 'classic-network' || ch.id === 'classic-movies' || ch.id === 'classic-westerns') continue;
     if (!cat.guide!.channels(ch)) continue;
     for (const p of ch.programs ?? []) {
       const mt = (p.metadata ?? {}) as any;

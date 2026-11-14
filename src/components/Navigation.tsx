@@ -16,6 +16,7 @@ import {
   Settings2,
   Activity,
   HelpCircle,
+  Clapperboard,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { SuggestInput } from './SuggestInput';
@@ -54,11 +55,13 @@ const PRIMARY_DESTINATIONS: NavItemConfig[] = [
   { id: 'library', label: 'Archive Vault', icon: FolderArchive, description: 'Curated archives & vaults' },
   { id: 'search', label: 'Search', icon: Search, description: 'TV News search' },
   { id: 'watch-later', label: 'Watch Later', icon: Bookmark, description: 'Saved, and half-played, to finish later' },
+  { id: 'shows', label: 'Shows', icon: Clapperboard, description: 'Browse shows by channel' },
 ];
 
 const DESKTOP_PRIMARY: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[0],
   PRIMARY_DESTINATIONS[1],
+  PRIMARY_DESTINATIONS[9],
   PRIMARY_DESTINATIONS[4],
   PRIMARY_DESTINATIONS[6],
 ];
@@ -67,7 +70,7 @@ const MY_LIBRARY_ITEMS: NavItemConfig[] = [PRIMARY_DESTINATIONS[5], PRIMARY_DEST
 const MOBILE_DESTINATIONS: NavItemConfig[] = [0, 1, 4, 6].map((i) => PRIMARY_DESTINATIONS[i]);
 // Everything else stays one tap away in the mobile "More" sheet.
 const MOBILE_MORE_ITEMS: NavItemConfig[] = [
-  PRIMARY_DESTINATIONS[2], PRIMARY_DESTINATIONS[3], PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8],
+  PRIMARY_DESTINATIONS[9], PRIMARY_DESTINATIONS[2], PRIMARY_DESTINATIONS[3], PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8],
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
   { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
 ];

@@ -4,6 +4,7 @@ import { Navigation } from './components/Navigation';
 import { HomeView } from './components/HomeView';
 import { TvGuideView } from './components/TvGuideView';
 import { TodayView } from './components/TodayView';
+import { ShowDrawersView } from './components/ShowDrawersView';
 import { PlayerView } from './components/PlayerView';
 import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
@@ -79,6 +80,7 @@ function getDestinationFromHash(): Destination {
     case 'rumble':
     case 'bannedvideo': return 'news';
     case 'news-cube': return 'news-cube';
+    case 'shows': return 'shows';
     case 'radio':
     case 'ajn-radio': return 'radio';
     case 'dev':
@@ -397,6 +399,11 @@ export default function App() {
         ) : destination === 'player' && (
           <div key="view-player" className="view-fade-in w-full">
             <PlayerView nowPlaying={nowPlaying} onSelectProgram={handleAdvanceProgram} onNavigate={navigateTo} recentlyPlayed={recentlyPlayed} onResumeRecentlyPlayed={resumeRecentlyPlayed} onProgress={updateRecentlyPlayedProgress} isFavorite={nowPlayingIsFavorite} onToggleFavorite={toggleNowPlayingFavorite} isWatchLater={nowPlayingId ? isInWatchLater(watchLaterEntries, nowPlayingId) : false} onToggleWatchLater={toggleNowPlayingWatchLater} />
+          </div>
+        )}
+        {destination === 'shows' && (
+          <div key="view-shows" className="view-fade-in w-full">
+            <ShowDrawersView onSelectProgram={handleEpgSelect} />
           </div>
         )}
         {destination === 'today' && (

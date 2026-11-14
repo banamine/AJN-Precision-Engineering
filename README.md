@@ -1,20 +1,14 @@
-# AJN buffer diagnostics drop-in (base: main 4c4c855)
+# Shows v3 drop-in (whole files, no script)
+Your export already has the Shows data/view files from v2. It was missing the wiring. Copy each file here to the same repo path, overwriting:
 
-NOT a behavior fix. No playback behavior changes. It adds the data needed to name the cause of the ~2.4 s buffer on some films.
+- src/types.ts                         ('shows' added to Destination)
+- src/nav/lastView.ts                  ("shows" added to VALID_DESTINATIONS)
+- src/App.tsx                          (imports ShowDrawersView, 'shows' route + view)
+- src/components/Navigation.tsx        (Shows nav item + Clapperboard icon import)
+- server/classicNetworkPublication.ts  (classicWesternsChannel)
+- guideRegistry.ts                     (AJN Westerns channel in classic-tv)
+- server/libraryIndex.ts               (skip classic-westerns in library index)
+- tools/compile-classic-network.mts, tools/check-classic-network-publication.mjs (classic-westerns file map)
 
-Files (copy over, same paths):
-- src/telemetry.ts        +9 lines: networkState / readyState / preload on buffer samples
-- src/MinimalPlayer.tsx   +3 lines: passes those three values from the <video> element
-- public/buffer-probe.html  NEW static page (served at /buffer-probe.html after build)
-
-Apply: copy the three files into the repo, or `git apply buffer-diagnostics.patch`.
-Verified: `npx tsc --noEmit` passes on base + these changes.
-Rollback: delete public/buffer-probe.html and revert the two src files (or revert the branch).
-
-After deploy:
-1. Open /buffer-probe.html on the live app, paste item lines
-   `group | label | /download/<identifier>/<file>`, seconds per arm 45, Run, Copy JSON.
-2. Or play a film ~60 s and paste getBufferSamples() (now includes networkState/readyState/preload).
-
-Why not a preload fix: headless Chromium A/B with autoplay showed preload="metadata" vs "auto" makes
-no real difference (1588 kbps: 17.8 s vs 16.0 s ahead), so it is not proven to be the cause.
+Each file = your Builder export's version + only the Shows/Westerns edits. Verified on that export: tsc 0 errors, vite build OK, server esbuild OK, westerns publication check "ok".
+After publishing, hard-refresh (Ctrl+F5). "Shows" appears in the top nav (after Live TV Guide) and under More on mobile.

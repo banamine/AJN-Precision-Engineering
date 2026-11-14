@@ -3,9 +3,10 @@ import fs from 'node:fs';
 const args = process.argv.slice(2);
 const i = args.indexOf('--network');
 const network = i < 0 ? 'classic-network' : args[i + 1];
-const file = network === 'classic-network' ? 'src/data/classicNetworkPublication.json' : 'src/data/classicMoviesPublication.json';
+const files = { 'classic-network': 'src/data/classicNetworkPublication.json', 'classic-movies': 'src/data/classicMoviesPublication.json', 'classic-westerns': 'src/data/classicWesternsPublication.json' };
+const file = files[network];
 try {
-  if (!['classic-network', 'classic-movies'].includes(network)) throw new Error('Unknown network');
+  if (!file) throw new Error('Unknown network');
   const p = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (!p || p.schema !== 1 || p.networkId !== network || !Number.isFinite(p.coveredUntilUtcMs)) throw new Error('Missing/invalid publication');
   const remainingHours = (p.coveredUntilUtcMs - Date.now()) / 3600000;

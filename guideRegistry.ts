@@ -1,5 +1,5 @@
 import { notWebPlayableVideo, unplayableReason } from './server/sources/archiveLinks';
-import { classicNetworkChannel, classicMoviesChannel } from './server/classicNetworkPublication';
+import { classicNetworkChannel, classicMoviesChannel, classicWesternsChannel } from './server/classicNetworkPublication';
 import audioGroupOverrides from './src/data/audioGroupOverrides.json';
 import {
   Guide, Channel, ChannelSource, Program, Playlist, ScheduleChannel, MediaType,
@@ -1061,7 +1061,7 @@ async function getScheduleForGuideRaw(guideId='cable-tv',movieNow?:Date):Promise
       names.add(normShowName(name));
       return name===channel.name?channel:{...channel,name};
     });
-    return [classicNetworkChannel(),...classic,...additions];
+    return [classicNetworkChannel(),classicWesternsChannel(),...classic,...additions];
   }
   if(guideId==='audio-podcasts'){
     const [existing,catalog,podcasts,liveRadio]=await Promise.all([

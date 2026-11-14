@@ -1,5 +1,6 @@
 import bakedClassic from '../src/data/classicNetworkPublication.json';
 import bakedMovies from '../src/data/classicMoviesPublication.json';
+import bakedWesterns from '../src/data/classicWesternsPublication.json';
 import type { ScheduleChannel, Program } from '../src/types';
 import { publicationHash, assertRepeat, HOUR, type Publication } from './classicNetwork';
 
@@ -39,6 +40,7 @@ export function createPublicationReader(value: unknown) {
 }
 const classic = createPublicationReader(bakedClassic);
 const movies = createPublicationReader(bakedMovies);
+const westerns = createPublicationReader(bakedWesterns);
 function networkChannel(reader: ReturnType<typeof createPublicationReader>, id: string, name: string, guideId: string, group: string, nowMs: number): ScheduleChannel {
   // Include the previous 24 h so the guide grid shows today's earlier blocks (other rows show a full day); ahead stays 48 h.
   const window = reader.getWindow(nowMs, 48 * HOUR, 24 * HOUR);
@@ -47,6 +49,9 @@ function networkChannel(reader: ReturnType<typeof createPublicationReader>, id: 
 }
 export function classicNetworkChannel(nowMs = Date.now()): ScheduleChannel {
   return networkChannel(classic, 'classic-network', 'AJN Classic TV', 'classic-tv', 'Classic TV', nowMs);
+}
+export function classicWesternsChannel(nowMs = Date.now()): ScheduleChannel {
+  return networkChannel(westerns, 'classic-westerns', 'AJN Westerns', 'classic-tv', 'Classic TV', nowMs);
 }
 export function classicMoviesChannel(nowMs = Date.now()): ScheduleChannel {
   return networkChannel(movies, 'classic-movies', 'AJN Classic Movies', 'movies-classics-vault', 'Movies', nowMs);
