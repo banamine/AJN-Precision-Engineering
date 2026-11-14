@@ -11,10 +11,29 @@
       "guideId": "movies-classics-vault",
       "owner": "banamine",
       "catalogRef": "src/data/classicMoviesCatalog.json",
-      "includeChannels": ["mx-movies-classics-list", "classic-cinema", "mx-filmography", "mx-atlas-taggart"],
+      "includeChannels": [
+        "mx-movies-classics-list",
+        "classic-cinema",
+        "mx-filmography",
+        "mx-atlas-taggart"
+      ],
       "seed": "ajn-classic-movies-v1-2026-11-09",
-      "pools": {"cinema": {"series": ["movies"], "rotateEveryWeeks": 1, "offset": 0}},
-      "lineup": [{"start": "00:00", "end": "24:00", "pool": "cinema"}]
+      "pools": {
+        "cinema": {
+          "series": [
+            "movies"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        }
+      },
+      "lineup": [
+        {
+          "start": "00:00",
+          "end": "24:00",
+          "pool": "cinema"
+        }
+      ]
     },
     "classic-network": {
       "id": "classic-network",
@@ -23,26 +42,230 @@
       "owner": "banamine",
       "catalogRef": "src/data/classicNetworkCatalog.json",
       "pools": {
-        "overnight": {"series": ["mister-ed"], "rotateEveryWeeks": 1, "offset": 0},
-        "early": {"series": ["the-jeffersons"], "rotateEveryWeeks": 1, "offset": 0},
-        "smart": {"series": ["get-smart"], "rotateEveryWeeks": 1, "offset": 0},
-        "benson": {"series": ["benson"], "rotateEveryWeeks": 1, "offset": 0},
-        "taxi": {"series": ["taxi"], "rotateEveryWeeks": 1, "offset": 0},
-        "hogan": {"series": ["hogans-heroes"], "rotateEveryWeeks": 1, "offset": 0}
+        "overnight": {
+          "series": [
+            "mister-ed"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "early": {
+          "series": [
+            "the-jeffersons"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "smart": {
+          "series": [
+            "get-smart"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "benson": {
+          "series": [
+            "benson"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "taxi": {
+          "series": [
+            "taxi"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "hogan": {
+          "series": [
+            "hogans-heroes"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        }
       },
       "lineup": [
-        {"start": "00:00", "end": "04:00", "pool": "overnight"},
-        {"start": "04:00", "end": "05:45", "pool": "early"},
-        {"start": "05:45", "end": "09:45", "pool": "smart"},
-        {"start": "09:45", "end": "12:45", "pool": "benson"},
-        {"start": "12:45", "end": "16:30", "pool": "taxi"},
-        {"start": "16:30", "end": "20:30", "pool": "hogan"},
-        {"start": "20:30", "end": "21:00", "pool": "smart"},
-        {"start": "21:00", "end": "21:30", "pool": "benson"},
-        {"start": "21:30", "end": "22:00", "pool": "taxi"},
-        {"start": "22:00", "end": "22:30", "pool": "hogan"},
-        {"start": "22:30", "end": "23:00", "pool": "overnight"},
-        {"start": "23:00", "end": "24:00", "pool": "benson"}
+        {
+          "start": "00:00",
+          "end": "04:00",
+          "pool": "overnight"
+        },
+        {
+          "start": "04:00",
+          "end": "05:45",
+          "pool": "early"
+        },
+        {
+          "start": "05:45",
+          "end": "09:45",
+          "pool": "smart"
+        },
+        {
+          "start": "09:45",
+          "end": "12:45",
+          "pool": "benson"
+        },
+        {
+          "start": "12:45",
+          "end": "16:30",
+          "pool": "taxi"
+        },
+        {
+          "start": "16:30",
+          "end": "20:30",
+          "pool": "hogan"
+        },
+        {
+          "start": "20:30",
+          "end": "21:00",
+          "pool": "smart"
+        },
+        {
+          "start": "21:00",
+          "end": "21:30",
+          "pool": "benson"
+        },
+        {
+          "start": "21:30",
+          "end": "22:00",
+          "pool": "taxi"
+        },
+        {
+          "start": "22:00",
+          "end": "22:30",
+          "pool": "hogan"
+        },
+        {
+          "start": "22:30",
+          "end": "23:00",
+          "pool": "overnight"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "pool": "benson"
+        }
+      ]
+    },
+    "classic-westerns": {
+      "id": "classic-westerns",
+      "name": "AJN Westerns",
+      "guideId": "classic-tv",
+      "owner": "banamine",
+      "catalogRef": "src/data/classicWesternsCatalog.json",
+      "seed": "ajn-classic-westerns-v1-2026-11-13",
+      "pools": {
+        "wanted-dead-or-alive": {
+          "series": [
+            "wanted-dead-or-alive"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "branded": {
+          "series": [
+            "branded"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "bat-masterson": {
+          "series": [
+            "bat-masterson"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "have-gun-will-travel": {
+          "series": [
+            "have-gun-will-travel"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "wagon-train": {
+          "series": [
+            "wagon-train"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "rawhide": {
+          "series": [
+            "rawhide"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "the-wild-wild-west": {
+          "series": [
+            "the-wild-wild-west"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "tales-of-wells-fargo": {
+          "series": [
+            "tales-of-wells-fargo"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        },
+        "the-virginian": {
+          "series": [
+            "the-virginian"
+          ],
+          "rotateEveryWeeks": 1,
+          "offset": 0
+        }
+      },
+      "lineup": [
+        {
+          "start": "00:00",
+          "end": "03:00",
+          "pool": "wanted-dead-or-alive"
+        },
+        {
+          "start": "03:00",
+          "end": "05:00",
+          "pool": "branded"
+        },
+        {
+          "start": "05:00",
+          "end": "08:00",
+          "pool": "bat-masterson"
+        },
+        {
+          "start": "08:00",
+          "end": "11:00",
+          "pool": "have-gun-will-travel"
+        },
+        {
+          "start": "11:00",
+          "end": "14:00",
+          "pool": "wagon-train"
+        },
+        {
+          "start": "14:00",
+          "end": "17:00",
+          "pool": "rawhide"
+        },
+        {
+          "start": "17:00",
+          "end": "20:00",
+          "pool": "the-wild-wild-west"
+        },
+        {
+          "start": "20:00",
+          "end": "22:00",
+          "pool": "tales-of-wells-fargo"
+        },
+        {
+          "start": "22:00",
+          "end": "24:00",
+          "pool": "the-virginian"
+        }
       ]
     }
   }
