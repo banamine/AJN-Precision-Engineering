@@ -1,0 +1,7 @@
+Drop these files into the repo at the SAME paths (overwrite):
+  src/guide/genreBuckets.ts        (new)
+  src/guide/channelIndex.ts
+  src/EpgGuide.tsx                 (pill bar markup only; built from repo main at 2026-11-14 - if Builder's copy differs, apply only the pill-bar block)
+  test-guide-channel-index.ts
+  docs/TV_GUIDE_GENRE_PILLS_PLAN.md
+Then: npx tsx test-guide-channel-index.ts   (expect PASS)  and  npm run typecheck

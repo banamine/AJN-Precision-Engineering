@@ -26,7 +26,23 @@ assert.deepEqual(news.rows.map((r) => [r.channel.id, r.station]), [['c2', 3], ['
 
 // 3. Categories: group or Video/Audio fallback, counted.
 const cats = categoryCounts(numbered);
-assert.deepEqual(cats.map((c) => [c.label, c.count]), [['Classic TV', 3], ['News', 2], ['Old-Time Radio', 1], ['Video', 1]]);
+// Multi-genre: Odd Couple -> Comedy, Bonanza -> Westerns + Drama (both leave the catch-all); Zorro matches nothing and stays Classic TV (always last).
+assert.deepEqual(cats.map((c) => [c.label, c.count]), [['News', 2], ['Comedy', 1], ['Drama', 1], ['Old-Time Radio', 1], ['Video', 1], ['Westerns', 1], ['Classic TV', 1]]);
+assert.deepEqual(filterChannels(numbered, buildSearchIndex(numbered), '', 'comedy').rows.map((r) => r.channel.id), ['o'], 'genre pill filters by genre');
+assert.deepEqual(filterChannels(numbered, buildSearchIndex(numbered), '', 'westerns').rows.map((r) => r.channel.id), ['b']);
+assert.deepEqual(filterChannels(numbered, buildSearchIndex(numbered), 'odd', 'drama').rows, [], 'genre + search combine');
+{
+  const g = numberChannels([ch('t', 'Taxi — All Seasons', 'Classic TV'), ch('j', 'The Jeffersons (complete TV series)', 'Classic TV'), ch('w', 'TVWesternsPart 2', 'Classic TV'), ch('x', 'TV shows', 'Classic TV'), ch('c', 'Bugs', 'Cartoons')]);
+  const gc = categoryCounts(g);
+  const count = (id: string) => gc.find((c) => c.id === id)?.count ?? 0;
+  assert.equal(count('comedy'), 2, 'Taxi (by title) + Jeffersons (curated) are Comedy');
+  assert.equal(count('drama'), 1, 'Taxi is Comedy AND Drama: one channel, two pills');
+  assert.equal(count('westerns'), 1, 'name keyword places TVWesternsPart 2 under Westerns');
+  assert.equal(count('cartoons'), 1, 'Cartoons group pill kept');
+  assert.equal(count('classic tv'), 1, 'uncategorized channel stays under the Classic TV catch-all');
+  assert.equal(gc[gc.length - 1].id, 'classic tv', 'catch-all pill sorts last');
+  assert.ok(gc.reduce((n, c) => n + c.count, 0) > g.length, 'pill counts may exceed the channel total; All stays the exact total');
+}
 
 // 4. Search: name, group, station number, and show titles; all terms must match; accent/case-insensitive.
 const q = (s: string, c = ALL_CATEGORIES) => filterChannels(numbered, index, s, c);

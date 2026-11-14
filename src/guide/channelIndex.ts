@@ -1,6 +1,7 @@
 /* Pure helpers for the EPG channel list: alphabetical order, sequential station numbers, categories, search.
  * No React, no DOM, no network. EpgGuide calls these once per schedule load / filter change. */
 import type { ScheduleChannel } from '../types';
+import { CATCH_ALL_ID, categoriesOf } from './genreBuckets';
 
 export interface NumberedChannel { channel: ScheduleChannel; station: number }
 export interface CategoryCount { id: string; label: string; count: number }
@@ -31,21 +32,23 @@ export function numberChannels(channels: readonly ScheduleChannel[]): NumberedCh
   return sortChannelsAlpha(channels).map((channel, i) => ({ channel, station: i + 1 }));
 }
 
-/** Category = the channel's group when it has one, else Video / Audio. */
+/** Primary category = the channel's group when it has one, else Video / Audio. Kept for callers that want a single bucket. */
 export function categoryOf(c: ScheduleChannel): { id: string; label: string } {
   const label = (c.group ?? '').trim() || (c.mediaType === 'audio' ? 'Audio' : 'Video');
   return { id: fold(label), label };
 }
 
-/** Categories present in the list, biggest first (ties alphabetical). */
+/** Pills present in the list. A channel counts once in EVERY pill it belongs to, so pill counts can add up to more than the
+ *  channel total ("All" stays the exact total). Biggest first (ties alphabetical); the "Classic TV" catch-all always goes last. */
 export function categoryCounts(list: readonly NumberedChannel[]): CategoryCount[] {
   const m = new Map<string, CategoryCount>();
   for (const { channel } of list) {
-    const c = categoryOf(channel);
-    const e = m.get(c.id);
-    if (e) e.count++; else m.set(c.id, { id: c.id, label: c.label, count: 1 });
+    for (const c of categoriesOf(channel)) {
+      const e = m.get(c.id);
+      if (e) e.count++; else m.set(c.id, { id: c.id, label: c.label, count: 1 });
+    }
   }
-  return [...m.values()].sort((a, b) => b.count - a.count || collator.compare(a.label, b.label));
+  return [...m.values()].sort((a, b) => (a.id === CATCH_ALL_ID ? 1 : 0) - (b.id === CATCH_ALL_ID ? 1 : 0) || b.count - a.count || collator.compare(a.label, b.label));
 }
 
 export interface SearchIndexEntry { station: number; hay: string; titles: string[] }
@@ -77,7 +80,7 @@ export function filterChannels(list: readonly NumberedChannel[], index: SearchIn
   const terms = fold(query).split(' ').filter(Boolean);
   const matchedShow = new Map<string, string>();
   const rows = list.filter(({ channel, station }) => {
-    if (category !== ALL_CATEGORIES && categoryOf(channel).id !== category) return false;
+    if (category !== ALL_CATEGORIES && !categoriesOf(channel).some((c) => c.id === category)) return false;
     if (onlyIf && !onlyIf(channel)) return false;
     if (!terms.length) return true;
     const e = index.get(channel.id);

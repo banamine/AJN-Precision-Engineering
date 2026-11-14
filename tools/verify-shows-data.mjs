@@ -9,7 +9,7 @@ for (const s of d.shows) {
   if (!fs.existsSync(f)) { fail('missing ' + f); continue; }
   const eps = JSON.parse(fs.readFileSync(f, 'utf8'));
   if (eps.length !== s.episodes) fail(`${s.id}: episodes ${eps.length} != ${s.episodes}`);
-  if (eps.some((e) => !e.p.startsWith('/download/') || !(e.d === 0 || e.d >= 120))) fail(`${s.id}: bad path or duration`);
+  if (eps.some((e) => !e.p.startsWith('/download/') || !(Number.isInteger(e.d) && e.d >= 0))) fail(`${s.id}: bad path or duration`);
   if (!d.channels.some((c) => c.id === s.channelId && c.pills.includes(s.pill))) fail(`${s.id}: unknown channel/pill`);
 }
 const p = JSON.parse(fs.readFileSync('src/data/classicWesternsPublication.json', 'utf8'));

@@ -1,0 +1,1872 @@
+{
+ "extended": [
+  [
+   "Archie Bunker's Place",
+   "+97 episodes -> 133"
+  ],
+  [
+   "Fawlty Towers",
+   "+12 episodes -> 32"
+  ],
+  [
+   "Wanted Dead or Alive",
+   "+94 episodes -> 188"
+  ],
+  [
+   "Trailer Park Boys",
+   "+6 episodes -> 29"
+  ],
+  [
+   "The Jeffersons",
+   "+248 episodes -> 261"
+  ],
+  [
+   "Beavis and Butt-Head",
+   "+15 episodes -> 113"
+  ],
+  [
+   "Wagon Train",
+   "+221 episodes -> 490"
+  ],
+  [
+   "Knight Rider",
+   "+86 episodes -> 171"
+  ]
+ ],
+ "held_talk": [
+  [
+   "Rush Limbaugh (TV Series 19921996)",
+   13
+  ],
+  [
+   "INFOWARS NIGHTLY NEWS",
+   9816
+  ],
+  [
+   "INFO WARS SURVIVAL",
+   1153
+  ],
+  [
+   "NEW WORLD TYRANNY",
+   3340
+  ],
+  [
+   "Norm Archive",
+   263
+  ],
+  [
+   "AJN archive 1",
+   500
+  ],
+  [
+   "Alex 24",
+   13062
+  ],
+  [
+   "Info Survior",
+   7692
+  ],
+  [
+   "Liberal Hivemind2",
+   1004
+  ],
+  [
+   "Liberty_Express_Live (1)",
+   499
+  ],
+  [
+   "Liberty_Express_Live (2)",
+   482
+  ],
+  [
+   "Liberty_Express_Live (3)",
+   7984
+  ],
+  [
+   "Project Veritos",
+   169
+  ],
+  [
+   "Super Alex Jones Archive",
+   1851
+  ],
+  [
+   "Surviv Guns Infowars",
+   949
+  ],
+  [
+   "Fact-Fake-News",
+   315
+  ]
+ ],
+ "dropped": [
+  [
+   "TV shows",
+   268
+  ],
+  [
+   "TVFighting CrimePart 7",
+   263
+  ],
+  [
+   "TVWesternsPart 2",
+   300
+  ],
+  [
+   "GUNSMOKE",
+   377
+  ],
+  [
+   "Classic TV Specials & Singles",
+   66
+  ],
+  [
+   "Torrent Couch.com. Cobra. Kai. S 01 E 10. . WEB DL.x 264.",
+   10
+  ],
+  [
+   "Maverick",
+   97
+  ],
+  [
+   "Gunsmoke",
+   145
+  ],
+  [
+   "Lawman",
+   48
+  ],
+  [
+   "Bumpers",
+   153
+  ]
+ ],
+ "duplicate": [
+  [
+   "The Phil Donahue Show (1976 - 1992)",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Cagney & Lacey Season 1",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Hart To Hart Season 4",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Arrest and Trial (1963-1964)",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Fawlty Towers VHS set (BBC Video + CBS FOX) (1986)",
+   "same title as an existing show (4 new episodes)"
+  ],
+  [
+   "Bat Masterson",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Rawhide",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Tales Of Wells Fargo",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Wagon Train",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Branded",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Wanted Dead Or Alive",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Naked City",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Man With A Camera",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "Johnny Staccato",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "The Wild Wild West",
+   "same title as an existing show (0 new episodes)"
+  ],
+  [
+   "The Twilight Zone (collection)",
+   "same title as an existing show (0 new episodes)"
+  ]
+ ],
+ "too_few": [
+  [
+   "70 Odd Couple",
+   1
+  ]
+ ],
+ "unplayable": [
+  [
+   "American Experience",
+   [
+    403,
+    403
+   ],
+   329
+  ],
+  [
+   "DAVE'S CLASSIC BRITISH TV & MOVIES",
+   [
+    403,
+    206
+   ],
+   281
+  ],
+  [
+   "Honey mooners",
+   [
+    403,
+    403
+   ],
+   134
+  ],
+  [
+   "The Man From U.N.C.L.E.",
+   [
+    403,
+    403
+   ],
+   107
+  ]
+ ],
+ "defaulted_to_drama": [
+  "Baa Baa Black Sheep (complete TV series)",
+  "Femme Fatales Complete TV Series",
+  "Jack & Bobby Season 1 Episodes 1-22",
+  "Mr Rogers Neighborhood",
+  "The Buccaneers",
+  "Nothing Sacred",
+  "Heartland - Brian Keith, Daisy Keith",
+  "On the Air (1992)",
+  "Cobra Kai Series Collection 1 to 4",
+  "Knight Rider Classic 1982 Collection - All 4 Seasons"
+ ],
+ "added": [
+  [
+   "Taxi",
+   "Sitcoms & Comedy",
+   114,
+   "series:classic-series-taxi"
+  ],
+  [
+   "Hogan's Heroes",
+   "Sitcoms & Comedy",
+   154,
+   "series:classic-series-hogans-heroes"
+  ],
+  [
+   "Rumpole Of The Bailey",
+   "British",
+   43,
+   "series:classic-series-l4-01-rumpole-of-the-bailey-s-01-e-01-rumpole-and-the-younger-g"
+  ],
+  [
+   "The Duchess of Duke Street",
+   "British",
+   15,
+   "series:classic-series-l4-01-the-duchess-of-duke-street-s-01-e-01-a-present-sovereign-"
+  ],
+  [
+   "The Spoils Of War",
+   "British",
+   20,
+   "series:classic-series-l4-01-the-spoils-of-war-s-01-e-01-ends-and-beginnings"
+  ],
+  [
+   "1600 Penn TV Series Episode 1-13",
+   "Sitcoms & Comedy",
+   11,
+   "series:classic-series-l4-1600-penn-s-01-e-07-hdtv-x-264"
+  ],
+  [
+   "The Saint: TV Series & Movies Archive",
+   "Crime & Spy",
+   128,
+   "series:classic-series-l4-2017-the-saint-movie-1080p-spanish-or-english"
+  ],
+  [
+   "Little House on the Prairie",
+   "Soaps & Drama",
+   196,
+   "series:classic-series-l4-bobbyprairie"
+  ],
+  [
+   "The Waltons",
+   "Soaps & Drama",
+   210,
+   "series:classic-series-l4-bobbywalton"
+  ],
+  [
+   "Middle The In Malcolm",
+   "Sitcoms & Comedy",
+   151,
+   "series:classic-series-l4-middletheinmalcolm"
+  ],
+  [
+   "Most Shocking (TV Series 2006-2010)",
+   "Documentary",
+   50,
+   "series:classic-series-l4-most-shocking-tv-series-2006-2010"
+  ],
+  [
+   "Operation Petticoat (Season 1)",
+   "Sitcoms & Comedy",
+   16,
+   "series:classic-series-l4-operationpetticoats1"
+  ],
+  [
+   "The Loner (1965) - Full Series",
+   "Westerns",
+   26,
+   "series:classic-series-l4-the-loner-1965-series"
+  ],
+  [
+   "The Baron (1966) - Full Series",
+   "Crime & Spy",
+   30,
+   "series:classic-series-l4-the-baron-1966-series"
+  ],
+  [
+   "Action (1999) Complete Series",
+   "Sitcoms & Comedy",
+   13,
+   "series:classic-series-l4-action-1999"
+  ],
+  [
+   "Alien Nation (1988) Alien Nation (1989) Complete Series Television Soundtrack All Five Television Films Extras",
+   "Sci-Fi",
+   22,
+   "series:classic-series-l4-alien-nation-1988"
+  ],
+  [
+   "Amen: Season 1",
+   "Sitcoms & Comedy",
+   22,
+   "series:classic-series-l4-amen-season-1"
+  ],
+  [
+   "Baa Baa Black Sheep (complete TV series)",
+   "Soaps & Drama",
+   36,
+   "series:classic-series-l4-ba-baa-blacksheep-lando18"
+  ],
+  [
+   "Barnaby Jones",
+   "Crime & Spy",
+   61,
+   "series:classic-series-l4-bitchute-barnaby-jones-2022"
+  ],
+  [
+   "Chico And The Man Series",
+   "Sitcoms & Comedy",
+   88,
+   "series:classic-series-l4-chico-the-man"
+  ],
+  [
+   "Coach Season 1",
+   "Sitcoms & Comedy",
+   13,
+   "series:classic-series-l4-coach-season-1-202311"
+  ],
+  [
+   "Colonel March Of Scotland Yard (1955)",
+   "Crime & Spy",
+   26,
+   "series:classic-series-l4-colonel-march-of-scotland-yard-s-01-e-01-the-sorcerer-1"
+  ],
+  [
+   "Duel On The Thin Rope",
+   "Crime & Spy",
+   57,
+   "series:classic-series-l4-duel-on-the-thin-rope"
+  ],
+  [
+   "Enos (Season 1)",
+   "Sitcoms & Comedy",
+   11,
+   "series:classic-series-l4-enostvshow"
+  ],
+  [
+   "Father Ted (TV Series 1995-1998)",
+   "British",
+   25,
+   "series:classic-series-l4-father-ted-2005"
+  ],
+  [
+   "Femme Fatales Complete TV Series",
+   "Soaps & Drama",
+   26,
+   "series:classic-series-l4-femme-fatales-s1-s2-complete"
+  ],
+  [
+   "Gemini Man Season 1",
+   "Sci-Fi",
+   12,
+   "series:classic-series-l4-geminiman-202203"
+  ],
+  [
+   "Hondo (TV series)",
+   "Westerns",
+   17,
+   "series:classic-series-l4-hondo-s-01-e-01-hondo-and-the-eagle-claw"
+  ],
+  [
+   "Interpol Calling Series 1959",
+   "Crime & Spy",
+   39,
+   "series:classic-series-l4-interpol-calling-s-01-e-14-the-mans-a-clown"
+  ],
+  [
+   "Ironside Season 2",
+   "Crime & Spy",
+   41,
+   "series:classic-series-l4-ironsides02"
+  ],
+  [
+   "It Ain't Half Hot Mum (complete)",
+   "British",
+   56,
+   "series:classic-series-l4-it-aint-half-hot-mum-s-06-e-04-the-dhobi-wallahs"
+  ],
+  [
+   "Jack & Bobby Season 1 Episodes 1-22",
+   "Soaps & Drama",
+   22,
+   "series:classic-series-l4-jack-bobby-1x-01-pilot"
+  ],
+  [
+   "Joanie Loves Chachi Complete Series (DVD RIP)",
+   "Sitcoms & Comedy",
+   17,
+   "series:classic-series-l4-joanieloveschachicompletedvdrip"
+  ],
+  [
+   "Major Dad",
+   "Sitcoms & Comedy",
+   96,
+   "series:classic-series-l4-major-dad"
+  ],
+  [
+   "Mr Rogers Neighborhood",
+   "Soaps & Drama",
+   19,
+   "series:classic-series-l4-mr-rogers-neighborhood"
+  ],
+  [
+   "MURDER, SHE WROTE",
+   "Crime & Spy",
+   505,
+   "series:classic-series-l4-murder-she-wrote-202402"
+  ],
+  [
+   "Odyssey 5 TV Series Episodes 1-20",
+   "Sci-Fi",
+   19,
+   "series:classic-series-l4-odyssey-5-s01e01-e02-ws-dvdrip-xvid-bia"
+  ],
+  [
+   "Pandora Complete TV Series (2019)",
+   "Sci-Fi",
+   23,
+   "series:classic-series-l4-pandora-2019-s-01-e-03-masters-of-war-1080p"
+  ],
+  [
+   "Maigret (1959)",
+   "British",
+   49,
+   "series:classic-series-l4-s-01-e-01-murder-in-monmartre-1"
+  ],
+  [
+   "Hamish Macbeth (TV series)",
+   "British",
+   20,
+   "series:classic-series-l4-s-01-e-02-a-pillar-of-the-community"
+  ],
+  [
+   "Top Gear",
+   "British",
+   54,
+   "series:classic-series-l4-s-01-e-03"
+  ],
+  [
+   "Galactica 1980",
+   "Sci-Fi",
+   9,
+   "series:classic-series-l4-s-02-e-07-e-08-tha-night-the-cylons-landed"
+  ],
+  [
+   "She Spies Complete TV Series (2002-2004)",
+   "Crime & Spy",
+   40,
+   "series:classic-series-l4-she-spies-complete-tv-series"
+  ],
+  [
+   "Starved (2005) Complete Series",
+   "Sitcoms & Comedy",
+   7,
+   "series:classic-series-l4-starved"
+  ],
+  [
+   "Survivors - Complete Series 1975",
+   "British",
+   38,
+   "series:classic-series-l4-survivors-1975"
+  ],
+  [
+   "The Adventures Of Sherlock Holmes 1954 (Subtitled)",
+   "Crime & Spy",
+   36,
+   "series:classic-series-l4-the-adventures-of-sherlock-holmes-s-03-e-01-reluctant-carpen"
+  ],
+  [
+   "The Buccaneers",
+   "Soaps & Drama",
+   37,
+   "series:classic-series-l4-the-buccaneers-s-01-e-01-blackbeard"
+  ],
+  [
+   "The Master - Complete Series 1984",
+   "Sci-Fi",
+   13,
+   "series:classic-series-l4-the-master-complete-series-1984"
+  ],
+  [
+   "The Net (Complete TV Series) 1998-1999",
+   "Crime & Spy",
+   22,
+   "series:classic-series-l4-the-net-complete-tv-series"
+  ],
+  [
+   "The Prisoner - Complete Series 1967",
+   "British",
+   23,
+   "series:classic-series-l4-the-prisoner-complete-series-1967"
+  ],
+  [
+   "The Secret Service (1969)",
+   "Crime & Spy",
+   13,
+   "series:classic-series-l4-the-secret-service-1969"
+  ],
+  [
+   "The Single Guy (1995-1997) TV Series Sitcom",
+   "Sitcoms & Comedy",
+   43,
+   "series:classic-series-l4-the-single-guy-tvseries"
+  ],
+  [
+   "The Sniffer ( 2013)",
+   "Crime & Spy",
+   32,
+   "series:classic-series-l4-the-sniffer-2013-s-03-e-01"
+  ],
+  [
+   "The. Apprentice. S 12",
+   "Reality",
+   14,
+   "series:classic-series-l4-the-apprentice-s-12-e-01-hdtv-xvid-2hd"
+  ],
+  [
+   "Thriller (1973 - 1976)",
+   "British",
+   99,
+   "series:classic-series-l4-thriller-s-01-e-010-spell-of-evil"
+  ],
+  [
+   "Whoops Apocalypse - TV Show - 1982 - MP4",
+   "British",
+   6,
+   "series:classic-series-l4-whoops-apocalypse-tv-show-1982-mp4"
+  ],
+  [
+   "The Protectors",
+   "Crime & Spy",
+   26,
+   "series:classic-series-l4-the-protectors"
+  ],
+  [
+   "Good Times (complete TV series)",
+   "Sitcoms & Comedy",
+   132,
+   "series:classic-series-l4-good-times-lando18"
+  ],
+  [
+   "Mister Ed (complete TV series)",
+   "Sitcoms & Comedy",
+   143,
+   "series:classic-series-l4-mister-ed-lando18"
+  ],
+  [
+   "Fish (complete TV series)",
+   "Sitcoms & Comedy",
+   35,
+   "series:classic-series-l4-fish-lando18"
+  ],
+  [
+   "Rob! (complete TV series)",
+   "Sitcoms & Comedy",
+   8,
+   "series:classic-series-l4-rob-lando18"
+  ],
+  [
+   "Lars Germany Mittank Movies",
+   "Movies",
+   22,
+   "extra:mx-lars-germany-mittank"
+  ],
+  [
+   "JT's Ghost Movies",
+   "Movies",
+   2965,
+   "extra:mx-jt-s-ghost"
+  ],
+  [
+   "AIVIIXX Movies",
+   "Movies",
+   1437,
+   "extra:mx-aiviixx"
+  ],
+  [
+   "Random Movies",
+   "Movies",
+   426,
+   "extra:mx-random-movies"
+  ],
+  [
+   "STAR WARS",
+   "Movies",
+   1,
+   "extra:mx-star-wars"
+  ],
+  [
+   "All My Children - Episodes",
+   "Soaps & Drama",
+   1367,
+   "extra:ajn-allmychildren-episodes"
+  ],
+  [
+   "Movies Classics (list)",
+   "Movies",
+   4054,
+   "extra:mx-movies-classics-list"
+  ],
+  [
+   "Disney anthology television series",
+   "Cartoons",
+   395,
+   "extra:cx-disney-anthology-television-series"
+  ],
+  [
+   "Walt Disney Treasures: Wave Two: The Complete Goofy DVD set",
+   "Cartoons",
+   52,
+   "extra:cx-walt-disney-treasures-wave-two-the-complete-goofy-dvd-set"
+  ],
+  [
+   "Bugs Bunny 80th Anniversary Collection (All Cartoons, No",
+   "Cartoons",
+   57,
+   "extra:cx-bugs-bunny-80th-anniversary-collection-all-cartoons-no-bonus"
+  ],
+  [
+   "The Cartoon Cartoon Show",
+   "Cartoons",
+   6,
+   "extra:cx-the-cartoon-cartoon-show"
+  ],
+  [
+   "Inspector Gadget Season 1 Part 2 ( Upscale)",
+   "Cartoons",
+   48,
+   "extra:cx-inspector-gadget-season-1-part-2-upscale"
+  ],
+  [
+   "Hulk Hogan's Rock 'n' Wrestling",
+   "Cartoons",
+   27,
+   "extra:cx-hulk-hogan-s-rock-n-wrestling"
+  ],
+  [
+   "The Underdog Show: The Complete Collection",
+   "Cartoons",
+   47,
+   "extra:cx-the-underdog-show-the-complete-collection"
+  ],
+  [
+   "All Dogs Go to Heaven",
+   "Cartoons",
+   19,
+   "extra:cx-all-dogs-go-to-heaven"
+  ],
+  [
+   "ReBoot with Subtitles and MKV",
+   "Cartoons",
+   44,
+   "extra:cx-reboot-with-subtitles-and-mkv"
+  ],
+  [
+   "All Animated VHS and DVD and Blu-ray Movies",
+   "Cartoons",
+   196,
+   "extra:cx-all-animated-vhs-and-dvd-and-blu-ray-movies"
+  ],
+  [
+   "Looney Tunes The Collector's Edition VHS",
+   "Cartoons",
+   15,
+   "extra:cx-looney-tunes-the-collector-s-edition-vhs"
+  ],
+  [
+   "The Mouse Factory Ultimate Fan Pack - & Bonus",
+   "Cartoons",
+   35,
+   "extra:cx-the-mouse-factory-ultimate-fan-pack-bonus"
+  ],
+  [
+   "Jim Henson's Muppet Babies (fan-remastered)",
+   "Cartoons",
+   55,
+   "extra:cx-jim-henson-s-muppet-babies-fan-remastered"
+  ],
+  [
+   "Dilbert: The DVD ISO NTSC",
+   "Cartoons",
+   3,
+   "extra:cx-dilbert-the-dvd-iso-ntsc"
+  ],
+  [
+   "Gargoyles AI Upscale",
+   "Cartoons",
+   40,
+   "extra:cx-gargoyles-ai-upscale"
+  ],
+  [
+   "Chadam (2010)",
+   "Cartoons",
+   3,
+   "extra:cx-chadam-2010"
+  ],
+  [
+   "Time Squad",
+   "Cartoons",
+   52,
+   "extra:cx-time-squad"
+  ],
+  [
+   "Toon In With Me - Season 1 (2021)",
+   "Cartoons",
+   8,
+   "extra:cx-toon-in-with-me-season-1-2021"
+  ],
+  [
+   "The Incredble Hulk (1966) ENGLISH",
+   "Cartoons",
+   9,
+   "extra:cx-the-incredble-hulk-1966-english"
+  ],
+  [
+   "The New Fantastic Four 1978",
+   "Cartoons",
+   13,
+   "extra:cx-the-new-fantastic-four-1978"
+  ],
+  [
+   "Spider-Man; The New Animated Series (2003) The HD",
+   "Cartoons",
+   5,
+   "extra:cx-spider-man-the-new-animated-series-2003-the-hd"
+  ],
+  [
+   "Ed, Edd N Eddy (all episodes and specials)",
+   "Cartoons",
+   76,
+   "extra:cx-ed-edd-n-eddy-all-episodes-and-specials"
+  ],
+  [
+   "Gravity Falls The ( 5.1 RCVR)",
+   "Cartoons",
+   62,
+   "extra:cx-gravity-falls-the-5-1-rcvr"
+  ],
+  [
+   "Pantheon - Season 1 & 2",
+   "Cartoons",
+   16,
+   "extra:cx-pantheon-season-1-2"
+  ],
+  [
+   "The Ant And The Aardvark",
+   "Cartoons",
+   17,
+   "extra:cx-the-ant-and-the-aardvark"
+  ],
+  [
+   "D. C. Follies",
+   "Cartoons",
+   81,
+   "extra:cx-d-c-follies"
+  ],
+  [
+   "More full movie cinematic dump (part 3.3)",
+   "Cartoons",
+   51,
+   "extra:cx-more-full-movie-cinematic-dump-part-3-3"
+  ],
+  [
+   "Stroker & Hoop \u2014",
+   "Cartoons",
+   13,
+   "extra:cx-stroker-hoop"
+  ],
+  [
+   "Charlie Brown's All Stars",
+   "Cartoons",
+   3,
+   "extra:cx-charlie-brown-s-all-stars"
+  ],
+  [
+   "The Woody Woodpecker & Friends Cartunes",
+   "Cartoons",
+   510,
+   "extra:cx-the-woody-woodpecker-friends-cartunes"
+  ],
+  [
+   "Yakky Doodle (complete cartoon collection)",
+   "Cartoons",
+   23,
+   "extra:cx-yakky-doodle-complete-cartoon-collection"
+  ],
+  [
+   "Popeye The Sailor Man 1933 to 1943",
+   "Cartoons",
+   123,
+   "extra:cx-popeye-the-sailor-man-1933-to-1943"
+  ],
+  [
+   "Popeye The Sailor Man 1943 to 1949",
+   "Cartoons",
+   43,
+   "extra:cx-popeye-the-sailor-man-1943-to-1949"
+  ],
+  [
+   "Woody Woodpecker & Friends: The Collector's Edition",
+   "Cartoons",
+   145,
+   "extra:cx-woody-woodpecker-friends-the-collector-s-edition"
+  ],
+  [
+   "This Is America, Charlie Brown",
+   "Cartoons",
+   8,
+   "extra:cx-this-is-america-charlie-brown"
+  ],
+  [
+   "Buddy Full HQ/HD Collection (1933-1935)",
+   "Cartoons",
+   23,
+   "extra:cx-buddy-full-hq-hd-collection-1933-1935"
+  ],
+  [
+   "Norman McCabe Warner Brothers Direction Colection",
+   "Cartoons",
+   27,
+   "extra:cx-norman-mccabe-warner-brothers-direction-colection"
+  ],
+  [
+   "Disney Rarities: Celebrated Shorts: 1920s-1960s",
+   "Cartoons",
+   37,
+   "extra:cx-disney-rarities-celebrated-shorts-1920s-1960s"
+  ],
+  [
+   "Noveltoons Original Classics",
+   "Cartoons",
+   26,
+   "extra:cx-noveltoons-original-classics"
+  ],
+  [
+   "The Nutty Squirrels Present",
+   "Cartoons",
+   28,
+   "extra:cx-the-nutty-squirrels-present"
+  ],
+  [
+   "Misterjaw",
+   "Cartoons",
+   23,
+   "extra:cx-misterjaw"
+  ],
+  [
+   "Sinbad Jr. and his Magic Belt",
+   "Cartoons",
+   33,
+   "extra:cx-sinbad-jr-and-his-magic-belt"
+  ],
+  [
+   "The Beary Family Album",
+   "Cartoons",
+   27,
+   "extra:cx-the-beary-family-album"
+  ],
+  [
+   "Andy Panda Filmography",
+   "Cartoons",
+   28,
+   "extra:cx-andy-panda-filmography"
+  ],
+  [
+   "X-Men The Animated Series AI Upscale",
+   "Cartoons",
+   33,
+   "extra:cx-x-men-the-animated-series-ai-upscale"
+  ],
+  [
+   "Teknoman (Upscale)",
+   "Cartoons",
+   43,
+   "extra:cx-teknoman-upscale"
+  ],
+  [
+   "Spider-Man Unlimited (1999 - 2001) Complete",
+   "Cartoons",
+   12,
+   "extra:cx-spider-man-unlimited-1999-2001-complete"
+  ],
+  [
+   "Death Note Complete (2006 - 2007)",
+   "Cartoons",
+   9,
+   "extra:cx-death-note-complete-2006-2007"
+  ],
+  [
+   "Noddy's Toyland Adventures (1992)",
+   "Cartoons",
+   52,
+   "extra:cx-noddy-s-toyland-adventures-1992"
+  ],
+  [
+   "Classic Cartoons",
+   "Cartoons",
+   35,
+   "extra:cx-classic-cartoons"
+  ],
+  [
+   "Filmography Collection",
+   "Movies",
+   2992,
+   "extra:mx-filmography"
+  ],
+  [
+   "Atlas Taggart Picks",
+   "Movies",
+   1,
+   "extra:mx-atlas-taggart"
+  ],
+  [
+   "Riders of Death Valley (1941)",
+   "Westerns",
+   13,
+   "extra:tvx-riders-of-death-valley-1941"
+  ],
+  [
+   "Gang Busters serial",
+   "Crime & Spy",
+   13,
+   "extra:tvx-gang-busters-serial"
+  ],
+  [
+   "Airwolf 402",
+   "Sci-Fi",
+   4,
+   "extra:tvx-airwolf-402"
+  ],
+  [
+   "Rod Serling",
+   "Sci-Fi",
+   124,
+   "extra:tvx-rod-serling"
+  ],
+  [
+   "THE ORGANIZATION (1972)",
+   "Crime & Spy",
+   7,
+   "extra:tvx-the-organization-1972"
+  ],
+  [
+   "A-THE SIX MILLION DOLLAR MAN ( SPECIAL NUMBERS )",
+   "Sci-Fi",
+   31,
+   "extra:tvx-a-the-six-million-dollar-man-special-numbers"
+  ],
+  [
+   "ALL VIKINGS (1-6)",
+   "Sci-Fi",
+   26,
+   "extra:tvx-all-vikings-1-6"
+  ],
+  [
+   "IRON MAN 5X",
+   "Cartoons",
+   5,
+   "extra:tvx-iron-man-5x"
+  ],
+  [
+   "THE BEVERLY HILLBILLIES SEASON 2",
+   "Sitcoms & Comedy",
+   24,
+   "extra:tvx-the-beverly-hillbillies-season-2"
+  ],
+  [
+   "The Phantom of the Air 1933 colorized cliffhanger serial",
+   "Sci-Fi",
+   12,
+   "extra:tvx-the-phantom-of-the-air-1933-colorized-cliffhanger-serial-tom"
+  ],
+  [
+   "J.J. Starbuck - Dale Robertson",
+   "Crime & Spy",
+   8,
+   "extra:tvx-j-j-starbuck-dale-robertson"
+  ],
+  [
+   "Ripley's Believe It or Not! (2000) Season 1",
+   "Documentary",
+   56,
+   "extra:tvx-ripley-s-believe-it-or-not-2000-season-1"
+  ],
+  [
+   "Ripleys Believe It or Not with Jack Palance - Drew's",
+   "Documentary",
+   3,
+   "extra:tvx-ripleys-believe-it-or-not-with-jack-palance-drew-s-favorite-"
+  ],
+  [
+   "Vintage TV Sci-Fi",
+   "Sci-Fi",
+   66,
+   "extra:tvx-vintage-tv-sci-fi"
+  ],
+  [
+   "HHGTTG - TV series",
+   "British",
+   7,
+   "extra:tvx-hhgttg-tv-series"
+  ],
+  [
+   "The Little Rascals Colorized Collection",
+   "Cartoons",
+   5,
+   "extra:tvx-the-little-rascals-colorized-collection"
+  ],
+  [
+   "Laurel and Hardy Colorized Collection VHS",
+   "Sitcoms & Comedy",
+   22,
+   "extra:tvx-laurel-and-hardy-colorized-collection-vhs"
+  ],
+  [
+   "The Western Tradition \"Lost\" Annenberg Series now with MKV",
+   "Documentary",
+   51,
+   "extra:tvx-the-western-tradition-lost-annenberg-series-now-with-mkv"
+  ],
+  [
+   "Robinson Crusoe Of Clipper Island Serial",
+   "Sci-Fi",
+   14,
+   "extra:tvx-robinson-crusoe-of-clipper-island-serial"
+  ],
+  [
+   "Ultraseven",
+   "Sci-Fi",
+   46,
+   "extra:tvx-ultraseven"
+  ],
+  [
+   "Highway To Heaven 1984-1989 Season 1-5",
+   "Soaps & Drama",
+   95,
+   "extra:tvx-highway-to-heaven-1984-1989-season-1-5"
+  ],
+  [
+   "THE ODYSSEY (1968) ENG SUB",
+   "Sci-Fi",
+   8,
+   "extra:tvx-the-odyssey-1968-eng-sub"
+  ],
+  [
+   "THE GREEN HORNET FILM SERIALS (1940-1941)",
+   "Sci-Fi",
+   27,
+   "extra:tvx-the-green-hornet-film-serials-1940-1941"
+  ],
+  [
+   "Dracula Series",
+   "Sci-Fi",
+   9,
+   "extra:tvx-dracula-series"
+  ],
+  [
+   "Nothing Sacred",
+   "Soaps & Drama",
+   19,
+   "extra:tvx-nothing-sacred"
+  ],
+  [
+   "The Fantastic Journey 1977",
+   "Sci-Fi",
+   10,
+   "extra:tvx-the-fantastic-journey-1977"
+  ],
+  [
+   "ALF",
+   "Sci-Fi",
+   99,
+   "extra:tvx-alf"
+  ],
+  [
+   "Heartland - Brian Keith, Daisy Keith",
+   "Soaps & Drama",
+   9,
+   "extra:tvx-heartland-brian-keith-daisy-keith"
+  ],
+  [
+   "9 To 5 TV Series Sitcom -Rachel Dennison, Sally Struthers,",
+   "Sitcoms & Comedy",
+   9,
+   "extra:tvx-9-to-5-tv-series-sitcom-rachel-dennison-sally-struthers-vale"
+  ],
+  [
+   "Counterstrike 1969 TV series",
+   "Sci-Fi",
+   4,
+   "extra:tvx-counterstrike-1969-tv-series"
+  ],
+  [
+   "M*A*S*H: (No Laugh Track)",
+   "Sitcoms & Comedy",
+   109,
+   "extra:tvx-m-a-s-h-no-laugh-track"
+  ],
+  [
+   "Soap",
+   "Soaps & Drama",
+   86,
+   "extra:tvx-soap"
+  ],
+  [
+   "Quincy, M. E",
+   "Crime & Spy",
+   144,
+   "extra:tvx-quincy-m-e"
+  ],
+  [
+   "McCloud",
+   "Crime & Spy",
+   44,
+   "extra:tvx-mccloud"
+  ],
+  [
+   "Mama's Family",
+   "Sitcoms & Comedy",
+   114,
+   "extra:tvx-mama-s-family"
+  ],
+  [
+   "Airwolf",
+   "Sci-Fi",
+   42,
+   "extra:tvx-airwolf"
+  ],
+  [
+   "Diff'rent Strokes",
+   "Sitcoms & Comedy",
+   179,
+   "extra:tvx-diff-rent-strokes"
+  ],
+  [
+   "Doctor Who",
+   "British",
+   811,
+   "extra:tvx-doctor-who"
+  ],
+  [
+   "Galavant (2015)",
+   "Sitcoms & Comedy",
+   18,
+   "extra:tvx-galavant-2015"
+  ],
+  [
+   "Everybody Loves Raymond",
+   "Sitcoms & Comedy",
+   192,
+   "extra:tvx-everybody-loves-raymond"
+  ],
+  [
+   "Star Trek T.O.S. Complete",
+   "Sci-Fi",
+   50,
+   "extra:tvx-star-trek-t-o-s-complete"
+  ],
+  [
+   "Supernatural Seasons 01-15 5.1 + Extras",
+   "Sci-Fi",
+   303,
+   "extra:tvx-supernatural-seasons-01-15-5-1-extras"
+  ],
+  [
+   "Ancient Aliens Seasons 1-18",
+   "Documentary",
+   91,
+   "extra:tvx-ancient-aliens-seasons-1-18"
+  ],
+  [
+   "Father Brown - 1974",
+   "Crime & Spy",
+   13,
+   "extra:tvx-father-brown-1974"
+  ],
+  [
+   "Wilfred (2011\u20132014)",
+   "Sitcoms & Comedy",
+   30,
+   "extra:tvx-wilfred-2011-2014"
+  ],
+  [
+   "Man From Atlantis - 1977",
+   "Sci-Fi",
+   16,
+   "extra:tvx-man-from-atlantis-1977"
+  ],
+  [
+   "Centennial (1978) (580p)",
+   "Westerns",
+   12,
+   "extra:tvx-centennial-1978-580p"
+  ],
+  [
+   "The Chronicles Of Narnia 1988",
+   "Sci-Fi",
+   18,
+   "extra:tvx-the-chronicles-of-narnia-1988"
+  ],
+  [
+   "Ironside 2013 Complete Season",
+   "Crime & Spy",
+   9,
+   "extra:tvx-ironside-2013-complete-season"
+  ],
+  [
+   "Hill Street Blues Season 1",
+   "Crime & Spy",
+   59,
+   "extra:tvx-hill-street-blues-season-1"
+  ],
+  [
+   "The Life And Legend Of Wyatt Earp",
+   "Westerns",
+   215,
+   "extra:tvx-the-life-and-legend-of-wyatt-earp"
+  ],
+  [
+   "It Takes a Thief - 1968",
+   "Crime & Spy",
+   58,
+   "extra:tvx-it-takes-a-thief-1968"
+  ],
+  [
+   "The Felony Squad (1967) - Complete Season 2",
+   "Crime & Spy",
+   26,
+   "extra:tvx-the-felony-squad-1967-complete-season-2"
+  ],
+  [
+   "N.Y.P.D (1967)",
+   "Crime & Spy",
+   49,
+   "extra:tvx-n-y-p-d-1967"
+  ],
+  [
+   "WKRP in Cincinnati",
+   "Sitcoms & Comedy",
+   82,
+   "extra:tvx-wkrp-in-cincinnati"
+  ],
+  [
+   "Room 222 (1969) - Complete Season 4",
+   "Sitcoms & Comedy",
+   31,
+   "extra:tvx-room-222-1969-complete-season-4"
+  ],
+  [
+   "Coronet Blue (1967)",
+   "Crime & Spy",
+   13,
+   "extra:tvx-coronet-blue-1967"
+  ],
+  [
+   "Rebel Highway of films",
+   "Movies",
+   10,
+   "extra:tvx-rebel-highway-of-films"
+  ],
+  [
+   "Unsolved mysteries; Season 11; CBS broadcasts",
+   "Documentary",
+   5,
+   "extra:tvx-unsolved-mysteries-season-11-cbs-broadcasts"
+  ],
+  [
+   "COPS VHS Collection",
+   "Crime & Spy",
+   12,
+   "extra:tvx-cops-vhs-collection"
+  ],
+  [
+   "Life Goes On TV Series (1989-1993) Complete",
+   "Sitcoms & Comedy",
+   81,
+   "extra:tvx-life-goes-on-tv-series-1989-1993-complete"
+  ],
+  [
+   "Perversions Of Science HBO TV Series 1997 DVD Rip",
+   "Science",
+   10,
+   "extra:tvx-perversions-of-science-hbo-tv-series-1997-dvd-rip"
+  ],
+  [
+   "FreakyLinks 2000",
+   "Sci-Fi",
+   12,
+   "extra:tvx-freakylinks-2000"
+  ],
+  [
+   "The New Alfred Hitchcock Presents (1985-1989)",
+   "Sci-Fi",
+   64,
+   "extra:tvx-the-new-alfred-hitchcock-presents-1985-1989"
+  ],
+  [
+   "The Amazing Spider-Man (Complete 1977 TV Series) Seasons 1-2",
+   "Cartoons",
+   12,
+   "extra:tvx-the-amazing-spider-man-complete-1977-tv-series-seasons-1-2"
+  ],
+  [
+   "So Weird",
+   "Sci-Fi",
+   21,
+   "extra:tvx-so-weird"
+  ],
+  [
+   "SPAWN Season S01 Complete",
+   "Cartoons",
+   6,
+   "extra:tvx-spawn-season-s01-complete"
+  ],
+  [
+   "Key West (TV Series)",
+   "Crime & Spy",
+   13,
+   "extra:tvx-key-west-tv-series"
+  ],
+  [
+   "The Nutt House (1989)",
+   "Sitcoms & Comedy",
+   9,
+   "extra:tvx-the-nutt-house-1989"
+  ],
+  [
+   "Three's Company Season 1 DVD ISO",
+   "Sitcoms & Comedy",
+   5,
+   "extra:tvx-three-s-company-season-1-dvd-iso"
+  ],
+  [
+   "Even Stevens (Season 1-3 & Films)",
+   "Sitcoms & Comedy",
+   61,
+   "extra:tvx-even-stevens-season-1-3-films"
+  ],
+  [
+   "family comedy animation",
+   "Cartoons",
+   37,
+   "extra:tvx-family-comedy-animation"
+  ],
+  [
+   "Shadow Raiders TV Series in English and German with MKV",
+   "Cartoons",
+   26,
+   "extra:cx-shadow-raiders-tv-series-in-english-and-german-with-mkv"
+  ],
+  [
+   "H.R. Pufnstuf",
+   "Cartoons",
+   11,
+   "extra:cx-h-r-pufnstuf"
+  ],
+  [
+   "The Minds Eye",
+   "Cartoons",
+   6,
+   "extra:cx-the-minds-eye"
+  ],
+  [
+   "Royal Space Force DVD ISO",
+   "Cartoons",
+   8,
+   "extra:cx-royal-space-force-dvd-iso"
+  ],
+  [
+   "Beast Wars: Transformers ( , Seasons 1-3) AI Upscale",
+   "Cartoons",
+   25,
+   "extra:cx-beast-wars-transformers-seasons-1-3-ai-upscale"
+  ],
+  [
+   "Spider-Man: The Animated Series (Complete 1994 Series) AI",
+   "Cartoons",
+   31,
+   "extra:cx-spider-man-the-animated-series-complete-1994-series-ai-upsca"
+  ],
+  [
+   "80's Cartoons - TaleSpin Collection",
+   "Cartoons",
+   65,
+   "extra:cx-80-s-cartoons-talespin-collection"
+  ],
+  [
+   "90's and 2000's Cartoons - Ed, Edd N Eddy Collection",
+   "Cartoons",
+   67,
+   "extra:cx-90-s-and-2000-s-cartoons-ed-edd-n-eddy-collection"
+  ],
+  [
+   "Darkwing Duck Collection",
+   "Cartoons",
+   86,
+   "extra:cx-darkwing-duck-collection"
+  ],
+  [
+   "80's Ducktales Collections",
+   "Cartoons",
+   91,
+   "extra:cx-80-s-ducktales-collections"
+  ],
+  [
+   "The Legend Of Zelda 1989 80's Cartoons",
+   "Cartoons",
+   23,
+   "extra:cx-the-legend-of-zelda-1989-80-s-cartoons"
+  ],
+  [
+   "Early Simpsons Collection on the Tracy Ullman Show",
+   "Cartoons",
+   20,
+   "extra:cx-early-simpsons-collection-on-the-tracy-ullman-show"
+  ],
+  [
+   "Pink Floyd - Live at Pompeii - Director's Cut DVD ISO",
+   "Cartoons",
+   4,
+   "extra:cx-pink-floyd-live-at-pompeii-director-s-cut-dvd-iso"
+  ],
+  [
+   "Dw2012 Complete Doctor Who Fanfilm Series 1-2 Backup",
+   "British",
+   8,
+   "extra:tvx-dw2012-complete-doctor-who-fanfilm-series-1-2-backup"
+  ],
+  [
+   "The Oregon Trail",
+   "Westerns",
+   29,
+   "extra:tvx-the-oregon-trail"
+  ],
+  [
+   "Inside & Outside the Box (The Complete Tom Green Show)",
+   "Reality",
+   21,
+   "extra:tvx-inside-outside-the-box-the-complete-tom-green-show"
+  ],
+  [
+   "Star Trek Deep Space Nine Best Buy Exclusive Bonus Extras",
+   "Sci-Fi",
+   5,
+   "extra:tvx-star-trek-deep-space-nine-best-buy-exclusive-bonus-extras"
+  ],
+  [
+   "DCOM",
+   "Movies",
+   6,
+   "extra:tvx-dcom"
+  ],
+  [
+   "On the Air (1992)",
+   "Soaps & Drama",
+   3,
+   "extra:tvx-on-the-air-1992"
+  ],
+  [
+   "Jimmy And The Federation Gang",
+   "Cartoons",
+   17,
+   "extra:tvx-jimmy-and-the-federation-gang"
+  ],
+  [
+   "Granada Series Sherlock Holmes",
+   "Crime & Spy",
+   39,
+   "extra:tvx-granada-series-sherlock-holmes"
+  ],
+  [
+   "The Ropers",
+   "Sitcoms & Comedy",
+   25,
+   "extra:tvx-the-ropers"
+  ],
+  [
+   "Star Trek: The Next Generation",
+   "Sci-Fi",
+   96,
+   "extra:tvx-star-trek-the-next-generation"
+  ],
+  [
+   "The Outer Limits 1x 01 02 The Sandkings",
+   "Sci-Fi",
+   186,
+   "extra:tvx-the-outer-limits-1x-01-02-the-sandkings"
+  ],
+  [
+   "Small Wonder 80's TV show",
+   "Sitcoms & Comedy",
+   36,
+   "extra:tvx-small-wonder-80-s-tv-show"
+  ],
+  [
+   "Star. Trek. Voyager. S 01 E 01. Caretaker",
+   "Sci-Fi",
+   84,
+   "extra:tvx-star-trek-voyager-s-01-e-01-caretaker"
+  ],
+  [
+   "Cobra Kai Series Collection 1 to 4",
+   "Soaps & Drama",
+   40,
+   "extra:tvx-cobra-kai-series-collection-1-to-4"
+  ],
+  [
+   "Terminator: The Sarah Connor Chronicles Complete Blu Ray HQ",
+   "Sci-Fi",
+   27,
+   "extra:tvx-terminator-the-sarah-connor-chronicles-complete-blu-ray-hq-1"
+  ],
+  [
+   "Knight Rider Classic 1982 Collection - All 4 Seasons",
+   "Soaps & Drama",
+   51,
+   "extra:tvx-knight-rider-classic-1982-collection-all-4-seasons"
+  ],
+  [
+   "MacGyver Collection 1985-1994 S01-S07",
+   "Crime & Spy",
+   138,
+   "extra:tvx-macgyver-collection-1985-1994-s01-s07"
+  ],
+  [
+   "The Outer Limits Season 7 E01 to E22",
+   "Sci-Fi",
+   19,
+   "extra:tvx-the-outer-limits-season-7-e01-to-e22"
+  ],
+  [
+   "Vom The Odd Couple S01 S05 1970 The Odd Couple S01 360P Re The Odd Couple",
+   "Sitcoms & Comedy",
+   24,
+   "m3u:70 Odd Couple"
+  ],
+  [
+   "Vom The Odd Couple S01 S05 1970 The Odd Couple S02 360P Re The Odd Couple",
+   "Sitcoms & Comedy",
+   23,
+   "m3u:70 Odd Couple"
+  ],
+  [
+   "Vom The Odd Couple S01 S05 1970 The Odd Couple S03 360P Re The Odd Couple",
+   "Sitcoms & Comedy",
+   23,
+   "m3u:70 Odd Couple"
+  ],
+  [
+   "Vom The Odd Couple S01 S05 1970 The Odd Couple S04 360P Re The Odd Couple",
+   "Sitcoms & Comedy",
+   22,
+   "m3u:70 Odd Couple"
+  ],
+  [
+   "Vom The Odd Couple S01 S05 1970 The Odd Couple S05 360P Re The Odd Couple",
+   "Sitcoms & Comedy",
+   22,
+   "m3u:70 Odd Couple"
+  ],
+  [
+   "BIG WESTERN ZONE",
+   "Westerns",
+   255,
+   "m3u:BIG WESTERN ZONE"
+  ],
+  [
+   "Classic Movies",
+   "Movies",
+   100,
+   "m3u:Classic Movies"
+  ],
+  [
+   "Classic Music Video",
+   "Music",
+   118,
+   "m3u:Classic Music Video"
+  ],
+  [
+   "MAYDAY",
+   "Science",
+   8,
+   "m3u:MAYDAY"
+  ],
+  [
+   "Aci",
+   "Science",
+   10,
+   "m3u:MAYDAY"
+  ],
+  [
+   "Air Crash Investigation",
+   "Science",
+   130,
+   "m3u:MAYDAY"
+  ],
+  [
+   "Air Crash Investigations",
+   "Science",
+   6,
+   "m3u:MAYDAY"
+  ],
+  [
+   "Mayday Air Crash Investigation",
+   "Science",
+   39,
+   "m3u:MAYDAY"
+  ],
+  [
+   "Rat Patrol",
+   "Sitcoms & Comedy",
+   58,
+   "m3u:Rat Patrol"
+  ],
+  [
+   "River Monsters",
+   "Documentary",
+   57,
+   "m3u:River Monsters"
+  ],
+  [
+   "September 11 2001",
+   "Documentary",
+   199,
+   "m3u:September 11 2001"
+  ],
+  [
+   "TV CRIME_cleaned",
+   "Crime & Spy",
+   6,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Columbo",
+   "Crime & Spy",
+   124,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Hawaii Five O",
+   "Crime & Spy",
+   280,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "The Fugitive",
+   "Crime & Spy",
+   166,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Barney Miller",
+   "Sitcoms & Comedy",
+   168,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Basil Rathbone Sherlock Holmes In Color",
+   "Crime & Spy",
+   4,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Charlie S Angels",
+   "Crime & Spy",
+   117,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Dick Tracy",
+   "Crime & Spy",
+   29,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Dragnet 1967",
+   "Crime & Spy",
+   98,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Police Woman",
+   "Crime & Spy",
+   89,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Sherlock Holmes",
+   "Crime & Spy",
+   12,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "The Green Hornet",
+   "Sci-Fi",
+   24,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "21 Jump Street",
+   "Crime & Spy",
+   102,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Hache",
+   "Crime & Spy",
+   14,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Hunter",
+   "Crime & Spy",
+   150,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "T J Hooker",
+   "Crime & Spy",
+   89,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "The Inspector Alleyn Mysteries",
+   "Crime & Spy",
+   9,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "The Mod Squad",
+   "Crime & Spy",
+   124,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Adam12",
+   "Crime & Spy",
+   174,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Brooklyn Nine Nine",
+   "Crime & Spy",
+   91,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Cannon",
+   "Crime & Spy",
+   122,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "Kojak",
+   "Crime & Spy",
+   116,
+   "m3u:TV CRIME_cleaned"
+  ],
+  [
+   "The Fugitive Tv Series 1963 1967 Season 1 The Fugitive",
+   "Crime & Spy",
+   96,
+   "m3u:The Fugitive"
+  ],
+  [
+   "The Sopranos",
+   "Soaps & Drama",
+   98,
+   "m3u:The Sopranos"
+  ],
+  [
+   "Total Drama",
+   "Cartoons",
+   253,
+   "m3u:Total Drama"
+  ],
+  [
+   "Hogans",
+   "Sitcoms & Comedy",
+   95,
+   "m3u:hogans"
+  ],
+  [
+   "Honeymooner Classic Movies",
+   "Sitcoms & Comedy",
+   49,
+   "m3u:honeymooner classic movies"
+  ],
+  [
+   "Petticoat Junction Season 1 Petticoat Junction",
+   "Sitcoms & Comedy",
+   107,
+   "m3u:petticoat"
+  ],
+  [
+   "Petticoat Junction Season 3 50Th Anniversary Edition Petticoat Junction",
+   "Sitcoms & Comedy",
+   34,
+   "m3u:petticoat"
+  ]
+ ]
+}

@@ -48,6 +48,8 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [episodes, setEpisodes] = useState<Episode[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [epLimit, setEpLimit] = useState(200);
+  const [epFilter, setEpFilter] = useState('');
 
   useEffect(() => { writeJson(VIEW_KEY, { channel: channelId, pill }); }, [channelId, pill]);
 
@@ -75,7 +77,7 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
 
   const toggleOpen = (show: ShowRow) => {
     if (openId === show.id) { setOpenId(null); return; }
-    setOpenId(show.id); setEpisodes(null); setLoadError(null);
+    setOpenId(show.id); setEpisodes(null); setLoadError(null); setEpLimit(200); setEpFilter('');
     loadEpisodes(show.id).then(setEpisodes).catch((e: unknown) => setLoadError(e instanceof Error ? e.message : String(e)));
   };
 
@@ -168,9 +170,16 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
                 <div className="border-t border-neutral-800 px-3 py-2 max-h-96 overflow-y-auto">
                   {loadError && <p className="text-sm text-red-400">Episode list unavailable: {loadError}</p>}
                   {!loadError && !episodes && <p className="text-sm text-neutral-400">Loading episodes…</p>}
-                  {episodes && (
+                  {episodes && episodes.length > 60 && (
+                    <input value={epFilter} onChange={(ev) => { setEpFilter(ev.target.value); setEpLimit(200); }} placeholder={`Filter ${episodes.length} episodes`}
+                      aria-label={`Filter episodes of ${show.title}`} className="mb-2 w-full rounded bg-neutral-800 px-2 py-1 text-sm text-neutral-100 placeholder:text-neutral-500" />
+                  )}
+                  {episodes && (() => {
+                    const q = epFilter.trim().toLowerCase();
+                    const matches = q ? episodes.filter((ep) => ep.t.toLowerCase().includes(q)) : episodes;
+                    return (<>
                     <ol className="space-y-0.5">
-                      {episodes.map((ep) => (
+                      {matches.slice(0, epLimit).map((ep) => (
                         <li key={ep.p}>
                           <button onClick={() => play(show, ep)}
                             className={`w-full text-left text-sm rounded px-2 py-1 hover:bg-neutral-800 flex justify-between gap-3 ${cont[show.id]?.path === ep.p ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'}`}>
@@ -180,7 +189,14 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
                         </li>
                       ))}
                     </ol>
-                  )}
+                    {matches.length === 0 && <p className="text-sm text-neutral-400">No episodes match.</p>}
+                    {matches.length > epLimit && (
+                      <button onClick={() => setEpLimit((n) => n + 300)} className="mt-2 text-sm text-[var(--ajn-accent)] hover:underline">
+                        Show more ({matches.length - epLimit} left)
+                      </button>
+                    )}
+                    </>);
+                  })()}
                 </div>
               )}
             </li>

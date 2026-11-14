@@ -1,14 +1,10 @@
-# Shows v3 drop-in (whole files, no script)
-Your export already has the Shows data/view files from v2. It was missing the wiring. Copy each file here to the same repo path, overwriting:
+# Shows v4 drop-in: the rest of the show list (whole files, no script)
+Apply ON TOP of v3 (the wiring files you already dropped in). Copy each path over the same repo path:
+- src/data/showDrawers.json                (474 shows, 38,996 episodes; was 206 / 9,662)
+- src/data/showEpisodes/*.json             (474 files; 268 new, 8 existing shows extended - copy the whole folder)
+- src/components/ShowDrawersView.tsx       (adds an episode filter box and "Show more" so 4,000-item lists stay fast)
+- tools/verify-shows-data.mjs, tools/build-show-drawers-rest.py, reports/show-drawers/rest-report.json  (optional, for the repo)
+Nothing else changes. Hard-refresh (Ctrl+F5) after publishing.
 
-- src/types.ts                         ('shows' added to Destination)
-- src/nav/lastView.ts                  ("shows" added to VALID_DESTINATIONS)
-- src/App.tsx                          (imports ShowDrawersView, 'shows' route + view)
-- src/components/Navigation.tsx        (Shows nav item + Clapperboard icon import)
-- server/classicNetworkPublication.ts  (classicWesternsChannel)
-- guideRegistry.ts                     (AJN Westerns channel in classic-tv)
-- server/libraryIndex.ts               (skip classic-westerns in library index)
-- tools/compile-classic-network.mts, tools/check-classic-network-publication.mjs (classic-westerns file map)
-
-Each file = your Builder export's version + only the Shows/Westerns edits. Verified on that export: tsc 0 errors, vite build OK, server esbuild OK, westerns publication check "ok".
-After publishing, hard-refresh (Ctrl+F5). "Shows" appears in the top nav (after Live TV Guide) and under More on mobile.
+What was added: every show from your series manifests, extra channels (cartoons, movies, TV classics, soaps) and M3U lists whose FIRST and LAST file answered a Range request with 200/206 on 2026-11-14.
+Not added (see rest-report.json): talk archives (Alex Jones/Infowars/Liberty Express etc.), Gunsmoke/Maverick/Lawman/Bonanza/Rifleman/Arsenio, 4 sources that return 403 today (American Experience, Dave's Classic British TV & Movies, Honey mooners, Man From U.N.C.L.E.).

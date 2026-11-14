@@ -63,6 +63,14 @@
    ]
   },
   {
+   "id": "ch501",
+   "label": "Ch 501",
+   "name": "Music TV",
+   "pills": [
+    "Music"
+   ]
+  },
+  {
    "id": "ch601",
    "label": "Ch 601",
    "name": "Reality",
@@ -73,343 +81,13 @@
  ],
  "shows": [
   {
-   "id": "wagon-train",
-   "title": "Wagon Train",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 269,
-   "hours": 239.9,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "tales-of-wells-fargo",
-   "title": "Tales of Wells Fargo",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 185,
-   "hours": 93.1,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "rawhide",
-   "title": "Rawhide",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 217,
-   "hours": 181.2,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "wanted-dead-or-alive",
-   "title": "Wanted Dead or Alive",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 94,
-   "hours": 39.4,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "branded",
-   "title": "Branded",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 48,
-   "hours": 17.8,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "bat-masterson",
-   "title": "Bat Masterson",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 106,
-   "hours": 45.9,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-wild-wild-west",
-   "title": "The Wild Wild West",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 104,
-   "hours": 87.2,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-virginian",
-   "title": "The Virginian",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 247,
-   "hours": 312.8,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "have-gun-will-travel",
-   "title": "Have Gun Will Travel",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 225,
-   "hours": 95.9,
-   "in24x7": true,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-texan",
-   "title": "The Texan",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 71,
-   "hours": 30.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "sky-king",
-   "title": "Sky King",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 72,
-   "hours": 31.9,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "adventures-of-superman",
-   "title": "Adventures of Superman",
-   "channelId": "ch101",
-   "pill": "Westerns",
-   "tags": [],
-   "episodes": 104,
-   "hours": 45.0,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "mission-impossible",
-   "title": "Mission Impossible",
+   "id": "21-jump-street",
+   "title": "21 Jump Street",
    "channelId": "ch101",
    "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 170,
-   "hours": 142.9,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-rockford-files",
-   "title": "The Rockford Files",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 119,
-   "hours": 101.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "miami-vice",
-   "title": "Miami Vice",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 111,
-   "hours": 91.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-fall-guy",
-   "title": "The Fall Guy",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 110,
-   "hours": 85.3,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "in-the-heat-of-the-night",
-   "title": "In the Heat of the Night",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 142,
-   "hours": 117.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "77-sunset-strip",
-   "title": "77 Sunset Strip",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 206,
-   "hours": 158.4,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "surfside-6",
-   "title": "Surfside 6",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 74,
-   "hours": 60.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "highway-patrol",
-   "title": "Highway Patrol",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 156,
-   "hours": 68.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "la-femme-nikita",
-   "title": "La Femme Nikita",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 96,
-   "hours": 71.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "silk-stalkings",
-   "title": "Silk Stalkings",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 176,
-   "hours": 133.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "route-66",
-   "title": "Route 66",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 116,
-   "hours": 97.5,
+   "episodes": 102,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -433,13 +111,13 @@
    }
   },
   {
-   "id": "stalker",
-   "title": "Stalker",
+   "id": "77-sunset-strip",
+   "title": "77 Sunset Strip",
    "channelId": "ch101",
    "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 6,
-   "hours": 4.2,
+   "episodes": 206,
+   "hours": 158.4,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -448,73 +126,13 @@
    }
   },
   {
-   "id": "mysterious-ways",
-   "title": "Mysterious Ways",
+   "id": "adam12",
+   "title": "Adam12",
    "channelId": "ch101",
    "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 10,
-   "hours": 7.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "moon-over-miami",
-   "title": "Moon Over Miami",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 16,
-   "hours": 11.0,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "point-pleasant",
-   "title": "Point Pleasant",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 2,
-   "hours": 1.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "peaceable-kingdom",
-   "title": "Peaceable Kingdom",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 1,
-   "hours": 0.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "cane",
-   "title": "Cane",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 1,
-   "hours": 0.8,
+   "episodes": 174,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -538,13 +156,13 @@
    }
   },
   {
-   "id": "department-s",
-   "title": "Department S",
+   "id": "barnaby-jones",
+   "title": "Barnaby Jones",
    "channelId": "ch101",
    "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 28,
-   "hours": 22.6,
+   "episodes": 61,
+   "hours": 47.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -553,13 +171,13 @@
    }
   },
   {
-   "id": "dirk-gently",
-   "title": "Dirk Gently",
+   "id": "basil-rathbone-sherlock-holmes-in-color",
+   "title": "Basil Rathbone Sherlock Holmes In Color",
    "channelId": "ch101",
    "pill": "Crime & Spy",
    "tags": [],
    "episodes": 4,
-   "hours": 3.8,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -568,73 +186,13 @@
    }
   },
   {
-   "id": "moonlighting",
-   "title": "Moonlighting",
+   "id": "brooklyn-nine-nine",
+   "title": "Brooklyn Nine Nine",
    "channelId": "ch101",
    "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 6,
-   "hours": 5.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "ellery-queen",
-   "title": "Ellery Queen",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 23,
-   "hours": 19.4,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-avengers",
-   "title": "The Avengers",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 138,
-   "hours": 118.0,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "riptide",
-   "title": "Riptide",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 59,
-   "hours": 50.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "hart-to-hart",
-   "title": "Hart to Hart",
-   "channelId": "ch101",
-   "pill": "Crime & Spy",
-   "tags": [],
-   "episodes": 64,
-   "hours": 51.3,
+   "episodes": 91,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -658,13 +216,13 @@
    }
   },
   {
-   "id": "parker-lewis-can-t-lose",
-   "title": "Parker Lewis Can't Lose",
+   "id": "cane",
+   "title": "Cane",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 92,
-   "hours": 35.2,
+   "episodes": 1,
+   "hours": 0.8,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -673,13 +231,13 @@
    }
   },
   {
-   "id": "do-over",
-   "title": "Do Over",
+   "id": "cannon",
+   "title": "Cannon",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 37,
-   "hours": 10.0,
+   "episodes": 122,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -688,13 +246,73 @@
    }
   },
   {
-   "id": "the-trouble-with-normal",
-   "title": "The Trouble with Normal",
+   "id": "charlie-s-angels",
+   "title": "Charlie S Angels",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 117,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "colonel-march-of-scotland-yard-1955",
+   "title": "Colonel March Of Scotland Yard (1955)",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 26,
+   "hours": 11.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "columbo",
+   "title": "Columbo",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 124,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "cops-vhs-collection",
+   "title": "COPS VHS Collection",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 12,
+   "hours": 10.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "coronet-blue-1967",
+   "title": "Coronet Blue (1967)",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
    "tags": [],
    "episodes": 13,
-   "hours": 4.8,
+   "hours": 10.8,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -703,13 +321,13 @@
    }
   },
   {
-   "id": "less-than-perfect",
-   "title": "Less Than Perfect",
+   "id": "department-s",
+   "title": "Department S",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 77,
-   "hours": 26.3,
+   "episodes": 28,
+   "hours": 22.6,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -718,13 +336,13 @@
    }
   },
   {
-   "id": "freddie",
-   "title": "Freddie",
+   "id": "dick-tracy",
+   "title": "Dick Tracy",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 22,
-   "hours": 7.8,
+   "episodes": 29,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -733,13 +351,13 @@
    }
   },
   {
-   "id": "love-inc",
-   "title": "Love, Inc.",
+   "id": "dirk-gently",
+   "title": "Dirk Gently",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 43,
-   "hours": 6.8,
+   "episodes": 4,
+   "hours": 3.8,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -748,13 +366,13 @@
    }
   },
   {
-   "id": "getting-personal",
-   "title": "Getting Personal",
+   "id": "dragnet-1967",
+   "title": "Dragnet 1967",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 10,
-   "hours": 3.7,
+   "episodes": 98,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -763,13 +381,13 @@
    }
   },
   {
-   "id": "some-of-my-best-friends",
-   "title": "Some of My Best Friends",
+   "id": "duel-on-the-thin-rope",
+   "title": "Duel On The Thin Rope",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 5,
-   "hours": 1.8,
+   "episodes": 57,
+   "hours": 24.4,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -778,58 +396,13 @@
    }
   },
   {
-   "id": "damon",
-   "title": "Damon",
+   "id": "ellery-queen",
+   "title": "Ellery Queen",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 7,
-   "hours": 2.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "dweebs",
-   "title": "Dweebs",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 10,
-   "hours": 3.9,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "a-u-s-a",
-   "title": "A.U.S.A.",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 8,
-   "hours": 2.6,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "sibs",
-   "title": "Sibs",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
    "episodes": 23,
-   "hours": 8.7,
+   "hours": 19.4,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -838,13 +411,13 @@
    }
   },
   {
-   "id": "maggie-winters",
-   "title": "Maggie Winters",
+   "id": "father-brown-1974",
+   "title": "Father Brown - 1974",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 15,
-   "hours": 6.4,
+   "episodes": 13,
+   "hours": 11.1,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -853,12 +426,387 @@
    }
   },
   {
-   "id": "for-your-love",
-   "title": "For Your Love",
+   "id": "gang-busters-serial",
+   "title": "Gang Busters serial",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 56,
+   "episodes": 13,
+   "hours": 4.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "granada-series-sherlock-holmes",
+   "title": "Granada Series Sherlock Holmes",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 39,
+   "hours": 39.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hache",
+   "title": "Hache",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 14,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hart-to-hart",
+   "title": "Hart to Hart",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 64,
+   "hours": 51.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hawaii-five-o",
+   "title": "Hawaii Five O",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 280,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "highway-patrol",
+   "title": "Highway Patrol",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 156,
+   "hours": 68.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hill-street-blues-season-1",
+   "title": "Hill Street Blues Season 1",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 59,
+   "hours": 45.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hunter",
+   "title": "Hunter",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 150,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "in-the-heat-of-the-night",
+   "title": "In the Heat of the Night",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 142,
+   "hours": 117.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "interpol-calling-series-1959",
+   "title": "Interpol Calling Series 1959",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 39,
+   "hours": 16.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ironside-2013-complete-season",
+   "title": "Ironside 2013 Complete Season",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 9,
+   "hours": 7.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ironside-season-2",
+   "title": "Ironside Season 2",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 41,
+   "hours": 33.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "it-takes-a-thief-1968",
+   "title": "It Takes a Thief - 1968",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 58,
+   "hours": 49.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "j-j-starbuck-dale-robertson",
+   "title": "J.J. Starbuck - Dale Robertson",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 8,
+   "hours": 6.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "key-west-tv-series",
+   "title": "Key West (TV Series)",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 13,
+   "hours": 9.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "kojak",
+   "title": "Kojak",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 116,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "la-femme-nikita",
+   "title": "La Femme Nikita",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 96,
+   "hours": 71.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "macgyver-collection-1985-1994-s01-s07",
+   "title": "MacGyver Collection 1985-1994 S01-S07",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 138,
+   "hours": 111.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "mccloud",
+   "title": "McCloud",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 44,
+   "hours": 61.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "miami-vice",
+   "title": "Miami Vice",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 111,
+   "hours": 91.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "mission-impossible",
+   "title": "Mission Impossible",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 170,
+   "hours": 142.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "moon-over-miami",
+   "title": "Moon Over Miami",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 16,
+   "hours": 11.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "moonlighting",
+   "title": "Moonlighting",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 6,
+   "hours": 5.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "murder-she-wrote",
+   "title": "MURDER, SHE WROTE",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 505,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "mysterious-ways",
+   "title": "Mysterious Ways",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 10,
+   "hours": 7.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "n-y-p-d-1967",
+   "title": "N.Y.P.D (1967)",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 49,
    "hours": 20.6,
    "in24x7": false,
    "verification": {
@@ -868,13 +816,28 @@
    }
   },
   {
-   "id": "the-brian-benben-show",
-   "title": "The Brian Benben Show",
+   "id": "peaceable-kingdom",
+   "title": "Peaceable Kingdom",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 1,
+   "hours": 0.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "point-pleasant",
+   "title": "Point Pleasant",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
    "tags": [],
    "episodes": 2,
-   "hours": 0.7,
+   "hours": 1.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -883,13 +846,13 @@
    }
   },
   {
-   "id": "ned-and-stacey",
-   "title": "Ned and Stacey",
+   "id": "police-woman",
+   "title": "Police Woman",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 47,
-   "hours": 17.4,
+   "episodes": 89,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -898,12 +861,282 @@
    }
   },
   {
-   "id": "day-by-day",
-   "title": "Day by Day",
+   "id": "quincy-m-e",
+   "title": "Quincy, M. E",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 33,
+   "episodes": 144,
+   "hours": 114.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "riptide",
+   "title": "Riptide",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 59,
+   "hours": 50.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "route-66",
+   "title": "Route 66",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 116,
+   "hours": 97.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "she-spies-complete-tv-series-2002-2004",
+   "title": "She Spies Complete TV Series (2002-2004)",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 40,
+   "hours": 28.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "sherlock-holmes",
+   "title": "Sherlock Holmes",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 12,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "silk-stalkings",
+   "title": "Silk Stalkings",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 176,
+   "hours": 133.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "stalker",
+   "title": "Stalker",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 6,
+   "hours": 4.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "surfside-6",
+   "title": "Surfside 6",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 74,
+   "hours": 60.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "t-j-hooker",
+   "title": "T J Hooker",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 89,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-adventures-of-sherlock-holmes-1954-subtitled",
+   "title": "The Adventures Of Sherlock Holmes 1954 (Subtitled)",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 36,
+   "hours": 16.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-avengers",
+   "title": "The Avengers",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 138,
+   "hours": 118.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-baron-1966-full-series",
+   "title": "The Baron (1966) - Full Series",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 30,
+   "hours": 25.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-fall-guy",
+   "title": "The Fall Guy",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 110,
+   "hours": 85.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-felony-squad-1967-complete-season-2",
+   "title": "The Felony Squad (1967) - Complete Season 2",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 26,
+   "hours": 14.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-fugitive",
+   "title": "The Fugitive",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 166,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-fugitive-tv-series-1963-1967-season-1-the-fugitive",
+   "title": "The Fugitive Tv Series 1963 1967 Season 1 The Fugitive",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 96,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-inspector-alleyn-mysteries",
+   "title": "The Inspector Alleyn Mysteries",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 9,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-mod-squad",
+   "title": "The Mod Squad",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 124,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-net-complete-tv-series-1998-1999",
+   "title": "The Net (Complete TV Series) 1998-1999",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 22,
    "hours": 15.8,
    "in24x7": false,
    "verification": {
@@ -913,132 +1146,12 @@
    }
   },
   {
-   "id": "veronica-s-closet",
-   "title": "Veronica's Closet",
+   "id": "the-organization-1972",
+   "title": "THE ORGANIZATION (1972)",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 66,
-   "hours": 22.9,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "still-standing",
-   "title": "Still Standing",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 88,
-   "hours": 31.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-jeff-foxworthy-show",
-   "title": "The Jeff Foxworthy Show",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 41,
-   "hours": 15.4,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "big-day",
-   "title": "Big Day",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 13,
-   "hours": 4.6,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "indebted",
-   "title": "Indebted",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 12,
-   "hours": 4.3,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "carter-country",
-   "title": "Carter Country",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 30,
-   "hours": 10.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "f-troop",
-   "title": "F Troop",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 65,
-   "hours": 27.6,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-super-dave-osborne-show",
-   "title": "The Super Dave Osborne Show",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 97,
-   "hours": 37.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "sanford-and-son",
-   "title": "Sanford and Son",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 14,
+   "episodes": 7,
    "hours": 6.1,
    "in24x7": false,
    "verification": {
@@ -1048,13 +1161,13 @@
    }
   },
   {
-   "id": "malcolm-in-the-middle",
-   "title": "Malcolm in the Middle",
+   "id": "the-protectors",
+   "title": "The Protectors",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 35,
-   "hours": 16.5,
+   "episodes": 26,
+   "hours": 11.2,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1063,13 +1176,13 @@
    }
   },
   {
-   "id": "archie-bunker-s-place",
-   "title": "Archie Bunker's Place",
+   "id": "the-rockford-files",
+   "title": "The Rockford Files",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 36,
-   "hours": 14.8,
+   "episodes": 119,
+   "hours": 101.2,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1078,13 +1191,28 @@
    }
   },
   {
-   "id": "the-jeffersons",
-   "title": "The Jeffersons",
+   "id": "the-saint-tv-series-movies-archive",
+   "title": "The Saint: TV Series & Movies Archive",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
+   "tags": [],
+   "episodes": 128,
+   "hours": 106.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-secret-service-1969",
+   "title": "The Secret Service (1969)",
+   "channelId": "ch101",
+   "pill": "Crime & Spy",
    "tags": [],
    "episodes": 13,
-   "hours": 5.8,
+   "hours": 5.6,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1093,13 +1221,13 @@
    }
   },
   {
-   "id": "all-in-the-family",
-   "title": "All in the Family",
+   "id": "the-sniffer-2013",
+   "title": "The Sniffer ( 2013)",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 89,
-   "hours": 36.6,
+   "episodes": 32,
+   "hours": 27.6,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1108,13 +1236,13 @@
    }
   },
   {
-   "id": "home-improvement",
-   "title": "Home Improvement",
+   "id": "tv-crime-cleaned",
+   "title": "TV CRIME_cleaned",
    "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
+   "pill": "Crime & Spy",
    "tags": [],
-   "episodes": 84,
-   "hours": 34.2,
+   "episodes": 6,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1123,73 +1251,13 @@
    }
   },
   {
-   "id": "naked-city",
-   "title": "Naked City",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 138,
-   "hours": 101.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "man-with-a-camera",
-   "title": "Man with a Camera",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 29,
-   "hours": 12.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "johnny-staccato",
-   "title": "Johnny Staccato",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 27,
-   "hours": 11.6,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-twilight-zone",
-   "title": "The Twilight Zone",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 156,
-   "hours": 73.1,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "knight-rider",
-   "title": "Knight Rider",
+   "id": "a-the-six-million-dollar-man-special-numbers",
+   "title": "A-THE SIX MILLION DOLLAR MAN ( SPECIAL NUMBERS )",
    "channelId": "ch101",
    "pill": "Sci-Fi",
    "tags": [],
-   "episodes": 85,
-   "hours": 72.7,
+   "episodes": 31,
+   "hours": 25.1,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1198,12 +1266,177 @@
    }
   },
   {
-   "id": "sapphire-and-steel",
-   "title": "Sapphire and Steel",
+   "id": "airwolf",
+   "title": "Airwolf",
    "channelId": "ch101",
    "pill": "Sci-Fi",
    "tags": [],
-   "episodes": 34,
+   "episodes": 42,
+   "hours": 34.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "airwolf-402",
+   "title": "Airwolf 402",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 4,
+   "hours": 3.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "alf",
+   "title": "ALF",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 99,
+   "hours": 41.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "alien-nation-1988-alien-nation-1989-complete-series-television-soundtr",
+   "title": "Alien Nation (1988) Alien Nation (1989) Complete Series Television Soundtrack All Five Television Films Extras",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 22,
+   "hours": 18.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "all-vikings-1-6",
+   "title": "ALL VIKINGS (1-6)",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 26,
+   "hours": 19.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "counterstrike-1969-tv-series",
+   "title": "Counterstrike 1969 TV series",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 4,
+   "hours": 3.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "dracula-series",
+   "title": "Dracula Series",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 9,
+   "hours": 3.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "eastwick",
+   "title": "Eastwick",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 13,
+   "hours": 9.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "freakylinks-2000",
+   "title": "FreakyLinks 2000",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 12,
+   "hours": 8.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "galactica-1980",
+   "title": "Galactica 1980",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 9,
+   "hours": 7.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "gemini-man-season-1",
+   "title": "Gemini Man Season 1",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 12,
+   "hours": 10.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hex",
+   "title": "Hex",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 19,
    "hours": 14.6,
    "in24x7": false,
    "verification": {
@@ -1243,12 +1476,102 @@
    }
   },
   {
-   "id": "hex",
-   "title": "Hex",
+   "id": "knight-rider",
+   "title": "Knight Rider",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 171,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "man-from-atlantis-1977",
+   "title": "Man From Atlantis - 1977",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 16,
+   "hours": 15.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "odyssey-5-tv-series-episodes-1-20",
+   "title": "Odyssey 5 TV Series Episodes 1-20",
    "channelId": "ch101",
    "pill": "Sci-Fi",
    "tags": [],
    "episodes": 19,
+   "hours": 15.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "pandora-complete-tv-series-2019",
+   "title": "Pandora Complete TV Series (2019)",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 23,
+   "hours": 16.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "robinson-crusoe-of-clipper-island-serial",
+   "title": "Robinson Crusoe Of Clipper Island Serial",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 14,
+   "hours": 3.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "rod-serling",
+   "title": "Rod Serling",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 124,
+   "hours": 75.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "sapphire-and-steel",
+   "title": "Sapphire and Steel",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 34,
    "hours": 14.6,
    "in24x7": false,
    "verification": {
@@ -1258,13 +1581,13 @@
    }
   },
   {
-   "id": "eastwick",
-   "title": "Eastwick",
+   "id": "so-weird",
+   "title": "So Weird",
    "channelId": "ch101",
    "pill": "Sci-Fi",
    "tags": [],
-   "episodes": 13,
-   "hours": 9.0,
+   "episodes": 21,
+   "hours": 8.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1273,43 +1596,58 @@
    }
   },
   {
-   "id": "the-new-addams-family",
-   "title": "The New Addams Family",
+   "id": "star-trek-deep-space-nine-best-buy-exclusive-bonus-extras",
+   "title": "Star Trek Deep Space Nine Best Buy Exclusive Bonus Extras",
    "channelId": "ch101",
    "pill": "Sci-Fi",
    "tags": [],
-   "episodes": 65,
-   "hours": 23.3,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-worst-witch-weirdsister-college",
-   "title": "The Worst Witch + Weirdsister College",
-   "channelId": "ch101",
-   "pill": "Sci-Fi",
-   "tags": [],
-   "episodes": 53,
-   "hours": 21.4,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "young-indiana-jones",
-   "title": "Young Indiana Jones",
-   "channelId": "ch101",
-   "pill": "Sci-Fi",
-   "tags": [],
-   "episodes": 1,
+   "episodes": 5,
    "hours": 1.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "star-trek-t-o-s-complete",
+   "title": "Star Trek T.O.S. Complete",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 50,
+   "hours": 42.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "star-trek-the-next-generation",
+   "title": "Star Trek: The Next Generation",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 96,
+   "hours": 75.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "star-trek-voyager-s-01-e-01-caretaker",
+   "title": "Star. Trek. Voyager. S 01 E 01. Caretaker",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 84,
+   "hours": 66.4,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1333,13 +1671,15 @@
    }
   },
   {
-   "id": "knots-landing",
-   "title": "Knots Landing",
+   "id": "supernatural-seasons-01-15-5-1-extras",
+   "title": "Supernatural Seasons 01-15 5.1 + Extras",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 344,
-   "hours": 273.0,
+   "pill": "Sci-Fi",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 303,
+   "hours": 194.2,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1348,13 +1688,13 @@
    }
   },
   {
-   "id": "falcon-crest",
-   "title": "Falcon Crest",
+   "id": "terminator-the-sarah-connor-chronicles-complete-blu-ray-hq",
+   "title": "Terminator: The Sarah Connor Chronicles Complete Blu Ray HQ",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sci-Fi",
    "tags": [],
-   "episodes": 228,
-   "hours": 177.8,
+   "episodes": 27,
+   "hours": 19.9,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1363,13 +1703,313 @@
    }
   },
   {
-   "id": "rich-man-poor-man-book-2",
-   "title": "Rich Man, Poor Man Book 2",
+   "id": "the-chronicles-of-narnia-1988",
+   "title": "The Chronicles Of Narnia 1988",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 18,
+   "hours": 8.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-fantastic-journey-1977",
+   "title": "The Fantastic Journey 1977",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 10,
+   "hours": 8.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-green-hornet",
+   "title": "The Green Hornet",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 24,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-green-hornet-film-serials-1940-1941",
+   "title": "THE GREEN HORNET FILM SERIALS (1940-1941)",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 27,
+   "hours": 8.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-master-complete-series-1984",
+   "title": "The Master - Complete Series 1984",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 13,
+   "hours": 10.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-new-addams-family",
+   "title": "The New Addams Family",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 65,
+   "hours": 23.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-new-alfred-hitchcock-presents-1985-1989",
+   "title": "The New Alfred Hitchcock Presents (1985-1989)",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 64,
+   "hours": 25.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-odyssey-1968-eng-sub",
+   "title": "THE ODYSSEY (1968) ENG SUB",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 8,
+   "hours": 6.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-outer-limits-1x-01-02-the-sandkings",
+   "title": "The Outer Limits 1x 01 02 The Sandkings",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 186,
+   "hours": 140.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-outer-limits-season-7-e01-to-e22",
+   "title": "The Outer Limits Season 7 E01 to E22",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 19,
+   "hours": 14.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-phantom-of-the-air-1933-colorized-cliffhanger-serial",
+   "title": "The Phantom of the Air 1933 colorized cliffhanger serial",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 12,
+   "hours": 3.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-worst-witch-weirdsister-college",
+   "title": "The Worst Witch + Weirdsister College",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 53,
+   "hours": 21.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ultraseven",
+   "title": "Ultraseven",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 46,
+   "hours": 19.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "vintage-tv-sci-fi",
+   "title": "Vintage TV Sci-Fi",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 66,
+   "hours": 55.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "young-indiana-jones",
+   "title": "Young Indiana Jones",
+   "channelId": "ch101",
+   "pill": "Sci-Fi",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "1600-penn-tv-series-episode-1-13",
+   "title": "1600 Penn TV Series Episode 1-13",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 11,
+   "hours": 3.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "9-to-5-tv-series-sitcom-rachel-dennison-sally-struthers",
+   "title": "9 To 5 TV Series Sitcom -Rachel Dennison, Sally Struthers,",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 9,
+   "hours": 3.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "a-u-s-a",
+   "title": "A.U.S.A.",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 8,
+   "hours": 2.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "action-1999-complete-series",
+   "title": "Action (1999) Complete Series",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 13,
+   "hours": 4.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "all-in-the-family",
+   "title": "All in the Family",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 89,
+   "hours": 36.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "amen-season-1",
+   "title": "Amen: Season 1",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
    "episodes": 22,
-   "hours": 17.7,
+   "hours": 8.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1378,13 +2018,13 @@
    }
   },
   {
-   "id": "l-a-law",
-   "title": "L.A. Law",
+   "id": "archie-bunker-s-place",
+   "title": "Archie Bunker's Place",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
-   "episodes": 171,
-   "hours": 134.5,
+   "episodes": 133,
+   "hours": 54.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1393,13 +2033,75 @@
    }
   },
   {
-   "id": "picket-fences",
-   "title": "Picket Fences",
+   "id": "barney-miller",
+   "title": "Barney Miller",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 168,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "beavis-and-butt-head",
+   "title": "Beavis and Butt-Head",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 113,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "big-day",
+   "title": "Big Day",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 13,
+   "hours": 4.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "carter-country",
+   "title": "Carter Country",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 30,
+   "hours": 10.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "chico-and-the-man-series",
+   "title": "Chico And The Man Series",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
    "episodes": 88,
-   "hours": 67.9,
+   "hours": 34.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1408,13 +2110,13 @@
    }
   },
   {
-   "id": "hart-of-dixie",
-   "title": "Hart of Dixie",
+   "id": "coach-season-1",
+   "title": "Coach Season 1",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
-   "episodes": 76,
-   "hours": 53.3,
+   "episodes": 13,
+   "hours": 5.2,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1423,13 +2125,13 @@
    }
   },
   {
-   "id": "popular",
-   "title": "Popular",
+   "id": "damon",
+   "title": "Damon",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
-   "episodes": 47,
-   "hours": 34.6,
+   "episodes": 7,
+   "hours": 2.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1438,13 +2140,13 @@
    }
   },
   {
-   "id": "edgemont",
-   "title": "Edgemont",
+   "id": "day-by-day",
+   "title": "Day by Day",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
-   "episodes": 74,
-   "hours": 27.9,
+   "episodes": 33,
+   "hours": 15.8,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1453,13 +2155,13 @@
    }
   },
   {
-   "id": "life-as-we-know-it",
-   "title": "Life as We Know It",
+   "id": "diff-rent-strokes",
+   "title": "Diff'rent Strokes",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
-   "episodes": 15,
-   "hours": 9.4,
+   "episodes": 179,
+   "hours": 77.4,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1468,12 +2170,162 @@
    }
   },
   {
-   "id": "palmetto-pointe",
-   "title": "Palmetto Pointe",
+   "id": "do-over",
+   "title": "Do Over",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
-   "episodes": 5,
+   "episodes": 37,
+   "hours": 10.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "dweebs",
+   "title": "Dweebs",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 10,
+   "hours": 3.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "enos-season-1",
+   "title": "Enos (Season 1)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 11,
+   "hours": 9.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "even-stevens-season-1-3-films",
+   "title": "Even Stevens (Season 1-3 & Films)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 61,
+   "hours": 24.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "everybody-loves-raymond",
+   "title": "Everybody Loves Raymond",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 192,
+   "hours": 71.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "f-troop",
+   "title": "F Troop",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 65,
+   "hours": 27.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "fish-complete-tv-series",
+   "title": "Fish (complete TV series)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 35,
+   "hours": 14.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "for-your-love",
+   "title": "For Your Love",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 56,
+   "hours": 20.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "freddie",
+   "title": "Freddie",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 22,
+   "hours": 7.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "galavant-2015",
+   "title": "Galavant (2015)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 18,
+   "hours": 6.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "getting-personal",
+   "title": "Getting Personal",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 10,
    "hours": 3.7,
    "in24x7": false,
    "verification": {
@@ -1483,13 +2335,478 @@
    }
   },
   {
-   "id": "sweet-valley-high",
-   "title": "Sweet Valley High",
+   "id": "good-times-complete-tv-series",
+   "title": "Good Times (complete TV series)",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 132,
+   "hours": 55.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hogan-s-heroes",
+   "title": "Hogan's Heroes",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 154,
+   "hours": 66.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hogans",
+   "title": "Hogans",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 95,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "home-improvement",
+   "title": "Home Improvement",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 84,
+   "hours": 34.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "honeymooner-classic-movies",
+   "title": "Honeymooner Classic Movies",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 49,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "indebted",
+   "title": "Indebted",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 12,
+   "hours": 4.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "joanie-loves-chachi-complete-series-dvd-rip",
+   "title": "Joanie Loves Chachi Complete Series (DVD RIP)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 17,
+   "hours": 6.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "laurel-and-hardy-colorized-collection-vhs",
+   "title": "Laurel and Hardy Colorized Collection VHS",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 22,
+   "hours": 10.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "less-than-perfect",
+   "title": "Less Than Perfect",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 77,
+   "hours": 26.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "life-goes-on-tv-series-1989-1993-complete",
+   "title": "Life Goes On TV Series (1989-1993) Complete",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 81,
+   "hours": 65.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "love-inc",
+   "title": "Love, Inc.",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 43,
+   "hours": 6.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "m-a-s-h-no-laugh-track",
+   "title": "M*A*S*H: (No Laugh Track)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 109,
+   "hours": 48.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "maggie-winters",
+   "title": "Maggie Winters",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 15,
+   "hours": 6.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "major-dad",
+   "title": "Major Dad",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 96,
+   "hours": 35.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "malcolm-in-the-middle",
+   "title": "Malcolm in the Middle",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 35,
+   "hours": 16.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "mama-s-family",
+   "title": "Mama's Family",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 114,
+   "hours": 40.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "middle-the-in-malcolm",
+   "title": "Middle The In Malcolm",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 151,
+   "hours": 55.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "mister-ed-complete-tv-series",
+   "title": "Mister Ed (complete TV series)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 143,
+   "hours": 60.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ned-and-stacey",
+   "title": "Ned and Stacey",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 47,
+   "hours": 17.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "operation-petticoat-season-1",
+   "title": "Operation Petticoat (Season 1)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 16,
+   "hours": 7.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "parker-lewis-can-t-lose",
+   "title": "Parker Lewis Can't Lose",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 92,
+   "hours": 35.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "petticoat-junction-season-1-petticoat-junction",
+   "title": "Petticoat Junction Season 1 Petticoat Junction",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 107,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "petticoat-junction-season-3-50th-anniversary-edition-petticoat-junctio",
+   "title": "Petticoat Junction Season 3 50Th Anniversary Edition Petticoat Junction",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 34,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "rat-patrol",
+   "title": "Rat Patrol",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 58,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "rob-complete-tv-series",
+   "title": "Rob! (complete TV series)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 8,
+   "hours": 2.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "room-222-1969-complete-season-4",
+   "title": "Room 222 (1969) - Complete Season 4",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 31,
+   "hours": 14.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "sanford-and-son",
+   "title": "Sanford and Son",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 14,
+   "hours": 6.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "sibs",
+   "title": "Sibs",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 23,
+   "hours": 8.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "small-wonder-80-s-tv-show",
+   "title": "Small Wonder 80's TV show",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 36,
+   "hours": 13.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "some-of-my-best-friends",
+   "title": "Some of My Best Friends",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 5,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "starved-2005-complete-series",
+   "title": "Starved (2005) Complete Series",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 7,
+   "hours": 2.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "still-standing",
+   "title": "Still Standing",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
    "episodes": 88,
-   "hours": 28.2,
+   "hours": 31.8,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1498,13 +2815,313 @@
    }
   },
   {
-   "id": "greetings-from-tucson",
-   "title": "Greetings from Tucson",
+   "id": "taxi",
+   "title": "Taxi",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 114,
+   "hours": 46.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-beverly-hillbillies-season-2",
+   "title": "THE BEVERLY HILLBILLIES SEASON 2",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 24,
+   "hours": 9.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-brian-benben-show",
+   "title": "The Brian Benben Show",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 2,
+   "hours": 0.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-jeff-foxworthy-show",
+   "title": "The Jeff Foxworthy Show",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 41,
+   "hours": 15.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-jeffersons",
+   "title": "The Jeffersons",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 261,
+   "hours": 111.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-nutt-house-1989",
+   "title": "The Nutt House (1989)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 9,
+   "hours": 3.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-ropers",
+   "title": "The Ropers",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 25,
+   "hours": 9.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-single-guy-1995-1997-tv-series-sitcom",
+   "title": "The Single Guy (1995-1997) TV Series Sitcom",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 43,
+   "hours": 15.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-super-dave-osborne-show",
+   "title": "The Super Dave Osborne Show",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 97,
+   "hours": 37.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-trouble-with-normal",
+   "title": "The Trouble with Normal",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 13,
+   "hours": 4.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "three-s-company-season-1-dvd-iso",
+   "title": "Three's Company Season 1 DVD ISO",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 5,
+   "hours": 2.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "trailer-park-boys",
+   "title": "Trailer Park Boys",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 29,
+   "hours": 16.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "veronica-s-closet",
+   "title": "Veronica's Closet",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 66,
+   "hours": 22.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "vom-the-odd-couple-s01-s05-1970-the-odd-couple-s01-360p-re-the-odd-cou",
+   "title": "Vom The Odd Couple S01 S05 1970 The Odd Couple S01 360P Re The Odd Couple",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 24,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "vom-the-odd-couple-s01-s05-1970-the-odd-couple-s02-360p-re-the-odd-cou",
+   "title": "Vom The Odd Couple S01 S05 1970 The Odd Couple S02 360P Re The Odd Couple",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 23,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "vom-the-odd-couple-s01-s05-1970-the-odd-couple-s03-360p-re-the-odd-cou",
+   "title": "Vom The Odd Couple S01 S05 1970 The Odd Couple S03 360P Re The Odd Couple",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 23,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "vom-the-odd-couple-s01-s05-1970-the-odd-couple-s04-360p-re-the-odd-cou",
+   "title": "Vom The Odd Couple S01 S05 1970 The Odd Couple S04 360P Re The Odd Couple",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 22,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "vom-the-odd-couple-s01-s05-1970-the-odd-couple-s05-360p-re-the-odd-cou",
+   "title": "Vom The Odd Couple S01 S05 1970 The Odd Couple S05 360P Re The Odd Couple",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 22,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "wilfred-2011-2014",
+   "title": "Wilfred (2011\u20132014)",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 30,
+   "hours": 10.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "wkrp-in-cincinnati",
+   "title": "WKRP in Cincinnati",
+   "channelId": "ch101",
+   "pill": "Sitcoms & Comedy",
+   "tags": [],
+   "episodes": 82,
+   "hours": 34.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "all-my-children-episodes",
+   "title": "All My Children - Episodes",
    "channelId": "ch101",
    "pill": "Soaps & Drama",
    "tags": [],
-   "episodes": 4,
-   "hours": 1.3,
+   "episodes": 1367,
+   "hours": 577.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1513,175 +3130,13 @@
    }
   },
   {
-   "id": "life-unexpected",
-   "title": "Life Unexpected",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 27,
-   "hours": 19.0,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "men-in-trees",
-   "title": "Men in Trees",
+   "id": "baa-baa-black-sheep-complete-tv-series",
+   "title": "Baa Baa Black Sheep (complete TV series)",
    "channelId": "ch101",
    "pill": "Soaps & Drama",
    "tags": [],
    "episodes": 36,
-   "hours": 25.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "ed",
-   "title": "Ed",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 28,
-   "hours": 19.0,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "hotel",
-   "title": "Hotel",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 115,
-   "hours": 93.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "brotherhood-of-poland-new-hampshire",
-   "title": "Brotherhood of Poland, New Hampshire",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [],
-   "episodes": 6,
-   "hours": 4.4,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "house-of-cards",
-   "title": "House of Cards",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [
-    "TV-MA"
-   ],
-   "episodes": 73,
-   "hours": 62.6,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "ozark",
-   "title": "Ozark",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [
-    "TV-MA"
-   ],
-   "episodes": 44,
-   "hours": 44.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "queen-of-the-south",
-   "title": "Queen of the South",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [
-    "TV-MA"
-   ],
-   "episodes": 62,
-   "hours": 43.4,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "wentworth",
-   "title": "Wentworth",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [
-    "TV-MA"
-   ],
-   "episodes": 100,
-   "hours": 77.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "suits",
-   "title": "Suits",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [
-    "TV-MA"
-   ],
-   "episodes": 134,
-   "hours": 97.1,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "damages",
-   "title": "Damages",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
-   "tags": [
-    "TV-MA"
-   ],
-   "episodes": 59,
-   "hours": 46.1,
+   "hours": 30.2,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1707,15 +3162,394 @@
    }
   },
   {
-   "id": "weeds",
-   "title": "Weeds",
+   "id": "brotherhood-of-poland-new-hampshire",
+   "title": "Brotherhood of Poland, New Hampshire",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 6,
+   "hours": 4.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "cobra-kai-series-collection-1-to-4",
+   "title": "Cobra Kai Series Collection 1 to 4",
    "channelId": "ch101",
    "pill": "Soaps & Drama",
    "tags": [
     "TV-MA"
    ],
-   "episodes": 101,
-   "hours": 46.8,
+   "episodes": 40,
+   "hours": 21.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "damages",
+   "title": "Damages",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 59,
+   "hours": 46.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ed",
+   "title": "Ed",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 28,
+   "hours": 19.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "edgemont",
+   "title": "Edgemont",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 74,
+   "hours": 27.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "falcon-crest",
+   "title": "Falcon Crest",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 228,
+   "hours": 177.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "femme-fatales-complete-tv-series",
+   "title": "Femme Fatales Complete TV Series",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 26,
+   "hours": 13.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "greetings-from-tucson",
+   "title": "Greetings from Tucson",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 4,
+   "hours": 1.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hart-of-dixie",
+   "title": "Hart of Dixie",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 76,
+   "hours": 53.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "heartland-brian-keith-daisy-keith",
+   "title": "Heartland - Brian Keith, Daisy Keith",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 9,
+   "hours": 3.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "highway-to-heaven-1984-1989-season-1-5",
+   "title": "Highway To Heaven 1984-1989 Season 1-5",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 95,
+   "hours": 75.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hotel",
+   "title": "Hotel",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 115,
+   "hours": 93.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "house-of-cards",
+   "title": "House of Cards",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 73,
+   "hours": 62.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "jack-bobby-season-1-episodes-1-22",
+   "title": "Jack & Bobby Season 1 Episodes 1-22",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 22,
+   "hours": 15.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "johnny-staccato",
+   "title": "Johnny Staccato",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 27,
+   "hours": 11.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "knight-rider-classic-1982-collection-all-4-seasons",
+   "title": "Knight Rider Classic 1982 Collection - All 4 Seasons",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 51,
+   "hours": 44.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "knots-landing",
+   "title": "Knots Landing",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 344,
+   "hours": 273.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "l-a-law",
+   "title": "L.A. Law",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 171,
+   "hours": 134.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "life-as-we-know-it",
+   "title": "Life as We Know It",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 15,
+   "hours": 9.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "life-unexpected",
+   "title": "Life Unexpected",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 27,
+   "hours": 19.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "little-house-on-the-prairie",
+   "title": "Little House on the Prairie",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 196,
+   "hours": 158.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "man-with-a-camera",
+   "title": "Man with a Camera",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 29,
+   "hours": 12.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "men-in-trees",
+   "title": "Men in Trees",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 36,
+   "hours": 25.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "mr-rogers-neighborhood",
+   "title": "Mr Rogers Neighborhood",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 19,
+   "hours": 9.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "naked-city",
+   "title": "Naked City",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 138,
+   "hours": 101.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "nothing-sacred",
+   "title": "Nothing Sacred",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 19,
+   "hours": 14.2,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1741,58 +3575,610 @@
    }
   },
   {
+   "id": "on-the-air-1992",
+   "title": "On the Air (1992)",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 3,
+   "hours": 2.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ozark",
+   "title": "Ozark",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 44,
+   "hours": 44.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "palmetto-pointe",
+   "title": "Palmetto Pointe",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 5,
+   "hours": 3.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "picket-fences",
+   "title": "Picket Fences",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 88,
+   "hours": 67.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "popular",
+   "title": "Popular",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 47,
+   "hours": 34.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "queen-of-the-south",
+   "title": "Queen of the South",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 62,
+   "hours": 43.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "rich-man-poor-man-book-2",
+   "title": "Rich Man, Poor Man Book 2",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 22,
+   "hours": 17.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "soap",
+   "title": "Soap",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 86,
+   "hours": 36.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "suits",
+   "title": "Suits",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 134,
+   "hours": 97.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "sweet-valley-high",
+   "title": "Sweet Valley High",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 88,
+   "hours": 28.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-buccaneers",
+   "title": "The Buccaneers",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 37,
+   "hours": 15.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-sopranos",
+   "title": "The Sopranos",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 98,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-twilight-zone",
+   "title": "The Twilight Zone",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 156,
+   "hours": 73.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-waltons",
+   "title": "The Waltons",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [],
+   "episodes": 210,
+   "hours": 179.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "weeds",
+   "title": "Weeds",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 101,
+   "hours": 46.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "wentworth",
+   "title": "Wentworth",
+   "channelId": "ch101",
+   "pill": "Soaps & Drama",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 100,
+   "hours": 77.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "adventures-of-superman",
+   "title": "Adventures of Superman",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 104,
+   "hours": 45.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "bat-masterson",
+   "title": "Bat Masterson",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 106,
+   "hours": 45.9,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "big-western-zone",
+   "title": "BIG WESTERN ZONE",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 255,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "branded",
+   "title": "Branded",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 48,
+   "hours": 17.8,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "centennial-1978-580p",
+   "title": "Centennial (1978) (580p)",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 12,
+   "hours": 20.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "have-gun-will-travel",
+   "title": "Have Gun Will Travel",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 225,
+   "hours": 95.9,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hondo-tv-series",
+   "title": "Hondo (TV series)",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 17,
+   "hours": 14.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "rawhide",
+   "title": "Rawhide",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 217,
+   "hours": 181.2,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "riders-of-death-valley-1941",
+   "title": "Riders of Death Valley (1941)",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 13,
+   "hours": 4.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "sky-king",
+   "title": "Sky King",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 72,
+   "hours": 31.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "tales-of-wells-fargo",
+   "title": "Tales of Wells Fargo",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 185,
+   "hours": 93.1,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-life-and-legend-of-wyatt-earp",
+   "title": "The Life And Legend Of Wyatt Earp",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 215,
+   "hours": 91.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-loner-1965-full-series",
+   "title": "The Loner (1965) - Full Series",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 26,
+   "hours": 11.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-oregon-trail",
+   "title": "The Oregon Trail",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 29,
+   "hours": 12.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-texan",
+   "title": "The Texan",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 71,
+   "hours": 30.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-virginian",
+   "title": "The Virginian",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 247,
+   "hours": 312.8,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-wild-wild-west",
+   "title": "The Wild Wild West",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 104,
+   "hours": 87.2,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "wagon-train",
+   "title": "Wagon Train",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 490,
+   "hours": 435.9,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "wanted-dead-or-alive",
+   "title": "Wanted Dead or Alive",
+   "channelId": "ch101",
+   "pill": "Westerns",
+   "tags": [],
+   "episodes": 188,
+   "hours": 78.9,
+   "in24x7": true,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "agatha-christie-hour",
+   "title": "Agatha Christie Hour",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 3,
+   "hours": 2.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "doctor-who",
+   "title": "Doctor Who",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 811,
+   "hours": 421.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "dw2012-complete-doctor-who-fanfilm-series-1-2-backup",
+   "title": "Dw2012 Complete Doctor Who Fanfilm Series 1-2 Backup",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 8,
+   "hours": 5.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "father-ted-tv-series-1995-1998",
+   "title": "Father Ted (TV Series 1995-1998)",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 25,
+   "hours": 10.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
    "id": "fawlty-towers",
    "title": "Fawlty Towers",
    "channelId": "ch102",
    "pill": "British",
    "tags": [],
-   "episodes": 20,
-   "hours": 14.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-thin-blue-line",
-   "title": "The Thin Blue Line",
-   "channelId": "ch102",
-   "pill": "British",
-   "tags": [],
-   "episodes": 14,
-   "hours": 7.3,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "on-the-buses",
-   "title": "On the Buses",
-   "channelId": "ch102",
-   "pill": "British",
-   "tags": [],
-   "episodes": 85,
-   "hours": 62.6,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "wkuk",
-   "title": "WKUK",
-   "channelId": "ch102",
-   "pill": "British",
-   "tags": [],
-   "episodes": 90,
-   "hours": 22.8,
+   "episodes": 32,
+   "hours": 21.0,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1816,13 +4202,13 @@
    }
   },
   {
-   "id": "agatha-christie-hour",
-   "title": "Agatha Christie Hour",
+   "id": "hamish-macbeth-tv-series",
+   "title": "Hamish Macbeth (TV series)",
    "channelId": "ch102",
    "pill": "British",
    "tags": [],
-   "episodes": 3,
-   "hours": 2.6,
+   "episodes": 20,
+   "hours": 16.4,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1831,57 +4217,12 @@
    }
   },
   {
-   "id": "galaxy-rangers",
-   "title": "Galaxy Rangers",
-   "channelId": "ch103",
-   "pill": "Cartoons",
+   "id": "hhgttg-tv-series",
+   "title": "HHGTTG - TV series",
+   "channelId": "ch102",
+   "pill": "British",
    "tags": [],
-   "episodes": 65,
-   "hours": 23.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "defenders-of-the-earth",
-   "title": "Defenders of the Earth",
-   "channelId": "ch103",
-   "pill": "Cartoons",
-   "tags": [],
-   "episodes": 65,
-   "hours": 22.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "dragon-s-lair",
-   "title": "Dragon's Lair",
-   "channelId": "ch103",
-   "pill": "Cartoons",
-   "tags": [],
-   "episodes": 13,
-   "hours": 4.6,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "lazer-tag-academy",
-   "title": "Lazer Tag Academy",
-   "channelId": "ch103",
-   "pill": "Cartoons",
-   "tags": [],
-   "episodes": 13,
+   "episodes": 7,
    "hours": 5.1,
    "in24x7": false,
    "verification": {
@@ -1891,13 +4232,13 @@
    }
   },
   {
-   "id": "sectaurs",
-   "title": "Sectaurs",
-   "channelId": "ch103",
-   "pill": "Cartoons",
+   "id": "it-ain-t-half-hot-mum-complete",
+   "title": "It Ain't Half Hot Mum (complete)",
+   "channelId": "ch102",
+   "pill": "British",
    "tags": [],
-   "episodes": 5,
-   "hours": 1.8,
+   "episodes": 56,
+   "hours": 27.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1906,13 +4247,13 @@
    }
   },
   {
-   "id": "the-fonz-and-the-happy-days-gang",
-   "title": "The Fonz and the Happy Days Gang",
-   "channelId": "ch103",
-   "pill": "Cartoons",
+   "id": "maigret-1959",
+   "title": "Maigret (1959)",
+   "channelId": "ch102",
+   "pill": "British",
    "tags": [],
-   "episodes": 24,
-   "hours": 10.2,
+   "episodes": 49,
+   "hours": 41.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1921,13 +4262,13 @@
    }
   },
   {
-   "id": "the-neverending-story",
-   "title": "The Neverending Story",
-   "channelId": "ch103",
-   "pill": "Cartoons",
+   "id": "on-the-buses",
+   "title": "On the Buses",
+   "channelId": "ch102",
+   "pill": "British",
    "tags": [],
-   "episodes": 26,
-   "hours": 10.4,
+   "episodes": 85,
+   "hours": 62.6,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1936,13 +4277,13 @@
    }
   },
   {
-   "id": "monchhichis",
-   "title": "Monchhichis",
-   "channelId": "ch103",
-   "pill": "Cartoons",
+   "id": "rumpole-of-the-bailey",
+   "title": "Rumpole Of The Bailey",
+   "channelId": "ch102",
+   "pill": "British",
    "tags": [],
-   "episodes": 13,
-   "hours": 4.6,
+   "episodes": 43,
+   "hours": 38.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1951,13 +4292,13 @@
    }
   },
   {
-   "id": "doctor-dolittle",
-   "title": "Doctor Dolittle",
-   "channelId": "ch103",
-   "pill": "Cartoons",
+   "id": "survivors-complete-series-1975",
+   "title": "Survivors - Complete Series 1975",
+   "channelId": "ch102",
+   "pill": "British",
    "tags": [],
-   "episodes": 17,
-   "hours": 5.8,
+   "episodes": 38,
+   "hours": 31.3,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1966,13 +4307,193 @@
    }
   },
   {
-   "id": "tom-terrific",
-   "title": "Tom Terrific",
+   "id": "the-duchess-of-duke-street",
+   "title": "The Duchess of Duke Street",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 15,
+   "hours": 13.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-prisoner-complete-series-1967",
+   "title": "The Prisoner - Complete Series 1967",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 23,
+   "hours": 18.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-spoils-of-war",
+   "title": "The Spoils Of War",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 20,
+   "hours": 17.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-thin-blue-line",
+   "title": "The Thin Blue Line",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 14,
+   "hours": 7.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "thriller-1973-1976",
+   "title": "Thriller (1973 - 1976)",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 99,
+   "hours": 93.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "top-gear",
+   "title": "Top Gear",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 54,
+   "hours": 50.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "whoops-apocalypse-tv-show-1982-mp4",
+   "title": "Whoops Apocalypse - TV Show - 1982 - MP4",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 6,
+   "hours": 2.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "wkuk",
+   "title": "WKUK",
+   "channelId": "ch102",
+   "pill": "British",
+   "tags": [],
+   "episodes": 90,
+   "hours": 22.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "80-s-cartoons-talespin-collection",
+   "title": "80's Cartoons - TaleSpin Collection",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 26,
-   "hours": 5.2,
+   "episodes": 65,
+   "hours": 24.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "80-s-ducktales-collections",
+   "title": "80's Ducktales Collections",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 91,
+   "hours": 35.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "90-s-and-2000-s-cartoons-ed-edd-n-eddy-collection",
+   "title": "90's and 2000's Cartoons - Ed, Edd N Eddy Collection",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 67,
+   "hours": 22.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "all-animated-vhs-and-dvd-and-blu-ray-movies",
+   "title": "All Animated VHS and DVD and Blu-ray Movies",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 196,
+   "hours": 230.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "all-dogs-go-to-heaven",
+   "title": "All Dogs Go to Heaven",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 19,
+   "hours": 9.9,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -1996,13 +4517,13 @@
    }
   },
   {
-   "id": "earthworm-jim",
-   "title": "Earthworm Jim",
+   "id": "andy-panda-filmography",
+   "title": "Andy Panda Filmography",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 32,
-   "hours": 24.9,
+   "episodes": 28,
+   "hours": 3.3,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2011,13 +4532,13 @@
    }
   },
   {
-   "id": "street-fighter-ii-v",
-   "title": "Street Fighter II V",
+   "id": "beast-wars-transformers-seasons-1-3-ai-upscale",
+   "title": "Beast Wars: Transformers ( , Seasons 1-3) AI Upscale",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 33,
-   "hours": 47.7,
+   "episodes": 25,
+   "hours": 9.3,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2026,13 +4547,13 @@
    }
   },
   {
-   "id": "you-re-under-arrest-the-movie",
-   "title": "You're Under Arrest: The Movie",
+   "id": "buddy-full-hq-hd-collection-1933-1935",
+   "title": "Buddy Full HQ/HD Collection (1933-1935)",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 4,
-   "hours": 1.7,
+   "episodes": 23,
+   "hours": 2.6,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2041,13 +4562,13 @@
    }
   },
   {
-   "id": "the-junkman",
-   "title": "The Junkman",
+   "id": "bugs-bunny-80th-anniversary-collection-all-cartoons-no",
+   "title": "Bugs Bunny 80th Anniversary Collection (All Cartoons, No",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 26,
-   "hours": 10.3,
+   "episodes": 57,
+   "hours": 6.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2056,13 +4577,13 @@
    }
   },
   {
-   "id": "hyper-street-racing",
-   "title": "Hyper Street Racing",
+   "id": "chadam-2010",
+   "title": "Chadam (2010)",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 11,
-   "hours": 1.8,
+   "episodes": 3,
+   "hours": 0.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2071,13 +4592,28 @@
    }
   },
   {
-   "id": "transformers-the-movie",
-   "title": "Transformers: The Movie",
+   "id": "charlie-brown-s-all-stars",
+   "title": "Charlie Brown's All Stars",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 4,
-   "hours": 1.7,
+   "episodes": 3,
+   "hours": 1.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "classic-cartoons",
+   "title": "Classic Cartoons",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 35,
+   "hours": 30.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2101,13 +4637,13 @@
    }
   },
   {
-   "id": "the-original-transformers",
-   "title": "The Original Transformers",
+   "id": "d-c-follies",
+   "title": "D. C. Follies",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 146,
-   "hours": 143.9,
+   "episodes": 81,
+   "hours": 28.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2116,13 +4652,13 @@
    }
   },
   {
-   "id": "jacob-two-two",
-   "title": "Jacob Two-Two",
+   "id": "darkwing-duck-collection",
+   "title": "Darkwing Duck Collection",
    "channelId": "ch103",
    "pill": "Cartoons",
    "tags": [],
-   "episodes": 40,
-   "hours": 60.6,
+   "episodes": 86,
+   "hours": 33.0,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2131,30 +4667,105 @@
    }
   },
   {
-   "id": "the-brave-little-toaster",
-   "title": "The Brave Little Toaster",
+   "id": "death-note-complete-2006-2007",
+   "title": "Death Note Complete (2006 - 2007)",
    "channelId": "ch103",
    "pill": "Cartoons",
-   "tags": [],
-   "episodes": 5,
-   "hours": 2.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "beavis-and-butt-head",
-   "title": "Beavis and Butt-Head",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
    "tags": [
     "TV-MA"
    ],
-   "episodes": 98,
-   "hours": null,
+   "episodes": 9,
+   "hours": 3.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "defenders-of-the-earth",
+   "title": "Defenders of the Earth",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 65,
+   "hours": 22.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "dilbert-the-dvd-iso-ntsc",
+   "title": "Dilbert: The DVD ISO NTSC",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 3,
+   "hours": 1.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "disney-anthology-television-series",
+   "title": "Disney anthology television series",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 395,
+   "hours": 417.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "disney-rarities-celebrated-shorts-1920s-1960s",
+   "title": "Disney Rarities: Celebrated Shorts: 1920s-1960s",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 37,
+   "hours": 6.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "doctor-dolittle",
+   "title": "Doctor Dolittle",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 17,
+   "hours": 5.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "dragon-s-lair",
+   "title": "Dragon's Lair",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 13,
+   "hours": 4.6,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2180,13 +4791,13 @@
    }
   },
   {
-   "id": "the-last-starfighter",
-   "title": "The Last Starfighter",
-   "channelId": "ch201",
-   "pill": "Movies",
+   "id": "early-simpsons-collection-on-the-tracy-ullman-show",
+   "title": "Early Simpsons Collection on the Tracy Ullman Show",
+   "channelId": "ch103",
+   "pill": "Cartoons",
    "tags": [],
-   "episodes": 1,
-   "hours": 1.7,
+   "episodes": 20,
+   "hours": 0.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2195,13 +4806,13 @@
    }
   },
   {
-   "id": "the-adventures-of-buckaroo-banzai",
-   "title": "The Adventures of Buckaroo Banzai",
-   "channelId": "ch201",
-   "pill": "Movies",
+   "id": "earthworm-jim",
+   "title": "Earthworm Jim",
+   "channelId": "ch103",
+   "pill": "Cartoons",
    "tags": [],
-   "episodes": 1,
-   "hours": 1.7,
+   "episodes": 32,
+   "hours": 24.9,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2210,13 +4821,13 @@
    }
   },
   {
-   "id": "beastmaster-trilogy",
-   "title": "Beastmaster Trilogy",
-   "channelId": "ch201",
-   "pill": "Movies",
+   "id": "ed-edd-n-eddy-all-episodes-and-specials",
+   "title": "Ed, Edd N Eddy (all episodes and specials)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
    "tags": [],
-   "episodes": 3,
-   "hours": 5.3,
+   "episodes": 76,
+   "hours": 30.0,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2225,13 +4836,1005 @@
    }
   },
   {
-   "id": "the-land-that-time-forgot",
-   "title": "The Land That Time Forgot",
-   "channelId": "ch201",
-   "pill": "Movies",
+   "id": "family-comedy-animation",
+   "title": "family comedy animation",
+   "channelId": "ch103",
+   "pill": "Cartoons",
    "tags": [],
-   "episodes": 2,
+   "episodes": 37,
+   "hours": 63.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "galaxy-rangers",
+   "title": "Galaxy Rangers",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 65,
+   "hours": 23.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "gargoyles-ai-upscale",
+   "title": "Gargoyles AI Upscale",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 40,
+   "hours": 15.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "gravity-falls-the-5-1-rcvr",
+   "title": "Gravity Falls The ( 5.1 RCVR)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 62,
+   "hours": 13.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "h-r-pufnstuf",
+   "title": "H.R. Pufnstuf",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 11,
+   "hours": 3.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hulk-hogan-s-rock-n-wrestling",
+   "title": "Hulk Hogan's Rock 'n' Wrestling",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 27,
+   "hours": 10.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hyper-street-racing",
+   "title": "Hyper Street Racing",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 11,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "inspector-gadget-season-1-part-2-upscale",
+   "title": "Inspector Gadget Season 1 Part 2 ( Upscale)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 48,
+   "hours": 17.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "iron-man-5x",
+   "title": "IRON MAN 5X",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 5,
+   "hours": 9.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "jacob-two-two",
+   "title": "Jacob Two-Two",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 40,
+   "hours": 60.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "jim-henson-s-muppet-babies-fan-remastered",
+   "title": "Jim Henson's Muppet Babies (fan-remastered)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 55,
+   "hours": 22.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "jimmy-and-the-federation-gang",
+   "title": "Jimmy And The Federation Gang",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 17,
+   "hours": 14.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "lazer-tag-academy",
+   "title": "Lazer Tag Academy",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 13,
+   "hours": 5.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "looney-tunes-the-collector-s-edition-vhs",
+   "title": "Looney Tunes The Collector's Edition VHS",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 15,
+   "hours": 23.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "misterjaw",
+   "title": "Misterjaw",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 23,
+   "hours": 2.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "monchhichis",
+   "title": "Monchhichis",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 13,
+   "hours": 4.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "more-full-movie-cinematic-dump-part-3-3",
+   "title": "More full movie cinematic dump (part 3.3)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 51,
+   "hours": 33.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "noddy-s-toyland-adventures-1992",
+   "title": "Noddy's Toyland Adventures (1992)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 52,
+   "hours": 9.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "norman-mccabe-warner-brothers-direction-colection",
+   "title": "Norman McCabe Warner Brothers Direction Colection",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 27,
+   "hours": 4.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "noveltoons-original-classics",
+   "title": "Noveltoons Original Classics",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 26,
+   "hours": 3.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "pantheon-season-1-2",
+   "title": "Pantheon - Season 1 & 2",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 16,
+   "hours": 11.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "pink-floyd-live-at-pompeii-director-s-cut-dvd-iso",
+   "title": "Pink Floyd - Live at Pompeii - Director's Cut DVD ISO",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 4,
    "hours": 3.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "popeye-the-sailor-man-1933-to-1943",
+   "title": "Popeye The Sailor Man 1933 to 1943",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 123,
+   "hours": 14.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "popeye-the-sailor-man-1943-to-1949",
+   "title": "Popeye The Sailor Man 1943 to 1949",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 43,
+   "hours": 5.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "reboot-with-subtitles-and-mkv",
+   "title": "ReBoot with Subtitles and MKV",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 44,
+   "hours": 17.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "royal-space-force-dvd-iso",
+   "title": "Royal Space Force DVD ISO",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 8,
+   "hours": 3.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "sectaurs",
+   "title": "Sectaurs",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 5,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "shadow-raiders-tv-series-in-english-and-german-with-mkv",
+   "title": "Shadow Raiders TV Series in English and German with MKV",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 26,
+   "hours": 9.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "sinbad-jr-and-his-magic-belt",
+   "title": "Sinbad Jr. and his Magic Belt",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 33,
+   "hours": 2.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "spawn-season-s01-complete",
+   "title": "SPAWN Season S01 Complete",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 6,
+   "hours": 2.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "spider-man-unlimited-1999-2001-complete",
+   "title": "Spider-Man Unlimited (1999 - 2001) Complete",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 12,
+   "hours": 4.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "spider-man-the-animated-series-complete-1994-series-ai",
+   "title": "Spider-Man: The Animated Series (Complete 1994 Series) AI",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 31,
+   "hours": 10.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "spider-man-the-new-animated-series-2003-the-hd",
+   "title": "Spider-Man; The New Animated Series (2003) The HD",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 5,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "street-fighter-ii-v",
+   "title": "Street Fighter II V",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 33,
+   "hours": 47.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "stroker-hoop",
+   "title": "Stroker & Hoop \u2014",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 13,
+   "hours": 4.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "teknoman-upscale",
+   "title": "Teknoman (Upscale)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 43,
+   "hours": 13.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-amazing-spider-man-complete-1977-tv-series-seasons-1-2",
+   "title": "The Amazing Spider-Man (Complete 1977 TV Series) Seasons 1-2",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 12,
+   "hours": 11.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-ant-and-the-aardvark",
+   "title": "The Ant And The Aardvark",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 17,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-beary-family-album",
+   "title": "The Beary Family Album",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 27,
+   "hours": 2.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-brave-little-toaster",
+   "title": "The Brave Little Toaster",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 5,
+   "hours": 2.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-cartoon-cartoon-show",
+   "title": "The Cartoon Cartoon Show",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 6,
+   "hours": 2.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-fonz-and-the-happy-days-gang",
+   "title": "The Fonz and the Happy Days Gang",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 24,
+   "hours": 10.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-incredble-hulk-1966-english",
+   "title": "The Incredble Hulk (1966) ENGLISH",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 9,
+   "hours": 2.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-junkman",
+   "title": "The Junkman",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 26,
+   "hours": 10.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-legend-of-zelda-1989-80-s-cartoons",
+   "title": "The Legend Of Zelda 1989 80's Cartoons",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 23,
+   "hours": 6.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-little-rascals-colorized-collection",
+   "title": "The Little Rascals Colorized Collection",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 5,
+   "hours": 3.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-minds-eye",
+   "title": "The Minds Eye",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 6,
+   "hours": 4.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-mouse-factory-ultimate-fan-pack-bonus",
+   "title": "The Mouse Factory Ultimate Fan Pack - & Bonus",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 35,
+   "hours": 13.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-neverending-story",
+   "title": "The Neverending Story",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 26,
+   "hours": 10.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-new-fantastic-four-1978",
+   "title": "The New Fantastic Four 1978",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 13,
+   "hours": 5.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-nutty-squirrels-present",
+   "title": "The Nutty Squirrels Present",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 28,
+   "hours": 2.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-original-transformers",
+   "title": "The Original Transformers",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 146,
+   "hours": 143.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-underdog-show-the-complete-collection",
+   "title": "The Underdog Show: The Complete Collection",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 47,
+   "hours": 14.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-woody-woodpecker-friends-cartunes",
+   "title": "The Woody Woodpecker & Friends Cartunes",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 510,
+   "hours": 56.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "this-is-america-charlie-brown",
+   "title": "This Is America, Charlie Brown",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 8,
+   "hours": 3.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "time-squad",
+   "title": "Time Squad",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 52,
+   "hours": 9.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "tom-terrific",
+   "title": "Tom Terrific",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 26,
+   "hours": 5.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "toon-in-with-me-season-1-2021",
+   "title": "Toon In With Me - Season 1 (2021)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 8,
+   "hours": 8.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "total-drama",
+   "title": "Total Drama",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 253,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "transformers-the-movie",
+   "title": "Transformers: The Movie",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 4,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "walt-disney-treasures-wave-two-the-complete-goofy-dvd-set",
+   "title": "Walt Disney Treasures: Wave Two: The Complete Goofy DVD set",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 52,
+   "hours": 5.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "woody-woodpecker-friends-the-collector-s-edition",
+   "title": "Woody Woodpecker & Friends: The Collector's Edition",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 145,
+   "hours": 15.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "x-men-the-animated-series-ai-upscale",
+   "title": "X-Men The Animated Series AI Upscale",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 33,
+   "hours": 11.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "yakky-doodle-complete-cartoon-collection",
+   "title": "Yakky Doodle (complete cartoon collection)",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 23,
+   "hours": 2.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "you-re-under-arrest-the-movie",
+   "title": "You're Under Arrest: The Movie",
+   "channelId": "ch103",
+   "pill": "Cartoons",
+   "tags": [],
+   "episodes": 4,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "a-low-down-dirty-shame",
+   "title": "A Low Down Dirty Shame",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "aiviixx-movies",
+   "title": "AIVIIXX Movies",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1437,
+   "hours": 510.5,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2255,128 +5858,8 @@
    }
   },
   {
-   "id": "doc-savage-the-man-of-bronze",
-   "title": "Doc Savage: The Man of Bronze",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "remo-williams",
-   "title": "Remo Williams",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 2.0,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "dreamscape",
-   "title": "Dreamscape",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-last-dragon",
-   "title": "The Last Dragon",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "runaway",
-   "title": "Runaway",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "timeline",
-   "title": "Timeline",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.9,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "jake-speed",
-   "title": "Jake Speed",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-last-chase",
-   "title": "The Last Chase",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "gymkata",
-   "title": "Gymkata",
+   "id": "angel-on-my-shoulder",
+   "title": "Angel on My Shoulder",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
@@ -2390,38 +5873,8 @@
    }
   },
   {
-   "id": "josh-kirby-time-warrior",
-   "title": "Josh Kirby: Time Warrior",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 6,
-   "hours": 8.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "warriors-of-virtue",
-   "title": "Warriors of Virtue",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 2,
-   "hours": 3.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "warlords-of-atlantis",
-   "title": "Warlords of Atlantis",
+   "id": "anonymous-rex",
+   "title": "Anonymous Rex",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
@@ -2435,58 +5888,13 @@
    }
   },
   {
-   "id": "mistress-of-atlantis",
-   "title": "Mistress of Atlantis",
+   "id": "atlas-taggart-picks",
+   "title": "Atlas Taggart Picks",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
    "episodes": 1,
-   "hours": 1.3,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "lost-horizon",
-   "title": "Lost Horizon",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 3,
-   "hours": 6.9,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "five-weeks-in-a-balloon",
-   "title": "Five Weeks in a Balloon",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.6,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-humanoid",
-   "title": "The Humanoid",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.6,
+   "hours": 0.8,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2497,6 +5905,66 @@
   {
    "id": "baby-secret-of-the-lost-legend",
    "title": "Baby: Secret of the Lost Legend",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "beastmaster-trilogy",
+   "title": "Beastmaster Trilogy",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 3,
+   "hours": 5.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "biggles-adventures-in-time",
+   "title": "Biggles: Adventures in Time",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "bridge-across-time",
+   "title": "Bridge Across Time",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "captain-kronos-vampire-hunter",
+   "title": "Captain Kronos: Vampire Hunter",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
@@ -2525,13 +5993,13 @@
    }
   },
   {
-   "id": "anonymous-rex",
-   "title": "Anonymous Rex",
+   "id": "classic-movies",
+   "title": "Classic Movies",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
-   "episodes": 1,
-   "hours": 1.5,
+   "episodes": 100,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2540,38 +6008,8 @@
    }
   },
   {
-   "id": "the-return-of-sherlock-holmes",
-   "title": "The Return of Sherlock Holmes",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "young-sherlock-holmes",
-   "title": "Young Sherlock Holmes",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.8,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "sherlock-holmes-returns",
-   "title": "Sherlock Holmes Returns",
+   "id": "countess-dracula",
+   "title": "Countess Dracula",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
@@ -2585,13 +6023,13 @@
    }
   },
   {
-   "id": "the-assassination-bureau",
-   "title": "The Assassination Bureau",
+   "id": "dcom",
+   "title": "DCOM",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
-   "episodes": 1,
-   "hours": 1.8,
+   "episodes": 6,
+   "hours": 4.2,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2600,8 +6038,98 @@
    }
   },
   {
-   "id": "i-spy-returns",
-   "title": "I Spy Returns",
+   "id": "dead-heat",
+   "title": "Dead Heat",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "doc-savage-the-man-of-bronze",
+   "title": "Doc Savage: The Man of Bronze",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "dreamscape",
+   "title": "Dreamscape",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "filmography-collection",
+   "title": "Filmography Collection",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 2992,
+   "hours": 4994.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "five-weeks-in-a-balloon",
+   "title": "Five Weeks in a Balloon",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "fu-manchu-films",
+   "title": "Fu Manchu Films",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 6,
+   "hours": 9.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "gymkata",
+   "title": "Gymkata",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
@@ -2630,36 +6158,6 @@
    }
   },
   {
-   "id": "biggles-adventures-in-time",
-   "title": "Biggles: Adventures in Time",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "a-low-down-dirty-shame",
-   "title": "A Low Down Dirty Shame",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
    "id": "house-film-series",
    "title": "House Film Series",
    "channelId": "ch201",
@@ -2675,38 +6173,8 @@
    }
   },
   {
-   "id": "fu-manchu-films",
-   "title": "Fu Manchu Films",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 6,
-   "hours": 9.3,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "the-fiendish-plot-of-dr-fu-manchu",
-   "title": "The Fiendish Plot of Dr. Fu Manchu",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.7,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "captain-kronos-vampire-hunter",
-   "title": "Captain Kronos: Vampire Hunter",
+   "id": "i-spy-returns",
+   "title": "I Spy Returns",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
@@ -2720,13 +6188,103 @@
    }
   },
   {
-   "id": "countess-dracula",
-   "title": "Countess Dracula",
+   "id": "jake-speed",
+   "title": "Jake Speed",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
    "episodes": 1,
-   "hours": 1.6,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "josh-kirby-time-warrior",
+   "title": "Josh Kirby: Time Warrior",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 6,
+   "hours": 8.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "jt-s-ghost-movies",
+   "title": "JT's Ghost Movies",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 2965,
+   "hours": 2422.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "lars-germany-mittank-movies",
+   "title": "Lars Germany Mittank Movies",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 22,
+   "hours": 35.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "lost-horizon",
+   "title": "Lost Horizon",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 3,
+   "hours": 6.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "mistress-of-atlantis",
+   "title": "Mistress of Atlantis",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "movies-classics-list",
+   "title": "Movies Classics (list)",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 4054,
+   "hours": 7098.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2750,13 +6308,13 @@
    }
   },
   {
-   "id": "dead-heat",
-   "title": "Dead Heat",
+   "id": "random-movies",
+   "title": "Random Movies",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
-   "episodes": 1,
-   "hours": 1.4,
+   "episodes": 426,
+   "hours": 723.3,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2765,13 +6323,13 @@
    }
   },
   {
-   "id": "bridge-across-time",
-   "title": "Bridge Across Time",
+   "id": "rebel-highway-of-films",
+   "title": "Rebel Highway of films",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
-   "episodes": 1,
-   "hours": 1.6,
+   "episodes": 10,
+   "hours": 13.9,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2780,28 +6338,13 @@
    }
   },
   {
-   "id": "the-final-programme",
-   "title": "The Final Programme",
+   "id": "remo-williams",
+   "title": "Remo Williams",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
    "episodes": 1,
-   "hours": 1.5,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "she-security-hazards-expert",
-   "title": "SHE: Security Hazards Expert",
-   "channelId": "ch201",
-   "pill": "Movies",
-   "tags": [],
-   "episodes": 1,
-   "hours": 1.5,
+   "hours": 2.0,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2825,8 +6368,23 @@
    }
   },
   {
-   "id": "angel-on-my-shoulder",
-   "title": "Angel on My Shoulder",
+   "id": "runaway",
+   "title": "Runaway",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "she-security-hazards-expert",
+   "title": "SHE: Security Hazards Expert",
    "channelId": "ch201",
    "pill": "Movies",
    "tags": [],
@@ -2840,13 +6398,13 @@
    }
   },
   {
-   "id": "in-search-of",
-   "title": "In Search Of",
-   "channelId": "ch301",
-   "pill": "Documentary",
+   "id": "sherlock-holmes-returns",
+   "title": "Sherlock Holmes Returns",
+   "channelId": "ch201",
+   "pill": "Movies",
    "tags": [],
-   "episodes": 146,
-   "hours": 58.3,
+   "episodes": 1,
+   "hours": 1.6,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2855,13 +6413,13 @@
    }
   },
   {
-   "id": "unsolved-mysteries",
-   "title": "Unsolved Mysteries",
-   "channelId": "ch301",
-   "pill": "Documentary",
+   "id": "star-wars",
+   "title": "STAR WARS",
+   "channelId": "ch201",
+   "pill": "Movies",
    "tags": [],
-   "episodes": 95,
-   "hours": 29.8,
+   "episodes": 1,
+   "hours": 2.0,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2870,13 +6428,13 @@
    }
   },
   {
-   "id": "wildlife-on-one",
-   "title": "Wildlife on One",
-   "channelId": "ch301",
-   "pill": "Documentary",
+   "id": "the-adventures-of-buckaroo-banzai",
+   "title": "The Adventures of Buckaroo Banzai",
+   "channelId": "ch201",
+   "pill": "Movies",
    "tags": [],
-   "episodes": 14,
-   "hours": 6.5,
+   "episodes": 1,
+   "hours": 1.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2885,13 +6443,208 @@
    }
   },
   {
-   "id": "nature-pbs",
-   "title": "Nature (PBS)",
+   "id": "the-assassination-bureau",
+   "title": "The Assassination Bureau",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-fiendish-plot-of-dr-fu-manchu",
+   "title": "The Fiendish Plot of Dr. Fu Manchu",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-final-programme",
+   "title": "The Final Programme",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-humanoid",
+   "title": "The Humanoid",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-land-that-time-forgot",
+   "title": "The Land That Time Forgot",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 2,
+   "hours": 3.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-last-chase",
+   "title": "The Last Chase",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-last-dragon",
+   "title": "The Last Dragon",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-last-starfighter",
+   "title": "The Last Starfighter",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-return-of-sherlock-holmes",
+   "title": "The Return of Sherlock Holmes",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "timeline",
+   "title": "Timeline",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.9,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "warlords-of-atlantis",
+   "title": "Warlords of Atlantis",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "warriors-of-virtue",
+   "title": "Warriors of Virtue",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 2,
+   "hours": 3.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "young-sherlock-holmes",
+   "title": "Young Sherlock Holmes",
+   "channelId": "ch201",
+   "pill": "Movies",
+   "tags": [],
+   "episodes": 1,
+   "hours": 1.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ancient-aliens-seasons-1-18",
+   "title": "Ancient Aliens Seasons 1-18",
    "channelId": "ch301",
    "pill": "Documentary",
    "tags": [],
-   "episodes": 4,
-   "hours": 3.7,
+   "episodes": 91,
+   "hours": 71.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2930,13 +6683,13 @@
    }
   },
   {
-   "id": "ocean-world-musical",
-   "title": "Ocean World Musical",
+   "id": "hms-pandora-in-pursuit-of-the-bounty",
+   "title": "HMS Pandora: In Pursuit of the Bounty",
    "channelId": "ch301",
    "pill": "Documentary",
    "tags": [],
    "episodes": 1,
-   "hours": 1.1,
+   "hours": 0.8,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2945,13 +6698,13 @@
    }
   },
   {
-   "id": "the-dinosaurs",
-   "title": "The Dinosaurs!",
+   "id": "in-search-of",
+   "title": "In Search Of",
    "channelId": "ch301",
    "pill": "Documentary",
    "tags": [],
-   "episodes": 4,
-   "hours": 3.6,
+   "episodes": 146,
+   "hours": 58.3,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2975,13 +6728,13 @@
    }
   },
   {
-   "id": "hms-pandora-in-pursuit-of-the-bounty",
-   "title": "HMS Pandora: In Pursuit of the Bounty",
+   "id": "most-shocking-tv-series-2006-2010",
+   "title": "Most Shocking (TV Series 2006-2010)",
    "channelId": "ch301",
    "pill": "Documentary",
    "tags": [],
-   "episodes": 1,
-   "hours": 0.8,
+   "episodes": 50,
+   "hours": 35.7,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -2990,13 +6743,73 @@
    }
   },
   {
-   "id": "the-world-about-us-the-last-great-race-on-earth",
-   "title": "The World About Us: The Last Great Race on Earth",
+   "id": "nature-pbs",
+   "title": "Nature (PBS)",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 4,
+   "hours": 3.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ocean-world-musical",
+   "title": "Ocean World Musical",
    "channelId": "ch301",
    "pill": "Documentary",
    "tags": [],
    "episodes": 1,
-   "hours": 0.8,
+   "hours": 1.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ripley-s-believe-it-or-not-2000-season-1",
+   "title": "Ripley's Believe It or Not! (2000) Season 1",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 56,
+   "hours": 40.1,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "ripleys-believe-it-or-not-with-jack-palance-drew-s",
+   "title": "Ripleys Believe It or Not with Jack Palance - Drew's",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 3,
+   "hours": 2.3,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "river-monsters",
+   "title": "River Monsters",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 57,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -3020,13 +6833,148 @@
    }
   },
   {
-   "id": "nova",
-   "title": "NOVA",
+   "id": "september-11-2001",
+   "title": "September 11 2001",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 199,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-dinosaurs",
+   "title": "The Dinosaurs!",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 4,
+   "hours": 3.6,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-western-tradition-lost-annenberg-series-now-with-mkv",
+   "title": "The Western Tradition \"Lost\" Annenberg Series now with MKV",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 51,
+   "hours": 23.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-world-about-us-the-last-great-race-on-earth",
+   "title": "The World About Us: The Last Great Race on Earth",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 1,
+   "hours": 0.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "unsolved-mysteries",
+   "title": "Unsolved Mysteries",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 95,
+   "hours": 29.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "unsolved-mysteries-season-11-cbs-broadcasts",
+   "title": "Unsolved mysteries; Season 11; CBS broadcasts",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 5,
+   "hours": 5.0,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "wildlife-on-one",
+   "title": "Wildlife on One",
+   "channelId": "ch301",
+   "pill": "Documentary",
+   "tags": [],
+   "episodes": 14,
+   "hours": 6.5,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "aci",
+   "title": "Aci",
    "channelId": "ch302",
    "pill": "Science",
    "tags": [],
-   "episodes": 4,
-   "hours": 3.8,
+   "episodes": 10,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "air-crash-investigation",
+   "title": "Air Crash Investigation",
+   "channelId": "ch302",
+   "pill": "Science",
+   "tags": [],
+   "episodes": 130,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "air-crash-investigations",
+   "title": "Air Crash Investigations",
+   "channelId": "ch302",
+   "pill": "Science",
+   "tags": [],
+   "episodes": 6,
+   "hours": null,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -3050,6 +6998,68 @@
    }
   },
   {
+   "id": "mayday",
+   "title": "MAYDAY",
+   "channelId": "ch302",
+   "pill": "Science",
+   "tags": [],
+   "episodes": 8,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "mayday-air-crash-investigation",
+   "title": "Mayday Air Crash Investigation",
+   "channelId": "ch302",
+   "pill": "Science",
+   "tags": [],
+   "episodes": 39,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "nova",
+   "title": "NOVA",
+   "channelId": "ch302",
+   "pill": "Science",
+   "tags": [],
+   "episodes": 4,
+   "hours": 3.8,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "perversions-of-science-hbo-tv-series-1997-dvd-rip",
+   "title": "Perversions Of Science HBO TV Series 1997 DVD Rip",
+   "channelId": "ch302",
+   "pill": "Science",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 10,
+   "hours": 4.2,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
    "id": "y2k-invasion-of-the-millennium-bug",
    "title": "Y2K: Invasion of the Millennium Bug",
    "channelId": "ch302",
@@ -3057,6 +7067,21 @@
    "tags": [],
    "episodes": 1,
    "hours": 0.7,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "the-phil-donahue-show",
+   "title": "The Phil Donahue Show",
+   "channelId": "ch401",
+   "pill": "Late Night & Talk",
+   "tags": [],
+   "episodes": 87,
+   "hours": 64.4,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -3080,13 +7105,60 @@
    }
   },
   {
-   "id": "the-phil-donahue-show",
-   "title": "The Phil Donahue Show",
-   "channelId": "ch401",
-   "pill": "Late Night & Talk",
+   "id": "classic-music-video",
+   "title": "Classic Music Video",
+   "channelId": "ch501",
+   "pill": "Music",
    "tags": [],
-   "episodes": 87,
-   "hours": 64.4,
+   "episodes": 118,
+   "hours": null,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "hardcore-pawn-chicago",
+   "title": "Hardcore Pawn: Chicago",
+   "channelId": "ch601",
+   "pill": "Reality",
+   "tags": [],
+   "episodes": 18,
+   "hours": 6.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "inside-outside-the-box-the-complete-tom-green-show",
+   "title": "Inside & Outside the Box (The Complete Tom Green Show)",
+   "channelId": "ch601",
+   "pill": "Reality",
+   "tags": [
+    "TV-MA"
+   ],
+   "episodes": 21,
+   "hours": 11.4,
+   "in24x7": false,
+   "verification": {
+    "ok": true,
+    "date": "2026-11-14",
+    "method": "range-sample-first-last"
+   }
+  },
+  {
+   "id": "kenny-vs-spenny",
+   "title": "Kenny vs. Spenny",
+   "channelId": "ch601",
+   "pill": "Reality",
+   "tags": [],
+   "episodes": 40,
+   "hours": 20.6,
    "in24x7": false,
    "verification": {
     "ok": true,
@@ -3125,36 +7197,6 @@
    }
   },
   {
-   "id": "hardcore-pawn-chicago",
-   "title": "Hardcore Pawn: Chicago",
-   "channelId": "ch601",
-   "pill": "Reality",
-   "tags": [],
-   "episodes": 18,
-   "hours": 6.4,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
-   "id": "trailer-park-boys",
-   "title": "Trailer Park Boys",
-   "channelId": "ch101",
-   "pill": "Sitcoms & Comedy",
-   "tags": [],
-   "episodes": 23,
-   "hours": 14.2,
-   "in24x7": false,
-   "verification": {
-    "ok": true,
-    "date": "2026-11-14",
-    "method": "range-sample-first-last"
-   }
-  },
-  {
    "id": "the-osbournes",
    "title": "The Osbournes",
    "channelId": "ch601",
@@ -3170,13 +7212,13 @@
    }
   },
   {
-   "id": "kenny-vs-spenny",
-   "title": "Kenny vs. Spenny",
+   "id": "the-apprentice-s-12",
+   "title": "The. Apprentice. S 12",
    "channelId": "ch601",
    "pill": "Reality",
    "tags": [],
-   "episodes": 40,
-   "hours": 20.6,
+   "episodes": 14,
+   "hours": 20.8,
    "in24x7": false,
    "verification": {
     "ok": true,

@@ -1547,7 +1547,7 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
           </span>
         </div>
         {categories.length > 1 && (
-          <div role="group" aria-label="Filter by category" className="flex gap-1.5 overflow-x-auto pb-0.5" data-testid="epg-categories">
+          <div role="group" aria-label="Filter by category" className="flex flex-wrap gap-1.5" data-testid="epg-categories">
             {[{ id: ALL_CATEGORIES, label: "All", count: numbered.length }, ...categories].map((c) => (
               <button
                 key={c.id}
@@ -1555,11 +1555,13 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
                 aria-pressed={category === c.id}
                 onClick={() => setCategory(c.id)}
                 data-category={c.id}
-                className={`shrink-0 cursor-pointer rounded-full border px-2.5 py-0.5 text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                  category === c.id ? "border-sky-500/60 bg-sky-500/20 text-sky-100" : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-[11px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 [@media(pointer:coarse)]:min-h-9 [@media(pointer:coarse)]:px-3.5 [@media(pointer:coarse)]:text-xs ${
+                  category === c.id
+                    ? "border-amber-500/70 bg-amber-500/15 text-amber-100"
+                    : "border-neutral-700/80 bg-neutral-950/60 text-neutral-300 hover:border-amber-500/45 hover:bg-amber-500/10 hover:text-amber-50"
                 }`}
               >
-                {c.label} <span className="tabular-nums text-neutral-500">{c.count}</span>
+                {c.label} <span className={`tabular-nums ${category === c.id ? "text-amber-300/80" : "text-neutral-500"}`}>{c.count}</span>
               </button>
             ))}
           </div>
