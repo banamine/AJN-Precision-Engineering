@@ -1,4 +1,3 @@
-import { BUILD_LABEL } from '../buildInfo';
 import { createPortal } from 'react-dom';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -310,7 +309,6 @@ export function Navigation({
                       </button>
                     );
                   })}
-                  <p className="px-3 pb-1 pt-1.5 text-[10px] text-neutral-500" data-testid="build-label">{BUILD_LABEL}</p>
                 </div>
               )}
             </div>
@@ -468,7 +466,6 @@ export function Navigation({
                   <span className="font-medium">Start Guide</span>
                 </button>
               )}
-              <p className="px-3 pb-1 pt-1.5 text-[10px] text-neutral-500">{BUILD_LABEL}</p>
             </div>,
             document.body,
           )}

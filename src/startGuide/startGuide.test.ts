@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { GUIDE_CARDS } from './startGuideCards';
 import { VALID_DESTINATIONS } from '../nav/lastView';
 import {
@@ -34,6 +35,14 @@ for (const card of GUIDE_CARDS) {
   for (const step of card.tour) assert.ok(filled(step.title) && filled(step.body), `${card.id}: tour step text`);
   assert.ok(filled(card.explain.title) && filled(card.explain.body), `${card.id}: explain text`);
   assert.ok(card.explain.pills.length >= 2 && card.explain.pills.every(filled), `${card.id}: at least 2 pills`);
+}
+
+// c2) screenshots are optional, but when present they are complete and the file exists
+for (const card of GUIDE_CARDS) {
+  if (!card.image) continue;
+  assert.ok(card.image.src.startsWith('/start-guide/') && card.image.src.endsWith('.png'), `${card.id}: image src`);
+  assert.ok(filled(card.image.alt) && filled(card.image.caption), `${card.id}: image alt/caption`);
+  assert.ok(existsSync(`public${card.image.src}`), `${card.id}: public${card.image.src} is missing`);
 }
 
 // d) empty storage gives the default

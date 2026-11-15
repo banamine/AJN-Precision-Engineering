@@ -24,6 +24,8 @@ const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [tabindex]:not
 /** Start Guide: Layer A is the goals dialog, Layer B is the step callout. Always mounted by App. */
 export function StartGuide({ open, onClose, onNavigate }: StartGuideProps): ReactElement | null {
   const [explaining, setExplaining] = useState<GuideCard | null>(null);
+  // Card id whose screenshot failed to load; that card then shows text only (no broken-image icon).
+  const [failedImage, setFailedImage] = useState<string | null>(null);
   const [dontAutoOpen, setDontAutoOpen] = useState<boolean>(() => loadStartGuidePref().dontAutoOpen);
   const [tour, setTour] = useState<ActiveTour | null>(null);
 
@@ -162,7 +164,21 @@ export function StartGuide({ open, onClose, onNavigate }: StartGuideProps): Reac
             ) : (
               <div className="mb-5 rounded-xl border border-neutral-800 bg-neutral-900/40 p-5">
                 <h2 className="text-lg font-semibold text-white">{explaining.explain.title}</h2>
-                <p className="mt-2 text-xs leading-relaxed text-neutral-300">{explaining.explain.body}</p>
+                {explaining.image && failedImage !== explaining.id && (
+                  <figure className="mt-3 flex flex-col items-center gap-2">
+                    <img
+                      src={explaining.image.src}
+                      alt={explaining.image.alt}
+                      width={606}
+                      height={444}
+                      decoding="async"
+                      onError={() => setFailedImage(explaining.id)}
+                      className="h-auto w-full max-w-[606px] rounded-lg border border-neutral-700"
+                    />
+                    <figcaption className="w-full max-w-[606px] text-center text-[11px] leading-snug text-neutral-400">{explaining.image.caption}</figcaption>
+                  </figure>
+                )}
+                <p className="mt-3 text-xs leading-relaxed text-neutral-300">{explaining.explain.body}</p>
                 <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-xs">
                   {explaining.explain.pills.map((pill, i) => (
                     <span key={pill} className="flex items-center gap-2">
