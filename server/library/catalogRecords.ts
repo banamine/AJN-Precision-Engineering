@@ -8,7 +8,7 @@ import podcastSources from '../../src/data/podcastSources.json';
 import type { IndexRecord } from '../libraryIndex';
 import type { SeriesFile } from './series';
 
-export const CATALOG_CATEGORY_IDS = ['concerts', 'fm-broadcasts', 'podcast-episodes'] as const;
+export const CATALOG_CATEGORY_IDS = ['concerts', 'fm-broadcasts', 'podcast-episodes', 'music-albums'] as const;
 export const isCatalogRecord = (r: { categoryIds: string[] }): boolean => r.categoryIds.some((c) => (CATALOG_CATEGORY_IDS as readonly string[]).includes(c));
 
 interface Track { f: string; t?: string; d?: number; b?: number; n?: number }

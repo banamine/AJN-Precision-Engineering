@@ -97,7 +97,7 @@ export function ArchiveMusicSpectrum({ analyser, isPlaying, analyzerState }: Arc
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" data-testid="archive-music-spectrum">
       <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 h-full w-full opacity-70" />
       {(unavailable || noSignal) && (
-        <span data-testid="spectrum-note" className="absolute bottom-4 left-1/2 z-[1] -translate-x-1/2 rounded-full border border-slate-600 bg-slate-950/90 px-3 py-1.5 text-xs font-medium text-slate-200">
+        <span data-testid="spectrum-note" className="absolute right-2 top-1.5 z-[1] max-w-[60%] truncate rounded-full border border-slate-600 bg-slate-950/90 px-2 py-0.5 text-[10px] font-medium text-slate-200">
           {unavailable ? "Spectrum unavailable" : "No signal from this source"}
         </span>
       )}

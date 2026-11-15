@@ -113,8 +113,9 @@ const cache = new WeakMap<object, CategoryDescriptor[]>();
 export function categoriesOf(c: ScheduleChannel): CategoryDescriptor[] {
   const hit = cache.get(c);
   if (hit) return hit;
-  const label = (c.group ?? '').trim() || (c.mediaType === 'audio' ? 'Audio' : 'Video');
-  const base: CategoryDescriptor = { id: fold(label), label };
+  // Group names can arrive with a stray HTML entity ("Crime &amp"): show a plain "&". "Western" is the same pill as "Westerns".
+  const label = (c.group ?? '').replace(/&amp;?/gi, '&').trim() || (c.mediaType === 'audio' ? 'Audio' : 'Video');
+  const base: CategoryDescriptor = fold(label) === 'western' ? GENRE.westerns : { id: fold(label), label };
   let result: CategoryDescriptor[];
   if (!ENRICHED_GROUPS.has(base.id)) result = [base];
   else {

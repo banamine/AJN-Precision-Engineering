@@ -61,6 +61,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => loadFavorites());
   const [showFavorites, setShowFavorites] = useState(false);
   const [openSeries, setOpenSeries] = useState<Set<string>>(() => new Set());
+  const [openTracks, setOpenTracks] = useState<Set<string>>(() => new Set());
 
   useEffect(() => { saveFavorites(favoriteIds); }, [favoriteIds]);
   useEffect(() => { const t = setTimeout(() => setDebounced(query.trim()), SEARCH_DEBOUNCE_MS); return () => clearTimeout(t); }, [query]);
@@ -124,7 +125,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const toggleFavorite = (id: string) => setFavoriteIds((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const play = (it: Item) => {
     const tracks = it.parts ?? [];
-    const isCatalog = it.categoryIds.some((c) => c === 'concerts' || c === 'fm-broadcasts');
+    const isCatalog = it.categoryIds.some((c) => c === 'concerts' || c === 'fm-broadcasts' || c === 'music-albums');
     if (isCatalog && tracks.length > 1) {
       const items = tracks.map((t, i) => ({ src: t.path, mediaType: 'audio' as const, programId: t.id, title: `${it.title} · ${i + 1}/${tracks.length}`, partNo: i + 1, totalParts: tracks.length }));
       const first = startShowQueue({ mode: 'audio', items, missingHours: [], singleFile: false, playable: true }, it.title);
@@ -133,6 +134,14 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
     playOne(it);
   };
   const playOne = (it: Item) => onPlayProgram(it.path, it.title, it.description ?? it.identifier, it.mediaType, it.channelId ?? `library-${it.categoryIds[0]}`, it.guideId ?? 'library', it.programId ?? it.id, it.sourceId, it.assetId);
+  const trackName = (f: string) => f.replace(/\.[a-z0-9]{2,4}$/i, '').replace(/_/g, ' ');
+  const playTrack = (it: Item, from: number) => {
+    const tracks = it.parts ?? [];
+    const items = tracks.slice(from).map((t, j) => ({ src: t.path, mediaType: 'audio' as const, programId: t.id, title: `${trackName(t.file)} · ${from + j + 1}/${tracks.length}`, partNo: from + j + 1, totalParts: tracks.length }));
+    const first = startShowQueue({ mode: 'audio', items, missingHours: [], singleFile: false, playable: true }, it.title);
+    if (first) onPlayProgram(first.src, first.title, it.title, 'audio', `library-${it.categoryIds[0]}`, 'library', first.programId);
+  };
+  const toggleTracks = (id: string) => setOpenTracks((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleSeries = (id: string) => setOpenSeries((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   return (
@@ -168,7 +177,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                 else if (e.key === 'Escape') { e.preventDefault(); setSearchFocused(false); setActiveSuggestion(-1); }
               }}
               placeholder="Search the library…"
-              className="relative w-full rounded-xl border border-neutral-800 bg-transparent pl-9 pr-3.5 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-[var(--ajn-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--ajn-accent)]" />
+              className="[&::-webkit-search-cancel-button]:appearance-none relative w-full rounded-xl border border-neutral-800 bg-transparent pl-9 pr-3.5 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-[var(--ajn-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--ajn-accent)]" />
             {showSuggest && (
               <div id="library-suggest-list" role="listbox" aria-label="Library suggestions" data-testid="library-suggest-dropdown"
                 className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-xl border border-neutral-700 bg-neutral-950/98 p-1 shadow-xl backdrop-blur-md">
@@ -291,7 +300,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                 <div className="space-y-2">
                   <div className="relative mb-1">
                     <Thumb className="aspect-video w-full rounded-lg text-lg" title={item.title} showUnavailableLabel={item.categoryIds.includes('soaps')} input={{ identifier: item.identifier, path: item.path, category: item.categoryIds[0], mediaType: item.mediaType, channelId: item.channelId, guideId: item.guideId }} />
-                    <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 ring-1 ring-white/30"><Play className="ml-0.5 h-5 w-5 fill-white text-white" /></span></span>
+                    <button type="button" aria-label={`${isAudio ? 'Listen to' : 'Watch'} ${item.title}`} onClick={() => play(item)} className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 ring-1 ring-white/30"><Play className="ml-0.5 h-5 w-5 fill-white text-white" /></span></button>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">{item.categoryIds.includes('soaps') ? <Tv className="h-3.5 w-3.5" /> : isAudio ? <FileAudio className="h-3.5 w-3.5" /> : <FileVideo className="h-3.5 w-3.5" />}{item.kindBadge ?? (isAudio ? 'Audio' : 'Video')}{item.format && item.format !== 'none' ? ` · ${item.format}` : ''}</span>
@@ -302,8 +311,26 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
                       </button>
                     </span>
                   </div>
-                  <h2 className="text-sm font-semibold text-neutral-100 line-clamp-2">{item.title}</h2>
+                  <h2 className="text-sm font-semibold text-neutral-100 line-clamp-2"><button type="button" onClick={() => play(item)} className="cursor-pointer text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">{item.title}</button></h2>
                   {item.description && <p className="text-xs text-neutral-400 line-clamp-3 leading-relaxed">{item.description}</p>}
+                  {item.categoryIds.includes('music-albums') && (item.parts?.length ?? 0) > 1 && (
+                    <div>
+                      <button type="button" aria-expanded={openTracks.has(item.id)} onClick={() => toggleTracks(item.id)} className="flex items-center gap-1 text-[11px] font-medium text-sky-300 hover:underline">
+                        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${openTracks.has(item.id) ? 'rotate-180' : ''}`} aria-hidden="true" />Tracks ({item.parts!.length})
+                      </button>
+                      {openTracks.has(item.id) && (
+                        <ol className="mt-1 max-h-56 space-y-0.5 overflow-y-auto rounded-lg bg-neutral-950/60 p-1.5" aria-label="Album tracks">
+                          {item.parts!.map((t, i) => (
+                            <li key={t.id}>
+                              <button type="button" onClick={() => playTrack(item, i)} title={trackName(t.file)} className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-[11px] text-neutral-200 hover:bg-neutral-800">
+                                <span className="w-6 shrink-0 text-right font-mono text-neutral-500">{i + 1}</span><span className="min-w-0 truncate">{trackName(t.file)}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </div>
+                  )}
                   {item.showLabel && <p className="text-xs text-emerald-300">Show: {item.showLabel}</p>}
                   {item.originalCreator && <p className="text-xs text-neutral-400">Creator: {item.originalCreator}</p>}
                   {item.rightsStatus && <p className="text-[11px] text-amber-200">Rights metadata: {item.rightsStatus}; not a rights determination.</p>}

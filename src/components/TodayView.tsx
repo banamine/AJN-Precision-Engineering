@@ -179,7 +179,7 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
 
       {loading && !channels && (
         <div role="status" className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-6 text-sm text-neutral-300">
-          {slow ? "Still loading — this guide is slow to respond." : "Loading today's programmes…"}
+          {slow ? "Still loading — this guide is slow to respond." : "Loading today's programs…"}
           {slow && <button type="button" onClick={() => void load(guideId, true)} className="ml-3 rounded bg-white px-3 py-1 text-xs font-semibold text-black">Retry</button>}
         </div>
       )}
@@ -248,7 +248,7 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
                     <span className="text-[11px] text-neutral-500">{total} today</span>
                   </header>
                   {total === 0 ? (
-                    <p className="px-2 py-2 text-xs text-neutral-400">{tc.channel.sourceError ? `No programmes: ${tc.channel.sourceError}` : tc.channel.sourceStatus && tc.channel.sourceStatus !== "ok" ? `No programmes (source ${tc.channel.sourceStatus}).` : "No programmes scheduled today."}</p>
+                    <p className="px-2 py-2 text-xs text-neutral-400">{tc.channel.sourceError ? `No programs: ${tc.channel.sourceError}` : tc.channel.sourceStatus && tc.channel.sourceStatus !== "ok" ? `No programs (source ${tc.channel.sourceStatus}).` : "No programs scheduled today."}</p>
                   ) : (
                     <ul>
                       {showEarlier && tc.earlier.map((e) => renderRow(tc, e, false, `${e.program.id}-e`))}

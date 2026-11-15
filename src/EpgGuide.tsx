@@ -1515,7 +1515,7 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
               autoComplete="off"
               spellCheck={false}
               data-testid="epg-search"
-              className="h-8 w-full rounded-lg border border-neutral-700 bg-neutral-950 pl-8 pr-8 text-xs text-neutral-100 placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+              className="[&::-webkit-search-cancel-button]:appearance-none h-8 w-full rounded-lg border border-neutral-700 bg-neutral-950 pl-8 pr-8 text-xs text-neutral-100 placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
             />
             {query && (
               <button

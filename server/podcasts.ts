@@ -23,6 +23,8 @@ export interface PodcastSource {
   cadenceDays?: number;
   /** Override: feed counts as inactive when its newest episode is older than this many days. Default max(14, 3 x cadenceDays). */
   staleAfterDays?: number;
+  /** false = listed as its own channel but NOT in the "AJN Podcasts 24/7 - Fresh first" stack. Omitted/true = in the stack. */
+  inNetwork?: boolean;
 }
 export interface PodcastEpisode {
   guid: string; title: string; description: string; publishedAt: number; url: string;
@@ -239,7 +241,7 @@ export function buildPodcastChannels(guideId: string, now: Date, layout: (p: Pro
   // One 24/7 network channel over ALL shows: today's episodes first (shows taking turns), then yesterday, T-2 ... then Archive
   // back-catalog; see server/podcastStack.ts. Its own group so the per-show Listen/Podcast lists do not list every episode twice.
   const all: Program[] = [];
-  for (const source of PODCAST_SOURCES.filter((s) => s.enabled)) {
+  for (const source of PODCAST_SOURCES.filter((s) => s.enabled && s.inNetwork !== false)) {
     const state = cache.get(source.id);
     if (!state?.episodes.length) continue;
     const named = (p: Program): Program => ({ ...p, title: `${source.name}: ${p.title}` });

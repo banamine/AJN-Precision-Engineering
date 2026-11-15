@@ -3133,7 +3133,7 @@
    "id": "baa-baa-black-sheep-complete-tv-series",
    "title": "Baa Baa Black Sheep (complete TV series)",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [],
    "episodes": 36,
    "hours": 30.2,
@@ -3148,7 +3148,7 @@
    "id": "bates-motel",
    "title": "Bates Motel",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [
     "TV-MA"
    ],
@@ -3180,7 +3180,7 @@
    "id": "cobra-kai-series-collection-1-to-4",
    "title": "Cobra Kai Series Collection 1 to 4",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [
     "TV-MA"
    ],
@@ -3197,7 +3197,7 @@
    "id": "damages",
    "title": "Damages",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [
     "TV-MA"
    ],
@@ -3214,7 +3214,7 @@
    "id": "ed",
    "title": "Ed",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
    "episodes": 28,
    "hours": 19.0,
@@ -3274,7 +3274,7 @@
    "id": "greetings-from-tucson",
    "title": "Greetings from Tucson",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
    "episodes": 4,
    "hours": 1.3,
@@ -3381,7 +3381,7 @@
    "id": "johnny-staccato",
    "title": "Johnny Staccato",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [],
    "episodes": 27,
    "hours": 11.6,
@@ -3396,7 +3396,7 @@
    "id": "knight-rider-classic-1982-collection-all-4-seasons",
    "title": "Knight Rider Classic 1982 Collection - All 4 Seasons",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sci-Fi",
    "tags": [],
    "episodes": 51,
    "hours": 44.0,
@@ -3486,7 +3486,7 @@
    "id": "man-with-a-camera",
    "title": "Man with a Camera",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [],
    "episodes": 29,
    "hours": 12.5,
@@ -3515,8 +3515,8 @@
   {
    "id": "mr-rogers-neighborhood",
    "title": "Mr Rogers Neighborhood",
-   "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "channelId": "ch103",
+   "pill": "Cartoons",
    "tags": [],
    "episodes": 19,
    "hours": 9.0,
@@ -3531,7 +3531,7 @@
    "id": "naked-city",
    "title": "Naked City",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [],
    "episodes": 138,
    "hours": 101.5,
@@ -3561,7 +3561,7 @@
    "id": "nurse-jackie",
    "title": "Nurse Jackie",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [
     "TV-MA"
    ],
@@ -3578,7 +3578,7 @@
    "id": "on-the-air-1992",
    "title": "On the Air (1992)",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
    "episodes": 3,
    "hours": 2.7,
@@ -3593,7 +3593,7 @@
    "id": "ozark",
    "title": "Ozark",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [
     "TV-MA"
    ],
@@ -3655,7 +3655,7 @@
    "id": "queen-of-the-south",
    "title": "Queen of the South",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [
     "TV-MA"
    ],
@@ -3687,7 +3687,7 @@
    "id": "soap",
    "title": "Soap",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [],
    "episodes": 86,
    "hours": 36.1,
@@ -3702,7 +3702,7 @@
    "id": "suits",
    "title": "Suits",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [
     "TV-MA"
    ],
@@ -3749,7 +3749,7 @@
    "id": "the-sopranos",
    "title": "The Sopranos",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [
     "TV-MA"
    ],
@@ -3766,7 +3766,7 @@
    "id": "the-twilight-zone",
    "title": "The Twilight Zone",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sci-Fi",
    "tags": [],
    "episodes": 156,
    "hours": 73.1,
@@ -3796,7 +3796,7 @@
    "id": "weeds",
    "title": "Weeds",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Sitcoms & Comedy",
    "tags": [
     "TV-MA"
    ],
@@ -3813,7 +3813,7 @@
    "id": "wentworth",
    "title": "Wentworth",
    "channelId": "ch101",
-   "pill": "Soaps & Drama",
+   "pill": "Crime & Spy",
    "tags": [
     "TV-MA"
    ],
@@ -3830,7 +3830,7 @@
    "id": "adventures-of-superman",
    "title": "Adventures of Superman",
    "channelId": "ch101",
-   "pill": "Westerns",
+   "pill": "Sci-Fi",
    "tags": [],
    "episodes": 104,
    "hours": 45.0,

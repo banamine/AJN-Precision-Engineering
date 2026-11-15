@@ -10,6 +10,7 @@
 .ck-key:focus-visible{outline:2px solid var(--ajn-accent,#E06D3B);outline-offset:2px}
 .ck-key:disabled{opacity:.4;cursor:not-allowed}
 .ck-key--sm{min-height:44px;padding:.625rem .75rem .375rem;font-size:.75rem;border-radius:.625rem}
+.ck-key--genre{min-height:52px;min-width:0;padding:.875rem .375rem .5rem;line-height:1.2;font-size:.6875rem}
 .ck-key--sm::before{top:3px;height:3px;left:10px;right:10px}
 .ck-key--icon{padding:0;min-height:44px;min-width:44px}
 .ck-key--icon::before{display:none}

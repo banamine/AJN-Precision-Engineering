@@ -103,7 +103,8 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
   return (
     <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 text-neutral-100" data-testid="shows-view">
       <h1 className="text-xl font-semibold mb-1">Shows</h1>
-      <p className="text-sm text-neutral-400 mb-4">Browse by channel. The timeline guide is still under Live TV Guide.</p>
+      <p className="text-sm text-neutral-400 mb-1">Browse by channel. The timeline guide is still under Live TV Guide.</p>
+      <p className="text-xs text-neutral-500 mb-4" data-testid="shows-total">{SHOWS.length.toLocaleString()} shows · {SHOWS.reduce((n, s) => n + s.episodes, 0).toLocaleString()} episodes</p>
 
       {continueRows.length > 0 && (
         <section className="mb-5" aria-label="Continue watching">
@@ -120,7 +121,7 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
         </section>
       )}
 
-      <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Channels">
+      <nav className="flex flex-wrap gap-2 pb-2" aria-label="Channels">
         {CHANNELS.map((c) => (
           <button key={c.id} onClick={() => pickChannel(c.id)} aria-pressed={c.id === channelId}
             className={`shrink-0 rounded-md px-3 py-1.5 text-sm border ${c.id === channelId ? 'border-[var(--ajn-accent)] text-white bg-neutral-800' : 'border-neutral-700 text-neutral-300 hover:bg-neutral-800'}`}>
@@ -129,7 +130,7 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
         ))}
       </nav>
       {channel.pills.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto py-2" aria-label="Genres">
+        <div className="flex flex-wrap gap-2 py-2" aria-label="Genres">
           {channel.pills.map((p) => (
             <button key={p} onClick={() => { setPill(p); setOpenId(null); }} aria-pressed={p === pill}
               className={`shrink-0 rounded-full px-3 py-1 text-xs border ${p === pill ? 'border-[var(--ajn-accent)] text-white' : 'border-neutral-700 text-neutral-400 hover:text-neutral-200'}`}>{p}</button>

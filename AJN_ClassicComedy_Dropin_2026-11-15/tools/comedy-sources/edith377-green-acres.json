@@ -1,0 +1,785 @@
+{
+ "source": "archive.org/@edith377 probe 2026-11-14 (Range 206 on every file)",
+ "rows": [
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-14-the-wish-book",
+   "file": "S5E14 The Wish-Book.mp4",
+   "title": "The Wish Book",
+   "season": 5,
+   "episode": 14,
+   "seconds": 1530,
+   "bytes": 148776615
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-7-ebs-double-trouble",
+   "file": "S6E7 Eb\u2019s Double Trouble.mp4",
+   "title": "Eb's Double Trouble",
+   "season": 6,
+   "episode": 7,
+   "seconds": 1536,
+   "bytes": 148659251
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-22-the-carpenters-ball",
+   "file": "S6E22 The Carpenter\u2019s Ball.mp4",
+   "title": "The Carpenter's Ball",
+   "season": 6,
+   "episode": 22,
+   "seconds": 1542,
+   "bytes": 149386388
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-04-a-royal-love-story",
+   "file": "S6E04 A Royal Love Story.mp4",
+   "title": "A Royal Love Story",
+   "season": 6,
+   "episode": 4,
+   "seconds": 1530,
+   "bytes": 147877932
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-18-star-witness",
+   "file": "S6E18 Star Witness.mp4",
+   "title": "Star Witness",
+   "season": 6,
+   "episode": 18,
+   "seconds": 1536,
+   "bytes": 149398843
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-3-jealousy",
+   "file": "S6E3 Jealousy.mp4",
+   "title": "Jealousy",
+   "season": 6,
+   "episode": 3,
+   "seconds": 1536,
+   "bytes": 147914763
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-01-guess-whos-not-going-to-the-luau",
+   "file": "S4E01 Guess Who\u2019s Not Going to the Luau.mp4",
+   "title": "Guess Who's Not Going to the Luau?",
+   "season": 4,
+   "episode": 1,
+   "seconds": 1530,
+   "bytes": 148429976
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-22-oh-promise-me_202510",
+   "file": "S4E22 Oh, Promise Me.mp4",
+   "title": "Oh, Promise Me",
+   "season": 4,
+   "episode": 22,
+   "seconds": 1524,
+   "bytes": 147491896
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-20-the-confrontation",
+   "file": "S5E20 The Confrontation.mp4",
+   "title": "The Confrontation",
+   "season": 5,
+   "episode": 20,
+   "seconds": 1530,
+   "bytes": 148215233
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-19-economy-flight-to-washington",
+   "file": "S4E19 Economy Flight to Washington.mp4",
+   "title": "Economy Flight To Washington",
+   "season": 4,
+   "episode": 19,
+   "seconds": 1530,
+   "bytes": 147857815
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-11-ralphs-nuptials",
+   "file": "S5E11 Ralph\u2019s Nuptials.mp4",
+   "title": "Ralph's Nuptials",
+   "season": 5,
+   "episode": 11,
+   "seconds": 1530,
+   "bytes": 148101556
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-17-bundle-of-joy",
+   "file": "S5E17 Bundle of Joy.mp4",
+   "title": "Bundle Of Joy",
+   "season": 5,
+   "episode": 17,
+   "seconds": 1530,
+   "bytes": 148937962
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-19-the-cow-killer_202510",
+   "file": "S5E19 The Cow Killer.mp4",
+   "title": "The Cow Killer",
+   "season": 5,
+   "episode": 19,
+   "seconds": 1530,
+   "bytes": 148802147
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-22-the-picnic",
+   "file": "S5E22 The Picnic.mp4",
+   "title": "The Picnic",
+   "season": 5,
+   "episode": 22,
+   "seconds": 1524,
+   "bytes": 146968079
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-02-the-rummage-sale",
+   "file": "S4E02 The Rummage Sale.mp4",
+   "title": "The Rummage Sale",
+   "season": 4,
+   "episode": 2,
+   "seconds": 1530,
+   "bytes": 147451611
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-15-rest-and-relaxation",
+   "file": "S5E15 Rest and Relaxation.mp4",
+   "title": "Rest And Relaxation",
+   "season": 5,
+   "episode": 15,
+   "seconds": 1530,
+   "bytes": 148389339
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-16-son-of-drobny",
+   "file": "S6E16 Son of Drobny.mp4",
+   "title": "Son Of Drobny",
+   "season": 6,
+   "episode": 16,
+   "seconds": 1542,
+   "bytes": 149448249
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-26-the-ex-secretary",
+   "file": "S6E26 The Ex-Secretary.mp4",
+   "title": "The Ex-Secretary",
+   "season": 6,
+   "episode": 26,
+   "seconds": 1536,
+   "bytes": 148804446
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-6-the-great-mayoralty-campaign",
+   "file": "S6E6 The Great Mayoralty Campaign.mp4",
+   "title": "The Great Mayoralty Campaign",
+   "season": 6,
+   "episode": 6,
+   "seconds": 1542,
+   "bytes": 148362772
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-14-everywhere-a-chick-chick",
+   "file": "S4E14 Everywhere a Chick Chick.mp4",
+   "title": "Everywhere A Chick Chick",
+   "season": 4,
+   "episode": 14,
+   "seconds": 1530,
+   "bytes": 147572591
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-23-eb-uses-his-ingenuity",
+   "file": "S4E23 Eb Uses His Ingenuity.mp4",
+   "title": "Eb Uses His Ingenuity",
+   "season": 4,
+   "episode": 23,
+   "seconds": 1542,
+   "bytes": 149514788
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-13-beauty-is-skin-deep",
+   "file": "S5E13 Beauty is Skin Deep.mp4",
+   "title": "Beauty Is Skin Deep",
+   "season": 5,
+   "episode": 13,
+   "seconds": 1530,
+   "bytes": 148746288
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-18-the-ex-con",
+   "file": "S5E18 The Ex-Con.mp4",
+   "title": "The Ex Con",
+   "season": 5,
+   "episode": 18,
+   "seconds": 1302,
+   "bytes": 129288016
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-10-olivers-double",
+   "file": "S6E10 Oliver\u2019s Double.mp4",
+   "title": "Oliver's Double",
+   "season": 6,
+   "episode": 10,
+   "seconds": 1536,
+   "bytes": 149215087
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-14-the-engagement-ring",
+   "file": "S6E14 The Engagement Ring.mp4",
+   "title": "The Engagement Ring",
+   "season": 6,
+   "episode": 14,
+   "seconds": 1542,
+   "bytes": 149757588
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-19-the-spot-remover",
+   "file": "S6E19 The Spot Remover.mp4",
+   "title": "The Spot Remover",
+   "season": 6,
+   "episode": 19,
+   "seconds": 1542,
+   "bytes": 149629749
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-24-lisa-the-psychologist",
+   "file": "S6E24 Lisa, the Psychologist.mp4",
+   "title": "Lisa, the Psychologist",
+   "season": 6,
+   "episode": 24,
+   "seconds": 1536,
+   "bytes": 149459752
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-5-oliver-goes-broke",
+   "file": "S6E5 Oliver Goes Broke.mp4",
+   "title": "Oliver Goes Broke",
+   "season": 6,
+   "episode": 5,
+   "seconds": 1524,
+   "bytes": 147038617
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-9-enterprising-eb",
+   "file": "S6E9 Enterprising Eb.mp4",
+   "title": "Enterprising Eb",
+   "season": 6,
+   "episode": 9,
+   "seconds": 1542,
+   "bytes": 148736332
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-13-the-birthday-gift",
+   "file": "S4E13 The Birthday Gift.mp4",
+   "title": "The Birthday Gift",
+   "season": 4,
+   "episode": 13,
+   "seconds": 1530,
+   "bytes": 147319736
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-15-the-marital-vacation",
+   "file": "S4E15 The Marital Vacation.mp4",
+   "title": "The Marital Vacation",
+   "season": 4,
+   "episode": 15,
+   "seconds": 1530,
+   "bytes": 147904058
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-17-law-partners",
+   "file": "S4E17 Law Partners.mp4",
+   "title": "Law Partners",
+   "season": 4,
+   "episode": 17,
+   "seconds": 1530,
+   "bytes": 147053253
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-20-retreat-from-washington",
+   "file": "S4E20 Retreat From Washington.mp4",
+   "title": "Retreat From Washington",
+   "season": 4,
+   "episode": 20,
+   "seconds": 1530,
+   "bytes": 148035812
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-21-a-hunting-we-wont-go",
+   "file": "S4E21 A Hunting We Won\u2019t Go.mp4",
+   "title": "A Hunting We Won't Go",
+   "season": 4,
+   "episode": 21,
+   "seconds": 1530,
+   "bytes": 147504149
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-03-where-theres-a-will",
+   "file": "S5E03 Where There\u2019s a Will.mp4",
+   "title": "Where There's A Will",
+   "season": 5,
+   "episode": 3,
+   "seconds": 1530,
+   "bytes": 147770013
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-12-oliver-and-the-cornstalk",
+   "file": "S5E12 Oliver and the Cornstalk.mp4",
+   "title": "Oliver And The Cornstalk",
+   "season": 5,
+   "episode": 12,
+   "seconds": 1506,
+   "bytes": 146151777
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-26-happy-birthday",
+   "file": "S5E26 Happy Birthday.mp4",
+   "title": "Happy Birthday",
+   "season": 5,
+   "episode": 26,
+   "seconds": 1530,
+   "bytes": 147770750
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-20-king-oliver-i",
+   "file": "S6E20 King Oliver I.mp4",
+   "title": "King Oliver I",
+   "season": 6,
+   "episode": 20,
+   "seconds": 1542,
+   "bytes": 149449316
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-03-hail-to-the-fire-chief",
+   "file": "S4E03 Hail to the Fire Chief.mp4",
+   "title": "Hail To The Fire Chief",
+   "season": 4,
+   "episode": 3,
+   "seconds": 1530,
+   "bytes": 148393830
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-07-a-husband-for-eleanor",
+   "file": "S4E07 A Husband for Eleanor.mp4",
+   "title": "A Husband For Eleanor",
+   "season": 4,
+   "episode": 7,
+   "seconds": 1530,
+   "bytes": 148791979
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-08-old-mail-day",
+   "file": "S4E08 Old Mail Day.mp4",
+   "title": "Old Mail Day",
+   "season": 4,
+   "episode": 8,
+   "seconds": 1536,
+   "bytes": 147802201
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-18-a-day-in-the-life-of-oliver-wendell-holmes",
+   "file": "S4E18 A Day in the Life of Oliver Wendell Holmes.mp4",
+   "title": "A Day In The Life Of Oliver Wendell Holmes",
+   "season": 4,
+   "episode": 18,
+   "seconds": 1530,
+   "bytes": 147844709
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-26-the-reincarnation-of-eb",
+   "file": "S4E26 The Reincarnation of Eb.mp4",
+   "title": "The Reincarnation Of Eb",
+   "season": 4,
+   "episode": 26,
+   "seconds": 1530,
+   "bytes": 147590058
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-01-lisas-mudder-comes-for-a-visit",
+   "file": "S5E01 Lisa\u2019s Mudder Comes for a Visit.mp4",
+   "title": "Lisa's Mudder Comes For A Visit",
+   "season": 5,
+   "episode": 1,
+   "seconds": 1536,
+   "bytes": 148886551
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-05-you-and-your-big-shrunken-head",
+   "file": "S5E05 You and Your Big Shrunken Head.mp4",
+   "title": "You And Your Big Shrunken Head",
+   "season": 5,
+   "episode": 5,
+   "seconds": 1530,
+   "bytes": 148655049
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-23-the-beeping-rock",
+   "file": "S5E23 The Beeping Rock.mp4",
+   "title": "The Beeping Rock",
+   "season": 5,
+   "episode": 23,
+   "seconds": 1530,
+   "bytes": 149286913
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-24-uncle-fedor",
+   "file": "S5E24 Uncle Fedor.mp4",
+   "title": "Uncle Fedor",
+   "season": 5,
+   "episode": 24,
+   "seconds": 1530,
+   "bytes": 148794703
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-21-a-girl-for-drobny",
+   "file": "S6E21 A Girl for Drobny.mp4",
+   "title": "A Girl for Drobny",
+   "season": 6,
+   "episode": 21,
+   "seconds": 1542,
+   "bytes": 149909788
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-25-hawaiian-honeymoon",
+   "file": "S6E25 Hawaiian Honeymoon.mp4",
+   "title": "Hawaiian Honeymoon",
+   "season": 6,
+   "episode": 25,
+   "seconds": 1506,
+   "bytes": 146124534
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-04-ebs-romance",
+   "file": "S4E04 Eb\u2019s Romance.mp4",
+   "title": "Eb's Romance",
+   "season": 4,
+   "episode": 4,
+   "seconds": 1530,
+   "bytes": 148150197
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-05-the-candidate",
+   "file": "S4E05 The Candidate.mp4",
+   "title": "The Candidate",
+   "season": 4,
+   "episode": 5,
+   "seconds": 1530,
+   "bytes": 148143406
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-06-handy-lessons",
+   "file": "S4E06 Handy Lessons.mp4",
+   "title": "Handy Lessons",
+   "season": 4,
+   "episode": 6,
+   "seconds": 1530,
+   "bytes": 148318568
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-09-the-agricultural-student",
+   "file": "S4E09 The Agricultural Student.mp4",
+   "title": "The Agricultural Student",
+   "season": 4,
+   "episode": 9,
+   "seconds": 1530,
+   "bytes": 147766015
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-10-how-hooterville-was-floundered",
+   "file": "S4E10 How Hooterville Was Floundered.mp4",
+   "title": "How Hooterville Was Floundered",
+   "season": 4,
+   "episode": 10,
+   "seconds": 1530,
+   "bytes": 148575525
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-11-the-blue-feather",
+   "file": "S4E11 The Blue Feather.mp4",
+   "title": "The Blue Feather",
+   "season": 4,
+   "episode": 11,
+   "seconds": 1530,
+   "bytes": 146850832
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-12-how-to-get-from-hooterville-to-pixley-without-moving",
+   "file": "S4E12 How to Get From Hooterville to Pixley Without Moving.mp4",
+   "title": "How To Get From Hooterville To Pixley Without Moving",
+   "season": 4,
+   "episode": 12,
+   "seconds": 1506,
+   "bytes": 144477932
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-16-a-prize-in-every-package",
+   "file": "S4E16 A Prize in Every Package.mp4",
+   "title": "A Prize In Every Package",
+   "season": 4,
+   "episode": 16,
+   "seconds": 1512,
+   "bytes": 145592128
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-24-the-old-trunk",
+   "file": "S4E24 The Old Trunk.mp4",
+   "title": "The Old Trunk",
+   "season": 4,
+   "episode": 24,
+   "seconds": 1530,
+   "bytes": 147686282
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-4-e-25-the-milk-maker",
+   "file": "S4E25 The Milk Maker.mp4",
+   "title": "The Milk Maker",
+   "season": 4,
+   "episode": 25,
+   "seconds": 1530,
+   "bytes": 147663373
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-02-everybody-tries-to-love-a-countess",
+   "file": "S5E02 Everybody Tries to Love a Countess.mp4",
+   "title": "Everybody Tries To Love A Countess",
+   "season": 5,
+   "episode": 2,
+   "seconds": 1530,
+   "bytes": 148469561
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-04-a-tale-of-a-tail",
+   "file": "S5E04 A Tale of a Tail.mp4",
+   "title": "A Tale Of A Tail",
+   "season": 5,
+   "episode": 4,
+   "seconds": 1530,
+   "bytes": 147573281
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-06-the-road",
+   "file": "S5E06 The Road.mp4",
+   "title": "The Road",
+   "season": 5,
+   "episode": 6,
+   "seconds": 1326,
+   "bytes": 128510439
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-07-four-of-spades",
+   "file": "S5E07 Four of Spades.mp4",
+   "title": "Four Of Spades",
+   "season": 5,
+   "episode": 7,
+   "seconds": 1536,
+   "bytes": 149052475
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-08-the-youth-center",
+   "file": "S5E08 The Youth Center.mp4",
+   "title": "The Youth Center",
+   "season": 5,
+   "episode": 8,
+   "seconds": 1530,
+   "bytes": 148434704
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-09-the-special-delivery-letter",
+   "file": "S5E09 The Special Delivery Letter.mp4",
+   "title": "The Special Delivery Letter",
+   "season": 5,
+   "episode": 9,
+   "seconds": 1530,
+   "bytes": 148397665
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-10-olivers-schoolgirl-crush",
+   "file": "S5E10 Oliver\u2019s Schoolgirl Crush.mp4",
+   "title": "Oliver's Schoolgirl Crush",
+   "season": 5,
+   "episode": 10,
+   "seconds": 1530,
+   "bytes": 149082862
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-16-trapped",
+   "file": "S5E16 Trapped.mp4",
+   "title": "Trapped",
+   "season": 5,
+   "episode": 16,
+   "seconds": 1530,
+   "bytes": 149118251
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-21-the-case-of-the-hooterville-refund-fraud",
+   "file": "S5E21 The Case of the Hooterville Refund Fraud.mp4",
+   "title": "The Case Of The Hooterville Refund Fraud",
+   "season": 5,
+   "episode": 21,
+   "seconds": 1530,
+   "bytes": 148273210
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-5-e-25-the-wealthy-landowner",
+   "file": "S5E25 The Wealthy Landowner.mp4",
+   "title": "The Wealthy Landowner",
+   "season": 5,
+   "episode": 25,
+   "seconds": 1530,
+   "bytes": 147472219
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-1-the-city-kids",
+   "file": "S6E1 The City Kids.mp4",
+   "title": "The City Kids",
+   "season": 6,
+   "episode": 1,
+   "seconds": 1530,
+   "bytes": 147637582
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-11-the-high-cost-of-loving",
+   "file": "S6E11 The High Cost of Loving.mp4",
+   "title": "The High Cost Of Loving",
+   "season": 6,
+   "episode": 11,
+   "seconds": 1536,
+   "bytes": 149251108
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-12-the-liberation-movement",
+   "file": "S6E12 The Liberation Movement.mp4",
+   "title": "The Liberation Movement",
+   "season": 6,
+   "episode": 12,
+   "seconds": 1536,
+   "bytes": 149770131
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-13-charlie-homer-and-natasha",
+   "file": "S6E13 Charlie, Homer, and Natasha.mp4",
+   "title": "Charlie, Homer, And Natasha",
+   "season": 6,
+   "episode": 13,
+   "seconds": 1542,
+   "bytes": 149164239
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-15-the-free-paint-job",
+   "file": "S6E15 The Free Paint Job.mp4",
+   "title": "The Free Paint Job",
+   "season": 6,
+   "episode": 15,
+   "seconds": 1536,
+   "bytes": 149517663
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-17-the-wedding-deal",
+   "file": "S6E17 The Wedding Deal.mp4",
+   "title": "The Wedding Deal",
+   "season": 6,
+   "episode": 17,
+   "seconds": 1536,
+   "bytes": 149237510
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-2-the-coming-out-party",
+   "file": "S6E2 The Coming-Out Party.mp4",
+   "title": "The Coming Out Party",
+   "season": 6,
+   "episode": 2,
+   "seconds": 1530,
+   "bytes": 147914956
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-23-the-hole-in-the-porch",
+   "file": "S6E23 The Hole in the Porch.mp4",
+   "title": "The Hole in the Porch",
+   "season": 6,
+   "episode": 23,
+   "seconds": 1542,
+   "bytes": 148999813
+  },
+  {
+   "show": "green-acres",
+   "identifier": "s-6-e-8-apple-picking-time",
+   "file": "S6E8 Apple-Picking Time.mp4",
+   "title": "Apple Picking Time",
+   "season": 6,
+   "episode": 8,
+   "seconds": 1536,
+   "bytes": 149017846
+  }
+ ]
+}

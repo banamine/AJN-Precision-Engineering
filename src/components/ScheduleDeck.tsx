@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { RadioSpectrum } from './RadioSpectrum';
 import { useScheduleController } from '../hooks/useScheduleController';
-import { buildMusicPools, loadConcertPools, loadFmPools, loadPodcastPools } from '../utils/scheduleCatalog';
+import { loadConcertPools, loadFmPools, loadPodcastPools } from '../utils/scheduleCatalog';
+import { loadMusicPools } from '../utils/musicGenrePools';
 import { formatClock, formatDuration, formatRepeat, loopSeconds, DAY_MS, type SchedPool, type ScheduleBank } from '../utils/roundRobinSchedule';
 
 interface Props { bank: ScheduleBank; onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null; playingNow?: boolean }
@@ -12,22 +13,21 @@ const BANK_LABEL: Record<ScheduleBank, string> = { music: 'Music channels', conc
 
 /** Spectrum & 24-Hour Schedule Deck: the right-hand Head Unit panel while Archive Music is selected. */
 export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Props): ReactElement {
-  const musicPools = useMemo(() => buildMusicPools(), []);
   const [loaded, setLoaded] = useState<Partial<Record<ScheduleBank, SchedPool[]>>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   useEffect(() => {
-    if (bank === 'music' || loaded[bank]) return;
+    if (loaded[bank]) return;
     let alive = true; setLoadError(null);
-    (bank === 'concerts' ? loadConcertPools() : bank === 'podcasts' ? loadPodcastPools() : loadFmPools()).then((p) => { if (alive) setLoaded((l) => ({ ...l, [bank]: p })); })
+    (bank === 'concerts' ? loadConcertPools() : bank === 'music' ? loadMusicPools() : bank === 'podcasts' ? loadPodcastPools() : loadFmPools()).then((p) => { if (alive) setLoaded((l) => ({ ...l, [bank]: p })); })
       .catch((e: unknown) => { if (alive) setLoadError(e instanceof Error ? e.message : 'could not load the list'); });
     return () => { alive = false; };
   }, [bank, loaded]);
-  const pools: SchedPool[] | null = bank === 'music' ? musicPools : loaded[bank] ?? null;
+  const pools: SchedPool[] | null = loaded[bank] ?? null;
 
   const [chosen, setChosen] = useState<Partial<Record<ScheduleBank, string>>>({});
   const pool = useMemo(() => {
     if (!pools || !pools.length) return null;
-    const want = chosen[bank] ?? (bank === 'music' ? pools.find((p) => p.id === nowPlaying?.channelId)?.id ?? pools.find((p) => p.items[0]?.tracks.every((t) => t.durationSeconds))?.id : undefined);
+    const want = chosen[bank] ?? (bank === 'music' ? pools.find((p) => p.id === nowPlaying?.channelId)?.id : undefined);
     return pools.find((p) => p.id === want) ?? pools[0];
   }, [pools, chosen, bank, nowPlaying?.channelId]);
 
@@ -70,7 +70,7 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
       </div>
       {pools && pools.length > 1 && (
         <div role="group" aria-label={`${BANK_LABEL[bank]} direct tune`} data-testid="schedule-genre-keys" className="flex flex-wrap gap-1">
-          {pools.slice(0, GENRE_KEYS_MAX).map((p) => (
+          {pools.slice(0, bank === 'music' ? 24 : GENRE_KEYS_MAX).map((p) => (
             <button key={p.id} type="button" data-testid="schedule-genre-key" aria-pressed={pool?.id === p.id && c.tuned} title={`Tune ${p.label}`} onClick={() => directTune(p.id)} className="ck-key ck-key--sm max-w-[10rem] truncate text-[11px]">{p.label}</button>
           ))}
         </div>

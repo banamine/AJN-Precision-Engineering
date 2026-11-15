@@ -19,6 +19,7 @@ import { groupLibraryResults, findLibrarySeries, type LibrarySeries, type Series
 import nker150Manifest from '../src/data/nker150Manifest.json';
 import { shouldExposeNker150Record } from './nker150Rights';
 import { catalogRecords, isCatalogRecord } from './library/catalogRecords';
+import { musicAlbumRecords } from './library/musicAlbumRecords';
 export { groupLibraryResults, findLibrarySeries };
 export type { LibrarySeries };
 
@@ -47,6 +48,7 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
   { id: 'concerts', label: 'Live Concerts', mediaType: 'audio' },
   { id: 'fm-broadcasts', label: 'FM Broadcasts', mediaType: 'audio' },
   { id: 'podcast-episodes', label: 'Podcast Episodes', mediaType: 'audio' },
+  { id: 'music-albums', label: 'Music Albums (VA)', mediaType: 'audio' },
 ];
 export const ITEMS_PER_SEARCH = 150;
 
@@ -196,7 +198,7 @@ function nker150Records(): IndexRecord[] {
     availability: 'verified',
   }));
 }
-function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records(), ...(catalogRecordsEnabled ? catalogRecords() : [])]); }
+function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records(), ...(catalogRecordsEnabled ? [...catalogRecords(), ...musicAlbumRecords()] : [])]); }
 const visible = (r: IndexRecord) => { const a = availability(r); return a !== 'unavailable' && a !== 'unsupported' && !!r.path; };
 function librarySearchFields(r: {
   title?: string; episodeTitle?: string; description?: string; identifier?: string; sourceFile?: string;
