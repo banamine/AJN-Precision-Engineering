@@ -161,7 +161,7 @@ export function MiniPlayerDock({
         {theme ? <StationIcon theme={theme} size={44} className="!rounded-lg" /> : isAudio ? <Radio className="h-5 w-5" /> : <Tv className="h-5 w-5" />}
       </button>
 
-      <div className="relative flex h-12 min-w-0 flex-1 flex-col justify-center px-0.5 md:w-64 md:flex-none">
+      <div className="relative flex min-h-12 min-w-0 flex-1 flex-col justify-center px-0.5 py-0.5 md:w-64 md:flex-none">
         <span title={nowPlaying.title} className="truncate text-[11px] font-semibold leading-tight text-neutral-100 md:text-sm">
           {nowPlaying.title}
         </span>

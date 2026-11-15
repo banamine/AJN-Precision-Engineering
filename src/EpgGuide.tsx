@@ -224,18 +224,18 @@ export function EpgProgramBlock({
       )}
       {timelineLabel && (
         <span
-          className={`relative z-10 mb-0.5 inline-flex w-fit items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${
+          className={`relative z-10 mb-0.5 inline-flex w-fit max-w-full min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider ${
             timelineLabel === "In Rotation" ? "text-neutral-300" : mediaType === "audio" ? "text-amber-400" : "text-sky-400"
           }`}
         >
           <span
-            className={`h-1.5 w-1.5 rounded-full ${
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${
               timelineLabel === "In Rotation" ? "bg-neutral-400" : `animate-pulse ${mediaType === "audio" ? "bg-amber-400" : "bg-sky-400"}`
             }`}
           />
-          {timelineLabel}
+          <span className="min-w-0 truncate">{timelineLabel}</span>
           {mediaType !== "audio" && !isLiveStream(program) && (
-            <span data-testid="replay-tag" className="rounded bg-neutral-700/70 px-1 py-px text-[9px] font-bold tracking-wide text-neutral-200">
+            <span data-testid="replay-tag" className="shrink-0 rounded bg-neutral-700/70 px-1 py-px text-[9px] font-bold tracking-wide text-neutral-200">
               REPLAY
             </span>
           )}

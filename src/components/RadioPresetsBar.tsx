@@ -5,6 +5,7 @@ import { RadioSpectrum } from './RadioSpectrum';
 import { LiveSongDeck } from './LiveSongDeck';
 import { ListenBackDeck } from './ListenBackDeck';
 import { ScheduleDeck } from './ScheduleDeck';
+import { RadioStationKeys } from './RadioStationKeys';
 import { freshness } from '../utils/listenCatalog';
 import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
@@ -644,6 +645,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
             note={audioBank === 'concerts' ? (deckSources?.concertsError ?? (!deckSources?.concerts ? 'Loading concerts…' : undefined)) : audioBank === 'podcasts' ? deckSources?.podcastsNote : undefined}
             onPick={(it) => { it.play(); setKnobAngle((a) => a + 36); say(`Playing ${it.title}`); }} />
         )}
+        {mode === 'live' && <RadioStationKeys onPlay={onPlay} onTuned={onPresetTuned} activeId={playing?.channelId} />}
         <div className="relative mt-3 flex justify-end">
           <button type="button" data-testid="radio-view-wall" onClick={() => setView('wall')} className="ck-key ck-key--sm text-[11px]">Show wall view</button>
         </div>

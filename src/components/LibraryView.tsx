@@ -134,7 +134,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
     playOne(it);
   };
   const playOne = (it: Item) => onPlayProgram(it.path, it.title, it.description ?? it.identifier, it.mediaType, it.channelId ?? `library-${it.categoryIds[0]}`, it.guideId ?? 'library', it.programId ?? it.id, it.sourceId, it.assetId);
-  const trackName = (f: string) => f.replace(/\.[a-z0-9]{2,4}$/i, '').replace(/_/g, ' ');
+  const trackName = (f: string) => (f.split('/').pop() ?? f).replace(/\.[a-z0-9]{2,4}$/i, '').replace(/_/g, ' ');
   const playTrack = (it: Item, from: number) => {
     const tracks = it.parts ?? [];
     const items = tracks.slice(from).map((t, j) => ({ src: t.path, mediaType: 'audio' as const, programId: t.id, title: `${trackName(t.file)} · ${from + j + 1}/${tracks.length}`, partNo: from + j + 1, totalParts: tracks.length }));

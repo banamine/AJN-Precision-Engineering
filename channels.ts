@@ -42,6 +42,9 @@ export interface TVNewsItem {
   publicdate: string;
   airDateSource: "identifier" | "publicdate";
   description?: string;
+  /** Set by collapseRepeatAirings: how many airings of this program+description were found, and the newest one. */
+  airings?: number;
+  latestAired?: string;
 }
 
 export const TV_ID_RE =
@@ -113,7 +116,7 @@ async function probeArchiveCollection(
     `&fl%5B%5D=collection` +
     `&rows=${Math.min(Math.max(opts.rows ?? 12, 1), 50)}` +
     `&start=${Math.max(opts.start ?? 0, 0)}` +
-    `&sort%5B%5D=publicdate+desc` +
+    `&sort%5B%5D=identifier+desc` +
     `&output=json`;
 
   console.log(`[ARCHIVE COLLECTION TEST] collection:${collection}`);
@@ -216,11 +219,32 @@ export function setTVNewsSearchFetchForTests(fetchImpl: typeof fetch | undefined
   archiveCollectionFetch = fetchImpl ?? archiveApiFetch;
   searchCache.clear();
 }
-export async function searchTVNews(opts: Parameters<typeof searchTVNewsUncached>[0]): ReturnType<typeof searchTVNewsUncached> {
-  const key = JSON.stringify(opts);
+/**
+ * Collapses repeat airings of the same program (same network + program + description) into ONE item: the newest airing,
+ * with `airings` = how many were found and `latestAired` = its UTC air date/time. Input order is preserved (newest first).
+ */
+export function collapseRepeatAirings(items: TVNewsItem[]): TVNewsItem[] {
+  const out: TVNewsItem[] = [];
+  const seen = new Map<string, TVNewsItem>();
+  for (const item of items) {
+    const key = `${item.network}|${item.program}|${(item.description ?? "").replace(/\s+/g, " ").trim().toLowerCase()}`;
+    const first = seen.get(key);
+    if (!first) {
+      const kept: TVNewsItem = { ...item, airings: 1, latestAired: `${item.date} ${item.time} UTC` };
+      seen.set(key, kept); out.push(kept);
+    } else {
+      first.airings = (first.airings ?? 1) + 1;
+    }
+  }
+  return out;
+}
+
+export async function searchTVNews(opts: Parameters<typeof searchTVNewsUncached>[0] & { bypassCache?: boolean }): ReturnType<typeof searchTVNewsUncached> {
+  const { bypassCache, ...searchOpts } = opts;
+  const key = JSON.stringify(searchOpts);
   const hit = searchCache.get(key);
-  if (hit && hit.expires > Date.now()) return hit.value;
-  const value = searchTVNewsUncached(opts);
+  if (!bypassCache && hit && hit.expires > Date.now()) return hit.value;
+  const value = searchTVNewsUncached(searchOpts);
   const entry = { expires: Date.now() + 5 * 60_000, value };
   searchCache.set(key, entry);
   // Keep the entry while the search is in flight (concurrent callers share it), but

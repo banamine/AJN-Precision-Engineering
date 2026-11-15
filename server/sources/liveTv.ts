@@ -73,7 +73,7 @@ export const liveTvContract: SourceContract<LiveTvInput> = {
         : undefined;
       const displayName = upstreamOverride?.displayName ?? name;
       const groupOverride = groupOverrides.find((row) => !!entry.tvgId?.startsWith(row.tvgIdPrefix));
-      const group = groupOverride?.group ?? ((entry.groupTitle || 'Undefined').split(';')[0].trim() || 'Undefined');
+      const group = groupOverride?.group ?? ((entry.groupTitle || 'Undefined').replace(/&amp;/gi, '&').split(';')[0].trim() || 'Undefined');
       if (!name) return;
       if (ADULT_GROUP.test(entry.groupTitle ?? '')) { rejected.push({ id: name, reason: 'adult group' }); return; }
       const bad = checkLiveUrl(entry.url);

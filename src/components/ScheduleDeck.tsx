@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { RadioSpectrum } from './RadioSpectrum';
 import { useScheduleController } from '../hooks/useScheduleController';
-import { loadConcertPools, loadFmPools, loadPodcastPools } from '../utils/scheduleCatalog';
-import { loadMusicPools } from '../utils/musicGenrePools';
+import { buildMusicPools, loadConcertPools, loadFmPools, loadPodcastPools } from '../utils/scheduleCatalog';
 import { formatClock, formatDuration, formatRepeat, loopSeconds, DAY_MS, type SchedPool, type ScheduleBank } from '../utils/roundRobinSchedule';
 
 interface Props { bank: ScheduleBank; onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null; playingNow?: boolean }
@@ -13,21 +12,22 @@ const BANK_LABEL: Record<ScheduleBank, string> = { music: 'Music channels', conc
 
 /** Spectrum & 24-Hour Schedule Deck: the right-hand Head Unit panel while Archive Music is selected. */
 export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Props): ReactElement {
+  const musicPools = useMemo(() => buildMusicPools(), []);
   const [loaded, setLoaded] = useState<Partial<Record<ScheduleBank, SchedPool[]>>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   useEffect(() => {
-    if (loaded[bank]) return;
+    if (bank === 'music' || loaded[bank]) return;
     let alive = true; setLoadError(null);
-    (bank === 'concerts' ? loadConcertPools() : bank === 'music' ? loadMusicPools() : bank === 'podcasts' ? loadPodcastPools() : loadFmPools()).then((p) => { if (alive) setLoaded((l) => ({ ...l, [bank]: p })); })
+    (bank === 'concerts' ? loadConcertPools() : bank === 'podcasts' ? loadPodcastPools() : loadFmPools()).then((p) => { if (alive) setLoaded((l) => ({ ...l, [bank]: p })); })
       .catch((e: unknown) => { if (alive) setLoadError(e instanceof Error ? e.message : 'could not load the list'); });
     return () => { alive = false; };
   }, [bank, loaded]);
-  const pools: SchedPool[] | null = loaded[bank] ?? null;
+  const pools: SchedPool[] | null = bank === 'music' ? musicPools : loaded[bank] ?? null;
 
   const [chosen, setChosen] = useState<Partial<Record<ScheduleBank, string>>>({});
   const pool = useMemo(() => {
     if (!pools || !pools.length) return null;
-    const want = chosen[bank] ?? (bank === 'music' ? pools.find((p) => p.id === nowPlaying?.channelId)?.id : undefined);
+    const want = chosen[bank] ?? (bank === 'music' ? pools.find((p) => p.id === nowPlaying?.channelId)?.id ?? pools.find((p) => p.items[0]?.tracks.every((t) => t.durationSeconds))?.id : undefined);
     return pools.find((p) => p.id === want) ?? pools[0];
   }, [pools, chosen, bank, nowPlaying?.channelId]);
 
@@ -35,7 +35,20 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
   // Direct-tune genre keys: pick a real pool and start it. The controller follows `pool`, so tune once it has switched.
   const [tuneWanted, setTuneWanted] = useState<string | null>(null);
   useEffect(() => { if (tuneWanted && pool?.id === tuneWanted) { setTuneWanted(null); c.tune(); } }, [tuneWanted, pool?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  const directTune = (id: string): void => { if (pool?.id === id) c.tune(); else { setChosen((s) => ({ ...s, [bank]: id })); setTuneWanted(id); } };
+  // "Loading" pill: shown from the press until a different program is actually playing (or 12 s, so it can never stick).
+  const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
+  const startedFrom = useRef<string | null>(null);
+  const beginLoading = (label: string): void => { startedFrom.current = nowPlaying?.programId ?? null; setLoadingLabel(label); };
+  useEffect(() => {
+    if (!loadingLabel) return undefined;
+    if (playingNow && c.tuned && c.seekStatus !== 'pending' && (nowPlaying?.programId ?? null) !== startedFrom.current) { setLoadingLabel(null); return undefined; }
+    const id = window.setTimeout(() => setLoadingLabel(null), 12000);
+    return () => window.clearTimeout(id);
+  }, [loadingLabel, playingNow, c.tuned, c.seekStatus, nowPlaying?.programId]);
+  const directTune = (id: string): void => {
+    beginLoading(pools?.find((x) => x.id === id)?.label ?? 'your music');
+    if (pool?.id === id) c.tune(); else { setChosen((s) => ({ ...s, [bank]: id })); setTuneWanted(id); }
+  };
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => { const id = window.setInterval(() => setNowMs(Date.now()), 1000); return () => window.clearInterval(id); }, []);
 
@@ -66,14 +79,20 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
           </select>
         ) : <span className="min-w-0 flex-1 truncate">{pool?.label ?? BANK_LABEL[bank]}</span>}
         {c.tuned && c.mode === 'off-schedule' && <button type="button" data-testid="schedule-return-live" onClick={c.returnToLive} className="ck-key ck-key--sm is-latched">Return to live</button>}
-        {!c.tuned && pool && <button type="button" data-testid="schedule-tune" onClick={c.tune} className="ck-key ck-key--sm">{c.mode === 'shuffle' ? 'Play shuffle' : 'Tune live'}</button>}
+        {!c.tuned && pool && <button type="button" data-testid="schedule-tune" onClick={() => { beginLoading(pool.label); c.tune(); }} className="ck-key ck-key--sm">{c.mode === 'shuffle' ? 'Play shuffle' : 'Tune live'}</button>}
       </div>
       {pools && pools.length > 1 && (
-        <div role="group" aria-label={`${BANK_LABEL[bank]} direct tune`} data-testid="schedule-genre-keys" className="flex flex-wrap gap-1">
-          {pools.slice(0, bank === 'music' ? 24 : GENRE_KEYS_MAX).map((p) => (
-            <button key={p.id} type="button" data-testid="schedule-genre-key" aria-pressed={pool?.id === p.id && c.tuned} title={`Tune ${p.label}`} onClick={() => directTune(p.id)} className="ck-key ck-key--sm max-w-[10rem] truncate text-[11px]">{p.label}</button>
+        <div role="group" aria-label={`${BANK_LABEL[bank]} direct tune`} data-testid="schedule-genre-keys" className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          {pools.slice(0, GENRE_KEYS_MAX).map((p) => (
+            <button key={p.id} type="button" data-testid="schedule-genre-key" aria-pressed={pool?.id === p.id && c.tuned} title={`Tune ${p.label}`} onClick={() => directTune(p.id)} className="ck-key ck-key--sm h-auto min-w-0 w-full justify-center whitespace-normal text-center text-[11px] leading-tight [overflow-wrap:anywhere]">{p.label}</button>
           ))}
         </div>
+      )}
+      {loadingLabel && (
+        <p role="status" aria-live="polite" data-testid="schedule-loading" className="flex w-fit max-w-full items-center gap-2 rounded-full border border-orange-400/60 bg-orange-500/15 px-3 py-1 text-xs font-semibold text-orange-100">
+          <span aria-hidden="true" className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-orange-400" />
+          <span className="min-w-0 truncate">Loading {loadingLabel}… hang on a moment</span>
+        </p>
       )}
       {!pool && <p role="status" className="text-xs text-slate-300">{loadError ? `${BANK_LABEL[bank]} unavailable: ${loadError}` : pools ? `${BANK_LABEL[bank]}: nothing to schedule yet.` : `Loading ${BANK_LABEL[bank].toLowerCase()}…`}</p>}
       {pool && !c.clockEligible && <p className="text-[11px] text-amber-300">Shuffle only · durations not in {bank === 'music' ? 'snapshot' : 'manifest'}</p>}

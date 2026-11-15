@@ -1304,6 +1304,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
             </>
           ) : (
             <>
+              {radioBriefingOn && (
+                <>
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-slate-950" style={{ background: "radial-gradient(ellipse at center, rgba(8, 145, 178, 0.2), rgba(2, 6, 23, 0.96) 72%)" }} />
+                  <PreludeBackdropVideo source={PRELUDE_BACKDROP} enabled={preludeVideoOn} />
+                  <ArchiveMusicSpectrum analyser={analyserNode} isPlaying={isPlaying} analyzerState={analyzerState} />
+                </>
+              )}
               {artUrl && !radioBriefingOn && (
                 <img src={artUrl} alt="" aria-hidden="true" data-testid="audio-backdrop" className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-25 blur-md" />
               )}

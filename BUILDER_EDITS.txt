@@ -1,0 +1,15 @@
+STEP 1 - Restore the Builder to the last checkpoint BEFORE the Third Eye upload (Restore button above "View changes"), so the preview loads again.
+STEP 2 - Upload ONLY the 6 new files in this zip (they are not imported by anything yet, so they cannot break the build).
+STEP 3 - Give Google Builder exactly these 3 edits (nothing else):
+
+(a) server.ts: add this line with the other imports:
+    import { registerTvChyronsRoute } from './server/thirdEye/service.js';
+    and add this line directly after the line  registerCaptionRoutes(app);
+    registerTvChyronsRoute(app);
+
+(b) src/news-cube/NewsCubePage.tsx: add this line with the other imports:
+    import HeadlinesBoard from './HeadlinesBoard';
+    and add  <HeadlinesBoard />  on its own line directly above the existing line that renders <TvChannelStrip /> (if there is no TvChannelStrip in that file, put it just under the News Cube heading section).
+
+Do not change any other file. Do not run tests.
+The new files import these existing files, which must already exist in the Builder: server/archiveLimiter.ts, server/safeFetch.ts, server/captions/storyGrouping.ts.

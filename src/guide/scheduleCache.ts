@@ -33,7 +33,7 @@ export function setCachedLightSchedule(guideId: string, channels: unknown, now =
 export function isValidAudioLightSchedule(channels: ScheduleChannel[]): boolean {
   const partial = channels.filter((channel) => channel.programsComplete === false);
   return partial.length > 0 && partial.every((channel) =>
-    channel.id.startsWith('item-music-') && Number.isInteger(channel.programCount) &&
+    /^(item-)?music-/.test(channel.id) && Number.isInteger(channel.programCount) &&
     (channel.programCount ?? 0) > 24 && channel.programs.length === 3);
 }
 

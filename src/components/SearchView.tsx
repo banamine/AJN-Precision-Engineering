@@ -109,6 +109,9 @@ const [query, setQuery] = useSharedSearch();
   const showSuggestions = suggestionsOpen && visibleSuggestionItems.length > 0;
 
   const lastRunTermRef = React.useRef<string | null>(null);
+  const allTimeRef = React.useRef(false);
+  const bypassRef = React.useRef(false);
+  const [allTime, setAllTime] = useState(false);
   const executeSearch = useCallback(
     async (searchTerm: string, network: string, userInitiated = false) => {
       const seq = ++searchSeqRef.current;
@@ -121,7 +124,8 @@ const [query, setQuery] = useSharedSearch();
       setError(null);
       setHasSearched(true);
       try {
-        const url = `/api/search?network=${encodeURIComponent(network)}&q=${encodeURIComponent(searchTerm)}&rows=24`;
+        const url = `/api/search?network=${encodeURIComponent(network)}&q=${encodeURIComponent(searchTerm)}&rows=24${allTimeRef.current ? '&all=1' : ''}${bypassRef.current ? '&bypassCache=true' : ''}`;
+        bypassRef.current = false;
         const res = await fetch(url, { signal: controller.signal });
         const data = await res.json();
         if (seq !== searchSeqRef.current) return;
@@ -397,6 +401,10 @@ const [query, setQuery] = useSharedSearch();
             </button>
           </div>
         </form>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-neutral-400" data-testid="search-window">
+          <button type="button" aria-pressed={!allTime} onClick={() => { allTimeRef.current = !allTime; setAllTime(!allTime); executeSearch(query, selectedNetwork, true); }} className="rounded-md border border-neutral-700 px-2.5 py-1 hover:bg-neutral-800">{allTime ? 'All time' : 'Last 14 days'}</button>
+          <button type="button" onClick={() => { bypassRef.current = true; executeSearch(query, selectedNetwork, true); }} className="rounded-md border border-neutral-700 px-2.5 py-1 hover:bg-neutral-800">Latest</button>
+        </div>
         <SearchScopeStrip active="tvnews" />
 
         {/* Suggestion Chips */}
@@ -519,11 +527,12 @@ const [query, setQuery] = useSharedSearch();
                     </span>
                     <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
                       <Calendar className="h-3 w-3" />
-                      {item.date}
+                      {item.date}{item.time !== 'Unknown' ? ` ${item.time} UTC` : ''}
                     </span>
                   </div>
 
                   {/* Title & Description */}
+                  {(item.airings ?? 1) > 1 && <span className="inline-block rounded bg-neutral-800 px-2 py-0.5 text-[10px] text-neutral-300">aired {item.airings}x · latest {item.latestAired}</span>}
                   <div>
                     <h3 className="text-sm font-semibold text-neutral-100 group-hover:text-sky-400 transition line-clamp-2">
                       {item.title || item.program}

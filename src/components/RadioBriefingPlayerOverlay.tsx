@@ -28,7 +28,7 @@ export function RadioBriefingPlayerOverlay({ stationId, logoUrl }: { stationId?:
   return (
     <div
       data-testid="radio-briefing-overlay"
-      className="absolute inset-x-3 top-10 bottom-12 z-[2] overflow-hidden rounded-lg border border-neutral-700/80 bg-neutral-950/95 shadow-xl"
+      className="absolute inset-x-3 top-10 bottom-12 z-[2] overflow-hidden rounded-lg border border-neutral-700/80 bg-neutral-950/70 shadow-xl backdrop-blur-sm"
     >
       <section className="ajr h-full min-h-0 !p-3" aria-labelledby="radio-briefing-title">
         <div className="flex h-full min-h-0 flex-col gap-2">

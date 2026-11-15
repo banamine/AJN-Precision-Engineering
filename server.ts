@@ -30,7 +30,7 @@ import { hlsProxyAllowed, rewritePlaylist } from './server/hlsPlaylistProxy';
 import express,{Request,Response} from 'express';
 import path from 'path';
 import {createServer as createViteServer} from 'vite';
-import {searchTVNews} from './channels.js';
+import {searchTVNews, collapseRepeatAirings} from './channels.js';
 import {buildChannelFromSearch} from './archive-discovery';
 import {
  getAllGuides,getGuideById,getChannelsByGuide,getChannelById,getChannelSources,refreshMoviesClassicsFromArchive,
@@ -56,10 +56,11 @@ import { registerSourceRoutes } from './server/sources/routes.js';
 import { registerRumbleRoutes } from './server/rumble/routes.js';
 import { registerFolderArtRoute } from './server/folderArt.js';
 import { registerCaptionRoutes } from './server/captions/routes.js';
+import { registerTvHeadlinesRoute } from './server/tvHeadlines.js';
+import { registerTvChyronsRoute } from './server/thirdEye/service.js';
 import { registerArchiveSubtitleRoutes } from './server/archiveSubtitles.js';
 import { registerAudioAsrRoutes } from './server/audioAsrRoutes';
 import { registerNowPlayingRoute } from './server/radioNowPlayingRoute.js';
-import { registerTvStoriesRoute } from './server/tvStoriesRoute.js';
 import { registerSyncPlaceholder } from './server/routes/syncPlaceholder.js';
 import { registerAffiliateListingRoute } from './server/routes/affiliateListing.js';
 
@@ -424,7 +425,7 @@ app.post('/api/channels/build-news',async(req,res)=>{
     res.json({channelId:ch.id,guideId:DISCOVERY_GUIDE_ID,name:ch.name,items:identifiers.length,clips:ch.programs.length,skipped:ch.skipped,programs:(laid?.programs??[]).slice(0,ch.programs.length)});
   }catch(e:any){res.status(e?.status??500).json({error:e?.message??'build failed'});}
 });
-app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);try{const r=await searchTVNews({network,query:query.trim()||undefined,rows});if(r.status==='upstream_error'){return res.status(502).json({query,network,status:r.status,total:0,items:[],safeEndDate:r.safeEndDate,error:r.error||'Archive search upstream unavailable'});}res.json({query,network,status:r.status,total:r.total,items:r.items,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({query,network,status:'upstream_error',error:'Search failed',items:[],total:0});}});
+app.get('/api/search',async(req,res)=>{const query=(req.query.q as string)||'';const network=(req.query.network as string)||'FOXNEWSW';const rows=Math.min(parseInt((req.query.rows as string)||'24',10)||24,50);const allTime=req.query.all==='1';const bypassCache=req.query.bypassCache==='true';const startDate=/^\d{4}-\d{2}-\d{2}$/.test(String(req.query.startDate||''))?String(req.query.startDate):(allTime?undefined:new Date(Date.now()-14*86400000).toISOString().slice(0,10));res.set('Cache-Control','no-store');try{const r=await searchTVNews({network,query:query.trim()||undefined,rows:50,startDate,bypassCache});if(r.status==='upstream_error'){return res.status(502).json({query,network,status:r.status,total:0,items:[],safeEndDate:r.safeEndDate,windowStart:startDate??null,error:r.error||'Archive search upstream unavailable'});}const items=collapseRepeatAirings(r.items).slice(0,rows);res.json({query,network,status:r.status,total:r.total,items,collapsedFrom:r.items.length,windowStart:startDate??null,safeEndDate:r.safeEndDate});}catch(e){console.error('[Search API Error]',e);res.status(500).json({query,network,status:'upstream_error',error:'Search failed',items:[],total:0});}});
 
 function validateArchivePath(raw:string){
   if(!raw||typeof raw!=='string')return{valid:false,error:'Path is required'};
@@ -474,11 +475,12 @@ const IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 registerFolderArtRoute(app);
 registerCaptionRoutes(app);
+registerTvHeadlinesRoute(app);
+registerTvChyronsRoute(app);
 registerAffiliateListingRoute(app);
 registerArchiveSubtitleRoutes(app);
 registerAudioAsrRoutes(app);
 registerNowPlayingRoute(app);
-registerTvStoriesRoute(app);
 app.get('/api/live-radio/status', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json(getLiveRadioStatus());
