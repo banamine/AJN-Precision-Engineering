@@ -5,6 +5,7 @@
  * Channels that match nothing keep the catch-all "Classic TV" pill. Real data only; nothing is invented. */
 import { SHOW_INFO_FILE, getShowInfoByChannelId } from '../showinfo/lookup';
 import type { ScheduleChannel } from '../types';
+import { GENRE_CHANNELS } from './genreChannelIds';
 
 export interface CategoryDescriptor { id: string; label: string }
 
@@ -20,6 +21,7 @@ export const GENRE = {
   war: mk('War & History'),
   family: mk('Family & Kids'),
   westerns: mk('Westerns'),
+  cartoons: mk('Cartoons'),
 } as const;
 export const CLASSIC_TV: CategoryDescriptor = mk('Classic TV');
 export const CATCH_ALL_ID = CLASSIC_TV.id;
@@ -89,6 +91,8 @@ function fromRaw(tags: readonly string[], out: Map<string, CategoryDescriptor>):
 
 /** Genre buckets for a channel's show (no group handling). Exported for tests. */
 export function genresForChannel(channel: Pick<ScheduleChannel, 'id' | 'name'>): CategoryDescriptor[] {
+  const fixed = FIXED_GENRES[channel.id];
+  if (fixed) return [...fixed];
   const out = new Map<string, CategoryDescriptor>();
   const linked = getShowInfoByChannelId(channel.id);
   const key = titleKey(channel.name);
@@ -98,6 +102,10 @@ export function genresForChannel(channel: Pick<ScheduleChannel, 'id' | 'name'>):
   else { const f = fold(channel.name); for (const [re, b] of KEYWORDS) if (re.test(f)) out.set(b.id, b); }
   return [...out.values()];
 }
+
+/** Fixed pills for the 24/7 genre TV channels (by stable channel id), resolved by label so ids stay compatible with saved filters. */
+const FIXED_GENRES: Record<string, CategoryDescriptor[]> = Object.fromEntries(GENRE_CHANNELS.filter(c => c.pills.length).map(c => [c.id,
+  c.pills.map(label => Object.values(GENRE).find(g => g.label === label) ?? mk(label))]));
 
 const cache = new WeakMap<object, CategoryDescriptor[]>();
 

@@ -8,6 +8,7 @@
  *    NASA/NOVA, documentaries, Rush) — no extra Archive calls.
  * Items are hidden only when a file check failed twice (unavailable) or no
  * web-playable file exists (unsupported). No Node APIs at import time. */
+import { isGenreChannelId } from '../src/guide/genreChannelIds';
 import { resolveGenres, inGenrePools } from '../src/search/genreThesaurus';
 import type { Program, ScheduleChannel } from '../src/types';
 import { selectPlayableFile, type LibraryAvailability, type DurationSource } from './archive/mediaSelector';
@@ -101,7 +102,7 @@ export function recordsFromGuide(cat: LibraryCategory, channels: ScheduleChannel
   const out: IndexRecord[] = [];
   const seen = new Set<string>();
   for (const ch of channels) {
-    if (ch.id === 'classic-network' || ch.id === 'classic-movies' || ch.id === 'classic-westerns') continue;
+    if (ch.id === 'classic-network' || ch.id === 'classic-movies' || ch.id === 'classic-westerns' || isGenreChannelId(ch.id)) continue;
     if (!cat.guide!.channels(ch)) continue;
     for (const p of ch.programs ?? []) {
       const mt = (p.metadata ?? {}) as any;

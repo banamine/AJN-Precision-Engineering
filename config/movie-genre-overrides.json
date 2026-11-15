@@ -1,0 +1,5 @@
+{
+  "schema": 1,
+  "note": "Manual bucket overrides applied BEFORE the keyword rules. Key = episodeKey from src/data/classicMoviesCatalog.json. Value = 'action-western' | 'scifi-horror' | 'comedy-drama-noir' | 'exclude'. See reports/classic-network/genre-movie-triage.json for unclassified titles.",
+  "overrides": {}
+}

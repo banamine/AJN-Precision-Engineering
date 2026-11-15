@@ -1,0 +1,324 @@
+{
+  "schema": 1,
+  "activeFrom": "2026-11-14T00:00:00 America/Los_Angeles",
+  "seedSuffix": "v1-2026-11-14",
+  "minEpisodeDepth": 30,
+  "reducedWeightFactor": 0.9,
+  "tv": [
+    {
+      "id": "ajn247-sitcoms",
+      "name": "AJN Classic Sitcoms & Family Comedy",
+      "pills": [
+        "Comedy"
+      ],
+      "shows": [
+        {
+          "slug": "mash",
+          "name": "M*A*S*H",
+          "identifier": "^mash-series_202509$"
+        },
+        {
+          "slug": "good-times",
+          "name": "Good Times",
+          "file": "^Good Times"
+        },
+        {
+          "slug": "archie-bunkers-place",
+          "name": "Archie Bunker's Place",
+          "file": "^Archie Bunker's Place"
+        },
+        {
+          "slug": "chico-and-the-man",
+          "name": "Chico and the Man",
+          "file": "^Chico (&|and) (the )?Man"
+        },
+        {
+          "slug": "major-dad",
+          "name": "Major Dad",
+          "file": "^Major Dad"
+        },
+        {
+          "slug": "alf",
+          "name": "ALF",
+          "identifier": "^ALF-The-Complete-Series$"
+        },
+        {
+          "slug": "wkrp",
+          "name": "WKRP in Cincinnati",
+          "channel": "^tvx-wkrp-in-cincinnati"
+        },
+        {
+          "slug": "diffrent-strokes",
+          "name": "Diff'rent Strokes",
+          "channel": "^tvx-diff-rent-strokes"
+        },
+        {
+          "slug": "mamas-family",
+          "name": "Mama's Family",
+          "file": "^Mama's Family"
+        },
+        {
+          "slug": "everybody-loves-raymond",
+          "name": "Everybody Loves Raymond",
+          "channel": "^tvx-everybody-loves-raymond"
+        }
+      ]
+    },
+    {
+      "id": "ajn247-crime",
+      "name": "AJN Crime, Detective & Mystery",
+      "pills": [
+        "Crime & Mystery"
+      ],
+      "shows": [
+        {
+          "slug": "murder-she-wrote",
+          "name": "Murder, She Wrote",
+          "identifier": "^murder-she-wrote_202402$",
+          "requireCode": true
+        },
+        {
+          "slug": "quincy-me",
+          "name": "Quincy, M.E.",
+          "channel": "^tvx-quincy-m-e"
+        },
+        {
+          "slug": "ironside",
+          "name": "Ironside",
+          "file": "^Ironside S\\d{2}e\\d{2}"
+        },
+        {
+          "slug": "it-takes-a-thief",
+          "name": "It Takes a Thief",
+          "channel": "^tvx-it-takes-a-thief-1968"
+        },
+        {
+          "slug": "nypd-1967",
+          "name": "N.Y.P.D. (1967)",
+          "channel": "^tvx-n-y-p-d-1967"
+        },
+        {
+          "slug": "sherlock-holmes-1954",
+          "name": "The Adventures of Sherlock Holmes (1954)",
+          "identifier": "^the-adventures-of-sherlock-holmes-s-03-e-01-reluctant-carpenter$"
+        },
+        {
+          "slug": "mccloud",
+          "name": "McCloud",
+          "channel": "^tvx-mccloud"
+        },
+        {
+          "slug": "granada-sherlock-holmes",
+          "name": "Sherlock Holmes (Granada)",
+          "channel": "^tvx-granada-series-sherlock"
+        }
+      ]
+    },
+    {
+      "id": "ajn247-scifi",
+      "name": "AJN Sci-Fi, Mystery & Anthology",
+      "pills": [
+        "Sci-Fi",
+        "Horror & Thriller"
+      ],
+      "shows": [
+        {
+          "slug": "star-trek-tng",
+          "name": "Star Trek: The Next Generation",
+          "channel": "^tvx-star-trek-the-next-generat"
+        },
+        {
+          "slug": "star-trek-tos",
+          "name": "Star Trek: The Original Series",
+          "channel": "^tvx-star-trek-t-o-s"
+        },
+        {
+          "slug": "outer-limits",
+          "name": "The Outer Limits",
+          "identifier": "^the-outer-limits-1-7-tv-series$"
+        },
+        {
+          "slug": "rod-serling-anthology",
+          "name": "Rod Serling Anthology",
+          "identifier": "^01-rod-serling$",
+          "file": "^(The Twilight Zone|Night Gallery S\\d|Playhouse 90 S\\d|Danger S\\d|Suspense S\\d|Westinghouse Desilu Playhouse S\\d)",
+          "excludeFile": "Interview|Conversation|Beyond the Twilight|College Interviews|American Masters",
+          "titleRx": "^(?:The Twilight Zone(?:[- ]S\\d+ E\\d+ |-\\d+-)|Night Gallery S\\d+ E\\d+ |Playhouse 90 S\\d+ E\\d+ |Danger S\\d+ E\\d+ |Suspense S\\d+ E\\d+ |Westinghouse Desilu Playhouse S\\d+ E\\d+ )(.*?)(?: \\(aired.*)?-?\\.(?:ia\\.)?mp4$",
+          "seqRx": "^[^-]*-(\\d{1,3})-"
+        },
+        {
+          "slug": "doctor-who",
+          "name": "Doctor Who",
+          "channel": "^tvx-doctor-who$"
+        },
+        {
+          "slug": "new-alfred-hitchcock-presents",
+          "name": "The New Alfred Hitchcock Presents",
+          "identifier": "^the-new-alfred-hitchcock-presents-complete$"
+        },
+        {
+          "slug": "thriller-1960",
+          "name": "Thriller (1960)",
+          "channel": "^tvx-thriller-1960"
+        },
+        {
+          "slug": "ultraseven",
+          "name": "Ultraseven",
+          "channel": "^tvx-ultraseven"
+        }
+      ]
+    },
+    {
+      "id": "ajn247-action",
+      "name": "AJN Action & Adventure TV",
+      "pills": [
+        "Action & Adventure"
+      ],
+      "shows": [
+        {
+          "slug": "macgyver",
+          "name": "MacGyver",
+          "channel": "^tvx-macgyver-collection-1985"
+        },
+        {
+          "slug": "knight-rider",
+          "name": "Knight Rider",
+          "channel": "^tvx-knight-rider-classic-1982"
+        },
+        {
+          "slug": "airwolf",
+          "name": "Airwolf",
+          "channel": "^tvx-airwolf$"
+        },
+        {
+          "slug": "supernatural",
+          "name": "Supernatural",
+          "channel": "^tvx-supernatural-seasons-01-15",
+          "requireCode": true
+        },
+        {
+          "slug": "star-trek-voyager",
+          "name": "Star Trek: Voyager",
+          "channel": "^tvx-star-trek-voyager-s-01-e-0"
+        },
+        {
+          "slug": "she-spies",
+          "name": "She Spies",
+          "file": "^She Spies"
+        },
+        {
+          "slug": "cobra-kai",
+          "name": "Cobra Kai",
+          "channel": "^tvx-cobra-kai-series-collection-1-to-4"
+        },
+        {
+          "slug": "baa-baa-black-sheep",
+          "name": "Baa Baa Black Sheep",
+          "file": "^BlackSheep S\\d"
+        }
+      ]
+    },
+    {
+      "id": "ajn247-cartoons",
+      "name": "AJN Saturday Cartoons & Animation",
+      "pills": [
+        "Cartoons",
+        "Family & Kids"
+      ],
+      "shows": [
+        {
+          "slug": "ducktales",
+          "name": "DuckTales",
+          "channel": "^cx-80-s-ducktales-collections"
+        },
+        {
+          "slug": "darkwing-duck",
+          "name": "Darkwing Duck",
+          "channel": "^cx-darkwing-duck-collection"
+        },
+        {
+          "slug": "ed-edd-n-eddy",
+          "name": "Ed, Edd n Eddy",
+          "identifier": "^ed-edd-n-eddys-big-picture-show_202509$",
+          "file": "_S\\d",
+          "requireCode": true
+        },
+        {
+          "slug": "talespin",
+          "name": "TaleSpin",
+          "channel": "^cx-80-s-cartoons-talespin-collection"
+        },
+        {
+          "slug": "muppet-babies",
+          "name": "Jim Henson's Muppet Babies",
+          "channel": "^cx-jim-henson-s-muppet-babies"
+        },
+        {
+          "slug": "inspector-gadget",
+          "name": "Inspector Gadget",
+          "channel": "^cx-inspector-gadget-season",
+          "reduced": true
+        },
+        {
+          "slug": "underdog",
+          "name": "The Underdog Show",
+          "channel": "^cx-the-underdog-show",
+          "reduced": true
+        },
+        {
+          "slug": "gargoyles",
+          "name": "Gargoyles",
+          "channel": "^cx-gargoyles-ai-upscale$",
+          "reduced": true
+        },
+        {
+          "slug": "x-men-animated",
+          "name": "X-Men: The Animated Series",
+          "channel": "^cx-x-men-the-animated-series",
+          "reduced": true
+        }
+      ]
+    }
+  ],
+  "movies": [
+    {
+      "id": "ajn247-movies-action-western",
+      "bucket": "action-western",
+      "name": "AJN Classic Movies: Action, Adventure & Westerns",
+      "pills": [
+        "Action & Adventure",
+        "Westerns"
+      ]
+    },
+    {
+      "id": "ajn247-movies-scifi-horror",
+      "bucket": "scifi-horror",
+      "name": "AJN Classic Movies: Sci-Fi, Horror & Thrillers",
+      "pills": [
+        "Sci-Fi",
+        "Horror & Thriller"
+      ]
+    },
+    {
+      "id": "ajn247-movies-comedy-drama-noir",
+      "bucket": "comedy-drama-noir",
+      "name": "AJN Classic Movies: Comedy, Drama & Noir",
+      "pills": [
+        "Comedy",
+        "Drama",
+        "Crime & Mystery"
+      ]
+    }
+  ],
+  "movieRules": {
+    "scifi-horror": "\\b(horror|zombies?|vampires?|werewolf|werewolves|dracula|frankenstein|mummy|monsters?|creatures?|aliens?|invasion of|sci-?fi|science fiction|robots?|androids?|cyborgs?|spaceship|galaxy|planet of|from mars|martians?|ghosts?|haunted|haunting|demons?|exorcist|possessed|supernatural|slasher|nightmare|undead|godzilla|gamera|invisible man|mutants?|dinosaurs?|time machine|apocalypse|the blob|curse of|bride of|attack of|revenge of|terror|svengoolie|psychotronic|b-movie)\\b",
+    "action-western": "\\b(westerns?|cowboys?|gunfighters?|gunslingers?|outlaws?|sheriff|marshal|frontier|cavalry|stagecoach|apache|comanche|wild west|action|adventures?|war|battle|combat|commandos?|soldiers?|warriors?|samurai|ninja|pirates?|swashbuckler|rescue|kung fu|martial arts|karate|heist|fugitive|mercenar(?:y|ies)|special forces|navy|marines?|submarine|bomber|spy|spies)\\b",
+    "comedy-drama-noir": "\\b(comedy|comedies|comedian|funny|romance|romantic|love|drama|noir|crime|gangsters?|detective|murder|musical|melodrama|mafia|mob|private eye|marriage|wedding|family|farce|screwball|laurel and hardy|chaplin|keaton|abbott and costello|three stooges)\\b"
+  },
+  "movieIdentifierRules": {
+    "scifi-horror": "^(filmography-(roger-corman|herschell-gordon-lewis|david-decoteau|takashi-miike|nobuhiko-obayashi)|the\\.-ring\\.-2002)",
+    "action-western": "^filmography-(budd-boetticher|tsui-hark)",
+    "comedy-drama-noir": "^(comedy-collection$|filmography-(alfred-hitchcock|ingmar-bergman|mikio-naruse|yasujiro-ozu|satyajit-ray|ken-loach|otto-preminger|william-dieterle|brigitte-bardot|norman-jewison|robert-altman|elvis-presley|cecil-b-demille)|01-blondell-picture)"
+  },
+  "movieRuleOrder": "manual override -> scifi-horror title words -> item/director hint -> action-western title words -> comedy-drama-noir title words -> triage"
+}

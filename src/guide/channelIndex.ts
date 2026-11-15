@@ -2,6 +2,7 @@
  * No React, no DOM, no network. EpgGuide calls these once per schedule load / filter change. */
 import type { ScheduleChannel } from '../types';
 import { CATCH_ALL_ID, categoriesOf } from './genreBuckets';
+import { GENRE_CHANNELS } from './genreChannelIds';
 
 export interface NumberedChannel { channel: ScheduleChannel; station: number }
 export interface CategoryCount { id: string; label: string; count: number }
@@ -18,11 +19,13 @@ function sortKey(name: string): string {
   return f || fold(name);
 }
 const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+const GENRE_TV_PINNED: ReadonlySet<string> = new Set(GENRE_CHANNELS.filter((g) => g.group === 'Classic TV').map((g) => g.id));
 
 /** Alphabetical by display name (numbers compare numerically: "Channel 2" < "Channel 10"); id breaks ties so order is deterministic. */
 export function sortChannelsAlpha(channels: readonly ScheduleChannel[]): ScheduleChannel[] {
   // The scheduled Classic Network channel is pinned to the top of the lineup (station 1); everything else is alphabetical.
-  const pinned = (c: ScheduleChannel) => (c.id === 'classic-network' ? 0 : 1);
+  // The five AJN 24/7 genre TV channels sit right behind it (stations 2-6) so they are findable in a ~380-channel lineup.
+  const pinned = (c: ScheduleChannel) => (c.id === 'classic-network' ? 0 : GENRE_TV_PINNED.has(c.id) ? 1 : 2);
   return [...channels].sort((a, b) => pinned(a) - pinned(b) || collator.compare(sortKey(a.name), sortKey(b.name)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
