@@ -212,7 +212,25 @@ function librarySearchFields(r: {
   ];
 }
 
-export interface ItemsQuery { ids?: string[]; category?: string; decade?: number | null; q?: string; mediaType?: string; showId?: string; page?: number; limit?: number }
+export interface ItemsQuery { ids?: string[]; category?: string; decade?: number | null; q?: string; mediaType?: string; showId?: string; sort?: string; page?: number; limit?: number }
+
+/** Library sort choices. No `sort` keeps the existing order (best match while searching). Ties always fall back to name, then id, so pages are stable. */
+export type LibrarySort = 'name' | 'added' | 'genre';
+const collator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
+export function sortLibraryResults<T extends { id: string; title: string; categoryIds?: string[]; indexedAt?: string; episodes?: Array<{ indexedAt?: string }> }>(rows: T[], sort: string | undefined): T[] {
+  if (sort !== 'name' && sort !== 'added' && sort !== 'genre') return rows;
+  const label = new Map(LIBRARY_CATEGORIES.map((c) => [c.id, c.label]));
+  const genre = (r: T) => label.get(r.categoryIds?.[0] ?? '') ?? r.categoryIds?.[0] ?? '~';
+  // Date added = when the record entered the library index; a series counts as its newest episode. Records with no date sort last.
+  const added = (r: T) => [r.indexedAt ?? '', ...(r.episodes ?? []).map((e) => e.indexedAt ?? '')].reduce((a, b) => (b > a ? b : a), '');
+  const byName = (a: T, b: T) => collator.compare(a.title, b.title) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  return [...rows].sort((a, b) => {
+    if (sort === 'name') return byName(a, b);
+    if (sort === 'genre') return collator.compare(genre(a), genre(b)) || byName(a, b);
+    const da = added(a), db = added(b);
+    return da === db ? byName(a, b) : da < db ? 1 : -1;
+  });
+}
 export function queryLibrary(qy: ItemsQuery) {
   const limit = Math.max(1, Math.min(Number(qy.limit) || 24, 48));
   const page = Math.max(1, Number(qy.page) || 1);
@@ -234,7 +252,8 @@ export function queryLibrary(qy: ItemsQuery) {
   const best = (r: any): number => r.type === 'series'
     ? Math.max(scoreMatch({ title: r.title }, text), ...r.episodes.map((e: any) => scoreMatch(e, text)))
     : scoreMatch(r, text);
-  const grouped = text ? [...grouped0].sort((a, b) => best(b) - best(a)) : grouped0;
+  const grouped1 = text ? [...grouped0].sort((a, b) => best(b) - best(a)) : grouped0;
+  const grouped = sortLibraryResults(grouped1 as any[], qy.sort) as typeof grouped1;
   const totalItems = grouped.length;
   return { snapshotAt, page, limit, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / limit)),
     rawCount: rows.length, uniqueCount: rows.length, groupCount: grouped.filter((r) => r.type === 'series').length,

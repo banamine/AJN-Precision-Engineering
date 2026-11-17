@@ -15,6 +15,7 @@ import { WaitingNotes } from "./components/WaitingNotes";
 import { BufferJingle } from "./components/BufferJingle";
 import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
 import { releaseMediaElementAudioSource, useAudioNormalization } from "./use-audio-normalization";
+import { AUDIO_FADE_IN_MS, AUDIO_FADE_OUT_MS, audioFadeEnabled, rampVolume, shouldFadeOut } from "./utils/audioFade";
 import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
 import { ArchiveMusicSpectrum } from "./components/ArchiveMusicSpectrum";
@@ -129,6 +130,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // of this app session; a reload intentionally resets it.
   const [isMuted, setIsMuted] = useState(() => !sessionUnmuted);
   const [volume, setVolume] = useState(1);
+  const volumeRef = useRef(1);
+  volumeRef.current = volume;
+  const fadeInPendingRef = useRef(false);   // the previous track was faded out: ramp the next one up from silence
+  const fadeInCancelRef = useRef<(() => void) | null>(null);
+  const activeSrcRef = useRef("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
   const [activeSrc, setActiveSrc] = useState(() => bridgeSrc(src));
@@ -192,6 +198,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const sideArt = folderArt.slice(1, 3);
   const preloadRef = useRef<{ src: string; el: HTMLAudioElement } | null>(null);
   const adoptedRef = useRef(false);
+  activeSrcRef.current = activeSrc;
   const restoreHandledRef = useRef(false);   // the launch-restored item has been started by the user
   const handoffUntilRef = useRef(0);          // track-to-track handoff: keep the OS session 'playing'
   const repeatRef = useRef(false);
@@ -309,6 +316,14 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     el.autoplay = !(nowPlayingRef.current?.restoredPaused && !restoreHandledRef.current);
     el.loop = repeatRef.current;
     el.muted = isMutedRef.current;
+    // Track change after a fade-out: start silent, ramp up to the listener's volume once sound really starts.
+    fadeInCancelRef.current?.(); fadeInCancelRef.current = null;
+    if (fadeInPendingRef.current) {
+      fadeInPendingRef.current = false;
+      el.volume = 0;
+      const ramp = () => { fadeInCancelRef.current = rampVolume(el, volumeRef.current, AUDIO_FADE_IN_MS); };
+      if (!el.paused && !el.ended) ramp(); else el.addEventListener("playing", ramp, { once: true });
+    }
     el.className = "w-full";
     el.setAttribute("data-testid", "audio-element");
     host.replaceChildren(el);
@@ -374,7 +389,19 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   }, [activeSrc, isHls, isVideo, mediaType, nowPlaying?.channelId, nowPlaying?.guideId, nowPlaying?.programId, resolveNext]);
 
   useEffect(() => {
-    setActiveSrc(bridgeSrc(src));
+    // Smooth switch between audio tracks: the playing track fades out (~0.3 s) before the next one is loaded, which then fades in.
+    // The Web Audio bridge feeds ONE element at a time, so this is a fade-out/fade-in, not an overlap.
+    const nextSrc = bridgeSrc(src);
+    const prev = mediaRef.current;
+    let cancelFade: (() => void) | null = null;
+    if (audioFadeEnabled() && shouldFadeOut(prev, prev instanceof HTMLAudioElement, mediaType !== "video", nextSrc, activeSrcRef.current)) {
+      const restore = prev!.volume;
+      fadeInPendingRef.current = true;
+      const stop = rampVolume(prev!, 0, AUDIO_FADE_OUT_MS, () => setActiveSrc(nextSrc));
+      cancelFade = () => { stop(); fadeInPendingRef.current = false; prev!.volume = restore; };
+    } else {
+      setActiveSrc(nextSrc);
+    }
     setStatusText("Loading…");
     setIsPlaying(false);
     setResumePosition(null);
@@ -384,6 +411,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     restoreHandledRef.current = false;
     playingReportedRef.current = false;
     lastSavedPositionRef.current = 0;
+    return () => { cancelFade?.(); };
   }, [src, mediaType]);
 
   useEffect(() => {

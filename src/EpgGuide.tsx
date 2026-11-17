@@ -27,6 +27,7 @@ import {
   hourLabel,
   withLocalHours,
 } from "./guide/programHours";
+import { GuideSkeleton } from "./components/GuideSkeleton";
 import { AUDIO_ROW_HEIGHT_PX, buildHeightPrefixSums, computeRowWindow, ROW_HEIGHT_PX } from "./guide/virtualRows";
 import { ChannelRundown } from "./guide/ChannelRundown";
 import { ChannelRoster } from "./guide/ChannelRoster";
@@ -1485,10 +1486,7 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
 
   if (isLoading || channels === null) {
     return (
-      <div className="w-full rounded-xl border border-neutral-800 bg-neutral-950 p-12 text-center text-sm text-neutral-400">
-        <div className="mb-3 inline-block h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
-        <p>Loading...</p>
-      </div>
+      <GuideSkeleton channelColumnPx={CHANNEL_COLUMN_WIDTH_PX} />
     );
   }
 

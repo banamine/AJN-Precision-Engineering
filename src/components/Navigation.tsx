@@ -15,6 +15,7 @@ import {
   Box,
   Settings2,
   Activity,
+  CloudSun,
   HelpCircle,
   Clapperboard,
 } from 'lucide-react';
@@ -73,6 +74,7 @@ const MOBILE_MORE_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[9], PRIMARY_DESTINATIONS[2], PRIMARY_DESTINATIONS[3], PRIMARY_DESTINATIONS[5], PRIMARY_DESTINATIONS[8],
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
   { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
+  { id: 'weather', label: 'WEATHER', icon: CloudSun, description: 'Current conditions and 5-day forecast' },
 ];
 const VAULT_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[2],
@@ -80,6 +82,7 @@ const VAULT_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[4],
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
   { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
+  { id: 'weather', label: 'WEATHER', icon: CloudSun, description: 'Current conditions and 5-day forecast' },
 ];
 
 function useDismiss(open: boolean, close: () => void, ref: React.RefObject<HTMLElement | null>) {

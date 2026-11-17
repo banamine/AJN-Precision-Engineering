@@ -63,6 +63,7 @@ import { registerAudioAsrRoutes } from './server/audioAsrRoutes';
 import { registerNowPlayingRoute } from './server/radioNowPlayingRoute.js';
 import { registerSyncPlaceholder } from './server/routes/syncPlaceholder.js';
 import { registerAffiliateListingRoute } from './server/routes/affiliateListing.js';
+import { registerAviationRoutes } from './server/routes/aviationWeather.js';
 
 const app=express(); const PORT=Number(process.env.PORT || 3000); app.use(express.json());
 app.use(watchdogRouter);
@@ -478,6 +479,7 @@ registerCaptionRoutes(app);
 registerTvHeadlinesRoute(app);
 registerTvChyronsRoute(app);
 registerAffiliateListingRoute(app);
+registerAviationRoutes(app); // /api/aviation/metar|taf for the Weather page (cached 60 s)
 registerArchiveSubtitleRoutes(app);
 registerAudioAsrRoutes(app);
 registerNowPlayingRoute(app);

@@ -31,6 +31,7 @@ import { loadLastView, saveLastView, VALID_DESTINATIONS } from './nav/lastView';
 import type { CubeArticle } from './news-cube/adapter';
 import { AjnAppearanceProvider } from './components/ajn-platform-redesign/AppearanceProvider';
 
+const WeatherView = lazy(() => import('./components/WeatherView').then((m) => ({ default: m.WeatherView })));
 const NewsCubePage = lazy(() => import('./news-cube/NewsCubePage'));
 
 const RECENTLY_PLAYED_STORAGE_KEY = 'ajn.recentlyPlayed.v1';
@@ -81,6 +82,7 @@ function getDestinationFromHash(): Destination {
     case 'bannedvideo': return 'news';
     case 'news-cube': return 'news-cube';
     case 'shows': return 'shows';
+    case 'weather': return 'weather';
     case 'radio':
     case 'ajn-radio': return 'radio';
     case 'dev':
@@ -468,6 +470,11 @@ export default function App() {
               onClear={() => setWatchLaterEntries([])}
               onNavigate={navigateTo}
             />
+          </div>
+        )}
+        {destination === 'weather' && (
+          <div key="view-weather" className="view-fade-in w-full">
+            <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading Weather…</p>}><WeatherView /></Suspense>
           </div>
         )}
         {destination === 'dev' && (

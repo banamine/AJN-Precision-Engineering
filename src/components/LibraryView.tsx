@@ -60,12 +60,14 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [retryTick, setRetryTick] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => loadFavorites());
   const [showFavorites, setShowFavorites] = useState(false);
+  const [sort, setSort] = useState<'' | 'name' | 'added' | 'genre'>(() => { try { const v = localStorage.getItem('ajn.library.sort'); return v === 'name' || v === 'added' || v === 'genre' ? v : ''; } catch { return ''; } });
   const [openSeries, setOpenSeries] = useState<Set<string>>(() => new Set());
   const [openTracks, setOpenTracks] = useState<Set<string>>(() => new Set());
 
   useEffect(() => { saveFavorites(favoriteIds); }, [favoriteIds]);
   useEffect(() => { const t = setTimeout(() => setDebounced(query.trim()), SEARCH_DEBOUNCE_MS); return () => clearTimeout(t); }, [query]);
-  useEffect(() => { setPage(1); }, [category, showId, decade, debounced, showFavorites]);
+  useEffect(() => { try { localStorage.setItem('ajn.library.sort', sort); } catch { /* storage unavailable: the choice just won't persist */ } }, [sort]);
+  useEffect(() => { setPage(1); }, [category, showId, decade, debounced, showFavorites, sort]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -86,6 +88,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
       if (decade !== null) p.set('decade', String(decade));
       if (debounced) p.set('q', debounced);
     }
+    if (sort) p.set('sort', sort);
     if (showFavorites && favoriteIds.size === 0) { setData({ page: 1, totalPages: 1, totalItems: 0, items: [] }); return; }
     setLoading(true); setLoadError(null);
     fetch(`/api/library/items?${p}`, { signal: ctrl.signal })
@@ -94,7 +97,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
       .catch((e) => { if (e.name !== 'AbortError') { setData(null); setLoadError(e?.message || 'request failed'); setLoading(false); } });
     return () => ctrl.abort();
     // favorites only matter for the Favorites view
-  }, [page, category, showId, decade, debounced, showFavorites, showFavorites ? favoriteIds : null, retryTick]);
+  }, [page, category, showId, decade, debounced, showFavorites, showFavorites ? favoriteIds : null, retryTick, sort]);
 
   const cat = useMemo(() => heat?.find((c) => c.categoryId === category) ?? null, [heat, category]);
   const allTotal = useMemo(() => heat ? heat.reduce((n, c) => n + c.total, 0) : 0, [heat]);
@@ -247,7 +250,19 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
 
       <div className="flex items-center justify-between text-[11px] text-neutral-500">
         <span aria-live="polite">{loading ? 'Loading…' : data ? `${data.totalItems} ${data.totalItems === 1 ? 'item' : 'items'}` : ''}</span>
-        {data && data.totalPages > 1 && <Pager page={data.page} total={data.totalPages} onPage={setPage} />}
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5">
+            <span>Sort by</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort library items" data-testid="library-sort"
+              className="rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-[11px] text-neutral-200 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+              <option value="">{debounced ? 'Best match' : 'Default'}</option>
+              <option value="name">Name (A–Z)</option>
+              <option value="added">Date added (newest)</option>
+              <option value="genre">Genre</option>
+            </select>
+          </label>
+          {data && data.totalPages > 1 && <Pager page={data.page} total={data.totalPages} onPage={setPage} />}
+        </div>
       </div>
 
       {loadError && !loading && (
