@@ -4,6 +4,7 @@ import { PlayCircle, Heart, Bookmark } from "lucide-react";
 import { RUSH_PRELUDE_PROGRAM, RUSH_PROGRAM, resolveRushNext, rushProgramDate, upNextLabel, type RushNext } from "../utils/rushNext";
 import { loadRushSettings, markRushPreludeSeenToday, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
 import MinimalPlayer from "../MinimalPlayer";
+import { BrowsePanel } from "./BrowsePanel";
 import { toPlayableSrc } from "../utils/playableSrc";
 import { reportTelemetry } from "../telemetry";
 import { AvSyncControls } from "./AvSyncControls";
@@ -231,6 +232,32 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
     });
     return () => { live = false; };
   }, [archiveMusicOn, nowPlaying, schedulePrograms]);
+
+  // Browse panel "Up Next": the next programs on this channel (same schedule lookup the advance uses; cached per playing item).
+  const [browseUpcoming, setBrowseUpcoming] = useState<Program[]>([]);
+  useEffect(() => {
+    if (!nowPlaying || !nowPlaying.channelId || nowPlaying.channelId === "rush-vod" || isQueuePart(nowPlaying.programId)) {
+      setBrowseUpcoming((current) => current.length ? [] : current);
+      return;
+    }
+    let live = true;
+    void schedulePrograms(nowPlaying).then((programs: Program[]) => {
+      if (!live || latestRef.current !== nowPlaying) return;
+      const pick = pickNext(nowPlaying, programs);
+      if (!pick || !programs.length) { setBrowseUpcoming([]); return; }
+      if (pick.kind === "segment") { setBrowseUpcoming([pick.seg as Program]); return; }
+      const count = Math.min(6, programs.length);
+      setBrowseUpcoming(Array.from({ length: count }, (_, offset) => programs[(pick.nextIndex + offset) % programs.length]));
+    }).catch(() => { if (live) setBrowseUpcoming([]); });
+    return () => { live = false; };
+  }, [nowPlaying, schedulePrograms]);
+  const browseRecent = useMemo(() => {
+    const current = nowPlaying;
+    return (Array.isArray(recentlyPlayed) ? recentlyPlayed as RecentlyPlayedItem[] : [])
+      .filter((item) => item.programId !== current?.programId && item.archivePath !== current?.archivePath && item.src !== current?.src)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 4);
+  }, [recentlyPlayed, nowPlaying]);
 
   const resumeArchiveRecent = useCallback((item: RecentlyPlayedItem) => {
     if (onResumeRecentlyPlayed) {
@@ -661,6 +688,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={onError}
         overlaySlot={captionOverlaySlot}
+        browseSlot={<BrowsePanel upcoming={browseUpcoming} recent={browseRecent} onSelectUpcoming={selectArchiveUpcoming} onResumeRecent={resumeArchiveRecent} onPlayProgram={onSelectProgram} onNavigate={(d) => onNavigate?.(d)} />}
         autoplayBlockedLabel={nowPlaying.channelId === "rush-vod" ? "Next hour ready — tap Play" : undefined}
         onProgressEvent={(positionSeconds: number, durationSeconds?: number) => {
           const itemId = nowPlaying.assetId || nowPlaying.programId || nowPlaying.sourceId || nowPlaying.archivePath || nowPlaying.src;

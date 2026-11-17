@@ -57,3 +57,8 @@ Drop in over v5 (files only; no images, no server change).
 - Fix: calm wind showed "0° 0 kt" -> "Calm".
 - Unverified: red/orange EC warning colour mapping (only statements and yellow warnings seen live); EC licence text (check attribution rules before publishing).
 - Test: node --experimental-strip-types on test-ecan.ts (imports need .ts extensions).
+
+## v7 — quick places + no background polling
+- NEW src/utils/weatherQuickPicks.ts (12 one-tap places, scrolls sideways); CHANGED src/components/WeatherView.tsx.
+- Removed every auto-refresh timer (forecast, alerts, airport, AQHI, TAF). The page holds what it loaded until Refresh, a new place, or reopening. Refresh re-asks all sources.
+- This stops errors appearing a minute or two after a good first load.

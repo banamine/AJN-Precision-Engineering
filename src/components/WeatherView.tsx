@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { QUICK_PICKS } from '../utils/weatherQuickPicks';
 import { WeatherAlerts } from './WeatherAlerts';
 import { WeatherAirport } from './WeatherAirport';
 import { WeatherAirQuality } from './WeatherAirQuality';
@@ -11,7 +12,7 @@ import { backdropFor, backdropUrl, defaultUnits, describeCode, forecastUrl, desc
 /* Weather page (More menu). Real data from Open-Meteo, fetched in the browser; the chosen place is kept in this browser only.
  * States are explicit: no place, loading, error (with the reason), ready. No placeholder numbers are ever shown. */
 type Status = { kind: 'idle' } | { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ok' };
-const REFRESH_MS = 15 * 60_000;
+/* No background polling: what is on screen stays exactly as loaded until the person taps Refresh, picks another place, or reopens the page. */
 
 function readPlace(): WeatherPlace | null { try { return parseStoredPlace(window.localStorage.getItem(PLACE_KEY)); } catch { return null; } }
 const placeKey = (p: WeatherPlace) => `${p.latitude.toFixed(4)},${p.longitude.toFixed(4)}`;
@@ -57,8 +58,7 @@ export function WeatherView() {
   useEffect(() => {
     if (!place) return undefined;
     void fetchReport(place);
-    const t = window.setInterval(() => void fetchReport(place), REFRESH_MS);
-    return () => { window.clearInterval(t); abortRef.current?.abort(); };
+    return () => { abortRef.current?.abort(); };
   }, [place, fetchReport]);
 
   /* Official alerts (US only) and airport reports: each source loads, refreshes and fails on its own. */
@@ -130,16 +130,16 @@ export function WeatherView() {
   useEffect(() => {
     if (!place) return undefined;
     void loadAlerts(place); void loadMetars(place); void loadAqhi(place);
-    const t = window.setInterval(() => { void loadAlerts(place); void loadMetars(place); void loadAqhi(place); }, REFRESH_MS);
-    return () => { window.clearInterval(t); alertsAbort.current?.abort(); metarAbort.current?.abort(); aqhiAbort.current?.abort(); };
+    return () => { alertsAbort.current?.abort(); metarAbort.current?.abort(); aqhiAbort.current?.abort(); };
   }, [place, loadAlerts, loadMetars, loadAqhi]);
   useEffect(() => {
     if (!stationId) { setTaf({ kind: 'idle' }); return undefined; }
     setTaf({ kind: 'loading' }); void loadTaf(stationId);
-    const t = window.setInterval(() => void loadTaf(stationId), REFRESH_MS);
-    return () => { window.clearInterval(t); tafAbort.current?.abort(); };
+    return () => { tafAbort.current?.abort(); };
   }, [stationId, loadTaf]);
 
+  /* Refresh re-asks every source once; each keeps its own result, and a failure shows only when the person asked for the refresh. */
+  const refreshAll = (p: WeatherPlace) => { void fetchReport(p); void loadAlerts(p); void loadMetars(p); void loadAqhi(p); if (stationId) void loadTaf(stationId); };
   const choose = (p: WeatherPlace) => { savePlace(p); setAlerts({ kind: 'idle' }); setAqhi({ kind: 'idle' }); setMetars({ kind: 'idle' }); setTaf({ kind: 'idle' }); setStationId(null); setStatus({ kind: 'idle' }); setReport(readLast(p)); setPlace(p); setMatches(null); setQuery(''); setSearchMsg(null); setImgOk(true); };
   /* Autocomplete: runs ~0.3 s after typing stops; a newer keystroke cancels the older request. Enter / Search runs it at once. */
   const runSearch = useCallback(async (q: string, announce: boolean) => {
@@ -197,7 +197,7 @@ export function WeatherView() {
           <div className="flex flex-wrap gap-2">
             <button type="button" data-testid="weather-units" aria-pressed={units === 'metric'} onClick={() => updatePrefs({ ...prefs, units: units === 'us' ? 'metric' : 'us' })} className="ck-key ck-key--sm !min-h-[44px]">{units === 'us' ? '°F · mph' : '°C · km/h'}</button>
             <button type="button" data-testid="weather-plain" aria-pressed={prefs.plain} onClick={() => updatePrefs({ ...prefs, plain: !prefs.plain })} className="ck-key ck-key--sm !min-h-[44px]">{prefs.plain ? 'Photo background' : 'Plain background'}</button>
-            {place && <button type="button" data-testid="weather-refresh" onClick={() => void fetchReport(place)} className="ck-key ck-key--sm !min-h-[44px]">Refresh</button>}
+            {place && <button type="button" data-testid="weather-refresh" onClick={() => refreshAll(place)} className="ck-key ck-key--sm !min-h-[44px]">Refresh</button>}
           </div>
         </header>
 
@@ -207,6 +207,12 @@ export function WeatherView() {
           <button type="submit" data-testid="weather-search-go" className="ck-key ck-key--sm is-latched !min-h-[44px]">Search</button>
           <button type="button" data-testid="weather-locate" onClick={useMyLocation} className="ck-key ck-key--sm !min-h-[44px]">Use my location</button>
         </form>
+        <div data-testid="weather-quick" role="group" aria-label="Quick places" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          {QUICK_PICKS.map((q) => {
+            const on = !!place && Math.abs(place.latitude - q.place.latitude) < 0.01 && Math.abs(place.longitude - q.place.longitude) < 0.01;
+            return <button key={q.label} type="button" aria-pressed={on} onClick={() => choose(q.place)} className={`ck-key ck-key--sm !min-h-[44px] shrink-0 whitespace-nowrap ${on ? 'is-latched' : ''}`}>{q.label}</button>;
+          })}
+        </div>
         {searchMsg ? <p role="status" className={`text-xs ${searchMsg.warn ? 'font-semibold text-amber-300' : 'text-neutral-100'}`}>{searchMsg.text}</p>
           : !place && <p className="text-xs text-neutral-100">Search for a city or use your current location.</p>}
         {matches && matches.length > 0 && (

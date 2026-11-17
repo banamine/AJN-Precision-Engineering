@@ -16,7 +16,7 @@ import {
 const NeuralTwinView = lazy(() => import('./NeuralTwinView').then((m) => ({ default: m.NeuralTwinView })));
 import { ProxyMonitor } from './ProxyMonitor';
 import { ProxyTester } from './ProxyTester';
-import { AudioBridgeStatus } from './AudioBridgeStatus';
+import { AudioBridgeConnected } from './AudioBridgeConnected';
 import { Destination, RecentlyPlayedItem } from '../types';
 import { syncRecentlyPlayed, SYNC_ENDPOINT, type SyncResult } from '../utils/cloudSync';
 
@@ -194,7 +194,7 @@ export function DevModeView({ onNavigate, recentlyPlayed }: DevModeViewProps) {
 
         {/* Module 2: AudioBridge Singleton Visualizer */}
         <section aria-labelledby="audio-bridge-heading">
-          <AudioBridgeStatus />
+          <AudioBridgeConnected />
         </section>
 
         {/* Module 3: Live Media & Proxy Inspector */}

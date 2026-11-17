@@ -55,6 +55,8 @@ interface PlayerChromeProps {
   analyzerState: AnalyzerState;
   diagnosticsOpen: boolean;
   onToggleDiagnostics: () => void;
+  /** Hide the analyzer pill for normal users (diagnostics live in Developer Mode). Default: shown. */
+  showDiagnosticsPill?: boolean;
   /** Audio bar only. */
   thumbnailUrl?: string;
   onThumbnailError?: () => void;
@@ -240,7 +242,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
         />
       </div>
-      <button
+      {p.showDiagnosticsPill !== false && (<button
         type="button"
         data-testid="analyzer-pill"
         data-state={p.analyzerState}
@@ -254,7 +256,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
         <span className={`h-2 w-2 rounded-full ${PILL[p.analyzerState].dot}`} />
         <span className="hidden whitespace-nowrap md:inline">{PILL[p.analyzerState].label}</span>
         <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform md:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />
-      </button>
+      </button>)}
       <button
         type="button"
         disabled={p.visualizerLockedOn}
@@ -338,13 +340,13 @@ export function PlayerChrome(p: PlayerChromeProps) {
             <input type="range" min={0} max={1} step={0.05} value={p.isMuted ? 0 : p.volume} onChange={(e) => p.onVolume(Number(e.target.value))} aria-label="Volume"
               className="ml-1 hidden h-1 w-20 cursor-pointer appearance-none rounded bg-neutral-700 accent-[#E06D3B] md:block" />
           </div>
-          <button type="button" data-testid="analyzer-pill" data-state={p.analyzerState} onClick={p.onToggleDiagnostics} aria-expanded={p.diagnosticsOpen} aria-controls="audio-bridge-drawer"
+          {p.showDiagnosticsPill !== false && (<button type="button" data-testid="analyzer-pill" data-state={p.analyzerState} onClick={p.onToggleDiagnostics} aria-expanded={p.diagnosticsOpen} aria-controls="audio-bridge-drawer"
             aria-label={`${PILL[p.analyzerState].label} — ${p.diagnosticsOpen ? "hide" : "show"} diagnostics`} title="Diagnostics"
             className={`flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-1.5 text-xs sm:h-9 sm:px-2 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${PILL[p.analyzerState].text}`}>
             <span className={`h-2 w-2 rounded-full ${PILL[p.analyzerState].dot}`} />
             <span className="hidden whitespace-nowrap lg:inline">{PILL[p.analyzerState].label}</span>
             <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform lg:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />
-          </button>
+          </button>)}
           <button type="button" disabled={p.visualizerLockedOn} className={`${btn} ${visualizerPressed ? "bg-sky-500/20 text-sky-300" : ""} ${p.visualizerLockedOn ? "cursor-not-allowed opacity-80" : ""}`} onClick={p.onToggleVisualizer} aria-pressed={visualizerPressed}
             aria-label={visualizerLabel} title={visualizerLabel}><AudioLines className="h-4 w-4 sm:h-5 sm:w-5" /></button>
         </div>

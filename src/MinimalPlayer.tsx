@@ -16,7 +16,7 @@ import { BufferJingle } from "./components/BufferJingle";
 import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
 import { releaseMediaElementAudioSource, useAudioNormalization } from "./use-audio-normalization";
 import { AUDIO_FADE_IN_MS, AUDIO_FADE_OUT_MS, audioFadeEnabled, rampVolume, shouldFadeOut } from "./utils/audioFade";
-import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
+import { publishDiagnosticsTap, resetDiagnosticsTap } from "./audio/diagnosticsTap";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
 import { ArchiveMusicSpectrum } from "./components/ArchiveMusicSpectrum";
 import { MiniEqVisualizer } from "./components/MiniEqVisualizer";
@@ -63,6 +63,8 @@ interface MinimalPlayerProps {
   onToggleFavorite?: () => void;
   /** Optional in-player content; rendered inside the fullscreen stage. */
   overlaySlot?: ReactNode;
+  /** Optional browse area rendered under the player (replaces the old diagnostics drawer). */
+  browseSlot?: ReactNode;
 }
 
 const TV_NEWS_SLICE_SEC = 300;
@@ -116,7 +118,7 @@ const PRELUDE_BACKDROP: BackdropSource = {
   poster: `${import.meta.env.BASE_URL}media/prelude-loop-poster.jpg`,
 };
 
-export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite, overlaySlot }: MinimalPlayerProps) {
+export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite, overlaySlot, browseSlot }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSavedPositionRef = useRef(0);
@@ -1276,6 +1278,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     }
   }, []);
   const bufferStatusLine = bufferLine(bufferGaugeSnapshot, isVideo && isPlaying && !isHls);
+  // Developer Mode (Neural Twin page) shows the AudioBridge diagnostics; it reads this same tap, no extra audio nodes.
+  useEffect(() => {
+    publishDiagnosticsTap({ analyser: analyserNode, bufferLine: bufferStatusLine, onCopyBufferLog: copyBufferLog });
+  }, [analyserNode, bufferStatusLine, copyBufferLog]);
+  useEffect(() => () => resetDiagnosticsTap(), []);
 
   return (
     <div>
@@ -1445,6 +1452,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onToggleVisualizer={() => setVisualizerOn((v) => !v)}
         analyzerState={analyzerState}
         diagnosticsOpen={diagnosticsOpen}
+        showDiagnosticsPill={false}
         onToggleDiagnostics={() => setDiagnosticsOpen((v) => !v)}
         thumbnailUrl={radioBriefingOn ? undefined : artUrl}
         onThumbnailError={() => markArtFailed(artUrl)}
@@ -1464,11 +1472,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onToggleFavorite={onToggleFavorite}
       />
     </div>
-      {diagnosticsOpen && (
-        <div id="audio-bridge-drawer" className="mt-3">
-          <AudioBridgeStatus analyser={analyserNode} bufferLine={bufferStatusLine} onCopyBufferLog={copyBufferLog} />
-        </div>
-      )}
+      {browseSlot ? <div className="mt-3" data-testid="player-browse-slot">{browseSlot}</div> : null}
     </div>
   );
 }
