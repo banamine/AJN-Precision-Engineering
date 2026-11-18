@@ -83,8 +83,6 @@ export function StoryDrawer({ story, focusChannel, onClose }: { story: ChyronSto
           {caption.state === 'error' && <p role="alert" className="text-rose-300">Captions unavailable: {caption.message}</p>}
           {caption.state === 'ok' && <><p className="leading-relaxed">{caption.text}</p><p className="mt-1 text-[11px] text-neutral-500">Source: {caption.label}</p></>}
         </section>
-        <a className="mt-auto inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-500" target="_blank" rel="noopener noreferrer"
-           href={`https://archive.org/details/${encodeURIComponent(primary.identifier)}/start/${primary.startSec}`}>Open on Archive.org</a>
       </div>
     </div>
   );

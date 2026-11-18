@@ -5,10 +5,11 @@ export type PlayerKeyAction = 'toggle-play' | 'toggle-mute' | 'fullscreen' | 'se
 export const SEEK_STEP_SECONDS = 10;
 export const SEEK_STEP_LONG_SECONDS = 30;
 
-export interface KeyInfo { key: string; ctrlKey: boolean; altKey: boolean; metaKey: boolean; shiftKey: boolean; targetTag?: string; targetType?: string; editable?: boolean; defaultPrevented?: boolean }
+export interface KeyInfo { key: string; ctrlKey: boolean; altKey: boolean; metaKey: boolean; shiftKey: boolean; targetTag?: string; targetType?: string; editable?: boolean; defaultPrevented?: boolean; inModal?: boolean }
 
 export function playerKeyAction(k: KeyInfo): PlayerKeyAction | null {
   if (k.defaultPrevented || k.ctrlKey || k.altKey || k.metaKey) return null;
+  if (k.inModal) return null; // keys typed inside a full-screen viewer belong to the viewer (scrolling, Tab, Esc), never to the player
   const tag = (k.targetTag ?? '').toUpperCase();
   if (k.editable || tag === 'TEXTAREA' || tag === 'SELECT') return null;
   if (tag === 'INPUT') return null; // text fields, and range sliders which own the arrow keys

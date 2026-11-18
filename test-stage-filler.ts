@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { stageFillerOn, pickHeadlines } from './src/components/stageFillerLogic';
+const base = { isPlaying: true, isVideo: false, meterState: 'unavailable' as const, radioBriefingOn: false, archiveMusicOn: false };
+assert.equal(stageFillerOn(base), true);
+assert.equal(stageFillerOn({ ...base, meterState: 'active' }), false);
+assert.equal(stageFillerOn({ ...base, meterState: 'idle' }), false);
+assert.equal(stageFillerOn({ ...base, isPlaying: false }), false);
+assert.equal(stageFillerOn({ ...base, isVideo: true }), false);
+assert.equal(stageFillerOn({ ...base, radioBriefingOn: true }), false);
+assert.equal(stageFillerOn({ ...base, archiveMusicOn: true }), false);
+assert.deepEqual(pickHeadlines({ phase: 'loading', data: null, error: null }), []);
+const it = (n: number, url = 'https://x.test/' + n) => ({ id: 'i' + n, title: 'T' + n, url, source: 'S', excerpt: null, publishedAt: null, imageUrl: null });
+const view: any = { phase: 'ready', error: null, data: { status: 'ok', error: null, fetchedAt: null, digest: { top: [it(1), it(2, 'javascript:alert(1)'), it(3), it(4), it(5), it(6)] } } };
+const h = pickHeadlines(view, 4);
+assert.equal(h.length, 4); assert.deepEqual(h.map((x) => x.id), ['i1', 'i3', 'i4', 'i5']);
+console.log('stage filler tests passed');

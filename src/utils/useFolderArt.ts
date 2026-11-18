@@ -27,7 +27,7 @@ export function useFolderArt(ref: string | undefined, enabled: boolean): FolderA
     if (hit) { setArt(hit); return; }
     setArt([]);
     const ac = new AbortController();
-    fetch(`/api/archive/folder-art?path=${encodeURIComponent(path)}`, { signal: ac.signal })
+    fetch(`/api/library/folder-art?path=${encodeURIComponent(path)}`, { signal: ac.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d || !Array.isArray(d.images)) return;

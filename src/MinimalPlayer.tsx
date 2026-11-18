@@ -17,7 +17,11 @@ import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage,
 import { releaseMediaElementAudioSource, useAudioNormalization } from "./use-audio-normalization";
 import { AUDIO_FADE_IN_MS, AUDIO_FADE_OUT_MS, audioFadeEnabled, rampVolume, shouldFadeOut } from "./utils/audioFade";
 import { publishDiagnosticsTap, resetDiagnosticsTap } from "./audio/diagnosticsTap";
+import HomepageReel, { useWideStage } from "./library-reel/HomepageReel";
+import { alexPodcastArt, isInfowarsAudio } from "./library-reel/reelLogic";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
+import StageFiller from "./components/StageFiller";
+import { stageFillerOn } from "./components/stageFillerLogic";
 import { ArchiveMusicSpectrum } from "./components/ArchiveMusicSpectrum";
 import { MiniEqVisualizer } from "./components/MiniEqVisualizer";
 import { PreludeBackdropVideo, type BackdropSource } from "./components/PreludeBackdropVideo";
@@ -183,12 +187,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // building a fresh one. Each element still gets its own Web Audio source exactly once.
   const audioHostRef = useRef<HTMLDivElement>(null);
   const [repeatOne, setRepeatOne] = useState(false);
+  const wideStage = useWideStage();
   const folderArt = useFolderArt(nowPlaying?.archivePath, mediaType !== "video");
   // Cover order: folder art, the item's own thumbnail, then the Archive item's cover (audio only). A cover that fails to load is dropped, so the placeholder shows instead of a broken image.
   const itemArt = useMemo(() => (mediaType === "video" ? null : archiveItemArtFor(nowPlaying?.archivePath ?? activeSrc)), [mediaType, nowPlaying?.archivePath, activeSrc]);
   // Every candidate that fails to load is remembered, and the NEXT one is tried (the chain used to stop at the first failure).
   const [failedArts, setFailedArts] = useState<string[]>([]);
-  const artUrl = [folderArt[0]?.url, nowPlaying?.thumbnailUrl, itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
+  const artUrl = [alexPodcastArt(nowPlaying?.channelId), folderArt[0]?.url, nowPlaying?.thumbnailUrl, itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
   const markArtFailed = (u?: string | null): void => { if (u) setFailedArts((prev) => (prev.includes(u) ? prev : [...prev, u])); };
   const archiveTrack = useMemo(
     () => cleanArchiveMusicFilename(nowPlaying?.archivePath ?? activeSrc),
@@ -218,7 +223,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // it (a re-run calls load(), which aborts the play() in flight).
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
-  const { diagnosticsAnalyserRef, resumeAudioContext } = useAudioNormalization(
+  const { diagnosticsAnalyserRef, diagnosticsReady, resumeAudioContext } = useAudioNormalization(
     mediaRef,
     isVideo ? "video" : "audio",
     activeSrc,
@@ -228,11 +233,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // the overlay visualizer reads the same analyser tap (no extra audio nodes).
   const [diagnosticsOpen, setDiagnosticsOpen] = usePersistentFlag("ajn_diagnostics_expanded", false);
   const [visualizerOn, setVisualizerOn] = usePersistentFlag("ajn_visualizer_enabled", true);
-  const analyserNode = diagnosticsAnalyserRef.current;
+  // Only trust the analyser when the element really feeds it (CORS bridge connected). Otherwise an empty analyser would read 0 and the badge would claim "silence" while audio plays.
+  const analyserNode = diagnosticsReady ? diagnosticsAnalyserRef.current : null;
   // Archive-music extras: decorative backdrop video + mini multicolor equalizer on the cover tile. Both are decorative; the equalizer READS the same analyser as the blue bars.
   const [preludeVideoOn] = usePersistentFlag("ajn_prelude_video_enabled", true);
   const [miniEqOn] = usePersistentFlag("ajn_mini_eq_enabled", true);
   const analyzerState = useAnalyzerState(analyserNode, isPlaying);
+  const fillerOn = stageFillerOn({ isPlaying, isVideo, meterState: analyzerState, radioBriefingOn, archiveMusicOn });
 
   const eventMeta = useCallback(() => ({
     guideId: nowPlaying?.guideId ?? null,
@@ -1242,7 +1249,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       const t = e.target as HTMLElement | null;
       const action = playerKeyAction({
         key: e.key, ctrlKey: e.ctrlKey, altKey: e.altKey, metaKey: e.metaKey, shiftKey: e.shiftKey,
-        targetTag: t?.tagName, targetType: (t as HTMLInputElement | null)?.type, editable: !!t?.isContentEditable, defaultPrevented: e.defaultPrevented,
+        inModal: !!t?.closest?.('[data-ajn-modal]'), targetTag: t?.tagName, targetType: (t as HTMLInputElement | null)?.type, editable: !!t?.isContentEditable, defaultPrevented: e.defaultPrevented,
       });
       if (!action) return;
       const box = containerRef.current;
@@ -1346,6 +1353,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
                   <ArchiveMusicSpectrum analyser={analyserNode} isPlaying={isPlaying} analyzerState={analyzerState} />
                 </>
               )}
+              {fillerOn && <PreludeBackdropVideo source={PRELUDE_BACKDROP} enabled={preludeVideoOn} />}
               {artUrl && !radioBriefingOn && (
                 <img src={artUrl} alt="" aria-hidden="true" data-testid="audio-backdrop" className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-25 blur-md" />
               )}
@@ -1363,6 +1371,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
                 mode={radioBriefingOn ? "audio-briefing" : "audio"}
               />
               {radioBriefingOn && <RadioBriefingPlayerOverlay stationId={nowPlaying?.channelId} />}
+              {fillerOn && <StageFiller programId={nowPlaying?.programId} title={nowPlaying?.title ?? ""} subtitle={nowPlaying?.subtitle ?? nowPlaying?.channelName} artUrl={artUrl} duration={nowPlaying?.duration} />}
               {isPlaying && (
                 <div data-testid="on-air-badge" className="pointer-events-none absolute left-3 top-3 z-[3] flex items-center gap-2 rounded bg-black/60 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
@@ -1384,9 +1393,15 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
               ))}
             </>
           )}
+          {wideStage && isInfowarsAudio(nowPlaying) && (
+            <div className="absolute right-[2%] top-1/2 z-[5] -translate-y-1/2 lg:right-[5%]">
+              <HomepageReel compact isPlaying={isPlaying} onPlay={() => void play()} onPause={() => pause()} />
+            </div>
+          )}
           <div ref={audioHostRef} data-testid="audio-host" className="absolute left-0 top-0 h-0 w-0 overflow-hidden" />
         </div>
       )}
+      {!isVideo && !wideStage && isInfowarsAudio(nowPlaying) && <HomepageReel isPlaying={isPlaying} onPlay={() => void play()} onPause={() => pause()} />}
       {overlaySlot}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
       <BufferJingle status={statusText} enabled={isVideo} />

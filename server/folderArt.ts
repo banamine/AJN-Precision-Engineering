@@ -2,6 +2,8 @@
  *  (cover.jpg, folder.jpg, band photos…), taken from the item's own file list. Nothing invented:
  *  no images in the folder → an empty list and the player shows no art. */
 import type { Express } from 'express';
+import { registerHomepageLibraryRoutes } from './homepageLibrary';
+import { registerEpisodeNoteRoute } from './episodeNote';
 
 const IMG = /\.(jpe?g|png|webp)$/i;
 const PREFERRED = /(cover|folder|front|album|artwork|poster|band|artist|logo)/i;
@@ -69,7 +71,9 @@ async function loadIndex(id: string): Promise<Index> {
 }
 
 export function registerFolderArtRoute(app: Express): void {
-  app.get('/api/archive/folder-art', async (req, res) => {
+  registerEpisodeNoteRoute(app); // podcast episode description for the player card
+  registerHomepageLibraryRoutes(app); // library homepage captures: mounted here so server.ts needs no edit
+  app.get(['/api/library/folder-art', '/api/archive/folder-art'], async (req, res) => {
     const parsed = parseDownloadPath(String(req.query.path ?? ''));
     if (!parsed) return res.status(400).json({ error: 'path must be /download/<identifier>/<file>' });
     try {

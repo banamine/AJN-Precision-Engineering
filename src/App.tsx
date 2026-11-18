@@ -378,6 +378,7 @@ export default function App() {
               nowPlaying={nowPlaying}
               recentlyPlayed={recentlyPlayed}
               onResumeRecentlyPlayed={resumeRecentlyPlayed}
+              onClearRecentlyPlayed={() => setRecentlyPlayed([])}
               favorites={favorites}
               onPlayFavorite={playSaved}
             />

@@ -34,6 +34,12 @@ function store(s?: PresetStorage): PresetStorage | null {
   try { return s ?? (typeof window === 'undefined' ? null : window.localStorage); } catch { return null; }
 }
 
+/** Canonical live program id for a station ("<station id>:live:d0", the same id the server builds). A preset saved or built without one
+ *  must still carry it: the signal meter (visualizer) is only allowed for live stations whose program id is known. */
+export function presetProgramId(p: Pick<RadioPreset, 'channelId' | 'programId'>): string {
+  return p.programId ?? `${p.channelId}:live:d0`;
+}
+
 function clean(slot: RadioPresetSlot, o: Record<string, unknown>): RadioPreset | null {
   if (!isStr(o.channelId) || !o.channelId.startsWith('radio:') || !isStr(o.src) || !isStr(o.title)) return null;
   const number = typeof o.number === 'number' && Number.isInteger(o.number) && o.number > 0 ? o.number : undefined;

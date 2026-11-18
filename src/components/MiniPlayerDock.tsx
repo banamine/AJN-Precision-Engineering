@@ -5,7 +5,7 @@ import { AvSyncControls } from './AvSyncControls';
 import { findPersistentMedia, usePersistentMedia } from '../hooks/usePersistentMedia';
 import { useStationTheme } from '../utils/stationArt';
 import { StationIcon } from './StationBanner';
-import { listRadioPresets, pickAdjacentStation } from '../utils/radioPresets';
+import { listRadioPresets, pickAdjacentStation, presetProgramId } from '../utils/radioPresets';
 import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import { requestRadioDock } from '../utils/radioDock';
 import { bufferAheadSeconds, dockStatusLabel, isReconnecting } from '../utils/bufferAhead';
@@ -45,7 +45,7 @@ export function IdleDock({ onPlayProgram }: { onPlayProgram?: PlayProgramCallbac
     const first = pickAdjacentStation(listRadioPresets(), undefined, 1);
     if (!first || !onPlayProgram) { requestRadioDock('open'); return; }
     if (first.corsVerified) registerLiveRadioMeter(first.channelId);
-    onPlayProgram(first.src, first.title, first.subtitle, 'audio', first.channelId, first.guideId ?? 'audio-podcasts', first.programId);
+    onPlayProgram(first.src, first.title, first.subtitle, 'audio', first.channelId, first.guideId ?? 'audio-podcasts', presetProgramId(first));
   };
   return (
     <aside id="persistent-mini-player" data-testid="idle-dock" aria-label="Radio dock" className={DOCK_SHELL}>
@@ -91,7 +91,7 @@ export function MiniPlayerDock({
     const next = pickAdjacentStation(listRadioPresets(), nowPlaying.channelId, dir);
     if (!next || !onPlayProgram) return;
     if (next.corsVerified) registerLiveRadioMeter(next.channelId);
-    onPlayProgram(next.src, next.title, next.subtitle, 'audio', next.channelId, next.guideId ?? 'audio-podcasts', next.programId);
+    onPlayProgram(next.src, next.title, next.subtitle, 'audio', next.channelId, next.guideId ?? 'audio-podcasts', presetProgramId(next));
   };
 
   // Read status and volume from the existing authoritative media element; do not create another player.
