@@ -688,7 +688,6 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         onPauseEvent={() => console.log("[AJN PLAYBACK] pause", meta)}
         onErrorEvent={onError}
         overlaySlot={captionOverlaySlot}
-        browseSlot={<BrowsePanel upcoming={browseUpcoming} recent={browseRecent} onSelectUpcoming={selectArchiveUpcoming} onResumeRecent={resumeArchiveRecent} onPlayProgram={onSelectProgram} onNavigate={(d) => onNavigate?.(d)} />}
         autoplayBlockedLabel={nowPlaying.channelId === "rush-vod" ? "Next hour ready — tap Play" : undefined}
         onProgressEvent={(positionSeconds: number, durationSeconds?: number) => {
           const itemId = nowPlaying.assetId || nowPlaying.programId || nowPlaying.sourceId || nowPlaying.archivePath || nowPlaying.src;
@@ -780,6 +779,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       )}
     </>
   );
+  const browsePanel = !archiveMusicOn
+    ? <BrowsePanel upcoming={browseUpcoming} recent={browseRecent} onSelectUpcoming={selectArchiveUpcoming} onResumeRecent={resumeArchiveRecent} onPlayProgram={onSelectProgram} onNavigate={(d) => onNavigate?.(d)} />
+    : null;
   const isAudioPage = nowPlaying.mediaType === "audio" || archiveMusicOn;
 
   if (isAudioPage) {
@@ -789,6 +791,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
         {playbackFailure}
         {videoControls}
+        {browsePanel}
         {captionState.phase !== "off" && <CaptionPanel state={captionState} />}
         {secondaryPlayerInfo}
       </div>
@@ -812,6 +815,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
             <div ref={playerWrapRef} className="ajn-player-page-video" style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
             {playbackFailure}
             {videoControls}
+            {browsePanel}
             {!captionPanel && secondaryPlayerInfo}
           </div>
           {desktopSidebar}
@@ -824,6 +828,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
             {playerMetadata}
             {playbackFailure}
             {videoControls}
+            {browsePanel}
             {secondaryPlayerInfo}
           </div>
         </>

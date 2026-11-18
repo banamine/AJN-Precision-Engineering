@@ -1472,7 +1472,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onToggleFavorite={onToggleFavorite}
       />
     </div>
-      {browseSlot ? <div className="mt-3" data-testid="player-browse-slot">{browseSlot}</div> : null}
     </div>
   );
 }
