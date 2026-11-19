@@ -58,7 +58,7 @@ Known limits (honest)
 
 
 ROUND 2 - VISUALIZER (added 2026-11-18)
-- src/MinimalPlayer.tsx   badge/bars only use the analyser when the audio is really connected to it. Podcasts without a meter now say "no signal meter for this source" instead of a false "silence".
+- src/MinimalPlayer.tsx   badge/bars: the analyser is hidden only for sources not loaded in CORS mode (v7 fix: v2-v6 used a state that could lag and hid the visualizer on working sources). Podcasts without a meter now say "no signal meter for this source" instead of a false "silence".
 - src/data/podcastSources.json  +9 podcasts flagged corsVerified (probed 2026-11-18, every redirect hop sends CORS headers): Kuhner Report, Red Eye Radio, Lead Pedal, Mat's Trucking Great, TalkCDL, Truck n Hustle, Rush Limbaugh Wisdom, Ben Ferguson, Clay & Buck. If one ever fails to load in meter mode the app retries without it, so sound is never lost.
 - src/components/MiniPlayerDock.tsx  dock play / next / previous station now pass the live program id (same fix as the preset buttons).
 Still without a meter (their audio hosts send no CORS headers; badge says so): Quash, Bannon War Room, Savage Nation, Pat Gray, Jeff Fisher, Radiolab.

@@ -5,6 +5,7 @@ import { Guide, PlayProgramCallback, Destination } from '../types';
 import { AjnResourcePanel } from './AjnResourcePanel';
 import { RushEpisodePicker } from './RushEpisodePicker';
 import { LiveHealthNote } from './LiveHealthNote';
+import { PlayerWidgets, type WidgetSpec } from './PlayerWidget';
 import { loadLastView, saveLastView, VALID_DESTINATIONS } from '../nav/lastView';
 
 interface TvGuideViewProps {
@@ -89,18 +90,18 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true, playin
   });
 
   return (
-    <div className="space-y-6 pb-32 !pb-[18rem] md:!pb-[12rem]">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-800 pb-5">
+    <div className="space-y-3 pb-32 !pb-[18rem] md:!pb-[12rem]">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-800 pb-2">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${currentGuide.type === 'audio' ? 'bg-amber-500/10 text-amber-400 border-amber-500/25' : 'bg-sky-500/10 text-sky-400 border-sky-500/25'}`}>
               {currentGuide.type === 'audio' ? <Headphones className="h-4 w-4" /> : <Tv className="h-4 w-4" />}
             </div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-50">{currentGuide.name} Broadcast Grid</h1>
+            <h1 className="text-base sm:text-2xl font-semibold tracking-tight text-neutral-50">{currentGuide.name} Broadcast Grid</h1>
           </div>
-          <p className="text-xs text-neutral-400">{currentGuide.description || 'Normalized 24-hour programming timeline with live sweep line. Click any segment to stream.'}</p>
+          <p className="hidden text-xs text-neutral-400 sm:block">{currentGuide.description || 'Normalized 24-hour programming timeline with live sweep line. Click any segment to stream.'}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-300">
             <Calendar className="h-3.5 w-3.5 text-neutral-400" /><span>{dateFormatted}</span>
           </div>
@@ -115,8 +116,9 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true, playin
         </div>
       </div>
 
-      <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-2.5 backdrop-blur">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <PlayerWidgets tab="tv-guide-top" widgets={[
+        { key: 'select-guide', title: `Select guide · ${GUIDE_SHORT_NAMES[currentGuide.id] ?? currentGuide.name}`, defaultOpenWide: true, content: (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <span className="shrink-0 pl-2 text-xs font-medium text-neutral-400">Select Guide:</span>
           <div role="tablist" aria-label="Guides" className="grid flex-1 grid-cols-2 gap-1.5 rounded-lg border border-neutral-800 bg-neutral-950/80 p-1 sm:grid-cols-4">
             {guides.map((guide) => {
@@ -132,7 +134,8 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true, playin
             })}
           </div>
         </div>
-      </div>
+        ) },
+      ] as WidgetSpec[]} />
 
       {isAjnResourceGuide ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-5 shadow-2xl">
@@ -143,15 +146,19 @@ export function TvGuideView({ onSelectProgram, onNavigate, active = true, playin
           <div className="overflow-hidden rounded-xl shadow-2xl border border-neutral-800">
             <EpgGuide guideId={selectedGuideId} onSelectProgram={onSelectProgram} active={active} playingChannelId={playingChannelId} />
           </div>
-          {selectedGuideId === 'audio-podcasts' && <RushEpisodePicker onPlay={onSelectProgram} />}
-          {selectedGuideId === 'live-tv' && <LiveHealthNote />}
         </div>
       )}
 
+      <PlayerWidgets tab="tv-guide-more" widgets={[
+        ...(selectedGuideId === 'audio-podcasts' ? [{ key: 'rush', title: 'Rush episodes', content: <RushEpisodePicker onPlay={onSelectProgram} /> }] : []),
+        ...(selectedGuideId === 'live-tv' ? [{ key: 'health', title: 'Live channel health', content: <LiveHealthNote /> }] : []),
+        { key: 'legend', title: 'Guide legend', content: (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4"><div className="flex items-center gap-2 text-xs font-semibold text-neutral-200"><span className={`h-2.5 w-2.5 rounded-full ${currentGuide.type === 'audio' ? 'bg-amber-400' : 'bg-sky-400'}`} /><span>On Air Now (Active)</span></div><p className="mt-1.5 text-xs text-neutral-400">AJN resource entries are live source data when this guide is selected; other guides retain the canonical EPG grid.</p></div>
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4"><div className="flex items-center gap-2 text-xs font-semibold text-neutral-200"><span className="h-2.5 w-2.5 rounded-full bg-neutral-700" /><span>Upcoming / Archive</span></div><p className="mt-1.5 text-xs text-neutral-400">Archive entries remain available on demand through the existing playback pipeline.</p></div>
       </div>
+        ) },
+      ] as WidgetSpec[]} />
     </div>
   );
 }

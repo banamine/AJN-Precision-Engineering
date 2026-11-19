@@ -223,7 +223,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // it (a re-run calls load(), which aborts the play() in flight).
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
-  const { diagnosticsAnalyserRef, diagnosticsReady, resumeAudioContext } = useAudioNormalization(
+  const { diagnosticsAnalyserRef, resumeAudioContext } = useAudioNormalization(
     mediaRef,
     isVideo ? "video" : "audio",
     activeSrc,
@@ -233,8 +233,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // the overlay visualizer reads the same analyser tap (no extra audio nodes).
   const [diagnosticsOpen, setDiagnosticsOpen] = usePersistentFlag("ajn_diagnostics_expanded", false);
   const [visualizerOn, setVisualizerOn] = usePersistentFlag("ajn_visualizer_enabled", true);
-  // Only trust the analyser when the element really feeds it (CORS bridge connected). Otherwise an empty analyser would read 0 and the badge would claim "silence" while audio plays.
-  const analyserNode = diagnosticsReady ? diagnosticsAnalyserRef.current : null;
+  // The analyser is read at render exactly as before. It is hidden only for a source that is NOT loaded in CORS mode
+  // (corsMode undefined = the browser will not let Web Audio read it), so the badge cannot claim "silence" for audio it never receives.
+  const analyserNode = corsMode ? diagnosticsAnalyserRef.current : null;
   // Archive-music extras: decorative backdrop video + mini multicolor equalizer on the cover tile. Both are decorative; the equalizer READS the same analyser as the blue bars.
   const [preludeVideoOn] = usePersistentFlag("ajn_prelude_video_enabled", true);
   const [miniEqOn] = usePersistentFlag("ajn_mini_eq_enabled", true);

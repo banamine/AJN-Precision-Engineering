@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { PlayerWidgets, type WidgetSpec } from './PlayerWidget';
 import { Heart, Play, Tv, Radio, Sparkles, Clock, ArrowRight, Archive, Headphones, Rocket, Trash2 } from 'lucide-react';
 import { useLatestFullShows } from '../hooks/useLatestFullShows';
 import { useHomeNow } from '../hooks/useHomeNow';
@@ -172,9 +173,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
     return () => { mounted = false; };
   }, []);
 
-  return (
-    <div className="space-y-14 pb-16">
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" data-testid="home-top-grid">
+  const heroNode = (
       <section className="relative isolate overflow-hidden rounded-2xl border border-[var(--ajn-border)] bg-neutral-950 shadow-2xl">
         <img src={heroImage} alt="" aria-hidden="true" onError={() => setHeroImage('/Classic%20Archive.png')} className="absolute inset-0 h-full w-full object-cover opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/90 to-neutral-950/55" />
@@ -213,7 +212,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           <FullShowShortcuts onPlayProgram={onPlayProgram} testId="full-show-shortcuts-overlay" />
         </div>
 
-        <div className="relative z-10 min-h-[330px] flex flex-col justify-end p-6 pt-28 sm:p-8 sm:pt-28 lg:p-10 lg:pt-28">
+        <div className="relative z-10 min-h-[240px] flex flex-col justify-end p-6 pt-28 sm:p-8 sm:pt-28 lg:p-10 lg:pt-28">
           <div className="max-w-3xl space-y-4">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/20">
@@ -263,7 +262,10 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           </div>
         </div>
       </section>
-
+  );
+  const widgets: WidgetSpec[] = [
+    { key: 'hero', title: nowPlaying ? 'Now playing' : 'Featured', defaultOpenWide: true, defaultOpenNarrow: true, className: '[column-span:all]', content: heroNode },
+    { key: 'live-now', title: 'Live now', defaultOpenWide: true, content: (
       <section aria-labelledby="live-now-heading" className="min-w-0 space-y-3" data-testid="home-live-now">
         <div className="flex items-center justify-between gap-3">
           <h2 id="live-now-heading" className="text-xl font-semibold tracking-tight text-neutral-100">Live Now</h2>
@@ -286,11 +288,12 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           </div>
         )}
       </section>
-      </div>
-
+    ) },
+    { key: 'radio', title: 'Live radio & hubs', defaultOpenWide: true, content: (<div className="space-y-4">
       <LiveRadioBand />
       <HomeBroadcastHub onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
-
+    </div>) },
+    { key: 'programs', title: 'AJN Programs', content: (
       <section aria-labelledby="collections-heading" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -316,9 +319,8 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           })}
         </div>
       </section>
-
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="min-w-0 space-y-12">
+    ) },
+    { key: 'today', title: 'Today on AJN', content: (<div className="min-w-0 space-y-8">
           {daily && (
             <section aria-labelledby="today-ajn-heading" className="space-y-3" data-testid="home-today-ajn">
               <div><h2 id="today-ajn-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Today on AJN</h2><p className="text-xs text-neutral-500">Stills picked from {daily.date}'s broadcasts. Tap one to watch from that moment.</p></div>
@@ -333,7 +335,6 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               </div>
             </section>
           )}
-
           {!HUB_REPLACES_LEGACY_ROWS && (<>
           <section aria-labelledby="live-stations-heading" className="space-y-3">
             <div className="flex items-center justify-between">
@@ -343,7 +344,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               </div>
               <button type="button" onClick={() => onNavigate('tv-guide')} className="flex items-center gap-1 text-xs font-medium text-sky-400 hover:text-sky-300">Full Guide <ArrowRight className="h-3.5 w-3.5" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="home-on-now">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="home-on-now">
               {liveChannels.length === 0 && <p className="col-span-full rounded-xl border border-dashed border-neutral-800 p-5 text-sm text-neutral-500">Loading what is on now… If this stays empty, open the Full Guide.</p>}
               {liveChannels.map((channel) => (
                 <MediaCard key={channel.id} image={channel.logo} fit="contain" className="aspect-[4/3]" label={`Play ${channel.name}: ${channel.currentProgram}`}
@@ -357,11 +358,9 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
 
           <RecentCarousel now={now} onPlayProgram={onPlayProgram} onNavigate={onNavigate} playing={!!nowPlaying} />
           </>)}
-
           <AjnResourcePanel onPlayProgram={onPlayProgram} />
-        </div>
-
-        <aside className="min-w-0 space-y-10">
+    </div>) },
+    { key: 'recent', title: 'Recently played', defaultOpenWide: true, content: (
           <section aria-labelledby="recent-heading" className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <h2 id="recent-heading" tabIndex={-1} ref={recentHeadingRef} className="text-lg font-semibold tracking-tight text-neutral-100 focus:outline-none">Recently Played</h2>
@@ -409,7 +408,8 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               </ul>
             )}
           </section>
-
+    ) },
+    { key: 'favorites', title: 'Favorites', content: (
           <section aria-labelledby="favorites-heading" className="space-y-3" data-testid="home-favorites-section">
             <div className="flex items-center justify-between">
               <h2 id="favorites-heading" className="flex items-center gap-2 text-lg font-semibold tracking-tight text-neutral-100"><Heart className="h-4 w-4 fill-rose-500 text-rose-500" aria-hidden="true" /> Favorites</h2>
@@ -437,7 +437,8 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               </ul>
             )}
           </section>
-
+    ) },
+    { key: 'jump', title: 'Jump to', content: (
           <section aria-labelledby="resources-heading" className="space-y-3">
             <h2 id="resources-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Jump to</h2>
             <ul className="space-y-2">
@@ -457,8 +458,12 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               ))}
             </ul>
           </section>
-        </aside>
-      </div>
+    ) },
+  ];
+
+  return (
+    <div className="lg:columns-2 lg:gap-3" data-testid="home-widgets">
+      <PlayerWidgets tab="home" widgets={widgets} />
     </div>
   );
 }

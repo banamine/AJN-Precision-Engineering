@@ -369,9 +369,9 @@ export default function App() {
     <AjnAppearanceProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} onOpenStartGuide={openStartGuide} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
-      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
+      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : (['radio','home','shows','today','library','search','news','news-cube','weather','history','watch-later'].includes(destination)) ? `ajn-screen-main${nowPlaying ? ' ajn-has-dock' : ''}` : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
         {destination === 'home' && (
-          <div key="view-home" className="view-fade-in w-full">
+          <div key="view-home" className="view-fade-in w-full ajn-scroll-region" data-testid="scroll-region">
             <HomeView
               onNavigate={navigateTo}
               onPlayProgram={handlePlayProgram}
@@ -405,22 +405,22 @@ export default function App() {
           </div>
         )}
         {destination === 'shows' && (
-          <div key="view-shows" className="view-fade-in w-full">
+          <div key="view-shows" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <ShowDrawersView onSelectProgram={handleEpgSelect} />
           </div>
         )}
         {destination === 'today' && (
-          <div key="view-today" className="view-fade-in w-full">
+          <div key="view-today" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <TodayView onSelectProgram={handleEpgSelect} onNavigate={navigateTo} />
           </div>
         )}
         {destination === 'library' && (
-          <div key="view-library" className="view-fade-in w-full">
+          <div key="view-library" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <LibraryView onPlayProgram={handlePlayProgram} />
           </div>
         )}
         {destination === 'search' && (
-          <div key="view-search" className="view-fade-in w-full">
+          <div key="view-search" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <SearchView
               onPlayProgram={handlePlayProgram}
               externalQuery={externalSearch}
@@ -431,12 +431,12 @@ export default function App() {
           </div>
         )}
         {destination === 'news' && (
-          <div key="view-news" className="view-fade-in w-full">
+          <div key="view-news" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <RumbleNewsWall />
           </div>
         )}
         {destination === 'news-cube' && (
-          <div key="view-news-cube" className="view-fade-in w-full">
+          <div key="view-news-cube" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading News Cube…</p>}>
               <NewsCubePage
                 startExistingPlayback={startCubeArticlePlayback}
@@ -446,12 +446,12 @@ export default function App() {
           </div>
         )}
         {destination === 'radio' && (
-          <div key="view-radio" className="view-fade-in w-full">
+          <div key="view-radio" className="view-fade-in w-full ajn-scroll-region" data-testid="scroll-region">
             <RadioView onPlayProgram={handleAdvanceProgram} nowPlaying={nowPlaying} recentlyPlayed={recentlyPlayed} onNavigate={navigateTo} />
           </div>
         )}
         {destination === 'history' && (
-          <div key="view-history" className="view-fade-in w-full">
+          <div key="view-history" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <HistoryView
               entries={history}
               onPlay={playSaved}
@@ -463,7 +463,7 @@ export default function App() {
           </div>
         )}
         {destination === 'watch-later' && (
-          <div key="view-watch-later" className="view-fade-in w-full">
+          <div key="view-watch-later" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <WatchLaterView
               entries={watchLaterEntries}
               onPlay={playSaved}
@@ -474,7 +474,7 @@ export default function App() {
           </div>
         )}
         {destination === 'weather' && (
-          <div key="view-weather" className="view-fade-in w-full">
+          <div key="view-weather" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading Weather…</p>}><WeatherView /></Suspense>
           </div>
         )}

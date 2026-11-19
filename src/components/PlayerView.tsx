@@ -5,6 +5,7 @@ import { RUSH_PRELUDE_PROGRAM, RUSH_PROGRAM, resolveRushNext, rushProgramDate, u
 import { loadRushSettings, markRushPreludeSeenToday, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
 import MinimalPlayer from "../MinimalPlayer";
 import { BrowsePanel } from "./BrowsePanel";
+import { PlayerWidgets, type WidgetSpec } from "./PlayerWidget";
 import { toPlayableSrc } from "../utils/playableSrc";
 import { reportTelemetry } from "../telemetry";
 import { AvSyncControls } from "./AvSyncControls";
@@ -79,18 +80,6 @@ function writeCaptionOverlayPreference(enabled: boolean): void {
   catch { /* Browser storage can be disabled; the in-memory preference still works. */ }
 }
 
-function useWidePlayerLayout(): boolean {
-  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches);
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 1024px)");
-    const update = () => setWide(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-  return wide;
-}
-
 export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate, isFavorite = false, onToggleFavorite, isWatchLater = false, onToggleWatchLater, recentlyPlayed = [], onResumeRecentlyPlayed }: any) {
   const failuresRef = useRef(0);
   const failureContextRef = useRef<ProxyErrorBody | null>(null);
@@ -110,7 +99,6 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   const [retryClock, setRetryClock] = useState(() => Date.now());
   const { state: archiveState, refresh: refreshArchiveStatus } = useArchiveStatus();
   const archiveMusicOn = isArchiveMusicPlayback(nowPlaying?.mediaType, nowPlaying?.channelId);
-  const widePlayerLayout = useWidePlayerLayout();
   const captionState = useCaptionTrack(
     nowPlaying?.guideId !== "cable-tv" || nowPlaying.mediaType === "audio" || archiveMusicOn ? undefined : nowPlaying.archivePath,
     getPlayerVideo,
@@ -786,7 +774,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
 
   if (isAudioPage) {
     return (
-      <div data-testid="player-audio-page" className="h-full min-h-0 space-y-4 overflow-y-auto overscroll-contain pb-24">
+      <div data-testid="player-audio-page" className="ajn-audio-page h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain pb-6">
         {playerMetadata}
         <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
         {playbackFailure}
@@ -799,40 +787,23 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   }
 
   const captionPanel = captionState.phase === "off" ? null : <CaptionPanel state={captionState} variant="sidebar" />;
-  const desktopSidebar = captionPanel ? (
-    <aside className="ajn-player-page-right" aria-label="Player details and captions">
-      <div className="min-h-0 flex-1">{captionPanel}</div>
-      {secondaryPlayerInfo}
-    </aside>
-  ) : null;
+  const widgetList: WidgetSpec[] = [
+    { key: "now-playing", title: "Now playing", defaultOpenWide: true, defaultOpenNarrow: true, content: <>{playerMetadata}{playbackFailure}</> },
+    ...(browsePanel ? [{ key: "up-next", title: "Up Next / On Now", defaultOpenWide: true, content: browsePanel } as WidgetSpec] : []),
+    ...(captionPanel ? [{ key: "headlines", title: "Headlines & captions", content: captionPanel } as WidgetSpec] : []),
+    { key: "episode-note", title: "Episode note", content: secondaryPlayerInfo },
+  ];
+  const stageStyle = stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined;
 
   return (
     <div data-testid="player-page-layout" data-caption-phase={captionState.phase} className="ajn-player-page-layout">
-      {widePlayerLayout ? (
-        <>
-          <div className="ajn-player-page-left">
-            {playerMetadata}
-            <div ref={playerWrapRef} className="ajn-player-page-video" style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
-            {playbackFailure}
-            {videoControls}
-            {browsePanel}
-            {!captionPanel && secondaryPlayerInfo}
-          </div>
-          {desktopSidebar}
-        </>
-      ) : (
-        <>
-          <div ref={playerWrapRef} className="ajn-player-page-video" style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
-          <div className="ajn-player-page-lower" data-testid="player-lower-region">
-            {captionPanel}
-            {playerMetadata}
-            {playbackFailure}
-            {videoControls}
-            {browsePanel}
-            {secondaryPlayerInfo}
-          </div>
-        </>
-      )}
+      <div className="ajn-player-page-left">
+        <div ref={playerWrapRef} className="ajn-player-page-video" style={stageStyle}>{playerElement}</div>
+        <div className="fp-transport" data-testid="player-transport">{videoControls}</div>
+      </div>
+      <div className="ajn-player-page-right scroll-region" data-testid="player-widgets" aria-label="Player details">
+        <PlayerWidgets tab="player" widgets={widgetList} />
+      </div>
     </div>
   );
 }

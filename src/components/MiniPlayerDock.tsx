@@ -305,11 +305,18 @@ export function MiniPlayerDock({
           onClick={isRadio ? () => requestRadioDock('open') : onOpenFullPlayer}
           aria-label={isRadio ? 'Open Radio' : 'Open Full Player'}
           title={isRadio ? 'Open Radio' : 'Open Full Player'}
-          className={`ajn-dock-expand flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg ${isRadio ? 'md:w-auto md:gap-2 md:border md:border-[var(--ajn-line)] md:px-3' : ''} transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation`}
+          className={`ajn-dock-expand flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg ${isRadio ? 'md:w-auto md:gap-2 md:border md:border-[var(--ajn-line)] md:px-3' : 'sm:w-auto sm:gap-2 sm:border sm:border-[var(--ajn-line)] sm:px-3'} transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation`}
         >
           {isRadio && <span className="hidden text-xs font-semibold md:inline">Expand Deck</span>}
+          {!isRadio && <span className="hidden text-xs font-semibold sm:inline">Full player</span>}
           <Maximize2 className="h-4 w-4" />
         </button>
+        {isRadio && (
+          <button type="button" data-testid="dock-full-player" onClick={onOpenFullPlayer} aria-label="Open Full Player" title="Open Full Player"
+            className="ajn-dock-expand flex h-12 min-h-[48px] min-w-[48px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--ajn-line)] px-2 text-xs font-semibold cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2">
+            <Tv className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">Full player</span>
+          </button>
+        )}
         <div id="radio-dock-slot" data-testid="dock-radio-slot" className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center" />
         <button
           type="button"
