@@ -24,8 +24,12 @@ export interface SchedTrack {
 }
 /** One album / concert / broadcast: its tracks in play order. */
 export interface SchedItem { id: string; tracks: SchedTrack[] }
-export interface SchedPool { id: string; label: string; bank: ScheduleBank; items: SchedItem[] }
-export interface Slot { track: SchedTrack; startUtcMs: number; endUtcMs: number; index: number; cycle: number }
+/** A daily edition (Today's podcasts): one fixed list of back-to-back slots for a Denver calendar day, built by src/utils/dailyEdition.ts.
+ *  Slots are NOT clipped at UTC midnight and are never cut; the list ends at the last slot's end. */
+export interface SchedEditionSlot { track: SchedTrack; startUtcMs: number; endUtcMs: number; label: '' | 'Yesterday' | 'Replay' }
+export interface SchedEdition { id: string; startMs: number; endMs: number; loopEndMs: number; slots: SchedEditionSlot[] }
+export interface SchedPool { id: string; label: string; bank: ScheduleBank; items: SchedItem[]; /** Present only for the daily edition pool. */ edition?: SchedEdition }
+export interface Slot { track: SchedTrack; startUtcMs: number; endUtcMs: number; index: number; cycle: number; /** Edition slots only. */ editionId?: string; label?: string; /** A listener-picked play-now: not part of any schedule. */ demand?: boolean }
 
 export function fnv1a(text: string): number {
   let h = 0x811c9dc5;
@@ -42,6 +46,7 @@ export const poolTrackCount = (pool: SchedPool): number => pool.items.reduce((n,
 /** Clock mode needs a real duration on every track. */
 export function clockEligible(pool: SchedPool | null | undefined): boolean {
   if (!pool) return false;
+  if (pool.edition) return pool.edition.slots.length > 0;
   let any = false;
   for (const item of pool.items) for (const t of item.tracks) { if (!hasDuration(t)) return false; any = true; }
   return any;
@@ -78,12 +83,22 @@ function ordered(pool: SchedPool, seed: number): Ordered | null {
 
 /** Length of one loop in seconds for `utcMs`'s UTC day (null when the pool is not clock-eligible). */
 export function loopSeconds(pool: SchedPool, utcMs: number): number | null {
+  if (pool.edition) return (pool.edition.loopEndMs - pool.edition.startMs) / 1000;
   const o = ordered(pool, seedFor(Math.floor(utcMs / DAY_MS), pool.id));
   return o ? o.totalMs / 1000 : null;
 }
 
 /** The slot airing at `utcMs`. A slot that would run past UTC midnight is clipped there (the next day reseeds). Null when not clock-eligible. */
+function editionIndexAt(e: SchedEdition, t: number): number {
+  const s = e.slots;
+  if (!s.length || t < s[0].startUtcMs || t >= s[s.length - 1].endUtcMs) return -1;
+  let lo = 0, hi = s.length - 1;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (s[mid].startUtcMs <= t) lo = mid; else hi = mid - 1; }
+  return lo;
+}
+const editionSlot = (e: SchedEdition, i: number): Slot => ({ track: e.slots[i].track, startUtcMs: e.slots[i].startUtcMs, endUtcMs: e.slots[i].endUtcMs, index: i, cycle: 1, editionId: e.id, label: e.slots[i].label });
 export function slotAt(pool: SchedPool, utcMs: number): Slot | null {
+  if (pool.edition) { const i = editionIndexAt(pool.edition, utcMs); return i < 0 ? null : editionSlot(pool.edition, i); }
   const day = Math.floor(utcMs / DAY_MS); const dayStart = day * DAY_MS;
   const o = ordered(pool, seedFor(day, pool.id));
   if (!o || o.totalMs <= 0) return null;
@@ -97,6 +112,13 @@ export function slotAt(pool: SchedPool, utcMs: number): Slot | null {
 }
 /** The `count` scheduled slots after `slot` (crossing UTC midnight reseeds). */
 export function slotsAfter(pool: SchedPool, slot: Slot, count: number): Slot[] {
+  if (pool.edition) {
+    const e = pool.edition;
+    // play-now: what is live next; a slot of an older edition: the new edition starts from its first item; otherwise the next in this edition
+    const i = slot.demand ? e.slots.findIndex((s) => s.endUtcMs > slot.startUtcMs) : slot.editionId !== e.id ? 0 : slot.index + 1;
+    if (i < 0 || i >= e.slots.length) return [];
+    return e.slots.slice(i, i + count).map((_, k) => editionSlot(e, i + k));
+  }
   const out: Slot[] = []; let t = slot.endUtcMs;
   for (let i = 0; i < count; i++) { const s = slotAt(pool, t); if (!s || s.endUtcMs <= t) break; out.push(s); t = s.endUtcMs; }
   return out;

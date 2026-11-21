@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { PlayerWidgets, type WidgetSpec } from './PlayerWidget';
-import { Heart, Play, Tv, Radio, Sparkles, Clock, ArrowRight, Archive, Headphones, Rocket, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Heart, Play, Tv, Radio, Sparkles, Clock, ArrowRight, Archive, Headphones, Rocket } from 'lucide-react';
 import { useLatestFullShows } from '../hooks/useLatestFullShows';
 import { useHomeNow } from '../hooks/useHomeNow';
 import { RecentCarousel } from './RecentCarousel';
@@ -22,7 +21,6 @@ interface HomeViewProps {
   nowPlaying: NowPlayingMedia | null;
   recentlyPlayed: RecentlyPlayedItem[];
   onResumeRecentlyPlayed: (item: RecentlyPlayedItem) => void;
-  onClearRecentlyPlayed?: () => void;
   favorites?: FavoriteMedia[];
   onPlayFavorite?: (item: FavoriteMedia) => void;
 }
@@ -96,16 +94,7 @@ interface DailyFrame { image: string; show: string; hour: number; source: string
 /** Set to true once the hub is tested: hides the old On Now grid and RecentCarousel, which repeat what the hub shows. Default keeps them for rollback. */
 const HUB_REPLACES_LEGACY_ROWS = true;
 
-export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed, onResumeRecentlyPlayed, onClearRecentlyPlayed, favorites = [], onPlayFavorite }: HomeViewProps) {
-  const [confirmClearRecent, setConfirmClearRecent] = useState(false);
-  const [recentCleared, setRecentCleared] = useState(false);
-  const clearRecentBtnRef = useRef<HTMLButtonElement | null>(null);
-  const cancelClearRef = useRef<HTMLButtonElement | null>(null);
-  const recentHeadingRef = useRef<HTMLHeadingElement | null>(null);
-  useEffect(() => { if (confirmClearRecent) cancelClearRef.current?.focus(); }, [confirmClearRecent]);
-  useEffect(() => { if (recentlyPlayed.length > 0) setRecentCleared(false); else setConfirmClearRecent(false); }, [recentlyPlayed.length]);
-  const cancelClearRecent = () => { setConfirmClearRecent(false); window.setTimeout(() => clearRecentBtnRef.current?.focus(), 0); };
-  const confirmClearRecentNow = () => { setConfirmClearRecent(false); setRecentCleared(true); onClearRecentlyPlayed?.(); window.setTimeout(() => recentHeadingRef.current?.focus(), 0); };
+export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed, onResumeRecentlyPlayed, favorites = [], onPlayFavorite }: HomeViewProps) {
   // "Today on AJN": curated stills published by tools/daily-frames. No manifest (or an invalid one) = section hidden, nothing faked.
   const [daily, setDaily] = useState<{ date: string; items: DailyFrame[] } | null>(null);
   useEffect(() => {
@@ -173,7 +162,9 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
     return () => { mounted = false; };
   }, []);
 
-  const heroNode = (
+  return (
+    <div className="space-y-14 pb-16">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" data-testid="home-top-grid">
       <section className="relative isolate overflow-hidden rounded-2xl border border-[var(--ajn-border)] bg-neutral-950 shadow-2xl">
         <img src={heroImage} alt="" aria-hidden="true" onError={() => setHeroImage('/Classic%20Archive.png')} className="absolute inset-0 h-full w-full object-cover opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/90 to-neutral-950/55" />
@@ -212,7 +203,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           <FullShowShortcuts onPlayProgram={onPlayProgram} testId="full-show-shortcuts-overlay" />
         </div>
 
-        <div className="relative z-10 min-h-[240px] flex flex-col justify-end p-6 pt-28 sm:p-8 sm:pt-28 lg:p-10 lg:pt-28">
+        <div className="relative z-10 min-h-[330px] flex flex-col justify-end p-6 pt-28 sm:p-8 sm:pt-28 lg:p-10 lg:pt-28">
           <div className="max-w-3xl space-y-4">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/20">
@@ -262,10 +253,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           </div>
         </div>
       </section>
-  );
-  const widgets: WidgetSpec[] = [
-    { key: 'hero', title: nowPlaying ? 'Now playing' : 'Featured', defaultOpenWide: true, defaultOpenNarrow: true, className: '[column-span:all]', content: heroNode },
-    { key: 'live-now', title: 'Live now', defaultOpenWide: true, content: (
+
       <section aria-labelledby="live-now-heading" className="min-w-0 space-y-3" data-testid="home-live-now">
         <div className="flex items-center justify-between gap-3">
           <h2 id="live-now-heading" className="text-xl font-semibold tracking-tight text-neutral-100">Live Now</h2>
@@ -288,12 +276,11 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           </div>
         )}
       </section>
-    ) },
-    { key: 'radio', title: 'Live radio & hubs', defaultOpenWide: true, content: (<div className="space-y-4">
+      </div>
+
       <LiveRadioBand />
       <HomeBroadcastHub onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
-    </div>) },
-    { key: 'programs', title: 'AJN Programs', content: (
+
       <section aria-labelledby="collections-heading" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -319,8 +306,9 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           })}
         </div>
       </section>
-    ) },
-    { key: 'today', title: 'Today on AJN', content: (<div className="min-w-0 space-y-8">
+
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-12">
           {daily && (
             <section aria-labelledby="today-ajn-heading" className="space-y-3" data-testid="home-today-ajn">
               <div><h2 id="today-ajn-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Today on AJN</h2><p className="text-xs text-neutral-500">Stills picked from {daily.date}'s broadcasts. Tap one to watch from that moment.</p></div>
@@ -335,6 +323,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               </div>
             </section>
           )}
+
           {!HUB_REPLACES_LEGACY_ROWS && (<>
           <section aria-labelledby="live-stations-heading" className="space-y-3">
             <div className="flex items-center justify-between">
@@ -344,7 +333,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               </div>
               <button type="button" onClick={() => onNavigate('tv-guide')} className="flex items-center gap-1 text-xs font-medium text-sky-400 hover:text-sky-300">Full Guide <ArrowRight className="h-3.5 w-3.5" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="home-on-now">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="home-on-now">
               {liveChannels.length === 0 && <p className="col-span-full rounded-xl border border-dashed border-neutral-800 p-5 text-sm text-neutral-500">Loading what is on now… If this stays empty, open the Full Guide.</p>}
               {liveChannels.map((channel) => (
                 <MediaCard key={channel.id} image={channel.logo} fit="contain" className="aspect-[4/3]" label={`Play ${channel.name}: ${channel.currentProgram}`}
@@ -358,36 +347,18 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
 
           <RecentCarousel now={now} onPlayProgram={onPlayProgram} onNavigate={onNavigate} playing={!!nowPlaying} />
           </>)}
+
           <AjnResourcePanel onPlayProgram={onPlayProgram} />
-    </div>) },
-    { key: 'recent', title: 'Recently played', defaultOpenWide: true, content: (
+        </div>
+
+        <aside className="min-w-0 space-y-10">
           <section aria-labelledby="recent-heading" className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 id="recent-heading" tabIndex={-1} ref={recentHeadingRef} className="text-lg font-semibold tracking-tight text-neutral-100 focus:outline-none">Recently Played</h2>
-              {recentlyPlayed.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[11px] text-neutral-600">{recentlyPlayed.length}/5</span>
-                  {onClearRecentlyPlayed && !confirmClearRecent && (
-                    <button type="button" ref={clearRecentBtnRef} data-testid="home-recent-clear" onClick={() => setConfirmClearRecent(true)} className="flex items-center gap-1 rounded-lg border border-neutral-700 px-2 py-1 text-[11px] text-neutral-300 hover:border-red-500/50 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"><Trash2 className="h-3 w-3" aria-hidden="true" /> Clear history</button>
-                  )}
-                </div>
-              )}
+            <div className="flex items-center justify-between">
+              <h2 id="recent-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Recently Played</h2>
+              {recentlyPlayed.length > 0 && <span className="font-mono text-[11px] text-neutral-600">{recentlyPlayed.length}/5</span>}
             </div>
-            {onClearRecentlyPlayed && confirmClearRecent && recentlyPlayed.length > 0 && (
-              <div role="group" aria-label="Confirm clearing recently played" data-testid="home-recent-confirm" onKeyDown={(e) => { if (e.key === 'Escape') cancelClearRecent(); }} className="space-y-2 rounded-xl border border-neutral-700 bg-neutral-900 p-3 text-xs text-neutral-300">
-                <p className="font-semibold text-neutral-100">Clear recently played?</p>
-                <p>This removes this list and its saved resume positions from this browser. Favorites, Watch Later and History are not changed.</p>
-                <div className="flex items-center gap-2">
-                  <button type="button" ref={cancelClearRef} onClick={cancelClearRecent} className="rounded-lg border border-neutral-600 px-3 py-1.5 text-neutral-100 hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">Cancel</button>
-                  <button type="button" data-testid="home-recent-clear-confirm" onClick={confirmClearRecentNow} className="rounded-lg bg-red-500 px-3 py-1.5 font-semibold text-white hover:bg-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Clear history</button>
-                </div>
-              </div>
-            )}
             {recentlyPlayed.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/40 p-5 text-sm text-neutral-500">
-                {recentCleared && <p role="status" className="mb-1 font-semibold text-neutral-300">Recently played cleared.</p>}
-                Nothing played yet. Start a program and it appears here, ready to resume.
-              </div>
+              <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/40 p-5 text-sm text-neutral-500">Nothing played yet. Start a program and it appears here, ready to resume.</div>
             ) : (
               <ul className="space-y-2" data-testid="home-recent">
                 {recentlyPlayed.map((item) => (
@@ -408,8 +379,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               </ul>
             )}
           </section>
-    ) },
-    { key: 'favorites', title: 'Favorites', content: (
+
           <section aria-labelledby="favorites-heading" className="space-y-3" data-testid="home-favorites-section">
             <div className="flex items-center justify-between">
               <h2 id="favorites-heading" className="flex items-center gap-2 text-lg font-semibold tracking-tight text-neutral-100"><Heart className="h-4 w-4 fill-rose-500 text-rose-500" aria-hidden="true" /> Favorites</h2>
@@ -418,7 +388,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
             {favorites.length === 0 ? (
               <div data-testid="home-favorites-empty" className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/40 p-5 text-sm text-neutral-500">Tap the heart in the player to save something here.</div>
             ) : (
-              <ul className="max-h-[26rem] space-y-2 overflow-y-auto pr-1" data-testid="home-favorites">
+              <ul className="ajn-queue-scroll ajn-queue-scroll--rows-5 space-y-2" data-testid="home-favorites">
                 {favorites.map((item) => (
                   <li key={item.id}>
                     <button type="button" onClick={() => onPlayFavorite?.(item)} className="group flex w-full items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/70 p-2 text-left hover:border-rose-500/40 hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400">
@@ -437,8 +407,7 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               </ul>
             )}
           </section>
-    ) },
-    { key: 'jump', title: 'Jump to', content: (
+
           <section aria-labelledby="resources-heading" className="space-y-3">
             <h2 id="resources-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Jump to</h2>
             <ul className="space-y-2">
@@ -458,12 +427,8 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
               ))}
             </ul>
           </section>
-    ) },
-  ];
-
-  return (
-    <div className="lg:columns-2 lg:gap-3" data-testid="home-widgets">
-      <PlayerWidgets tab="home" widgets={widgets} />
+        </aside>
+      </div>
     </div>
   );
 }

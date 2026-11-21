@@ -1,0 +1,1 @@
+v6: spacing (index.css, TvGuideView) + Today fix (TodayView): removed duplicate On now block, Jump-to select instead of 141 pills, first 3 channel widgets open, On now capped at 12. Built on your latest export.

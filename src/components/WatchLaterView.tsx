@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PlayerWidgets, type WidgetSpec } from './PlayerWidget';
 import { Play, Trash2, X, Bookmark, History as HistoryIcon } from 'lucide-react';
 import type { Destination } from '../types';
 import type { WatchLaterItem } from '../utils/watchLater';
@@ -20,7 +21,7 @@ const fmtPos = (s: number) => {
 export function WatchLaterView({ entries, onPlay, onRemove, onClear, onNavigate }: WatchLaterViewProps) {
   const [confirmClear, setConfirmClear] = useState(false);
   return (
-    <section aria-labelledby="watch-later-heading" data-testid="watch-later-view" className="space-y-4">
+    <section aria-labelledby="watch-later-heading" data-testid="watch-later-view" className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Bookmark className="h-6 w-6 text-[var(--ajn-accent)]" aria-hidden="true" />
@@ -52,8 +53,11 @@ export function WatchLaterView({ entries, onPlay, onRemove, onClear, onNavigate 
           Nothing saved yet. Use the Watch Later button in the player, or play something past the halfway mark and stop.
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="watch-later-grid">
-          {entries.map((e) => {
+        <div className="space-y-0">
+          <PlayerWidgets tab="watch-later" widgets={(() => {
+            const renderList = (list: typeof entries) => (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="watch-later-grid">
+          {list.map((e) => {
             const pct = e.durationSeconds && e.durationSeconds > 0 ? Math.min(100, Math.round((e.progressSeconds / e.durationSeconds) * 100)) : null;
             const dur = e.durationSeconds && e.durationSeconds > 0 ? fmtPos(e.durationSeconds) : (e.duration || null);
             const tags = [e.mediaType === 'audio' ? 'Audio' : e.mediaType ? 'Video' : null, e.channelName || e.subtitle || null].filter(Boolean) as string[];
@@ -94,6 +98,15 @@ export function WatchLaterView({ entries, onPlay, onRemove, onClear, onNavigate 
             );
           })}
         </ul>
+            );
+            const resume = entries.filter((e) => e.progressSeconds >= 5);
+            const rest = entries.filter((e) => e.progressSeconds < 5);
+            const out: WidgetSpec[] = [];
+            if (resume.length) out.push({ key: 'resume', title: `Resume · ${resume.length}`, defaultOpenWide: true, defaultOpenNarrow: true, content: renderList(resume) });
+            if (rest.length) out.push({ key: 'saved', title: `Saved · ${rest.length}`, defaultOpenWide: true, defaultOpenNarrow: !resume.length, content: renderList(rest) });
+            return out;
+          })()} />
+        </div>
       )}
     </section>
   );

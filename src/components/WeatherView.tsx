@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { PlayerWidgets, type WidgetSpec } from './PlayerWidget';
 import { QUICK_PICKS } from '../utils/weatherQuickPicks';
 import { WeatherAlerts } from './WeatherAlerts';
 import { WeatherAirport } from './WeatherAirport';
@@ -184,11 +185,8 @@ export function WeatherView() {
     { name: 'AviationWeather.gov', dot: metars.kind === 'ok' && chosen ? '●' : '○', text: metars.kind === 'ok' ? (chosen ? `${chosen.metar.icao} · ${ageLabel(ageMinutes(chosen.metar.obsTime, Date.now()))}` : 'no airport within 60 miles') : metars.kind === 'error' ? 'unavailable' : 'checking' },
   ];
   const bg = report && !prefs.plain ? backdropUrl(backdropFor(report.current.code, report.current.isDay)) : null;
-  return (
-    <section data-testid="weather-view" className="relative overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
-      {imgOk && bg && <img key={bg} src={bg} alt="" aria-hidden onError={() => setImgOk(false)} className="absolute inset-0 h-full w-full object-cover" />}
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-neutral-950/70 via-neutral-950/60 to-neutral-950/85" />
-      <div className="relative space-y-4 p-4 sm:p-6">
+  const weatherWidgets: WidgetSpec[] = [
+    { key: 'place', title: place ? `Place · ${placeLabel(place)}` : 'Choose a place', defaultOpenWide: true, defaultOpenNarrow: !place, content: (<div className="space-y-3">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-neutral-50">Weather</h2>
@@ -220,13 +218,9 @@ export function WeatherView() {
             <li key={`${m.latitude},${m.longitude}`}><button type="button" onClick={() => choose({ name: m.name, region: m.region, country: m.country, latitude: m.latitude, longitude: m.longitude })} className="ck-key ck-key--sm ck-key--row !min-h-[44px] text-sm">{placeLabel(m)}</button></li>))}
           </ul>)}
 
-        {place && <WeatherAlerts state={alerts} tz={report?.timezone ?? ''} onRetry={() => void loadAlerts(place)} />}
-        {place && status.kind === 'loading' && <p role="status" className="text-sm text-neutral-100">{report ? 'Refreshing…' : 'Loading the forecast…'}</p>}
-        {place && status.kind === 'error' && (report
-          ? <p role="alert" data-testid="weather-stale" className="rounded-lg border border-amber-400/60 bg-amber-950/70 p-3 text-sm font-semibold text-amber-100">OUT OF DATE. Could not refresh ({status.message}). Showing the last forecast received at {new Date(report.fetchedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</p>
-          : <p role="alert" data-testid="weather-error" className="rounded-lg border border-red-500/50 bg-red-950/60 p-3 text-sm text-red-100">Could not load the weather: {status.message}. Nothing is shown rather than a guess.</p>)}
-        <div className={place ? 'grid gap-4 lg:grid-cols-[3fr_2fr]' : ''}>
-        <div className="min-w-0 space-y-4">
+
+    </div>) },
+    { key: 'forecast', title: 'Forecast', defaultOpenWide: true, defaultOpenNarrow: true, content: (<div className="min-w-0 space-y-4">
         {report && (
           <>
             <div data-testid="weather-current" className="flex flex-wrap items-end gap-x-6 gap-y-2">
@@ -257,14 +251,34 @@ export function WeatherView() {
             <p className="text-xs text-neutral-100">{stale ? 'Last updated' : 'Updated'} {new Date(report.fetchedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · refreshes every 15 minutes while this page is open</p>
           </>
         )}
-        </div>
+
+    </div>) },
+    ...(place ? [{ key: 'airport', title: 'Airport weather', defaultOpenWide: true, content: (<div className="min-w-0">
         {place && <WeatherAirport metars={metars} taf={taf} selected={stationId} onSelect={setStationId} units={units} tz={report?.timezone ?? ''} onRetryMetar={() => void loadMetars(place)} onRetryTaf={() => stationId && void loadTaf(stationId)} />}
-        </div>
+
+    </div>) }] : []),
+    ...(place ? [{ key: 'sources', title: 'Data sources', content: (<div className="space-y-2">
         {place && (
           <ul data-testid="weather-sources" className="flex flex-wrap gap-2 text-xs text-neutral-100" aria-label="Data sources">
             {sources.map((x) => <li key={x.name} className="rounded-md border border-neutral-600 bg-neutral-950/80 px-2 py-1"><span aria-hidden>{x.dot} </span>{x.name} · {x.text}</li>)}
           </ul>)}
         <p className="text-xs text-neutral-100">Weather data by <a className="underline" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo.com</a> (CC BY 4.0, non-commercial use). Alerts: National Weather Service (US) and Environment and Climate Change Canada. Air quality: Environment and Climate Change Canada. Airport data: AviationWeather.gov. Your place is saved in this browser only.</p>
+
+    </div>) }] : []),
+  ];
+  return (
+    <section data-testid="weather-view" className="relative overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
+      {imgOk && bg && <img key={bg} src={bg} alt="" aria-hidden onError={() => setImgOk(false)} className="absolute inset-0 h-full w-full object-cover" />}
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-neutral-950/70 via-neutral-950/60 to-neutral-950/85" />
+      <div className="relative space-y-3 p-3 sm:p-4">
+        {place && <WeatherAlerts state={alerts} tz={report?.timezone ?? ''} onRetry={() => void loadAlerts(place)} />}
+        {place && status.kind === 'loading' && <p role="status" className="text-sm text-neutral-100">{report ? 'Refreshing…' : 'Loading the forecast…'}</p>}
+        {place && status.kind === 'error' && (report
+          ? <p role="alert" data-testid="weather-stale" className="rounded-lg border border-amber-400/60 bg-amber-950/70 p-3 text-sm font-semibold text-amber-100">OUT OF DATE. Could not refresh ({status.message}). Showing the last forecast received at {new Date(report.fetchedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</p>
+          : <p role="alert" data-testid="weather-error" className="rounded-lg border border-red-500/50 bg-red-950/60 p-3 text-sm text-red-100">Could not load the weather: {status.message}. Nothing is shown rather than a guess.</p>)}
+        <div className="lg:columns-2 lg:gap-3">
+          <PlayerWidgets tab="weather" widgets={weatherWidgets} />
+        </div>
       </div>
     </section>
   );

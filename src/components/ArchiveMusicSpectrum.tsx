@@ -60,13 +60,12 @@ export function ArchiveMusicSpectrum({ analyser, isPlaying, analyzerState }: Arc
       if (hasSignal(bins)) {
         const bars = binFrequencies(bins, BAR_COUNT);
         const barWidth = canvas.width / BAR_COUNT;
-        const gradient = context.createLinearGradient(0, canvas.height, 0, 0);
-        gradient.addColorStop(0, "rgba(34, 211, 238, 0.18)");
-        gradient.addColorStop(1, "rgba(103, 232, 249, 0.56)");
-        context.fillStyle = gradient;
         for (let index = 0; index < bars.length; index += 1) {
           const height = (bars[index] / 255) * canvas.height * 0.82;
           if (height < 1) continue;
+          // Cyan through violet and pink to orange across the width; colour only, height is the real signal.
+          const hue = index < bars.length * 0.8 ? 190 + (index / (bars.length * 0.8)) * 150 : 340 + ((index - bars.length * 0.8) / (bars.length * 0.2)) * 50;
+          context.fillStyle = `hsla(${hue % 360}, 85%, 62%, 0.78)`;
           context.fillRect(index * barWidth, canvas.height - height, Math.max(1, barWidth - ratio), height);
         }
       }
@@ -95,10 +94,10 @@ export function ArchiveMusicSpectrum({ analyser, isPlaying, analyzerState }: Arc
   const unavailable = !analyser || analyzerState === "unavailable";
   return (
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" data-testid="archive-music-spectrum">
-      <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 h-full w-full opacity-70" />
+      <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 h-full w-full opacity-90" />
       {(unavailable || noSignal) && (
         <span data-testid="spectrum-note" className="absolute right-2 top-1.5 z-[1] max-w-[60%] truncate rounded-full border border-slate-600 bg-slate-950/90 px-2 py-0.5 text-[10px] font-medium text-slate-200">
-          {unavailable ? "Spectrum unavailable" : "No signal from this source"}
+          {unavailable ? "Meter unavailable for this stream" : "No signal from this source"}
         </span>
       )}
     </div>

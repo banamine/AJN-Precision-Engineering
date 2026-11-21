@@ -24,6 +24,7 @@ import { SuggestInput } from './SuggestInput';
 import type { SuggestCandidate } from '../utils/suggest';
 import { StatusIndicators } from './StatusIndicators';
 import { useAjnAppearance } from './ajn-platform-redesign/AppearanceProvider';
+import { useNavMenus } from '../hooks/useNavMenus';
 
 interface NavigationProps {
   currentDestination: Destination;
@@ -85,6 +86,11 @@ const VAULT_ITEMS: NavItemConfig[] = [
   { id: 'weather', label: 'WEATHER', icon: CloudSun, description: 'Current conditions and 5-day forecast' },
 ];
 
+const VAULT_GROUPS: { label: string; items: NavItemConfig[] }[] = [
+  { label: 'Broadcast', items: VAULT_ITEMS.slice(0, 3) },
+  { label: 'Tools', items: VAULT_ITEMS.slice(3) },
+];
+
 function useDismiss(open: boolean, close: () => void, ref: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
     if (!open) return;
@@ -117,14 +123,9 @@ export function Navigation({
     document.addEventListener('mousedown', onDown); document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [mobileMoreOpen, closeMobileMore]);
-  const [vaultOpen, setVaultOpen] = useState(false);
-  const vaultRef = useRef<HTMLDivElement>(null);
-  const closeVault = React.useCallback(() => setVaultOpen(false), []);
-  useDismiss(vaultOpen, closeVault, vaultRef);
-  const [myLibraryOpen, setMyLibraryOpen] = useState(false);
-  const myLibraryRef = useRef<HTMLDivElement>(null);
-  const closeMyLibrary = React.useCallback(() => setMyLibraryOpen(false), []);
-  useDismiss(myLibraryOpen, closeMyLibrary, myLibraryRef);
+  const menus = useNavMenus();
+  const vaultOpen = menus.openMenu === 'vault';
+  const myLibraryOpen = menus.openMenu === 'my-library';
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -235,14 +236,24 @@ export function Navigation({
                 </button>
               );
             })}
-            <div ref={myLibraryRef} className="relative">
+            <div
+              data-nav-menu="my-library"
+              className="relative"
+              onPointerEnter={(e) => menus.hoverEnter('my-library', e)}
+              onPointerLeave={menus.hoverLeave}
+              onBlur={(e) => menus.wrapperBlur('my-library', e)}
+              onKeyDown={menus.menuKeyDown}
+            >
               <button
                 type="button"
                 id="nav-link-my-library"
+                data-nav-trigger=""
                 aria-haspopup="menu"
                 aria-expanded={myLibraryOpen}
+                aria-controls="nav-menu-my-library"
                 aria-current={myLibraryActive ? 'page' : undefined}
-                onClick={() => setMyLibraryOpen((open) => !open)}
+                onClick={(e) => menus.triggerClick('my-library', e)}
+                onKeyDown={(e) => menus.triggerKeyDown('my-library', e)}
                 className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap px-3 xl:px-3.5 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ck-key${myLibraryActive ? ' is-latched' : ''}`}
               >
                 <Bookmark className={`h-4 w-4 ${myLibraryActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
@@ -251,36 +262,48 @@ export function Navigation({
                 {myLibraryActive && <span className="ajn-nav-underline absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />}
               </button>
               {myLibraryOpen && (
-                <div role="menu" aria-label="My Library" className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
-                  {MY_LIBRARY_ITEMS.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeDestination === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        id={`nav-link-${item.id}`}
-                        role="menuitem"
-                        type="button"
-                        onClick={() => { setMyLibraryOpen(false); onNavigate(item.id); }}
-                        aria-current={isActive ? 'page' : undefined}
-                        className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'}`}
-                      >
-                        <Icon className={`h-4 w-4 ${isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
-                        <span className="flex flex-col"><span className="font-medium">{item.label}</span><span className="text-[10px] text-neutral-500">{item.description}</span></span>
-                      </button>
-                    );
-                  })}
+                <div className="absolute left-0 top-full z-50 w-56 pt-2">
+                  <div id="nav-menu-my-library" role="menu" aria-label="My Library" className="rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
+                    {MY_LIBRARY_ITEMS.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeDestination === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          id={`nav-link-${item.id}`}
+                          role="menuitem"
+                          type="button"
+                          onClick={() => { menus.closeNow(); onNavigate(item.id); }}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'}`}
+                        >
+                          <Icon className={`h-4 w-4 ${isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
+                          <span className="flex flex-col"><span className="font-medium">{item.label}</span><span className="text-[10px] text-neutral-500">{item.description}</span></span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-            <div ref={vaultRef} className="relative">
+            <div
+              data-nav-menu="vault"
+              className="relative"
+              onPointerEnter={(e) => menus.hoverEnter('vault', e)}
+              onPointerLeave={menus.hoverLeave}
+              onBlur={(e) => menus.wrapperBlur('vault', e)}
+              onKeyDown={menus.menuKeyDown}
+            >
               <button
                 type="button"
                 id="nav-link-vault"
+                data-nav-trigger=""
                 aria-haspopup="menu"
                 aria-expanded={vaultOpen}
+                aria-controls="nav-menu-vault"
                 aria-current={vaultActive ? 'page' : undefined}
-                onClick={() => setVaultOpen((o) => !o)}
+                onClick={(e) => menus.triggerClick('vault', e)}
+                onKeyDown={(e) => menus.triggerKeyDown('vault', e)}
                 className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
                   vaultActive
                     ? 'ajn-nav-item-active'
@@ -292,26 +315,33 @@ export function Navigation({
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${vaultOpen ? 'rotate-180' : ''}`} />
               </button>
               {vaultOpen && (
-                <div role="menu" aria-label="More" className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
-                  {VAULT_ITEMS.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.id}
-                        id={`nav-link-${item.id}`}
-                        role="menuitem"
-                        type="button"
-                        onClick={() => { setVaultOpen(false); onNavigate(item.id); }}
-                        aria-current={activeDestination === item.id ? 'page' : undefined}
-                        className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${
-                          activeDestination === item.id ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'
-                        }`}
-                      >
-                        <Icon className="h-4 w-4 text-neutral-400" />
-                        <span className="flex flex-col"><span className="font-medium">{item.label}</span><span className="text-[10px] text-neutral-500">{item.description}</span></span>
-                      </button>
-                    );
-                  })}
+                <div className="absolute right-0 top-full z-50 w-[30rem] max-w-[calc(100vw-1rem)] pt-2">
+                  <div id="nav-menu-vault" role="menu" aria-label="More" className="grid grid-cols-2 gap-x-1 rounded-xl border border-neutral-800 bg-neutral-950/95 p-1.5 shadow-xl backdrop-blur-md">
+                    {VAULT_GROUPS.map((group) => (
+                      <div key={group.label} role="group" aria-label={group.label} className="flex flex-col">
+                        <div aria-hidden="true" className="px-3 pb-1 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500">{group.label}</div>
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.id}
+                              id={`nav-link-${item.id}`}
+                              role="menuitem"
+                              type="button"
+                              onClick={() => { menus.closeNow(); onNavigate(item.id); }}
+                              aria-current={activeDestination === item.id ? 'page' : undefined}
+                              className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] ${
+                                activeDestination === item.id ? 'text-[var(--ajn-accent)]' : 'text-neutral-200'
+                              }`}
+                            >
+                              <Icon className="h-4 w-4 text-neutral-400" />
+                              <span className="flex flex-col"><span className="font-medium">{item.label}</span><span className="text-[10px] text-neutral-500">{item.description}</span></span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

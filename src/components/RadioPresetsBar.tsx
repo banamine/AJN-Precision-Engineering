@@ -12,7 +12,7 @@ import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import { findPersistentMedia } from '../hooks/usePersistentMedia';
 import { SourcePrism3D, type AudioSourceType } from './SourcePrism3D';
 import {
-  DEFAULT_RADIO_PRESETS, RADIO_PRESET_SLOTS, clearRadioPreset, pickAdjacentStation, presetProgramId, saveRadioPreset, useRadioPresets,
+  DEFAULT_RADIO_PRESETS, RADIO_PRESET_SLOTS, clearRadioPreset, pickAdjacentStation, saveRadioPreset, useRadioPresets,
   type RadioPreset, type RadioPresetInput, type RadioPresetMap, type RadioPresetSlot,
 } from '../utils/radioPresets';
 import { getStationTheme } from '../utils/radioAccents';
@@ -105,7 +105,7 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
       <input data-testid="radio-deck-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${label.toLowerCase()}`} aria-label={`Search ${label}`}
         className="mt-2 min-h-[40px] w-full rounded-lg border border-white/20 bg-black/40 px-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]" />
       {note ? <p className="mt-2 text-xs text-orange-200">{note}</p> : null}
-      <ul ref={listRef} className="mt-2 max-h-64 space-y-1 overflow-y-auto overscroll-contain pr-1" aria-label={`${label} list`}>
+      <ul ref={listRef} className="ajn-queue-scroll ajn-queue-scroll--rows-5 mt-2 space-y-1" aria-label={`${label} list`}>
         {shown.map((it) => {
           const on = playingItem(it);
           return (
@@ -248,7 +248,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
   const tune = useCallback((p: RadioPreset) => {
     if (p.corsVerified) registerLiveRadioMeter(p.channelId);
     onPresetTuned?.(p.channelId, p.logo);
-    onPlay(p.src, p.title, p.subtitle, 'audio', p.channelId, p.guideId ?? 'audio-podcasts', presetProgramId(p));
+    onPlay(p.src, p.title, p.subtitle, 'audio', p.channelId, p.guideId ?? 'audio-podcasts', p.programId);
   }, [onPlay, onPresetTuned]);
 
   const openBank = useCallback((next: 'presets' | 'recent') => {
@@ -257,7 +257,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
   }, []);
   const tuneRecent = useCallback((r: RecentStation) => {
     onPresetTuned?.(r.channelId, getStationArt(r.channelId));
-    onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.channelId.startsWith('radio:') ? presetProgramId(r) : r.programId);
+    onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId);
   }, [onPlay, onPresetTuned]);
 
   /** Knob / skip keys: step to the previous or next station in the visible bank. Does nothing (and says so) when the bank is empty. */

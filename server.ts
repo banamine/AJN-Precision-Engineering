@@ -12,6 +12,7 @@ import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { resolveMoviesClassicChannelAlias } from './server/moviesClassicsSchedule';
 import { liveTvHealthSummary, getAudioLoopRows } from './guideRegistry';
 import { isKnownEnclosure, resolveEnclosure } from './server/podcasts';
+import { editionService } from './server/podcastEdition';
 import { getLiveRadioStatus, queryLiveRadioStations } from './server/liveRadio';
 import { plutoEpgStats } from './server/sources/plutoEpg';
 import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES } from './server/safeFetch';
@@ -260,6 +261,11 @@ app.get('/api/schedule/search',async(req,res)=>{
   }catch{
    return res.status(500).json({error:'Classic TV title search unavailable'});
   }
+});
+app.get('/api/podcasts/edition',async(_req,res)=>{
+ res.set('Cache-Control','no-store');
+ try{return res.json(await editionService.get(process.env.NODE_ENV==='test'&&typeof _req.query.now==='string'&&Number.isFinite(Date.parse(_req.query.now))?Date.parse(_req.query.now):Date.now()));}
+ catch{return res.status(500).json({error:'Today\'s podcasts edition unavailable',editionStatus:'building',edition:null});}
 });
 app.get('/api/schedule',async(req,res)=>{
  res.set('Cache-Control','no-store');

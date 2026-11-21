@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { PlayerWidgets, type WidgetSpec } from './PlayerWidget';
 import { Play, Trash2, X, History as HistoryIcon, Heart } from 'lucide-react';
 import type { HistoryEntry } from '../utils/historyStore';
 import { filterHistory, groupByDay } from '../utils/historyStore';
@@ -39,7 +40,7 @@ export function HistoryView({ entries, onPlay, onRemove, onClear, isFavorite, sy
   };
 
   return (
-    <div className="space-y-5" data-testid="history-view">
+    <div className="space-y-3" data-testid="history-view">
       {clearedCount !== null && clearedCount > 0 && (
         <div
           role="status"
@@ -58,9 +59,9 @@ export function HistoryView({ entries, onPlay, onRemove, onClear, isFavorite, sy
           </button>
         </div>
       )}
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-neutral-800 pb-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-neutral-800 pb-2">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-50"><HistoryIcon className="h-6 w-6 text-sky-400" aria-hidden="true" /> History</h1>
+          <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-neutral-50"><HistoryIcon className="h-6 w-6 text-sky-400" aria-hidden="true" /> History</h1>
           <p className="mt-1 text-sm text-neutral-400">Everything you've played on this device, newest first. {entries.length > 0 && <span data-testid="history-count">{entries.length} item{entries.length === 1 ? '' : 's'}</span>}</p>
         </div>
         {entries.length > 0 && (confirmClear ? (
@@ -91,9 +92,9 @@ export function HistoryView({ entries, onPlay, onRemove, onClear, isFavorite, sy
         <div data-testid="history-empty" className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/40 p-8 text-center text-sm text-neutral-500">No history yet. Anything you start from the Guide, Library, Radio or Search shows up here.</div>
       ) : filtered.length === 0 ? (
         <div data-testid="history-no-match" className="rounded-xl border border-dashed border-neutral-800 p-6 text-center text-sm text-neutral-500">No history matches.</div>
-      ) : groups.map((g) => (
-        <section key={g.key} aria-label={g.label} className="space-y-2" data-testid="history-group">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{g.label}</h2>
+      ) : (
+        <div className="lg:columns-2 lg:gap-3">
+          <PlayerWidgets tab="history" widgets={groups.map((g, gi): WidgetSpec => ({ key: g.key, title: `${g.label} · ${g.entries.length}`, defaultOpenWide: gi < 2, defaultOpenNarrow: gi === 0, content: (
           <ul className="space-y-2">
             {g.entries.map((e) => (
               <li key={e.id} data-testid="history-item" className="flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900/70 p-2 hover:border-sky-500/40">
@@ -114,8 +115,9 @@ export function HistoryView({ entries, onPlay, onRemove, onClear, isFavorite, sy
               </li>
             ))}
           </ul>
-        </section>
-      ))}
+          ) }))} />
+        </div>
+      )}
     </div>
   );
 }

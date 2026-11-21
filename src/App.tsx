@@ -369,7 +369,7 @@ export default function App() {
     <AjnAppearanceProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} onOpenStartGuide={openStartGuide} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
-      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : (['radio','home','shows','today','library','search','news','news-cube','weather','history','watch-later'].includes(destination)) ? `ajn-screen-main${nowPlaying ? ' ajn-has-dock' : ''}` : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
+      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : (['radio','home','shows','today','library','search','news','news-cube','weather','history','watch-later','tv-guide'].includes(destination)) ? `ajn-screen-main${nowPlaying ? ' ajn-has-dock' : ''}` : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full ajn-scroll-region" data-testid="scroll-region">
             <HomeView
@@ -385,7 +385,7 @@ export default function App() {
           </div>
         )}
         {hasVisitedTvGuide && (
-          <div key="view-tv-guide" hidden={destination !== 'tv-guide'} className="view-fade-in w-full">
+          <div key="view-tv-guide" hidden={destination !== 'tv-guide'} data-ajn-scroll="tv-guide" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <TvGuideView onSelectProgram={handleEpgSelect} onNavigate={navigateTo} active={destination === 'tv-guide'} playingChannelId={nowPlaying?.channelId ?? null} />
           </div>
         )}

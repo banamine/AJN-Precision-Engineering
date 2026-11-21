@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import FixedQueueViewport from "./FixedQueueViewport";
 import { createScrubber } from "../utils/seekScrub";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, PictureInPicture2, AudioLines, ChevronDown, SkipBack, SkipForward, Rewind, FastForward, Repeat1, Heart } from "lucide-react";
 import type { AnalyzerState } from "./AudioVisualizerOverlay";
@@ -55,8 +56,6 @@ interface PlayerChromeProps {
   analyzerState: AnalyzerState;
   diagnosticsOpen: boolean;
   onToggleDiagnostics: () => void;
-  /** Hide the analyzer pill for normal users (diagnostics live in Developer Mode). Default: shown. */
-  showDiagnosticsPill?: boolean;
   /** Audio bar only. */
   thumbnailUrl?: string;
   onThumbnailError?: () => void;
@@ -242,7 +241,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
         />
       </div>
-      {p.showDiagnosticsPill !== false && (<button
+      <button
         type="button"
         data-testid="analyzer-pill"
         data-state={p.analyzerState}
@@ -256,7 +255,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
         <span className={`h-2 w-2 rounded-full ${PILL[p.analyzerState].dot}`} />
         <span className="hidden whitespace-nowrap md:inline">{PILL[p.analyzerState].label}</span>
         <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform md:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />
-      </button>)}
+      </button>
       <button
         type="button"
         disabled={p.visualizerLockedOn}
@@ -340,13 +339,13 @@ export function PlayerChrome(p: PlayerChromeProps) {
             <input type="range" min={0} max={1} step={0.05} value={p.isMuted ? 0 : p.volume} onChange={(e) => p.onVolume(Number(e.target.value))} aria-label="Volume"
               className="ml-1 hidden h-1 w-20 cursor-pointer appearance-none rounded bg-neutral-700 accent-[#E06D3B] md:block" />
           </div>
-          {p.showDiagnosticsPill !== false && (<button type="button" data-testid="analyzer-pill" data-state={p.analyzerState} onClick={p.onToggleDiagnostics} aria-expanded={p.diagnosticsOpen} aria-controls="audio-bridge-drawer"
+          <button type="button" data-testid="analyzer-pill" data-state={p.analyzerState} onClick={p.onToggleDiagnostics} aria-expanded={p.diagnosticsOpen} aria-controls="audio-bridge-drawer"
             aria-label={`${PILL[p.analyzerState].label} — ${p.diagnosticsOpen ? "hide" : "show"} diagnostics`} title="Diagnostics"
             className={`flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-1.5 text-xs sm:h-9 sm:px-2 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${PILL[p.analyzerState].text}`}>
             <span className={`h-2 w-2 rounded-full ${PILL[p.analyzerState].dot}`} />
             <span className="hidden whitespace-nowrap lg:inline">{PILL[p.analyzerState].label}</span>
             <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform lg:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />
-          </button>)}
+          </button>
           <button type="button" disabled={p.visualizerLockedOn} className={`${btn} ${visualizerPressed ? "bg-sky-500/20 text-sky-300" : ""} ${p.visualizerLockedOn ? "cursor-not-allowed opacity-80" : ""}`} onClick={p.onToggleVisualizer} aria-pressed={visualizerPressed}
             aria-label={visualizerLabel} title={visualizerLabel}><AudioLines className="h-4 w-4 sm:h-5 sm:w-5" /></button>
         </div>
@@ -369,13 +368,13 @@ export function PlayerChrome(p: PlayerChromeProps) {
   const archiveMusicPanels = p.archiveMusicMode ? (
     <div
       data-testid="archive-music-panels"
-      className="grid grid-cols-1 gap-3 bg-slate-950 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,1.2fr)_minmax(0,1fr)]"
+      className="grid shrink-0 grid-cols-1 items-stretch gap-3 bg-slate-950 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,1.2fr)_minmax(0,1fr)]"
     >
       <section data-testid="archive-music-recently-played" aria-labelledby="archive-music-recent-heading" className="min-w-0 rounded-2xl border border-cyan-900/70 bg-slate-900/80 p-4 shadow-lg shadow-black/20">
         <h2 id="archive-music-recent-heading" className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-100">Recently Played</h2>
         {p.archiveMusicRecentlyPlayed?.length ? (
-          <ul className="space-y-1">
-            {p.archiveMusicRecentlyPlayed.slice(0, 6).map((item) => {
+          <FixedQueueViewport label="Recently played, scrollable" className="ajn-queue-scroll--side" testId="archive-music-recent-list">
+            {p.archiveMusicRecentlyPlayed.slice(0, 20).map((item) => {
               const row = archiveRowPresentation(item);
               return (
                 <li key={item.id}>
@@ -396,9 +395,9 @@ export function PlayerChrome(p: PlayerChromeProps) {
                 </li>
               );
             })}
-          </ul>
+          </FixedQueueViewport>
         ) : (
-          <p className="py-3 text-sm text-slate-300">No recent Archive music.</p>
+          <p className="ajn-queue-empty ajn-queue-scroll--side text-sm text-slate-300">No recent Archive music.</p>
         )}
       </section>
 
@@ -487,8 +486,8 @@ export function PlayerChrome(p: PlayerChromeProps) {
       <section data-testid="archive-music-up-next" aria-labelledby="archive-music-up-next-heading" className="min-w-0 rounded-2xl border border-cyan-900/70 bg-slate-900/80 p-4 shadow-lg shadow-black/20">
         <h2 id="archive-music-up-next-heading" className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-100">Up Next</h2>
         {p.archiveMusicUpcoming?.length ? (
-          <ol className="space-y-1">
-            {p.archiveMusicUpcoming.slice(0, 6).map((program, index) => {
+          <FixedQueueViewport as="ol" label="Up next, scrollable" className="ajn-queue-scroll--side" testId="archive-music-up-next-list">
+            {p.archiveMusicUpcoming.slice(0, 20).map((program, index) => {
               const row = archiveRowPresentation(program);
               return (
                 <li key={`${program.id}-${index}`}>
@@ -509,9 +508,9 @@ export function PlayerChrome(p: PlayerChromeProps) {
                 </li>
               );
             })}
-          </ol>
+          </FixedQueueViewport>
         ) : (
-          <p className="py-3 text-sm text-slate-300">Upcoming tracks unavailable.</p>
+          <p className="ajn-queue-empty ajn-queue-scroll--side text-sm text-slate-300">Upcoming tracks unavailable.</p>
         )}
       </section>
     </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { PlayerWidgets, type WidgetSpec } from './PlayerWidget';
 import { ArrowDownRight, AudioLines, Headphones, Pause, Play, RefreshCw, Search, SkipBack, SkipForward, Tv, X } from 'lucide-react';
 import type { Destination, NowPlayingMedia, PlayProgramCallback, RecentlyPlayedItem } from '../types';
 import { AvSyncControls } from './AvSyncControls';
@@ -247,19 +248,23 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
 
   useEffect(() => { document.body.dataset.ajnPage = 'radio'; return () => { delete document.body.dataset.ajnPage; }; }, []);
   return (
-    <div className="ajr pb-32 !pb-[18rem] md:!pb-[12rem]" id="ajn-radio-view">
+    <div className="ajr" id="ajn-radio-view">
       <header className="ajr-topbar">
         <span className="ajr-brand"><span className="ajr-brand-icon"><AudioLines size={17} /></span><span>ajn<span className="ajr-brand-light">radio</span></span><span className="ajr-brand-dot">.</span></span>
         <button type="button" className="ajr-refresh" onClick={() => void load()} disabled={loading}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> REFRESH</button>
       </header>
       <NewsTicker news={news} />
 
+      <div className="lg:columns-2 lg:gap-3" data-testid="radio-widgets">
+        <PlayerWidgets tab="radio" widgets={[
+          { key: "deck", title: "Deck · presets & live", defaultOpenWide: true, defaultOpenNarrow: true, className: "[column-span:all]", content: (
       <section className="ajr-live" aria-label="Live radio presets" data-testid="radio-page-live">
         <div className="ajr-label">YOUR DECK · LIVE RADIO · MUSIC · CONCERTS · PODCASTS</div>
         <RadioPresetsBar onNavigate={onNavigate} onListenBackChange={setListenBackOpen} deckSources={deckSources} nowPlaying={nowPlaying} playingNow={liveMedia.attached && !liveMedia.paused} defaultView="unit" station={liveStation} info={null} live={liveStation !== null && liveMedia.attached && !liveMedia.paused} onPlay={onPlayProgram} />
       </section>
-
-      {!listenBackOpen && (<>
+          ) },
+          ...(listenBackOpen ? [] : [
+            { key: "now", title: nowPlaying ? `Now playing · ${nowPlaying.title}` : "Now playing", defaultOpenWide: true, defaultOpenNarrow: false, content: (<>
       <NowPlayingPanel nowPlaying={nowPlaying} playingEntry={playingEntry} list={playingEntry ? (playingEntry.channel === 'ajn-radio' ? catalog.radio : catalog.exclusive) : entries} onPlayEntry={playEntry} onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
       <div role="group" aria-label="Radio drawers" data-testid="radio-drawer-master" className="ajr-section flex flex-wrap items-center gap-2">
         <span className="ajr-label" data-testid="radio-drawer-status">Drawers · Find &amp; save {prefs.findOpen ? 'open' : 'closed'} · Listen back {prefs.listenStage} · Full shows {prefs.fullShowsStage} · Briefing {prefs.briefingStage}</span>
@@ -271,6 +276,8 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
           onClick={() => setPrefs((p) => ({ ...p, listenStage: 'full', fullShowsStage: 'full', briefingStage: 'full' }))}>Expand all</button>
       </div>
 
+            </>) },
+            { key: "find", title: "Find & save", defaultOpenWide: false, defaultOpenNarrow: false, content: (
       <section className="ajr-section" aria-label="Find and save drawer" data-testid="find-drawer">
         <button type="button" className={`ck-key${findOpen ? ' is-latched' : ''}`} data-testid="find-drawer-toggle" aria-expanded={findOpen} aria-controls="ajr-find" onClick={() => setFindOpen((o) => !o)}>
           {findOpen ? 'Hide' : 'Find & save'} · {music.length.toLocaleString()} music · {podcastEps.length.toLocaleString()} podcast episodes{concerts ? ` · ${concerts.length.toLocaleString()} concerts` : ''}
@@ -279,7 +286,8 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
   <ListenBrowser music={music} concerts={concerts} podcasts={podcastEps} concertsError={concertsError} loadConcerts={loadConcerts} spokenLoaded={spoken !== null} spokenError={spokenError} feedsDown={spoken?.feedsDown ?? []} loadSpoken={loadSpoken} playingProgramId={nowPlaying?.programId} onPlay={playItem} presetFor={presetFor} />
         )}
       </section>
-
+            ) },
+            { key: "listen", title: `Listen back · ${catalog.radio.length} AJN Radio`, defaultOpenWide: true, defaultOpenNarrow: false, className: "[column-span:all]", content: (
       <section className="ajr-section" id="ajr-listen" aria-label="Listen back">
         <div className="ajr-heading"><div><div className="ajr-label">THE AJN AUDIO ARCHIVE</div><h2>Listen <em>back.</em></h2></div><span className="ajr-aside">RECORDED AJN SHOWS, HOURS AND SPECIALS.</span></div>
         <div className="mb-3 flex flex-wrap items-center gap-2" data-testid="listen-drawer-bar">
@@ -357,10 +365,12 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
         )}
         <FullShowDays days={showDays.slice(0, Math.min(12, stageLimit(prefs.fullShowsStage, 12)))} onPlay={playFullShow} />
       </section>
-      </>)}
-
+            ) },
+          ] as WidgetSpec[]),
+          { key: "briefing", title: "Daily briefing", defaultOpenWide: true, defaultOpenNarrow: false, content: (
       <DailyBriefing news={news} stage={prefs.briefingStage} onStageChange={(next) => setStage('briefingStage', next)} />
-
+          ) },
+          { key: "about", title: "About AJN Audio", defaultOpenWide: false, defaultOpenNarrow: false, content: (
       <section className="ajr-hero">
         <div>
           <div className="ajr-eyebrow"><i />AJN AUDIO · DAILY NEWS</div>
@@ -370,6 +380,9 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
         </div>
         <div className="ajr-hero-art" aria-hidden="true"><div className="ajr-glow" /><div className="ajr-ring r1" /><div className="ajr-ring r2" /><div className="ajr-ring r3" /><div className="ajr-hero-mark">AJN<br />RADIO</div></div>
       </section>
+          ) },
+        ] as WidgetSpec[]} />
+      </div>
       <footer className="ajr-footer"><span>AJN AUDIO · SHOWS FROM THE AJN FEEDS</span><span>NEWS FROM THE DAILY DIGEST</span></footer>
     </div>
   );

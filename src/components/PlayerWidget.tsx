@@ -79,7 +79,8 @@ export function PlayerWidgets({ tab, widgets }: Props) {
   return (
     <>
       {widgets.map((w) => {
-        const isOpen = !!open[w.key];
+        // A widget that appeared after mount (e.g. data arrived later) uses its default until the user toggles it.
+        const isOpen = w.key in open ? !!open[w.key] : (readMem(memKey(bp, tab, w.key)) ?? defaults[w.key]);
         const hid = `${baseId}-${w.key}-h`;
         const bid = `${baseId}-${w.key}-b`;
         return (

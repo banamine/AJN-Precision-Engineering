@@ -1,11 +1,11 @@
 // Today's Digest data: the 5 AJN feeds (small, for the really-new items) plus a spread of pages from the WHOLE Library (video and audio) for the backfill.
-// Every failure is counted and surfaced; nothing is invented. Feeds refresh every 30 min; the library spread is re-drawn at the viewer's local midnight.
+// Every failure is counted and surfaced; nothing is invented. AJN feeds come from the shared store (5-min refresh); the library spread is re-drawn at the viewer's local midnight.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { hash32, localDateKey, msUntilLocalMidnight } from '../utils/dayRotation';
 import { DISCOVER_CATEGORIES, toDiscoverItem } from './useDiscoverPool';
 import { AJN_DIGEST_FEEDS, cardFromFeedItem, cardFromLibrary, type DigestCard, type FeedItemWire } from '../home/digestModel';
+import { useAjnFeeds, reloadAjnFeeds } from './useAjnFeeds';
 
-const FEED_REFRESH_MS = 30 * 60 * 1000;
 const PAGE_SIZE = 48;
 const EXTRA_PAGES = 2; // page 1 tells us totalPages; two more are drawn from the session seed
 type Wire = Parameters<typeof toDiscoverItem>[0];
@@ -22,6 +22,7 @@ export interface DigestPool {
 }
 
 export function useTodaysDigest(enabled: boolean, sessionPart: string): DigestPool {
+  const ajn = useAjnFeeds();
   const [feedState, setFeedState] = useState<{ done: boolean; fresh: DigestCard[]; failed: number }>({ done: false, fresh: [], failed: 0 });
   const [libState, setLibState] = useState<{ done: boolean; library: DigestCard[]; failed: number; error: string | null }>({ done: false, library: [], failed: 0, error: null });
   const [attempt, setAttempt] = useState(0);
@@ -35,28 +36,20 @@ export function useTodaysDigest(enabled: boolean, sessionPart: string): DigestPo
     return () => window.clearTimeout(t);
   }, [enabled, day]);
 
-  // AJN feeds: the only source of the NEW label
+  // AJN feeds: the only source of the NEW label (read from the shared store, no own fetch)
   useEffect(() => {
     if (!enabled) return;
-    const ctl = new AbortController();
-    const load = async () => {
-      const results = await Promise.allSettled(AJN_DIGEST_FEEDS.map(async (f) => {
-        const r = await fetch(`/api/ajn/resources/${f.id}`, { signal: ctl.signal });
-        if (!r.ok) throw new Error(`${f.id} HTTP ${r.status}`);
-        const items = ((await r.json()) as { items?: FeedItemWire[] }).items ?? [];
-        const now = Date.now();
-        return items.map((it) => cardFromFeedItem(f, it, now)).filter((c): c is DigestCard => !!c);
-      }));
-      if (ctl.signal.aborted) return;
-      const fresh = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
-      const failed = results.filter((r) => r.status === 'rejected').length;
-      // a failed refresh keeps the last good NEW cards; a first load that fails shows nothing and says so (failed > 0)
-      setFeedState((prev) => (fresh.length > 0 || prev.fresh.length === 0 ? { done: true, fresh, failed } : { done: true, fresh: prev.fresh, failed }));
-    };
-    void load();
-    const t = window.setInterval(() => void load(), FEED_REFRESH_MS);
-    return () => { ctl.abort(); window.clearInterval(t); };
-  }, [enabled, attempt]);
+    if (!ajn.data) {
+      if (ajn.status === 'error') setFeedState({ done: true, fresh: [], failed: AJN_DIGEST_FEEDS.length });
+      return;
+    }
+    const data = ajn.data;
+    const now = Date.now();
+    const fresh = AJN_DIGEST_FEEDS.flatMap((f) =>
+      data.items.filter((i) => i.feedId === f.id).map((it) => cardFromFeedItem(f, it as unknown as FeedItemWire, now)).filter((c): c is DigestCard => !!c));
+    const failed = data.failures;
+    setFeedState((prev) => (fresh.length > 0 || prev.fresh.length === 0 ? { done: true, fresh, failed } : { done: true, fresh: prev.fresh, failed }));
+  }, [enabled, ajn.data, ajn.status, attempt]);
 
   // Library: pages drawn from the whole library, video and audio separately so both kinds are always in the pool
   useEffect(() => {
@@ -92,7 +85,7 @@ export function useTodaysDigest(enabled: boolean, sessionPart: string): DigestPo
     return () => { alive = false; ctl.abort(); };
   }, [enabled, attempt, day]);
 
-  const retry = useCallback(() => { setFeedState({ done: false, fresh: [], failed: 0 }); setLibState({ done: false, library: [], failed: 0, error: null }); setAttempt((n) => n + 1); }, []);
+  const retry = useCallback(() => { void reloadAjnFeeds(); setFeedState({ done: false, fresh: [], failed: 0 }); setLibState({ done: false, library: [], failed: 0, error: null }); setAttempt((n) => n + 1); }, []);
   const done = feedState.done && libState.done;
   const empty = feedState.fresh.length + libState.library.length === 0;
   const phase: DigestPool['phase'] = !enabled ? 'idle' : !done && empty ? 'loading' : done && empty ? 'error' : 'ready';

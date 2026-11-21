@@ -13,6 +13,7 @@ import { FullShowStatus } from "./FullShowStatus";
 import { getShowQueue, isQueuePart, peekNextPart, stepShowQueue, syncShowQueue } from "../utils/showQueue";
 import { GUIDE_FALLBACK_ORDER, fullShowTargets, nextInLoop, pickAnotherItem, radioNext, targetKey, type PlayTarget } from "../utils/continuity";
 import { loadAjnFeeds } from "../services/ajnFeeds";
+import { getAjnFeedsState, reloadAjnFeeds } from '../hooks/useAjnFeeds';
 import { buildRadioCatalog } from "../utils/ajnRadioCatalog";
 import { pickLatestFullShows, type FeedItemLike } from "../utils/latestFullShows";
 import { CaptionPanel } from "../news/captions/CaptionPanel";
@@ -333,12 +334,10 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
   /** Tier 3: AJN Full Shows audio (newest whole show of each AJN show). Loaded once, then looped. */
   const loadFullShowsLoop = useCallback(async (): Promise<PlayTarget[]> => {
     if (fallbackLoopRef.current?.length) return fallbackLoopRef.current;
+    let snap = getAjnFeedsState();
+    if (!snap.data) { await reloadAjnFeeds(); snap = getAjnFeedsState(); }
     const byFeed: Record<string, FeedItemLike[]> = {};
-    await Promise.allSettled((["Alex", "WarRoom"] as const).map(async (id) => {
-      const r = await fetch(`/api/ajn/resources/${id}`);
-      if (!r.ok) throw new Error(`${id} HTTP ${r.status}`);
-      byFeed[id] = ((await r.json()).items ?? []) as FeedItemLike[];
-    }));
+    for (const id of ["Alex", "WarRoom"] as const) byFeed[id] = (snap.data?.items ?? []).filter((i) => i.feedId === id);
     const loop = fullShowTargets(pickLatestFullShows(byFeed));
     if (loop.length) fallbackLoopRef.current = loop;
     return loop;
@@ -779,9 +778,13 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
         <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
         {playbackFailure}
         {videoControls}
-        {browsePanel}
-        {captionState.phase !== "off" && <CaptionPanel state={captionState} />}
-        {secondaryPlayerInfo}
+        <div className="lg:columns-2 lg:gap-3">
+          <PlayerWidgets tab="audio" widgets={[
+            ...(browsePanel ? [{ key: "up-next", title: "Up Next / On Now", defaultOpenWide: true, defaultOpenNarrow: false, content: browsePanel } as WidgetSpec] : []),
+            ...(captionState.phase !== "off" ? [{ key: "headlines", title: "Headlines & captions", defaultOpenWide: true, content: <CaptionPanel state={captionState} /> } as WidgetSpec] : []),
+            { key: "episode-note", title: "Episode note", content: secondaryPlayerInfo } as WidgetSpec,
+          ]} />
+        </div>
       </div>
     );
   }

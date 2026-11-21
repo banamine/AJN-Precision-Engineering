@@ -46,6 +46,8 @@ export function reloadAjnFeeds(): Promise<void> {
   return p;
 }
 
+export function getAjnFeedsState(): AjnFeedsState { return state; }
+
 function isStale(): boolean {
   const t = state.checkedAt ? Date.parse(state.checkedAt) : NaN;
   return !Number.isFinite(t) || Date.now() - t >= REFRESH_MS;

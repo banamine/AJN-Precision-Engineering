@@ -115,7 +115,7 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
       </div>
       {c.note && <p role="status" data-testid="schedule-note" className="text-[11px] text-amber-300">{c.note}</p>}
 
-      <ol aria-label="Up next" className="flex flex-col gap-1.5">
+      <ol aria-label="Up next" className="ajn-queue-scroll ajn-queue-scroll--side flex flex-col gap-1.5">
         {c.upcoming.map((r, i) => (
           <li key={`${r.track.programId}-${i}`}>
             <button type="button" data-testid={`schedule-next-${i}`} onClick={() => c.pickUpcoming(i)} disabled={r.failed}

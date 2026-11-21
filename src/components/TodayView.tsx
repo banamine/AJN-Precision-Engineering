@@ -7,6 +7,7 @@ import { clearScheduleCache, getCachedLightSchedule, getCachedSchedule, isStale,
 import { buildToday, formatHour, thumbnailOf, type TodayChannel, type TodayEntry } from "../guide/todayList";
 import { tuneIn, mediaTypeFor } from "../guide/liveTune";
 import { ChannelLogo } from "./ChannelLogo";
+import { PlayerWidgets, type WidgetSpec } from "./PlayerWidget";
 
 const AJN_RESOURCE_GUIDE_ID = "ajn-archive-special-feeds";
 const FALLBACK_GUIDES: Guide[] = [
@@ -60,6 +61,7 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [nowHour, setNowHour] = useState(nowHourFraction());
   const [showEarlier, setShowEarlier] = useState(false);
+  const [showAllNow, setShowAllNow] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const reqRef = useRef<AbortController | null>(null);
 
@@ -134,7 +136,13 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
     }
   };
 
-  const jump = (id: string) => document.getElementById(`today-ch-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const jump = (id: string) => {
+    const el = document.getElementById(`today-ch-${id}`);
+    const region = el?.closest('[role="region"]') as HTMLElement | null;
+    const btn = region?.id ? document.querySelector<HTMLButtonElement>(`button[aria-controls="${region.id}"]`) : null;
+    if (btn && btn.getAttribute("aria-expanded") === "false") btn.click();
+    window.setTimeout(() => (btn ?? el)?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  };
 
   const renderRow = (tc: TodayChannel, entry: TodayEntry, isNow: boolean, key: string) => {
     const playable = Boolean(entry.program.archivePath || entry.program.mediaUrl);
@@ -153,8 +161,8 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
   };
 
   return (
-    <div className="space-y-6 pb-16" data-testid="today-view">
-      <header className="flex flex-col gap-3 border-b border-neutral-800 pb-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-3" data-testid="today-view">
+      <header className="flex flex-col gap-3 border-b border-neutral-800 pb-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-500/25 bg-sky-500/10 text-sky-400"><ListChecks className="h-4 w-4" /></div>
@@ -192,13 +200,29 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
 
       {channels && (
         <>
-          <section aria-labelledby="today-now">
-            <h2 id="today-now" className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-300">On now · {formatHour(nowHour)}</h2>
+          <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="flex min-w-0 items-center gap-2 text-xs text-neutral-300">
+              <span>Jump to</span>
+              <select aria-label="Jump to channel" defaultValue="" onChange={(e) => { if (e.target.value) { jump(e.target.value); e.target.value = ""; } }} className="min-h-[44px] max-w-[16rem] rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100 sm:min-h-0">
+                <option value="">Channel…</option>
+                {today.filter((tc) => tc.upcoming.length + tc.earlier.length + (tc.now ? 1 : 0) > 0).map((tc) => (<option key={tc.channel.id} value={tc.channel.id}>{tc.channel.name}</option>))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs text-neutral-300">
+              <input type="checkbox" checked={showEarlier} onChange={(e) => setShowEarlier(e.target.checked)} className="h-4 w-4 accent-sky-500" />Show earlier today
+            </label>
+          </div>
+            <div className="lg:columns-2 lg:gap-3">
+              <PlayerWidgets tab="today" widgets={[
+                { key: "now", title: `On now · ${formatHour(nowHour)} · ${onNow.length}`, defaultOpenWide: true, defaultOpenNarrow: true, content: (
+          <div>
             {onNow.length === 0 ? (
               <p className="text-sm text-neutral-400">Nothing is scheduled at this moment in this guide. Pick something from the lists below.</p>
             ) : (
+              <>
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {onNow.map((tc) => {
+                {(showAllNow ? onNow : onNow.slice(0, 12)).map((tc) => {
                   const e = tc.now!;
                   const pct = Math.min(100, Math.max(0, ((nowHour - e.sHour) / (e.eHour - e.sHour)) * 100));
                   return (
@@ -218,35 +242,17 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
                   );
                 })}
               </ul>
+              {onNow.length > 12 && (<button type="button" onClick={() => setShowAllNow((v) => !v)} className="mt-2 px-2 py-1 text-xs font-semibold text-sky-300 hover:text-white">{showAllNow ? "Show fewer" : `Show all ${onNow.length} on now`}</button>)}
+              </>
             )}
-          </section>
-
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <nav aria-label="Jump to channel" className="flex flex-wrap gap-1.5">
-              {today.map((tc) => (
-                <button key={tc.channel.id} type="button" onClick={() => jump(tc.channel.id)} className="flex items-center gap-1.5 rounded-full border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400">
-                  <ChannelLogo logo={tc.channel.logo} name={tc.channel.name} fallback={<span className="h-4 w-4 rounded bg-neutral-700" aria-hidden="true" />} />
-                  <span>{tc.channel.name}</span>
-                </button>
-              ))}
-            </nav>
-            <label className="flex items-center gap-2 text-xs text-neutral-300">
-              <input type="checkbox" checked={showEarlier} onChange={(e) => setShowEarlier(e.target.checked)} className="h-4 w-4 accent-sky-500" />Show earlier today
-            </label>
           </div>
-
-          <div className="space-y-4">
-            {today.map((tc) => {
+                ) } as WidgetSpec,
+                ...today.filter((tc) => tc.upcoming.length + tc.earlier.length + (tc.now ? 1 : 0) > 0).map((tc, idx): WidgetSpec => {
               const open = expanded[tc.channel.id] === true;
               const upcoming = open ? tc.upcoming : tc.upcoming.slice(0, UPCOMING_PREVIEW);
               const total = tc.upcoming.length + tc.earlier.length + (tc.now ? 1 : 0);
-              return (
-                <section key={tc.channel.id} id={`today-ch-${tc.channel.id}`} data-testid="today-channel" aria-label={tc.channel.name} className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3">
-                  <header className="mb-1 flex items-center gap-2.5 px-1">
-                    <ChannelLogo logo={tc.channel.logo} name={tc.channel.name} fallback={<div className="flex h-6 w-6 items-center justify-center rounded bg-neutral-800 text-neutral-400" aria-hidden="true">{tc.channel.mediaType === "audio" ? <Headphones className="h-3.5 w-3.5" /> : <Tv className="h-3.5 w-3.5" />}</div>} />
-                    <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-neutral-50">{tc.channel.name}</h3>
-                    <span className="text-[11px] text-neutral-500">{total} today</span>
-                  </header>
+              return { key: `ch-${tc.channel.id}`, title: `${tc.channel.name} · ${total}`, defaultOpenWide: idx < 3, defaultOpenNarrow: false, content: (
+<div id={`today-ch-${tc.channel.id}`} data-testid="today-channel">
                   {total === 0 ? (
                     <p className="px-2 py-2 text-xs text-neutral-400">{tc.channel.sourceError ? `No programs: ${tc.channel.sourceError}` : tc.channel.sourceStatus && tc.channel.sourceStatus !== "ok" ? `No programs (source ${tc.channel.sourceStatus}).` : "No programs scheduled today."}</p>
                   ) : (
@@ -261,9 +267,18 @@ export function TodayView({ onSelectProgram, onNavigate }: TodayViewProps) {
                       {open ? "Show fewer" : `Show all ${tc.upcoming.length} remaining`}
                     </button>
                   )}
-                </section>
-              );
-            })}
+                </div>
+              ) };
+            }),
+                ...(today.some((tc) => tc.upcoming.length + tc.earlier.length + (tc.now ? 1 : 0) === 0) ? [{ key: "empty-channels", title: `No schedule today · ${today.filter((tc) => tc.upcoming.length + tc.earlier.length + (tc.now ? 1 : 0) === 0).length} channels`, defaultOpenWide: false, defaultOpenNarrow: false, content: (
+                  <ul className="space-y-1 text-xs text-neutral-400">
+                    {today.filter((tc) => tc.upcoming.length + tc.earlier.length + (tc.now ? 1 : 0) === 0).map((tc) => (
+                      <li key={tc.channel.id} id={`today-ch-${tc.channel.id}`}>{tc.channel.name}{tc.channel.sourceError ? ` — ${tc.channel.sourceError}` : ""}</li>
+                    ))}
+                  </ul>
+                ) } as WidgetSpec] : []),
+              ]} />
+            </div>
           </div>
         </>
       )}

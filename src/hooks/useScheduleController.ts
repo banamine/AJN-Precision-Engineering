@@ -11,7 +11,7 @@ import { clockEligible, orderTracks, shuffleWindow, slotAt, slotsAfter, type Sch
 export type ScheduleMode = 'clock24h' | 'shuffle' | 'off-schedule';
 export type SeekStatus = 'none' | 'pending' | 'synced' | 'fallback-zero';
 export interface AiredEntry { programId: string; title: string; subtitle: string; bank: string; poolId: string; airedAtUtcMs: number }
-export interface DeckRow { track: SchedTrack; startUtcMs: number | null; failed: boolean }
+export interface DeckRow { track: SchedTrack; startUtcMs: number | null; failed: boolean; /** Daily edition rows: Yesterday / Replay. */ label?: string }
 type Cursor = { kind: 'clock'; slot: Slot; startedMs: number } | { kind: 'shuffle'; order: SchedTrack[]; index: number; startedMs: number };
 
 const PREF_KEY = 'ajn.schedule.mode.v1';
@@ -25,6 +25,8 @@ export interface ScheduleController {
   now: { track: SchedTrack; startUtcMs: number | null; endUtcMs: number | null; cycle: number } | null;
   upcoming: DeckRow[]; elapsedSec: number; seekStatus: SeekStatus; note: string | null; aired: AiredEntry[];
   setMode: (m: 'clock24h' | 'shuffle') => void; tune: () => void; returnToLive: () => void; pickUpcoming: (i: number) => void;
+  /** Daily edition pool only: play this episode now, then return to the live edition. */
+  playOnDemand: (track: SchedTrack) => void;
 }
 
 export function useScheduleController(pool: SchedPool | null, onPlayProgram: PlayProgramCallback, nowPlayingProgramId: string | undefined, enabled = true): ScheduleController {
@@ -48,7 +50,10 @@ export function useScheduleController(pool: SchedPool | null, onPlayProgram: Pla
   const pending = useRef<{ programId: string; slotStartMs: number; since: number; sentAt: number | null } | null>(null);
 
   const eligible = clockEligible(pool);
-  const mode: ScheduleMode = !eligible ? 'shuffle' : tuned && offSchedule ? 'off-schedule' : pref;
+  const isEdition = !!pool?.edition;                               // the daily edition has no Shuffle: it is one fixed list
+  const effPref: 'clock24h' | 'shuffle' = isEdition ? 'clock24h' : pref;
+  const waitingForEdition = useRef(false);
+  const mode: ScheduleMode = !eligible ? 'shuffle' : tuned && offSchedule ? 'off-schedule' : effPref;
   const order = useMemo(() => (pool ? orderTracks(pool, shuffleSeed) : []), [pool, shuffleSeed]);
 
   // 1-second tick: only progress/clock text depends on it.
@@ -56,7 +61,7 @@ export function useScheduleController(pool: SchedPool | null, onPlayProgram: Pla
   // The previewed clock slot is recomputed only when its window has ended or the pool changed (not every tick).
   useEffect(() => {
     if (!pool || !eligible) { setPreviewSlot(null); return; }
-    setPreviewSlot((prev) => (prev && previewPool.current === pool.id && nowMs >= prev.startUtcMs && nowMs < prev.endUtcMs ? prev : (previewPool.current = pool.id, slotAt(pool, nowMs))));
+    setPreviewSlot((prev) => (prev && previewPool.current === pool.id && prev.editionId === pool.edition?.id && nowMs >= prev.startUtcMs && nowMs < prev.endUtcMs ? prev : (previewPool.current = pool.id, slotAt(pool, nowMs))));
   }, [pool, eligible, nowMs]);
 
   const media = usePersistentMedia('audio', cursorKey(cursor), enabled && tuned);
@@ -109,6 +114,13 @@ export function useScheduleController(pool: SchedPool | null, onPlayProgram: Pla
       setNote('No playable track in this pool'); return;
     }
     const now = Date.now();
+    if (cursor.slot.demand) { if (reason === 'failed') setNote('Failed to load — skipped'); tuneLive(); return; }   // a play-now ended: back to the live edition
+    if (pool.edition && cursor.slot.editionId !== pool.edition.id) {  // the edition changed while this episode played: it was never cut; the new edition starts from its first item
+      const first = firstPlayable(slotsAfter(pool, cursor.slot, 1)[0] ?? null);
+      if (!first) { setNote('No playable track in this pool'); return; }
+      setOffSchedule(true); setNote('New edition started from the top'); play({ kind: 'clock', slot: first, startedMs: now }, 0, first.track); return;
+    }
+    if (pool.edition && reason === 'ended' && !(offSchedule ? slotsAfter(pool, cursor.slot, 1)[0] : slotAt(pool, now + 500))) { waitingForEdition.current = true; setNote('Waiting for the next edition'); return; }  // this edition is finished: nothing is invented
     if (offSchedule || reason === 'failed') {                      // not following the wall clock: take the next scheduled track from 0:00
       const next = firstPlayable(slotsAfter(pool, cursor.slot, 1)[0] ?? null);
       if (!next) { setNote('No playable track in this pool'); return; }
@@ -122,7 +134,7 @@ export function useScheduleController(pool: SchedPool | null, onPlayProgram: Pla
     const skipped = next.startUtcMs > now + 500; setOffSchedule(skipped); setNote(skipped ? 'Failed to load — skipped' : null);
     const offset = skipped ? 0 : Math.max(0, (now - next.startUtcMs) / 1000);
     play({ kind: 'clock', slot: next, startedMs: skipped ? now : next.startUtcMs }, offset, next.track);
-  }, [pool, cursor, offSchedule, firstPlayable, play]);
+  }, [pool, cursor, offSchedule, firstPlayable, play, tuneLive]);
   const advanceRef = useRef(advance); advanceRef.current = advance;
 
   // Hand-off: ~0.4 s before the end (or on 'ended') start the next slot ourselves.
@@ -180,12 +192,22 @@ export function useScheduleController(pool: SchedPool | null, onPlayProgram: Pla
     setAired((a) => [{ programId: t.programId, title: t.title, subtitle: t.subtitle, bank: t.bank, poolId: t.poolId, airedAtUtcMs: Date.now() }, ...a].slice(0, LOG_MAX));
   }, [tuned, cursor, media.attached, media.paused, nowPlayingProgramId]);
 
+  // The edition ended while the last episode was finishing, and a newer edition has now arrived: start it from the top.
+  const editionId = pool?.edition?.id;
+  useEffect(() => {
+    if (!waitingForEdition.current || !pool?.edition || !tuned) return;
+    const first = firstPlayable(pool.edition.slots.length ? slotAt(pool, pool.edition.slots[0].startUtcMs) : null);
+    waitingForEdition.current = false; if (!first) return;
+    setOffSchedule(true); setNote('New edition started from the top'); play({ kind: 'clock', slot: first, startedMs: Date.now() }, 0, first.track);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editionId]);
+
   // A different pool: stop steering, forget the cursor.
   const poolId = pool?.id;
-  useEffect(() => { setTuned(false); setOffSchedule(false); setCursor(null); setNote(null); setSeekStatus('none'); pending.current = null; }, [poolId]);
+  useEffect(() => { waitingForEdition.current = false; setTuned(false); setOffSchedule(false); setCursor(null); setNote(null); setSeekStatus('none'); pending.current = null; }, [poolId]);
 
   const active: Cursor | null = tuned && cursor ? cursor
-    : !pool ? null : pref === 'clock24h' && eligible ? (previewSlot ? { kind: 'clock', slot: previewSlot, startedMs: previewSlot.startUtcMs } : null)
+    : !pool ? null : effPref === 'clock24h' && eligible ? (previewSlot ? { kind: 'clock', slot: previewSlot, startedMs: previewSlot.startUtcMs } : null)
     : order.length ? { kind: 'shuffle', order, index: 0, startedMs: eligible ? Math.floor(nowMs / 60_000) * 60_000 : 0 } : null; // preview times update once a minute
 
   const nowRow = active ? (active.kind === 'clock'
@@ -196,7 +218,7 @@ export function useScheduleController(pool: SchedPool | null, onPlayProgram: Pla
     if (!active || !pool) return [];
     if (active.kind === 'shuffle') return shuffleWindow(active.order, active.index, active.startedMs || null, 3).map((r) => ({ ...r, failed: failedIds.current.has(r.track.programId) }));
     let at = active.startedMs + (active.slot.endUtcMs - active.slot.startUtcMs);
-    return slotsAfter(pool, active.slot, 3).map((s) => { const row = { track: s.track, startUtcMs: at, failed: failedIds.current.has(s.track.programId) }; at += s.endUtcMs - s.startUtcMs; return row; });
+    return slotsAfter(pool, active.slot, 3).map((s) => { const row = { track: s.track, startUtcMs: at, failed: failedIds.current.has(s.track.programId), label: s.label }; at += s.endUtcMs - s.startUtcMs; return row; });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active && cursorKey(active), pool, failedVersion]);
 
@@ -205,11 +227,16 @@ export function useScheduleController(pool: SchedPool | null, onPlayProgram: Pla
     : nowRow.startUtcMs !== null ? Math.max(0, (nowMs - nowRow.startUtcMs) / 1000) : 0;
 
   const setMode = useCallback((m: 'clock24h' | 'shuffle') => {
-    if (m === 'clock24h' && !eligible) return;
+    if (isEdition || (m === 'clock24h' && !eligible)) return;
     setPref(m); savePref(m);
     if (tuned) { if (m === 'clock24h') tuneLive(); else startShuffle(true); } else if (m === 'shuffle') setShuffleSeed(Date.now() >>> 0);
-  }, [eligible, tuned, tuneLive, startShuffle]);
-  const tune = useCallback(() => { if (pref === 'clock24h' && eligible) tuneLive(); else startShuffle(false); }, [pref, eligible, tuneLive, startShuffle]);
+  }, [eligible, isEdition, tuned, tuneLive, startShuffle]);
+  const tune = useCallback(() => { if (effPref === 'clock24h' && eligible) tuneLive(); else startShuffle(false); }, [effPref, eligible, tuneLive, startShuffle]);
+  const playOnDemand = useCallback((track: SchedTrack) => {
+    if (!pool) return; const t = Date.now();
+    const slot: Slot = { track, startUtcMs: t, endUtcMs: t + (track.durationSeconds ?? 0) * 1000, index: -1, cycle: 1, demand: true };
+    setOffSchedule(true); setNote('Playing on demand'); play({ kind: 'clock', slot, startedMs: t }, 0, track);
+  }, [pool, play]);
   const pickUpcoming = useCallback((i: number) => {
     if (!pool || !active) return;
     if (active.kind === 'shuffle') { const index = (active.index + 1 + i) % active.order.length; play({ kind: 'shuffle', order: active.order, index, startedMs: Date.now() }, 0, active.order[index]); return; }
@@ -217,7 +244,7 @@ export function useScheduleController(pool: SchedPool | null, onPlayProgram: Pla
     setOffSchedule(true); setNote(null); play({ kind: 'clock', slot: s, startedMs: Date.now() }, 0, s.track);
   }, [pool, active, play]);
 
-  return { mode, pref, clockEligible: eligible, tuned, now: nowRow, upcoming, elapsedSec, seekStatus, note, aired, setMode, tune, returnToLive: tuneLive, pickUpcoming };
+  return { mode, pref, clockEligible: eligible, tuned, now: nowRow, upcoming, elapsedSec, seekStatus, note, aired, setMode, tune, returnToLive: tuneLive, pickUpcoming, playOnDemand };
 }
 
 const cursorTrack = (c: Cursor): SchedTrack => (c.kind === 'clock' ? c.slot.track : c.order[c.index]);

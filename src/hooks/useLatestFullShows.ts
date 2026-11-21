@@ -1,35 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { useAjnFeeds } from './useAjnFeeds';
 import { pickLatestFullShows, SHORTCUT_SHOWS, type FeedItemLike, type LatestFullShow } from '../utils/latestFullShows';
-
-const REFRESH_MS = 30 * 60 * 1000; // new day's links appear without a page reload
 
 export type LatestFullShowsState = { status: 'loading' } | { status: 'ready'; shows: LatestFullShow[] } | { status: 'error'; message: string };
 
-/** Loads only the two whole-show feeds (small), picks the newest of each, refreshes every 30 minutes. */
+/** Reads the shared AJN feed store (no own fetch), picks the newest whole show of each. */
 export function useLatestFullShows(): LatestFullShowsState {
-  const [state, setState] = useState<LatestFullShowsState>({ status: 'loading' });
-  useEffect(() => {
-    const ctl = new AbortController();
-    const load = async () => {
-      try {
-        const results = await Promise.allSettled(SHORTCUT_SHOWS.map(async (s) => {
-          const r = await fetch(`/api/ajn/resources/${s.feedId}`, { signal: ctl.signal });
-          if (!r.ok) throw new Error(`${s.feedId} HTTP ${r.status}`);
-          return [s.feedId, ((await r.json()).items ?? []) as FeedItemLike[]] as const;
-        }));
-        if (ctl.signal.aborted) return;
-        const byFeed: Record<string, FeedItemLike[]> = {};
-        for (const r of results) if (r.status === 'fulfilled') byFeed[r.value[0]] = [...r.value[1]];
-        const shows = pickLatestFullShows(byFeed);
-        // Keep the last good buttons if a refresh fails; only report an error when we have nothing to show.
-        setState((prev) => shows.length > 0 ? { status: 'ready', shows } : prev.status === 'ready' ? prev : { status: 'error', message: 'AJN feeds are unavailable.' });
-      } catch (e) {
-        if (!ctl.signal.aborted) setState((prev) => prev.status === 'ready' ? prev : { status: 'error', message: e instanceof Error ? e.message : String(e) });
-      }
-    };
-    void load();
-    const t = window.setInterval(() => void load(), REFRESH_MS);
-    return () => { ctl.abort(); window.clearInterval(t); };
-  }, []);
-  return state;
+  const feeds = useAjnFeeds();
+  return useMemo<LatestFullShowsState>(() => {
+    if (feeds.data) {
+      const byFeed: Record<string, FeedItemLike[]> = {};
+      for (const s of SHORTCUT_SHOWS) byFeed[s.feedId] = feeds.data.items.filter((i) => i.feedId === s.feedId);
+      const shows = pickLatestFullShows(byFeed);
+      if (shows.length > 0) return { status: 'ready', shows };
+    }
+    if (feeds.status === 'loading') return { status: 'loading' };
+    return { status: 'error', message: feeds.error ?? 'AJN feeds are unavailable.' };
+  }, [feeds.data, feeds.status, feeds.error]);
 }

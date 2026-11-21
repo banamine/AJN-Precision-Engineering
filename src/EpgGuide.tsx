@@ -747,7 +747,9 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
   const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasChannels = channels !== null;
 
-  // Vertical virtualization scroll state reading window scroll relative to rowsBodyRef (throttled via requestAnimationFrame)
+  // The guide lives in the shell's inner scroll region (data-ajn-scroll); fall back to the window when it is not inside one.
+  const getScroller = useCallback((): HTMLElement | null => rowsBodyRef.current?.closest<HTMLElement>("[data-ajn-scroll]") ?? document.querySelector<HTMLElement>("[data-ajn-scroll=\"tv-guide\"]"), []);
+  // Vertical virtualization scroll state reading scroll relative to rowsBodyRef (throttled via requestAnimationFrame)
   const [scrollTop, setScrollTop] = useState<number>(() => Math.max(0, savedView?.scrollY ?? 0));
   const [viewportHeight, setViewportHeight] = useState<number>(() =>
     typeof window !== "undefined" && window.innerHeight > 0 ? window.innerHeight : DEFAULT_VIEWPORT_HEIGHT_PX,
@@ -758,28 +760,33 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
     let rafId: number | null = null;
     const measureScroll = () => {
       rafId = null;
-      const vh = window.innerHeight > 0 ? window.innerHeight : DEFAULT_VIEWPORT_HEIGHT_PX;
+      const sc = getScroller();
+      const vh = sc && sc.clientHeight > 0 ? sc.clientHeight : window.innerHeight > 0 ? window.innerHeight : DEFAULT_VIEWPORT_HEIGHT_PX;
       setViewportHeight(vh);
       const bodyEl = rowsBodyRef.current;
       if (bodyEl) {
         const rect = bodyEl.getBoundingClientRect();
         if (rect.height > 0 || rect.top !== 0) {
-          setScrollTop(Math.max(0, -(rect.top + TIMELINE_HEADER_HEIGHT_PX)));
+          const top = sc ? rect.top - sc.getBoundingClientRect().top : rect.top;
+          setScrollTop(Math.max(0, -(top + TIMELINE_HEADER_HEIGHT_PX)));
           return;
         }
       }
-      setScrollTop(Math.max(0, window.scrollY));
+      setScrollTop(Math.max(0, sc ? sc.scrollTop : window.scrollY));
     };
     const scheduleMeasure = () => {
       if (rafId !== null) return;
       rafId = window.requestAnimationFrame(measureScroll);
     };
     measureScroll();
+    const scEl = getScroller();
     window.addEventListener("scroll", scheduleMeasure, { passive: true });
+    scEl?.addEventListener("scroll", scheduleMeasure, { passive: true });
     window.addEventListener("resize", scheduleMeasure, { passive: true });
     return () => {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", scheduleMeasure);
+      scEl?.removeEventListener("scroll", scheduleMeasure);
       window.removeEventListener("resize", scheduleMeasure);
     };
   }, [active, hasChannels, viewMode, selectedDay]);
@@ -1223,10 +1230,18 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
     if (idx < rowWindow.start || idx >= rowWindow.end) {
       setScrollTop(desiredScrollTop);
       if (typeof window !== "undefined") {
-        const bodyTop = rowsBodyRef.current
-          ? rowsBodyRef.current.getBoundingClientRect().top + window.scrollY + TIMELINE_HEADER_HEIGHT_PX
-          : 0;
-        window.scrollTo({ top: Math.max(0, bodyTop + desiredScrollTop), behavior: "auto" });
+        const sc = getScroller();
+        if (sc) {
+          const bodyTop = rowsBodyRef.current
+            ? rowsBodyRef.current.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop + TIMELINE_HEADER_HEIGHT_PX
+            : 0;
+          sc.scrollTo({ top: Math.max(0, bodyTop + desiredScrollTop), behavior: "auto" });
+        } else {
+          const bodyTop = rowsBodyRef.current
+            ? rowsBodyRef.current.getBoundingClientRect().top + window.scrollY + TIMELINE_HEADER_HEIGHT_PX
+            : 0;
+          window.scrollTo({ top: Math.max(0, bodyTop + desiredScrollTop), behavior: "auto" });
+        }
       }
       return;
     }
@@ -1262,13 +1277,14 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
   useLayoutEffect(() => {
     if (!active || !hasChannels) return;
     if (!hasRestoredScroll.current) {
-      lastScroll.current = { scrollY: savedView?.scrollY ?? window.scrollY, scrollX: 0 };
+      lastScroll.current = { scrollY: savedView?.scrollY ?? (getScroller()?.scrollTop ?? window.scrollY), scrollX: 0 };
       hasRestoredScroll.current = true;
     }
     const position = lastScroll.current;
     if (!position) return;
     restoringScroll.current = true;
-    window.scrollTo(window.scrollX, position.scrollY);
+    const scRestore = getScroller();
+    if (scRestore) scRestore.scrollTo(0, position.scrollY); else window.scrollTo(window.scrollX, position.scrollY);
     const frame = requestAnimationFrame(() => {
       restoringScroll.current = false;
     });
@@ -1285,7 +1301,7 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
     };
     const onScroll = () => {
       if (!activeRef.current || restoringScroll.current || !hasRestoredScroll.current) return;
-      lastScroll.current = { scrollY: window.scrollY, scrollX: 0 };
+      lastScroll.current = { scrollY: getScroller()?.scrollTop ?? window.scrollY, scrollX: 0 };
       const remaining = 300 - (Date.now() - lastScrollSaveAt.current);
       if (remaining <= 0) {
         if (scrollSaveTimer.current !== null) clearTimeout(scrollSaveTimer.current);
@@ -1294,9 +1310,12 @@ export default function EpgGuide({ guideId = "cable-tv", onSelectProgram, active
         scrollSaveTimer.current = setTimeout(persist, remaining);
       }
     };
+    const scPersist = getScroller();
     window.addEventListener("scroll", onScroll, { passive: true });
+    scPersist?.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
+      scPersist?.removeEventListener("scroll", onScroll);
     };
   }, [active, hasChannels]);
 

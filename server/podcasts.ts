@@ -25,6 +25,8 @@ export interface PodcastSource {
   staleAfterDays?: number;
   /** false = listed as its own channel but NOT in the "AJN Podcasts 24/7 - Fresh first" stack. Omitted/true = in the stack. */
   inNetwork?: boolean;
+  /** Daily edition (Today's podcasts) rules. See server/podcastEdition.ts and src/utils/dailyEdition.ts. */
+  dailyPriority?: number; dailyMode?: 'newest' | 'bundle' | 'exclude'; maxEpisodes?: number; includeTitle?: string; bundleOrder?: 'part-number' | 'published-asc' | 'published-then-number';
 }
 export interface PodcastEpisode {
   guid: string; title: string; description: string; publishedAt: number; url: string;
@@ -70,7 +72,7 @@ export function parseDuration(v?: string): number | undefined {
   const s = parts.reduce((a, n) => a * 60 + n, 0);
   return s > 0 ? s : undefined;
 }
-function fnv(s: string): string { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+export function fnv(s: string): string { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 /** Station-column logos are ~40 px. Omny serves size=Small (25 KB) instead of size=Large (~1 MB); verified 2026-10-10. Other hosts: unchanged. */
 export function smallArtwork(url?: string): string | undefined {
   if (!url) return url;

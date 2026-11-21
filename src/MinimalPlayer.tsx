@@ -15,14 +15,10 @@ import { WaitingNotes } from "./components/WaitingNotes";
 import { BufferJingle } from "./components/BufferJingle";
 import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
 import { releaseMediaElementAudioSource, useAudioNormalization } from "./use-audio-normalization";
-import { AUDIO_FADE_IN_MS, AUDIO_FADE_OUT_MS, audioFadeEnabled, rampVolume, shouldFadeOut } from "./utils/audioFade";
-import { publishDiagnosticsTap, resetDiagnosticsTap } from "./audio/diagnosticsTap";
-import HomepageReel, { useWideStage } from "./library-reel/HomepageReel";
-import { alexPodcastArt, isInfowarsAudio } from "./library-reel/reelLogic";
+import { AudioBridgeStatus } from "./components/AudioBridgeStatus";
 import { AudioVisualizerOverlay, useAnalyzerState } from "./components/AudioVisualizerOverlay";
-import StageFiller from "./components/StageFiller";
-import { stageFillerOn } from "./components/stageFillerLogic";
 import { ArchiveMusicSpectrum } from "./components/ArchiveMusicSpectrum";
+import { StageLiveRadioInfo, StageUpNext } from "./components/StageNowNext";
 import { MiniEqVisualizer } from "./components/MiniEqVisualizer";
 import { PreludeBackdropVideo, type BackdropSource } from "./components/PreludeBackdropVideo";
 import { useFolderArt } from "./utils/useFolderArt";
@@ -67,8 +63,6 @@ interface MinimalPlayerProps {
   onToggleFavorite?: () => void;
   /** Optional in-player content; rendered inside the fullscreen stage. */
   overlaySlot?: ReactNode;
-  /** Optional browse area rendered under the player (replaces the old diagnostics drawer). */
-  browseSlot?: ReactNode;
 }
 
 const TV_NEWS_SLICE_SEC = 300;
@@ -122,7 +116,7 @@ const PRELUDE_BACKDROP: BackdropSource = {
   poster: `${import.meta.env.BASE_URL}media/prelude-loop-poster.jpg`,
 };
 
-export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite, overlaySlot, browseSlot }: MinimalPlayerProps) {
+export default function MinimalPlayer({ src, title, mediaType = "video", onProgramEnded, nowPlaying, onPlayEvent, onPauseEvent, onErrorEvent, onProgressEvent, autoplayBlockedLabel, resolveNext, onPrev, onNext, onRetry, onBackToGuide, archiveMusicMode, archiveMusicRecentlyPlayed, archiveMusicUpcoming, onResumeRecentlyPlayed, onSelectUpcoming, isFavorite, onToggleFavorite, overlaySlot }: MinimalPlayerProps) {
   const mediaRef = useRef<HTMLMediaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSavedPositionRef = useRef(0);
@@ -136,11 +130,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // of this app session; a reload intentionally resets it.
   const [isMuted, setIsMuted] = useState(() => !sessionUnmuted);
   const [volume, setVolume] = useState(1);
-  const volumeRef = useRef(1);
-  volumeRef.current = volume;
-  const fadeInPendingRef = useRef(false);   // the previous track was faded out: ramp the next one up from silence
-  const fadeInCancelRef = useRef<(() => void) | null>(null);
-  const activeSrcRef = useRef("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
   const [activeSrc, setActiveSrc] = useState(() => bridgeSrc(src));
@@ -187,13 +176,12 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // building a fresh one. Each element still gets its own Web Audio source exactly once.
   const audioHostRef = useRef<HTMLDivElement>(null);
   const [repeatOne, setRepeatOne] = useState(false);
-  const wideStage = useWideStage();
   const folderArt = useFolderArt(nowPlaying?.archivePath, mediaType !== "video");
   // Cover order: folder art, the item's own thumbnail, then the Archive item's cover (audio only). A cover that fails to load is dropped, so the placeholder shows instead of a broken image.
   const itemArt = useMemo(() => (mediaType === "video" ? null : archiveItemArtFor(nowPlaying?.archivePath ?? activeSrc)), [mediaType, nowPlaying?.archivePath, activeSrc]);
   // Every candidate that fails to load is remembered, and the NEXT one is tried (the chain used to stop at the first failure).
   const [failedArts, setFailedArts] = useState<string[]>([]);
-  const artUrl = [alexPodcastArt(nowPlaying?.channelId), folderArt[0]?.url, nowPlaying?.thumbnailUrl, itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
+  const artUrl = [folderArt[0]?.url, nowPlaying?.thumbnailUrl, itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
   const markArtFailed = (u?: string | null): void => { if (u) setFailedArts((prev) => (prev.includes(u) ? prev : [...prev, u])); };
   const archiveTrack = useMemo(
     () => cleanArchiveMusicFilename(nowPlaying?.archivePath ?? activeSrc),
@@ -205,7 +193,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const sideArt = folderArt.slice(1, 3);
   const preloadRef = useRef<{ src: string; el: HTMLAudioElement } | null>(null);
   const adoptedRef = useRef(false);
-  activeSrcRef.current = activeSrc;
   const restoreHandledRef = useRef(false);   // the launch-restored item has been started by the user
   const handoffUntilRef = useRef(0);          // track-to-track handoff: keep the OS session 'playing'
   const repeatRef = useRef(false);
@@ -233,14 +220,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // the overlay visualizer reads the same analyser tap (no extra audio nodes).
   const [diagnosticsOpen, setDiagnosticsOpen] = usePersistentFlag("ajn_diagnostics_expanded", false);
   const [visualizerOn, setVisualizerOn] = usePersistentFlag("ajn_visualizer_enabled", true);
-  // The analyser is read at render exactly as before. It is hidden only for a source that is NOT loaded in CORS mode
-  // (corsMode undefined = the browser will not let Web Audio read it), so the badge cannot claim "silence" for audio it never receives.
-  const analyserNode = corsMode ? diagnosticsAnalyserRef.current : null;
+  const analyserNode = diagnosticsAnalyserRef.current;
   // Archive-music extras: decorative backdrop video + mini multicolor equalizer on the cover tile. Both are decorative; the equalizer READS the same analyser as the blue bars.
   const [preludeVideoOn] = usePersistentFlag("ajn_prelude_video_enabled", true);
   const [miniEqOn] = usePersistentFlag("ajn_mini_eq_enabled", true);
   const analyzerState = useAnalyzerState(analyserNode, isPlaying);
-  const fillerOn = stageFillerOn({ isPlaying, isVideo, meterState: analyzerState, radioBriefingOn, archiveMusicOn });
 
   const eventMeta = useCallback(() => ({
     guideId: nowPlaying?.guideId ?? null,
@@ -326,14 +310,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     el.autoplay = !(nowPlayingRef.current?.restoredPaused && !restoreHandledRef.current);
     el.loop = repeatRef.current;
     el.muted = isMutedRef.current;
-    // Track change after a fade-out: start silent, ramp up to the listener's volume once sound really starts.
-    fadeInCancelRef.current?.(); fadeInCancelRef.current = null;
-    if (fadeInPendingRef.current) {
-      fadeInPendingRef.current = false;
-      el.volume = 0;
-      const ramp = () => { fadeInCancelRef.current = rampVolume(el, volumeRef.current, AUDIO_FADE_IN_MS); };
-      if (!el.paused && !el.ended) ramp(); else el.addEventListener("playing", ramp, { once: true });
-    }
     el.className = "w-full";
     el.setAttribute("data-testid", "audio-element");
     host.replaceChildren(el);
@@ -399,19 +375,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   }, [activeSrc, isHls, isVideo, mediaType, nowPlaying?.channelId, nowPlaying?.guideId, nowPlaying?.programId, resolveNext]);
 
   useEffect(() => {
-    // Smooth switch between audio tracks: the playing track fades out (~0.3 s) before the next one is loaded, which then fades in.
-    // The Web Audio bridge feeds ONE element at a time, so this is a fade-out/fade-in, not an overlap.
-    const nextSrc = bridgeSrc(src);
-    const prev = mediaRef.current;
-    let cancelFade: (() => void) | null = null;
-    if (audioFadeEnabled() && shouldFadeOut(prev, prev instanceof HTMLAudioElement, mediaType !== "video", nextSrc, activeSrcRef.current)) {
-      const restore = prev!.volume;
-      fadeInPendingRef.current = true;
-      const stop = rampVolume(prev!, 0, AUDIO_FADE_OUT_MS, () => setActiveSrc(nextSrc));
-      cancelFade = () => { stop(); fadeInPendingRef.current = false; prev!.volume = restore; };
-    } else {
-      setActiveSrc(nextSrc);
-    }
+    setActiveSrc(bridgeSrc(src));
     setStatusText("Loading…");
     setIsPlaying(false);
     setResumePosition(null);
@@ -421,7 +385,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     restoreHandledRef.current = false;
     playingReportedRef.current = false;
     lastSavedPositionRef.current = 0;
-    return () => { cancelFade?.(); };
   }, [src, mediaType]);
 
   useEffect(() => {
@@ -1250,7 +1213,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       const t = e.target as HTMLElement | null;
       const action = playerKeyAction({
         key: e.key, ctrlKey: e.ctrlKey, altKey: e.altKey, metaKey: e.metaKey, shiftKey: e.shiftKey,
-        inModal: !!t?.closest?.('[data-ajn-modal]'), targetTag: t?.tagName, targetType: (t as HTMLInputElement | null)?.type, editable: !!t?.isContentEditable, defaultPrevented: e.defaultPrevented,
+        targetTag: t?.tagName, targetType: (t as HTMLInputElement | null)?.type, editable: !!t?.isContentEditable, defaultPrevented: e.defaultPrevented,
       });
       if (!action) return;
       const box = containerRef.current;
@@ -1286,11 +1249,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     }
   }, []);
   const bufferStatusLine = bufferLine(bufferGaugeSnapshot, isVideo && isPlaying && !isHls);
-  // Developer Mode (Neural Twin page) shows the AudioBridge diagnostics; it reads this same tap, no extra audio nodes.
-  useEffect(() => {
-    publishDiagnosticsTap({ analyser: analyserNode, bufferLine: bufferStatusLine, onCopyBufferLog: copyBufferLog });
-  }, [analyserNode, bufferStatusLine, copyBufferLog]);
-  useEffect(() => () => resetDiagnosticsTap(), []);
 
   return (
     <div>
@@ -1321,7 +1279,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       ) : (
         <div
           data-testid="audio-stage"
-          className={`relative isolate flex ${archiveMusicOn ? "min-h-[18rem] max-h-[60vh] w-full items-center justify-center overflow-hidden bg-slate-950 px-4 py-6 sm:min-h-[22rem] sm:px-8" : `${radioBriefingOn ? "h-96 sm:h-auto sm:aspect-video" : "aspect-video"} max-h-[60vh] min-h-44 w-full items-center justify-center overflow-hidden px-4 py-4`}`}
+          className={`relative isolate flex ${archiveMusicOn ? "min-h-[22rem] max-h-[60vh] shrink-0 w-full items-center justify-center overflow-hidden bg-slate-950 px-4 pb-24 pt-6 sm:min-h-[26rem] sm:px-8" : `${radioBriefingOn ? "h-96 sm:h-auto sm:aspect-video" : "aspect-video"} max-h-[60vh] min-h-44 w-full items-center justify-center overflow-hidden px-4 py-4`}`}
         >
           {archiveMusicOn ? (
             <>
@@ -1344,9 +1302,21 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
                   {archiveMusicArtist && <p data-testid="archive-music-artist" className="mt-2 text-base font-medium text-slate-200 sm:text-lg">{archiveMusicArtist}</p>}
                 </div>
               </div>
+              {(() => {
+                const next = archiveMusicUpcoming?.[0];
+                if (!next) return null;
+                const n = cleanArchiveMusicFilename((next as { archivePath?: string; src?: string; mediaUrl?: string }).archivePath || (next as { src?: string }).src || (next as { mediaUrl?: string }).mediaUrl || next.title);
+                return <StageUpNext title={n.title || next.title || ""} artist={n.artist || (next as { subtitle?: string }).subtitle || ""} />;
+              })()}
             </>
           ) : (
             <>
+              {!radioBriefingOn && (
+                <ArchiveMusicSpectrum analyser={analyserNode} isPlaying={isPlaying} analyzerState={analyzerState} />
+              )}
+              {!radioBriefingOn && nowPlaying?.channelId?.startsWith("radio:") && (
+                <StageLiveRadioInfo stationId={nowPlaying.channelId} stationName={nowPlaying.channelName || title || "Live radio"} />
+              )}
               {radioBriefingOn && (
                 <>
                   <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-slate-950" style={{ background: "radial-gradient(ellipse at center, rgba(8, 145, 178, 0.2), rgba(2, 6, 23, 0.96) 72%)" }} />
@@ -1354,7 +1324,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
                   <ArchiveMusicSpectrum analyser={analyserNode} isPlaying={isPlaying} analyzerState={analyzerState} />
                 </>
               )}
-              {fillerOn && <PreludeBackdropVideo source={PRELUDE_BACKDROP} enabled={preludeVideoOn} />}
               {artUrl && !radioBriefingOn && (
                 <img src={artUrl} alt="" aria-hidden="true" data-testid="audio-backdrop" className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-25 blur-md" />
               )}
@@ -1372,7 +1341,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
                 mode={radioBriefingOn ? "audio-briefing" : "audio"}
               />
               {radioBriefingOn && <RadioBriefingPlayerOverlay stationId={nowPlaying?.channelId} />}
-              {fillerOn && <StageFiller programId={nowPlaying?.programId} title={nowPlaying?.title ?? ""} subtitle={nowPlaying?.subtitle ?? nowPlaying?.channelName} artUrl={artUrl} duration={nowPlaying?.duration} />}
               {isPlaying && (
                 <div data-testid="on-air-badge" className="pointer-events-none absolute left-3 top-3 z-[3] flex items-center gap-2 rounded bg-black/60 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
@@ -1394,15 +1362,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
               ))}
             </>
           )}
-          {wideStage && isInfowarsAudio(nowPlaying) && (
-            <div className="absolute right-[2%] top-1/2 z-[5] -translate-y-1/2 lg:right-[5%]">
-              <HomepageReel compact isPlaying={isPlaying} onPlay={() => void play()} onPause={() => pause()} />
-            </div>
-          )}
           <div ref={audioHostRef} data-testid="audio-host" className="absolute left-0 top-0 h-0 w-0 overflow-hidden" />
         </div>
       )}
-      {!isVideo && !wideStage && isInfowarsAudio(nowPlaying) && <HomepageReel isPlaying={isPlaying} onPlay={() => void play()} onPause={() => pause()} />}
       {overlaySlot}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
       <BufferJingle status={statusText} enabled={isVideo} />
@@ -1468,7 +1430,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onToggleVisualizer={() => setVisualizerOn((v) => !v)}
         analyzerState={analyzerState}
         diagnosticsOpen={diagnosticsOpen}
-        showDiagnosticsPill={false}
         onToggleDiagnostics={() => setDiagnosticsOpen((v) => !v)}
         thumbnailUrl={radioBriefingOn ? undefined : artUrl}
         onThumbnailError={() => markArtFailed(artUrl)}
@@ -1488,6 +1449,11 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onToggleFavorite={onToggleFavorite}
       />
     </div>
+      {diagnosticsOpen && (
+        <div id="audio-bridge-drawer" className="mt-3">
+          <AudioBridgeStatus analyser={analyserNode} bufferLine={bufferStatusLine} onCopyBufferLog={copyBufferLog} />
+        </div>
+      )}
     </div>
   );
 }
