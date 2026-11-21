@@ -21,6 +21,7 @@ interface HomeViewProps {
   nowPlaying: NowPlayingMedia | null;
   recentlyPlayed: RecentlyPlayedItem[];
   onResumeRecentlyPlayed: (item: RecentlyPlayedItem) => void;
+  onClearRecentlyPlayed?: () => void;
   favorites?: FavoriteMedia[];
   onPlayFavorite?: (item: FavoriteMedia) => void;
 }
@@ -94,7 +95,7 @@ interface DailyFrame { image: string; show: string; hour: number; source: string
 /** Set to true once the hub is tested: hides the old On Now grid and RecentCarousel, which repeat what the hub shows. Default keeps them for rollback. */
 const HUB_REPLACES_LEGACY_ROWS = true;
 
-export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed, onResumeRecentlyPlayed, favorites = [], onPlayFavorite }: HomeViewProps) {
+export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed, onResumeRecentlyPlayed, onClearRecentlyPlayed, favorites = [], onPlayFavorite }: HomeViewProps) {
   // "Today on AJN": curated stills published by tools/daily-frames. No manifest (or an invalid one) = section hidden, nothing faked.
   const [daily, setDaily] = useState<{ date: string; items: DailyFrame[] } | null>(null);
   useEffect(() => {
@@ -355,7 +356,12 @@ export function HomeView({ onNavigate, onPlayProgram, nowPlaying, recentlyPlayed
           <section aria-labelledby="recent-heading" className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 id="recent-heading" className="text-lg font-semibold tracking-tight text-neutral-100">Recently Played</h2>
-              {recentlyPlayed.length > 0 && <span className="font-mono text-[11px] text-neutral-600">{recentlyPlayed.length}/5</span>}
+              {recentlyPlayed.length > 0 && (
+                <span className="flex items-center gap-3">
+                  <span className="font-mono text-[11px] text-neutral-600">{recentlyPlayed.length}/5</span>
+                  {onClearRecentlyPlayed && <button type="button" onClick={onClearRecentlyPlayed} data-testid="home-recent-clear" className="text-[11px] text-neutral-500 underline-offset-2 hover:text-neutral-200 hover:underline">Clear</button>}
+                </span>
+              )}
             </div>
             {recentlyPlayed.length === 0 ? (
               <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/40 p-5 text-sm text-neutral-500">Nothing played yet. Start a program and it appears here, ready to resume.</div>

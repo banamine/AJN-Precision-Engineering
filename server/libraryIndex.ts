@@ -19,6 +19,7 @@ import { groupLibraryResults, findLibrarySeries, type LibrarySeries, type Series
 import nker150Manifest from '../src/data/nker150Manifest.json';
 import { shouldExposeNker150Record } from './nker150Rights';
 import { catalogRecords, isCatalogRecord } from './library/catalogRecords';
+import { extraLibraryRecords } from './library/extraLibraryRecords';
 import { musicAlbumRecords } from './library/musicAlbumRecords';
 export { groupLibraryResults, findLibrarySeries };
 export type { LibrarySeries };
@@ -169,8 +170,11 @@ const probe = new Map<string, { fails: number; status: LibraryAvailability }>();
 export const libraryIndexStats = { snapshotAt: null as string | null, searchItems: 0, guideItems: 0, refreshes: 0, lastRefresh: null as string | null, lastRefreshCategory: null as string | null, lastError: null as string | null, probed: 0, verified: 0, unavailable: 0 };
 
 let catalogRecordsEnabled = true;
+let extraLibraryEnabled = true;
 /** Test hook. `isolate: true` also drops the built-in concert/FM/podcast catalog records so a test sees only the records it supplied. */
-export function setLibraryIndexForTests(items: IndexRecord[] | null, opts: { isolate?: boolean } = {}) { searchItems = items ?? []; loaded = Promise.resolve(); guideItems = new Map(); probe.clear(); catalogRecordsEnabled = !opts.isolate; }
+export function setLibraryIndexForTests(items: IndexRecord[] | null, opts: { isolate?: boolean } = {}) { searchItems = items ?? []; loaded = Promise.resolve(); guideItems = new Map(); probe.clear(); catalogRecordsEnabled = !opts.isolate; extraLibraryEnabled = false; }
+/** Test hook: search-only extra Library records (edith377 / squidguin) on or off. Off after setLibraryIndexForTests(). */
+export function setExtraLibraryForTests(on: boolean) { extraLibraryEnabled = on; }
 
 export async function loadLibrarySnapshot(): Promise<void> {
   loaded ??= (async () => {
@@ -198,7 +202,7 @@ function nker150Records(): IndexRecord[] {
     availability: 'verified',
   }));
 }
-function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records(), ...(catalogRecordsEnabled ? [...catalogRecords(), ...musicAlbumRecords()] : [])]); }
+function allRecords(): IndexRecord[] { return mergeRecords([...searchItems, ...[...guideItems.values()].flat(), ...nker150Records(), ...(catalogRecordsEnabled ? [...catalogRecords(), ...musicAlbumRecords()] : []), ...(extraLibraryEnabled ? extraLibraryRecords() : [])]); }
 const visible = (r: IndexRecord) => { const a = availability(r); return a !== 'unavailable' && a !== 'unsupported' && !!r.path; };
 function librarySearchFields(r: {
   title?: string; episodeTitle?: string; description?: string; identifier?: string; sourceFile?: string;

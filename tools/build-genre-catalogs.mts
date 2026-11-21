@@ -146,7 +146,7 @@ for (const spec of cfg.tv) {
   const caps = Object.fromEntries(spec.shows.filter(s => s.reduced).map(s => [s.slug, Math.floor(per.find(p => p.show === s.slug)!.distinctEpisodes * cfg.reducedWeightFactor)]));
   networks[spec.id] = { id: spec.id, name: spec.name, guideId: 'classic-tv', ...common, catalogRef: `src/data/genre/${spec.id}Catalog.json`, publicationRef: `src/data/genre/${spec.id}Publication.json`,
     schedulingMode: 'shuffle-in-order', showPool: spec.shows.map(s => s.slug), episodesPerTurn: 1, noBackToBackWindow: Math.min(3, spec.shows.length - 1),
-    ...(Object.keys(caps).length ? { maxWeeklyAirings: caps } : {}), seed: `${spec.id}-${cfg.seedSuffix}` } as NetworkConfig;
+    ...(Object.keys(caps).length ? { maxWeeklyAirings: caps } : {}), seed: `${spec.id}-${cfg.seedSuffix}` } as unknown as NetworkConfig;
   summary.push({ channel: spec.id, shows: per, excluded: excluded.length });
 }
 
@@ -159,7 +159,7 @@ for (const spec of cfg.movies) {
   assertMovieCycle(assets);
   write(`src/data/genre/${spec.id}Catalog.json`, { schema: 1, assets } as NetworkCatalog);
   networks[spec.id] = { id: spec.id, name: spec.name, guideId: 'movies-classics-vault', ...common, catalogRef: `src/data/genre/${spec.id}Catalog.json`, publicationRef: `src/data/genre/${spec.id}Publication.json`,
-    schedulingMode: 'random-movie', seed } as NetworkConfig;
+    schedulingMode: 'random-movie', seed } as unknown as NetworkConfig;
   summary.push({ channel: spec.id, films: assets.length, hours });
 }
 function assetsHours(a: NetworkAsset[]) { return Number((a.reduce((t, x) => t + x.durationSeconds, 0) / 3600).toFixed(1)); }
