@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FixedQueueViewport from "./FixedQueueViewport";
 import { createScrubber } from "../utils/seekScrub";
+import { skipMedia, skipLabel, skipAriaLabel, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../utils/podcastSkip";
+import { usePodcastAdSkip, type AdSkipSource } from "../hooks/usePodcastAdSkip";
+import { AdSkipPanel } from "./AdSkipPanel";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, PictureInPicture2, AudioLines, ChevronDown, SkipBack, SkipForward, Rewind, FastForward, Repeat1, Heart } from "lucide-react";
 import type { AnalyzerState } from "./AudioVisualizerOverlay";
 import type { Program, RecentlyPlayedItem } from "../types";
@@ -32,6 +35,8 @@ export function formatClock(sec: number): string {
 }
 
 interface PlayerChromeProps {
+  /** Podcast episode being played (ad-break prompt + ad-seconds line). Omit/null for everything else. */
+  adSkipSource?: AdSkipSource | null;
   mediaRef: React.RefObject<HTMLMediaElement | null>;
   containerRef: React.RefObject<HTMLElement | null>;
   /** Changes whenever a new media element is mounted, so listeners re-attach. */
@@ -55,7 +60,8 @@ interface PlayerChromeProps {
   onToggleVisualizer: () => void;
   analyzerState: AnalyzerState;
   diagnosticsOpen: boolean;
-  onToggleDiagnostics: () => void;
+  /** when absent the pill is a plain status light (no diagnostics drawer) */
+  onToggleDiagnostics?: () => void;
   /** Audio bar only. */
   thumbnailUrl?: string;
   onThumbnailError?: () => void;
@@ -246,15 +252,13 @@ export function PlayerChrome(p: PlayerChromeProps) {
         data-testid="analyzer-pill"
         data-state={p.analyzerState}
         onClick={p.onToggleDiagnostics}
-        aria-expanded={p.diagnosticsOpen}
-        aria-controls="audio-bridge-drawer"
-        aria-label={`${PILL[p.analyzerState].label} — ${p.diagnosticsOpen ? "hide" : "show"} diagnostics`}
-        title="Diagnostics"
+        disabled={!p.onToggleDiagnostics}
+        aria-label={PILL[p.analyzerState].label}
         className={`flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-1.5 text-xs sm:h-9 sm:px-2 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${PILL[p.analyzerState].text}`}
       >
         <span className={`h-2 w-2 rounded-full ${PILL[p.analyzerState].dot}`} />
         <span className="hidden whitespace-nowrap md:inline">{PILL[p.analyzerState].label}</span>
-        <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform md:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />
+        {p.onToggleDiagnostics && <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform md:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />}
       </button>
       <button
         type="button"
@@ -280,11 +284,23 @@ export function PlayerChrome(p: PlayerChromeProps) {
     </div>
   );
 
+  // Skip chips: every tap shows what it did ("+30s → 12:34 / 45:00") for about 1.5 s, so the person can see the jump size and where they landed.
+  const [skipFlash, setSkipFlash] = useState<{ n: number; text: string } | null>(null);
+  const flashTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (flashTimer.current) window.clearTimeout(flashTimer.current); }, []);
+  const adSkip = usePodcastAdSkip(() => p.mediaRef.current, p.adSkipSource ?? null);
   const skip = (d: number) => {
     const m = p.mediaRef.current;
     if (!m || noDuration) return;
-    m.currentTime = Math.max(0, Math.min(m.duration - 0.5, m.currentTime + d));
+    const from = m.currentTime;
+    const target = skipMedia(m, d);
+    if (target !== null) adSkip.noteSeek(from, target);
+    if (target === null) { setSkipFlash({ n: Date.now(), text: "Can't skip: this item has no length yet" }); }
+    else setSkipFlash({ n: Date.now(), text: `${skipLabel(d)} → ${formatClock(target)} / ${formatClock(m.duration)}` });
+    if (flashTimer.current) window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setSkipFlash(null), 1500);
   };
+  const skipChip = "inline-flex h-9 min-w-[3.25rem] items-center justify-center gap-1 rounded-lg border border-white/15 bg-white/10 px-2.5 text-xs font-bold tabular-nums text-neutral-100 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-white/10";
   const tbtn = `${btn} disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent`;
   // Dedicated bottom-docked glass bar: its own row under the stage, so it never covers the visualizer or the art.
   const audioBar = (
@@ -306,11 +322,9 @@ export function PlayerChrome(p: PlayerChromeProps) {
         {/* centre: transport */}
         <div className="flex items-center justify-center gap-0.5 sm:gap-1">
           <button type="button" className={tbtn} onClick={p.onPrev} disabled={!p.onPrev} aria-label="Previous track" title="Previous"><SkipBack className="h-4 w-4 sm:h-5 sm:w-5" /></button>
-          <button type="button" className={`${tbtn} hidden sm:flex`} onClick={() => skip(-10)} disabled={noDuration} aria-label="Back 10 seconds" title="Back 10 s (←)"><Rewind className="h-4 w-4 sm:h-5 sm:w-5" /></button>
           <button type="button" className={`${btn} !h-10 !w-10 rounded-full bg-white/10`} onClick={p.onTogglePlay} aria-label={p.isPlaying ? "Pause" : "Play"} title="Play/Pause (Space)">
             {p.isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
-          <button type="button" className={`${tbtn} hidden sm:flex`} onClick={() => skip(10)} disabled={noDuration} aria-label="Forward 10 seconds" title="Forward 10 s (→)"><FastForward className="h-4 w-4 sm:h-5 sm:w-5" /></button>
           <button type="button" className={tbtn} onClick={p.onNext} disabled={!p.onNext} aria-label="Next track" title="Next"><SkipForward className="h-4 w-4 sm:h-5 sm:w-5" /></button>
           {p.onToggleRepeat && (
             <button type="button" className={`${btn} ${p.repeatOne ? "bg-sky-500/20 text-sky-300" : ""}`} onClick={p.onToggleRepeat} aria-pressed={p.repeatOne} aria-label={p.repeatOne ? "Repeat this track: on" : "Repeat this track: off"} title="Repeat this track"><Repeat1 className="h-4 w-4 sm:h-5 sm:w-5" /></button>
@@ -339,17 +353,30 @@ export function PlayerChrome(p: PlayerChromeProps) {
             <input type="range" min={0} max={1} step={0.05} value={p.isMuted ? 0 : p.volume} onChange={(e) => p.onVolume(Number(e.target.value))} aria-label="Volume"
               className="ml-1 hidden h-1 w-20 cursor-pointer appearance-none rounded bg-neutral-700 accent-[#E06D3B] md:block" />
           </div>
-          <button type="button" data-testid="analyzer-pill" data-state={p.analyzerState} onClick={p.onToggleDiagnostics} aria-expanded={p.diagnosticsOpen} aria-controls="audio-bridge-drawer"
-            aria-label={`${PILL[p.analyzerState].label} — ${p.diagnosticsOpen ? "hide" : "show"} diagnostics`} title="Diagnostics"
+          <button type="button" data-testid="analyzer-pill" data-state={p.analyzerState} onClick={p.onToggleDiagnostics} disabled={!p.onToggleDiagnostics}
+            aria-label={PILL[p.analyzerState].label}
             className={`flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-1.5 text-xs sm:h-9 sm:px-2 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${PILL[p.analyzerState].text}`}>
             <span className={`h-2 w-2 rounded-full ${PILL[p.analyzerState].dot}`} />
             <span className="hidden whitespace-nowrap lg:inline">{PILL[p.analyzerState].label}</span>
-            <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform lg:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />
+            {p.onToggleDiagnostics && <ChevronDown className={`hidden h-3.5 w-3.5 transition-transform lg:block ${p.diagnosticsOpen ? "rotate-180" : ""}`} />}
           </button>
           <button type="button" disabled={p.visualizerLockedOn} className={`${btn} ${visualizerPressed ? "bg-sky-500/20 text-sky-300" : ""} ${p.visualizerLockedOn ? "cursor-not-allowed opacity-80" : ""}`} onClick={p.onToggleVisualizer} aria-pressed={visualizerPressed}
             aria-label={visualizerLabel} title={visualizerLabel}><AudioLines className="h-4 w-4 sm:h-5 sm:w-5" /></button>
         </div>
       </div>
+      {/* skip row: labelled jump buttons, visible on every width (on-demand audio only; hidden for live) */}
+      {!live && (
+        <div data-testid="skip-row" role="group" aria-label="Skip" className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+          {SKIP_BACK_SECONDS.map((sec) => (
+            <button key={sec} type="button" data-testid={`skip-back-${sec}`} className={skipChip} onClick={() => skip(-sec)} disabled={noDuration} aria-label={skipAriaLabel(-sec)} title={skipAriaLabel(-sec)}><Rewind className="h-3.5 w-3.5" aria-hidden="true" />{skipLabel(-sec)}</button>
+          ))}
+          {SKIP_FORWARD_SECONDS.map((sec) => (
+            <button key={sec} type="button" data-testid={`skip-fwd-${sec}`} className={skipChip} onClick={() => skip(sec)} disabled={noDuration} aria-label={skipAriaLabel(sec)} title={skipAriaLabel(sec)}><FastForward className="h-3.5 w-3.5" aria-hidden="true" />{skipLabel(sec)}</button>
+          ))}
+          <span data-testid="skip-flash" role="status" aria-live="polite" className={`min-w-[9.5rem] text-center font-mono text-[11px] tabular-nums text-amber-200 ${skipFlash ? "opacity-100" : "opacity-0"}`}>{skipFlash ? skipFlash.text : "\u00A0"}</span>
+        </div>
+      )}
+      {!live && adSkip.active && <AdSkipPanel view={adSkip.view} onAccept={adSkip.accept} onDismiss={adSkip.dismiss} onMode={adSkip.setMode} />}
       {/* seek row: elapsed — bar — total */}
       <div className="mt-1 flex items-center gap-2 font-mono text-[11px] tabular-nums text-neutral-300">
         <span data-testid="player-time" className="order-none shrink-0">{clockLabel}</span>
@@ -373,7 +400,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
       <section data-testid="archive-music-recently-played" aria-labelledby="archive-music-recent-heading" className="min-w-0 rounded-2xl border border-cyan-900/70 bg-slate-900/80 p-4 shadow-lg shadow-black/20">
         <h2 id="archive-music-recent-heading" className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-100">Recently Played</h2>
         {p.archiveMusicRecentlyPlayed?.length ? (
-          <FixedQueueViewport label="Recently played, scrollable" className="ajn-queue-scroll--side" testId="archive-music-recent-list">
+          <FixedQueueViewport label="Recently played, scrollable" className="ajn-queue-scroll--rows-3" testId="archive-music-recent-list">
             {p.archiveMusicRecentlyPlayed.slice(0, 20).map((item) => {
               const row = archiveRowPresentation(item);
               return (
@@ -397,7 +424,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
             })}
           </FixedQueueViewport>
         ) : (
-          <p className="ajn-queue-empty ajn-queue-scroll--side text-sm text-slate-300">No recent Archive music.</p>
+          <p className="ajn-queue-empty ajn-queue-scroll--rows-3 text-sm text-slate-300">No recent Archive music.</p>
         )}
       </section>
 
@@ -486,7 +513,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
       <section data-testid="archive-music-up-next" aria-labelledby="archive-music-up-next-heading" className="min-w-0 rounded-2xl border border-cyan-900/70 bg-slate-900/80 p-4 shadow-lg shadow-black/20">
         <h2 id="archive-music-up-next-heading" className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-100">Up Next</h2>
         {p.archiveMusicUpcoming?.length ? (
-          <FixedQueueViewport as="ol" label="Up next, scrollable" className="ajn-queue-scroll--side" testId="archive-music-up-next-list">
+          <FixedQueueViewport as="ol" label="Up next, scrollable" className="ajn-queue-scroll--rows-3" testId="archive-music-up-next-list">
             {p.archiveMusicUpcoming.slice(0, 20).map((program, index) => {
               const row = archiveRowPresentation(program);
               return (
@@ -510,7 +537,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
             })}
           </FixedQueueViewport>
         ) : (
-          <p className="ajn-queue-empty ajn-queue-scroll--side text-sm text-slate-300">Upcoming tracks unavailable.</p>
+          <p className="ajn-queue-empty ajn-queue-scroll--rows-3 text-sm text-slate-300">Upcoming tracks unavailable.</p>
         )}
       </section>
     </div>

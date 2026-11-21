@@ -11,6 +11,8 @@ import { getBufferSamples, reportBufferSample, reportTelemetry } from "./telemet
 import { NowPlayingMedia, MediaType } from "./types";
 import type { Program, RecentlyPlayedItem } from "./types";
 import { PlayerChrome } from "./components/PlayerChrome";
+import { adSkipSourceOf } from "./hooks/usePodcastAdSkip";
+import { PodcastStage } from "./components/PodcastStage";
 import { WaitingNotes } from "./components/WaitingNotes";
 import { BufferJingle } from "./components/BufferJingle";
 import { archiveFailureDiagnosticUrl, classifyArchiveFailure, overloadedMessage, type ProxyErrorBody } from "./utils/archiveFailure";
@@ -181,7 +183,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const itemArt = useMemo(() => (mediaType === "video" ? null : archiveItemArtFor(nowPlaying?.archivePath ?? activeSrc)), [mediaType, nowPlaying?.archivePath, activeSrc]);
   // Every candidate that fails to load is remembered, and the NEXT one is tried (the chain used to stop at the first failure).
   const [failedArts, setFailedArts] = useState<string[]>([]);
-  const artUrl = [folderArt[0]?.url, nowPlaying?.thumbnailUrl, itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
+  // Rush Limbaugh on-demand has no usable Archive cover (it came back blank white), so it gets the supplied picture first.
+  const rushArt = nowPlaying?.channelId === "rush-vod" || /limbaugh/i.test(`${nowPlaying?.title ?? ""} ${title ?? ""}`) ? "/ajn-art/rush-limbaugh.jpg" : undefined;
+  const artUrl = [rushArt, folderArt[0]?.url, nowPlaying?.thumbnailUrl, itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
   const markArtFailed = (u?: string | null): void => { if (u) setFailedArts((prev) => (prev.includes(u) ? prev : [...prev, u])); };
   const archiveTrack = useMemo(
     () => cleanArchiveMusicFilename(nowPlaying?.archivePath ?? activeSrc),
@@ -191,6 +195,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const archiveMusicArtist = archiveTrack.artist || nowPlaying?.subtitle || "";
   const archiveMusicRawFilename = archiveTrack.rawFilename || nowPlaying?.title || "";
   const sideArt = folderArt.slice(1, 3);
+  /** Podcast episodes: the stage shows live captions + the news carousel (there is no visualizer to show for them). */
+  const podcastStageSource = !isVideo && !radioBriefingOn && !archiveMusicOn ? adSkipSourceOf(nowPlaying) : null;
   const preloadRef = useRef<{ src: string; el: HTMLAudioElement } | null>(null);
   const adoptedRef = useRef(false);
   const restoreHandledRef = useRef(false);   // the launch-restored item has been started by the user
@@ -1279,7 +1285,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       ) : (
         <div
           data-testid="audio-stage"
-          className={`relative isolate flex ${archiveMusicOn ? "min-h-[22rem] max-h-[60vh] shrink-0 w-full items-center justify-center overflow-hidden bg-slate-950 px-4 pb-24 pt-6 sm:min-h-[26rem] sm:px-8" : `${radioBriefingOn ? "h-96 sm:h-auto sm:aspect-video" : "aspect-video"} max-h-[60vh] min-h-44 w-full items-center justify-center overflow-hidden px-4 py-4`}`}
+          className={`relative isolate flex ${archiveMusicOn ? "min-h-[22rem] max-h-[60vh] shrink-0 w-full items-center justify-center overflow-hidden bg-slate-950 px-4 pb-24 pt-6 sm:min-h-[26rem] sm:px-8" : `${radioBriefingOn ? "h-96 sm:h-auto sm:aspect-video" : "aspect-video"} max-h-[60vh] ${podcastStageSource ? "min-h-[18rem] max-h-[max(18rem,calc(100dvh-24rem))]" : "min-h-44"} w-full items-center justify-center overflow-hidden px-4 py-4`}`}
         >
           {archiveMusicOn ? (
             <>
@@ -1350,18 +1356,19 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
                   </span>
                 </div>
               )}
-              {artUrl && !radioBriefingOn && (
+              {artUrl && !radioBriefingOn && !podcastStageSource && (
                 <div data-testid="audio-art" className="pointer-events-none relative z-[2] aspect-square h-32 max-h-[70%] overflow-hidden rounded-full shadow-2xl ring-2 ring-sky-300/40 sm:h-52">
                   <img src={artUrl} alt="" className="h-full w-full object-cover" />
                 </div>
               )}
-              {!radioBriefingOn && sideArt.map((img, i) => (
+              {!radioBriefingOn && !podcastStageSource && sideArt.map((img, i) => (
                 <div key={img.url} data-testid="audio-side-art" className={`pointer-events-none absolute top-1/2 z-[2] hidden h-20 w-20 -translate-y-1/2 overflow-hidden rounded-full shadow-xl ring-2 ring-white/20 md:block lg:h-24 lg:w-24 ${i === 0 ? "left-[8%]" : "right-[8%]"}`}>
                   <img src={img.url} alt="" className="h-full w-full object-cover" />
                 </div>
               ))}
             </>
           )}
+          {podcastStageSource && <PodcastStage getMedia={() => mediaRef.current} source={podcastStageSource} analyser={analyserNode} meter={Boolean(analyserNode) && analyzerState !== "unavailable"} artUrl={artUrl} title={title} />}
           <div ref={audioHostRef} data-testid="audio-host" className="absolute left-0 top-0 h-0 w-0 overflow-hidden" />
         </div>
       )}
@@ -1409,6 +1416,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         </div>
       )}
       <PlayerChrome
+        adSkipSource={adSkipSourceOf(nowPlaying)}
         mediaRef={mediaRef}
         containerRef={containerRef}
         sourceKey={`${mediaType}:${activeSrc}`}
@@ -1430,7 +1438,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onToggleVisualizer={() => setVisualizerOn((v) => !v)}
         analyzerState={analyzerState}
         diagnosticsOpen={diagnosticsOpen}
-        onToggleDiagnostics={() => setDiagnosticsOpen((v) => !v)}
         thumbnailUrl={radioBriefingOn ? undefined : artUrl}
         onThumbnailError={() => markArtFailed(artUrl)}
         onPrev={onPrev}
@@ -1449,11 +1456,6 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         onToggleFavorite={onToggleFavorite}
       />
     </div>
-      {diagnosticsOpen && (
-        <div id="audio-bridge-drawer" className="mt-3">
-          <AudioBridgeStatus analyser={analyserNode} bufferLine={bufferStatusLine} onCopyBufferLog={copyBufferLog} />
-        </div>
-      )}
     </div>
   );
 }

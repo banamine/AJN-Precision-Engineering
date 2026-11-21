@@ -1,17 +1,25 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { RotateCcw, X } from 'lucide-react';
 import { TelemetryAudit } from './TelemetryAudit';
+import { skyForDate, type SkyChoice, type SkyPhase } from './skins/sky';
+import './skins/duskMarquee.css';
+import { LeanBackLayer } from '../LeanBackLayer';
+import { LEANBACK_SCALE } from '../../leanback/leanNav';
 
 type BackgroundChoice = 'contrast' | 'paper' | 'white' | 'slate';
 type TextChoice = 'auto' | 'white' | 'ink' | 'softblack';
 type AccentChoice = 'copper' | 'blue' | 'gold' | 'green';
 type SizeChoice = 'S' | 'M' | 'L' | 'XL';
+type SkinChoice = 'current' | 'dusk';
 
 interface AppearanceSettings {
   background: BackgroundChoice;
   text: TextChoice;
   accent: AccentChoice;
   size: SizeChoice;
+  skin: SkinChoice;
+  sky: SkyChoice;
+  leanback: boolean;
 }
 
 interface ThemeColors {
@@ -26,7 +34,9 @@ interface ThemeColors {
 }
 
 const STORAGE_KEY = 'ajn-appearance-settings.v1';
-const DEFAULTS: AppearanceSettings = { background: 'contrast', text: 'auto', accent: 'copper', size: 'M' };
+const DEFAULTS: AppearanceSettings = { background: 'contrast', text: 'auto', accent: 'copper', size: 'M', skin: 'current', sky: 'auto', leanback: false };
+const DUSK_COLORS: ThemeColors = { background: '#0b0e18', surface: '#161b2b', card: '#1e2438', border: '#2b3450', text: '#eceef5', muted: '#c3c9db', accent: '#f3c15a', accentText: '#0b0e18' };
+const SKY_CHOICES: SkyChoice[] = ['auto', 'dawn', 'day', 'dusk', 'night'];
 const palettes: Record<BackgroundChoice, ThemeColors> = {
   contrast: { background: '#0F1117', surface: '#181B24', card: '#20242F', border: '#282D3D', text: '#ffffff', muted: '#c7cbd6', accent: '#E06D3B', accentText: '#0F1117' },
   paper: { background: '#f2efe6', surface: '#ffffff', card: '#e8e4d9', border: '#d6d0c0', text: '#1c1c1a', muted: '#4a4a42', accent: '#a84e31', accentText: '#ffffff' },
@@ -46,6 +56,9 @@ function loadSettings(): AppearanceSettings {
       text: value.text && ['auto', 'white', 'ink', 'softblack'].includes(value.text) ? value.text : DEFAULTS.text,
       accent: value.accent && value.accent in accents ? value.accent : DEFAULTS.accent,
       size: value.size && value.size in scales ? value.size : DEFAULTS.size,
+      skin: value.skin === 'dusk' ? 'dusk' : 'current',
+      sky: value.sky && SKY_CHOICES.includes(value.sky) ? value.sky : 'auto',
+      leanback: value.leanback === true,
     };
   } catch {
     return DEFAULTS;
@@ -63,7 +76,9 @@ function contrastRatio(first: string, second: string): number {
   return (values[0] + 0.05) / (values[1] + 0.05);
 }
 
-const colorStyle = (colors: ThemeColors, size: SizeChoice) => ({
+const colorStyle = (colors: ThemeColors, size: SizeChoice, factor = 1) => {
+  const k = Number(scales[size]) * factor;
+  return ({
   '--ajn-bg': colors.background,
   '--ajn-surface': colors.surface,
   '--ajn-card': colors.card,
@@ -72,22 +87,29 @@ const colorStyle = (colors: ThemeColors, size: SizeChoice) => ({
   '--ajn-muted': colors.muted,
   '--ajn-accent': colors.accent,
   '--ajn-accent-text': colors.accentText,
-  '--ajn-badge': colors.background === '#000000' || colors.background === '#0F1117' || colors.background === '#1e2528' ? '#fcd34d' : '#8a3a1f',
-  '--ajn-font-scale': scales[size],
-  '--text-xs': `calc(0.75rem * ${scales[size]})`,
-  '--text-sm': `calc(0.875rem * ${scales[size]})`,
-  '--text-base': `calc(1rem * ${scales[size]})`,
-  '--text-lg': `calc(1.125rem * ${scales[size]})`,
-  '--text-xl': `calc(1.25rem * ${scales[size]})`,
-  '--text-2xl': `calc(1.5rem * ${scales[size]})`,
-  '--text-3xl': `calc(1.875rem * ${scales[size]})`,
+  '--ajn-badge': colors.background === '#0b0e18' || colors.background === '#000000' || colors.background === '#0F1117' || colors.background === '#1e2528' ? '#fcd34d' : '#8a3a1f',
+  '--ajn-font-scale': k,
+  '--text-xs': `calc(0.75rem * ${k})`,
+  '--text-sm': `calc(0.875rem * ${k})`,
+  '--text-base': `calc(1rem * ${k})`,
+  '--text-lg': `calc(1.125rem * ${k})`,
+  '--text-xl': `calc(1.25rem * ${k})`,
+  '--text-2xl': `calc(1.5rem * ${k})`,
+  '--text-3xl': `calc(1.875rem * ${k})`,
 } as CSSProperties);
+};
 
 interface AppearanceContextValue {
   openAppearance: () => void;
+  skin: SkinChoice;
 }
 
 const AppearanceContext = createContext<AppearanceContextValue | null>(null);
+
+/** Current skin; 'current' when rendered outside the provider (tests, demos). Never throws. */
+export function useAjnSkin(): SkinChoice {
+  return useContext(AppearanceContext)?.skin ?? 'current';
+}
 
 export function useAjnAppearance(): AppearanceContextValue {
   const context = useContext(AppearanceContext);
@@ -100,13 +122,21 @@ export function AjnAppearanceProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const base = palettes[settings.background];
+  const [clockSky, setClockSky] = useState<SkyPhase>(() => skyForDate(new Date()));
+  const activeSky: SkyPhase = settings.sky === 'auto' ? clockSky : settings.sky;
+  useEffect(() => {
+    const tick = () => setClockSky(skyForDate(new Date()));
+    const id = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
   const colors = useMemo<ThemeColors>(() => {
+    if (settings.skin === 'dusk') return DUSK_COLORS;
     const text = settings.text === 'white' ? '#ffffff'
       : settings.text === 'ink' ? '#1c1c1a'
         : settings.text === 'softblack' ? '#2b2b28' : base.text;
     const lightText = text === '#ffffff' ? '#d0d0d0' : text === '#1c1c1a' ? '#4a4a42' : text === '#2b2b28' ? '#555550' : base.muted;
     return { ...base, text, muted: lightText, accent: accents[settings.accent], accentText: settings.accent === 'gold' ? '#1c1c1a' : settings.accent === 'copper' ? '#0F1117' : '#ffffff' };
-  }, [base, settings.accent, settings.text]);
+  }, [base, settings.accent, settings.text, settings.skin]);
 
   useEffect(() => {
     try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch { /* appearance remains usable without storage */ }
@@ -132,14 +162,16 @@ export function AjnAppearanceProvider({ children }: { children: ReactNode }) {
     };
   }, [open]);
 
+  const leanOn = settings.skin === 'dusk' && settings.leanback;
   const ratio = contrastRatio(colors.text, colors.background);
   const accentRatio = contrastRatio(colors.accentText, colors.accent);
 
   return (
-    <AppearanceContext.Provider value={{ openAppearance: () => setOpen(true) }}>
-      <div className="ajn-platform-shell" style={colorStyle(colors, settings.size)}>
+    <AppearanceContext.Provider value={{ openAppearance: () => setOpen(true), skin: settings.skin }}>
+      <div className="ajn-platform-shell" data-ajn-skin={settings.skin} data-ajn-sky={settings.skin === 'dusk' ? activeSky : undefined} data-ajn-leanback={leanOn ? 'true' : undefined} style={colorStyle(colors, settings.size, leanOn ? LEANBACK_SCALE : 1)}>
         {children}
       </div>
+      {leanOn && <LeanBackLayer />}
       {open && (
         <div className="ajn-appearance-scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
           <section ref={panelRef} className="ajn-appearance-panel" role="dialog" aria-modal="true" aria-labelledby="ajn-appearance-title">
@@ -151,6 +183,30 @@ export function AjnAppearanceProvider({ children }: { children: ReactNode }) {
               <button type="button" className="ajn-icon-button" onClick={() => setOpen(false)} aria-label="Close appearance settings"><X size={20} /></button>
             </header>
             <div className="ajn-appearance-content">
+              <fieldset>
+                <legend>Skin</legend>
+                <div className="ajn-choice-grid" role="group" aria-label="Skin">
+                  {([['current', 'Current'], ['dusk', 'Dusk Marquee']] as const).map(([value, label]) => (
+                    <button key={value} type="button" aria-pressed={settings.skin === value} onClick={() => setSettings((old) => ({ ...old, skin: value }))}>{label}</button>
+                  ))}
+                </div>
+              </fieldset>
+              {settings.skin === 'dusk' && (
+                <fieldset>
+                  <legend>Lean-back (TV)</legend>
+                  <div className="ajn-choice-grid" role="group" aria-label="Lean-back">
+                    <button type="button" aria-pressed={settings.leanback} onClick={() => setSettings((old) => ({ ...old, leanback: !old.leanback }))}>{settings.leanback ? 'On: bigger text, D-pad, Remote (R)' : 'Off'}</button>
+                  </div>
+                </fieldset>
+              )}
+              {settings.skin === 'dusk' && (
+                <label className="ajn-field">
+                  <span>Sky (Auto follows your clock)</span>
+                  <select value={settings.sky} onChange={(event) => setSettings((old) => ({ ...old, sky: event.target.value as SkyChoice }))}>
+                    <option value="auto">Auto</option><option value="dawn">Dawn</option><option value="day">Day</option><option value="dusk">Dusk</option><option value="night">Night</option>
+                  </select>
+                </label>
+              )}
               <fieldset>
                 <legend>Background</legend>
                 <div className="ajn-choice-grid ajn-theme-choices">

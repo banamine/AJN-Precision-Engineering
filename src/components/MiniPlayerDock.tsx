@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
 import { AvSyncControls } from './AvSyncControls';
@@ -10,6 +10,9 @@ import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import { requestRadioDock } from '../utils/radioDock';
 import { bufferAheadSeconds, dockStatusLabel, isReconnecting } from '../utils/bufferAhead';
 import { RumbleLiveBadge } from './RumbleLiveBadge';
+import { skipMedia, skipLabel, skipAriaLabel, DOCK_SKIP_BACK_SECONDS, DOCK_SKIP_FORWARD_SECONDS } from '../utils/podcastSkip';
+import { usePodcastAdSkip, adSkipSourceOf } from '../hooks/usePodcastAdSkip';
+import { AdSkipDockChip } from './AdSkipPanel';
 
 interface MiniPlayerDockProps {
   nowPlaying: NowPlayingMedia;
@@ -81,6 +84,21 @@ export function MiniPlayerDock({
   const [aheadSeconds, setAheadSeconds] = useState(0);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [volumeOpen, setVolumeOpen] = useState(false);
+  // Skip chips (-15s / +30s): each tap shows what it did ("+30s" and the new time) for about 1.5 s in the time row.
+  const [skipFlash, setSkipFlash] = useState<string | null>(null);
+  const flashTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (flashTimer.current) window.clearTimeout(flashTimer.current); }, []);
+  const adSkip = usePodcastAdSkip(() => findPersistentMedia(nowPlaying.mediaType), adSkipSourceOf(nowPlaying));
+  const doSkip = (delta: number) => {
+    const media = findPersistentMedia(nowPlaying.mediaType);
+    const from = media ? media.currentTime : 0;
+    const target = media ? skipMedia(media, delta) : null;
+    if (target !== null) adSkip.noteSeek(from, target);
+    setSkipFlash(target === null ? "Can't skip" : `${skipLabel(delta)} → ${formatDockTime(target)}`);
+    if (flashTimer.current) window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setSkipFlash(null), 1500);
+  };
+  const skipChipCls = 'ajn-dock-control inline-flex h-9 min-w-[2.75rem] shrink-0 items-center justify-center rounded-lg px-1.5 font-mono text-[11px] font-bold tabular-nums transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer touch-manipulation motion-reduce:transition-none';
   const isAudio = nowPlaying.mediaType === 'audio';
   const isLive = isLiveDockItem(nowPlaying);
   const canSeek = !isLive && Number.isFinite(duration) && duration > 0;
@@ -168,7 +186,11 @@ export function MiniPlayerDock({
         {canSeek ? (
           <div className="relative mt-0.5 flex h-6 min-w-0 flex-col justify-end">
             <div className="mb-0.5 flex min-w-0 items-center justify-between gap-1 font-mono text-[8px] leading-none text-neutral-400">
-              <span>{formatDockTime(currentTime)}</span>
+              {skipFlash
+                ? <span data-testid="dock-skip-flash" role="status" aria-live="polite" className="text-amber-200">{skipFlash}</span>
+                : adSkip.view.chip
+                  ? <AdSkipDockChip chip={adSkip.view.chip} onAccept={adSkip.accept} onDismiss={adSkip.dismiss} />
+                  : <span>{formatDockTime(currentTime)}</span>}
               <span>{formatDockTime(duration)}</span>
             </div>
             <input
@@ -216,6 +238,9 @@ export function MiniPlayerDock({
             <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
           </button>
         )}
+        {canSeek && (
+          <button type="button" data-testid="dock-skip-back" aria-label={skipAriaLabel(-DOCK_SKIP_BACK_SECONDS)} title={skipAriaLabel(-DOCK_SKIP_BACK_SECONDS)} onClick={() => doSkip(-DOCK_SKIP_BACK_SECONDS)} className={skipChipCls}>{skipLabel(-DOCK_SKIP_BACK_SECONDS)}</button>
+        )}
         <button
           type="button"
           id="mini-player-toggle-btn"
@@ -234,6 +259,9 @@ export function MiniPlayerDock({
               ? <Play className="ml-0.5 h-4 w-4 fill-current" />
               : <Pause className="h-4 w-4" />}
         </button>
+        {canSeek && (
+          <button type="button" data-testid="dock-skip-fwd" aria-label={skipAriaLabel(DOCK_SKIP_FORWARD_SECONDS)} title={skipAriaLabel(DOCK_SKIP_FORWARD_SECONDS)} onClick={() => doSkip(DOCK_SKIP_FORWARD_SECONDS)} className={skipChipCls}>{skipLabel(DOCK_SKIP_FORWARD_SECONDS)}</button>
+        )}
         {isRadio && (
           <button type="button" data-testid="dock-next-round" aria-label="Next station" title="Next station" onClick={() => stepStation(1)} style={{ minWidth: '48px', minHeight: '48px' }} className="ajn-dock-control hidden h-12 w-12 !min-h-[48px] !min-w-[48px] shrink-0 items-center justify-center rounded-full border border-[var(--ajn-line)] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 cursor-pointer md:flex">
             <ChevronsRight className="h-5 w-5" aria-hidden="true" />

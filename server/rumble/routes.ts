@@ -3,6 +3,8 @@ import { RUMBLE_BASELINE } from "../../src/rumble/baseline";
 import { sortItems, validateBaseline } from "../../src/rumble/logic";
 import type { RumbleBaseline } from "../../src/rumble/types";
 import { registerNewsRoutes } from "../news/routes";
+import { resolveNewsLink } from "../news/resolve";
+import { createSlotChecker, type SlotResolver } from "./slotCheck";
 import { registerYoutubeRoutes } from "../youtube/routes";
 
 function enabled(): boolean {
@@ -13,7 +15,11 @@ function failure(reason: string, res: Response): Response {
   return res.status(200).json({ ok: false, reason });
 }
 
-export function registerRumbleRoutes(app: Express, baseline: RumbleBaseline = RUMBLE_BASELINE): void {
+export function registerRumbleRoutes(
+  app: Express,
+  baseline: RumbleBaseline = RUMBLE_BASELINE,
+  slotResolver: SlotResolver = (input) => resolveNewsLink(input),
+): void {
   const validation = validateBaseline(baseline);
 
   // Provider-agnostic link resolver (Rumble today, YouTube later). Registered here so server.ts is untouched.
@@ -55,6 +61,17 @@ export function registerRumbleRoutes(app: Express, baseline: RumbleBaseline = RU
       total: baseline.channels.length,
       channels: baseline.channels,
     });
+  });
+
+  // Read-only. Checks the BAKED baseline only (this server cannot see any browser's override).
+  const slotChecker = createSlotChecker(() => baseline, slotResolver);
+  app.get("/api/rumble/slots/status", async (_req: Request, res: Response) => {
+    if (guard(res)) return;
+    try {
+      return res.json(await slotChecker.get());
+    } catch {
+      return failure("slot-check-failed", res);
+    }
   });
 
   app.get("/api/rumble/items", (req: Request, res: Response) => {

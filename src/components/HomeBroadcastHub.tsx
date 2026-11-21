@@ -3,6 +3,8 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, Play, Shuffle, X } from 'lucide-react';
 import { HomeLiveStrip } from './HomeLiveStrip';
+import { HomeOnAirWall } from './HomeOnAirWall';
+import { HomeDaypartShelves } from './HomeDaypartShelves';
 import { LaneImage } from './LaneImage';
 import { useClassicUpcoming } from '../hooks/useClassicUpcoming';
 import { useDiscoverPool } from '../hooks/useDiscoverPool';
@@ -271,6 +273,8 @@ export function HomeBroadcastHub({ onPlayProgram, onNavigate }: { onPlayProgram:
   const onPicks = useCallback((keys: string[]) => setDiscoverKeys((prev) => (prev.size === keys.length && keys.every((k) => prev.has(k)) ? prev : new Set(keys))), []);
   return (
     <div className="space-y-10" data-testid="home-broadcast-hub">
+      <HomeOnAirWall onPlayProgram={onPlayProgram} />
+      <HomeDaypartShelves onPlayProgram={onPlayProgram} />
       <HomeLiveStrip onPlayProgram={onPlayProgram} onNavigate={onNavigate} />
       <DigestRow onPlayProgram={onPlayProgram} dismissed={dismissed} onDismiss={onDismiss} onClearDismissed={onClearDismissed} exclude={discoverKeys} />
       <DiscoverRow onPlayProgram={onPlayProgram} dismissed={dismissed} onDismiss={onDismiss} onClearDismissed={onClearDismissed} onPicks={onPicks} />

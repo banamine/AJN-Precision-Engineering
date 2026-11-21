@@ -3,6 +3,8 @@
 
 /** Full player buttons, in order. */
 export const SKIP_FORWARD_SECONDS = [15, 30, 60] as const;
+/** Full player rewind buttons, left to right. */
+export const SKIP_BACK_SECONDS = [60, 15] as const;
 /** The dock is narrow: one rewind (to undo an overshoot) and one forward. */
 export const DOCK_SKIP_BACK_SECONDS = 15;
 export const DOCK_SKIP_FORWARD_SECONDS = 30;
@@ -35,7 +37,7 @@ export function clampSkipTarget(target: number, duration: number): number | null
 export function skipLabel(seconds: number): string {
   const a = Math.abs(seconds);
   const sign = seconds < 0 ? '-' : '+';
-  return a % 60 === 0 ? `${sign}${a / 60}m` : `${sign}${a}s`;
+  return `${sign}${a}s`; // always seconds ("+60s", not "+1m"): the person asked to see the real jump size
 }
 export function skipAriaLabel(seconds: number): string {
   const a = Math.abs(seconds);

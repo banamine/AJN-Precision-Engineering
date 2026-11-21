@@ -3,18 +3,23 @@
  * Anything without a source is 'unwired' and says so. Nothing is random, simulated or hardcoded. */
 import type { Neuron } from './topology';
 import { NEURONS } from './topology';
+import type { SlotStatusReport } from '../rumble/types';
 
 export type NeuronState = 'live' | 'idle' | 'static' | 'unwired';
 export interface Reading { id: string; state: NeuronState; headline: string; details: string[]; payload?: string }
 export interface MediaLike { paused: boolean; currentTime: number; readyState: number; buffered: TimeRanges; dataset?: Record<string, string | undefined> }
 export interface DigestProbe { ok: boolean; rttMs: number; checkedAt: number; lastUpdated?: string; stories?: number; error?: string }
 export interface FrameProbe { ok: boolean; at: number; error?: string }
+export interface RumbleSlotsProbe { ok: boolean; rttMs: number; checkedAt: number; report?: SlotStatusReport; error?: string }
+export interface RumbleEnv { baselineGeneratedAt: string; wall: { open: boolean; iframes: number }; slots: RumbleSlotsProbe | null }
 export interface TelemetryEnv {
   audio: MediaLike | null; video: MediaLike | null;
   jingle: { supported: boolean; playing: boolean; on: boolean };
   sharedQuery: string;
   counts: { concerts: number | null; fm: number | null; rssFeeds: number | null; rssCollected: number | null; podcastFeeds: number | null };
   digest: DigestProbe | null; frame: FrameProbe | null; now: number;
+  /** Rumble wall readings. When absent the Rumble part says "Not wired". */
+  rumble?: RumbleEnv;
 }
 export const DIGEST_URL = 'https://banamine.github.io/Daily-News-Digest-/data/current/data.json';
 
@@ -71,6 +76,36 @@ export function readNeuron(neuron: Neuron, env: TelemetryEnv): Reading {
       if (!f) return { id, state: 'idle', headline: 'No frame captured yet', details: ['First capture happens within 30 s.'] };
       return f.ok ? { id, state: 'live', headline: `Frame captured ${fmtAge(env.now - f.at)} ago`, details: [], payload: 'Keyframe · current video' } : { id, state: 'idle', headline: 'Frame blocked', details: [f.error ?? 'the stream does not allow capture (CORS)'] };
     }
+    case 'rumble-wall': {
+      const r = env.rumble;
+      if (!r) return { id, state: 'unwired', headline: 'Not wired', details: [neuron.emptyNote ?? 'No live signal is wired for this part yet.'] };
+      const baked = env.now - Date.parse(r.baselineGeneratedAt);
+      const ageText = Number.isFinite(baked) ? (baked >= 172_800_000 ? `${Math.round(baked / 86_400_000)} d` : fmtAge(baked)) : null;
+      const details = [
+        r.wall.open ? `${r.wall.iframes} Rumble iframe${r.wall.iframes === 1 ? '' : 's'} mounted` : '0 Rumble iframes (wall not open)',
+        r.baselineGeneratedAt ? `baked baseline generatedAt ${r.baselineGeneratedAt}` : 'baked baseline has no generatedAt',
+      ];
+      const s = r.slots;
+      if (!s) details.push('Slot check: not run. Press "Check Rumble slots now" for a real request.');
+      else if (!s.ok || !s.report) details.push(`Slot check failed: ${s.error ?? 'unknown error'} (after ${s.rttMs} ms)`);
+      else {
+        const c = s.report.counts;
+        details.push(`Slots: ${c.ok} ok, ${c.failed} failed, ${c.unchecked} unchecked, ${c.uncheckedEmbedOnly} embed-only (checked ${fmtAge(env.now - s.checkedAt)} ago, round trip ${s.rttMs} ms)`);
+        if (s.report.stoppedEarly) details.push(`Pass stopped early: ${s.report.stoppedEarly}`);
+        const failed = s.report.slots.filter((x) => x.status === 'failed');
+        if (failed.length) details.push(`Failed: ${failed.slice(0, 5).map((x) => `${x.channelId} (${x.reason ?? 'unknown'})`).join(', ')}${failed.length > 5 ? ` +${failed.length - 5} more` : ''}`);
+        const changed = s.report.slots.filter((x) => x.titleChanged === true).length;
+        const mismatch = s.report.slots.filter((x) => x.embedIdMatches === false).length;
+        const ended = s.report.slots.filter((x) => x.liveHint === 'ended-or-vod').length;
+        if (changed) details.push(changed === 1 ? '1 title differs from the baseline' : `${changed} titles differ from the baseline`);
+        if (mismatch) details.push(mismatch === 1 ? '1 embed id differs from the baseline (the wall plays the baseline id)' : `${mismatch} embed ids differ from the baseline (the wall plays the baseline id)`);
+        if (ended) details.push(ended === 1 ? '1 live slot looks ended (hint only)' : `${ended} live slots look ended (hint only)`);
+      }
+      const headline = ageText ? `Baked baseline ${ageText} old` : 'Baked baseline date unreadable';
+      return r.wall.open && r.wall.iframes > 0
+        ? { id, state: 'live', headline, details, payload: `Rumble · ${r.wall.iframes} embed${r.wall.iframes === 1 ? '' : 's'} mounted` }
+        : { id, state: s ? 'static' : 'idle', headline, details };
+    }
     default: return { id, state: 'unwired', headline: 'Not wired', details: [neuron.emptyNote ?? 'No live signal is wired for this part yet.'] };
   }
 }
@@ -86,6 +121,23 @@ export async function probeDigest(fetchFn: typeof fetch, now: () => number, perf
     const j = (await res.json()) as { last_updated?: string; stories_count?: number };
     return { ok: true, rttMs: rtt, checkedAt: now(), lastUpdated: j.last_updated, stories: j.stories_count };
   } catch (e) { return { ok: false, rttMs: Math.round(perf() - t0), checkedAt: now(), error: e instanceof Error ? e.message : String(e) }; }
+}
+
+/** One real request to the slot check. Never throws; a failure is returned as ok:false with the reason. */
+export async function probeRumbleSlots(fetchFn: typeof fetch, now: () => number, perf: () => number, timeoutMs = 30_000): Promise<RumbleSlotsProbe> {
+  const t0 = perf();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetchFn('/api/rumble/slots/status', { cache: 'no-store', signal: controller.signal });
+    const rtt = Math.round(perf() - t0);
+    if (!res.ok) return { ok: false, rttMs: rtt, checkedAt: now(), error: `HTTP ${res.status}` };
+    const j = (await res.json()) as { ok?: boolean; reason?: string; slots?: unknown; counts?: unknown };
+    if (j.ok === false) return { ok: false, rttMs: rtt, checkedAt: now(), error: j.reason ?? 'server declined' };
+    if (j.ok !== true || !Array.isArray(j.slots) || !j.counts) return { ok: false, rttMs: rtt, checkedAt: now(), error: 'unexpected response' };
+    return { ok: true, rttMs: rtt, checkedAt: now(), report: j as unknown as SlotStatusReport };
+  } catch (e) { return { ok: false, rttMs: Math.round(perf() - t0), checkedAt: now(), error: e instanceof Error && e.name === 'AbortError' ? 'timed out' : (e instanceof Error ? e.message : String(e)) }; }
+  finally { clearTimeout(timer); }
 }
 
 /** Draws the playing video onto a tiny canvas. A cross-origin stream taints the canvas: that is reported, not hidden. */

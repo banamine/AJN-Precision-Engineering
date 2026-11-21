@@ -73,7 +73,7 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
 
       <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
         {pools && pools.length > 1 ? (
-          <select aria-label={`${BANK_LABEL[bank]} pool`} data-testid="schedule-pool" value={pool?.id ?? ''} onChange={(e) => setChosen((s) => ({ ...s, [bank]: e.currentTarget.value }))}
+          <select aria-label={`${BANK_LABEL[bank]} pool`} data-testid="schedule-pool" value={pool?.id ?? ''} onChange={(e) => { const id = e.currentTarget.value; setChosen((s) => ({ ...s, [bank]: id })); }}
             className="min-h-[40px] min-w-0 max-w-full flex-1 rounded-md border border-white/15 bg-black/40 px-2 text-xs text-white focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">
             {pools.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>

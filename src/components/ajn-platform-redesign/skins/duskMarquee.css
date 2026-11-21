@@ -1,0 +1,181 @@
+/* Dusk Marquee skin (Stage 1: tokens + sky only). Active only when the shell has data-ajn-skin="dusk".
+   Colours arrive through the existing --ajn-* vars set by AppearanceProvider; this file adds sky glow,
+   radii and focus ring. No layout changes. */
+.ajn-platform-shell[data-ajn-skin="dusk"] {
+  --ajn-r-sm: 8px;
+  --ajn-r-md: 14px;
+  --ajn-r-lg: 22px;
+  --ajn-focus-ring: 2px solid #f3c15a;
+  --ajn-sky-1: transparent;
+  --ajn-sky-2: transparent;
+  background-color: var(--ajn-bg);
+  background-image:
+    radial-gradient(900px 520px at 12% -8%, var(--ajn-sky-1), transparent 70%),
+    radial-gradient(900px 560px at 92% 0%, var(--ajn-sky-2), transparent 72%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+.ajn-platform-shell[data-ajn-skin="dusk"][data-ajn-sky="dawn"]  { --ajn-sky-1: rgba(234,96,121,0.11); --ajn-sky-2: rgba(243,168,90,0.10); }
+.ajn-platform-shell[data-ajn-skin="dusk"][data-ajn-sky="day"]   { --ajn-sky-1: rgba(96,165,250,0.11); --ajn-sky-2: rgba(125,211,252,0.09); }
+.ajn-platform-shell[data-ajn-skin="dusk"][data-ajn-sky="dusk"]  { --ajn-sky-1: rgba(243,193,90,0.11); --ajn-sky-2: rgba(234,96,121,0.10); }
+.ajn-platform-shell[data-ajn-skin="dusk"][data-ajn-sky="night"] { --ajn-sky-1: rgba(56,78,145,0.15);  --ajn-sky-2: rgba(30,42,86,0.18); }
+
+.ajn-platform-shell[data-ajn-skin="dusk"] :where(button, a, input, select, textarea):focus-visible {
+  outline: var(--ajn-focus-ring) !important;
+  outline-offset: 2px;
+}
+.ajn-platform-shell[data-ajn-skin="dusk"] :where(h1, h2, h3) {
+  font-family: 'Newsreader', Georgia, serif;
+  letter-spacing: 0.005em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ajn-platform-shell[data-ajn-skin="dusk"] { transition: none; }
+}
+
+/* ---- Stage 2: Home "Tonight on AJN" wall ---- */
+.ajn-platform-shell[data-ajn-skin="dusk"] .ajn-wall { display: block; }
+.ajn-wall__title { font: 600 1.5rem/1.2 'Newsreader', Georgia, serif; margin: 0 0 12px; color: var(--ajn-text); }
+.ajn-wall__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; list-style: none; margin: 0; padding: 0; }
+@media (max-width: 1023px) { .ajn-wall__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 479px) { .ajn-wall__grid { grid-template-columns: minmax(0, 1fr); } }
+.ajn-wall__card { display: block; width: 100%; text-align: left; cursor: pointer; overflow: hidden; border-radius: var(--ajn-r-md, 14px);
+  border: 1px solid var(--ajn-border); background: var(--ajn-surface); color: var(--ajn-text); transition: transform 160ms ease, border-color 160ms ease; }
+.ajn-wall__card:hover { transform: translateY(-2px); border-color: #f3c15a; }
+.ajn-wall__card:focus-visible { outline: var(--ajn-focus-ring, 2px solid #f3c15a) !important; outline-offset: 2px; }
+.ajn-wall__card--skeleton { height: 220px; cursor: default; }
+.ajn-wall__poster { position: relative; display: block; aspect-ratio: 16 / 9; background: var(--ajn-card); }
+.ajn-wall__chip { position: absolute; left: 8px; top: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 6px;
+  background: rgba(11,14,24,0.82); border: 1px solid #ea6079; color: #f38296; font: 700 10px/1 'Plus Jakarta Sans', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+.ajn-wall__dot { width: 6px; height: 6px; border-radius: 999px; background: #ea6079; }
+.ajn-wall__play { position: absolute; right: 8px; bottom: 8px; display: inline-flex; height: 40px; width: 40px; align-items: center; justify-content: center;
+  border-radius: 999px; background: #f3c15a; color: #0b0e18; opacity: 0; transition: opacity 160ms ease; }
+.ajn-wall__card:hover .ajn-wall__play, .ajn-wall__card:focus-visible .ajn-wall__play { opacity: 1; }
+.ajn-wall__meta { display: grid; gap: 4px; padding: 10px 12px 12px; }
+.ajn-wall__channel { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ajn-muted); }
+.ajn-wall__show { font: 600 1rem/1.25 'Newsreader', Georgia, serif; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ajn-wall__bar { display: block; height: 4px; border-radius: 999px; background: var(--ajn-border); overflow: hidden; margin-top: 2px; }
+.ajn-wall__bar > span { display: block; height: 100%; background: #f3c15a; }
+.ajn-wall__next { font-size: 12px; color: var(--ajn-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ajn-wall__note { border: 1px dashed var(--ajn-border); border-radius: var(--ajn-r-md, 14px); padding: 12px 14px; font-size: 13px; color: var(--ajn-muted); }
+@media (prefers-reduced-motion: reduce) { .ajn-wall__card, .ajn-wall__play { transition: none; } .ajn-wall__card:hover { transform: none; } }
+
+/* ---- Stage 2: ticket-stub guide cells (styling only; set on EpgGuide blocks via data-epg-block / data-on-air) ---- */
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-epg-block] {
+  border-radius: 10px !important;
+  border: 1px solid var(--ajn-border) !important;
+  background: var(--ajn-surface) !important;
+  color: var(--ajn-text) !important;
+  -webkit-mask: radial-gradient(circle 5px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 5px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-epg-block]:hover { border-color: #f3c15a !important; background: var(--ajn-card) !important; }
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-epg-block][data-on-air="true"] {
+  border-color: #f3c15a !important;
+  background: linear-gradient(180deg, rgba(243,193,90,0.26), rgba(243,193,90,0.10)) var(--ajn-surface) !important;
+  box-shadow: none !important;
+}
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-epg-block]:focus-visible {
+  -webkit-mask: none; mask: none; /* the notch mask would clip the focus ring */
+  outline: var(--ajn-focus-ring, 2px solid #f3c15a) !important; outline-offset: 1px;
+}
+
+/* ---- Stage 3: Shows detail panel (ShowDetailPanel; rendered only in the Dusk skin) ---- */
+.ajn-detail { border-top: 1px solid var(--ajn-border); padding: 12px; display: grid; gap: 10px; }
+.ajn-detail__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.ajn-detail__chips { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.ajn-detail__chip { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--ajn-border); background: var(--ajn-card); color: var(--ajn-text); font-size: 12px; line-height: 1.2; }
+.ajn-detail__chip--ok { border-color: #f3c15a; color: #f3c15a; }
+.ajn-detail__chip--warn { border-color: #ea6079; color: #f38296; }
+.ajn-detail__play { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer; background: #f3c15a; color: #0b0e18; font-weight: 700; font-size: 13px; }
+.ajn-detail__tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.ajn-detail__tab { flex: 0 0 auto; min-height: 44px; padding: 0 14px; border-radius: 999px; cursor: pointer; border: 1px solid var(--ajn-border); background: transparent; color: var(--ajn-muted); font-size: 13px; }
+.ajn-detail__tab[aria-selected="true"] { background: #f3c15a; border-color: #f3c15a; color: #0b0e18; font-weight: 700; }
+.ajn-detail__filter { min-height: 44px; width: 100%; padding: 0 12px; border-radius: var(--ajn-r-sm, 8px); border: 1px solid var(--ajn-border); background: var(--ajn-card); color: var(--ajn-text); }
+.ajn-detail__list { list-style: none; margin: 0; padding: 0; max-height: 24rem; overflow-y: auto; display: grid; gap: 2px; }
+.ajn-detail__ep { display: flex; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; align-items: center; padding: 0 10px; text-align: left; border: 0; border-radius: var(--ajn-r-sm, 8px); background: transparent; color: var(--ajn-text); cursor: pointer; font-size: 14px; }
+.ajn-detail__ep:hover { background: var(--ajn-card); }
+.ajn-detail__ep.is-current { color: #f3c15a; background: rgba(243,193,90,0.10); }
+.ajn-detail__ep-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ajn-detail__ep-len { flex: 0 0 auto; color: var(--ajn-muted); font-size: 12px; }
+.ajn-detail__more { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--ajn-border); background: transparent; color: #f3c15a; cursor: pointer; }
+.ajn-detail__note { font-size: 13px; color: var(--ajn-muted); margin: 0; }
+.ajn-detail :where(button, input):focus-visible { outline: var(--ajn-focus-ring, 2px solid #f3c15a) !important; outline-offset: 2px; }
+
+/* ---- Stage 4: daypart shelves ---- */
+.ajn-shelves { display: grid; gap: 18px; }
+.ajn-shelf { display: grid; gap: 8px; }
+.ajn-shelf__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ajn-shelf__title { font: 600 1.15rem/1.2 'Newsreader', Georgia, serif; margin: 0; color: var(--ajn-text); }
+.ajn-shelf__now { padding: 3px 8px; border-radius: 6px; background: #f3c15a; color: #0b0e18; font: 800 10px/1 'Plus Jakarta Sans', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+.ajn-shelf__range { font-size: 12px; color: var(--ajn-muted); }
+.ajn-shelf__arrows { margin-left: auto; display: inline-flex; gap: 6px; }
+.ajn-shelf__arrows button { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--ajn-border); background: var(--ajn-surface); color: var(--ajn-text); }
+.ajn-shelf__arrows button:disabled { opacity: 0.35; cursor: default; }
+.ajn-shelf__row { display: flex; gap: 12px; list-style: none; margin: 0; padding: 2px 2px 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+.ajn-shelf__cell { flex: 0 0 220px; scroll-snap-align: start; }
+.ajn-shelf__card { display: grid; gap: 4px; width: 100%; text-align: left; cursor: pointer; padding: 0 0 10px; overflow: hidden; border-radius: var(--ajn-r-md, 14px);
+  border: 1px solid var(--ajn-border); background: var(--ajn-surface); color: var(--ajn-text); }
+.ajn-shelf__card:hover { border-color: #f3c15a; }
+.ajn-shelf__card[data-status="on-air"] { border-color: #ea6079; }
+.ajn-shelf__card:focus-visible { outline: var(--ajn-focus-ring, 2px solid #f3c15a) !important; outline-offset: 2px; }
+.ajn-shelf__thumb { position: relative; display: block; aspect-ratio: 16 / 9; background: var(--ajn-card); }
+.ajn-shelf__time { position: absolute; left: 8px; bottom: 8px; padding: 3px 8px; border-radius: 6px; background: rgba(11,14,24,0.85); color: #f3c15a; font: 700 11px/1 'Plus Jakarta Sans', sans-serif; }
+.ajn-shelf__card[data-status="on-air"] .ajn-shelf__time { color: #f38296; }
+.ajn-shelf__show { padding: 0 10px; font: 600 0.95rem/1.25 'Newsreader', Georgia, serif; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ajn-shelf__channel { padding: 0 10px; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ajn-muted); }
+.ajn-shelf__empty { margin: 0; border: 1px dashed var(--ajn-border); border-radius: var(--ajn-r-md, 14px); padding: 12px 14px; font-size: 13px; color: var(--ajn-muted); }
+@media (prefers-reduced-motion: reduce) { .ajn-shelf__row { scroll-behavior: auto; } }
+
+/* ---- Stage 4: genre tiles ---- */
+.ajn-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 8px 0; }
+.ajn-tile { position: relative; display: grid; align-content: end; gap: 2px; min-height: 84px; padding: 12px 14px; text-align: left; cursor: pointer; overflow: hidden;
+  border-radius: var(--ajn-r-md, 14px); border: 1px solid rgba(255,255,255,0.12); color: #fff; }
+.ajn-tile[aria-pressed="true"] { border-color: #f3c15a; box-shadow: inset 0 0 0 1px #f3c15a; }
+.ajn-tile__name { font: 600 1rem/1.2 'Newsreader', Georgia, serif; }
+.ajn-tile__count { font-size: 12px; color: #e6e9f2; }
+.ajn-tile__arrow { position: absolute; right: 12px; top: 12px; opacity: 0; transition: opacity 160ms ease; color: #f3c15a; }
+.ajn-tile:hover .ajn-tile__arrow, .ajn-tile:focus-visible .ajn-tile__arrow { opacity: 1; }
+.ajn-tile:focus-visible { outline: var(--ajn-focus-ring, 2px solid #f3c15a) !important; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .ajn-tile__arrow { transition: none; } }
+
+/* ---- Stage 4: Intermission card (the waiting room, restyled; text, timer, status and Retry are the real ones) ---- */
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-testid="waiting-notes"][data-skin="dusk"] > div {
+  background: rgba(11,14,24,0.94) !important;
+  border: 1px solid #f3c15a !important;
+  border-top-width: 3px !important;
+  border-radius: 14px !important;
+}
+.ajn-intermission__label { margin: 0 0 2px; font: 800 10px/1 'Plus Jakarta Sans', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; color: #f3c15a; }
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-testid="waiting-notes"][data-skin="dusk"] [data-testid="waiting-acronym"] { color: #f3c15a !important; }
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-testid="waiting-notes"][data-skin="dusk"] .border-t-sky-300 { border-top-color: #f3c15a !important; }
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-testid="waiting-notes"][data-skin="dusk"] .border-sky-400\/30 { border-color: rgba(243,193,90,0.3) !important; }
+.ajn-platform-shell[data-ajn-skin="dusk"] [data-testid="playback-retry"] { min-height: 44px; padding: 0 16px !important; border-radius: 999px !important; background: #f3c15a !important; color: #0b0e18 !important; }
+
+/* ---- Stage 5: lean-back (TV) mode. Only applies when data-ajn-leanback="true" (Dusk skin + user toggle). ---- */
+[data-ajn-leanback="true"] :is(button, a[href], [role="button"], [role="tab"], select, input:not([type="range"]):not([type="checkbox"]):not([type="radio"])):not([data-epg-block]):not([data-epg-channel-row] *):not(.ajn-remote__btn) {
+  min-height: 64px;
+}
+[data-ajn-leanback="true"] :is(button, a[href], [role="button"], [role="tab"], select, input, textarea, [tabindex]):focus,
+.ajn-remote__btn:focus, .ajn-remote-toggle:focus {
+  outline: 4px solid #f3c15a;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--ajn-bg, #0b0e18);
+}
+.ajn-remote-toggle {
+  position: fixed; right: 16px; bottom: 96px; z-index: 60; min-height: 64px; padding: 0 20px;
+  border-radius: 14px; border: 2px solid var(--ajn-border, #3a3f55); background: var(--ajn-surface, #141827); color: var(--ajn-text, #fff); font-weight: 700;
+}
+.ajn-remote-toggle[aria-pressed="true"] { background: #f3c15a; color: #0b0e18; }
+.ajn-remote {
+  position: fixed; right: 16px; bottom: 176px; z-index: 60; padding: 14px; border-radius: 18px;
+  background: var(--ajn-surface, #141827); border: 2px solid var(--ajn-border, #3a3f55); box-shadow: 0 12px 40px rgba(0,0,0,.55);
+}
+.ajn-remote__grid { display: grid; grid-template-columns: repeat(4, 84px); gap: 8px; }
+.ajn-remote__btn {
+  min-height: 64px; border-radius: 12px; border: 1px solid var(--ajn-border, #3a3f55); background: var(--ajn-card, #1b2033); color: var(--ajn-text, #fff); font-size: 0.8rem; font-weight: 700;
+}
+.ajn-remote__btn[data-remote="ok"] { background: #f3c15a; color: #0b0e18; }
+.ajn-remote__readout { margin: 10px 2px 0; font-size: 0.85rem; color: var(--ajn-muted, #aab); min-height: 1.4em; }

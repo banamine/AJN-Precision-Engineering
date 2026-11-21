@@ -2,7 +2,7 @@
  * The map is the ARCHITECTURE (which part feeds which). Whether a part is alive comes only from telemetry.ts. */
 export type LobeId = 'audio' | 'video' | 'search' | 'news' | 'server' | 'sync' | 'ui';
 export interface Lobe { id: LobeId; label: string; color: string }
-export type ProbeKind = 'audio-element' | 'video-element' | 'jingle' | 'shared-query' | 'count-concerts' | 'count-fm' | 'count-rss' | 'count-podcasts' | 'digest' | 'video-frame' | 'unwired';
+export type ProbeKind = 'audio-element' | 'video-element' | 'jingle' | 'shared-query' | 'count-concerts' | 'count-fm' | 'count-rss' | 'count-podcasts' | 'digest' | 'video-frame' | 'rumble-wall' | 'unwired';
 export interface Neuron { id: string; lobe: LobeId; label: string; file: string; role: string; probe: ProbeKind; emptyNote?: string }
 export interface Edge { from: string; to: string; kind: string }
 
@@ -28,7 +28,7 @@ export const NEURONS: Neuron[] = [
   { id: 'buffer-jingle', lobe: 'video', label: 'Buffer jingle', file: 'src/components/BufferJingle.tsx', role: '"The Quiet Between" waiting-room interstitial.', probe: 'jingle' },
   { id: 'av-sync', lobe: 'video', label: 'AV sync', file: 'src/hooks/useAvSync.ts', role: 'Pairs radio audio with video.', probe: 'unwired', emptyNote: UNWIRED },
   { id: 'tv-guide', lobe: 'video', label: 'TV guide', file: 'src/components/TvGuideView.tsx', role: 'EPG (protected core).', probe: 'unwired', emptyNote: UNWIRED },
-  { id: 'rumble-wall', lobe: 'video', label: 'Rumble wall', file: 'src/components/RumbleNewsWall.tsx', role: 'Video-only news wall.', probe: 'unwired', emptyNote: UNWIRED },
+  { id: 'rumble-wall', lobe: 'video', label: 'Rumble wall', file: 'src/components/RumbleNewsWall.tsx', role: 'Video-only news wall.', probe: 'rumble-wall' },
 
   { id: 'registry-csv', lobe: 'search', label: 'Media registry CSV', file: 'tools/metadata/media_master_registry.csv', role: 'Offline search-metadata registry built by tools/generate_media_registry.py. Not loaded at runtime.', probe: 'unwired', emptyNote: 'Generated offline; the app does not read it at runtime.' },
   { id: 'actor-director-graph', lobe: 'search', label: 'Actor / director graph', file: 'src/utils/actorDirectorGraph.ts (not built)', role: 'Would link movies by cast and director.', probe: 'unwired', emptyNote: 'No cast or director metadata source exists yet, so this neuron stays empty rather than showing invented names.' },

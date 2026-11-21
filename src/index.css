@@ -131,7 +131,11 @@
   width: min(100%, calc(40vh * 16 / 9));
   width: min(100%, calc(40dvh * 16 / 9));
   aspect-ratio: 16 / 9;
-  min-height: 0;
+  /* fixed ceiling and floor: the stage keeps its size when the lists below fill up */
+  max-height: 40vh;
+  max-height: 40dvh;
+  min-height: min(12rem, 40dvh);
+  flex-shrink: 0;
   margin-inline: auto;
 }
 
@@ -172,9 +176,11 @@
     gap: 1rem;
   }
 
+  /* The right column (Now playing / Up Next / Episode note) is always rendered, with or without captions,
+     so the caption-off layout keeps both areas. A single "left" area here collapsed the video to 0 height. */
   .ajn-player-page-layout[data-caption-phase="off"] {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "left";
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-areas: "left right";
   }
 
   .ajn-player-page-left {
@@ -259,17 +265,26 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
+  scrollbar-color: #334155 transparent;
   color-scheme: dark;
   padding-right: 0.5rem;
   scroll-snap-type: y proximity;
   scroll-padding-block: 4px;
 }
 .ajn-queue-scroll > li { scroll-snap-align: start; }
+/* Slim, defined scrollbar shared by every queue list (Recently Played, Up Next, ...). */
+.ajn-queue-scroll::-webkit-scrollbar { width: 6px; }
+.ajn-queue-scroll::-webkit-scrollbar-track { background: transparent; }
+.ajn-queue-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+.ajn-queue-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
 .ajn-queue-scroll--rows-5 { --ajn-queue-rows: 5; }
 @media (max-width: 1023.98px) {
   .ajn-queue-scroll--side { --ajn-queue-rows: 2; }
 }
+/* Exactly 3 tracks tall at every width (declared after --side so it wins on small screens). */
+.ajn-queue-scroll--rows-3 { --ajn-queue-rows: 3; }
+/* lists whose rows carry a title, a line of detail and a button */
+.ajn-queue-scroll--tall { --ajn-queue-row: 56px; }
 .ajn-queue-empty {
   display: flex;
   height: var(--ajn-queue-h);

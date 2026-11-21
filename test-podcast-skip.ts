@@ -20,7 +20,7 @@ assert.equal(clampSkipTarget(-20, 3000), 0, 'never negative');
 assert.equal(clampSkipTarget(10, 1.2), 0.7, 'short track stays inside');
 assert.equal(clampSkipTarget(10, NaN), null); assert.equal(clampSkipTarget(10, 0.5), null);
 // labels
-assert.deepEqual([15, 30, 60, -15].map(skipLabel), ['+15s', '+30s', '+1m', '-15s']);
+assert.deepEqual([15, 30, 60, -15].map(skipLabel), ['+15s', '+30s', '+60s', '-15s']);
 assert.equal(skipAriaLabel(60), 'Skip forward 1 minute'); assert.equal(skipAriaLabel(30), 'Skip forward 30 seconds'); assert.equal(skipAriaLabel(-15), 'Skip back 15 seconds');
 
 // rapid taps stack even when currentTime has not moved yet (range slice still loading)

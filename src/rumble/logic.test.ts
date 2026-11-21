@@ -257,6 +257,7 @@ assert.deepEqual([...handlers.keys()], [
   "/api/rumble",
   "/api/rumble/baseline",
   "/api/rumble/channels",
+  "/api/rumble/slots/status",
   "/api/rumble/items",
 ]);
 

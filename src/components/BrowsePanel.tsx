@@ -45,7 +45,7 @@ export function BrowsePanel({ upcoming, recent, onSelectUpcoming, onResumeRecent
               Nothing is queued after this on this channel. Try On Now to see what else is on air.
             </p>
           ) : (
-            <ul className="divide-y divide-neutral-800 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40" data-testid="browse-up-next-list">
+            <ul className="ajn-queue-scroll ajn-queue-scroll--rows-3 ajn-queue-scroll--tall divide-y divide-neutral-800 rounded-lg border border-neutral-800 bg-neutral-900/40" data-testid="browse-up-next-list">
               {upcoming.map((p, i) => (
                 <li key={`${p.id}-${i}`} className="flex items-center gap-3 px-3 py-2">
                   <span className="w-5 shrink-0 text-center text-[10px] tabular-nums text-neutral-500">{i + 1}</span>
@@ -64,7 +64,7 @@ export function BrowsePanel({ upcoming, recent, onSelectUpcoming, onResumeRecent
           {recent.length > 0 && (
             <div className="space-y-2" data-testid="browse-recent">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Recently played</h3>
-              <ul className="divide-y divide-neutral-800 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40">
+              <ul className="ajn-queue-scroll ajn-queue-scroll--rows-3 ajn-queue-scroll--tall divide-y divide-neutral-800 rounded-lg border border-neutral-800 bg-neutral-900/40" data-testid="browse-recent-list">
                 {recent.map((r) => (
                   <li key={r.id} className="flex items-center gap-3 px-3 py-2">
                     <div className="min-w-0 flex-1">

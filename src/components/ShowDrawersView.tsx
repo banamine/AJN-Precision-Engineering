@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Star, Play, ChevronDown, ChevronRight, BadgeCheck } from 'lucide-react';
 import type { PlayProgramCallback } from '../types';
 import drawers from '../data/showDrawers.json';
+import { ShowDetailPanel } from './ShowDetailPanel';
+import { GenreTiles } from './GenreTiles';
+import { genreTiles } from '../shows/genreTiles';
+import { useAjnSkin } from './ajn-platform-redesign/AppearanceProvider';
 
 /** Shows: genre channels with show "drawers". Additive; the timeline TV Guide is untouched.
  *  Data comes from tools/build-show-drawers.py (real Archive.org file lengths; a show is "verified" only
@@ -39,6 +43,7 @@ const CHANNELS = drawers.channels as Array<{ id: string; label: string; name: st
 interface Props { onSelectProgram: PlayProgramCallback }
 
 export function ShowDrawersView({ onSelectProgram }: Props) {
+  const skin = useAjnSkin();
   const saved = useMemo(() => readJson<{ channel?: string; pill?: string }>(VIEW_KEY, {}), []);
   const [channelId, setChannelId] = useState<string>(CHANNELS.some((c) => c.id === saved.channel) ? saved.channel! : CHANNELS[0].id);
   const channel = CHANNELS.find((c) => c.id === channelId) ?? CHANNELS[0];
@@ -129,7 +134,10 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
           </button>
         ))}
       </nav>
-      {channel.pills.length > 1 && (
+      {channel.pills.length > 1 && skin === 'dusk' && (
+        <GenreTiles tiles={genreTiles(SHOWS, channelId, channel.pills)} active={pill} onPick={(p) => { setPill(p); setOpenId(null); }} />
+      )}
+      {channel.pills.length > 1 && skin !== 'dusk' && (
         <div className="flex flex-wrap gap-2 py-2" aria-label="Genres">
           {channel.pills.map((p) => (
             <button key={p} onClick={() => { setPill(p); setOpenId(null); }} aria-pressed={p === pill}
@@ -167,7 +175,11 @@ export function ShowDrawersView({ onSelectProgram }: Props) {
                   <Star size={16} fill={starred ? 'currentColor' : 'none'} />
                 </button>
               </div>
-              {open && (
+              {open && skin === 'dusk' && (
+                <ShowDetailPanel show={show} episodes={episodes} loadError={loadError} continuePath={cont[show.id]?.path ?? null}
+                  onPlay={(ep) => play(show, ep)} onPlayNext={() => playNext(show)} />
+              )}
+              {open && skin !== 'dusk' && (
                 <div className="border-t border-neutral-800 px-3 py-2 max-h-96 overflow-y-auto">
                   {loadError && <p className="text-sm text-red-400">Episode list unavailable: {loadError}</p>}
                   {!loadError && !episodes && <p className="text-sm text-neutral-400">Loading episodes…</p>}

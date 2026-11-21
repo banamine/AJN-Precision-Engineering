@@ -3,9 +3,11 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { EDGES, LOBES, NEURONS, type LobeId } from '../neural/topology';
 import { nodeEdges } from '../neural/sceneMath';
-import { readAll, probeDigest, captureFrame, type DigestProbe, type FrameProbe, type MediaLike, type TelemetryEnv, type Reading } from '../neural/telemetry';
+import { readAll, probeDigest, probeRumbleSlots, captureFrame, type RumbleSlotsProbe, type DigestProbe, type FrameProbe, type MediaLike, type TelemetryEnv, type Reading } from '../neural/telemetry';
 import { useJingle, jingleStore } from '../utils/jingleStore';
 import { readSharedQuery } from '../hooks/useSharedSearch';
+import { RUMBLE_BASELINE } from '../rumble/baseline';
+import { getWallState } from '../rumble/wallState';
 import newsRss from '../data/newsRssSources.json';
 import fmData from '../data/fmBroadcastChannels.json';
 import podcastSources from '../data/podcastSources.json';
@@ -25,6 +27,8 @@ export function NeuralTwinView() {
   const [tick, setTick] = useState(0);
   const [digest, setDigest] = useState<DigestProbe | null>(null);
   const [checking, setChecking] = useState(false);
+  const [rumbleSlots, setRumbleSlots] = useState<RumbleSlotsProbe | null>(null);
+  const [rumbleChecking, setRumbleChecking] = useState(false);
   const [frame, setFrame] = useState<{ probe: FrameProbe; dataUrl?: string } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [lobe, setLobe] = useState<LobeId | 'all'>('all');
@@ -40,6 +44,8 @@ export function NeuralTwinView() {
   }, []);
   const check = useCallback(async () => { setChecking(true); setDigest(await probeDigest(fetch.bind(window), Date.now, () => performance.now())); setChecking(false); }, []);
 
+  const checkRumble = useCallback(async () => { setRumbleChecking(true); setRumbleSlots(await probeRumbleSlots(fetch.bind(window), Date.now, () => performance.now())); setRumbleChecking(false); }, []);
+
   const readings = useMemo(() => {
     void tick;
     const feeds = (newsRss as unknown as { feeds: { collectedByDigest: boolean }[] }).feeds;
@@ -48,9 +54,10 @@ export function NeuralTwinView() {
       audio: pickMedia('audio'), video: pickMedia('video'), jingle, sharedQuery: q,
       counts: { concerts, fm: (fmData as unknown as { broadcasts: unknown[] }).broadcasts.length, rssFeeds: feeds.length, rssCollected: feeds.filter((f) => f.collectedByDigest).length, podcastFeeds: (podcastSources as unknown as { sources: unknown[] }).sources.length },
       digest, frame: frame?.probe ?? null, now: Date.now(),
+      rumble: { baselineGeneratedAt: RUMBLE_BASELINE.generatedAt, wall: getWallState(), slots: rumbleSlots },
     };
     return readAll(env);
-  }, [tick, jingle, digest, frame, concerts]);
+  }, [tick, jingle, digest, frame, concerts, rumbleSlots]);
 
   const byId = new Map(readings.map((r) => [r.id, r]));
   const sel = NEURONS.find((n) => n.id === selected) ?? null;
@@ -64,6 +71,7 @@ export function NeuralTwinView() {
           <p className="text-xs text-neutral-400">{NEURONS.length} parts in {LOBES.length} groups. The map shows how the app is wired; only a part with a real signal lights up or sends a dot. {liveCount} live right now.</p></div>
         <div className="flex flex-wrap gap-2">
           <button type="button" data-testid="neural-check-digest" onClick={check} disabled={checking} className="ck-key ck-key--sm">{checking ? 'Checking…' : 'Check digest now'}</button>
+          <button type="button" data-testid="neural-check-rumble" onClick={checkRumble} disabled={rumbleChecking} className="ck-key ck-key--sm">{rumbleChecking ? 'Checking…' : 'Check Rumble slots now'}</button>
           <button type="button" data-testid="neural-jingle" aria-pressed={jingle.on} onClick={() => jingleStore.setOn(!jingle.on)} className={`ck-key ck-key--sm ${jingle.on ? 'is-latched' : ''}`}>Buffer jingle {jingle.on ? 'on' : 'off'}</button>
         </div>
       </header>

@@ -11,6 +11,7 @@ import { layoutFreshFirstStack } from './podcastStack';
 import { safeFetch, anyPublicHost } from './safeFetch';
 import sourcesJson from '../src/data/podcastSources.json';
 import archiveEpisodesJson from '../src/data/podcastArchiveEpisodes.json';
+import { pickTranscriptLink } from '../src/utils/transcriptParse';
 
 export interface PodcastSource {
   id: string; name: string; publisher?: string; feedUrl: string;
@@ -31,6 +32,8 @@ export interface PodcastSource {
 export interface PodcastEpisode {
   guid: string; title: string; description: string; publishedAt: number; url: string;
   durationSeconds?: number; imageUrl?: string;
+  /** SRT/WebVTT link from <podcast:transcript>, when the feed publishes one (clean-show clock). */
+  transcriptUrl?: string;
 }
 export type PodcastStatus = 'ok' | 'degraded' | 'error';
 export interface PodcastState {
@@ -132,7 +135,7 @@ export function buildState(source: PodcastSource, parts: { head: string; items: 
     if (!(type.toLowerCase().startsWith('audio/') || AUDIO_EXT.test(url))) { rejected.push({ id, reason: `enclosure is not audio (${type || 'no type'})` }); continue; }
     if (!title) { rejected.push({ id, reason: 'missing title' }); continue; }
     eps.push({ guid, title, description: stripTags(decodeXml(tag(block, 'description') ?? tag(block, 'itunes:summary') ?? '')).slice(0, 280), publishedAt: pub, url,
-      durationSeconds: parseDuration(tag(block, 'itunes:duration')), imageUrl: attr(block, 'itunes:image', 'href') });
+      durationSeconds: parseDuration(tag(block, 'itunes:duration')), imageUrl: attr(block, 'itunes:image', 'href'), transcriptUrl: pickTranscriptLink(block) });
     if (eps.length >= limit) break;
   }
   if (eps.length === 0) return { ...base, status: 'error', feedTitle, imageUrl, episodes: [], rejected, error: 'no playable episodes in the newest items' };
@@ -222,6 +225,17 @@ function ensureFresh(now: Date): Promise<void> {
   const stale = PODCAST_SOURCES.some((s) => s.enabled && (!cache.get(s.id) || now.getTime() - Date.parse(cache.get(s.id)!.fetchedAt) > REFRESH_MS));
   if (stale && !inflight) inflight = refreshAll(now).finally(() => { inflight = null; });
   return inflight ?? Promise.resolve();
+}
+/** Find the episode a player URL belongs to. A server that just started (a new deploy) has an empty list until the guide loads the feeds,
+ *  so when the list is incomplete this waits (bounded) for the feeds instead of answering "unknown" for a perfectly good episode. */
+export async function findEpisodeByUrl(url: string, waitMs = FIRST_LOAD_WAIT_MS * 2): Promise<{ state: PodcastState; episode: PodcastEpisode } | null> {
+  const look = () => { for (const st of cache.values()) { const episode = st.episodes.find((e) => e.url === url); if (episode) return { state: st, episode }; } return null; };
+  const hit = look(); if (hit) return hit;
+  if (!PODCAST_SOURCES.filter((x) => x.enabled).every((x) => cache.get(x.id))) {
+    await Promise.race([ensureFresh(new Date()), new Promise((r) => setTimeout(r, waitMs))]);
+    return look();
+  }
+  return null;
 }
 export function podcastStates(): PodcastState[] { return PODCAST_SOURCES.filter((s) => s.enabled).map((s) => cache.get(s.id)).filter(Boolean) as PodcastState[]; }
 

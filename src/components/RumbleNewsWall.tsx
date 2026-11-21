@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Maximize2, Minimize2, Play, RotateCcw, Square } from 'lucide-react';
 import { RUMBLE_BASELINE } from '../rumble/baseline';
 import { fetchRumbleBaseline } from '../rumble/baselineClient';
+import { iframeMounted, wallOpened } from '../rumble/wallState';
 import type { RumbleBaseline, RumbleChannel } from '../rumble/types';
 import { RESOLVE_FAILURE_TEXT, type ResolvedMedia } from '../news/contract';
 import { resolveNewsOnServer } from '../news/client';
@@ -141,6 +142,8 @@ function WallPanel({ source, picks, missing, active, focused, onChange, onActiva
   activeRef.current = active;
   const token = useRef(0);
   useEffect(() => () => { token.current += 1; }, []);
+  // report the real iframe to #dev (the wall is unmounted when #dev shows, so it cannot be counted from the DOM)
+  useEffect(() => (active && source.embedId ? iframeMounted() : undefined), [active, source.embedId]);
 
   const pickIds = useMemo(() => new Set(picks.map((pick) => pick.channelId)), [picks]);
   const selectValue =
@@ -469,6 +472,7 @@ export function RumbleNewsWall({
   const [active, setActive] = useState<boolean[]>([true, true, true, true]);
   const [focusIndex, setFocusIndex] = useState<number | null>(null);
   const touched = useRef(false);
+  useEffect(() => wallOpened(), []);
 
   // Prefer the server's list when it answers, unless the list saved in this browser is newer.
   useEffect(() => {

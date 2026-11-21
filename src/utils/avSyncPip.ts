@@ -8,10 +8,19 @@ let state: PipState | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach(l => l());
 
+/** Episodes whose mini video the listener closed on purpose: it is not opened again by itself for them. */
+const dismissed = new Set<string>();
+
 export const pipStore = {
   get: (): PipState | null => state,
-  open(next: PipState) { state = next; emit(); },
+  /** Open by hand (WATCH / mini-video button): clears an earlier "I closed it". */
+  open(next: PipState) { dismissed.delete(next.programId); state = next; emit(); },
+  /** Open automatically; refused for an episode the listener closed. Returns whether it opened. */
+  autoOpen(next: PipState): boolean { if (dismissed.has(next.programId) || state !== null) return false; state = next; emit(); return true; },
+  isDismissed: (programId: string): boolean => dismissed.has(programId),
   close() { if (state === null) return; state = null; emit(); },
+  /** The listener closed it (X or CLOSE MINI VIDEO): remember that for this episode. */
+  closeByUser() { if (state === null) return; dismissed.add(state.programId); state = null; emit(); },
   subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
 };
 

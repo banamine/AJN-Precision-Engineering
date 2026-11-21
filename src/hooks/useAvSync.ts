@@ -114,7 +114,7 @@ export function useAvSwitch(nowPlaying: NowPlayingMedia | null | undefined, onPl
 
   const toggleMini = useCallback(() => {
     if (!twin || twin.target !== 'video') return;
-    if (miniOpen) { pipStore.close(); return; }
+    if (miniOpen) { pipStore.closeByUser(); return; }
     pipStore.open({ programId: twin.entry.id, src: twin.url, title: twin.entry.title });
   }, [twin, miniOpen]);
 

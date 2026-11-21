@@ -6,26 +6,36 @@ import { GripHorizontal, Maximize2, PictureInPicture2, X } from 'lucide-react';
 import { usePip, pipStore, clampPipPos, readPipPos, PIP_POS_KEY, type PipPos } from '../utils/avSyncPip';
 import { findPersistentMedia } from '../hooks/usePersistentMedia';
 import { bridgeSrc } from '../utils/mediaRoute';
-import { needsDriftCorrection } from '../utils/avSync';
+import { baseIdOf, needsDriftCorrection } from '../utils/avSync';
 import { useAvSwitch } from '../hooks/useAvSync';
 import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 
 const DRIFT_CHECK_MS = 500;
+/** Screen-size class used to remember the mini video's position. */
+function pipBucket(): string { const w = window.innerWidth; const h = window.innerHeight; return h < 500 ? 'short' : w < 640 ? 'phone' : w < 1024 ? 'tablet' : 'desktop'; }
 
 export function SyncedVideoPip({ nowPlaying, onPlay, onNavigate }: { nowPlaying: NowPlayingMedia | null; onPlay: PlayProgramCallback; onNavigate: (destination: Destination) => void }) {
   const pip = usePip();
-  const { hardSwitch } = useAvSwitch(nowPlaying, onPlay, onNavigate);
+  const { hardSwitch, twin, canMini } = useAvSwitch(nowPlaying, onPlay, onNavigate);
+  // Open by default: an AJN episode that has a paired video opens its mini video as the audio plays, so nobody has to hunt for the button.
+  // Closing it (X, or CLOSE MINI VIDEO) is remembered for that episode only (pipStore.closeByUser); the next episode opens its video again.
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
   const boxRef = useRef<HTMLElement>(null);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
-  const [pos, setPos] = useState<PipPos | null>(() => { try { return typeof localStorage === 'undefined' ? null : readPipPos(localStorage); } catch { return null; } });
+  // The dragged position is remembered per screen size (short landscape phone / phone / tablet / desktop), so a spot picked on a wide window
+  // never leaks onto a narrow one (where it ended up clipped or on top of the player controls).
+  const [bucket, setBucket] = useState<string>(() => pipBucket());
+  useEffect(() => { const on = (): void => setBucket(pipBucket()); window.addEventListener('resize', on); return () => window.removeEventListener('resize', on); }, []);
+  const store = (b: string): Pick<Storage, 'getItem'> | null => { try { return typeof localStorage === 'undefined' ? null : { getItem: (k: string) => localStorage.getItem(`${k}.${b}`) }; } catch { return null; } };
+  const [pos, setPos] = useState<PipPos | null>(() => readPipPos(store(bucket)));
+  useEffect(() => { setPos(readPipPos(store(bucket))); }, [bucket]);
   const place = (next: PipPos): void => {
     const box = boxRef.current; if (!box) return;
     const r = box.getBoundingClientRect();
     const clamped = clampPipPos(next, { w: r.width, h: r.height }, { w: window.innerWidth, h: window.innerHeight });
     setPos(clamped);
-    try { localStorage.setItem(PIP_POS_KEY, JSON.stringify(clamped)); } catch { /* storage unavailable: position lasts this visit */ }
+    try { localStorage.setItem(`${PIP_POS_KEY}.${bucket}`, JSON.stringify(clamped)); } catch { /* storage unavailable: position lasts this visit */ }
   };
   const onDragStart = (e: React.PointerEvent<HTMLDivElement>): void => {
     if ((e.target as HTMLElement).closest('button')) return;
@@ -43,9 +53,16 @@ export function SyncedVideoPip({ nowPlaying, onPlay, onNavigate }: { nowPlaying:
   };
   useEffect(() => {
     if (!pos) return;
+    const r0 = boxRef.current?.getBoundingClientRect();
+    if (r0) { const c = clampPipPos(pos, { w: r0.width, h: r0.height }, { w: window.innerWidth, h: window.innerHeight }); if (c.x !== pos.x || c.y !== pos.y) { setPos(c); return; } }
     const onResize = (): void => { const r = boxRef.current?.getBoundingClientRect(); if (r) setPos(clampPipPos(pos, { w: r.width, h: r.height }, { w: window.innerWidth, h: window.innerHeight })); };
     window.addEventListener('resize', onResize); return () => window.removeEventListener('resize', onResize);
-  }, [pos]);
+  }, [pos, Boolean(pip)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const baseNow = baseIdOf(nowPlaying?.programId);
+  useEffect(() => {
+    if (pip || !twin || !canMini || !baseNow || nowPlaying?.mediaType !== 'audio') return;
+    pipStore.autoOpen({ programId: twin.entry.id, src: twin.url, title: twin.entry.title });
+  }, [pip, twin, canMini, baseNow, nowPlaying?.mediaType]);
   const active = Boolean(pip && nowPlaying?.mediaType === 'audio');
   const src = pip ? bridgeSrc(pip.src) : undefined;
 
@@ -94,7 +111,7 @@ export function SyncedVideoPip({ nowPlaying, onPlay, onNavigate }: { nowPlaying:
   return (
     <aside ref={boxRef} id="synced-video-pip" data-testid="synced-video-pip" aria-label={`Mini video: ${pip.title}`}
       style={pos ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' } : undefined}
-      className={`fixed z-50 ${pos ? '' : 'right-2 sm:right-6 bottom-[13.5rem] sm:bottom-[14.5rem] md:bottom-[10rem]'} w-56 sm:w-72 overflow-hidden rounded-xl border border-[#E06D3B]/70 bg-black shadow-2xl`}>
+      className={`fixed z-50 ${pos ? '' : bucket === 'short' ? 'right-2 top-12' : 'right-2 sm:right-6 bottom-[13.5rem] sm:bottom-[14.5rem] md:bottom-[10rem]'} ${bucket === 'short' ? 'w-44' : 'w-56 sm:w-72'} overflow-hidden rounded-xl border border-[#E06D3B]/70 bg-black shadow-2xl`}>
       <video ref={videoRef} key={src} src={src} muted playsInline preload="auto" className="block aspect-video w-full bg-black" aria-label="Synced video (sound plays from the audio player)" />
       {error && <p role="alert" className="absolute inset-x-0 top-0 bg-red-950/90 px-2 py-1 text-[11px] text-red-200">{error}</p>}
       <div data-testid="synced-video-pip-handle" role="group" tabIndex={0} aria-label="Move mini video. Drag, or use the arrow keys." title="Drag to move" onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd} onKeyDown={onHandleKey}
@@ -103,7 +120,7 @@ export function SyncedVideoPip({ nowPlaying, onPlay, onNavigate }: { nowPlaying:
         <span className="flex items-center gap-1">
           {canNativePip && <button type="button" aria-label="Pop video out of the page" title="Pop out" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={() => { void videoRef.current?.requestPictureInPicture().catch(() => {}); }}><PictureInPicture2 className="h-3.5 w-3.5" /></button>}
           <button type="button" aria-label="Switch main player to video" title="Make video the main player" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={hardSwitch}><Maximize2 className="h-3.5 w-3.5" /></button>
-          <button type="button" aria-label="Close mini video" title="Close" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={() => pipStore.close()}><X className="h-3.5 w-3.5" /></button>
+          <button type="button" aria-label="Close mini video" title="Close" className="rounded p-1 text-neutral-300 hover:bg-neutral-800" onClick={() => pipStore.closeByUser()}><X className="h-3.5 w-3.5" /></button>
         </span>
       </div>
     </aside>

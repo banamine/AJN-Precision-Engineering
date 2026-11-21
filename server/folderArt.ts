@@ -4,6 +4,8 @@
 import type { Express } from 'express';
 import { registerHomepageLibraryRoutes } from './homepageLibrary';
 import { registerEpisodeNoteRoute } from './episodeNote';
+import { registerPodcastAdMapRoute } from './podcastAdMap';
+import { registerPodcastTranscriptRoute } from './podcastTranscript';
 
 const IMG = /\.(jpe?g|png|webp)$/i;
 const PREFERRED = /(cover|folder|front|album|artwork|poster|band|artist|logo)/i;
@@ -72,6 +74,8 @@ async function loadIndex(id: string): Promise<Index> {
 
 export function registerFolderArtRoute(app: Express): void {
   registerEpisodeNoteRoute(app); // podcast episode description for the player card
+  registerPodcastTranscriptRoute(app); // episode transcript (SRT/VTT) for the live captions
+  registerPodcastAdMapRoute(app); // iHeart/Triton ad-break layout + feed length for the ad-skip prompt (no audio is fetched)
   registerHomepageLibraryRoutes(app); // library homepage captures: mounted here so server.ts needs no edit
   app.get(['/api/library/folder-art', '/api/archive/folder-art'], async (req, res) => {
     const parsed = parseDownloadPath(String(req.query.path ?? ''));

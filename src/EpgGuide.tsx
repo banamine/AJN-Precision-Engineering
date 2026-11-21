@@ -149,6 +149,8 @@ export function EpgProgramBlock({
       type="button"
       id={`epg-prog-${channel.id}-${idx}`}
       title={displayProgramTitle}
+      data-epg-block=""
+      data-on-air={isLive ? "true" : "false"}
       aria-description={program.description && width < DESCRIPTION_MIN_BLOCK_PX ? program.description : undefined}
       aria-label={`${displayProgramTitle}, ${displayChannelName}${aired ? `, ${aired.label}` : ""}`}
       onClick={() => {

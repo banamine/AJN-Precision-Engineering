@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import notesJson from "../data/waitingNotes.json";
 import { JingleChip } from "./BufferJingle";
+import { useAjnSkin } from "./ajn-platform-redesign/AppearanceProvider";
 import { createDeck, waitKindOf, type Acronym, type Note, type WaitingNotesData } from "../utils/waitingNotes";
 
 const DATA = notesJson as unknown as WaitingNotesData;
@@ -9,6 +10,7 @@ const DATA = notesJson as unknown as WaitingNotesData;
  *  A spinner, a made-up acronym for what is going on, and a rotating joke. The real status text and a live seconds counter
  *  stay on screen next to the joke, so the fun never hides what is actually happening. Retry appears only after a long wait. */
 export function WaitingNotes({ status, onRetry, archive = false }: { status: string; onRetry?: () => void; archive?: boolean }) {
+  const skin = useAjnSkin();
   const kind = waitKindOf(status);
   const { showAfterMs, rotateMs, retryAfterMs } = DATA.settings;
   const acrRotateMs = DATA.settings.archiveRotateMs ?? 4000;
@@ -45,7 +47,7 @@ export function WaitingNotes({ status, onRetry, archive = false }: { status: str
   if (!visible || !kind || !acr) return null;
   const secs = Math.floor(elapsed / 1000);
   return (
-    <div data-testid="waiting-notes" data-kind={kind} data-source={archive ? "archive" : "other"} className="pointer-events-none absolute inset-x-3 bottom-14 z-30 flex justify-center sm:bottom-16">
+    <div data-testid="waiting-notes" data-skin={skin} data-kind={kind} data-source={archive ? "archive" : "other"} className="pointer-events-none absolute inset-x-3 bottom-14 z-30 flex justify-center sm:bottom-16">
       <div className="pointer-events-auto flex max-w-xl items-center gap-3 rounded-xl border border-white/10 bg-black/80 p-3 text-white shadow-xl backdrop-blur">
         <span aria-hidden="true" className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center">
           <span className="absolute inset-0 rounded-full border-2 border-sky-400/30" />
@@ -53,6 +55,7 @@ export function WaitingNotes({ status, onRetry, archive = false }: { status: str
           <span className="text-base">{note?.emoji ?? "⏳"}</span>
         </span>
         <div className="min-w-0 flex-1">
+          {skin === 'dusk' && <p className="ajn-intermission__label">Intermission</p>}
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span data-testid="waiting-acronym" className="font-mono text-xs font-bold tracking-wider text-sky-300">{acr.short}</span>
             <span className="text-[11px] text-neutral-400">{acr.long}</span>

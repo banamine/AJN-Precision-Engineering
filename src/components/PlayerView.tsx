@@ -5,6 +5,7 @@ import { RUSH_PRELUDE_PROGRAM, RUSH_PROGRAM, resolveRushNext, rushProgramDate, u
 import { loadRushSettings, markRushPreludeSeenToday, RUSH_SETTINGS_EVENT } from "../utils/rushSettings";
 import MinimalPlayer from "../MinimalPlayer";
 import { BrowsePanel } from "./BrowsePanel";
+import { PlayerDock } from "./PlayerDock";
 import { PlayerWidgets, type WidgetSpec } from "./PlayerWidget";
 import { toPlayableSrc } from "../utils/playableSrc";
 import { reportTelemetry } from "../telemetry";
@@ -766,6 +767,9 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       )}
     </>
   );
+  // the flyout only exists when there is something to show in it (podcasts have no episode note, so no empty box)
+  const hasEpisodeNote = Boolean(radioCaptions) || (!archiveMusicOn && nowPlaying.channelId === "ajn-radio")
+    || (nowPlaying.channelId === "rush-vod" && Boolean(upNextLabel(upNext, rushProgramDate(String(nowPlaying.programId ?? "")))));
   const browsePanel = !archiveMusicOn
     ? <BrowsePanel upcoming={browseUpcoming} recent={browseRecent} onSelectUpcoming={selectArchiveUpcoming} onResumeRecent={resumeArchiveRecent} onPlayProgram={onSelectProgram} onNavigate={(d) => onNavigate?.(d)} />
     : null;
@@ -773,18 +777,16 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
 
   if (isAudioPage) {
     return (
-      <div data-testid="player-audio-page" className="ajn-audio-page h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain pb-6">
+      <div data-testid="player-audio-page" className="ajn-audio-page flex h-full min-h-0 flex-col gap-2 overflow-y-auto overscroll-contain">
         {playerMetadata}
         <div ref={playerWrapRef} style={stationTheme ? { borderLeft: `3px solid ${stationTheme.accentColor}`, borderRadius: 12, background: `linear-gradient(180deg, ${stationTheme.themeColor}66, transparent 60%)` } : undefined}>{playerElement}</div>
         {playbackFailure}
         {videoControls}
-        <div className="lg:columns-2 lg:gap-3">
-          <PlayerWidgets tab="audio" widgets={[
-            ...(browsePanel ? [{ key: "up-next", title: "Up Next / On Now", defaultOpenWide: true, defaultOpenNarrow: false, content: browsePanel } as WidgetSpec] : []),
-            ...(captionState.phase !== "off" ? [{ key: "headlines", title: "Headlines & captions", defaultOpenWide: true, content: <CaptionPanel state={captionState} /> } as WidgetSpec] : []),
-            { key: "episode-note", title: "Episode note", content: secondaryPlayerInfo } as WidgetSpec,
-          ]} />
-        </div>
+        <PlayerDock items={[
+          ...(browsePanel ? [{ key: "up-next", label: "Up Next / On Now", content: browsePanel }] : []),
+          ...(captionState.phase !== "off" ? [{ key: "headlines", label: "Headlines & captions", content: <CaptionPanel state={captionState} /> }] : []),
+          ...(hasEpisodeNote ? [{ key: "episode-note", label: "Episode note", content: secondaryPlayerInfo }] : []),
+        ]} />
       </div>
     );
   }
