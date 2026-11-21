@@ -38,6 +38,10 @@
     "AJN_FIX_CAPTIONS_TYPES",
     "files",
     "full-files-for-export-baseline",
-    "dropin"
+    "dropin",
+    "AJN_*_Dropin_*",
+    "_dropin",
+    "_sync_backup_2026-11-21",
+    "_sync_backup_viz"
   ]
 }

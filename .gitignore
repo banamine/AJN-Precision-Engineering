@@ -18,3 +18,8 @@ catalog-probe.json
 /deliver/
 /reports/classic-network/
 /generated-artifacts/
+
+# drop-in/backup folders never belong in the repo
+AJN_*_Dropin_*/
+_dropin/
+_sync_backup*/
