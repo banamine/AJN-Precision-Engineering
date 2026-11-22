@@ -1,0 +1,5 @@
+ON AIR BUILD 17 - small fixes. Based on your 11:51 AM export (it matched Builds 13-16 exactly). Copy 2 files, publish:
+  src/onair/OnAirPage.tsx
+  src/onair/onair.css
+Fixes: (1) CAM news slate uses the normal sans font, slightly larger; (2) in the compact side panels (camera corner BR/BL) the Show card now shows show name + episode title (was show name + date); (3) when the on-air file has video, the big cover box becomes 16:9 (about 242x136 instead of 134x134 in the test window), no black bars above/below.
+NOT changed: the empty top-middle area with the camera on TL/TR, and the "Library not checked" chip (existing status chip).

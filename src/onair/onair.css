@@ -1,0 +1,711 @@
+/* AJN On Air: Dusk Marquee frame (locked Revision 2 mock-up), scoped under .onair-root. */
+  .onair-root {
+    --ink: #0b0e18;
+    --surface: #161b2b;
+    --surface-glass: rgba(22, 27, 43, 0.80);
+    --surface-elev: #1d2438;
+    --line: #2b3450;
+    --gold: #f3c15a;
+    --gold-soft: rgba(243, 193, 90, 0.16);
+    --rose: #ea6079;
+    --rose-soft: rgba(234, 96, 121, 0.18);
+    --text: #eceef5;
+    --muted: #9aa3bd;
+    --sky-glow: rgba(110, 155, 220, 0.16);
+    --radius-sm: 14px;
+    --radius-md: 18px;
+    --radius-lg: 22px;
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+.onair-root .role-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    background: rgba(11, 14, 24, 0.55);
+    border-radius: 999px;
+    padding: 2px 7px;
+    letter-spacing: 0.04em;
+  }/* PART A: 16:9 DUSK MARQUEE FRAME (V1: frame-relative scale via container-type: inline-size & --u) */.onair-root .screen-shell {
+    width: 960px;
+    max-width: 100%;
+    margin: 0 auto 16px auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--ink);
+    position: relative;
+    overflow: hidden;
+    container-type: inline-size;
+  }.onair-root .screen-frame {
+    --u: calc(100cqw / 1920);
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: radial-gradient(ellipse 68% 62% at 36% 48%, var(--sky-glow), var(--ink) 74%);
+    overflow: hidden;
+    user-select: none;
+    font-size: calc(22 * var(--u));
+    line-height: 1.25;
+  }.onair-root .screen-frame[data-daypart="Morning"] { --sky-glow: rgba(234, 96, 121, 0.18); }.onair-root .screen-frame[data-daypart="Afternoon"] { --sky-glow: rgba(110, 155, 220, 0.16); }.onair-root .screen-frame[data-daypart="Evening"] { --sky-glow: rgba(243, 193, 90, 0.18); }.onair-root .screen-frame[data-daypart="Late Night"] { --sky-glow: rgba(45, 70, 130, 0.22); }.onair-root .screen-frame .demo-tag {
+    font-size: calc(12 * var(--u));
+    color: rgba(154, 163, 189, 0.58);
+    border-color: rgba(43, 52, 80, 0.55);
+    background: transparent;
+    padding: calc(1 * var(--u)) calc(6 * var(--u));
+    margin-left: calc(4 * var(--u));
+  }.onair-root .screen-frame .role-tag {
+    font-size: calc(13 * var(--u));
+    padding: calc(2 * var(--u)) calc(8 * var(--u));
+  }.onair-root .frame-box {
+    position: absolute;
+    background: var(--surface-glass);
+    border: 1px solid var(--line);
+    border-radius: calc(16 * var(--u));
+    overflow: hidden;
+  }/* A1 HEADER MARQUEE STRIP */.onair-root .frame-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 calc(20 * var(--u));
+    background: rgba(22, 27, 43, 0.92);
+    border-radius: 0;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    gap: calc(12 * var(--u));
+  }.onair-root .hdr-left,
+.onair-root .hdr-center,
+.onair-root .hdr-right {
+    display: flex;
+    align-items: center;
+    gap: calc(12 * var(--u));
+    white-space: nowrap;
+    min-width: 0;
+  }.onair-root .hdr-brand {
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    font-size: calc(24 * var(--u));
+    color: var(--text);
+  }.onair-root .hdr-clock-display {
+    font-variant-numeric: tabular-nums;
+    font-size: calc(34 * var(--u));
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--gold);
+    line-height: 1;
+  }@keyframes onAirPulse {0%, 100% { opacity: 1; transform: scale(1); }50% { opacity: 0.55; transform: scale(0.92); }
+  }.onair-root .on-air-dot {
+    width: calc(18 * var(--u));
+    height: calc(18 * var(--u));
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    flex-shrink: 0;
+  }.onair-root .on-air-dot.live {
+    background: var(--rose);
+    animation: onAirPulse 1.8s ease-in-out infinite;
+  }.onair-root .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface-glass);
+    color: var(--text);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }.onair-root .screen-frame .chip {
+    font-size: calc(22 * var(--u));
+    padding: calc(4 * var(--u)) calc(13 * var(--u));
+    line-height: 1.15;
+  }.onair-root .chip.on-air-chip {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+    font-weight: 800;
+  }.onair-root .chip.rose-chip {
+    background: var(--rose-soft);
+    border-color: var(--rose);
+    color: var(--text);
+    font-weight: 700;
+  }.onair-root .chip.net-rav {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+    color: var(--gold);
+    font-weight: 700;
+  }.onair-root .chip.net-ajn {
+    background: var(--rose-soft);
+    border-color: var(--rose);
+    color: var(--text);
+    font-weight: 700;
+  }/* A2 STAGE POSTER CARD (V2: fills card with large 28% cover tile & bold typography) */.onair-root .frame-stage {
+    padding: calc(18 * var(--u)) calc(22 * var(--u));
+    display: flex;
+    flex-direction: column;
+    gap: calc(14 * var(--u));
+    border-radius: calc(20 * var(--u));
+  }.onair-root .stage-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: calc(10 * var(--u));
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }.onair-root .stage-banner {
+    display: none;
+    align-self: flex-start;
+    padding: calc(5 * var(--u)) calc(16 * var(--u));
+    border-radius: 999px;
+    border: 1px solid var(--rose);
+    background: var(--rose-soft);
+    color: var(--text);
+    font-size: calc(20 * var(--u));
+    font-weight: 700;
+    flex-shrink: 0;
+  }.onair-root .stage-banner.visible { display: inline-flex; }.onair-root .stage-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: calc(18 * var(--u));
+    position: relative;
+  }.onair-root .stage-main {
+    flex: 1.52;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(16 * var(--u));
+    border: 1px solid var(--line);
+    border-radius: calc(18 * var(--u));
+    padding: calc(22 * var(--u));
+    background: rgba(11, 14, 24, 0.56);
+    overflow: hidden;
+  }.onair-root .stage-hero-center {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    padding: calc(18 * var(--u));
+    border-radius: calc(16 * var(--u));
+    background: rgba(22, 27, 43, 0.36);
+    border: 1px solid rgba(43, 52, 80, 0.55);
+  }.onair-root .stage-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: calc(20 * var(--u));
+    padding: calc(18 * var(--u)) calc(20 * var(--u));
+    border-radius: calc(16 * var(--u));
+    background: rgba(22, 27, 43, 0.42);
+    border: 1px solid rgba(43, 52, 80, 0.55);
+    flex-shrink: 0;
+  }.onair-root .stage-side {
+    flex: 0.5;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(14 * var(--u));
+    border: 1px solid var(--line);
+    border-radius: calc(18 * var(--u));
+    padding: calc(20 * var(--u));
+    background: rgba(11, 14, 24, 0.44);
+    overflow: hidden;
+  }.onair-root .cover-row {
+    width: 100%;
+    display: flex;
+    gap: calc(24 * var(--u));
+    align-items: center;
+    min-height: 0;
+  }.onair-root .cover-box {
+    width: 48%;
+    max-width: calc(360 * var(--u));
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    border-radius: calc(18 * var(--u));
+    background: var(--surface-elev);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(8 * var(--u));
+    font-family: var(--font-mono);
+    font-size: calc(24 * var(--u));
+    font-weight: 700;
+    color: var(--muted);
+    text-align: center;
+    padding: calc(12 * var(--u));
+  }.onair-root .meta-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(12 * var(--u));
+  }.onair-root .show-title {
+    font-size: calc(60 * var(--u));
+    font-weight: 800;
+    line-height: 1.12;
+    padding-bottom: 0.12em;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }.onair-root .episode-title {
+    font-size: calc(30 * var(--u));
+    line-height: 1.22;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }.onair-root .meta-subline {
+    font-size: calc(22 * var(--u));
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    line-height: 1.2;
+  }.onair-root .progress-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: calc(8 * var(--u));
+    flex-shrink: 0;
+  }.onair-root .progress-track {
+    width: 100%;
+    height: calc(22 * var(--u));
+    border-radius: 999px;
+    background: rgba(43, 52, 80, 0.72);
+    overflow: hidden;
+  }.onair-root .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--muted);
+    width: 0%;
+  }.onair-root .progress-fill.on-air-bar {
+    background: var(--gold);
+  }.onair-root .progress-times {
+    display: flex;
+    justify-content: space-between;
+    font-variant-numeric: tabular-nums;
+    font-size: calc(22 * var(--u));
+    font-weight: 600;
+    color: var(--text);
+  }/* Notched ticket stub for Plays Next */.onair-root .plays-next-ticket {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: calc(14 * var(--u));
+    padding: calc(18 * var(--u)) calc(24 * var(--u));
+    border: 1px dashed var(--line);
+    border-radius: calc(14 * var(--u));
+    background: rgba(22, 27, 43, 0.88);
+    font-size: calc(24 * var(--u));
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    min-width: 0;
+  }.onair-root .plays-next-ticket > span:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }.onair-root .plays-next-ticket::before,
+.onair-root .plays-next-ticket::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: calc(16 * var(--u));
+    height: calc(16 * var(--u));
+    margin-top: calc(-8 * var(--u));
+    border-radius: 50%;
+    background: var(--ink);
+    border: 1px solid var(--line);
+  }.onair-root .plays-next-ticket::before { left: calc(-9 * var(--u)); }.onair-root .plays-next-ticket::after { right: calc(-9 * var(--u)); }.onair-root .plays-next-ticket.blending-ticket {
+    border-color: var(--gold);
+    background: var(--gold-soft);
+    color: var(--text);
+  }.onair-root .ticket-time {
+    font-variant-numeric: tabular-nums;
+    color: var(--gold);
+    font-weight: 800;
+    white-space: nowrap;
+  }.onair-root .side-heading {
+    font-size: calc(22 * var(--u));
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: calc(8 * var(--u));
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }.onair-root .transcript-lines {
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: calc(8 * var(--u));
+    font-size: calc(24 * var(--u));
+    line-height: 1.2;
+    color: var(--text);
+    overflow: hidden;
+  }.onair-root .transcript-line {
+    flex: 0 0 auto;
+    height: calc(50 * var(--u));
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 calc(16 * var(--u));
+    border-radius: calc(14 * var(--u));
+    border: 1px solid var(--line);
+    background: var(--surface);
+    overflow: hidden;
+  }.onair-root .transcript-line > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+  }.onair-root .transcript-line:last-child {
+    opacity: 0.4;
+  }.onair-root .bars-grid {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: calc(8 * var(--u));
+    padding: calc(14 * var(--u));
+    border-radius: calc(14 * var(--u));
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }.onair-root .sim-bar {
+    flex: 1;
+    border-radius: calc(6 * var(--u)) calc(6 * var(--u)) 0 0;
+    background: var(--gold);
+    min-height: calc(8 * var(--u));
+  }/* Cinema Intermission Station ID Slate (Visual Only) */.onair-root .slate-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--gold);
+    border-radius: calc(20 * var(--u));
+    background: #0b0e18;
+    gap: calc(16 * var(--u));
+    text-align: center;
+  }.onair-root .slate-kicker {
+    font-size: calc(22 * var(--u));
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 700;
+  }.onair-root .slate-title {
+    font-size: calc(56 * var(--u));
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }.onair-root .blend-overlay {
+    display: flex;
+    align-items: center;
+    gap: calc(8 * var(--u));
+  }/* A3 RIGHT COLUMN MARQUEE POSTERS (V3: larger title + 2-4 lines vertically balanced) */@keyframes panelFadeIn {from { opacity: 0.25; }to { opacity: 1; }
+  }.onair-root .frame-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: calc(12 * var(--u)) calc(16 * var(--u));
+    border-radius: calc(16 * var(--u));
+    background: var(--surface-glass);
+    gap: calc(6 * var(--u));
+  }.onair-root .frame-panel.panel-fade {
+    animation: panelFadeIn 250ms ease-out;
+  }.onair-root .panel-hdr {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: calc(8 * var(--u));
+    border-bottom: 1px solid var(--line);
+    padding-bottom: calc(5 * var(--u));
+    flex-shrink: 0;
+  }.onair-root .panel-title {
+    font-size: calc(28 * var(--u));
+    font-weight: 800;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }.onair-root .panel-countdown {
+    font-variant-numeric: tabular-nums;
+    font-size: calc(20 * var(--u));
+    font-weight: 700;
+    color: var(--gold);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }.onair-root .panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: calc(6 * var(--u));
+  }.onair-root .panel-lines {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: calc(4 * var(--u));
+    font-size: calc(25 * var(--u));
+    line-height: 1.22;
+    color: var(--text);
+    overflow: hidden;
+  }.onair-root .panel-line-item {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }.onair-root .panel-tags {
+    display: flex;
+    align-items: center;
+    gap: calc(6 * var(--u));
+    flex-shrink: 0;
+  }/* A4 LOWER THIRD (3 PILLS: NOW | NEXT | LATER) */.onair-root .frame-lower-third {
+    display: flex;
+    align-items: center;
+    padding: 0 calc(16 * var(--u));
+    background: rgba(22, 27, 43, 0.90);
+    border-radius: calc(14 * var(--u));
+    overflow: hidden;
+  }.onair-root .lt-pills {
+    display: flex;
+    align-items: center;
+    gap: calc(12 * var(--u));
+    flex: 1;
+    min-width: 0;
+  }.onair-root .lt-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(8 * var(--u));
+    padding: calc(6 * var(--u)) calc(16 * var(--u));
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(11, 14, 24, 0.68);
+    font-size: calc(24 * var(--u));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+  }.onair-root .lt-pill.lt-now {
+    border-color: var(--gold);
+    background: var(--gold-soft);
+  }.onair-root .lt-pill strong {
+    color: var(--gold);
+    font-size: calc(18 * var(--u));
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }.onair-root .lt-pill span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }/* A5 TICKER (V4: fixed left HEADLINES slot + dedicated overflow:hidden viewport to the right) */.onair-root .frame-ticker {
+    display: flex;
+    align-items: center;
+    padding: 0 calc(14 * var(--u));
+    background: rgba(11, 14, 24, 0.94);
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    border-top: 1px solid var(--line);
+    gap: calc(14 * var(--u));
+    overflow: hidden;
+  }.onair-root .ticker-label {
+    flex-shrink: 0;
+    z-index: 2;
+    font-family: var(--font-mono);
+    font-size: calc(18 * var(--u));
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    background: var(--gold);
+    border-radius: 999px;
+    padding: calc(3 * var(--u)) calc(14 * var(--u));
+  }.onair-root .ticker-viewport {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }.onair-root .ticker-track {
+    display: inline-block;
+    white-space: nowrap;
+    font-size: calc(22 * var(--u));
+    font-weight: 500;
+    color: var(--text);
+  }/* A6 CAMERA SAFE ZONE (DASHED GOLD) */.onair-root .frame-cam {
+    position: absolute;
+    border: 2px dashed var(--gold);
+    border-radius: calc(16 * var(--u));
+    background: rgba(243, 193, 90, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(6 * var(--u));
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: calc(28 * var(--u));
+    color: var(--gold);
+    pointer-events: none;
+  }/* A7 START GATE */.onair-root .gate-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(11, 14, 24, 0.86);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }.onair-root .gate-card {
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-radius: calc(22 * var(--u));
+    padding: calc(32 * var(--u)) calc(44 * var(--u));
+    text-align: center;
+    max-width: calc(620 * var(--u));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: calc(18 * var(--u));
+  }.onair-root .gate-card h2 { font-size: calc(32 * var(--u)); color: var(--text); }.onair-root .gate-card p { font-size: calc(22 * var(--u)); color: var(--muted); }.onair-root .gate-card button {
+    font-size: calc(24 * var(--u));
+    padding: calc(12 * var(--u)) calc(30 * var(--u));
+  }
+  .onair-root .clean-exit-btn {
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+    position: fixed;
+    top: 7%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    background: var(--surface-glass);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .onair-root .clean-exit-btn.reveal { opacity: 1; pointer-events: auto; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .onair-root .on-air-dot.live,
+    .onair-root .frame-panel.panel-fade { animation: none !important; }
+    .onair-root .progress-fill { transition: none !important; }
+  }
+
+/* ---------- Page wrapper ---------- */
+.onair-root { color: var(--text); font-family: var(--font-sans); width: 100%; }
+.onair-root * { box-sizing: border-box; }
+.onair-root .screen-shell { width: 100%; max-width: 1920px; margin: 0 auto; }
+.onair-root.clean-view { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 2147483000; background: var(--ink); display: flex; align-items: center; justify-content: center; }
+.onair-root.clean-view.hide-cursor { cursor: none; }
+.onair-root.clean-view .screen-shell { width: min(100vw, calc(100vh * 16 / 9)); max-width: none; border: none; border-radius: 0; }
+.onair-root .onair-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 auto 10px; max-width: 1920px; font-size: 13px; color: var(--muted); }
+.onair-root .onair-bar button, .onair-root .gate-card button { cursor: pointer; background: var(--surface-elev); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font: inherit; }
+.onair-root .onair-bar button:hover { border-color: var(--gold); }
+.onair-root .onair-bar select { background: var(--surface-elev); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font: inherit; }
+.onair-root .onair-note { margin: 0 auto 10px; max-width: 1920px; padding: 10px 14px; border: 1px solid var(--rose); background: var(--rose-soft); border-radius: 12px; font-size: 14px; }
+.onair-root .onair-debug { margin: 10px auto 0; max-width: 1920px; font: 12px/1.45 var(--font-mono); color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; white-space: pre-wrap; }
+
+/* ---------- Real-page display rules (Revision 2 audit) ---------- */
+.onair-root .cover-box { width: 48%; max-width: calc(280 * var(--u)); padding: 0; overflow: hidden; }
+.onair-root .cover-box > div { width: 100%; height: 100%; }
+.onair-root .show-title.fit-1 { font-size: calc(60 * var(--u)); }
+.onair-root .show-title.fit-2 { font-size: calc(48 * var(--u)); }
+.onair-root .show-title.fit-3 { font-size: calc(40 * var(--u)); }
+.onair-root .episode-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: clip; }
+.onair-root .transcript-line.two-line { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; font-size: calc(21 * var(--u)); }
+.onair-root .transcript-line.two-line > span { white-space: nowrap; }
+.onair-root .transcript-line.two-line > span.sub { color: var(--muted); font-size: calc(17 * var(--u)); }
+.onair-root .transcript-line.single { font-size: calc(21 * var(--u)); }
+.onair-root .progress-fill { transition: none; }
+
+.onair-root .ticker-track.onair-ticker { position: static; display: inline-block; white-space: nowrap; transform: none; animation: onairTicker 60s linear infinite; }
+@keyframes onairTicker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .onair-root .ticker-track.onair-ticker { animation-duration: 240s !important; } }
+.onair-root.clean-view .onair-debug { position: fixed; left: 0; bottom: 0; max-width: 40vw; z-index: 2; opacity: .85; }
+.onair-root .onair-spectrum { width: 100%; margin-top: calc(22 * var(--u)); }
+.onair-root .onair-spectrum canvas { display: block; width: 100%; height: calc(84 * var(--u)); }
+.onair-root .onair-spectrum-note { min-height: calc(26 * var(--u)); font-size: calc(18 * var(--u)); color: var(--muted); text-align: center; margin-top: calc(6 * var(--u)); }
+.onair-root .hero-stack { width: 100%; }
+
+.onair-root .transcript-line.has-art { flex-direction: row; align-items: center; gap: calc(10 * var(--u)); padding-left: calc(6 * var(--u)); }
+.onair-root .row-art { width: calc(40 * var(--u)); height: calc(40 * var(--u)); border-radius: calc(6 * var(--u)); object-fit: cover; flex-shrink: 0; }
+.onair-root .row-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.onair-root .row-text > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.onair-root .row-text > span.sub { color: var(--muted); font-size: calc(17 * var(--u)); }
+
+/* From the Archive · On This Day (carousel, one real Archive.org item at a time; the item is a link that opens a new tab) */
+.onair-root .arch-lines { justify-content: stretch; align-items: stretch; }
+.onair-root .arch-item { display: flex; align-items: center; gap: calc(12 * var(--u)); width: 100%; min-height: 0; color: inherit; text-decoration: none; animation: arch-in .45s ease both; cursor: pointer; position: relative; }
+.onair-root .arch-item:hover .arch-title, .onair-root .arch-item:focus-visible .arch-title { text-decoration: underline; }
+.onair-root .arch-item:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+.onair-root .arch-static { cursor: default; }
+.onair-root .arch-thumb { flex: 0 0 auto; width: calc(64 * var(--u)); height: calc(64 * var(--u)); object-fit: cover; border-radius: calc(6 * var(--u)); background: rgba(255,255,255,.06); }
+.onair-root .arch-item.compact .arch-thumb { width: calc(44 * var(--u)); height: calc(44 * var(--u)); }
+.onair-root .arch-text { display: flex; flex-direction: column; gap: calc(2 * var(--u)); min-width: 0; flex: 1; }
+.onair-root .arch-meta { font-family: var(--font-mono); font-size: .62em; letter-spacing: .08em; color: var(--gold); }
+.onair-root .arch-meta b { font-size: 1.15em; }
+.onair-root .arch-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; white-space: normal; line-height: 1.18; font-size: .82em; }
+.onair-root .arch-item.compact .arch-title { -webkit-line-clamp: 2; font-size: .75em; }
+.onair-root .arch-col { font-size: .55em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.onair-root .arch-count { position: absolute; top: 0; right: 0; font-family: var(--font-mono); font-size: .5em; color: var(--muted); }
+@keyframes arch-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .onair-root .arch-item { animation: none; } }
+
+/* Build 13: panel carousel (Headlines, Digest): one full item at a time, wrapped, never ellipsised. */
+.onair-root .pc-lines { justify-content: center; overflow: hidden; }
+.onair-root .pc-item { display: flex; align-items: flex-start; gap: calc(8 * var(--u)); animation: pcIn 350ms ease-out; min-height: 0; }
+.onair-root .pc-text { flex: 1; min-width: 0; overflow-wrap: anywhere; white-space: normal; line-height: 1.2; }
+.onair-root .pc-s0 .pc-text { font-size: 1em; }
+.onair-root .pc-s1 .pc-text { font-size: 0.92em; }
+.onair-root .pc-s2 .pc-text { font-size: 0.82em; }
+.onair-root .pc-s3 .pc-text { font-size: 0.72em; }
+.onair-root .pc-count { flex-shrink: 0; font-size: 0.7em; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+@keyframes pcIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .onair-root .pc-item { animation: none; } }
+
+/* Build 14: the hero card (cover + spectrum) must fit its box in every camera-corner layout: the art shrinks instead of being clipped. */
+.onair-root .stage-hero-center { overflow: hidden; }
+.onair-root .hero-stack { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.onair-root .hero-stack .cover-row { flex: 1 1 0; min-height: 0; }
+.onair-root .hero-stack .cover-box { height: 100%; width: auto; max-width: 48%; }
+.onair-root .hero-stack .onair-spectrum { flex: 0 0 auto; }
+.onair-root .hero-stack .cover-row { align-items: flex-start; }
+.onair-root .hero-stack .meta-col { max-height: 100%; overflow: hidden; }
+.onair-root .hero-stack .onair-spectrum { margin-top: calc(12 * var(--u)); }
+.onair-root .hero-stack .onair-spectrum canvas { height: calc(56 * var(--u)); }
+.onair-root .hero-stack .onair-spectrum-note { min-height: calc(20 * var(--u)); margin-top: calc(4 * var(--u)); }
+.onair-root .hero-stack .show-title { font-size: calc(46 * var(--u)); line-height: 1.1; padding-bottom: 0.08em; }
+.onair-root .hero-stack .episode-title { font-size: calc(26 * var(--u)); }
+
+/* Build 16: video picture (mirrored from the on-air deck) in the big card and the CAM box; falls back to art / news slate. */
+.onair-root .dp-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.onair-root .dp-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; background: #000; }
+.onair-root .dp-fallback { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(8 * var(--u)); min-height: 0; }
+.onair-root .cover-box { overflow: hidden; }
+.onair-root .frame-cam .dp-wrap { border-radius: inherit; overflow: hidden; }
+.onair-root .cam-slate { width: 100%; padding: calc(8 * var(--u)); display: flex; flex-direction: column; gap: calc(6 * var(--u)); font-family: var(--font-sans); font-size: calc(22 * var(--u)); font-weight: 600; line-height: 1.2; color: var(--text); text-align: left; overflow: hidden; }
+
+/* Build 17: when the on-air file has a picture, the cover box becomes 16:9 (wider, no black bars above/below). */
+.onair-root .hero-stack .cover-box:has(.dp-wrap[data-has-picture="yes"]),
+.onair-root .cover-row .cover-box:has(.dp-wrap[data-has-picture="yes"]) { aspect-ratio: 16 / 9; height: auto; max-height: 100%; width: 52%; max-width: calc(480 * var(--u)); }

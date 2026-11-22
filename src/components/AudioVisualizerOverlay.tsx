@@ -57,6 +57,8 @@ interface OverlayProps {
   style?: "solid" | "transparent" | "semi-transparent" | React.CSSProperties;
   variant?: "solid" | "transparent" | "semi-transparent";
   styleVariant?: "solid" | "transparent" | "semi-transparent";
+  /** Bar colour: "gold" for Classic Hits 109, otherwise the default blue. */
+  palette?: "default" | "gold";
 }
 
 /**
@@ -64,7 +66,7 @@ interface OverlayProps {
  * The requestAnimationFrame loop runs only while enabled, the tab is visible and the canvas is on screen;
  * otherwise it is cancelled and the canvas cleared.
  */
-export function AudioVisualizerOverlay({ analyser, enabled, mode, style, variant, styleVariant }: OverlayProps) {
+export function AudioVisualizerOverlay({ analyser, enabled, mode, style, variant, styleVariant, palette = "default" }: OverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [onScreen, setOnScreen] = useState(true);
   const [tabVisible, setTabVisible] = useState(() => typeof document === "undefined" || document.visibilityState !== "hidden");
@@ -186,8 +188,8 @@ export function AudioVisualizerOverlay({ analyser, enabled, mode, style, variant
       const bars = binFrequencies(data, OVERLAY_BAR_COUNT);
       clear();
       const grad = ctx.createLinearGradient(0, canvas.height, 0, 0);
-      grad.addColorStop(0, `rgba(14,165,233,${alphaBottom})`);
-      grad.addColorStop(1, `rgba(56,189,248,${alphaTop})`);
+      grad.addColorStop(0, palette === "gold" ? `rgba(230,161,59,${alphaBottom})` : `rgba(14,165,233,${alphaBottom})`);
+      grad.addColorStop(1, palette === "gold" ? `rgba(255,209,117,${alphaTop})` : `rgba(56,189,248,${alphaTop})`);
       ctx.fillStyle = grad;
       const bw = canvas.width / OVERLAY_BAR_COUNT;
       for (let i = 0; i < OVERLAY_BAR_COUNT; i += 1) {
@@ -198,7 +200,7 @@ export function AudioVisualizerOverlay({ analyser, enabled, mode, style, variant
     };
     raf = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(raf); ro?.disconnect(); clear(); };
-  }, [run, analyser, mode, isSolid]);
+  }, [run, analyser, mode, isSolid, palette]);
 
   const videoOverlayStyle: React.CSSProperties = {
     position: controlsBottom !== null ? "absolute" : "relative",

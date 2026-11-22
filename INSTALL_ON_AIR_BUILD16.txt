@@ -1,0 +1,10 @@
+ON AIR BUILD 16 - video picture. Goes on top of Builds 13, 14, 15. Copy 4 files, publish:
+  src/onair/DeckPicture.tsx     (new)
+  src/onair/OnAirPage.tsx       (big card + CAM box use DeckPicture; also contains Build 13 carousel wiring)
+  src/onair/useOnAirPlayout.ts  (decks are <video> elements instead of Audio; new activeVideo(); nothing else in the engine/crossfade touched)
+  src/onair/onair.css           (includes Build 14 + Build 16 styles, replaces the Build 14 copy)
+
+Behaviour: if the on-air file has video (mp4 clips, cable news, Archive movies) its picture shows in the CAM box AND in the big cover square (letterboxed, never stretched). Audio-only files (mp3, radio, podcasts) show the cover art in the big card and a small NEWS headline slate in the CAM box (or the CAM label if there are no fresh headlines).
+Audio is unchanged: the video elements are never moved, only mirrored to canvases.
+Check after publish: play an mp4 filler (CNN / Fox clip) and look for the picture in the CAM corner (turn Camera corner on) and the big card.
+Not in this build: description line under On This Day headlines.

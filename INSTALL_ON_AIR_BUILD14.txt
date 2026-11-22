@@ -1,0 +1,6 @@
+ON AIR BUILD 14 - drop-in (on top of Build 13). Copy 2 files, publish:
+  src/onair/onair.css
+  src/onair/panelCarouselLogic.ts
+Fixes: (1) carousel text no longer shrinks as hard (full size up to 90 chars, then 92% / 82% / 72%); (2) the album art + spectrum card now fits its box in every camera-corner layout, so the art is no longer clipped at the top when the camera is TL/TR; spectrum is slightly shorter.
+Known edge: a song title that wraps to 2 long lines in a short hero box (camera corner on, small window) can still lose its second line's lower half. One-line titles fit.
+Not in this build: video/camera, the visualizer during podcasts, early audio ramp.

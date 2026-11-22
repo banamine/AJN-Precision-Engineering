@@ -5,7 +5,7 @@ import { createProgressWatchdog } from "./utils/progressWatchdog";
 import { bufferGaugeMetadata, createBufferGauge, type BufferGaugeSnapshot } from "./utils/bufferGauge";
 import { playerKeyAction, seekDelta } from "./utils/playerKeys";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { bridgeSrc, corsModeFor, NO_METER_MARK, RESOLVED_MARK, podcastAllowsMeter, liveRadioAllowsMeter } from "./utils/mediaRoute";
+import { bridgeSrc, corsModeFor, NO_METER_MARK, RESOLVED_MARK, podcastAllowsMeter, podcastMeterVia, liveRadioAllowsMeter } from "./utils/mediaRoute";
 import Hls from "hls.js";
 import { getBufferSamples, reportBufferSample, reportTelemetry } from "./telemetry";
 import { NowPlayingMedia, MediaType } from "./types";
@@ -134,7 +134,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [statusText, setStatusText] = useState("Loading…");
-  const [activeSrc, setActiveSrc] = useState(() => bridgeSrc(src));
+  const [activeSrc, setActiveSrc] = useState(() => bridgeSrc(src, nowPlaying?.programId));
   const [resumePosition, setResumePosition] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [resumePromptFading, setResumePromptFading] = useState(false);
@@ -345,7 +345,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       asked = true;
       void resolveNext().then((n) => {
         if (!live || !n || n.mediaType !== "audio") return;
-        const nextSrc = bridgeSrc(n.src);
+        const nextSrc = bridgeSrc(n.src, n.programId);
         if (!nextSrc || nextSrc === activeSrc || /\.m3u8(\?|$)/i.test(nextSrc) || nextSrc.startsWith("/api/hls/")) return;
         disposePreload();
         const el = new Audio();
@@ -381,7 +381,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   }, [activeSrc, isHls, isVideo, mediaType, nowPlaying?.channelId, nowPlaying?.guideId, nowPlaying?.programId, resolveNext]);
 
   useEffect(() => {
-    setActiveSrc(bridgeSrc(src));
+    setActiveSrc(bridgeSrc(src, nowPlayingRef.current?.programId));
     setStatusText("Loading…");
     setIsPlaying(false);
     setResumePosition(null);
@@ -749,6 +749,23 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       }
       // A CORS-mode load of a verified podcast failed (a tracker hop dropped its CORS headers): play the same file
       // natively once. The signal meter then shows its honest "no signal" state; nothing is faked.
+      // A tracker hop that sends no CORS headers blocks the meter while the final CDN allows it: walk the chain on the server
+      // (every tracker is still hit) and play the final URL in CORS mode. Only for feeds probed as "resolve".
+      if (err?.code === 4 && media.crossOrigin && activeSrc && activeSrc.startsWith("https://") && !activeSrc.includes(NO_METER_MARK) && !activeSrc.includes(RESOLVED_MARK)
+          && podcastMeterVia(nowPlayingRef.current?.programId) === "resolve") {
+        setStatusText("Loading… (resolving the redirect chain so the signal meter can read it)");
+        try {
+          const r = await fetch(`/api/podcast/resolve?url=${encodeURIComponent(activeSrc.split("#")[0])}`);
+          if (r.ok && mediaRef.current === media) {
+            const body = await r.json();
+            if (typeof body?.url === "string" && body.url.startsWith("https://")) {
+              reportTelemetry({ event: "playback.podcast_resolved", ...eventMeta(), resolvedHost: new URL(body.url).hostname });
+              setActiveSrc(`${body.url}${RESOLVED_MARK}`);
+              return;
+            }
+          }
+        } catch { /* fall through to the no-meter retry below */ }
+      }
       if (err?.code === 4 && media.crossOrigin && activeSrc && !activeSrc.includes(NO_METER_MARK) && (podcastAllowsMeter(nowPlayingRef.current?.programId) || liveRadioAllowsMeter(nowPlayingRef.current?.programId))) {
         reportTelemetry({ event: "playback.cors_fallback", ...eventMeta() });
         setStatusText("Loading… (signal meter unavailable for this file)");

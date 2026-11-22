@@ -1,0 +1,13 @@
+ON AIR BUILD 13 - drop-in (base: your 10:05 AM Nov 22 export, Build 12 already in)
+
+Copy these 7 files over the project at the same paths, then publish:
+  package.json                      (adds one test to test:schedule)
+  src/onair/engine.js               (pickPanels only: while Panel A is locked to the Show card, panels are spread over lanes B-D so Headlines / On this day are no longer parked in the hidden lane)
+  src/onair/OnAirPage.tsx           (Headlines + Digest use the new carousel; Headlines now up to 8 items)
+  src/onair/onair.css               (carousel styles; other panel lines now wrap instead of "...")
+  src/onair/PanelCarousel.tsx       (new)
+  src/onair/panelCarouselLogic.ts   (new)
+  src/onair/PanelCarousel.test.ts   (new)
+
+What you should see: Headlines and Digest panels show ONE full item at a time (no "..."), counter n/N, text steps down in size for long items and splits into pages if very long. "From the Library - On This Day" can now appear in Morning too (needs /api/onair/on-this-day to be ok).
+NOT in this build: visualizer fix, images, video/camera, early audio ramp.

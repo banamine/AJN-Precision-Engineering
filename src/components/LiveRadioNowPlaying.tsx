@@ -14,7 +14,7 @@ export function LiveRadioNowPlaying({ stationId, logoUrl }: { stationId: string 
   else if (np.state === "none") { line1 = "No song right now"; line2 = "Talk, news or ad break"; }
   else { line1 = "Song info unavailable"; line2 = np.reason ?? ""; }
   return (
-    <div data-testid="live-radio-nowplaying" data-state={np.state} className="shrink-0 rounded-md border border-neutral-700/80 bg-neutral-900/80 p-1.5">
+    <div data-testid="live-radio-nowplaying" data-state={np.state} className="shrink-0 rounded-md border border-white/10 bg-black/20 p-1.5 backdrop-blur-sm [text-shadow:0_1px_3px_rgba(0,0,0,.85)]">
     <div className="flex items-center gap-2">
       <div className="h-10 w-10 shrink-0 overflow-hidden rounded bg-neutral-800">
         {art ? <img src={art} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={() => c?.artUrl && setArtFailed(c.artUrl)} />
@@ -28,7 +28,7 @@ export function LiveRadioNowPlaying({ stationId, logoUrl }: { stationId: string 
       </div>
     </div>
     {np.recent.length > 0 && (
-      <details open data-testid="live-radio-recent" className="mt-1.5 border-t border-neutral-800 pt-1">
+      <details open data-testid="live-radio-recent" className="mt-1.5 border-t border-white/10 pt-1">
         <summary className="cursor-pointer select-none text-[10px] uppercase tracking-wide text-neutral-400">Recently played</summary>
         <ul className="m-0 mt-1 list-none space-y-0.5 p-0">
           {np.recent.map((r, i) => (

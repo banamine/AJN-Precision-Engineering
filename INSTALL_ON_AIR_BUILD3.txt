@@ -1,0 +1,3 @@
+AJN On Air - Build 3 (2 files, unzip over project root, replaces the Build 2 versions)
+Start button no longer fails silently: any error inside Start is caught and shown in red on the start screen and in the debug log (add &debug=1).
+Also clamps the starting segment index so a run of show that does not cover "now" cannot crash Start.

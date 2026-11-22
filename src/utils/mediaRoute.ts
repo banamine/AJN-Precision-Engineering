@@ -15,10 +15,14 @@ export const AJN_PROXY_HOSTS = ["archive.alexjoneslive.com", "www.alexjoneslive.
 /** Hosts verified to send Access-Control-Allow-Origin: * (live AJN streams). */
 export const CORS_HOSTS = ["stream.alexjones.media"];
 
-export function bridgeSrc(src: string | undefined): string | undefined {
+export function bridgeSrc(src: string | undefined, programId?: string): string | undefined {
   if (!src) return src;
   try {
     const u = new URL(src);
+    // Podcast hosts whose audio can only be read through our own origin (no CORS on the final file host).
+    if (u.protocol === "https:" && podcastMeterVia(programId) === "proxy" && !src.includes(NO_METER_MARK)) {
+      return `/api/podcast/proxy?url=${encodeURIComponent(src.split("#")[0])}`;
+    }
     // Pluto playlists refuse other sites; segments/keys don't. Playlists only.
     if (u.protocol === "https:" && (u.hostname === "jmp2.uk" || u.hostname === "pluto.tv" || u.hostname.endsWith(".pluto.tv"))) {
       return `/api/hls/playlist?url=${encodeURIComponent(src)}`;
@@ -36,6 +40,15 @@ export const NO_METER_MARK = "#nometer";
 export const RESOLVED_MARK = "#resolved";
 const METER_PODCAST_PREFIXES = ((podcastSources as { sources: Array<{ id: string; enabled: boolean; corsVerified?: boolean }> }).sources)
   .filter((p) => p.enabled && p.corsVerified).map((p) => `pod-${p.id}-`);
+/** How a flagged podcast reaches the signal meter: "direct" (every hop allows CORS), "resolve" (a tracker hop blocks it: the server walks
+ *  the chain and the final CDN is played directly), "proxy" (the final file host blocks it: bounded slices through /api/podcast/proxy). */
+const METER_VIA = new Map<string, "resolve" | "proxy">(((podcastSources as { sources: Array<{ id: string; enabled: boolean; meterVia?: string }> }).sources)
+  .filter((p) => p.enabled && (p.meterVia === "resolve" || p.meterVia === "proxy")).map((p) => [`pod-${p.id}-`, p.meterVia as "resolve" | "proxy"]));
+export function podcastMeterVia(programId?: string): "direct" | "resolve" | "proxy" | undefined {
+  if (!podcastAllowsMeter(programId)) return undefined;
+  for (const [prefix, via] of METER_VIA) if (programId!.startsWith(prefix)) return via;
+  return "direct";
+}
 /** True for podcast programs whose enclosure chain was verified to allow CORS-mode playback. */
 export function podcastAllowsMeter(programId?: string): boolean {
   return Boolean(programId) && METER_PODCAST_PREFIXES.some((x) => programId!.startsWith(x));

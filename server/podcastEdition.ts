@@ -32,7 +32,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 export function createEditionService(overrides: Partial<EditionDeps> = {}) {
   const d: EditionDeps = { ...DEFAULTS, ...overrides };
   const rules = showRulesFromSources(d.sources.filter((s) => s.enabled) as unknown as DailySourceConfig[]);
-  let built: { dateKey: string; edition: Edition; revision: string; fetchedAt: string; degraded: boolean; staleFeeds: string[] } | null = null;
+  let built: { dateKey: string; edition: Edition; revision: string; fetchedAt: string; degraded: boolean; staleFeeds: string[]; premature: boolean } | null = null;
   let refresh: { dateKey: string; startedMs: number; done: boolean; failed: Set<string>; promise: Promise<void> } | null = null;
   const probed = new Map<string, number | null>();
 
@@ -63,6 +63,7 @@ export function createEditionService(overrides: Partial<EditionDeps> = {}) {
       for (const e of st.episodes) {
         if (seen.has(e.guid)) continue; seen.add(e.guid);
         const fe: FeedEpisode = { guid: e.guid, programId: `pod-${rule.id}-${fnv(e.guid)}`, title: e.title, src: e.url, publishedMs: Number.isFinite(e.publishedAt) ? e.publishedAt : null };
+        const art = e.imageUrl ?? st.imageUrl; if (art && /^https:\/\//i.test(art)) fe.artUrl = art;
         if (e.durationSeconds) { fe.durationSeconds = e.durationSeconds; fe.durationSource = 'rss'; }
         else if (probed.get(e.guid)) { fe.durationSeconds = probed.get(e.guid)!; fe.durationSource = 'probed'; }
         else fe.durationEstimated = true;
@@ -82,25 +83,29 @@ export function createEditionService(overrides: Partial<EditionDeps> = {}) {
   }
 
   const counts = (id: string): boolean => d.sources.find((x) => x.id === id)?.dailyMode !== 'exclude'; // excluded shows never make the edition degraded
-  async function build(nowMs: number, degradedIn: boolean, staleIn: string[]) {
+  async function build(nowMs: number, degradedIn: boolean, staleIn: string[], premature = false) {
     const staleFeeds = staleIn.filter(counts); const degraded = degradedIn && staleFeeds.length > 0;
     let feeds = feedsFromStates(nowMs);
     await probeMissing(feeds, nowMs);
     feeds = feedsFromStates(nowMs);
     const edition = buildEdition(feeds, nowMs);
-    built = { dateKey: edition.dateKey, edition, revision: feedRevision(feeds, nowMs), fetchedAt: new Date().toISOString(), degraded, staleFeeds };
+    built = { dateKey: edition.dateKey, edition, revision: feedRevision(feeds, nowMs), fetchedAt: new Date().toISOString(), degraded, staleFeeds, premature };
   }
 
   /** The edition for the Denver day containing nowMs. Never throws. */
   async function get(nowMs: number = Date.now()): Promise<EditionResponse> {
     const dateKey = denverDateKey(nowMs); const C = denverMidnight(nowMs, 0);
-    if (built && built.dateKey === dateKey) return respond(false);
+    if (built && built.dateKey === dateKey) {
+      // A degraded edition built while the feed refresh was still running (e.g. right after a server restart, from an empty cache) is replaced once, when that refresh completes.
+      if (built.premature && refresh && refresh.dateKey === dateKey && refresh.done) await build(nowMs, refresh.failed.size > 0, [...refresh.failed]);
+      return respond(false);
+    }
     if (!refresh || refresh.dateKey !== dateKey) startRefresh(dateKey, Math.max(nowMs, C));
     const r = refresh!;
     if (r.done) { await build(nowMs, r.failed.size > 0, [...r.failed]); return respond(false); }
     if (nowMs - C >= d.degradedAfterMs) {
       const stale = d.sources.filter((s) => s.enabled && (!d.states().find((x) => x.source.id === s.id) || Date.parse(d.states().find((x) => x.source.id === s.id)!.fetchedAt) < C)).map((s) => s.id);
-      await build(nowMs, true, stale); return respond(true);
+      await build(nowMs, true, stale, true); return respond(true);
     }
     return respond(true, 'building');
   }

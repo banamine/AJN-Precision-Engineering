@@ -11,11 +11,17 @@ import { localHourAt } from './server/scheduleWindow';
 import { LIBRARY_SOURCES, libraryFromChannels } from './server/library';
 import { resolveMoviesClassicChannelAlias } from './server/moviesClassicsSchedule';
 import { liveTvHealthSummary, getAudioLoopRows } from './guideRegistry';
-import { isKnownEnclosure, resolveEnclosure } from './server/podcasts';
+import { isKnownEnclosure, isResolvedFinal, resolveEnclosure } from './server/podcasts';
+import { PODCAST_SOURCES, archivePrograms } from './server/podcasts';
+import { buildFillerPool, type FillerPool } from './server/onairFiller';
+import extraChannelsManifestJson from './src/data/extraChannelsManifest.json';
+import usgovLibraryJson from './src/data/usgovLibrary.json';
+import { buildOnThisDay, denverMMDD, type OnThisDayFeed } from './server/onairArchive';
+import { archiveApiFetch as archiveApiFetchOnAir } from './server/archiveLimiter';
 import { editionService } from './server/podcastEdition';
 import { getLiveRadioStatus, queryLiveRadioStations } from './server/liveRadio';
 import { plutoEpgStats } from './server/sources/plutoEpg';
-import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES } from './server/safeFetch';
+import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES, anyPublicHost } from './server/safeFetch';
 import { proxySliceRange } from './server/proxyRange';
 import { getDigestState } from './server/newsDigest';
 import { unplayableReason } from './server/sources/archiveLinks';
@@ -266,6 +272,37 @@ app.get('/api/podcasts/edition',async(_req,res)=>{
  res.set('Cache-Control','no-store');
  try{return res.json(await editionService.get(process.env.NODE_ENV==='test'&&typeof _req.query.now==='string'&&Number.isFinite(Date.parse(_req.query.now))?Date.parse(_req.query.now):Date.now()));}
  catch{return res.status(500).json({error:'Today\'s podcasts edition unavailable',editionStatus:'building',edition:null});}
+});
+// On Air backfill pool (real news clips, Infowars-family long files, The Quash). Memoized 10 min; a failed build is not cached.
+let onairFillerCache:{at:number;pool:FillerPool}|null=null;
+app.get('/api/onair/filler',async(_req,res)=>{
+ res.set('Cache-Control','no-store');
+ if(onairFillerCache&&Date.now()-onairFillerCache.at<10*60_000)return res.json(onairFillerCache.pool);
+ try{
+  const quash=PODCAST_SOURCES.find((s)=>s.id==='quash');
+  const pool=buildFillerPool({scheduleChannels:visibleScheduleChannels(await cachedSchedule('cable-tv')),manifest:extraChannelsManifestJson as any,quashPrograms:quash?archivePrograms(quash,'audio-podcasts'):[]});
+  if(pool.news.length+pool.long.length+pool.quash.length>0)onairFillerCache={at:Date.now(),pool};
+  return res.json(pool);
+ }catch(e){return res.status(500).json({error:'filler pool unavailable',detail:e instanceof Error?e.message:String(e)});}
+});
+// On Air "From the Archive · On This Day": real usgovernmentmirrors items dated today's Denver month/day in earlier years. Built in the background
+// (about 13 Archive.org queries through the shared limiter), cached for the Denver day. Never reports an empty failure as success.
+let onairArchiveCache:{mmdd:string;feed:OnThisDayFeed}|null=null;
+let onairArchiveBuilding:string|null=null;
+let onairArchiveFail:{mmdd:string;at:number;error:string}|null=null;
+app.get('/api/onair/on-this-day',(_req,res)=>{
+ res.set('Cache-Control','no-store');
+ const {mmdd,year}=denverMMDD(new Date());
+ if(onairArchiveCache&&onairArchiveCache.mmdd===mmdd)return res.json({status:'ok',...onairArchiveCache.feed});
+ if(onairArchiveBuilding===mmdd)return res.status(202).json({status:'building',generatedFor:mmdd,items:[]});
+ if(onairArchiveFail&&onairArchiveFail.mmdd===mmdd&&Date.now()-onairArchiveFail.at<10*60_000)return res.status(502).json({status:'unavailable',generatedFor:mmdd,error:onairArchiveFail.error,items:[]});
+ onairArchiveBuilding=mmdd;
+ void buildOnThisDay({fetchImpl:archiveApiFetchOnAir,lib:usgovLibraryJson.collections,mmdd,thisYear:year}).then((feed)=>{
+  if(feed.count>0||feed.skipped){onairArchiveCache={mmdd,feed};onairArchiveFail=null;}
+  else onairArchiveFail={mmdd,at:Date.now(),error:'Archive.org returned no usable items for this date'};
+ }).catch((e)=>{onairArchiveFail={mmdd,at:Date.now(),error:e instanceof Error?e.message:String(e)};})
+ .finally(()=>{onairArchiveBuilding=null;});
+ return res.status(202).json({status:'building',generatedFor:mmdd,items:[]});
 });
 app.get('/api/schedule',async(req,res)=>{
  res.set('Cache-Control','no-store');
@@ -876,19 +913,17 @@ app.get('/api/archive/proxy', async (req,res)=>{
 // audio bridge/visualizer can't read them directly. Same-origin proxy, fixed
 // host allowlist (no open proxy), bounded 8 MiB slices like the Archive proxy.
 const AJN_PROXY_HOSTS=new Set(['archive.alexjoneslive.com','www.alexjoneslive.com']);
-app.get('/api/ajn/proxy',async(req,res)=>{
-  let target:URL;
-  try{target=new URL(String(req.query.url||''));}catch{return res.status(400).json({error:'invalid url'});}
-  if(target.protocol!=='https:'||target.port||!AJN_PROXY_HOSTS.has(target.hostname))return res.status(403).json({error:'host not allowed'});
+// One bounded-slice pass-through for every third-party media proxy (Cloud Run rejects responses over 32 MiB, so always <= 8 MiB / 206).
+async function pipeBoundedSlice(req:express.Request,res:express.Response,target:URL,allow:(host:string)=>boolean,label:string,ua:string){
   const slice=proxySliceRange(req.headers.range);
   const abort=new AbortController();
   res.on('close',()=>{if(!res.writableFinished)abort.abort();});
   try{
     // Every redirect hop is checked against the allowlist; 60 s bounds one 8 MiB slice.
-    const {res:up}=await safeFetch(target,{allow:(h)=>AJN_PROXY_HOSTS.has(h),timeoutMs:60_000,signal:abort.signal,headers:{'User-Agent':'AJN-Media-Console/AjnProxy',Range:`bytes=${slice.start}-${slice.end}`}});
-    if(!up.ok){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:`AJN media HTTP ${up.status}`,upstreamStatus:up.status});}
+    const {res:up}=await safeFetch(target,{allow,timeoutMs:60_000,signal:abort.signal,headers:{'User-Agent':ua,Range:`bytes=${slice.start}-${slice.end}`}});
+    if(!up.ok){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:`${label} media HTTP ${up.status}`,upstreamStatus:up.status});}
     const ct=up.headers.get('content-type')||'';
-    if(/text\/html/i.test(ct)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:'AJN host returned a web page, not media'});}
+    if(/text\/html/i.test(ct)){await up.body?.cancel().catch(()=>{});return res.status(502).json({error:`${label} host returned a web page, not media`});}
     res.setHeader('Access-Control-Allow-Origin','*');
     res.setHeader('Access-Control-Expose-Headers','Content-Range, Content-Length, Accept-Ranges');
     for(const h of ['content-type','content-length','content-range','etag','last-modified']){const v=up.headers.get(h);if(v)res.setHeader(h,v);}
@@ -899,7 +934,30 @@ app.get('/api/ajn/proxy',async(req,res)=>{
     body.once('error',()=>res.destroy());
     res.once('close',()=>{if(!body.destroyed)body.destroy();});
     return body.pipe(res);
-  }catch(e:any){if(e?.name==='AbortError'||res.headersSent)return;if(e instanceof SafeFetchError&&e.reason==='redirect_blocked')return res.status(502).json({error:'redirected off allowlist',detail:e.message});return res.status(e instanceof SafeFetchError&&e.reason==='timeout'?504:502).json({error:'AJN proxy failure',reason:e?.reason,detail:e?.message});}
+  }catch(e:any){if(e?.name==='AbortError'||res.headersSent)return;if(e instanceof SafeFetchError&&e.reason==='redirect_blocked')return res.status(502).json({error:'redirected off allowlist',detail:e.message});return res.status(e instanceof SafeFetchError&&e.reason==='timeout'?504:502).json({error:`${label} proxy failure`,reason:e?.reason,detail:e?.message});}
+}
+app.get('/api/ajn/proxy',async(req,res)=>{
+  let target:URL;
+  try{target=new URL(String(req.query.url||''));}catch{return res.status(400).json({error:'invalid url'});}
+  if(target.protocol!=='https:'||target.port||!AJN_PROXY_HOSTS.has(target.hostname))return res.status(403).json({error:'host not allowed'});
+  return pipeBoundedSlice(req,res,target,(h)=>AJN_PROXY_HOSTS.has(h),'AJN','AJN-Media-Console/AjnProxy');
+});
+// Podcast files whose host sends no CORS headers (so the signal meter could not read them): same bounded slices, same origin.
+// Only a known enclosure (we published it) or a CDN URL this server resolved from one is fetched; the tracker chain is still walked for the former.
+app.get('/api/podcast/proxy',async(req,res)=>{
+  res.set('Cache-Control','no-store');
+  const raw=String(req.query.url??'');
+  let target:URL;
+  try{
+    let u=raw;
+    if(!isResolvedFinal(u)){
+      if(!isKnownEnclosure(u))return res.status(404).json({error:'Not a known podcast enclosure'});
+      u=(await resolveEnclosure(u)).url;
+    }
+    target=new URL(u);
+  }catch(e:any){if(e instanceof TypeError)return res.status(400).json({error:'invalid url'});console.error('[Podcasts] proxy resolve failed:',e?.message);return res.status(502).json({error:String(e?.message??e)});}
+  if(target.protocol!=='https:')return res.status(403).json({error:'https only'});
+  return pipeBoundedSlice(req,res,target,anyPublicHost,'Podcast','AJN-Precision-Engineering/1.0 (podcast proxy)');
 });
 // Pluto (jmp2.uk → stitcher.pluto.tv) playlists: fetched and rewritten here
 // because the stitcher only allows http://pluto.tv to read them. Text only.

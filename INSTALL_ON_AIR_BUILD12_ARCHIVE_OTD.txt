@@ -1,0 +1,7 @@
+AJN On Air — Build 12: "From the Library · On This Day" panel (real Archive.org items, dated today's Denver month/day)
+Unzip over the project (9 files). Publish. No other steps: the server builds the day's list itself (~10 s after the first request each Denver day).
+Files: package.json (test script only), server.ts (+ /api/onair/on-this-day), server/onairArchive.ts (+ .test.ts), src/data/usgovLibrary.json,
+       src/onair/ArchiveOnThisDay.tsx (new), OnAirPage.tsx, useOnAirData.ts, onair.css.
+Check after publishing:  open  <app>/api/onair/on-this-day  twice, ~10 s apart:  first {"status":"building"}, then {"status":"ok", ... "items":[...]}.
+Then #on-air, press START; the panel appears in the rotation as "From the Library · On This Day" (the app's wording rule turns "Archive" into "Library").
+Behavior: one item at a time (9 s); item = link that opens Archive.org in a NEW tab (audio keeps playing). Missing / building / stale-date / empty / error => the panel is simply not in the rotation.

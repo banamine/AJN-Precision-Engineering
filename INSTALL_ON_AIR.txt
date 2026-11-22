@@ -1,0 +1,5 @@
+AJN On Air page - drop-in build 1
+Unzip over the project root (replaces the 4 existing files, adds src/onair/).
+Open: /#on-air   OBS: /?clean=1&cam=BR#on-air   Debug strip: add &debug=1
+Notes: live-music stall is logged only (no auto failover yet); podcast side shows "Coming up" (transcripts not wired);
+"Classic Hits 109" maps to the /70s stream - confirm; Homepage reel panel disabled (no data).

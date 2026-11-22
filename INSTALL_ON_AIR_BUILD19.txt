@@ -1,0 +1,12 @@
+ON AIR BUILD 19 - consistent loudness. Copy 4 files, publish (goes on top of Builds 13-18):
+  package.json                      (adds the loudness test to test:schedule)
+  src/onair/loudness.ts             (new)
+  src/onair/loudness.test.ts        (new)
+  src/onair/useOnAirPlayout.ts      (measures the on-air deck and scales each source to one target level)
+
+How it works: the analyser tap hears each on-air source before the element volume, so the page measures its real level (RMS, dBFS), remembers it per source (browser localStorage key ajn-onair-levels-v1: one entry per podcast/filler show, one for live music, one for library music), and sets that deck's volume so every source lands near -24 dBFS. The fade shape is unchanged (engine volume / ceiling); only the scale changes. The trim moves at most 4 dB per second, so nothing jumps.
+Limit: browser volume can only be LOWERED (max 1.0), so loud music is pulled down to the level of quiet news; a source quieter than -24 dBFS is left at full volume. Overall loudness will be lower than before: raise the system/speaker volume.
+First time a music block plays it starts from a typical-music guess (-14 dB) and corrects within ~5 s; after that it is remembered.
+Sources the browser cannot read (cross-origin without CORS) cannot be measured and keep the old fixed ceiling.
+To change the target: TARGET_DB in src/onair/loudness.ts (default -24; -20 = louder overall, but loud music then sits closer to the top).
+To forget learned levels: delete the localStorage key ajn-onair-levels-v1.

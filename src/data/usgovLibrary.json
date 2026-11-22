@@ -1,0 +1,257 @@
+{
+ "parent": "usgovernmentmirrors",
+ "collections": [
+  {
+   "identifier": "acch-historic-records",
+   "name": "Augusta County Circuit Court Historic Records"
+  },
+  {
+   "identifier": "acch-immigration-records",
+   "name": "ACCH Immigration Records"
+  },
+  {
+   "identifier": "casolaro",
+   "name": "Danny Casolaro's files and notes"
+  },
+  {
+   "identifier": "ccny-ipsp",
+   "name": "Carnegie International Peace and Security Publications"
+  },
+  {
+   "identifier": "chinadossier",
+   "name": "US Intelligence on China FOIA Results"
+  },
+  {
+   "identifier": "cia-collection",
+   "name": "Central Intelligence Agency collection"
+  },
+  {
+   "identifier": "cia-czech-lessons",
+   "name": "CIA Lessons Learned from Czechoslovakia"
+  },
+  {
+   "identifier": "cia-phoenix",
+   "name": "CIA Phoenix Assassination Program"
+  },
+  {
+   "identifier": "ciareadingroom",
+   "name": "The CIA Reading Room Mirror"
+  },
+  {
+   "identifier": "congressional-research-service",
+   "name": "Congressional Research Service"
+  },
+  {
+   "identifier": "dallas-pd-jfk-documents",
+   "name": "Dallas PD JFK Documents"
+  },
+  {
+   "identifier": "defense-dept",
+   "name": "Department of Defense"
+  },
+  {
+   "identifier": "dticarchive",
+   "name": "Defense Technical Information Archive"
+  },
+  {
+   "identifier": "edwinwalkercollection",
+   "name": "Edwin A. Walker"
+  },
+  {
+   "identifier": "ernie1241_cdsi",
+   "name": "Ernie Lazar FOIA Collection: Custodial Detention Security Index"
+  },
+  {
+   "identifier": "ernie1241_commindexes",
+   "name": "Ernie Lazar FOIA Collection: Communist Indexes"
+  },
+  {
+   "identifier": "ernie1241_cpusa",
+   "name": "Ernie Lazar FOIA Collection: Communist Party of the USA"
+  },
+  {
+   "identifier": "ernie1241_fbiadminexec",
+   "name": "Ernie Lazar FOIA Collection: FBI Admin and Exec Conf"
+  },
+  {
+   "identifier": "ernie1241_fbiemployees",
+   "name": "Ernie Lazar FOIA Collection: FBI Employee FOIA Requests"
+  },
+  {
+   "identifier": "ernie1241_fbiinformants",
+   "name": "Ernie Lazar FOIA Collection: FBI Informants"
+  },
+  {
+   "identifier": "ernie1241_general",
+   "name": "Ernie Lazar FOIA Collection: General Files A-Z"
+  },
+  {
+   "identifier": "ernie1241_hoovermod",
+   "name": "Ernie Lazar FOIA Collection: Hoover, \"Masters of Deceit\""
+  },
+  {
+   "identifier": "ernie1241_jbs",
+   "name": "Ernie Lazar FOIA Collection: John Birch Society"
+  },
+  {
+   "identifier": "ernie1241_xr",
+   "name": "Ernie Lazar FOIA Collection: Extreme Right Groups"
+  },
+  {
+   "identifier": "field-technical-manuals",
+   "name": "Field Manuals and Technical Manuals"
+  },
+  {
+   "identifier": "helms-cia-collection",
+   "name": "Richard Helms (Director of Central Intelligence)"
+  },
+  {
+   "identifier": "interiorbureauofmines",
+   "name": "Mirrored Documents from the Interior Bureau of Mines"
+  },
+  {
+   "identifier": "joint-chiefs",
+   "name": "Joint Chiefs of Staff"
+  },
+  {
+   "identifier": "lansing-council-proceedings",
+   "name": "City of Lansing Council Proceedings"
+  },
+  {
+   "identifier": "lazarfoia",
+   "name": "Ernie Lazar FOIA Collection"
+  },
+  {
+   "identifier": "losangelesbusinessimprovementdistricts",
+   "name": "Los Angeles Business Improvement Districts"
+  },
+  {
+   "identifier": "mkultrafiles",
+   "name": "MKULTRA files"
+  },
+  {
+   "identifier": "NASA_NTRS_Archive",
+   "name": "NASA Network Resource and Training Site"
+  },
+  {
+   "identifier": "national-intelligence-university",
+   "name": "National Intelligence University Publications"
+  },
+  {
+   "identifier": "nationalsecurityarchive",
+   "name": "National Security Internet Archive (NSIA)"
+  },
+  {
+   "identifier": "nationalsecurityarchive-weisberg",
+   "name": "Weisberg Collection on the JFK Assassination"
+  },
+  {
+   "identifier": "ndu-edu",
+   "name": "National Defense University"
+  },
+  {
+   "identifier": "nist-911",
+   "name": "NIST 9/11 Vault"
+  },
+  {
+   "identifier": "nsa-archive",
+   "name": "National Security Agency (NSA) Archive"
+  },
+  {
+   "identifier": "nsa-friedman",
+   "name": "William F. Friedman NSA Collection"
+  },
+  {
+   "identifier": "nsia-911",
+   "name": "September 11 Collection"
+  },
+  {
+   "identifier": "nsia-fbi-files",
+   "name": "FBI Files"
+  },
+  {
+   "identifier": "nsia-inscom",
+   "name": "INSCOM Dossiers"
+  },
+  {
+   "identifier": "nsia-snowden-documents",
+   "name": "Global Surveillance Disclosures"
+  },
+  {
+   "identifier": "nsia-venona",
+   "name": "Venona Documents"
+  },
+  {
+   "identifier": "nsia-vz-energy-corruption",
+   "name": "Venezuela Energy Corruption"
+  },
+  {
+   "identifier": "nsia-whistleblowers",
+   "name": "Whistleblowers"
+  },
+  {
+   "identifier": "nsia_contributions",
+   "name": "Unsorted NSIA Contributions"
+  },
+  {
+   "identifier": "nwcda",
+   "name": "Nazi War Crimes"
+  },
+  {
+   "identifier": "office-strategic-services",
+   "name": "Office of Strategic Services"
+  },
+  {
+   "identifier": "pcdspo",
+   "name": "Presidential Communications Development and Strategic Planning Office"
+  },
+  {
+   "identifier": "project-blue-book",
+   "name": "Project Blue Book"
+  },
+  {
+   "identifier": "secret-white-house-recordings",
+   "name": "Secret White House Recordings"
+  },
+  {
+   "identifier": "stargatefiles",
+   "name": "STARGATE files"
+  },
+  {
+   "identifier": "state-department",
+   "name": "U.S. State Department"
+  },
+  {
+   "identifier": "state-foia-dump",
+   "name": "State Department FOIA Server Dump"
+  },
+  {
+   "identifier": "statedocs_maine",
+   "name": "Maine State Documents"
+  },
+  {
+   "identifier": "strategic-studies-institute",
+   "name": "Strategic Studies Institute"
+  },
+  {
+   "identifier": "thefederalregister",
+   "name": "The Federal Register"
+  },
+  {
+   "identifier": "ufo-files",
+   "name": "UFO Files"
+  },
+  {
+   "identifier": "usaid-documents",
+   "name": "US-AID Documents Mirror"
+  },
+  {
+   "identifier": "usgovernmentsourcecode",
+   "name": "US Government Source Code Repositories"
+  },
+  {
+   "identifier": "wikileakspyfiles",
+   "name": "Spy Files"
+  }
+ ]
+}

@@ -36,7 +36,8 @@ export function useDailyEdition(enabled: boolean, fetchImpl: typeof fetch = fetc
       setError(null); setStale(data.staleFeeds ?? []); setStatus(data.editionStatus ?? 'ok');
       if (!next) return;                                                     // still building: keep what we have
       const cur = adopted.current;
-      if (!cur || next.dateKey > cur.dateKey) {                                // first edition, or a newer Denver date
+      const slotsOf = (e: Edition): number => e.loop.length + e.tail.length;
+      if (!cur || next.dateKey > cur.dateKey || (next.dateKey === cur.dateKey && slotsOf(cur) === 0 && slotsOf(next) > 0)) { // first edition, a newer Denver date, or a real edition replacing an empty one
         adopted.current = next; setEdition(next);
         seenNew.current = new Set(next.shelves.new.map((e) => e.guid)); setNotice(null);
       } else if (next.dateKey === cur.dateKey) {                               // same date: list stays frozen; only the New shelf may grow

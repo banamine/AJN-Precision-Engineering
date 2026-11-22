@@ -12,7 +12,7 @@ import { registerLiveRadioMeter } from '../utils/mediaRoute';
 import { findPersistentMedia } from '../hooks/usePersistentMedia';
 import { SourcePrism3D, type AudioSourceType } from './SourcePrism3D';
 import {
-  DEFAULT_RADIO_PRESETS, RADIO_PRESET_SLOTS, clearRadioPreset, pickAdjacentStation, saveRadioPreset, useRadioPresets,
+  DEFAULT_RADIO_PRESETS, RADIO_PRESET_SLOTS, clearRadioPreset, pickAdjacentStation, presetProgramId, saveRadioPreset, useRadioPresets,
   type RadioPreset, type RadioPresetInput, type RadioPresetMap, type RadioPresetSlot,
 } from '../utils/radioPresets';
 import { getStationTheme } from '../utils/radioAccents';
@@ -248,7 +248,8 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
   const tune = useCallback((p: RadioPreset) => {
     if (p.corsVerified) registerLiveRadioMeter(p.channelId);
     onPresetTuned?.(p.channelId, p.logo);
-    onPlay(p.src, p.title, p.subtitle, 'audio', p.channelId, p.guideId ?? 'audio-podcasts', p.programId);
+    // Canonical live id ("<station>:live:d0"): without it a factory/saved preset carried no ":live:" id, so the player never used CORS mode and the meter read "unavailable".
+    onPlay(p.src, p.title, p.subtitle, 'audio', p.channelId, p.guideId ?? 'audio-podcasts', presetProgramId(p));
   }, [onPlay, onPresetTuned]);
 
   const openBank = useCallback((next: 'presets' | 'recent') => {
@@ -257,7 +258,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
   }, []);
   const tuneRecent = useCallback((r: RecentStation) => {
     onPresetTuned?.(r.channelId, getStationArt(r.channelId));
-    onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId);
+    onPlay(r.src, r.title, r.subtitle, 'audio', r.channelId, r.guideId ?? 'audio-podcasts', r.programId ?? (r.channelId.startsWith('radio:') ? `${r.channelId}:live:d0` : undefined));
   }, [onPlay, onPresetTuned]);
 
   /** Knob / skip keys: step to the previous or next station in the visible bank. Does nothing (and says so) when the bank is empty. */

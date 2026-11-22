@@ -289,10 +289,18 @@ export function isKnownEnclosure(url: string): boolean {
   return false;
 }
 const resolved = new Map<string, { at: number; url: string; hops: string[] }>();
+/** Final CDN URLs this server resolved from known enclosures: the only third-party files /api/podcast/proxy will fetch (kept for the length of an episode). */
+const resolvedFinals = new Map<string, number>();
+const FINAL_TTL_MS = 6 * 60 * 60_000;
+const FINAL_MAX = 500;
+export function isResolvedFinal(url: string): boolean {
+  const at = resolvedFinals.get(url);
+  return at !== undefined && Date.now() - at < FINAL_TTL_MS;
+}
 const RESOLVE_TTL_MS = 5 * 60_000;
 export async function resolveEnclosure(url: string, fetchImpl?: typeof fetch): Promise<{ url: string; hosts: string[] }> {
   const hit = resolved.get(url);
-  if (hit && Date.now() - hit.at < RESOLVE_TTL_MS) return { url: hit.url, hosts: hit.hops };
+  if (hit && Date.now() - hit.at < RESOLVE_TTL_MS) { resolvedFinals.set(hit.url, Date.now()); return { url: hit.url, hosts: hit.hops }; }
   const hosts: string[] = [];
   const { res, finalUrl } = await safeFetch(url, {
     allow: anyPublicHost, timeoutMs: 15_000, maxRedirects: 14, fetchImpl: fetchImpl ?? fetchImplForTests,
@@ -304,5 +312,7 @@ export async function resolveEnclosure(url: string, fetchImpl?: typeof fetch): P
   if (!/^audio\//i.test(ct) && !/octet-stream/i.test(ct)) throw new Error(`enclosure is not audio (${ct || 'no content-type'})`);
   hosts.push(finalUrl.hostname);
   resolved.set(url, { at: Date.now(), url: finalUrl.href, hops: hosts });
+  resolvedFinals.set(finalUrl.href, Date.now());
+  if (resolvedFinals.size > FINAL_MAX) { const oldest = resolvedFinals.keys().next().value; if (oldest !== undefined) resolvedFinals.delete(oldest); }
   return { url: finalUrl.href, hosts };
 }

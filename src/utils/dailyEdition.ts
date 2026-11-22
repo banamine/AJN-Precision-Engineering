@@ -20,6 +20,8 @@ export interface ShowRule {
 export interface FeedEpisode {
   guid: string; programId: string; title: string; src: string;
   publishedMs: number | null; durationSeconds?: number; durationSource?: 'rss' | 'probed'; durationEstimated?: boolean;
+  /** The episode's own cover, else the show's feed cover. Absent when the feed gives none. */
+  artUrl?: string;
 }
 export interface FeedInput {
   rule: ShowRule;
@@ -35,6 +37,7 @@ export interface EditionSlot {
   showId: string; showName: string; channelId: string; programId: string; guid: string; title: string; src: string;
   publishedMs: number | null; durationSeconds: number; durationSource: 'rss' | 'probed';
   startMs: number; endMs: number; label: EditionLabel;
+  artUrl?: string;
 }
 export interface ShelfEpisode {
   showId: string; showName: string; channelId: string; programId: string; guid: string; title: string; src: string;
@@ -191,7 +194,7 @@ export function buildEdition(feeds: readonly FeedInput[], nowMs: number): Editio
   let cursor = startMs;
   const slotOf = (rule: ShowRule, e: Indexed, at: number, label: EditionLabel): EditionSlot => ({
     showId: rule.id, showName: rule.name, channelId: rule.channelId, programId: e.programId, guid: e.guid, title: e.title, src: e.src, publishedMs: e.publishedMs,
-    durationSeconds: e.durationSeconds as number, durationSource: e.durationSource ?? 'rss', startMs: at, endMs: at + Math.round((e.durationSeconds as number) * 1000), label,
+    durationSeconds: e.durationSeconds as number, durationSource: e.durationSource ?? 'rss', ...(e.artUrl ? { artUrl: e.artUrl } : {}), startMs: at, endMs: at + Math.round((e.durationSeconds as number) * 1000), label,
   });
 
   for (const feed of feeds) {

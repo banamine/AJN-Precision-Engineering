@@ -47,6 +47,15 @@ test('a hung refresh: status building, then degraded after C+10 min with the sta
   assert.equal(late.editionStatus, 'degraded'); assert.equal(late.degraded, true); assert.deepEqual(late.staleFeeds.sort(), ['a', 'b']);
   assert.ok(late.edition, 'built from last-good data (empty here), never an exception');
 });
+test('a degraded edition built from an empty cache is replaced once the refresh completes', async () => {
+  const h = harness({ hang: true });
+  await h.svc.get(T0010);
+  const late = await h.svc.get(parseDenverDateTime('2026-11-20 00:11'));
+  assert.equal(late.editionStatus, 'degraded'); assert.equal(late.edition!.loop.length, 0);
+  await new Promise((r) => setTimeout(r, 600));
+  const fixed = await h.svc.get(parseDenverDateTime('2026-11-20 00:12'));
+  assert.deepEqual(fixed.edition!.loop.map((s) => s.showId), ['a', 'b'], 'late feed data now reaches the edition (still flagged degraded: the refresh timed out)');
+});
 test('one feed failing all attempts: edition is built, flagged degraded, failed feed listed', async () => {
   const h = harness({ failB: true });
   await h.svc.get(T0010); await new Promise((r) => setTimeout(r, 30));

@@ -1,0 +1,7 @@
+AJN On Air - Build 7 (3 files, unzip over project root; Builds 5 and 6 stay in place)
+From Gemini's live test (see claude/AJN_On_Air_Gemini_Live_Test_2026-11-22.md):
+1. Start screen asks the server again every 10 s while no podcast edition is playable (was: stranded until a manual reload). Button is now "Check again now".
+2. Live music exit time reads "Exit by HH:MM:SS" / "by HH:MM:SS" until a real song change fixes it (it is only the latest possible time until then).
+3. "Around the clock" times carry a "~" (projection).
+4. Show names drop the feed suffix "(podcast)". Missed shows lists each show once.
+Not changed (checked, by design): bed level at T-19 s is mid 3-second fade-in; prebuffer is 60 s (my test script said 70); block count follows the edition length.

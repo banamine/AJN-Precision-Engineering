@@ -1,0 +1,8 @@
+ON AIR BUILD 15 - early audio ramp. Goes on top of Builds 13 and 14. Copy 2 files, publish:
+  src/onair/engine.js      (contains the Build 13 panel-lane fix too, so use this one, not an older copy)
+  src/onair/runOfShow.ts   (new defaults + 2 optional params)
+
+What changes (podcast -> music): the next music block starts at T-20 s (as before) but now rises SLOWLY from silence to the 25% bed over 12 s, reaching 25% exactly at T-8 s, where the normal 8 s crossfade takes over. Before: jumped to 25% within 3 s. Curve is ease-in (very quiet at first). bedCurve:'linear' gives a straight ramp.
+What changes (music -> podcast): the 6 s fade became a 10 s equal-power crossfade and the incoming podcast starts at 3% instead of 0%.
+To get the OLD behaviour back: bedFadeInSec: 3, musicFadeOutSec: 6, bedCurve: 'linear', podcastInStartPct: 0 in DEFAULT_PARAMS.
+Not in this build: video / camera.

@@ -18,6 +18,7 @@ import {
   CloudSun,
   HelpCircle,
   Clapperboard,
+  RadioTower,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { SuggestInput } from './SuggestInput';
@@ -76,6 +77,7 @@ const MOBILE_MORE_ITEMS: NavItemConfig[] = [
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
   { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
   { id: 'weather', label: 'WEATHER', icon: CloudSun, description: 'Current conditions and 5-day forecast' },
+  { id: 'on-air', label: 'ON AIR', icon: RadioTower, description: 'Daily podcasts and live radio as a broadcast frame' },
 ];
 const VAULT_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[2],
@@ -84,6 +86,7 @@ const VAULT_ITEMS: NavItemConfig[] = [
   { id: 'news-cube', label: 'NEWS CUBE', icon: Box, description: 'Daily News Digest headlines in a six-face cube' },
   { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
   { id: 'weather', label: 'WEATHER', icon: CloudSun, description: 'Current conditions and 5-day forecast' },
+  { id: 'on-air', label: 'ON AIR', icon: RadioTower, description: 'Daily podcasts and live radio as a broadcast frame' },
 ];
 
 const VAULT_GROUPS: { label: string; items: NavItemConfig[] }[] = [
@@ -193,7 +196,7 @@ export function Navigation({
           <nav
             role="navigation"
             aria-label="Primary Destinations"
-            className="hidden md:flex items-center gap-1.5"
+            className="hidden md:flex min-w-0 items-center gap-1"
           >
             {DESKTOP_PRIMARY.map((item) => {
               const Icon = item.icon;
@@ -209,7 +212,7 @@ export function Navigation({
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={item.label}
                   title={item.label}
-                  className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
+                  className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap px-2 2xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
                     isActive
                       ? 'ck-key is-latched'
                       : 'ck-key'
@@ -254,7 +257,7 @@ export function Navigation({
                 aria-current={myLibraryActive ? 'page' : undefined}
                 onClick={(e) => menus.triggerClick('my-library', e)}
                 onKeyDown={(e) => menus.triggerKeyDown('my-library', e)}
-                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap px-3 xl:px-3.5 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ck-key${myLibraryActive ? ' is-latched' : ''}`}
+                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap px-2 2xl:px-3.5 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ck-key${myLibraryActive ? ' is-latched' : ''}`}
               >
                 <Bookmark className={`h-4 w-4 ${myLibraryActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
                 <span className="hidden xl:inline">My Library</span>
@@ -304,7 +307,7 @@ export function Navigation({
                 aria-current={vaultActive ? 'page' : undefined}
                 onClick={(e) => menus.triggerClick('vault', e)}
                 onKeyDown={(e) => menus.triggerKeyDown('vault', e)}
-                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
+                className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-2 2xl:px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ${
                   vaultActive
                     ? 'ajn-nav-item-active'
                     : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100 border border-transparent'
@@ -348,7 +351,7 @@ export function Navigation({
           </nav>
 
           {/* Right Header Utility: Dev Mode Access & Stream Status */}
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 2xl:gap-2">
             <StatusIndicators onPlayProgram={onPlayProgram} />
             {onOpenStartGuide && (
               <button

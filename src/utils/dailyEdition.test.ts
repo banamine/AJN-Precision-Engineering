@@ -194,3 +194,11 @@ test('feedRevision changes when a relevant episode or duration changes, not othe
   const old = feedsFrom(); old.find((f) => f.rule.id === 'truck-n-hustle')!.episodes[0].title = 'changed';
   assert.equal(a, feedRevision(old, T0130), 'an episode older than P2 is not part of the revision');
 });
+
+test('an episode cover (artUrl) is carried onto its edition slot', () => {
+  const feeds = feedsFrom().map((f) => ({ ...f, episodes: f.episodes.map((e) => ({ ...e, artUrl: `https://img.example/${f.rule.id}.jpg` })) }));
+  const ed = buildEdition(feeds, T0130);
+  const slots = [...ed.loop, ...ed.tail];
+  assert.ok(slots.length > 0);
+  for (const sl of slots) assert.equal(sl.artUrl, `https://img.example/${sl.showId}.jpg`);
+});

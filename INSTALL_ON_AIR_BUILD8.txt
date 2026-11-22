@@ -1,0 +1,5 @@
+AJN On Air - Build 8: music spectrum visualizer (4 files, 1 new; unzip over project root; Builds 5-7 stay in place)
+- New src/onair/OnAirSpectrum.tsx: 48 real bars under the song title in the MUSIC view. Bars come only from an AnalyserNode (getByteFrequencyData); no random or canned motion.
+- useOnAirPlayout.ts: AudioContext + analyser created on the Start click; the foreground deck is read with captureStream() (does NOT re-route playback, so audio cannot go silent). Music decks request CORS reading; a station that refuses is retried once without it and keeps playing with the meter off ("Meter unavailable for this source"). No signal for 5 s shows "No signal from this source".
+- Podcasts: not metered (the view only shows the meter in the music stage).
+- Reuses binFrequencies/hasSignal from src/components/AudioVisualizerOverlay (one implementation, per docs/VISUALIZER_CONTRACT.md). Does not touch the player's own audio tap.

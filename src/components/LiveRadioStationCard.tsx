@@ -11,7 +11,7 @@ export function LiveRadioStationCard({ stationId }: { stationId: string | null |
   const where = [s.city, s.region].filter(Boolean).join(", ") || s.country;
   const showLogo = s.logo && broken !== s.id;
   return (
-    <div data-testid="radio-station-card" className="flex shrink-0 items-center gap-3 rounded-md border border-neutral-700/80 bg-neutral-900/80 p-2">
+    <div data-testid="radio-station-card" className="flex shrink-0 items-center gap-3 rounded-md border border-white/10 bg-black/20 p-2 backdrop-blur-sm [text-shadow:0_1px_3px_rgba(0,0,0,.85)]">
       {showLogo
         ? <img src={s.logo} alt="" referrerPolicy="no-referrer" draggable={false} className="h-14 w-14 shrink-0 rounded-lg bg-neutral-900 object-contain"
             onError={() => setBroken(s.id)} onLoad={(e) => { if (e.currentTarget.naturalWidth < 24) setBroken(s.id); }} />
@@ -24,7 +24,6 @@ export function LiveRadioStationCard({ stationId }: { stationId: string | null |
         <div className="truncate text-xs text-neutral-400">{[where, s.genres.slice(0, 3).join(" · ")].filter(Boolean).join(" · ")}</div>
         {s.description && <div className="line-clamp-2 text-xs text-neutral-300">{s.description}</div>}
       </div>
-      {s.homepage && <a href={s.homepage} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-md border border-neutral-700 px-2 py-1 text-[11px] text-sky-300 hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400">Website</a>}
     </div>
   );
 }

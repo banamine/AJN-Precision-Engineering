@@ -1,0 +1,5 @@
+AJN On Air - Build 6: Clean view fix (2 files, unzip over project root; Build 5 stays in place)
+- Clean view now renders directly under <body>, so the page's animated container can no longer push the frame out of the window.
+- The Exit button works (a CSS selector bug kept it hidden forever). It shows for 5 s on entry and whenever you move the mouse, touch or press a key.
+- Leave Clean view with Esc, the Exit button, or a double-click anywhere.
+- The debug strip no longer squeezes the frame in Clean view.

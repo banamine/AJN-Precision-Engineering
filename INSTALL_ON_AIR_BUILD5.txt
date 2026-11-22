@@ -1,0 +1,6 @@
+AJN On Air - Build 5: podcast edition frozen-empty fix (3 files, unzip over project root; includes everything from Build 4)
+Root cause: after a server restart more than 10 min past Denver midnight, the edition service built a degraded edition from an EMPTY feed cache and froze it for the whole Denver day. The page then had no podcasts to schedule.
+1. server/podcastEdition.ts - a degraded edition built while the feed refresh is still running is rebuilt once when that refresh completes.
+2. src/hooks/useDailyEdition.ts - the client now takes a later same-day edition that has episodes when it is holding one with none (shared with the Listen deck).
+3. server/podcastEdition.test.ts - new test for the above (5/5 pass; dailyEdition + editionPool tests still pass).
+After publishing: wait about 2 minutes, then open /#on-air and press "Check again".

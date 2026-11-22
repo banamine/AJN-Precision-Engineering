@@ -1,0 +1,8 @@
+AJN On Air Build 20 — music no longer hard-cuts to news
+Copy these 3 files into the repo at the same paths (overwrite):
+  src/onair/engine.js
+  src/onair/songChangeFade.test.ts   (new)
+  package.json                       (adds the new test to test:schedule)
+Cause: on Live 109, the exit time was set to the moment a new song was SEEN, so the 10 s fade window had already passed and news came in with no fade.
+Fix: exit = song change + deck load time (6 s) + full 10 s fade. Music now fades over a full 10 s, news starts 6 s after the song change.
+Verify in the debug box: "SONG_CHANGE at +MM:SS -> exit ... (song_change)", then "Music fade-out started (song_change)" about 6 s later, then "Crossfade complete" about 10 s after that.

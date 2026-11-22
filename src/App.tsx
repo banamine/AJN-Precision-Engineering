@@ -33,6 +33,7 @@ import { AjnAppearanceProvider } from './components/ajn-platform-redesign/Appear
 
 const WeatherView = lazy(() => import('./components/WeatherView').then((m) => ({ default: m.WeatherView })));
 const NewsCubePage = lazy(() => import('./news-cube/NewsCubePage'));
+const OnAirPage = lazy(() => import('./onair/OnAirPage'));
 
 const RECENTLY_PLAYED_STORAGE_KEY = 'ajn.recentlyPlayed.v1';
 const RECENTLY_PLAYED_LIMIT = 5;
@@ -63,7 +64,7 @@ function isBannedVideoPath(): boolean {
 
 function getDestinationFromHash(): Destination {
   if (typeof window === 'undefined') return 'home';
-  const hash = window.location.hash.replace('#', '').toLowerCase();
+  const hash = window.location.hash.replace('#', '').split('?')[0].toLowerCase();
   if (!hash && isBannedVideoPath()) return 'news';
   switch (hash) {
     case 'tv-guide':
@@ -83,6 +84,8 @@ function getDestinationFromHash(): Destination {
     case 'news-cube': return 'news-cube';
     case 'shows': return 'shows';
     case 'weather': return 'weather';
+    case 'on-air':
+    case 'onair': return 'on-air';
     case 'radio':
     case 'ajn-radio': return 'radio';
     case 'dev':
@@ -369,7 +372,7 @@ export default function App() {
     <AjnAppearanceProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
       <Navigation currentDestination={destination} onNavigate={navigateTo} onOpenStartGuide={openStartGuide} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
-      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : (['radio','home','shows','today','library','search','news','news-cube','weather','history','watch-later','tv-guide'].includes(destination)) ? `ajn-screen-main${nowPlaying ? ' ajn-has-dock' : ''}` : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
+      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : (['radio','home','shows','today','library','search','news','news-cube','weather','on-air','history','watch-later','tv-guide'].includes(destination)) ? `ajn-screen-main${nowPlaying ? ' ajn-has-dock' : ''}` : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full ajn-scroll-region" data-testid="scroll-region">
             <HomeView
@@ -476,6 +479,13 @@ export default function App() {
         {destination === 'weather' && (
           <div key="view-weather" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
             <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading Weather…</p>}><WeatherView /></Suspense>
+          </div>
+        )}
+        {destination === 'on-air' && (
+          <div key="view-on-air" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
+            <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading On Air…</p>}>
+              <OnAirPage stopExistingPlayback={pauseExistingPlayerForCube} />
+            </Suspense>
           </div>
         )}
         {destination === 'dev' && (

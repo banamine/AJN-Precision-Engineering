@@ -1,0 +1,2 @@
+AJN On Air Build 4 - 1 file (src/onair/OnAirPage.tsx), unzip over project root.
+Start screen now states the real reason when no podcast edition is available (status, stale feeds) and has a "Check again" button.

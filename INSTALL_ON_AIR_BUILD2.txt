@@ -1,0 +1,4 @@
+AJN On Air - Build 2 (2 files; unzip over project root, replaces the same 2 files from Build 1)
+1. src/onair/OnAirPage.tsx - "Around the clock" times now include the real music-exit drift, so they match "Plays next".
+2. src/onair/useOnAirPlayout.ts - live music stuck "waiting" past 15 s now raises ERROR -> automatic failover to Library (was log-only).
+Note: the same show twice in "Around the clock" comes from the edition's loop+tail cycling; left as-is.

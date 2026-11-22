@@ -35,11 +35,11 @@ async function checkOne(item: RumbleItem, resolve: SlotResolver): Promise<SlotSt
   } catch {
     result = { ok: false, reason: "upstream-error" };
   }
-  if (!result.ok) {
+  if (result.ok === false) {
     if (STOP_REASONS.has(result.reason)) return { stop: result.reason };
     return { channelId: item.channelId, videoId: item.videoId, status: "failed", reason: result.reason, resolvedAt: null, titleChanged: null, embedIdMatches: null, liveHint: null };
   }
-  const media = result.media;
+  const media = result.media; // narrowed: ok === true (tsconfig has no strictNullChecks, so `!result.ok` would not narrow)
   return {
     channelId: item.channelId,
     videoId: item.videoId,

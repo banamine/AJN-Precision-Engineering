@@ -6,6 +6,7 @@ import { digestNotice } from "../utils/newsDigest";
 import { NewsTicker } from "./DailyBriefing";
 import { LiveRadioNowPlaying } from "./LiveRadioNowPlaying";
 import { LiveRadioStationCard } from "./LiveRadioStationCard";
+import { Radio109Glass, isClassicHits109 } from "./Radio109Glass";
 import "../radio.css";
 
 function timeLabel(iso: string | null): string {
@@ -17,7 +18,7 @@ function timeLabel(iso: string | null): string {
 }
 
 /** Text-first Daily Briefing inside the existing live-radio audio stage. */
-export function RadioBriefingPlayerOverlay({ stationId, logoUrl }: { stationId?: string | null; logoUrl?: string | null } = {}) {
+export function RadioBriefingPlayerOverlay({ stationId, logoUrl, playing = false }: { stationId?: string | null; logoUrl?: string | null; playing?: boolean } = {}) {
   const news = useDigest();
   const digest = news.data?.digest ?? null;
   const notice = digest ? digestNotice(digest.updatedAt, Date.now(), news.error) : null;
@@ -28,24 +29,25 @@ export function RadioBriefingPlayerOverlay({ stationId, logoUrl }: { stationId?:
   return (
     <div
       data-testid="radio-briefing-overlay"
-      className="absolute inset-x-3 top-10 bottom-12 z-[2] overflow-hidden rounded-lg border border-neutral-700/80 bg-neutral-950/70 shadow-xl backdrop-blur-sm"
+      className="absolute inset-x-3 top-10 bottom-12 z-[2] overflow-hidden rounded-lg border border-white/10 bg-black/15 shadow-xl"
     >
-      <section className="ajr h-full min-h-0 !p-3" aria-labelledby="radio-briefing-title">
+      <section className="ajr ajr-glass-host h-full min-h-0 !p-3" aria-labelledby="radio-briefing-title">
         <div className="flex h-full min-h-0 flex-col gap-2">
-          <LiveRadioStationCard stationId={stationId} />
-          <LiveRadioNowPlaying stationId={stationId} logoUrl={logoUrl} />
-          <header className="flex shrink-0 items-start justify-between gap-3">
+          {isClassicHits109(stationId)
+            ? <div className="min-h-0 shrink overflow-hidden"><Radio109Glass stationId={stationId} playing={playing} /></div>
+            : <><LiveRadioStationCard stationId={stationId} /><LiveRadioNowPlaying stationId={stationId} logoUrl={logoUrl} /></>}
+          <header className="flex shrink-0 items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="ajr-label">
                 {digest?.date ? `THE DAILY BRIEFING · ${digest.date}` : "THE DAILY BRIEFING"}
               </div>
-              <h2 id="radio-briefing-title" className="mt-1 hidden text-lg font-semibold leading-tight text-white sm:block">
+              <h2 id="radio-briefing-title" className="sr-only">
                 Daily news
               </h2>
             </div>
-            <div className="flex shrink-0 items-start gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {digest?.updatedAt && (
-                <span className="pt-1 text-right text-[10px] text-neutral-400">
+                <span className="text-right text-[11px] text-neutral-300">
                   Updated {timeLabel(digest.updatedAt)}
                 </span>
               )}
@@ -56,7 +58,7 @@ export function RadioBriefingPlayerOverlay({ stationId, logoUrl }: { stationId?:
                   aria-pressed={!auto.paused}
                   aria-label={auto.paused ? "Start auto-scroll" : "Pause auto-scroll"}
                   onClick={() => auto.setPaused(!auto.paused)}
-                  className="pointer-events-auto -mt-2 -mr-2 inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-neutral-300 hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                  className="pointer-events-auto -my-1.5 -mr-2 inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-neutral-300 hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
                 >
                   {auto.paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
                 </button>
@@ -64,7 +66,7 @@ export function RadioBriefingPlayerOverlay({ stationId, logoUrl }: { stationId?:
             </div>
           </header>
 
-          <div className="shrink-0">
+          <div className="ajr-ticker-lg shrink-0">
             <NewsTicker news={news} />
           </div>
 

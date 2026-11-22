@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 export interface RadioSong { artist: string; title: string; artUrl: string | null }
-export interface RadioRecent { artist: string; title: string; playedLabel: string | null }
+export interface RadioRecent { artist: string; title: string; playedLabel: string | null; artUrl?: string | null }
 export interface LiveRadioNowPlaying {
   recent: RadioRecent[];
   state: "loading" | "ok" | "stale" | "none" | "error" | "unsupported";
@@ -30,10 +30,10 @@ export function useLiveRadioNowPlaying(stationId: string | null | undefined): Li
         if (j.state === "unsupported") { setValue({ recent: [], state: "unsupported", current: null, reason: j.reason ?? null, refreshFailed: false }); return; }
         if (j.state === "ok" || j.state === "stale") {
           const c = j.current;
-          const recent: RadioRecent[] = Array.isArray(j.recent) ? j.recent.slice(0, 5).map((x: any) => ({ artist: String(x?.artist ?? ""), title: String(x?.title ?? ""), playedLabel: x?.playedLabel ?? null })).filter((x: RadioRecent) => x.title) : [];
+          const recent: RadioRecent[] = Array.isArray(j.recent) ? j.recent.slice(0, 5).map((x: any) => ({ artist: String(x?.artist ?? ""), title: String(x?.title ?? ""), playedLabel: x?.playedLabel ?? null, artUrl: typeof x?.artUrl === "string" && /^https:\/\//i.test(x.artUrl) ? x.artUrl : null })).filter((x: RadioRecent) => x.title) : [];
           setValue({ recent, state: j.state, current: c ? { artist: String(c.artist ?? ""), title: String(c.title ?? ""), artUrl: c.artUrl ?? null } : null, reason: null, refreshFailed: false });
         } else if (j.state === "none") {
-          setValue({ recent: Array.isArray(j.recent) ? j.recent.slice(0, 5).map((x: any) => ({ artist: String(x?.artist ?? ""), title: String(x?.title ?? ""), playedLabel: x?.playedLabel ?? null })).filter((x: RadioRecent) => x.title) : [], state: "none", current: null, reason: j.reason ?? null, refreshFailed: false });
+          setValue({ recent: Array.isArray(j.recent) ? j.recent.slice(0, 5).map((x: any) => ({ artist: String(x?.artist ?? ""), title: String(x?.title ?? ""), playedLabel: x?.playedLabel ?? null, artUrl: typeof x?.artUrl === "string" && /^https:\/\//i.test(x.artUrl) ? x.artUrl : null })).filter((x: RadioRecent) => x.title) : [], state: "none", current: null, reason: j.reason ?? null, refreshFailed: false });
         } else {
           setValue((v) => ({ recent: v.recent, state: v.current ? v.state : "error", current: v.current, reason: j.reason ?? "feed error", refreshFailed: true }));
         }

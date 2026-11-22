@@ -1,0 +1,7 @@
+ON AIR BUILD 18 - news filler freshness. Copy 2 files, publish:
+  server/onairFiller.ts
+  server/onairFiller.test.ts
+Rule: a cable-news filler clip is used only if its real recording date (airedUtc) is within the last 7 days. Older or undated clips are skipped, newest clips are taken first, and a channel with nothing fresh is listed in the pool's "missing" list with the newest date the guide has (e.g. 'news channel "Fox News": no clips from the last 7 days (newest in the guide: 2026-10-31)').
+Nothing is substituted: if a channel has no fresh clips it simply does not appear as filler.
+Check after publish (open it, then reload On Air): /api/onair/filler  -> look at "missing" and the dates in news[].clipDate.
+To change the window: NEWS_MAX_AGE_DAYS in server/onairFiller.ts (default 7).
