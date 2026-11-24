@@ -1,0 +1,17 @@
+AJN On Air v8 (2026-11-23), cumulative: includes everything from v7 (clock plan, Rush slots, weather rotation, clean view removed, stage fit).
+Unzip over the project root (same paths, full files), then publish via Builder.
+New in v8:
+- "Missed shows" is gone. "Still to come" lists today's shows that have not started (a show leaves the list at its start second).
+- Coming up (3 shows) is always visible, including during music. Bottom row: NOW stays; the other two panels snap through the rest of the daypart (after the Coming up three).
+- One ticker only (the Headlines panel and Around the clock panel are removed).
+- Countdowns never show a minus sign; at zero they say Finishing.
+- Evening (6 pm Denver, shared constant in dayparts.ts): current Alex Jones shows (AJN feed, last 4 days, newest first) lead; before 6 pm the archive plays.
+- Weather card: Wikimedia Commons photo of the city behind the text (route /api/onair/city-photo, public domain / CC0 / CC BY only, credit shown). A page reload picks different photos.
+- Video picture is larger; right-hand list is narrower.
+Check after publishing: /api/onair/city-photo?city=chicago&seed=abc should return status ok; /api/onair/filler should list "ajfresh" clips when the AJN feed is reachable.
+
+v8b: stage fit allowance tightened (200px -> 150px, measured from your screenshot) so the stage is larger in short windows.
+
+v8c: On Air frame sits 8 px below the nav row and 8 px above the dock (top padding on On Air reduced, allowance 136px).
+
+v8d: the stage frame fills the whole space between the nav row and the dock, edge to edge (layout takes the box shape; stageSize.ts). Side padding on On Air reduced to 8 px.

@@ -6,7 +6,7 @@ import type { FillerPool } from '../../server/onairFiller';
 export type FillerStatus = 'loading' | 'ok' | 'error';
 export interface FillerState { status: FillerStatus; pool: FillerPool | null; error: string | null }
 const RETRY_MS = 60_000;
-export const poolSize = (p: FillerPool | null): number => (p ? p.news.length + p.long.length + p.quash.length : 0);
+export const poolSize = (p: FillerPool | null): number => (p ? p.news.length + p.long.length + p.quash.length + (p.talk?.length ?? 0) + (p.harvey?.length ?? 0) + (p.rush?.length ?? 0) : 0);
 
 export function useOnAirFiller(enabled = true): FillerState {
   const [state, setState] = useState<FillerState>({ status: 'loading', pool: null, error: null });

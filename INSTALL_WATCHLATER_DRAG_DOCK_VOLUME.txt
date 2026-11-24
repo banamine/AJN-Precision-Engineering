@@ -1,0 +1,9 @@
+Drop-in: copy each file over the same path in the project (all are full files).
+ src/utils/watchLater.ts            moveWatchLater, nudgeWatchLater; saved order is no longer re-sorted by date on load
+ src/components/WatchLaterView.tsx  drag handle + up/down buttons, drop highlight
+ src/App.tsx                        passes onMove / onNudge to WatchLaterView
+ src/utils/dockVolume.ts            NEW: saves/restores the volume (localStorage key ajn.dockVolume.v1)
+ src/hooks/usePersistentMedia.ts    exposes volume + setVolume; restores the saved volume once per new player element
+ src/components/MiniPlayerDock.tsx  both volume sliders now save
+ src/components/RadioDock.tsx       new volume slider next to Mute
+Checked: typecheck clean, vite build ok, reorder by drag and by arrow buttons persisted in localStorage (headless Chrome).

@@ -1,0 +1,11 @@
+ON AIR BOARD + RADIO TO TOP (built on export nov-24-2026-4-03-07-pm)
+Drop these 7 files at the same paths (1 new, 6 replaced; onair.css now makes panel text large and fills the panel):
+ src/onair/nextAirings.ts (new)  src/onair/OnAirPage.tsx  src/App.tsx
+ src/components/Navigation.tsx  src/components/MiniPlayerDock.tsx  server/desk.ts
+What changes:
+ - Panels: "Tonight on AJN" (5 shows), "Now" (Denver clock, weekday/weekend, daypart, last songs), "When does it play" (next Alex Jones / Fox / CNN / BBC / Coast / Paul Harvey starts; "not in the current schedule window" if none).
+ - Radio: button next to Home in the top bar opens a dropdown (the old bottom bar, now top-right). Bottom bar gone on every page; stays mounted so audio never stops.
+ - Desk: if the title is an ID/garble and there is no SUBJ line, the headline is the first real sentence (max 80 chars).
+Verify: npx tsc --noEmit ; npx vitest run server/desk.test.ts ; open /on-air and the top bar.
+Desk cards update only after the snapshot rebuilds (AJN Desk Snapshot action).
+Not done: radio button on mobile nav (desktop top bar only); tsc was NOT run here (no node_modules), syntax-checked only.

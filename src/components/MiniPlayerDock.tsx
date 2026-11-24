@@ -40,7 +40,7 @@ const formatDockTime = (seconds: number) => {
     : `${minutes}:${String(remainder).padStart(2, '0')}`;
 };
 
-const DOCK_SHELL = "ajn-redesign-surface ajn-dock !h-auto fixed box-border bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 left-1 right-1 sm:left-auto sm:right-6 sm:w-[calc(100vw-3rem)] sm:max-w-[960px] md:left-0 md:right-0 md:w-full md:max-w-none md:rounded-none md:border-x-0 md:border-b-0 md:px-6 md:py-2 z-50 flex flex-col items-stretch gap-1 rounded-xl border bg-neutral-900/95 p-1 sm:px-2 shadow-2xl backdrop-blur-md mini-player-dock mini-player-slide-up animate-slide-up animate-in slide-in-from-bottom-4 duration-200";
+const DOCK_SHELL = "ajn-redesign-surface ajn-dock !h-auto fixed box-border top-[3.75rem] right-2 left-2 sm:left-auto sm:right-4 sm:w-[420px] z-50 flex flex-col items-stretch gap-1 rounded-xl border bg-neutral-900/95 p-2 shadow-2xl backdrop-blur-md mini-player-dock duration-200";
 
 /** The same bottom bar when nothing is playing, so the Radio button always lives in the dock. Play starts the first saved preset; with no presets it opens Radio. */
 export function IdleDock({ onPlayProgram }: { onPlayProgram?: PlayProgramCallback }) {
@@ -77,7 +77,7 @@ export function MiniPlayerDock({
   onNavigate,
 }: MiniPlayerDockProps) {
   // The real player stays mounted (hidden) in #persistent-player; the dock drives it through the shared hook.
-  const { paused, muted, currentTime, duration, toggle: togglePlay, toggleMute, seek } =
+  const { paused, muted, currentTime, duration, toggle: togglePlay, toggleMute, seek, setVolume: persistVolume } =
     usePersistentMedia(nowPlaying.mediaType, `${nowPlaying.src}|${nowPlaying.mediaType}`);
   const [playbackStatus, setPlaybackStatus] = useState<DockPlaybackStatus>('paused');
   const [volume, setVolume] = useState(1);
@@ -272,7 +272,7 @@ export function MiniPlayerDock({
       {/* Actions */}
       <div className="relative flex shrink-0 items-center gap-0.5 sm:gap-1">
         <input type="range" min={0} max={1} step={0.05} value={volume} data-testid="dock-volume-inline" aria-label="Volume"
-          onChange={(event) => { const v = Number(event.currentTarget.value); const media = findPersistentMedia(nowPlaying.mediaType); if (media) media.volume = v; setVolume(v); }}
+          onChange={(event) => { const v = Number(event.currentTarget.value); persistVolume(v); setVolume(v); }}
           className="hidden w-24 accent-[var(--ajn-accent)] md:block" />
         <button
           type="button"
@@ -316,8 +316,7 @@ export function MiniPlayerDock({
                 value={volume}
                 onChange={(event) => {
                   const nextVolume = Number(event.currentTarget.value);
-                  const media = findPersistentMedia(nowPlaying.mediaType);
-                  if (media) media.volume = nextVolume;
+                  persistVolume(nextVolume);
                   setVolume(nextVolume);
                 }}
                 aria-label="Volume"

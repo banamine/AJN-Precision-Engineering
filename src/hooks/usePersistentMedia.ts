@@ -2,6 +2,7 @@
 // Used by the mini dock and the Radio "Now Playing" panel. It only READS and drives that element; it never creates one.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MediaType } from '../types';
+import { restoreDockVolume, setDockVolume } from '../utils/dockVolume';
 
 export interface PersistentMediaState {
   /** True when there is no element yet or it is paused. */
@@ -13,6 +14,8 @@ export interface PersistentMediaState {
   attached: boolean;
   /** Current playback mute state */
   muted: boolean;
+  /** Element volume, 0 to 1. */
+  volume: number;
   /** True after the attached media element reports a playback error. */
   failed: boolean;
 }
@@ -21,6 +24,8 @@ export interface PersistentMedia extends PersistentMediaState {
   toggle: () => void;
   seek: (seconds: number) => void;
   toggleMute: () => void;
+  /** Sets the volume and remembers it on this device. */
+  setVolume: (volume: number) => void;
 }
 
 export function findPersistentMedia(mediaType?: MediaType): HTMLMediaElement | null {
@@ -39,7 +44,7 @@ export function togglePersistentMedia(media: HTMLMediaElement): void {
 }
 
 const EVENTS = ['play', 'pause', 'timeupdate', 'durationchange', 'loadedmetadata', 'ended', 'emptied', 'volumechange', 'error', 'loadstart', 'playing'] as const;
-const IDLE: PersistentMediaState = { paused: true, currentTime: 0, duration: 0, attached: false, muted: false, failed: false };
+const IDLE: PersistentMediaState = { paused: true, currentTime: 0, duration: 0, attached: false, muted: false, volume: 1, failed: false };
 
 /** `sourceKey` should change whenever a different item is loaded (the element is replaced when the source changes). */
 export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: string | undefined, enabled = true): PersistentMedia {
@@ -51,9 +56,9 @@ export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: 
     let media: HTMLMediaElement | null = null;
     const read = () => {
       const next: PersistentMediaState = media
-        ? { paused: media.paused, currentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0, duration: Number.isFinite(media.duration) ? media.duration : 0, attached: true, muted: Boolean(media.muted), failed: Boolean(media.error) }
+        ? { paused: media.paused, currentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0, duration: Number.isFinite(media.duration) ? media.duration : 0, attached: true, muted: Boolean(media.muted), volume: Number.isFinite(media.volume) ? media.volume : 1, failed: Boolean(media.error) }
         : IDLE;
-      setState(prev => (prev.paused === next.paused && Math.floor(prev.currentTime) === Math.floor(next.currentTime) && prev.duration === next.duration && prev.attached === next.attached && prev.muted === next.muted && prev.failed === next.failed ? prev : next));
+      setState(prev => (prev.paused === next.paused && Math.floor(prev.currentTime) === Math.floor(next.currentTime) && prev.duration === next.duration && prev.attached === next.attached && prev.muted === next.muted && prev.volume === next.volume && prev.failed === next.failed ? prev : next));
     };
     const detach = () => { if (media) for (const e of EVENTS) media.removeEventListener(e, read); };
     const attach = () => {
@@ -61,6 +66,7 @@ export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: 
       if (next === media) return;
       detach();
       media = next; mediaRef.current = next;
+      if (media) restoreDockVolume(media);
       if (media) for (const e of EVENTS) media.addEventListener(e, read);
       read();
     };
@@ -85,5 +91,6 @@ export function usePersistentMedia(mediaType: MediaType | undefined, sourceKey: 
     if (!media) return;
     media.muted = !media.muted;
   }, [mediaType]);
-  return { ...state, toggle, seek, toggleMute };
+  const setVolume = useCallback((v: number) => { setDockVolume(mediaRef.current ?? findPersistentMedia(mediaType), v); }, [mediaType]);
+  return { ...state, toggle, seek, toggleMute, setVolume };
 }

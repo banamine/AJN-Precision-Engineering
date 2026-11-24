@@ -23,7 +23,7 @@ import { bridgeSrc } from './utils/mediaRoute';
 import { HistoryView } from './components/HistoryView';
 import { HistoryEntry, loadHistory, saveHistory, recordPlay, updateHistoryProgress, removeHistoryEntry } from './utils/historyStore';
 import { FavoriteMedia, loadMediaFavorites, saveMediaFavorites, toggleFavorite, isFavorite as isMediaFavorite } from './utils/mediaFavorites';
-import { addWatchLater, isInWatchLater, loadWatchLater, progressAction, removeWatchLater, saveWatchLater, type WatchLaterItem } from './utils/watchLater';
+import { addWatchLater, isInWatchLater, loadWatchLater, moveWatchLater, nudgeWatchLater, progressAction, removeWatchLater, saveWatchLater, type WatchLaterItem } from './utils/watchLater';
 import { useRadioFavorites, toggleRadioFavorite } from './utils/radioFavorites';
 import { useCloudSync } from './hooks/useCloudSync';
 import { buildSuggestCandidates, addRecentSearch, loadRecentSearches, saveRecentSearches } from './utils/suggest';
@@ -34,6 +34,7 @@ import { AjnAppearanceProvider } from './components/ajn-platform-redesign/Appear
 const WeatherView = lazy(() => import('./components/WeatherView').then((m) => ({ default: m.WeatherView })));
 const NewsCubePage = lazy(() => import('./news-cube/NewsCubePage'));
 const OnAirPage = lazy(() => import('./onair/OnAirPage'));
+const DeskView = lazy(() => import('./desk/DeskView'));
 
 const RECENTLY_PLAYED_STORAGE_KEY = 'ajn.recentlyPlayed.v1';
 const RECENTLY_PLAYED_LIMIT = 5;
@@ -86,6 +87,8 @@ function getDestinationFromHash(): Destination {
     case 'weather': return 'weather';
     case 'on-air':
     case 'onair': return 'on-air';
+    case 'desk':
+    case 'declassified': return 'desk';
     case 'radio':
     case 'ajn-radio': return 'radio';
     case 'dev':
@@ -142,6 +145,7 @@ function writeRecentlyPlayed(items: RecentlyPlayedItem[]): void {
 }
 
 export default function App() {
+  const [radioTopOpen, setRadioTopOpen] = useState(false);
   const [initialView] = useState(getInitialView);
   const [destination, setDestination] = useState<Destination>(initialView.destination);
   const [startGuideOpen, setStartGuideOpen] = useState<boolean>(() => typeof window !== 'undefined' && shouldAutoOpen(loadStartGuidePref(), Boolean(window.location.hash)));
@@ -371,8 +375,8 @@ export default function App() {
   return (
     <AjnAppearanceProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
-      <Navigation currentDestination={destination} onNavigate={navigateTo} onOpenStartGuide={openStartGuide} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
-      <main id="canonical-main-viewport" className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 ${destination === 'player' ? 'ajn-player-main' : (['radio','home','shows','today','library','search','news','news-cube','weather','on-air','history','watch-later','tv-guide'].includes(destination)) ? `ajn-screen-main${nowPlaying ? ' ajn-has-dock' : ''}` : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
+      <Navigation radioOpen={radioTopOpen} onToggleRadio={() => setRadioTopOpen((v) => !v)} currentDestination={destination} onNavigate={navigateTo} onOpenStartGuide={openStartGuide} nowPlaying={nowPlaying} onPlayProgram={handlePlayProgram} suggestions={suggestCandidates} onSearch={(q) => { recordSearch(q); setExternalSearch((prev) => ({ q, n: prev.n + 1 })); navigateTo('search'); }} />
+      <main id="canonical-main-viewport" className={`flex-1 w-full ${destination === 'on-air' ? 'max-w-none' : 'max-w-7xl'} mx-auto ${destination === 'on-air' ? 'px-2 pt-2' : 'px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8'} ${destination === 'player' ? 'ajn-player-main' : (['radio','home','shows','today','library','search','news','news-cube','weather','on-air','desk','history','watch-later','tv-guide'].includes(destination)) ? `ajn-screen-main${nowPlaying ? ' ajn-has-dock' : ''}` : nowPlaying ? 'pb-[18rem] md:pb-[12rem]' : 'pb-44 md:pb-32'}`}>
         {destination === 'home' && (
           <div key="view-home" className="view-fade-in w-full ajn-scroll-region" data-testid="scroll-region">
             <HomeView
@@ -472,6 +476,8 @@ export default function App() {
               onPlay={playSaved}
               onRemove={(id) => setWatchLaterEntries((items) => removeWatchLater(items, id))}
               onClear={() => setWatchLaterEntries([])}
+              onMove={(fromId, toId) => setWatchLaterEntries((items) => moveWatchLater(items, fromId, toId))}
+              onNudge={(id, dir) => setWatchLaterEntries((items) => nudgeWatchLater(items, id, dir))}
               onNavigate={navigateTo}
             />
           </div>
@@ -488,6 +494,11 @@ export default function App() {
             </Suspense>
           </div>
         )}
+        {destination === 'desk' && (
+          <div key="view-desk" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
+            <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading Declassified Desk…</p>}><DeskView /></Suspense>
+          </div>
+        )}
         {destination === 'dev' && (
           <div key="view-dev" className="view-fade-in w-full">
             <DevModeView onNavigate={navigateTo} />
@@ -497,10 +508,13 @@ export default function App() {
       <RadioDock nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} miniPlayerShowing={destination !== 'player'} />
       <StartGuide open={startGuideOpen} onClose={closeStartGuide} onNavigate={navigateTo} />
       <SyncedVideoPip nowPlaying={nowPlaying} onPlay={handleAdvanceProgram} onNavigate={navigateTo} />
-      {!nowPlaying && destination !== 'player' && <IdleDock onPlayProgram={handleAdvanceProgram} />}
-      {nowPlaying && destination !== 'player' && (
-        <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => navigateTo('player')} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />
-      )}
+      {/* Radio dropdown (top bar). Always mounted so audio never stops; hidden until the Radio button next to Home is pressed. */}
+      <div data-testid="radio-top-dropdown" className={radioTopOpen ? 'block' : 'hidden'}>
+        {!nowPlaying && <IdleDock onPlayProgram={handleAdvanceProgram} />}
+        {nowPlaying && (
+          <MiniPlayerDock nowPlaying={nowPlaying} onOpenFullPlayer={() => { setRadioTopOpen(false); navigateTo('player'); }} onDismiss={() => setNowPlaying(null)} onPlayProgram={handleAdvanceProgram} onNavigate={navigateTo} />
+        )}
+      </div>
     </div>
     </AjnAppearanceProvider>
   );

@@ -111,10 +111,10 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
           return (
             <li key={it.id}>
               <button type="button" data-testid="radio-deck-pick" aria-current={on ? 'true' : undefined} onClick={() => onPick(it)}
-                className="ck-key ck-key--row !min-h-[48px] gap-2 rounded-lg !py-1.5">
+                className="ck-key ck-key--row !min-h-[48px] flex-wrap items-center gap-x-2 gap-y-1 rounded-lg !py-1.5">
                 <span aria-hidden="true" className={`text-xs ${on ? 'text-[#F9A56D]' : 'text-neutral-500'}`}>{on ? '▶' : '•'}</span>
-                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{it.title}</span>{it.subtitle ? <span className="block truncate text-[11px] text-neutral-400">{it.subtitle}</span> : null}</span>
-                <FreshnessTag publishedAt={it.publishedAt} />
+                <span className="min-w-[8.5rem] flex-1"><span className="block line-clamp-2 break-words text-sm font-semibold">{it.title}</span>{it.subtitle ? <span className="block truncate text-[11px] text-neutral-400">{it.subtitle}</span> : null}</span>
+                <span className="ml-auto shrink-0"><FreshnessTag publishedAt={it.publishedAt} /></span>
               </button>
             </li>
           );
@@ -440,7 +440,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
                   style={{ background: 'linear-gradient(180deg, rgba(15,17,23,0.55), rgba(15,17,23,0.35))', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.12)' }}>
                   <div className="flex min-w-0 flex-1 flex-col justify-between gap-1">
                     <div className="flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-300">
-                      <span className="min-w-0 truncate">AJN-1 · {mode === 'live' ? (bank === 'presets' ? 'My presets' : 'Recent') : browse ? `${bankLabel} · browse` : `${bankLabel} · my keys`}</span>
+                      <span className="min-w-0 truncate">AJN-1 · {listenBack ? 'Listen Back · hourly archives' : mode === 'live' ? (bank === 'presets' ? 'My presets' : 'Recent') : browse ? `${bankLabel} · browse` : `${bankLabel} · my keys`}</span>
                       <span data-testid="radio-head-unit-lamp" className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-black tracking-wider ${lampOn ? 'border-red-400/70 bg-red-500/15 text-red-200' : 'border-white/20 bg-white/5 text-neutral-300'}`} style={lampOn ? { boxShadow: '0 0 14px rgba(239,68,68,0.55)' } : undefined}>
                         <span aria-hidden="true" className={`h-2 w-2 rounded-full ${lampOn ? 'bg-red-400 animate-pulse motion-reduce:animate-none' : 'bg-neutral-500'}`} />{mode === 'live' ? (live ? 'ON AIR' : (playingNow && nowPlaying?.title ? 'PLAYING' : 'OFF AIR')) : (lampOn ? 'PLAYING' : 'STOPPED')}
                       </span>
@@ -481,7 +481,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
                 )}
               </div>
 
-              <div className="space-y-2 md:col-span-2 md:row-start-2">
+              <div className={listenBack ? 'hidden' : 'space-y-2 md:col-span-2 md:row-start-2'} data-testid="radio-presets-section">
                 <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                   <span className="text-neutral-400">Presets</span>
                   <span className="text-neutral-500">01 - 05</span>

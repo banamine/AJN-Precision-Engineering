@@ -4,6 +4,13 @@ import { audioPlaybackHeartbeatState } from "./utils/audioBridgeHeartbeat";
 const TARGET_DBFS = -18;
 const SAMPLE_DURATION_S = 3;
 const RAMP_DURATION_S = 1;
+const FIRST_ESTIMATE_S = 0.7;
+const MUSIC_OFFSET_DB = 2; // music may sit slightly above talk
+/** Last measured compensation per kind, so the next track of that kind starts near its final level instead of at the previous kind's. */
+const lastCompensationDb: Record<"talk" | "music", number | null> = { talk: null, music: null };
+/** First guess before anything is measured: music is mastered hotter than talk, so start it 6 dB under unity and let it rise slowly. */
+const FIRST_GUESS_DB: Record<"talk" | "music", number> = { talk: 0, music: -6 };
+const GLIDE_TAU_S = 1.5; // slow glide: no sudden jump up or down
 const DB_MIN = -12;
 const DB_MAX = 12;
 const LS_GAIN_KEY = "tvnews-gain-db";
@@ -141,12 +148,12 @@ function connectMediaElementToRuntime(media: HTMLMediaElement): AudioRuntime | n
   return runtime;
 }
 
-export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | null>, playerType: "video" | "hls" | "iframe" | "audio" | "skip", clipKey: string): AudioNormalizationReturn {
+export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | null>, playerType: "video" | "hls" | "iframe" | "audio" | "skip", clipKey: string, kind: "talk" | "music" = "talk"): AudioNormalizationReturn {
   const [gainDb, setGainDbState] = useState<number>(() => { const saved = parseFloat(lsGet(LS_GAIN_KEY) ?? "0"); return isNaN(saved) ? 0 : Math.max(DB_MIN, Math.min(DB_MAX, saved)); });
   const [autoNormalize, setAutoNormalizeState] = useState<boolean>(() => lsGet(LS_AUTONORM_KEY) === "on");
   const [audioContextSuspended, setAudioContextSuspended] = useState(false); const [bridgeReady, setBridgeReady] = useState(false); const [diagnosticsReady, setDiagnosticsReady] = useState(false);
   const gainDbRef = useRef(gainDb); gainDbRef.current = gainDb; const autoNormalizeRef = useRef(autoNormalize); autoNormalizeRef.current = autoNormalize;
-  const sampleTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); const sampleIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined); const samplingActiveRef = useRef(false); const resumeRetryCountRef = useRef(0); const [, forceRuntimeRefresh] = useState(0);
+  const sampleTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); const firstTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); const kindRef = useRef<"talk" | "music">(kind); kindRef.current = kind; const sampleIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined); const samplingActiveRef = useRef(false); const resumeRetryCountRef = useRef(0); const [, forceRuntimeRefresh] = useState(0);
   const audioCtxRef = useRef<AudioContext | null>(null); const gainNodeRef = useRef<GainNode | null>(null); const masterVolumeNodeRef = useRef<GainNode | null>(null); const compressorNodeRef = useRef<DynamicsCompressorNode | null>(null); const preAnalyserRef = useRef<AnalyserNode | null>(null); const diagnosticsAnalyserRef = useRef<AnalyserNode | null>(null); const masterVolTargetRef = useRef<number>(1);
   const syncRuntimeRefs = useCallback((runtime: AudioRuntime | null) => { audioCtxRef.current = runtime?.ctx ?? null; gainNodeRef.current = runtime?.gainNode ?? null; masterVolumeNodeRef.current = runtime?.masterVolumeNode ?? null; compressorNodeRef.current = runtime?.compressorNode ?? null; preAnalyserRef.current = runtime?.preAnalyser ?? null; diagnosticsAnalyserRef.current = runtime?.diagnosticsAnalyser ?? null; setAudioContextSuspended(Boolean(runtime && runtime.ctx.state !== "running")); setBridgeReady(Boolean(runtime?.bridgeReady)); setDiagnosticsReady(Boolean(runtime?.diagnosticsReady)); }, []);
   const getOrCreateContext = useCallback((): AudioContext | null => { const runtime = createAudioRuntime(); syncRuntimeRefs(runtime); return runtime?.ctx ?? null; }, [syncRuntimeRefs]);
@@ -184,7 +191,29 @@ export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | nul
   const applyGain = useCallback((db: number, ramp = false) => { const gainNode = audioRuntime?.gainNode; const ctx = audioRuntime?.ctx; if (!gainNode || !ctx || ctx.state === "closed") return; const linearVal = dbToLinear(db); if (ramp) gainNode.gain.linearRampToValueAtTime(linearVal, ctx.currentTime + RAMP_DURATION_S); else gainNode.gain.setValueAtTime(linearVal, ctx.currentTime); }, []);
   const MASTER_FADE_S = 0.5;
   const setMasterVolume = useCallback((vol: number) => { const node = audioRuntime?.masterVolumeNode; const ctx = audioRuntime?.ctx; if (!node || !ctx || ctx.state === "closed") return; const clamped = Math.max(0, Math.min(1, vol)); masterVolTargetRef.current = clamped; node.gain.cancelScheduledValues(ctx.currentTime); node.gain.setValueAtTime(node.gain.value, ctx.currentTime); node.gain.linearRampToValueAtTime(clamped, ctx.currentTime + MASTER_FADE_S); }, []);
-  const startNormalizationSampling = useCallback(() => { const analyser = audioRuntime?.preAnalyser ?? null; const ctx = audioRuntime?.ctx ?? null; const gainNode = audioRuntime?.gainNode ?? null; if (!analyser || !ctx || !gainNode || ctx.state !== "running" || samplingActiveRef.current) return; samplingActiveRef.current = true; clearTimeout(sampleTimerRef.current); clearInterval(sampleIntervalRef.current); const bufferLength = analyser.frequencyBinCount; const dataArray = new Float32Array(bufferLength); let sumSquares = 0; let sampleCount = 0; sampleIntervalRef.current = setInterval(() => { if (ctx.state !== "running") return; analyser.getFloatTimeDomainData(dataArray); let ss = 0; for (let i = 0; i < bufferLength; i += 1) ss += dataArray[i] * dataArray[i]; sumSquares += ss / bufferLength; sampleCount += 1; }, 100); sampleTimerRef.current = setTimeout(() => { samplingActiveRef.current = false; clearInterval(sampleIntervalRef.current); if (!autoNormalizeRef.current || sampleCount === 0) return; const rms = Math.sqrt(sumSquares / sampleCount); if (rms < 1e-6) return; const rawDb = linearToDb(rms); const compensationDb = TARGET_DBFS - rawDb; const totalDb = Math.max(DB_MIN, Math.min(DB_MAX, gainDbRef.current + compensationDb)); gainNode.gain.linearRampToValueAtTime(dbToLinear(totalDb), ctx.currentTime + RAMP_DURATION_S); }, SAMPLE_DURATION_S * 1000); }, []);
+  // Per-kind levelling. A new track no longer inherits the previous track's boost: it starts at the remembered
+  // gain for its kind (talk or music), takes a quick first estimate (~0.7 s), then refines at 3 s.
+  // Music sits MUSIC_OFFSET_DB above talk so a music bed can be a little louder than speech.
+  const startNormalizationSampling = useCallback(() => {
+    const analyser = audioRuntime?.preAnalyser ?? null; const ctx = audioRuntime?.ctx ?? null; const gainNode = audioRuntime?.gainNode ?? null;
+    if (!analyser || !ctx || !gainNode || ctx.state !== "running") return;
+    // A new track restarts measurement; stop any run still in flight from the previous one.
+    clearTimeout(sampleTimerRef.current); clearTimeout(firstTimerRef.current); clearInterval(sampleIntervalRef.current); samplingActiveRef.current = true;
+    const kind = kindRef.current; const targetDb = TARGET_DBFS + (kind === "music" ? MUSIC_OFFSET_DB : 0);
+    const clampDb = (db: number) => Math.max(DB_MIN, Math.min(DB_MAX, db));
+    const slideTo = (db: number, tau: number) => { try { gainNode.gain.cancelScheduledValues(ctx.currentTime); gainNode.gain.setTargetAtTime(dbToLinear(db), ctx.currentTime, tau); } catch { /* context closed */ } };
+    if (autoNormalizeRef.current) slideTo(clampDb(gainDbRef.current + (lastCompensationDb[kind] ?? FIRST_GUESS_DB[kind])), 0.02);
+    const bufferLength = analyser.frequencyBinCount; const dataArray = new Float32Array(bufferLength);
+    let sumSquares = 0; let sampleCount = 0;
+    const compensation = () => { if (sampleCount === 0) return null; const rms = Math.sqrt(sumSquares / sampleCount); if (rms < 1e-6) return null; return targetDb - linearToDb(rms); };
+    sampleIntervalRef.current = setInterval(() => { if (ctx.state !== "running") return; analyser.getFloatTimeDomainData(dataArray); let ss = 0; for (let i = 0; i < bufferLength; i += 1) ss += dataArray[i] * dataArray[i]; sumSquares += ss / bufferLength; sampleCount += 1; }, 100);
+    firstTimerRef.current = setTimeout(() => { if (!autoNormalizeRef.current || sampleCount < 5) return; const c = compensation(); if (c !== null) slideTo(clampDb(gainDbRef.current + c), GLIDE_TAU_S); }, FIRST_ESTIMATE_S * 1000);
+    sampleTimerRef.current = setTimeout(() => {
+      samplingActiveRef.current = false; clearInterval(sampleIntervalRef.current);
+      if (!autoNormalizeRef.current) return; const c = compensation(); if (c === null) return;
+      lastCompensationDb[kind] = Math.max(DB_MIN, Math.min(DB_MAX, c)); slideTo(clampDb(gainDbRef.current + c), GLIDE_TAU_S);
+    }, SAMPLE_DURATION_S * 1000);
+  }, []);
   const setGainDb = useCallback((db: number) => { const clamped = Math.max(DB_MIN, Math.min(DB_MAX, db)); lsSet(LS_GAIN_KEY, String(clamped)); setGainDbState(clamped); applyGain(clamped, true); }, [applyGain]);
   const setAutoNormalize = useCallback((on: boolean) => { lsSet(LS_AUTONORM_KEY, on ? "on" : "off"); setAutoNormalizeState(on); if (on) startNormalizationSampling(); }, [startNormalizationSampling]);
   useEffect(() => {

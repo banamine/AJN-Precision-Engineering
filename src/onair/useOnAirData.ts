@@ -1,49 +1,92 @@
 /* Real data for the On Air side panels and ticker. Every value comes from an existing app source; when a source is empty or failed the
  * panel says so (or is left out of the rotation), it never shows made-up content. */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDigest } from '../hooks/useDigest';
 import { AJN_PLAYOUT as E } from './engine.js';
-import { PLACE_KEY, PREFS_KEY, defaultUnits, describeCode, forecastUrl, parseForecast, parsePrefs, parseStoredPlace, placeLabel, tempUnit, toTemp, toWind, windUnit, type WeatherReport } from '../utils/weather';
+import { PREFS_KEY, defaultUnits, describeCode, forecastUrl, parseForecast, parsePrefs, placeLabel, tempUnit, toTemp, toWind, windUnit, type WeatherPlace, type WeatherReport } from '../utils/weather';
 import type { Edition } from '../utils/dailyEdition';
+import type { CityPhotoResponse, CityPhoto } from '../../server/cityPhotos';
+/** Same key the server uses for the city (see server/cityPhotos.ts CITY_CATEGORIES). */
+export const cityKeyOf = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export interface Headline { id: string; text: string; publishedMs: number; source: string }
-import { tidyShowName } from './runOfShow';
 export interface OnThisDay { date: string; title: string }
 /** One real Archive.org item from /api/onair/on-this-day (usgovernmentmirrors, dated today's month/day in an earlier year). */
 export interface ArchiveItem { identifier: string; title: string; collectionName: string; date: string; year: number; mediatype: 'texts' | 'audio' | 'movies'; thumbnail: string; url: string }
 export interface OnAirData {
-  headlines: Headline[]; digestLines: string[]; weatherLines: string[] | null; onThisDay: OnThisDay | null; archiveItems: ArchiveItem[]; missedLines: string[];
+  headlines: Headline[]; digestLines: string[]; weatherLines: string[] | null; onThisDay: OnThisDay | null; archiveItems: ArchiveItem[];
+  /** Weather card background for the city on screen (null until loaded, or when none is available). */
+  weatherPhoto: CityPhoto | null;
   digestStatus: 'loading' | 'ready' | 'error';
 }
 const WEATHER_POLL_MS = 15 * 60_000;
+/** The weather panel rotates through these cities (chosen by the owner), one at a time. */
+export const WEATHER_CITIES: readonly WeatherPlace[] = [
+  { name: 'New York City', region: 'New York', country: 'United States', latitude: 40.7128, longitude: -74.006 },
+  { name: 'Toronto', region: 'Ontario', country: 'Canada', latitude: 43.6532, longitude: -79.3832 },
+  { name: 'Los Angeles', region: 'California', country: 'United States', latitude: 34.0522, longitude: -118.2437 },
+  { name: 'Vancouver', region: 'British Columbia', country: 'Canada', latitude: 49.2827, longitude: -123.1207 },
+  { name: 'Chicago', region: 'Illinois', country: 'United States', latitude: 41.8781, longitude: -87.6298 },
+  { name: 'Montreal', region: 'Quebec', country: 'Canada', latitude: 45.5017, longitude: -73.5673 },
+  { name: 'San Francisco', region: 'California', country: 'United States', latitude: 37.7749, longitude: -122.4194 },
+  { name: 'Ottawa', region: 'Ontario', country: 'Canada', latitude: 45.4215, longitude: -75.6972 },
+  { name: 'Boston', region: 'Massachusetts', country: 'United States', latitude: 42.3601, longitude: -71.0589 },
+  { name: 'Calgary', region: 'Alberta', country: 'Canada', latitude: 51.0447, longitude: -114.0719 },
+  { name: 'Miami', region: 'Florida', country: 'United States', latitude: 25.7617, longitude: -80.1918 },
+  { name: 'Quebec City', region: 'Quebec', country: 'Canada', latitude: 46.8139, longitude: -71.208 },
+];
+/** A new city every 5 minutes, in list order (US and Canada alternate). Pure: the city is a function of the clock. */
+export const WEATHER_CITY_MS = 5 * 60_000;
+export const weatherCityAt = (ms: number): WeatherPlace => WEATHER_CITIES[Math.floor(ms / WEATHER_CITY_MS) % WEATHER_CITIES.length];
 
-export function useOnAirData(edition: Edition | null, nowMs: number, headlineMaxAgeHours: number): OnAirData {
+export function useOnAirData(_edition: Edition | null, nowMs: number, headlineMaxAgeHours: number): OnAirData {
   const digest = useDigest();
   const [weather, setWeather] = useState<{ report: WeatherReport; label: string; units: 'us' | 'metric' } | null>(null);
+  const weatherCache = useRef(new Map<string, { report: WeatherReport }>());
   const [onThisDay, setOnThisDay] = useState<OnThisDay | null>(null);
+  // One random value per page load: the photo for each city stays the same while the page is open, and changes on a reload.
+  const photoSeed = useRef(Math.random().toString(36).slice(2, 12));
+  const photoCache = useRef(new Map<string, CityPhoto | null>());
+  const [weatherPhoto, setWeatherPhoto] = useState<CityPhoto | null>(null);
 
-  // Weather: the place already chosen on the Weather page. No saved place, no weather panel.
+  // Weather: rotates through WEATHER_CITIES (a new city every 5 minutes). Each city's forecast is fetched when it comes up and re-fetched after 15 minutes.
+  const city = weatherCityAt(nowMs);
+  const cityKey = placeLabel(city);
   useEffect(() => {
-    let place = null as ReturnType<typeof parseStoredPlace>;
-    try { place = parseStoredPlace(window.localStorage.getItem(PLACE_KEY)); } catch { /* storage unavailable */ }
-    if (!place) { setWeather(null); return undefined; }
-    const p = place;
     let units: 'us' | 'metric' = defaultUnits(navigator.language);
     try { units = parsePrefs(window.localStorage.getItem(PREFS_KEY)).units ?? units; } catch { /* keep default */ }
-    let alive = true, timer: number | undefined, ctl: AbortController | null = null;
-    const load = async (): Promise<void> => {
-      ctl = new AbortController();
+    const cached = weatherCache.current.get(cityKey);
+    if (cached && Date.now() - cached.report.fetchedAt < WEATHER_POLL_MS) { setWeather({ report: cached.report, label: cityKey, units }); return undefined; }
+    let alive = true; const ctl = new AbortController();
+    (async (): Promise<void> => {
       try {
-        const r = await fetch(forecastUrl(p), { signal: ctl.signal });
+        const r = await fetch(forecastUrl(city), { signal: ctl.signal });
         if (!r.ok) throw new Error(`weather HTTP ${r.status}`);
         const report = parseForecast(await r.json(), Date.now());
-        if (alive && report) setWeather({ report, label: placeLabel(p), units });
-      } catch (e) { if ((e as Error).name !== 'AbortError' && alive) setWeather((w) => w); }
-      if (alive) timer = window.setTimeout(() => { void load(); }, WEATHER_POLL_MS);
-    };
-    void load();
-    return () => { alive = false; if (timer) window.clearTimeout(timer); ctl?.abort(); };
-  }, []);
+        if (alive && report) { weatherCache.current.set(cityKey, { report }); setWeather({ report, label: cityKey, units }); }
+      } catch { /* AbortError or a failed fetch: keep the last city's report; the panel is built only from what was fetched */ }
+    })();
+    return () => { alive = false; ctl.abort(); };
+  }, [cityKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // City photo: one request per city per page session (the server caches the list for a day). Failure or no photo = no background, never a broken image.
+  const photoKey = cityKeyOf(city.name);
+  useEffect(() => {
+    const have = photoCache.current;
+    if (have.has(photoKey)) { setWeatherPhoto(have.get(photoKey) ?? null); return undefined; }
+    setWeatherPhoto(null);
+    let alive = true; const ctl = new AbortController();
+    (async (): Promise<void> => {
+      try {
+        const r = await fetch(`/api/onair/city-photo?city=${encodeURIComponent(photoKey)}&seed=${photoSeed.current}`, { signal: ctl.signal, cache: 'no-store' });
+        const j = (await r.json()) as CityPhotoResponse;
+        const photo = r.ok && j.status === 'ok' && j.photo && /^https:\/\//.test(j.photo.url) ? j.photo : null;
+        if (j.status !== 'error') have.set(photoKey, photo);   // an error is retried the next time the city comes round
+        if (alive) setWeatherPhoto(photo);
+      } catch { /* AbortError or network failure: no background */ }
+    })();
+    return () => { alive = false; ctl.abort(); };
+  }, [photoKey]);
 
   // On this day: the Rush Limbaugh library has a recording for today's calendar date in an earlier year.
   const denverDay = useMemo(() => { const p = E.denverParts(nowMs) as { month: number; day: number }; return `${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`; }, [Math.floor(nowMs / 3_600_000)]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -69,7 +112,7 @@ export function useOnAirData(edition: Edition | null, nowMs: number, headlineMax
       try {
         const r = await fetch('/api/onair/on-this-day', { signal: ctl.signal, cache: 'no-store' });
         const j = (await r.json().catch(() => null)) as { status?: string; generatedFor?: string; items?: ArchiveItem[] } | null;
-        if (r.ok && j?.status === 'ok' && j.generatedFor === denverDay && Array.isArray(j.items)) { if (alive) setArchiveItems(j.items.filter((i) => i && i.url && i.title)); return; }
+        if (r.ok && j?.status === 'ok' && j.generatedFor === denverDay && Array.isArray(j.items)) { if (alive) setArchiveItems(j.items.filter((i) => i && i.url && i.title && i.mediatype !== 'audio')); return; }
         if (r.status === 202 && tries < 40) retryMs = 15_000;          // still building: ask again shortly
         else if (r.status >= 500 && tries < 6) retryMs = 10 * 60_000;  // unavailable: try again later, panel stays hidden meanwhile
       } catch (e) { if ((e as Error).name === 'AbortError') return; if (tries < 6) retryMs = 10 * 60_000; }
@@ -97,7 +140,5 @@ export function useOnAirData(edition: Edition | null, nowMs: number, headlineMax
       d0 ? `Today: high ${toTemp(d0.high, units)}${tempUnit(units)} · low ${toTemp(d0.low, units)}${tempUnit(units)}` : '',
     ].filter(Boolean);
   }, [weather]);
-  const missedLines = useMemo(() => [...new Set((edition?.shelves.missed ?? []).map((e) => tidyShowName(e.showName)))].slice(0, 3).map((n) => `Yesterday · ${n}`), [edition]);
-
-  return { headlines, digestLines, weatherLines, onThisDay, archiveItems, missedLines, digestStatus: digest.phase };
+  return { headlines, digestLines, weatherLines, onThisDay, archiveItems, weatherPhoto, digestStatus: digest.phase };
 }

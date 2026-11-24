@@ -220,6 +220,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     mediaRef,
     isVideo ? "video" : "audio",
     activeSrc,
+    archiveMusicOn ? "music" : "talk",
   );
 
   // Phase 3/4: diagnostics drawer is collapsed by default and remembers the user's choice;
@@ -1389,7 +1390,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           <div ref={audioHostRef} data-testid="audio-host" className="absolute left-0 top-0 h-0 w-0 overflow-hidden" />
         </div>
       )}
-      {overlaySlot}
+      {/* The podcast stage already draws its own Live captions; a second overlay on top made them overlap. */}
+      {!podcastStageSource && overlaySlot}
       {isVideo && <AudioVisualizerOverlay analyser={analyserNode} enabled={visualizerOn && isPlaying} mode="video" />}
       <BufferJingle status={statusText} enabled={isVideo} />
       <WaitingNotes status={statusText} onRetry={onRetry} archive={typeof src === "string" && src.includes("/api/archive/proxy")} />

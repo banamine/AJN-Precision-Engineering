@@ -19,6 +19,7 @@ import {
   HelpCircle,
   Clapperboard,
   RadioTower,
+  FileSearch,
 } from 'lucide-react';
 import { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
 import { SuggestInput } from './SuggestInput';
@@ -39,6 +40,9 @@ interface NavigationProps {
   onPlayProgram?: PlayProgramCallback;
   /** Opens the Start Guide. Omitted → no Start Guide button. */
   onOpenStartGuide?: () => void;
+  /** Radio dropdown (top bar): open state, toggle, and whether something is playing. */
+  radioOpen?: boolean;
+  onToggleRadio?: () => void;
 }
 
 interface NavItemConfig {
@@ -78,6 +82,7 @@ const MOBILE_MORE_ITEMS: NavItemConfig[] = [
   { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
   { id: 'weather', label: 'WEATHER', icon: CloudSun, description: 'Current conditions and 5-day forecast' },
   { id: 'on-air', label: 'ON AIR', icon: RadioTower, description: 'Daily podcasts and live radio as a broadcast frame' },
+  { id: 'desk', label: 'DECLASSIFIED', icon: FileSearch, description: 'Story and scan cards from government documents' },
 ];
 const VAULT_ITEMS: NavItemConfig[] = [
   PRIMARY_DESTINATIONS[2],
@@ -87,6 +92,7 @@ const VAULT_ITEMS: NavItemConfig[] = [
   { id: 'dev', label: 'NEURAL TWIN', icon: Activity, description: 'App health map and diagnostics' },
   { id: 'weather', label: 'WEATHER', icon: CloudSun, description: 'Current conditions and 5-day forecast' },
   { id: 'on-air', label: 'ON AIR', icon: RadioTower, description: 'Daily podcasts and live radio as a broadcast frame' },
+  { id: 'desk', label: 'DECLASSIFIED', icon: FileSearch, description: 'Story and scan cards from government documents' },
 ];
 
 const VAULT_GROUPS: { label: string; items: NavItemConfig[] }[] = [
@@ -113,6 +119,8 @@ export function Navigation({
   suggestions = [],
   onPlayProgram,
   onOpenStartGuide,
+  radioOpen = false,
+  onToggleRadio,
 }: NavigationProps) {
   const { openAppearance } = useAjnAppearance();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
@@ -204,6 +212,7 @@ export function Navigation({
               const hasBadge = item.id === 'player' && nowPlaying;
 
               return (
+                <React.Fragment key={item.id}>
                 <button
                   key={item.id}
                   id={`nav-link-${item.id}`}
@@ -223,7 +232,7 @@ export function Navigation({
                       isActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'
                     }`}
                   />
-                  <span className="hidden xl:inline">{item.label}</span>
+                  <span className="hidden 2xl:inline">{item.label}</span>
 
                   {/* Active playing indicator badge on Player tab */}
                   {hasBadge && (
@@ -237,6 +246,14 @@ export function Navigation({
                     <span className="ajn-nav-underline absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />
                   )}
                 </button>
+                {item.id === 'home' && onToggleRadio ? (
+                  <button type="button" id="nav-radio-toggle" data-testid="nav-radio-toggle" onClick={onToggleRadio} aria-expanded={radioOpen} aria-controls="persistent-mini-player" aria-label="Radio" title="Radio"
+                    className={`ck-key relative flex min-h-[44px] shrink-0 items-center gap-2 px-2 py-2 text-xs font-medium ${radioOpen ? 'is-latched' : ''}`}>
+                    <Radio className="h-4 w-4 text-neutral-300" />
+                    {nowPlaying ? <span className="h-2 w-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" aria-hidden="true" /> : null}
+                  </button>
+                ) : null}
+                </React.Fragment>
               );
             })}
             <div
@@ -260,7 +277,7 @@ export function Navigation({
                 className={`group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap px-2 2xl:px-3.5 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)] cursor-pointer ck-key${myLibraryActive ? ' is-latched' : ''}`}
               >
                 <Bookmark className={`h-4 w-4 ${myLibraryActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
-                <span className="hidden xl:inline">My Library</span>
+                <span className="hidden 2xl:inline">My Library</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${myLibraryOpen ? 'rotate-180' : ''}`} />
                 {myLibraryActive && <span className="ajn-nav-underline absolute -bottom-[9px] left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />}
               </button>
@@ -314,7 +331,7 @@ export function Navigation({
                 }`}
               >
                 <Box className={`h-4 w-4 ${vaultActive ? 'text-[var(--ajn-accent)]' : 'text-neutral-400'}`} />
-                <span className="hidden xl:inline">More</span>
+                <span className="hidden 2xl:inline">More</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${vaultOpen ? 'rotate-180' : ''}`} />
               </button>
               {vaultOpen && (

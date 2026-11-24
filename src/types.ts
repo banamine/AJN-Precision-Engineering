@@ -1,6 +1,6 @@
 import type { BufferGaugeMetadata } from "./utils/bufferGauge";
 
-export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'news-cube' | 'radio' | 'today' | 'history' | 'watch-later' | 'shows' | 'weather' | 'on-air' | 'dev';
+export type Destination = 'home' | 'tv-guide' | 'player' | 'library' | 'search' | 'news' | 'news-cube' | 'radio' | 'today' | 'history' | 'watch-later' | 'shows' | 'weather' | 'on-air' | 'desk' | 'dev';
 
 export type MediaType = 'video' | 'audio';
 

@@ -30,20 +30,25 @@
     padding: 2px 7px;
     letter-spacing: 0.04em;
   }/* PART A: 16:9 DUSK MARQUEE FRAME (V1: frame-relative scale via container-type: inline-size & --u) */.onair-root .screen-shell {
-    width: 960px;
-    max-width: 100%;
-    margin: 0 auto 16px auto;
+    /* The thin frame line fills the space between the nav row and the bottom dock, edge to edge and top to bottom, at 100% zoom.
+       136px = nav row 54 + top gap 8 (pt-2 on On Air) + bottom dock 64 + bottom gap 8 + 2 slack (measured from screenshots).
+       The layout inside takes the box's own shape (stageSize.ts), so there is no empty band at the sides. */
+    width: 100%;
+    height: calc(100vh - 136px);
+    height: calc(100dvh - 136px);
+    min-height: 260px;
+    margin: 0 auto;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: var(--ink);
     position: relative;
     overflow: hidden;
-    container-type: inline-size;
+    container-type: size;
   }.onair-root .screen-frame {
-    --u: calc(100cqw / 1920);
+    --u: min(calc(100cqw / 1920), calc(100cqh / 1080));
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    height: 100%;
     background: radial-gradient(ellipse 68% 62% at 36% 48%, var(--sky-glow), var(--ink) 74%);
     overflow: hidden;
     user-select: none;
@@ -615,7 +620,7 @@
 /* ---------- Page wrapper ---------- */
 .onair-root { color: var(--text); font-family: var(--font-sans); width: 100%; }
 .onair-root * { box-sizing: border-box; }
-.onair-root .screen-shell { width: 100%; max-width: 1920px; margin: 0 auto; }
+.onair-root .screen-shell { margin: 0 auto; } /* width comes from the main .screen-shell rule above (fits the window at 100% zoom) */
 .onair-root.clean-view { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 2147483000; background: var(--ink); display: flex; align-items: center; justify-content: center; }
 .onair-root.clean-view.hide-cursor { cursor: none; }
 .onair-root.clean-view .screen-shell { width: min(100vw, calc(100vh * 16 / 9)); max-width: none; border: none; border-radius: 0; }
@@ -709,3 +714,64 @@
 /* Build 17: when the on-air file has a picture, the cover box becomes 16:9 (wider, no black bars above/below). */
 .onair-root .hero-stack .cover-box:has(.dp-wrap[data-has-picture="yes"]),
 .onair-root .cover-row .cover-box:has(.dp-wrap[data-has-picture="yes"]) { aspect-ratio: 16 / 9; height: auto; max-height: 100%; width: 52%; max-width: calc(480 * var(--u)); }
+
+/* Always-visible "Coming up" under the music side list (compact), and the bottom row snap-in. */
+.onair-root .side-heading-sm { font-size: calc(18 * var(--u)); padding-bottom: calc(4 * var(--u)); }
+.onair-root .side-recent { flex: 1 1 auto; }
+.onair-root .upnext-lines { flex: 0 0 auto; display: flex; flex-direction: column; gap: calc(4 * var(--u)); font-size: calc(20 * var(--u)); line-height: 1.2; color: var(--text); overflow: hidden; }
+.onair-root .upnext-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.92; }
+.onair-root .lt-snap { animation: lt-snap-in 0.35s ease-out; }
+@keyframes lt-snap-in { from { opacity: 0; transform: translateY(calc(6 * var(--u))); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .onair-root .lt-snap { animation: none; } }
+
+/* Weather card with the city photo behind the text: dimmed and slightly blurred, with a dark wash so the text stays readable. */
+.onair-root .frame-panel.has-photo { position: relative; overflow: hidden; isolation: isolate; }
+.onair-root .frame-panel.has-photo::before { content: ''; position: absolute; inset: calc(-6 * var(--u)); z-index: -2; background-image: var(--photo); background-size: cover; background-position: center; filter: blur(1.5px) saturate(1.05); opacity: 0.6; }
+.onair-root .frame-panel.has-photo::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(8, 11, 20, 0.55) 0%, rgba(8, 11, 20, 0.72) 100%); }
+.onair-root .frame-panel.has-photo .panel-lines { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85); }
+.onair-root .photo-credit { margin-left: auto; font-size: calc(13 * var(--u)); color: rgba(235, 240, 255, 0.78); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+
+/* Bigger video: the picture card takes more of the stage and the right-hand list gets narrower. */
+.onair-root .stage-side { flex: 0.36; }
+.onair-root .hero-stack .cover-box:has(.dp-wrap[data-has-picture="yes"]),
+.onair-root .cover-row .cover-box:has(.dp-wrap[data-has-picture="yes"]) { width: 64%; max-width: calc(700 * var(--u)); }
+
+/* Desk stories in the On This Day panel: a news-article card (picture, dateline, headline, verbatim lead). */
+.onair-root .arch-story { display: flex; flex-direction: column; gap: calc(10 * var(--u)); width: 100%; height: 100%; min-height: 0; padding: 0; margin: 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; position: relative; animation: arch-in .6s ease both; }
+.onair-root .arch-story:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+.onair-root .arch-story-img { flex: 0 1 26%; min-height: 0; width: 100%; object-fit: cover; object-position: top center; border-radius: calc(8 * var(--u)); background: #e9e4d6; }
+.onair-root .arch-story-text { display: flex; flex-direction: column; gap: calc(5 * var(--u)); min-width: 0; flex: 0 1 auto; }
+.onair-root .arch-story-dateline { font-family: var(--font-mono); font-size: .6em; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
+.onair-root .arch-story-head { font-weight: 700; font-size: 1em; line-height: 1.15; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.onair-root .arch-story-lead { font-family: Georgia, 'Times New Roman', serif; font-size: .95em; line-height: 1.35; color: var(--text, #e8ebf0); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 14; overflow: hidden; }
+.onair-root .arch-story-tag { font-family: var(--font-mono); font-size: .5em; letter-spacing: .08em; color: var(--muted); }
+.onair-root .arch-story.compact { flex-direction: row; align-items: center; }
+.onair-root .arch-story.compact .arch-story-img { flex: 0 0 auto; width: calc(64 * var(--u)); height: calc(64 * var(--u)); }
+.onair-root .arch-story.compact .arch-story-lead { -webkit-line-clamp: 2; }
+.onair-root .frame-panel-big .panel-body { min-height: 0; }
+.onair-root .frame-panel-big .arch-lines { height: 100%; }
+@media (prefers-reduced-motion: reduce) { .onair-root .arch-story { animation: none; } }
+
+.onair-root .arch-item.arch-big { flex: 1; height: 100%; justify-content: center; background: rgba(0,0,0,.25); border-radius: calc(8 * var(--u)); overflow: hidden; }
+.onair-root .arch-item.arch-big .arch-thumb { width: 100%; height: 100%; object-fit: contain; border-radius: 0; background: transparent; }
+.onair-root .panel-hdr .panel-caption { flex: 1 1 auto; min-width: 0; margin: 0 calc(10 * var(--u)); font-family: var(--font-mono); font-size: calc(17 * var(--u)); letter-spacing: .04em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.onair-root .panel-hdr .panel-caption > span { display: block; overflow: hidden; text-overflow: ellipsis; }
+.onair-root .panel-hdr:has(.panel-caption) .panel-title { flex-shrink: 0; }
+.onair-root .panel-art { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.onair-root .panel-art img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: calc(8 * var(--u)); }
+
+/* Big panel: the story is the headline. Large type first, the picture is just a small example beside/above it. */
+.onair-root .frame-panel-big .arch-story:not(.compact) .arch-story-img { flex: 0 0 30%; }
+.onair-root .frame-panel-big .arch-story .arch-story-dateline { font-size: calc(18 * var(--u)); }
+.onair-root .frame-panel-big .arch-story .arch-story-head { font-size: calc(40 * var(--u)); line-height: 1.12; -webkit-line-clamp: 4; }
+.onair-root .frame-panel-big .arch-story .arch-story-lead { font-size: calc(22 * var(--u)); -webkit-line-clamp: 5; }
+
+/* Board text fills its panel: big readable lines, spaced evenly, instead of tiny text at the bottom of an empty box. */
+.onair-root .frame-panel .panel-body { justify-content: flex-start; }
+.onair-root .frame-panel .panel-lines:not(.arch-lines):not(.pc-lines) { justify-content: space-evenly; font-size: calc(46 * var(--u)); line-height: 1.18; font-weight: 600; gap: calc(8 * var(--u)); }
+.onair-root .frame-panel-big .panel-lines:not(.arch-lines):not(.pc-lines) { font-size: calc(58 * var(--u)); }
+.onair-root .frame-panel .panel-lines:not(.arch-lines):not(.pc-lines) .panel-line-item { padding-bottom: calc(6 * var(--u)); border-bottom: 1px solid var(--line, rgba(255,255,255,.12)); }
+.onair-root .frame-panel .panel-lines:not(.arch-lines):not(.pc-lines) .panel-line-item:last-child { border-bottom: 0; }
+.onair-root .frame-panel .pc-lines { font-size: calc(46 * var(--u)); }
+.onair-root .frame-panel .panel-lines.pl-show { justify-content: flex-start; font-size: calc(30 * var(--u)); font-weight: 500; gap: calc(4 * var(--u)); }
+.onair-root .frame-panel .panel-lines.pl-show .panel-line-item { border-bottom: 0; padding-bottom: 0; }

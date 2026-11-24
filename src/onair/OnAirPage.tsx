@@ -1,51 +1,55 @@
 /* AJN On Air: the daily run of show (podcast, then live radio, then podcast) as a 16:9 broadcast frame.
  * Audio first. One foreground audio source at a time; the engine (engine.js) decides, this page shows and does what it says.
- * ?clean=1 hides the app chrome for OBS; &cam=BR|BL|TR|TL reserves a 25% x 25% camera corner. &debug=1 shows the engine state and log.
+ * &debug=1 shows the engine state and log. (Clean view and the camera-corner reservation were removed 2026-11-23: a camera is laid over the page instead.)
  * Everything on screen is real data or an explicit "unavailable" note; nothing is invented. */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { AJN_PLAYOUT as E } from './engine.js';
 import { DEFAULT_PARAMS, LIVE_STATIONS, STATION_LOGO, buildRunOfShowFromEdition, segmentIndexAt, type Segment } from './runOfShow';
 import { useOnAirPlayout } from './useOnAirPlayout';
 import OnAirSpectrum from './OnAirSpectrum';
 import ArchiveOnThisDay from './ArchiveOnThisDay';
+import { useDeskStories } from './useDeskStories';
+import { rankForToday } from '../desk/onThisDay';
+import { StoryWindow } from '../desk/StoryWindow';
+import { isSaved, loadSaved, saveSaved, toggleSaved } from '../desk/savedStories';
+import type { DeskItem } from '../desk/useDesk';
 import PanelCarousel from './PanelCarousel';
 import DeckPicture from './DeckPicture';
 import { loadLibraryAlbums, type LibAlbum } from './libraryTracks';
 import { useOnAirData } from './useOnAirData';
 import { useOnAirFiller, poolSize } from './useOnAirFiller';
 import { DEFAULT_BACKFILL } from './backfill';
+import { stageVirtualSize, type StageSize } from './stageSize';
+import { comingUp, cycleStart, daypartRest, remainingLabel, stillToComeToday } from './scheduleView';
+import { nextAirings } from './nextAirings';
 import { denverDateKey, denverMidnight } from '../utils/dailyEdition';
 import { useDailyEdition } from '../hooks/useDailyEdition';
 import { useLiveRadioNowPlaying } from '../hooks/useLiveRadioNowPlaying';
 import { ShowArt } from '../components/ShowArt';
 import './onair.css';
 
-const PANEL_CATALOG = ['Headlines', 'Digest', 'Weather', 'Last songs', 'On this day', 'Live now', 'Homepage reel', 'Missed shows', 'Around the clock', 'Station ID card', 'Clock card', 'Show card'];
+// One ticker only: the headlines run along the bottom, so there is no Headlines panel. "Still to come" replaces the old Missed shows and Around the clock panels.
+/** How long the large right-hand panel holds each of its contents before it crossfades to the next. */
+const BIG_PANEL_DWELL_MS = 25_000;
+const PANEL_CATALOG = ['Digest', 'Weather', 'Last songs', 'On this day', 'Live now', 'Homepage reel', 'Still to come', 'Station ID card', 'Clock card', 'Show card'];
 const params = DEFAULT_PARAMS;
 type Rect = { x: number; y: number; w: number; h: number };
-const pct = (r: Rect, axis: 'x' | 'y' | 'w' | 'h'): string => `${(r[axis] / (axis === 'x' || axis === 'w' ? 1920 : 1080)) * 100}%`;
-const boxStyle = (r: Rect): React.CSSProperties => ({ left: pct(r, 'x'), top: pct(r, 'y'), width: pct(r, 'w'), height: pct(r, 'h') });
+const boxStyleIn = (r: Rect, vw: number, vh: number): React.CSSProperties => ({ left: `${(r.x / vw) * 100}%`, top: `${(r.y / vh) * 100}%`, width: `${(r.w / vw) * 100}%`, height: `${(r.h / vh) * 100}%` });
 const fitClass = (t: string): string => (t.length <= 22 ? 'fit-1' : t.length <= 38 ? 'fit-2' : 'fit-3');
 const hms = (ms: number): string => E.formatDenverHMS(ms) as string;
 const mmss = (s: number): string => E.formatMMSS(s) as string;
 
-function readQuery(): { clean: boolean; cam: string; debug: boolean } {
+function readQuery(): { debug: boolean } {
   const search = typeof window === 'undefined' ? '' : window.location.search;
   const hashQ = typeof window === 'undefined' ? '' : (window.location.hash.split('?')[1] ?? '');
-  const a = E.parseClean(search) as { clean: boolean; cam: string }, b = E.parseClean(hashQ) as { clean: boolean; cam: string };
   const dbg = new URLSearchParams(search || `?${hashQ}`).get('debug') === '1' || new URLSearchParams(hashQ).get('debug') === '1';
-  return { clean: a.clean || b.clean, cam: a.cam !== 'Off' ? a.cam : b.cam, debug: dbg };
+  return { debug: dbg };
 }
 
 export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayback?: () => void }) {
   const initial = useMemo(readQuery, []);
-  const [clean, setClean] = useState(initial.clean);
-  const [cam, setCam] = useState(initial.cam);
-  const [revealExit, setRevealExit] = useState(false);
   const [albums, setAlbums] = useState<LibAlbum[] | null>(null);
   const [albumsFailed, setAlbumsFailed] = useState(false);
-  const revealTimer = useRef<number | null>(null);
   const lastPanels = useRef<Array<string | null>>([null, null, null, null]);
 
   const edition = useDailyEdition(true);
@@ -102,17 +106,6 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   }, [songKey, liveStationId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (liveStationId && np.state === 'stale') playout.notifyFeedStale(); }, [np.state, liveStationId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Clean view: Esc or a double-click leaves it. The exit button shows for 5 s on entry and again whenever the pointer, a touch or a key is used.
-  useEffect(() => {
-    if (!clean) return undefined;
-    const show = (ms: number): void => { setRevealExit(true); if (revealTimer.current) window.clearTimeout(revealTimer.current); revealTimer.current = window.setTimeout(() => setRevealExit(false), ms); };
-    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') setClean(false); else show(3000); };
-    const onMove = (): void => show(3000);
-    const onDbl = (): void => setClean(false);
-    show(5000);
-    document.addEventListener('keydown', onKey); document.addEventListener('pointermove', onMove); document.addEventListener('pointerdown', onMove); document.addEventListener('touchstart', onMove); document.addEventListener('dblclick', onDbl);
-    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerdown', onMove); document.removeEventListener('touchstart', onMove); document.removeEventListener('dblclick', onDbl); if (revealTimer.current) window.clearTimeout(revealTimer.current); };
-  }, [clean]);
 
   const idx = ros.length ? (machine && machine.state !== 'IDLE' ? Math.max(0, playout.ros.findIndex((s) => s.id === machine.segmentId)) : segmentIndexAt(playout.ros, nowMs)) : -1;
   const list = playout.ros;
@@ -123,51 +116,83 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   const dp = E.daypartOf(nowMs) as string;
   const fresh = data.headlines;
   const tickerVisible = fresh.length > 0;
-  const lay0 = E.layoutFor(cam, 1920, 1080, tickerVisible) as { header: Rect; stage: Rect; panels: Rect[]; lowerThird: Rect; ticker: Rect; cam: Rect | null };
+  // The stage fills its box edge to edge: layout runs in a virtual space of the box's own shape (see stageSize.ts).
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const [vsz, setVsz] = useState<StageSize>({ w: 1920, h: 1080 });
+  useEffect(() => {
+    const el = shellRef.current; if (!el) return undefined;
+    const measure = (): void => { const n = stageVirtualSize(el.clientWidth, el.clientHeight); setVsz((p) => (p.w === n.w && p.h === n.h ? p : n)); };
+    measure();
+    if (typeof ResizeObserver === 'undefined') { window.addEventListener('resize', measure); return () => window.removeEventListener('resize', measure); }
+    const ro = new ResizeObserver(measure); ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const VW = vsz.w;
+  const boxStyle = (r: Rect): React.CSSProperties => boxStyleIn(r, vsz.w, vsz.h);
+  const lay0 = E.layoutFor('Off', vsz.w, vsz.h, tickerVisible) as { header: Rect; stage: Rect; panels: Rect[]; lowerThird: Rect; ticker: Rect; cam: Rect | null };
   // Wider side panels (about 38% of the width): the stage gives up the room the Recently Played list no longer needs. Only when the panels sit to the right of the stage.
   const lay = (() => {
     const px = Math.min(...lay0.panels.map((r) => r.x));
     if (px <= lay0.stage.x) return lay0;
-    const grow = Math.max(0, Math.min(150, Math.round(1920 * 0.38) - (1920 - px)));
+    const grow = Math.max(0, Math.min(150, Math.round(VW * 0.38) - (VW - px)));
     if (!grow) return lay0;
     return { ...lay0, stage: { ...lay0.stage, w: lay0.stage.w - grow }, panels: lay0.panels.map((r) => ({ ...r, x: r.x - grow, w: r.w + grow })) };
   })();
 
+  // Declassified Desk stories: near-date ones first, then the rest (see desk/onThisDay.ts). Click opens the story window.
+  const deskStories = useDeskStories();
+  const todayMD = (() => { const p = E.denverParts(nowMs) as { month: number; day: number }; return { month: p.month, day: p.day }; })();
+  const rankedStories = useMemo(() => rankForToday(deskStories, todayMD), [deskStories, todayMD.month, todayMD.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [openStory, setOpenStory] = useState<{ item: DeskItem; label: string; el: HTMLElement | null } | null>(null);
+  const [capHost, setCapHost] = useState<HTMLElement | null>(null);
+  const [savedStories, setSavedStories] = useState<DeskItem[]>(() => loadSaved());
+  const toggleStory = (item: DeskItem) => setSavedStories((list) => { const next = toggleSaved(list, item); saveSaved(next); return next; });
+
+  // Music blocks end early/late; shift planned times by the real exit drift so every list agrees with the stage ticket.
+  const drift = cur && cur.type === 'music' && machine?.musicExitMs ? machine.musicExitMs - cur.endMs : 0;
+  const curName = cur && cur.type === 'podcast' ? cur.name : '';
+  const upRows = comingUp(list, nowMs, curName, drift);
+  const upcomingPodcasts = (): string[] => upRows.map((r) => `~${r.label}`);
+  const stillLines = stillToComeToday(list, nowMs, 5, drift);
+
   // Music block display: live song from the station's feed; library track from the block's real track list.
   const libTrack = playout.blockTrack;
-  const recent = np.recent.slice(0, 5);
+  const recent = np.recent.slice(0, 3);
   const lastSongs: string[] = effSrc === 'Live 109' ? recent.map((r, i) => `${i + 1}. ${r.artist ? `${r.artist} – ` : ''}${r.title}`) : [];
   const availability: Record<string, boolean> = {
-    Headlines: fresh.length > 0, Digest: data.digestLines.length > 0, Weather: data.weatherLines !== null, 'Last songs': lastSongs.length > 0,
-    'On this day': data.onThisDay !== null || data.archiveItems.length > 0, 'Live now': true, 'Homepage reel': false, 'Missed shows': data.missedLines.length > 0,
-    'Around the clock': true, 'Station ID card': true, 'Clock card': true,
+    Digest: data.digestLines.length > 0, Weather: data.weatherLines !== null, 'Last songs': lastSongs.length > 0,
+    'On this day': data.onThisDay !== null || data.archiveItems.length > 0 || rankedStories.length > 0, 'Live now': true, 'Homepage reel': false, 'Still to come': stillLines.length > 0,
+    'Station ID card': true, 'Clock card': true,
   };
-  const panelTypes = cur ? (E.pickPanels({ dwellSec: params.panelDwellSec, libraryUnreachable: !!machine?.libraryUnreachable }, PANEL_CATALOG, availability, dp, cur.type, nowMs) as string[]) : [];
+  const panelTypes = cur ? (E.pickPanels({ dwellSec: params.panelDwellSec, libraryUnreachable: !!machine?.libraryUnreachable && rankedStories.length === 0 && data.archiveItems.length === 0 }, PANEL_CATALOG, availability, dp, cur.type, nowMs) as string[]) : [];
 
-  const upcomingPodcasts = (): string[] => {
-    const out: string[] = [];
-    // Music blocks end early/late; shift planned times by the real exit drift so this panel agrees with the stage ticket.
-    const drift = cur && cur.type === 'music' && machine?.musicExitMs ? machine.musicExitMs - cur.endMs : 0;
-    let prev = cur && cur.type === 'podcast' ? cur.name : '';
-    for (let i = idx + 1; i < list.length && out.length < 3; i++) if (list[i].type === 'podcast' && list[i].name !== prev) { prev = list[i].name; out.push(`~${hms(list[i].startMs + drift).slice(0, 5)}  ${list[i].name}${list[i].filler ? ' · filler' : ''}`); }
-    return out;
-  };
+  const whenLines = nextAirings(list, nowMs, [
+    { label: 'Alex Jones', re: /alex jones|infowars/i }, { label: 'Fox News', re: /fox news/i },
+    { label: 'CNN', re: /\bcnn\b/i }, { label: 'BBC News', re: /\bbbc\b/i },
+    { label: 'Coast to Coast', re: /coast to coast/i }, { label: 'Paul Harvey', re: /paul harvey/i },
+  ], drift);
+  const wdName = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'long' }).format(new Date(nowMs));
+  const nowLines = [
+    `${new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit' }).format(new Date(nowMs))} Denver`,
+    `${wdName} · ${wdName === 'Saturday' || wdName === 'Sunday' ? 'Weekend' : 'Weekday'} · ${dp}`,
+    ...lastSongs.slice(0, 3),
+  ];
+  const panelTitle = (t: string): string =>
+    ({ 'Still to come': 'Tonight on AJN', 'Clock card': 'Now', 'Station ID card': 'When does it play' } as Record<string, string>)[t] ?? t;
   const panelLines = (type: string): string[] => {
     if (!cur) return [type];
     if (type === 'Show card') return [cur.showName, [cur.networkTag, cur.publishedDate].filter(Boolean).join(' · ') || 'On Air', cur.episodeTitle ?? 'On Air'];
-    if (type === 'Headlines') return fresh.slice(0, 8).map((h) => `${h.text} (${E.relativeAge(h.publishedMs, nowMs)})`);
     if (type === 'Digest') return data.digestLines;
     if (type === 'Weather') return data.weatherLines ?? ['Weather unavailable'];
     if (type === 'Last songs') return lastSongs.slice(0, 3);
     if (type === 'On this day') return data.onThisDay ? [`On this day · ${data.onThisDay.date}`, data.onThisDay.title, 'Library recording'] : [];
     if (type === 'Live now') return ['AJN Radio · Live 109', 'Classic Rock 109 · Classic Hits 109', cur.type === 'music' && effSrc === 'Live 109' ? `On air: ${cur.musicStation}` : 'Between podcasts'];
-    if (type === 'Missed shows') return data.missedLines;
-    if (type === 'Around the clock') return upcomingPodcasts();
-    if (type === 'Station ID card') return ['AJN Precision Engineering', `${dp} broadcast · Audio only`, 'Denver local time'];
-    if (type === 'Clock card') return [`Denver local time: ${hms(nowMs)}`, `Daypart: ${dp}`, new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(nowMs))];
+    if (type === 'Still to come') return stillLines;
+    if (type === 'Station ID card') return whenLines;
+    if (type === 'Clock card') return nowLines;
     return [type];
   };
-  const panelTag = (t: string): string => ({ 'Show card': 'SHOW META', 'On this day': 'LIBRARY', Weather: 'WEATHER', 'Live now': 'LIVE 109', 'Last songs': 'MUSIC LOG', Headlines: 'NEWS', Digest: 'DIGEST', 'Missed shows': 'YESTERDAY', 'Around the clock': 'SCHEDULE' } as Record<string, string>)[t] ?? 'AJN';
+  const panelTag = (t: string): string => ({ 'Show card': 'SHOW META', 'On this day': 'LIBRARY', Weather: 'WEATHER', 'Live now': 'LIVE 109', 'Last songs': 'MUSIC LOG', Digest: 'DIGEST', 'Still to come': 'TODAY' } as Record<string, string>)[t] ?? 'AJN';
 
   // Banners (all truthful engine state).
   const banners: string[] = [];
@@ -196,7 +221,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
               <div className="episode-title">{cur.episodeTitle}</div>
               <div className="btn-row">
                 {cur.filler && cur.tag && <span className="chip" data-testid="on-air-filler-tag">{cur.tag}</span>}
-                {cur.filler && cur.clipDate && <span className="chip">Recorded {cur.clipDate}</span>}
+                {cur.filler && cur.clipDate && <span className="chip">{cur.tag === 'LATEST' ? 'Aired' : 'Recorded'} {cur.clipDate}</span>}
                 {cur.networkTag && <span className={cur.networkTag === "REAL AMERICA'S VOICE" ? 'chip net-rav' : cur.networkTag === 'AJN NETWORK' ? 'chip net-ajn' : 'chip'}>{cur.networkTag}</span>}
                 {cur.publishedDate && <span className="chip">Published {cur.publishedDate}</span>}
               </div>
@@ -206,7 +231,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
           <div className="stage-bottom">
             <div className="progress-wrap">
               <div className="progress-track"><div className={onAir ? 'progress-fill on-air-bar' : 'progress-fill'} style={{ width: `${p.toFixed(1)}%` }} /></div>
-              <div className="progress-times"><span>Elapsed {mmss(elapsed)}</span><span>Remaining -{mmss(rem)}</span></div>
+              <div className="progress-times"><span>Elapsed {mmss(elapsed)}</span><span>Remaining {remainingLabel(rem, mmss)}</span></div>
             </div>
             {next && <div className={machine?.state === 'CROSSFADING' ? 'plays-next-ticket blending-ticket' : 'plays-next-ticket'}><span>Plays next: {next.name}</span><span className="ticket-time">{hms(next.startMs)}</span></div>}
           </div>
@@ -245,21 +270,28 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
         <div className="stage-bottom">
           <div className="progress-wrap">
             <div className="progress-track"><div className={onAir ? 'progress-fill on-air-bar' : 'progress-fill'} style={{ width: `${((el / blockDur) * 100).toFixed(1)}%` }} /></div>
-            <div className="progress-times"><span>Elapsed {mmss(el)}</span><span>Exit -{mmss(rem)}</span></div>
+            <div className="progress-times"><span>Elapsed {mmss(el)}</span><span>Exit in {remainingLabel(rem, mmss)}</span></div>
           </div>
           {next && <div className={machine?.state === 'CROSSFADING' ? 'plays-next-ticket blending-ticket' : 'plays-next-ticket'}><span>Plays next: {next.name}</span><span className="ticket-time">{exitBy ? 'by ' : ''}{hms(exitMs)}</span></div>}
         </div>
       </div>
       <div className="stage-side">
         <div className="side-heading"><span>{live ? 'Recently Played' : 'This block'}</span></div>
-        <div className="transcript-lines">
+        <div className="transcript-lines side-recent">
           {live
             ? (recent.length ? recent.map((r, i) => <div key={`${r.artist}|${r.title}|${i}`} className={r.artUrl ? 'transcript-line two-line has-art' : 'transcript-line two-line'}>{r.artUrl && <img className="row-art" src={r.artUrl} alt="" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}<div className="row-text"><span>{r.title}</span><span className="sub">{r.artist}</span></div></div>) : <div className="transcript-line single"><span>Song list unavailable</span></div>)
-            : (playout.blockTracks.length ? playout.blockTracks.slice(0, 5).map((t, i) => <div key={`${t.src}|${i}`} className="transcript-line two-line"><span>{t.title}</span><span className="sub">{t.artist || t.album}</span></div>) : <div className="transcript-line single"><span>Library tracks unavailable</span></div>)}
+            : (playout.blockTracks.length ? playout.blockTracks.slice(0, 3).map((t, i) => <div key={`${t.src}|${i}`} className="transcript-line two-line"><span>{t.title}</span><span className="sub">{t.artist || t.album}</span></div>) : <div className="transcript-line single"><span>Library tracks unavailable</span></div>)}
         </div>
+        <div className="side-heading side-heading-sm"><span>Coming up</span></div>
+        <div className="upnext-lines">{upcomingPodcasts().length ? upcomingPodcasts().map((u) => <div key={u} className="upnext-line">{u}</div>) : <div className="upnext-line">Nothing scheduled after this</div>}</div>
       </div>
     </>);
   };
+
+  // Bottom row: NOW stays; the other two panels snap through the rest of today's daypart (after the three "Coming up" shows). Nothing left in the daypart: plain NEXT / LATER.
+  const rest = daypartRest(list, nowMs, curName, drift);
+  const rs = cycleStart(nowMs, rest.length, 2);
+  const restPills = rest.length ? [rest[rs], rest.length > 1 ? rest[(rs + 1) % rest.length] : null].filter((r): r is NonNullable<typeof r> => !!r) : [];
 
   const tickerText = fresh.map((h) => `${h.text} [${E.relativeAge(h.publishedMs, nowMs)}]`).join('   •   ');
   const tickerSecs = Math.max(30, Math.round(tickerText.length * 0.18));
@@ -279,18 +311,15 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   const gateFiller = filler.status === 'error' ? ` Backfill clips could not be loaded (${filler.error ?? 'unknown'}).` : '';
 
   const view = (
-    <div className={`onair-root${clean ? ' clean-view' : ''}${clean && !revealExit ? ' hide-cursor' : ''}`} data-testid="on-air-page">
-      {clean && <button type="button" className={`clean-exit-btn${revealExit ? ' reveal' : ''}`} onClick={() => setClean(false)}>Exit Clean View (Esc)</button>}
-      {!clean && (
+    <div className="onair-root" data-testid="on-air-page">
+      {edition.notice && (
         <div className="onair-bar">
-          <button type="button" onClick={() => setClean(true)}>Clean view</button>
-          <label>Camera corner <select value={cam} onChange={(e) => setCam(e.target.value)}>{['Off', 'BR', 'BL', 'TR', 'TL'].map((c) => <option key={c} value={c}>{c}</option>)}</select></label>
-          {edition.notice && <span>{edition.notice.count} new episode{edition.notice.count === 1 ? '' : 's'} published</span>}
+          <span>{edition.notice.count} new episode{edition.notice.count === 1 ? '' : 's'} published</span>
         </div>
       )}
-      {!clean && edition.status === 'error' && !ed && <div className="onair-note" role="alert">Today's podcasts could not be loaded{edition.error ? `: ${edition.error}` : ''}. Nothing will play until they load.</div>}
-      {!clean && albumsFailed && <div className="onair-note" role="status">Library music could not be loaded, so there is no backup if the live station fails.</div>}
-      <div className="screen-shell">
+      {edition.status === 'error' && !ed && <div className="onair-note" role="alert">Today's podcasts could not be loaded{edition.error ? `: ${edition.error}` : ''}. Nothing will play until they load.</div>}
+      {albumsFailed && <div className="onair-note" role="status">Library music could not be loaded, so there is no backup if the live station fails.</div>}
+      <div className="screen-shell" ref={shellRef}>
         <div className="screen-frame" data-daypart={dp}>
           <div className="frame-box frame-header" style={boxStyle(lay.header)}>
             <div className="hdr-left"><span className={onAir ? 'on-air-dot live' : 'on-air-dot'} /><span className="hdr-brand">AJN ON AIR</span></div>
@@ -312,24 +341,37 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
             </div>
           </div>
           {[0, 1, 2, 3].map((pi) => {
-            const type = panelTypes[pi];
+            // Slots B, C and D are one larger panel that crossfades through their content (the engine still picks what each lane offers).
+            if (pi >= 2) return null;
+            const bigTypes = [1, 2, 3].map((k) => panelTypes[k]).filter((t): t is string => !!t);
+            const bigStep = Math.floor(nowMs / BIG_PANEL_DWELL_MS);
+            const storiesOn = rankedStories.length > 0 || data.archiveItems.length > 0;
+            const bigOthers = bigTypes.filter((t) => t !== 'On this day');
+            /* Stories hold the big panel 3 of every 4 turns; the 4th turn is a Board card (Now, Tonight, Weather...). With no stories, the Board rotates as before. */
+            const type = pi === 0 ? panelTypes[0] : storiesOn ? ((bigStep % 4 === 3 && bigOthers.length) ? bigOthers[Math.floor(bigStep / 4) % bigOthers.length] : 'On this day') : (bigTypes.length ? bigTypes[bigStep % bigTypes.length] : undefined);
+            const rect = pi === 0 ? lay.panels[0] : { x: lay.panels[1].x, y: lay.panels[1].y, w: lay.panels[1].w, h: lay.panels[3].y + lay.panels[3].h - lay.panels[1].y };
             const changed = lastPanels.current[pi] !== null && lastPanels.current[pi] !== type;
             lastPanels.current[pi] = type ?? null;
-            if (!type || !cur) return <div key={pi} className="frame-box frame-panel" style={boxStyle(lay.panels[pi])} />;
-            const compact = lay.panels[pi].h < 200;
+            if (!type || !cur) return <div key={pi} className="frame-box frame-panel" style={boxStyle(rect)} />;
+            const compact = rect.h < 200;
             const lines = panelLines(type);
-            const slot = 'ABCD'[pi];
             const lockedA = pi === 0 && cur.type === 'podcast' && type === 'Show card';
+            const photo = type === 'Weather' ? data.weatherPhoto : null;
+            const hasLib = type === 'On this day' && (data.archiveItems.length > 0 || rankedStories.length > 0);
+            const moveText = false; /* text stays in the panel body, readable */ // // the small text goes up into the header line; the body is left for the picture
+            const countdown = pi === 0 ? (lockedA ? 'LOCKED' : `changes in ${E.panelChangesInSec(0, nowMs, params.panelDwellSec)} s`) : `changes in ${Math.max(1, Math.ceil((BIG_PANEL_DWELL_MS - (nowMs % BIG_PANEL_DWELL_MS)) / 1000))} s`;
             return (
-              <div key={`${pi}-${type}`} className={changed ? 'frame-box frame-panel panel-fade' : 'frame-box frame-panel'} style={boxStyle(lay.panels[pi])}>
-                <div className="panel-hdr"><span className="panel-title">P-{slot} · {type === 'On this day' && data.archiveItems.length > 0 ? 'From the Archive · On This Day' : type}</span><span className="panel-countdown">{lockedA ? 'LOCKED' : `changes in ${E.panelChangesInSec(pi, nowMs, params.panelDwellSec)} s`}</span></div>
+              <div key={`${pi}-${type}`} className={`frame-box frame-panel${pi === 1 ? ' frame-panel-big' : ''}${changed ? ' panel-fade' : ''}${photo ? ' has-photo' : ''}`} style={photo ? ({ ...boxStyle(rect), '--photo': `url("${photo.url}")` } as React.CSSProperties) : boxStyle(rect)}>
+                <div className="panel-hdr"><span className="panel-title">{hasLib ? 'From the Library · On This Day' : panelTitle(type)}</span>{hasLib && pi === 1 ? <span className="panel-caption" ref={setCapHost} /> : null}{moveText ? <span className="panel-caption"><span title={lines.join(' · ')}>{lines.join(' · ')}</span></span> : null}<span className="panel-countdown">{countdown}</span></div>
                 <div className="panel-body">
-                  {type === 'On this day' && data.archiveItems.length > 0
-                    ? <div className="panel-lines arch-lines"><ArchiveOnThisDay items={data.archiveItems} rush={data.onThisDay} nowMs={nowMs} compact={compact} /></div>
-                    : (type === 'Headlines' || type === 'Digest')
+                  {moveText
+                    ? (photo || !cur.artUrl ? null : <div className="panel-art"><img src={cur.artUrl} alt="" referrerPolicy="no-referrer" /></div>)
+                    : hasLib
+                    ? <div className="panel-lines arch-lines"><ArchiveOnThisDay items={data.archiveItems} rush={data.onThisDay} stories={rankedStories} nowMs={nowMs} compact={compact} big={pi === 1} captionHost={pi === 1 ? capHost : null} onOpenStory={(item, label, el) => setOpenStory({ item, label, el })} /></div>
+                    : type === 'Digest'
                       ? <div className="panel-lines pc-lines"><PanelCarousel items={lines.map((l) => l.replace(/^[•\s]+/, ''))} nowMs={nowMs} /></div>
-                      : <div className="panel-lines">{(compact && type === 'Show card' ? [lines[0], lines[2] ?? lines[1]] : lines.slice(0, compact ? 2 : lines.length)).map((l, i) => <div key={i} className="panel-line-item">{l}</div>)}</div>}
-                  {!compact && <div className="panel-tags"><span className="role-tag">{type === 'On this day' && data.archiveItems.length > 0 ? 'ARCHIVE' : panelTag(type)}</span></div>}
+                      : <div className={`panel-lines${type === 'Show card' ? ' pl-show' : ''}`}>{(compact && type === 'Show card' ? [lines[0], lines[2] ?? lines[1]] : lines.slice(0, compact ? 2 : lines.length)).map((l, i) => <div key={i} className="panel-line-item">{l}</div>)}</div>}
+                  {!compact && <div className="panel-tags"><span className="role-tag">{hasLib ? 'LIBRARY' : panelTag(type)}</span>{photo && <a className="photo-credit" href={photo.pageUrl} target="_blank" rel="noopener noreferrer">Photo: {photo.author} · {photo.license}</a>}</div>}
                 </div>
               </div>
             );
@@ -337,8 +379,9 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
           <div className="frame-box frame-lower-third" style={boxStyle(lay.lowerThird)}>
             <div className="lt-pills">
               <span className="lt-pill lt-now"><strong>NOW</strong><span>{cur?.name ?? '—'}</span></span>
-              <span className="lt-pill"><strong>NEXT</strong><span>{next?.name ?? '—'}</span></span>
-              <span className="lt-pill"><strong>LATER</strong><span>{later?.name ?? '—'}</span></span>
+              {restPills.length
+                ? restPills.map((r, k) => <span key={`${k}-${r.key}`} className="lt-pill lt-snap"><strong>LATER</strong><span>{r.label}</span></span>)
+                : <><span className="lt-pill"><strong>NEXT</strong><span>{next?.name ?? '—'}</span></span><span className="lt-pill"><strong>LATER</strong><span>{later?.name ?? '—'}</span></span></>}
             </div>
           </div>
           {tickerVisible && (
@@ -347,7 +390,6 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
               <div className="ticker-viewport"><span className="ticker-track onair-ticker" style={{ animationDuration: `${tickerSecs}s` }}>{tickerText}   •   {tickerText}</span></div>
             </div>
           )}
-          {lay.cam && <div className="frame-cam" style={boxStyle(lay.cam)}><DeckPicture getEl={playout.activeVideo} fallback={fresh.length > 0 ? <div className="cam-slate"><span className="role-tag">NEWS</span><PanelCarousel items={fresh.slice(0, 5).map((h) => h.text)} nowMs={nowMs} /></div> : <><span>CAM</span><span className="role-tag">{cam} (25% x 25%)</span></>} /></div>}
           {gateVisible && (
             <div className="gate-overlay">
               <div className="gate-card">
@@ -357,7 +399,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
                 {!canStart && edition.staleFeeds.length > 0 && <p style={{ fontSize: 'calc(16 * var(--u))' }}>Feeds not refreshed: {edition.staleFeeds.slice(0, 6).join(', ')}{edition.staleFeeds.length > 6 ? ` and ${edition.staleFeeds.length - 6} more` : ''}</p>}
                 {!canStart && <><p style={{ fontSize: 'calc(16 * var(--u))' }}>Checking again every 10 seconds.</p><button type="button" onClick={() => edition.refresh()} data-testid="on-air-retry">Check again now</button></>}
                 {playout.startError && <p role="alert" style={{ color: '#ff8a80' }}>Start failed: {playout.startError}</p>}
-                <button type="button" disabled={!canStart} onClick={() => playout.start()} data-testid="on-air-start">Start On Air</button>
+                <button type="button" disabled={!canStart} onClick={() => playout.start()} data-testid="on-air-start">{canStart ? 'Start On Air' : 'Loading…'}</button>
               </div>
             </div>
           )}
@@ -370,8 +412,9 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
           {playout.logRing.slice(-12).map((l) => `${l.at} ${l.msg}`).join('\n')}
         </div>
       )}
+      {openStory ? <StoryWindow item={openStory.item} dateLabel={openStory.label} returnFocus={openStory.el} onClose={() => setOpenStory(null)} saved={isSaved(savedStories, openStory.item.id)} onToggleSave={() => toggleStory(openStory.item)} /> : null}
     </div>
   );
   // Clean view renders straight under <body> so no animated or transformed page ancestor can offset it from the window.
-  return clean ? createPortal(view, document.body) : view;
+  return view;
 }

@@ -17,7 +17,7 @@ export interface OnAirParams {
 }
 /** The locked defaults from the approved mock-up. */
 export const DEFAULT_PARAMS: OnAirParams = {
-  prebufferSec: 60, watchdogSec: 15, musicInSec: 20, musicBedPct: 25, bedFadeInSec: 12, riseSec: 8, podcastFadeOutSec: 8,
+  prebufferSec: 60, watchdogSec: 20, musicInSec: 30, musicBedPct: 25, bedFadeInSec: 12, riseSec: 15, podcastFadeOutSec: 15,
   musicMinSec: 330, musicTargetSec: 420, musicMaxSec: 570, musicFadeOutSec: 10,
   ceilingPodcast: 1.0, ceilingLive109: 0.72, ceilingLibrary: 0.85, nearEndSkipSec: 15, panelDwellSec: 45, headlineMaxAgeHours: 12,
   tickMs: 100, standbyLoadSec: 6, libraryLoadSec: 2, podcastRetries: 3, retryWaitSec: 5, horizonHours: 24, musicSource: 'Live 109',
@@ -45,6 +45,8 @@ export interface Segment {
   filler?: boolean; tag?: string; why?: string; clipDate?: string | null;
   /** Seconds into the file where this piece starts (a news clip window, or a seeded start in a long file). */
   startOffsetSec?: number;
+  /** Music only: planned length in seconds when it is not the default (clock breaks, hour-end pad). The engine exits the block around this length. */
+  musicSec?: number;
 }
 
 const networkTagFor = (showId: string): string => (showId === 'bannon-war-room' ? "REAL AMERICA'S VOICE" : '');
@@ -58,9 +60,9 @@ const dateLabel = (ms: number | null): string => {
  *  The edition's loop + replay tail repeats if the horizon is longer than one pass. Returns [] when the edition has no slots. */
 export function buildRunOfShowFromEdition(edition: Edition | null, params: OnAirParams, startMs: number, horizonMs: number, firstSeq = 1, pool: FillerPool | null = null, cfg: BackfillCfg = DEFAULT_BACKFILL, dateKey = ''): Segment[] {
   // With a backfill pool the day is planned from TODAY'S fresh podcasts only (the edition loop; older episodes never play) plus real filler clips.
-  if (pool && pool.news.length + pool.long.length + pool.quash.length > 0) {
+  if (pool && pool.news.length + pool.long.length + pool.quash.length + (pool.talk?.length ?? 0) + (pool.harvey?.length ?? 0) + (pool.rush?.length ?? 0) > 0) {
     const key = edition?.dateKey ?? dateKey;
-    const plan = planDay({ fresh: edition ? edition.loop : [], pool, dateKey: key, cfg: { ...cfg, musicSec: params.musicTargetSec }, targetSec: Math.max(0, (horizonMs - startMs) / 1000) });
+    const plan = planDay({ fresh: edition ? edition.loop : [], pool, dateKey: key, cfg: { ...cfg, musicSec: params.musicTargetSec }, targetSec: Math.max(0, (horizonMs - startMs) / 1000), startMs });
     return buildRunOfShowFromPlan(plan, params, startMs, horizonMs, firstSeq);
   }
   const slots: EditionSlot[] = edition ? [...edition.loop, ...edition.tail] : [];
@@ -124,12 +126,13 @@ export function buildRunOfShowFromPlan(plan: readonly PlanItem[], params: OnAirP
     seq += 1; cursor += dur;
     if (!it.musicAfter || cursor >= horizonMs) continue;
     const station = STATION_ORDER[musicIdx % 2];
+    const mMs = it.musicSec ? Math.round(it.musicSec * 1000) : musicMs;
     push({
       id: `seg-mus-${firstSeq}-${musicIdx + 1}`, type: 'music', name: params.musicSource === 'Library' ? `Music Block ${musicIdx + 1} (Library)` : `Music Block ${musicIdx + 1} (${station})`,
       showName: station, episodeTitle: null, networkTag: params.musicSource === 'Library' ? 'LIBRARY' : 'LIVE 109', publishedDate: dateLabel(cursor),
-      editionTag: it.tag, musicStation: station, musicSource: params.musicSource, startMs: cursor, endMs: cursor + musicMs, durationMs: musicMs,
+      editionTag: it.tag, musicStation: station, musicSource: params.musicSource, startMs: cursor, endMs: cursor + mMs, durationMs: mMs, ...(it.musicSec ? { musicSec: it.musicSec } : {}),
     });
-    musicIdx += 1; cursor += musicMs;
+    musicIdx += 1; cursor += mMs;
   }
   return out;
 }

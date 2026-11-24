@@ -1,0 +1,22 @@
+Declassified Desk snapshot (Step 1). Copy each file over the same path (all are full files; scripts/ and the workflow are new).
+ server/deskSnapshot.ts, server/deskSnapshotBuild.ts, server/deskSnapshot.test.ts   NEW
+ scripts/build-desk-snapshot.ts                                                      NEW
+ .github/workflows/ajn-desk-snapshot.yml                                             NEW (weekly + manual)
+ server/desk.ts            adds optional `snapshot` field to DeskFeed
+ server.ts                 /api/desk serves the saved snapshot; /desk/thumbs/:name serves thumbnails
+ src/desk/DeskView.tsx, src/desk/desk.css   "Updated <date>" / "Saved N days ago, refresh is overdue" label
+ package.json              adds `npm run desk:snapshot` and the new test to test:schedule
+
+CREATE THE FIRST SNAPSHOT (nothing exists until you do this one step; until then the Desk builds live exactly as before):
+ A) GitHub: Actions > "AJN Desk Snapshot" > Run workflow (leave 25). It commits public/desk/desk.json + public/desk/thumbs/*.jpg to main.
+    If main is protected the push step will fail; then use B.
+ B) Your machine, in the repo folder:  npm run desk:snapshot   then commit and push public/desk/.
+ Then redeploy once so the bundled copy ships. After that, the server picks up newer desk.json from GitHub by itself (startup + every 6 h).
+
+How it behaves:
+ - Startup: bundled copy is read first, then GitHub is tried (8 s timeout). The newest valid one wins. GitHub unreachable = bundled copy. Neither = old live build.
+ - A failed or empty refresh never overwrites a good snapshot. New runs ADD cards (cap 300), old cards are kept.
+ - Thumbnails are saved as files; a card whose thumbnail could not be saved keeps its live image address.
+ - Env override for testing: DESK_SNAPSHOT_BASE.
+Verified here with a fake Archive (build, merge, failed run, failed thumbnails) and the real production server (GitHub down -> bundled + stale label; GitHub up -> newer copy + thumbnail proxy; bad thumbnail name -> 400).
+NOT verified: the real Archive.org run (my sandbox cannot reach it). The first workflow run is that check; send me its log or desk.json size if anything looks off.

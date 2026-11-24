@@ -1,0 +1,43 @@
+name: AJN Desk Snapshot
+# Weekly (and on demand): rebuild the Declassified Desk snapshot from Archive.org and commit public/desk/ (desk.json + thumbnails).
+# The server reads the newest desk.json from GitHub at startup and every 6 hours, and falls back to the copy bundled in the deploy.
+# A failed or empty build changes nothing: the existing snapshot stays.
+
+on:
+  schedule:
+    - cron: '41 11 * * 1' # Mondays, 04:41 PDT / 03:41 PST
+  workflow_dispatch:
+    inputs:
+      per_beat:
+        description: 'Cards to try per beat (more = bigger snapshot, longer run)'
+        default: '25'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ajn-desk-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build snapshot
+        run: npx tsx scripts/build-desk-snapshot.ts --out public --per-beat "${{ github.event.inputs.per_beat || '25' }}"
+      - name: Commit if changed
+        run: |
+          git config user.name "ajn-desk-snapshot"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/desk
+          if git diff --cached --quiet; then echo "No changes."; exit 0; fi
+          git commit -m "Desk snapshot $(date -u +%F)"
+          git pull --rebase origin main
+          git push origin HEAD:main

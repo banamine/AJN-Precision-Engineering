@@ -1,5 +1,5 @@
 export const LAST_VIEW_KEY = "ajn.nav.v1";
-export const VALID_DESTINATIONS = ["home", "tv-guide", "player", "library", "search", "news", "news-cube", "radio", "today", "history", "watch-later", "shows", "weather", "on-air", "dev"];
+export const VALID_DESTINATIONS = ["home", "tv-guide", "player", "library", "search", "news", "news-cube", "radio", "today", "history", "watch-later", "shows", "weather", "on-air", "desk", "dev"];
 
 export interface LastView {
   version: 1;

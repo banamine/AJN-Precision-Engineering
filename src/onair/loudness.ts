@@ -36,9 +36,9 @@ export function trimFor(db: number, target: number = TARGET_DB): number {
 }
 
 /** One step of the slew: move `applied` toward `target` by at most SLEW_DB_PER_SEC * dtSec (in dB). */
-export function slewTrim(applied: number, target: number, dtSec: number): number {
+export function slewTrim(applied: number, target: number, dtSec: number, rateDbPerSec: number = SLEW_DB_PER_SEC): number {
   if (applied <= 0) return target;
-  const stepDb = SLEW_DB_PER_SEC * dtSec;
+  const stepDb = rateDbPerSec * dtSec;
   const diffDb = 20 * Math.log10(target / applied);
   if (Math.abs(diffDb) <= stepDb) return target;
   return applied * Math.pow(10, (Math.sign(diffDb) * stepDb) / 20);
@@ -53,3 +53,25 @@ export function levelKey(kind: 'podcast' | 'live' | 'library' | null, loadedItem
 
 /** Starting guess for sources with no remembered level yet (typical mastered music sits near -14 dBFS RMS); real measurement replaces it within seconds. */
 export const DEFAULT_LEVEL_DB: Record<string, number> = { live: -14, library: -14 };
+
+/* Podcast-to-music blend: music is matched to what the listener was just hearing, may sit a little above it, and only ever moves slowly. */
+export const MUSIC_OVER_DB = 3;            // music may sit this far above the podcast it follows (owner rule: music can be louder than talk, talk must never scream)
+export const MUSIC_SLEW_DB_PER_SEC = 1.5;  // music trim moves slowly in either direction (the 8 s blend never hears a step)
+export const MUSIC_START_BELOW_DB = 6;     // an unmeasured music deck starts this far under its target and rises into it (deep enough that the first real measurement only ever raises it)
+/** Level the listener hears from a deck: its measured source level plus its applied trim (dBFS RMS). */
+export function outputDb(levelDb: number, trim: number): number { return levelDb + 20 * Math.log10(Math.max(trim, 1e-6)); }
+/** Trim that puts a source measured at `db` at `refOutDb + overDb` (never boosted, floor applies). */
+export function relativeTrim(db: number, refOutDb: number, overDb: number = MUSIC_OVER_DB): number {
+  const t = Math.pow(10, (refOutDb + overDb - db) / 20);
+  return t > 1 ? 1 : t < MIN_TRIM ? MIN_TRIM : t;
+}
+/** Music rises and stays: once a music block has found its real level (`settled`), its trim may only go UP for the rest of the block.
+ *  Before that (guess phase and the one settling move to the measured level) it follows the target either way, slowly. */
+export function musicTrimNext(applied: number, target: number, dtSec: number, settled: boolean): number {
+  if (settled && target <= applied) return applied;
+  return slewTrim(applied, target, dtSec, MUSIC_SLEW_DB_PER_SEC);
+}
+/** Once a music block has settled it keeps rising, very slowly, until it reaches full level (trim 1 = whatever the listener's own volume is set to). Never turns down. */
+export const MUSIC_CREEP_DB_PER_SEC = 0.25;
+export function musicCreepNext(applied: number, dtSec: number): number { return applied >= 1 ? 1 : slewTrim(applied, 1, dtSec, MUSIC_CREEP_DB_PER_SEC); }
+export const isMusicKey = (key: string | null): boolean => key === 'live' || key === 'library';

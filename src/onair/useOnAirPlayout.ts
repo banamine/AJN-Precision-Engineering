@@ -1,7 +1,7 @@
 /* Drives the On Air state machine (engine.js) with REAL audio: two <audio> decks, real load/ended/error events, real clock.
  * The engine decides (what plays, when to blend, what the deck volumes are); this hook only does what the engine says and reports what
  * the audio elements really did. Readiness of the standby deck is the element's real readyState, never the engine's simulated load timer. */
-import { DEFAULT_LEVEL_DB, LevelEstimator, levelKey, rmsDb, slewTrim, trimFor } from './loudness';
+import { DEFAULT_LEVEL_DB, LevelEstimator, MIN_TRIM, MUSIC_CREEP_DB_PER_SEC, MUSIC_SLEW_DB_PER_SEC, MUSIC_START_BELOW_DB, isMusicKey, musicCreepNext, musicTrimNext, levelKey, outputDb, relativeTrim, rmsDb, slewTrim, trimFor } from './loudness';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AJN_PLAYOUT as E } from './engine.js';
 import { DEFAULT_PARAMS, LIVE_STATIONS, segmentIndexAt, type MusicSource, type OnAirParams, type Segment } from './runOfShow';
@@ -34,8 +34,8 @@ const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const LEVELS_KEY = 'ajn-onair-levels-v1';
 const loadLevels = (): Record<string, number> => { try { const o = JSON.parse(localStorage.getItem(LEVELS_KEY) ?? '{}') as Record<string, unknown>; const out: Record<string, number> = {}; for (const [k, v] of Object.entries(o)) if (typeof v === 'number' && Number.isFinite(v)) out[k] = v; return out; } catch { return {}; } };
 const saveLevels = (o: Record<string, number>): void => { try { localStorage.setItem(LEVELS_KEY, JSON.stringify(o)); } catch { /* storage blocked: levels are simply relearned */ } };
-interface LevelState { key: string | null; applied: number; target: number | null; est: LevelEstimator; at: number }
-const newLevel = (): LevelState => ({ key: null, applied: 1, target: null, est: new LevelEstimator(), at: 0 });
+interface LevelState { key: string | null; seg: string | null; settled: boolean; measured: boolean; applied: number; target: number | null; est: LevelEstimator; at: number }
+const newLevel = (): LevelState => ({ key: null, seg: null, settled: false, measured: false, applied: 1, target: null, est: new LevelEstimator(), at: 0 });
 
 interface DeckMeta { segmentId: string | null; kind: 'podcast' | 'live' | 'library' | null; tracks: LibTrack[]; trackIdx: number; mutedUntilAudible: boolean; pendingSeek: number | null; loadedAtMs: number }
 const emptyMeta = (): DeckMeta => ({ segmentId: null, kind: null, tracks: [], trackIdx: 0, mutedUntilAudible: false, pendingSeek: null, loadedAtMs: 0 });
@@ -60,6 +60,8 @@ export function useOnAirPlayout(opts: { ros: Segment[]; albums: LibAlbum[] | nul
   const tapRef = useRef<{ deck: DeckId; node: MediaStreamAudioSourceNode; src: string } | null>(null);
   const levelRef = useRef<Record<DeckId, LevelState>>({ A: newLevel(), B: newLevel() });
   const levelMemRef = useRef<Record<string, number>>(loadLevels());
+  /** What the last podcast sounded like to the listener (dBFS RMS after trim). The next music block is matched to it. */
+  const podcastOutDbRef = useRef<number | null>(null);
   const levelSavedAtRef = useRef(0);
   const levelBufRef = useRef<Float32Array | null>(null);
   const levelMeasuredAtRef = useRef(0);
@@ -245,8 +247,16 @@ export function useOnAirPlayout(opts: { ros: Segment[]; albums: LibAlbum[] | nul
       const el = decks[id], d = m.decks[id], meta = metaRef.current[id];
       // Build 19: same fade shape as the engine (volume / ceiling), but scaled to the source's learned level instead of a fixed per-kind ceiling.
       const lv = levelRef.current[id]; const key = levelKey(meta.kind, d.loadedItem); const nowT = Date.now();
-      if (lv.key !== key) { lv.key = key; lv.est = new LevelEstimator(); const mem = key ? (levelMemRef.current[key] ?? DEFAULT_LEVEL_DB[key]) : undefined; lv.target = typeof mem === 'number' ? trimFor(mem) : null; lv.applied = lv.target ?? d.ceiling; lv.at = nowT; }
-      if (lv.target !== null) { lv.applied = slewTrim(lv.applied, lv.target, Math.min(0.5, Math.max(0, (nowT - lv.at) / 1000))); }
+      if (lv.key !== key || (isMusicKey(key) && lv.seg !== meta.segmentId)) { lv.key = key; lv.seg = meta.segmentId; lv.settled = false; lv.measured = false; lv.est = new LevelEstimator(); const mem = key ? (levelMemRef.current[key] ?? DEFAULT_LEVEL_DB[key]) : undefined; const ref = podcastOutDbRef.current; lv.target = typeof mem === 'number' ? (isMusicKey(key) && ref !== null ? relativeTrim(mem, ref) : trimFor(mem)) : null; lv.applied = isMusicKey(key) && lv.target !== null ? Math.max(MIN_TRIM, lv.target * Math.pow(10, -MUSIC_START_BELOW_DB / 20)) : (lv.target ?? d.ceiling); lv.at = nowT; }
+      if (lv.target !== null) {
+        const dtS = Math.min(0.5, Math.max(0, (nowT - lv.at) / 1000));
+        if (isMusicKey(lv.key)) {
+          // Music rises and stays: after it has reached its measured level it is never turned down again within the block.
+          lv.applied = musicTrimNext(lv.applied, lv.target, dtS, lv.settled);
+          if (lv.measured && lv.applied === lv.target) lv.settled = true;
+          if (lv.settled) lv.applied = musicCreepNext(lv.applied, dtS); // then keeps rising slowly to full level (the listener's own volume is the ceiling)
+        } else lv.applied = slewTrim(lv.applied, lv.target, dtS);
+      }
       lv.at = nowT;
       const vol = d.ceiling > 0 && lv.key ? clamp01((d.volume / d.ceiling) * lv.applied) : clamp01(d.volume);
       if (Math.abs(el.volume - vol) > 0.001) el.volume = vol;
@@ -276,7 +286,7 @@ export function useOnAirPlayout(opts: { ros: Segment[]; albums: LibAlbum[] | nul
       const meta = metaRef.current[m.activeDeck];
       if (meta.kind === 'library' && meta.tracks.length) m.trackLengthsMs = meta.tracks.map((t) => t.durationMs);
       const mode = m.blockSourceOverride ?? m.musicSource;
-      const ex = E.musicExitAtMs(m.activeSegment.startMs, m.params, m.songChangeTimesMs || [], m.feedStale, mode, m.trackLengthsMs);
+      const ex = E.musicExitAtMs(m.activeSegment.startMs, E.paramsForSegment(m.activeSegment, m.params), m.songChangeTimesMs || [], m.feedStale, mode, m.trackLengthsMs);
       m.musicExitMs = ex.exitAtMs; m.musicExitReason = ex.reason;
     }
     syncAudio(m);
@@ -314,7 +324,8 @@ export function useOnAirPlayout(opts: { ros: Segment[]; albums: LibAlbum[] | nul
           an.getFloatTimeDomainData(buf); lv.est.add(rmsDb(buf), dt);
           const lvl = lv.est.get();
           if (lvl !== null) {
-            lv.target = trimFor(lvl);
+            if (lv.key?.startsWith('podcast:')) podcastOutDbRef.current = outputDb(lvl, lv.applied);
+            lv.target = isMusicKey(lv.key) && podcastOutDbRef.current !== null ? relativeTrim(lvl, podcastOutDbRef.current) : trimFor(lvl); if (isMusicKey(lv.key)) lv.measured = true;
             if (lv.est.heardSec >= 10 && nowMs - levelSavedAtRef.current > 10_000) { levelSavedAtRef.current = nowMs; const mem = levelMemRef.current[lv.key]; levelMemRef.current[lv.key] = typeof mem === 'number' ? 0.5 * mem + 0.5 * lvl : lvl; saveLevels(levelMemRef.current); }
           }
         }
@@ -359,7 +370,7 @@ export function useOnAirPlayout(opts: { ros: Segment[]; albums: LibAlbum[] | nul
     if (seg.type === 'music') {
       const meta = metaRef.current.A;
       if (meta.kind === 'library' && meta.tracks.length) out.machine.trackLengthsMs = meta.tracks.map((t) => t.durationMs);
-      const ex = E.musicExitAtMs(seg.startMs, params, [], false, params.musicSource, out.machine.trackLengthsMs);
+      const ex = E.musicExitAtMs(seg.startMs, E.paramsForSegment(seg, params), [], false, params.musicSource, out.machine.trackLengthsMs);
       out.machine.musicExitMs = ex.exitAtMs; out.machine.musicExitReason = ex.reason;
     }
     applyActions(out.actions, out.machine, out.runOfShow, nowMs);

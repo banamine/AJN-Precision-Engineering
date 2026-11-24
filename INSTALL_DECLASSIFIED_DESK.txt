@@ -1,0 +1,34 @@
+DECLASSIFIED DESK - drop-in (2026-11-24)
+
+WHAT IT ADDS
+A new screen (More menu > DECLASSIFIED, or #desk in the address) with story cards and scan cards built from real
+government scans on Archive.org (CIA Reading Room, Project Blue Book / UFO files, State Dept., MKULTRA).
+FBI shows as an empty "Not loaded yet" chip. English-language items only. There are NO links to Archive.org on the page;
+the page only loads page-image addresses.
+
+FILES (copy over, same paths, replace when asked)
+NEW      server/desk.ts
+NEW      server/desk.test.ts
+NEW      src/desk/useDesk.ts
+NEW      src/desk/DeskView.tsx
+NEW      src/desk/desk.css
+CHANGED  server.ts                       (adds /api/desk and one import)
+CHANGED  src/App.tsx                     (desk route, lazy import, screen container)
+CHANGED  src/types.ts                    ('desk' destination)
+CHANGED  src/nav/lastView.ts             ('desk' allowed)
+CHANGED  src/components/Navigation.tsx   (DECLASSIFIED menu entry)
+CHANGED  package.json                    (desk.test.ts added to test:schedule)
+
+CHECKED HERE (sandbox)
+npm run typecheck: clean.  tsx server/desk.test.ts: passes (fake fetch).  vite build: ok.
+Screenshots with stand-in images at 1360x700, 856x458, 390x800: no horizontal scroll, first card near the top,
+2+ cards visible at 1360x700, no card taller than 360px.
+
+NOT CHECKED HERE (the sandbox cannot reach archive.org)
+Live Archive.org results and the real page images. First load after a publish takes up to about a minute
+(the page says "Reading today's documents..."), then it is cached for the day.
+
+YOUR CHECK AFTER PUBLISH
+1. Open https://<your app>/api/desk  -> first shows {"status":"building"}, then after ~1 minute {"status":"ok", "count": N ...}.
+   If it shows status "unavailable", send me the "error" text.
+2. Open the DECLASSIFIED screen: cards show real page thumbnails; click one -> side sheet with Original scan / Raw OCR; Escape closes.

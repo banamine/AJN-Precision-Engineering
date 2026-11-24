@@ -13,11 +13,15 @@ import { resolveMoviesClassicChannelAlias } from './server/moviesClassicsSchedul
 import { liveTvHealthSummary, getAudioLoopRows } from './guideRegistry';
 import { isKnownEnclosure, isResolvedFinal, resolveEnclosure } from './server/podcasts';
 import { PODCAST_SOURCES, archivePrograms } from './server/podcasts';
-import { buildFillerPool, type FillerPool } from './server/onairFiller';
+import { buildFillerPool, ajnFreshClips, type FillerPool } from './server/onairFiller';
+import { fetchAjnFeed } from './ajnResourceService.js';
+import { createCityPhotoService } from './server/cityPhotos';
 import extraChannelsManifestJson from './src/data/extraChannelsManifest.json';
 import usgovLibraryJson from './src/data/usgovLibrary.json';
 import { buildOnThisDay, denverMMDD, type OnThisDayFeed } from './server/onairArchive';
 import { archiveApiFetch as archiveApiFetchOnAir } from './server/archiveLimiter';
+import { buildDesk, type DeskFeed } from './server/desk';
+import { freshest, ageDays, isValidFeed, STALE_AFTER_DAYS, THUMB_NAME_RE } from './server/deskSnapshot';
 import { editionService } from './server/podcastEdition';
 import { getLiveRadioStatus, queryLiveRadioStations } from './server/liveRadio';
 import { plutoEpgStats } from './server/sources/plutoEpg';
@@ -205,7 +209,7 @@ async function libraryReady() {
 }
 app.get('/api/library/items',async(req,res)=>{
   try{await libraryReady();const d=req.query.decade;
-    res.set('Cache-Control','no-store').json(queryLibrary({ids:req.query.ids?String(req.query.ids).split(',').filter(Boolean).slice(0,500):undefined,category:(req.query.category as string)||undefined,decade:d===undefined||d===''?null:Number(d),q:req.query.q as string,mediaType:req.query.mediaType as string,showId:req.query.showId as string,page:Number(req.query.page)||1,limit:Number(req.query.limit)||24}));
+    res.set('Cache-Control','no-store').json(queryLibrary({ids:req.query.ids?String(req.query.ids).split(',').filter(Boolean).slice(0,500):undefined,category:(req.query.category as string)||undefined,decade:d===undefined||d===''?null:Number(d),q:req.query.q as string,mediaType:req.query.mediaType as string,showId:req.query.showId as string,sort:req.query.sort as string|undefined,page:Number(req.query.page)||1,limit:Number(req.query.limit)||24}));
   }catch(e:any){res.status(500).json({error:'library unavailable',detail:e?.message,items:[]});}
 });
 app.get('/api/library/series/:key',async(req,res)=>{
@@ -274,14 +278,25 @@ app.get('/api/podcasts/edition',async(_req,res)=>{
  catch{return res.status(500).json({error:'Today\'s podcasts edition unavailable',editionStatus:'building',edition:null});}
 });
 // On Air backfill pool (real news clips, Infowars-family long files, The Quash). Memoized 10 min; a failed build is not cached.
-let onairFillerCache:{at:number;pool:FillerPool}|null=null;
+let onairFillerCache:{at:number;pool:FillerPool;ttl:number}|null=null;
+// On Air weather-card background: one Wikimedia Commons photo per known city key (curated server-side; the browser never names a category).
+const cityPhotoService=createCityPhotoService((u,i)=>fetch(u,i as any) as any,(m)=>console.log(m));
+app.get('/api/onair/city-photo',async(req,res)=>{
+ res.set('Cache-Control','no-store');
+ const seedRaw=String(req.query.seed??'');
+ return res.json(await cityPhotoService.get(String(req.query.city??''),/^[A-Za-z0-9]{1,16}$/.test(seedRaw)?seedRaw:''));
+});
 app.get('/api/onair/filler',async(_req,res)=>{
  res.set('Cache-Control','no-store');
- if(onairFillerCache&&Date.now()-onairFillerCache.at<10*60_000)return res.json(onairFillerCache.pool);
+ if(onairFillerCache&&Date.now()-onairFillerCache.at<onairFillerCache.ttl)return res.json(onairFillerCache.pool);
  try{
   const quash=PODCAST_SOURCES.find((s)=>s.id==='quash');
-  const pool=buildFillerPool({scheduleChannels:visibleScheduleChannels(await cachedSchedule('cable-tv')),manifest:extraChannelsManifestJson as any,quashPrograms:quash?archivePrograms(quash,'audio-podcasts'):[]});
-  if(pool.news.length+pool.long.length+pool.quash.length>0)onairFillerCache={at:Date.now(),pool};
+  const audioChannels=await cachedSchedule('audio-podcasts').then((c)=>visibleScheduleChannels(c)).catch(()=>undefined);
+  // Current Alex Jones shows (AJN feed): only files the AJN proxy can serve. A feed failure leaves the group empty; the archive covers the evening then.
+  const ajnFresh=await fetchAjnFeed('Alex',AbortSignal.timeout(15000)).then((f)=>ajnFreshClips(f.items,new Date(),(u)=>{try{const t=new URL(u);return t.protocol==='https:'&&!t.port&&AJN_PROXY_HOSTS.has(t.hostname)?`/api/ajn/proxy?url=${encodeURIComponent(u)}`:null;}catch{return null;}})).catch(()=>[]);
+  const pool=buildFillerPool({scheduleChannels:visibleScheduleChannels(await cachedSchedule('cable-tv')),manifest:extraChannelsManifestJson as any,quashPrograms:quash?archivePrograms(quash,'audio-podcasts'):[],audioChannels,ajnFresh});
+  // Build 21: a pool with no news (a cold start before the cable-news guide was warm) is remembered for 30 s only, not 10 min, so it heals itself.
+  if(pool.news.length+pool.long.length+pool.quash.length>0)onairFillerCache={at:Date.now(),pool,ttl:pool.news.length>0?10*60_000:30_000};
   return res.json(pool);
  }catch(e){return res.status(500).json({error:'filler pool unavailable',detail:e instanceof Error?e.message:String(e)});}
 });
@@ -303,6 +318,59 @@ app.get('/api/onair/on-this-day',(_req,res)=>{
  }).catch((e)=>{onairArchiveFail={mmdd,at:Date.now(),error:e instanceof Error?e.message:String(e)};})
  .finally(()=>{onairArchiveBuilding=null;});
  return res.status(202).json({status:'building',generatedFor:mmdd,items:[]});
+});
+// Saved snapshot (desk.json): the bundled repo copy is read at startup; the newest copy on GitHub replaces it when reachable. If GitHub is down the bundled copy is used, so the server never boots empty.
+const DESK_RAW_BASE=process.env.DESK_SNAPSHOT_BASE||'https://raw.githubusercontent.com/banamine/AJN-Precision-Engineering/main/public/desk';
+let deskSnap:{feed:DeskFeed;source:'bundled'|'github'}|null=null;
+let deskSnapLoading:Promise<void>|null=null;
+function readBundledDesk():DeskFeed|null{
+ for(const p of [path.join(process.cwd(),'dist','desk','desk.json'),path.join(process.cwd(),'public','desk','desk.json')]){
+  try{const j=JSON.parse(fs.readFileSync(p,'utf8'));if(isValidFeed(j))return j;}catch{/* not there or not valid: try the next */}
+ }
+ return null;
+}
+async function loadDeskSnapshot():Promise<void>{
+ const bundled=readBundledDesk();
+ let remote:DeskFeed|null=null;
+ try{const r=await fetch(`${DESK_RAW_BASE}/desk.json`,{signal:AbortSignal.timeout(8000),headers:{'User-Agent':'AJN-Precision-Engineering/1.0'}});if(r.ok){const j=await r.json();if(isValidFeed(j))remote=j;}}catch{/* GitHub unreachable: the bundled copy stands */}
+ const best=freshest([bundled,remote]);
+ if(best)deskSnap={feed:best,source:best===remote?'github':'bundled'};
+}
+function refreshDeskSnapshot(){deskSnapLoading=loadDeskSnapshot().finally(()=>{deskSnapLoading=null;});return deskSnapLoading;}
+// Thumbnails: served from dist when present; a newer snapshot's images that are not in this deploy are fetched from GitHub once and kept in memory.
+const deskThumbCache=new Map<string,Buffer>();
+app.get('/desk/thumbs/:name',async(req,res)=>{
+ const name=String(req.params.name);
+ if(!THUMB_NAME_RE.test(name))return res.status(400).end();
+ for(const base of [path.join(process.cwd(),'dist'),path.join(process.cwd(),'public')]){
+  const f=path.join(base,'desk','thumbs',name);
+  if(fs.existsSync(f)){res.set('Cache-Control','public, max-age=86400');return res.sendFile(f);}
+ }
+ let buf=deskThumbCache.get(name);
+ if(!buf){
+  try{const r=await fetch(`${DESK_RAW_BASE}/thumbs/${name}`,{signal:AbortSignal.timeout(10000)});if(!r.ok)return res.status(404).end();const ab=Buffer.from(await r.arrayBuffer());if(ab.length>1_500_000)return res.status(404).end();buf=ab;if(deskThumbCache.size<400)deskThumbCache.set(name,ab);}catch{return res.status(404).end();}
+ }
+ res.set({'Content-Type':'image/jpeg','Cache-Control':'public, max-age=86400'});return res.end(buf);
+});
+// Declassified Desk: story/scan cards from real government scans. Served from the saved snapshot; only if there is no snapshot at all does it build live (an empty or failed build is an explicit 502, never an empty success).
+let deskCache:{day:string;feed:DeskFeed}|null=null;
+let deskBuilding:string|null=null;
+let deskFail:{day:string;at:number;error:string}|null=null;
+app.get('/api/desk',async(_req,res)=>{
+ res.set('Cache-Control','no-store');
+ if(!deskSnap&&deskSnapLoading)await Promise.race([deskSnapLoading,new Promise((r)=>setTimeout(r,10000))]);
+ if(deskSnap){const age=ageDays(deskSnap.feed,new Date());return res.json({status:'ok',...deskSnap.feed,snapshot:{source:deskSnap.source,ageDays:age,stale:age>STALE_AFTER_DAYS}});}
+ const day=new Date().toISOString().slice(0,10);
+ if(deskCache&&deskCache.day===day)return res.json({status:'ok',...deskCache.feed,snapshot:{source:'live',ageDays:0,stale:false}});
+ if(deskBuilding===day)return res.status(202).json({status:'building',items:[]});
+ if(deskFail&&deskFail.day===day&&Date.now()-deskFail.at<10*60_000)return res.status(502).json({status:'unavailable',error:deskFail.error,items:[]});
+ deskBuilding=day;
+ void buildDesk({fetchImpl:archiveApiFetchOnAir,lib:usgovLibraryJson.collections}).then((feed)=>{
+  if(feed.count>0){deskCache={day,feed};deskFail=null;}
+  else deskFail={day,at:Date.now(),error:'Archive.org returned no usable documents'};
+ }).catch((e)=>{deskFail={day,at:Date.now(),error:e instanceof Error?e.message:String(e)};})
+ .finally(()=>{deskBuilding=null;});
+ return res.status(202).json({status:'building',items:[]});
 });
 app.get('/api/schedule',async(req,res)=>{
  res.set('Cache-Control','no-store');
@@ -983,7 +1051,7 @@ app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.origi
 
 async function startServer(){
  if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
- app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); /* Health prober runs regardless of warmers: it sends nothing while Archive is ok, and is the only thing that clears a stale 'down' when no one is playing. */ if(process.env.NODE_ENV!=='test'){startArchiveHealthProber({health:archiveHealth,fetchImpl:fetch,controlUrl:process.env.AJN_CONTROL_PROBE_URL});} if(process.env.AJN_BOOT_WARMERS!=='1'){console.log('[AJN] Archive boot warmers disabled (set AJN_BOOT_WARMERS=1 to enable)');return;} if(process.env.NODE_ENV!=='test'){ for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));}
+ app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); if(process.env.NODE_ENV!=='test'){void refreshDeskSnapshot().then(()=>console.log('[AJN] Desk snapshot:',deskSnap?`${deskSnap.feed.count} cards from ${deskSnap.source}`:'none yet (will build live on first request)')); setInterval(()=>{void refreshDeskSnapshot();},6*3600_000).unref();} /* Health prober runs regardless of warmers: it sends nothing while Archive is ok, and is the only thing that clears a stale 'down' when no one is playing. */ if(process.env.NODE_ENV!=='test'){startArchiveHealthProber({health:archiveHealth,fetchImpl:fetch,controlUrl:process.env.AJN_CONTROL_PROBE_URL});} if(process.env.AJN_BOOT_WARMERS!=='1'){console.log('[AJN] Archive boot warmers disabled (set AJN_BOOT_WARMERS=1 to enable)');return;} if(process.env.NODE_ENV!=='test'){ for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));}
   // Warm the guides one at a time (Archive rate-limits bursts) so the first
   // viewer gets a filled grid instead of waiting on every source.
   if(process.env.NODE_ENV!=='test'&&process.env.LIBRARY_BACKGROUND!=='off'){void loadLibrarySnapshot().then(()=>startLibraryBackground());}

@@ -1,0 +1,6 @@
+AJN On Air Build 21 — news filler no longer stuck empty after a server restart
+Copy server.ts to the repo root (overwrite). One change, three lines in the /api/onair/filler route.
+Evidence: right after a publish/restart, /api/onair/filler returned news 0 with every channel "newest in the guide: 2026-11-01", while /api/schedule?guide=cable-tv already had clips dated Nov 22. The same endpoint 10 minutes later (cache expired) returned 250 news clips dated Nov 20-22 and no "missing".
+Cause: a pool with no news was remembered for 10 minutes because the long and Quash groups were not empty.
+Fix: a pool with no news is remembered 30 s only, so it rebuilds itself as soon as the cable-news guide is ready.
+Verify: after publishing, open /api/onair/filler. "news" should be above 0 and "missing" empty. If news is 0, reload after 30 s.

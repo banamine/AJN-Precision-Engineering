@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PlayerWidgets, type WidgetSpec } from './PlayerWidget';
-import { Play, Trash2, X, Bookmark, History as HistoryIcon } from 'lucide-react';
+import { Play, Trash2, X, Bookmark, History as HistoryIcon, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import type { Destination } from '../types';
 import type { WatchLaterItem } from '../utils/watchLater';
 
@@ -9,6 +9,10 @@ interface WatchLaterViewProps {
   onPlay: (entry: WatchLaterItem) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
+  /** Drop `fromId` where `toId` is (drag and drop). */
+  onMove: (fromId: string, toId: string) => void;
+  /** One step up (-1) or down (1), for the keyboard and the arrow buttons. */
+  onNudge: (id: string, dir: -1 | 1) => void;
   onNavigate: (dest: Destination) => void;
 }
 
@@ -18,8 +22,11 @@ const fmtPos = (s: number) => {
 };
 
 /** Things saved to finish later: saved by hand, or automatically once half was played and it was not finished. Local only. */
-export function WatchLaterView({ entries, onPlay, onRemove, onClear, onNavigate }: WatchLaterViewProps) {
+export function WatchLaterView({ entries, onPlay, onRemove, onClear, onMove, onNudge, onNavigate }: WatchLaterViewProps) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const endDrag = () => { setDragId(null); setOverId(null); };
   return (
     <section aria-labelledby="watch-later-heading" data-testid="watch-later-view" className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -62,7 +69,20 @@ export function WatchLaterView({ entries, onPlay, onRemove, onClear, onNavigate 
             const dur = e.durationSeconds && e.durationSeconds > 0 ? fmtPos(e.durationSeconds) : (e.duration || null);
             const tags = [e.mediaType === 'audio' ? 'Audio' : e.mediaType ? 'Video' : null, e.channelName || e.subtitle || null].filter(Boolean) as string[];
             return (
-              <li key={e.id} data-testid="watch-later-row" className="flex flex-col gap-3 rounded-xl border border-[var(--ajn-border)] bg-[var(--ajn-surface)] p-3">
+              <li key={e.id} data-testid="watch-later-row" draggable
+                onDragStart={(ev) => { setDragId(e.id); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', e.id); }}
+                onDragOver={(ev) => { if (dragId && dragId !== e.id) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; if (overId !== e.id) setOverId(e.id); } }}
+                onDrop={(ev) => { ev.preventDefault(); if (dragId && dragId !== e.id) onMove(dragId, e.id); endDrag(); }}
+                onDragEnd={endDrag}
+                data-dragging={dragId === e.id ? 'true' : undefined} data-drop-target={overId === e.id && dragId !== e.id ? 'true' : undefined}
+                className={`flex flex-col gap-3 rounded-xl border bg-[var(--ajn-surface)] p-3 ${overId === e.id && dragId !== e.id ? 'border-[var(--ajn-accent)] ring-2 ring-[var(--ajn-accent)]/40' : 'border-[var(--ajn-border)]'} ${dragId === e.id ? 'opacity-50' : ''}`}>
+                <div className="-mb-1 flex items-center justify-between text-neutral-500">
+                  <span title="Drag to reorder" className="flex cursor-grab items-center gap-1 text-[11px] active:cursor-grabbing"><GripVertical className="h-4 w-4" aria-hidden="true" />Drag to reorder</span>
+                  <span className="flex items-center gap-1">
+                    <button type="button" onClick={() => onNudge(e.id, -1)} aria-label={`Move ${e.title} up`} className="rounded p-1 hover:text-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"><ChevronUp className="h-4 w-4" aria-hidden="true" /></button>
+                    <button type="button" onClick={() => onNudge(e.id, 1)} aria-label={`Move ${e.title} down`} className="rounded p-1 hover:text-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"><ChevronDown className="h-4 w-4" aria-hidden="true" /></button>
+                  </span>
+                </div>
                 <div className="flex gap-3">
                   <button type="button" onClick={() => onPlay(e)} tabIndex={-1} aria-hidden="true" className="relative h-[72px] w-[104px] shrink-0 overflow-hidden rounded-lg bg-[var(--ajn-card)]">
                     {e.thumbnailUrl && <img src={e.thumbnailUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = 'none'; }} />}

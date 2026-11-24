@@ -43,6 +43,7 @@ const decadeLabel = (d: number) => (d === 0 ? 'Undated' : `${d}s`);
 /** Library: categories and decade counts come from the server index; items arrive one page at a time. */
 export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   const [heat, setHeat] = useState<HeatCat[] | null>(null);
+  const [heatAllTotal, setHeatAllTotal] = useState<number | null>(null);
   const [nker150Shows, setNker150Shows] = useState<ShowOption[]>([]);
   const [heatError, setHeatError] = useState<string | null>(null);
   // Opened from a shortcut (e.g. Home's "Apollo Mission Archive"): start on that category once.
@@ -73,7 +74,7 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
     const ctrl = new AbortController();
     fetch('/api/library/heatmap', { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d) => { setHeat(d.categories); setNker150Shows(d.nker150Shows ?? []); })
+      .then((d) => { setHeat(d.categories); setHeatAllTotal(typeof d.allTotal === 'number' ? d.allTotal : null); setNker150Shows(d.nker150Shows ?? []); })
       .catch((e) => { if (e.name !== 'AbortError') setHeatError(e.message); });
     return () => ctrl.abort();
   }, []);
@@ -100,7 +101,8 @@ export function LibraryView({ onPlayProgram }: LibraryViewProps) {
   }, [page, category, showId, decade, debounced, showFavorites, showFavorites ? favoriteIds : null, retryTick, sort]);
 
   const cat = useMemo(() => heat?.find((c) => c.categoryId === category) ?? null, [heat, category]);
-  const allTotal = useMemo(() => heat ? heat.reduce((n, c) => n + c.total, 0) : 0, [heat]);
+  // Prefer the server's grouped total (matches the grid); the category sum double-counts records that sit in several categories.
+  const allTotal = useMemo(() => heatAllTotal ?? (heat ? heat.reduce((n, c) => n + c.total, 0) : 0), [heat, heatAllTotal]);
   const maxDecade = Math.max(1, ...(cat?.decades.map((d) => d.count) ?? [1]));
 
   // Typeahead: genre rows first (with the live count once the result for exactly this text is in), then titles from the loaded page.

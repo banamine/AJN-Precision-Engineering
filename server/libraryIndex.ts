@@ -281,6 +281,8 @@ export function libraryHeatmap() {
   const rows = allRecords().filter(visible);
   return {
     snapshotAt,
+    /** Same unit the grid counts (series grouped, each record once), so the All pill matches the list below it. */
+    allTotal: groupLibraryResults(rows).length,
     categories: LIBRARY_CATEGORIES.map((c) => {
       const inCat = rows.filter((r) => r.categoryIds.includes(c.id));
       const byDecade = new Map<number, number>();

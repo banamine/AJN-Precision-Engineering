@@ -90,7 +90,8 @@
     }
     var angle = progress * (Math.PI / 2);
     var outGain = Math.cos(angle) * ceilingOut;
-    var inGain = ceilingIn * (s + (1 - s) * Math.sin(angle));
+    var sn = Math.sin(angle);
+    var inGain = ceilingIn * (s + (1 - s) * sn * sn); // eases in: the new source rises slowly while the old one is still audible
     if (outGain > ceilingOut) outGain = ceilingOut;
     if (outGain < 0) outGain = 0;
     if (inGain > ceilingIn) inGain = ceilingIn;
@@ -213,6 +214,19 @@
     if (finalOff > maxMs) finalOff = maxMs;
     if (finalOff < minMs) finalOff = Math.min(targetMs, maxMs);
     return { tracks: picked, exitAtMs: blockStartMs + finalOff, reason: reason };
+  }
+
+  // 8b. paramsForSegment(seg, params): a music block planned with its own length (clock breaks: 4 min, 2 min, hour-end pad) uses that length
+  // for its exit window instead of the global min/target/max. Blocks without seg.musicSec are unchanged.
+  function paramsForSegment(seg, params) {
+    var s = seg && seg.musicSec;
+    if (!(s > 0)) return params;
+    var o = {};
+    for (var k in params) o[k] = params[k];
+    o.musicTargetSec = s;
+    o.musicMinSec = Math.max(60, s - 60);
+    o.musicMaxSec = s + 60;
+    return o;
   }
 
   // 9. musicExitAtMs(blockStartMs, params, songChangeTimesMs, feedStale, mode, trackLengthsMs)
@@ -490,7 +504,7 @@
     var mode = effectiveMusicSource(m);
     var res = musicExitAtMs(
       m.activeSegment.startMs,
-      m.params,
+      paramsForSegment(m.activeSegment, m.params),
       m.songChangeTimesMs || [],
       m.feedStale,
       mode,
@@ -1290,18 +1304,19 @@
   // 15. daypartOf(nowMs)
   function daypartOf(nowMs) {
     var h = denverParts(nowMs).hour;
-    if (h >= 5 && h <= 10) return "Morning";
-    if (h >= 11 && h <= 16) return "Afternoon";
-    if (h >= 17 && h <= 22) return "Evening";
+    // Same boundaries as dayparts.ts (shared with the planner): 5, 12, 18 and 23 Denver.
+    if (h >= 5 && h <= 11) return "Morning";
+    if (h >= 12 && h <= 17) return "Afternoon";
+    if (h >= 18 && h <= 22) return "Evening";
     return "Late Night";
   }
 
   // 16. pickPanels (11: 4 interleaved lanes so slots only change on their own boundary, zero simultaneous changes, zero duplicates)
   var DAYPART_PREFS = {
-    "Morning": ["Weather", "Headlines", "Digest", "Missed shows", "Around the clock"],
-    "Afternoon": ["Headlines", "Live now", "On this day", "Digest", "Weather"],
-    "Evening": ["Headlines", "Homepage reel", "Live now", "Around the clock", "Digest"],
-    "Late Night": ["On this day", "Homepage reel", "Missed shows", "Weather", "Headlines"]
+    "Morning": ["Weather", "Digest", "Still to come"],
+    "Afternoon": ["Live now", "On this day", "Digest", "Weather", "Still to come"],
+    "Evening": ["Homepage reel", "Live now", "Still to come", "Digest", "Weather"],
+    "Late Night": ["On this day", "Homepage reel", "Still to come", "Weather"]
   };
 
   function panelChangesInSec(slotIndex, nowMs, dwellSec) {
@@ -1522,6 +1537,7 @@
     teardownOps: teardownOps,
     applyOps: applyOps,
     libraryPlan: libraryPlan,
+    paramsForSegment: paramsForSegment,
     musicExitAtMs: musicExitAtMs,
     buildRunOfShow: buildRunOfShow,
     rescheduleFrom: rescheduleFrom,
