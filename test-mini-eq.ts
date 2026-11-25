@@ -50,7 +50,11 @@ const branchEnd = player.indexOf(") : (", branchStart);
 assert.ok(branchStart > 0 && branchEnd > branchStart, "archive-music stage branch found");
 const archiveBranch = player.slice(branchStart, branchEnd);
 assert.ok(archiveBranch.includes("<PreludeBackdropVideo") && archiveBranch.includes("<MiniEqVisualizer"), "extras mounted inside archive-music branch");
-assert.ok(!player.slice(branchEnd).includes("<MiniEqVisualizer") && !player.slice(branchEnd).includes("<PreludeBackdropVideo"), "extras NOT in live-radio / other branches");
+const otherBranches = player.slice(branchEnd);
+assert.ok(!otherBranches.includes("<MiniEqVisualizer"), "mini EQ NOT in live-radio / other branches");
+// The Prelude backdrop video is deliberately also shown in the radio-briefing block (its own gradient + spectrum); nowhere else outside the archive-music branch.
+const backdropAt = otherBranches.indexOf("<PreludeBackdropVideo");
+assert.ok(backdropAt === -1 || (otherBranches.lastIndexOf("{radioBriefingOn && (", backdropAt) > -1 && otherBranches.indexOf("<PreludeBackdropVideo", backdropAt + 1) === -1), "backdrop video only in the radio-briefing block outside the archive-music branch");
 assert.ok(archiveBranch.includes("analyser={analyserNode}") && archiveBranch.includes("<MiniEqVisualizer analyser={analyserNode}"), "mini EQ wired to the same analyser as the blue bars");
 assert.ok(read("./src/components/PreludeBackdropVideo.tsx").includes("muted"), "backdrop video is muted");
 

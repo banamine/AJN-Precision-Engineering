@@ -202,6 +202,7 @@ export function StartGuide({ open, onClose, onNavigate }: StartGuideProps): Reac
               <label className="flex min-h-[44px] cursor-pointer select-none items-center gap-2.5 text-neutral-400">
                 <input
                   type="checkbox"
+                  aria-label="Don't open automatically"
                   checked={dontAutoOpen}
                   onChange={(e) => toggleAuto(e.target.checked)}
                   className="h-4 w-4 rounded border-neutral-700 bg-neutral-900 focus:ring-[var(--ajn-accent)] focus:ring-offset-0"

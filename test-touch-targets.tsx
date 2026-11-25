@@ -29,7 +29,7 @@ for (const file of ['src/components/RadioPresetsBar.tsx', 'src/components/RadioD
 
 const { ArchiveMusicSpectrum } = await import('./src/components/ArchiveMusicSpectrum');
 const noAnalyser = renderToStaticMarkup(createElement(ArchiveMusicSpectrum, { analyser: null, isPlaying: true, analyzerState: 'unavailable' } as never));
-assert.match(noAnalyser, /Spectrum unavailable/);
+assert.match(noAnalyser, /Meter unavailable/);
 const live = renderToStaticMarkup(createElement(ArchiveMusicSpectrum, { analyser: {} as never, isPlaying: true, analyzerState: 'active' } as never));
-assert.ok(!/Spectrum unavailable|No signal/.test(live), 'a working spectrum carries no note');
+assert.ok(!/Meter unavailable|No signal/.test(live), 'a working spectrum carries no note');
 console.log('touch targets + spectrum honesty: all checks passed');

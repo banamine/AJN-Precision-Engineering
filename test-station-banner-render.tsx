@@ -1,9 +1,22 @@
 import assert from 'node:assert/strict';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { StationBanner, StationIcon } from './src/components/StationBanner.tsx';
-import { getStationTheme } from './src/utils/radioAccents.ts';
-import { Navigation } from './src/components/Navigation.tsx';
-import { AjnAppearanceProvider } from './src/components/ajn-platform-redesign/AppearanceProvider.tsx';
+import { registerHooks } from 'node:module';
+
+// AppearanceProvider imports skin .css files for the bundler; plain Node cannot load them, so serve an empty module.
+registerHooks({
+  resolve(spec, ctx, next) {
+    if (spec.endsWith('.css')) return { url: new URL(spec, ctx.parentURL).href + '?stub', shortCircuit: true, format: 'module' };
+    return next(spec, ctx);
+  },
+  load(url, ctx, next) {
+    if (url.includes('.css?stub')) return { format: 'module', source: 'export default {};', shortCircuit: true };
+    return next(url, ctx);
+  },
+});
+const { StationBanner, StationIcon } = await import('./src/components/StationBanner.tsx');
+const { getStationTheme } = await import('./src/utils/radioAccents.ts');
+const { Navigation } = await import('./src/components/Navigation.tsx');
+const { AjnAppearanceProvider } = await import('./src/components/ajn-platform-redesign/AppearanceProvider.tsx');
 
 // Station with a real logo: the logo is drawn, in the station's colours.
 const withLogo = renderToStaticMarkup(<StationBanner theme={getStationTheme('radio:ch109-warm-109', '', 'https://img.example/warm.png')} title="Warm 109" subtitle="Toronto" />);
