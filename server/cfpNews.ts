@@ -17,7 +17,7 @@ const MAX_KEPT = 200;
 const MAX_ATTEMPTS = 3;
 const PAGE_BYTES = 400 * 1024;
 const TIMEOUT_MS = 10_000;
-const UA = { 'user-agent': 'ajn-precision-engineering/news (headline reader)', accept: 'text/html,application/xhtml+xml,application/rss+xml,application/xml' };
+const UA = { connection: 'close', 'user-agent': 'ajn-precision-engineering/news (headline reader)', accept: 'text/html,application/xhtml+xml,application/rss+xml,application/xml' };
 
 export type Platform = 'x' | 'rumble' | 'youtube' | 'archive';
 export interface CfpItem { id: string; title: string; url: string; outlet: string; publishedAt: string; image: string | null; blurb: string | null; headlineOnly: boolean; platform: Platform | null }
@@ -99,7 +99,7 @@ export function createCfpStore(opts: CfpStoreOptions = {}) {
   const now = opts.now ?? Date.now; const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const delay = opts.delayMs ?? CFP_CRAWL_DELAY_MS; const poll = opts.pollMs ?? CFP_POLL_MS;
   const tracked = new Map<string, Tracked>();
-  let lastCfpRequest = 0; let fetchedAt: string | null = null; let feedError: string | null = null; let feedOk = false; let running: Promise<void> | null = null; let timer: ReturnType<typeof setTimeout> | null = null;
+  let lastCfpRequest = 0; let fetchedAt: string | null = null; let feedError: string | null = null; let feedOk = false; let running: Promise<void> | null = null; let lastPostError: string | null = null; let busy = false; let lastFeedAt = 0; let timer: ReturnType<typeof setTimeout> | null = null;
 
   async function waitTurn(): Promise<void> { if (lastCfpRequest > 0) { const wait = lastCfpRequest + delay - now(); if (wait > 0) await sleep(wait); } lastCfpRequest = now(); }
 
@@ -110,7 +110,7 @@ export function createCfpStore(opts: CfpStoreOptions = {}) {
       if (!res.ok) { await res.body?.cancel().catch(() => {}); throw new Error(`HTTP ${res.status}`); }
       const items = parseRssItems(await readTextCapped(res, 3 * 1024 * 1024), CFP_FEED, now(), FEED_ITEMS);
       if (!items.length) throw new Error('feed had no usable items');   // an empty result is a failure
-      feedOk = true; feedError = null; fetchedAt = new Date(now()).toISOString();
+      lastFeedAt = now(); feedOk = true; feedError = null; fetchedAt = new Date(now()).toISOString();
       for (const it of items) { const ms = Date.parse(it.publishedAt); if (now() - ms > CFP_MAX_AGE_MS) continue; if (!tracked.has(it.url)) tracked.set(it.url, { postUrl: it.url, title: it.title, publishedMs: ms, attempts: 0, retryAt: 0, item: null, skipped: false }); }
     } catch (e) { feedError = e instanceof SafeFetchError ? `${e.reason}: ${e.message}` : e instanceof Error ? e.message : String(e); }
   }
@@ -123,7 +123,7 @@ export function createCfpStore(opts: CfpStoreOptions = {}) {
       const { res } = await safeFetch(t.postUrl, { allow: (h) => h === CFP_HOST, timeoutMs: TIMEOUT_MS, fetchImpl: opts.fetchImpl, headers: UA });
       if (!res.ok) { await res.body?.cancel().catch(() => {}); throw new Error(`HTTP ${res.status}`); }
       outbound = extractExternalLink(await readTextCapped(res, PAGE_BYTES));
-    } catch { t.retryAt = now() + poll; return; }                      // CFP page unavailable: try again at a later poll (max attempts)
+    } catch (e) { lastPostError = e instanceof SafeFetchError ? `${e.reason}: ${e.message}` : e instanceof Error ? e.message : String(e); t.retryAt = now() + poll; return; }                      // CFP page unavailable: try again at a later poll (max attempts)
     if (!outbound) { t.skipped = true; return; }                       // a post with no article link cannot open a source, so it is not shown
     const pf = platformOf(outbound); const canon = canonicalUrl(outbound) ?? outbound;
     const base: CfpItem = { id: `cfp:${canon}`, title: t.title, url: outbound, outlet: outletName(outbound), publishedAt: new Date(t.publishedMs).toISOString(), image: null, blurb: null, headlineOnly: true, platform: pf };
@@ -147,6 +147,19 @@ export function createCfpStore(opts: CfpStoreOptions = {}) {
     for (const t of todo) await enrich(t);
     prune();
   }
+  /** One polite unit of work, driven by an incoming request (Cloud Run only gives CPU while a request is open, so a background timer cannot be trusted).
+   *  Does nothing unless the 60 s crawl gap has passed: re-reads the feed when it is older than the poll time, otherwise enriches the newest unread post. */
+  async function step(): Promise<void> {
+    if (busy || running) return;
+    if (lastCfpRequest > 0 && now() - lastCfpRequest < delay) return;
+    busy = true;
+    try {
+      if (!feedOk || now() - lastFeedAt >= poll) { await readFeed(); if (!feedOk) lastFeedAt = now(); prune(); return; }
+      const t = [...tracked.values()].filter((x) => !x.item && !x.skipped && x.attempts < MAX_ATTEMPTS && x.retryAt <= now()).sort((a, b) => b.publishedMs - a.publishedMs)[0];
+      if (t) await enrich(t);
+      prune();
+    } catch { /* one failed step never breaks the next */ } finally { busy = false; }
+  }
   function ensureStarted(): void {
     if (running || timer) return;
     const loop = (): void => { running = runOnce().catch(() => {}).finally(() => { running = null; timer = setTimeout(loop, poll); timer.unref?.(); }); };
@@ -160,9 +173,10 @@ export function createCfpStore(opts: CfpStoreOptions = {}) {
     }
     const pending = [...tracked.values()].filter((t) => !t.item && !t.skipped && t.attempts < MAX_ATTEMPTS).length;
     const status: CfpState['status'] = items.length ? 'ok' : feedError ? 'error' : feedOk && !pending ? 'ok' : 'building';
-    return { status, items, pending, error: items.length ? null : feedError, fetchedAt };
+    return { status, items, pending, error: items.length ? null : (feedError ?? lastPostError), fetchedAt };
   }
-  return { runOnce, ensureStarted, snapshot, get: (): CfpState => { ensureStarted(); return snapshot(); } };
+  return { runOnce, step, ensureStarted, snapshot, get: (): CfpState => snapshot() };
 }
 const store = createCfpStore();
-export const getCfpNews = (): CfpState => store.get();
+/** Called by the route on every request: does at most one polite step (awaited, so it finishes while the request is open), then returns the current state. */
+export const getCfpNews = async (): Promise<CfpState> => { await store.step(); return store.get(); };

@@ -37,6 +37,7 @@ assert.equal(parseArticleMeta(article('<meta property="og:description" content="
   const fetchImpl = (async (u: URL | string) => { const k = String(u); log.push(k); if (k.startsWith('https://citizenfreepress.com')) stamps.push(T); const p = pages[k]; return p ? p() : new Response('missing', { status: 404 }); }) as unknown as typeof fetch;
   const sleep = async (ms: number) => { T += ms; };
   feedXml = `<rss><channel>${rssItem('Fox story headline', 'fox', 1)}${rssItem('Post from X', 'xpost', 2)}${rssItem('Blocked site headline', 'blocked', 3)}${rssItem('No link here', 'nolink', 4)}${rssItem('Too old to show', 'old', 49)}${rssItem('Same article again', 'dupe', 5)}</channel></rss>`;
+  const goodFeed = feedXml; const T0 = T;
   const store = createCfpStore({ fetchImpl, now: () => T, sleep });
   assert.equal(store.snapshot().status, 'building', 'nothing yet: building, not success');
   await store.runOnce();
@@ -55,5 +56,13 @@ assert.equal(parseArticleMeta(article('<meta property="og:description" content="
   T += 49 * 3600_000; feedXml = '<rss><channel></channel></rss>';
   await store.runOnce();
   const later = store.snapshot(); assert.equal(later.items.length, 0, 'nothing older than 48 h is kept'); assert.equal(later.status, 'error'); assert.match(later.error ?? '', /no usable items/);
+  // request-driven stepping (Cloud Run gives CPU only while a request is open): one polite unit of work per call, never closer than 60 s
+  feedXml = goodFeed; stamps.length = 0; T = T0 + 600_000;
+  const stepped = createCfpStore({ fetchImpl, now: () => T, sleep: async () => { throw new Error('step() must never sleep'); } });
+  await stepped.step(); assert.equal(stamps.length, 1, 'first step reads the feed only');
+  await stepped.step(); assert.equal(stamps.length, 1, 'a second call inside 60 s does nothing');
+  for (let i = 0; i < 8; i++) { T += CFP_CRAWL_DELAY_MS + 1000; await stepped.step(); }
+  assert.ok(stepped.snapshot().items.length >= 2, 'stories appear one per step');
+  for (let i = 1; i < stamps.length; i++) assert.ok(stamps[i] - stamps[i - 1] >= CFP_CRAWL_DELAY_MS, `stepped CFP requests are >= 60 s apart (${i})`);
   console.log('cfpNews tests ok');
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -32,6 +32,9 @@ jobs:
       - run: npm ci
       - name: Build snapshot
         run: npx tsx scripts/build-desk-snapshot.ts --out public --per-beat "${{ github.event.inputs.per_beat || '25' }}"
+      - name: Build old-print sentence index (only new items are read)
+        run: |
+          if [ -f ids/oldprint-ids.txt ]; then npx tsx scripts/build-oldprint-index.ts --ids ids/oldprint-ids.txt --out public/desk/oldprint.json; fi
       - name: Commit if changed
         run: |
           git config user.name "ajn-desk-snapshot"

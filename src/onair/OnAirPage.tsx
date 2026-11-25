@@ -319,7 +319,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   const restPills = rest.length ? [rest[rs], rest.length > 1 ? rest[(rs + 1) % rest.length] : null].filter((r): r is NonNullable<typeof r> => !!r) : [];
 
   const tickerText = fresh.map((h) => `${h.text} [${E.relativeAge(h.publishedMs, nowMs)}]`).join('   •   ');
-  const tickerSecs = Math.max(30, Math.round(tickerText.length * 0.18));
+  const tickerSecs = Math.max(45, Math.round(tickerText.length * 0.28));
   const gateVisible = !onAir;
   const canStart = list.length > 0;
   // No playable edition (server still building after a restart): keep asking every 10 s so nobody is stranded on the start screen.
