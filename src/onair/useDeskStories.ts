@@ -2,6 +2,7 @@
  * While the server is still building (202) it asks again later; on any failure it returns nothing and the panel simply shows what it already did. */
 import { useEffect, useState } from 'react';
 import type { DeskItem } from '../desk/useDesk';
+import { decodeDeskItem } from '../desk/decodeEntities';
 
 export function useDeskStories(): DeskItem[] {
   const [items, setItems] = useState<DeskItem[]>([]);
@@ -12,7 +13,7 @@ export function useDeskStories(): DeskItem[] {
       try {
         const r = await fetch('/api/desk', { signal: ctl.signal, cache: 'no-store' });
         const j = (await r.json().catch(() => null)) as { items?: DeskItem[] } | null;
-        if (r.ok && j && Array.isArray(j.items)) { if (alive) setItems(j.items.filter((i) => i && i.cardType === 'story' && i.lead && i.headline)); return; }
+        if (r.ok && j && Array.isArray(j.items)) { if (alive) setItems(j.items.filter((i) => i && i.cardType === 'story' && i.lead && i.headline).map(decodeDeskItem)); return; }
         if (r.status === 202 && tries < 40) retryMs = 15_000;
         else if (r.status >= 500 && tries < 4) retryMs = 10 * 60_000;
       } catch (e) { if ((e as Error).name === 'AbortError') return; if (tries < 4) retryMs = 10 * 60_000; }

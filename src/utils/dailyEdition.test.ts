@@ -40,7 +40,10 @@ test('show rules come from podcastSources.json: 19 daily shows in the owner\'s o
   const order = RULES.filter((r) => r.mode !== 'exclude').map((r) => r.id);
   assert.deepEqual(order.slice(0, 7), ['red-eye-radio', 'fox-news-rundown', 'pat-gray', 'kuhner-report', 'kyle-seraphin', 'bannon-war-room', 'clay-buck']);
   assert.equal(order.length, 19);
-  assert.deepEqual(RULES.filter((r) => r.mode === 'exclude').map((r) => r.id).sort(), ['quash', 'rush-limbaugh-wisdom']);
+  // Shows added from the Conservative Ledger list (2026-11-25) are directory-only: excluded from the daily edition on purpose.
+  const directoryOnly = (sources as unknown as Array<{ id: string; addedFrom?: string }>).filter((x) => x.addedFrom).map((x) => x.id);
+  assert.ok(directoryOnly.length > 0);
+  assert.deepEqual(RULES.filter((r) => r.mode === 'exclude').map((r) => r.id).sort(), ['quash', 'rush-limbaugh-wisdom', ...directoryOnly].sort());
 });
 test('config validation rejects unknown mode, bad regex, maxEpisodes < 1, duplicate priority', () => {
   assert.equal(validateDailyConfig([{ id: 'a', name: 'a', dailyMode: 'capped' }]).length, 1);

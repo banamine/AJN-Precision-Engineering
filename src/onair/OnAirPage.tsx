@@ -26,18 +26,29 @@ import { denverDateKey, denverMidnight } from '../utils/dailyEdition';
 import { useDailyEdition } from '../hooks/useDailyEdition';
 import { useLiveRadioNowPlaying } from '../hooks/useLiveRadioNowPlaying';
 import { ShowArt } from '../components/ShowArt';
+import OnAirCaptions, { archivePathOf } from './OnAirCaptions';
+import { useCaptionTrack } from '../news/captions/useCaptionTrack';
 import './onair.css';
 
 // One ticker only: the headlines run along the bottom, so there is no Headlines panel. "Still to come" replaces the old Missed shows and Around the clock panels.
 /** How long the large right-hand panel holds each of its contents before it crossfades to the next. */
-const BIG_PANEL_DWELL_MS = 25_000;
-const PANEL_CATALOG = ['Digest', 'Weather', 'Last songs', 'On this day', 'Live now', 'Homepage reel', 'Still to come', 'Station ID card', 'Clock card', 'Show card'];
+const BIG_PANEL_DWELL_MS = 30_000;
+/* Board merge (2026-11-25): Last songs and Live now are inside the Now card and the music stage; Still to come duplicated Coming up; Homepage reel was never available. */
+const PANEL_CATALOG = ['Digest', 'Weather', 'On this day', 'Station ID card', 'Clock card', 'Show card'];
 const params = DEFAULT_PARAMS;
 type Rect = { x: number; y: number; w: number; h: number };
 const boxStyleIn = (r: Rect, vw: number, vh: number): React.CSSProperties => ({ left: `${(r.x / vw) * 100}%`, top: `${(r.y / vh) * 100}%`, width: `${(r.w / vw) * 100}%`, height: `${(r.h / vh) * 100}%` });
 const fitClass = (t: string): string => (t.length <= 22 ? 'fit-1' : t.length <= 38 ? 'fit-2' : 'fit-3');
 const hms = (ms: number): string => E.formatDenverHMS(ms) as string;
 const mmss = (s: number): string => E.formatMMSS(s) as string;
+const kindForPanel = (type: string): string => {
+  if (type === 'Show card' || type === 'Last songs') return 'show';
+  if (type === 'Clock card' || type === 'Live now') return 'now';
+  if (type === 'Station ID card' || type === 'Still to come') return 'when';
+  if (type === 'Digest') return 'digest';
+  if (type === 'Weather') return 'weather';
+  return 'story';
+};
 
 function readQuery(): { debug: boolean } {
   const search = typeof window === 'undefined' ? '' : window.location.search;
@@ -133,10 +144,17 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   // Wider side panels (about 38% of the width): the stage gives up the room the Recently Played list no longer needs. Only when the panels sit to the right of the stage.
   const lay = (() => {
     const px = Math.min(...lay0.panels.map((r) => r.x));
-    if (px <= lay0.stage.x) return lay0;
-    const grow = Math.max(0, Math.min(150, Math.round(VW * 0.38) - (VW - px)));
-    if (!grow) return lay0;
-    return { ...lay0, stage: { ...lay0.stage, w: lay0.stage.w - grow }, panels: lay0.panels.map((r) => ({ ...r, x: r.x - grow, w: r.w + grow })) };
+    let base = lay0;
+    if (px > lay0.stage.x) {
+      const grow = Math.max(0, Math.min(150, Math.round(VW * 0.38) - (VW - px)));
+      if (grow) base = { ...lay0, stage: { ...lay0.stage, w: lay0.stage.w - grow }, panels: lay0.panels.map((r) => ({ ...r, x: r.x - grow, w: r.w + grow })) };
+    }
+    const colTop = base.panels[0].y;
+    const colBottom = base.lowerThird.y - 12;
+    const gap = 14;
+    const panel0 = { ...base.panels[0], h: 150 };
+    const panelBig = { ...base.panels[1], y: colTop + 150 + gap, h: colBottom - (colTop + 150 + gap) };
+    return { ...base, panels: [panel0, panelBig, panelBig, panelBig] };
   })();
 
   // Declassified Desk stories: near-date ones first, then the rest (see desk/onThisDay.ts). Click opens the story window.
@@ -151,6 +169,9 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   // Music blocks end early/late; shift planned times by the real exit drift so every list agrees with the stage ticket.
   const drift = cur && cur.type === 'music' && machine?.musicExitMs ? machine.musicExitMs - cur.endMs : 0;
   const curName = cur && cur.type === 'podcast' ? cur.name : '';
+  // Captions for news clips: the same Archive caption pipeline as the player; only TV News files match, everything else stays 'off'.
+  const capPath = cur && cur.type === 'podcast' && cur.filler ? archivePathOf(cur.src) : undefined;
+  const captionState = useCaptionTrack(capPath, () => playout.activeVideo() as HTMLVideoElement | null);
   const upRows = comingUp(list, nowMs, curName, drift);
   const upcomingPodcasts = (): string[] => upRows.map((r) => `~${r.label}`);
   const stillLines = stillToComeToday(list, nowMs, 5, drift);
@@ -160,8 +181,8 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   const recent = np.recent.slice(0, 3);
   const lastSongs: string[] = effSrc === 'Live 109' ? recent.map((r, i) => `${i + 1}. ${r.artist ? `${r.artist} – ` : ''}${r.title}`) : [];
   const availability: Record<string, boolean> = {
-    Digest: data.digestLines.length > 0, Weather: data.weatherLines !== null, 'Last songs': lastSongs.length > 0,
-    'On this day': data.onThisDay !== null || data.archiveItems.length > 0 || rankedStories.length > 0, 'Live now': true, 'Homepage reel': false, 'Still to come': stillLines.length > 0,
+    Digest: data.digestLines.length > 0, Weather: data.weatherLines !== null, 'Last songs': false,
+    'On this day': data.onThisDay !== null || data.archiveItems.length > 0 || rankedStories.length > 0, 'Live now': false, 'Homepage reel': false, 'Still to come': false,
     'Station ID card': true, 'Clock card': true,
   };
   const panelTypes = cur ? (E.pickPanels({ dwellSec: params.panelDwellSec, libraryUnreachable: !!machine?.libraryUnreachable && rankedStories.length === 0 && data.archiveItems.length === 0 }, PANEL_CATALOG, availability, dp, cur.type, nowMs) as string[]) : [];
@@ -181,7 +202,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
     ({ 'Still to come': 'Tonight on AJN', 'Clock card': 'Now', 'Station ID card': 'When does it play' } as Record<string, string>)[t] ?? t;
   const panelLines = (type: string): string[] => {
     if (!cur) return [type];
-    if (type === 'Show card') return [cur.showName, [cur.networkTag, cur.publishedDate].filter(Boolean).join(' · ') || 'On Air', cur.episodeTitle ?? 'On Air'];
+    if (type === 'Show card') return [cur.showName, [cur.networkTag, cur.publishedDate].filter(Boolean).join(' · ') || (next ? `Next: ${next.name}` : ''), cur.episodeTitle ?? ''].filter(Boolean);
     if (type === 'Digest') return data.digestLines;
     if (type === 'Weather') return data.weatherLines ?? ['Weather unavailable'];
     if (type === 'Last songs') return lastSongs.slice(0, 3);
@@ -237,8 +258,9 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
           </div>
         </div>
         <div className="stage-side">
+          <OnAirCaptions state={captionState} />
           <div className="side-heading"><span>Coming up</span></div>
-          <div className="transcript-lines">{ups.length ? ups.map((u) => <div key={u} className="transcript-line single"><span>{u}</span></div>) : <div className="transcript-line single"><span>Nothing scheduled after this</span></div>}</div>
+          <div className="transcript-lines">{(captionState.phase === 'off' ? ups : ups.slice(0, 2)).length ? (captionState.phase === 'off' ? ups : ups.slice(0, 2)).map((u) => <div key={u} className="transcript-line single"><span>{u}</span></div>) : <div className="transcript-line single"><span>Nothing scheduled after this</span></div>}</div>
         </div>
       </>);
     }
@@ -349,7 +371,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
             const bigOthers = bigTypes.filter((t) => t !== 'On this day');
             /* Stories hold the big panel 3 of every 4 turns; the 4th turn is a Board card (Now, Tonight, Weather...). With no stories, the Board rotates as before. */
             const type = pi === 0 ? panelTypes[0] : storiesOn ? ((bigStep % 4 === 3 && bigOthers.length) ? bigOthers[Math.floor(bigStep / 4) % bigOthers.length] : 'On this day') : (bigTypes.length ? bigTypes[bigStep % bigTypes.length] : undefined);
-            const rect = pi === 0 ? lay.panels[0] : { x: lay.panels[1].x, y: lay.panels[1].y, w: lay.panels[1].w, h: lay.panels[3].y + lay.panels[3].h - lay.panels[1].y };
+            const rect = pi === 0 ? lay.panels[0] : lay.panels[1];
             const changed = lastPanels.current[pi] !== null && lastPanels.current[pi] !== type;
             lastPanels.current[pi] = type ?? null;
             if (!type || !cur) return <div key={pi} className="frame-box frame-panel" style={boxStyle(rect)} />;
@@ -361,13 +383,13 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
             const moveText = false; /* text stays in the panel body, readable */ // // the small text goes up into the header line; the body is left for the picture
             const countdown = pi === 0 ? (lockedA ? 'LOCKED' : `changes in ${E.panelChangesInSec(0, nowMs, params.panelDwellSec)} s`) : `changes in ${Math.max(1, Math.ceil((BIG_PANEL_DWELL_MS - (nowMs % BIG_PANEL_DWELL_MS)) / 1000))} s`;
             return (
-              <div key={`${pi}-${type}`} className={`frame-box frame-panel${pi === 1 ? ' frame-panel-big' : ''}${changed ? ' panel-fade' : ''}${photo ? ' has-photo' : ''}`} style={photo ? ({ ...boxStyle(rect), '--photo': `url("${photo.url}")` } as React.CSSProperties) : boxStyle(rect)}>
+              <div key={`${pi}-${type}`} className={`frame-box frame-panel${pi === 1 ? ' frame-panel-big' : ''}${changed ? ' panel-fade' : ''}${photo ? ' has-photo' : ''}`} data-kind={kindForPanel(type)} style={photo ? ({ ...boxStyle(rect), '--photo': `url("${photo.url}")` } as React.CSSProperties) : boxStyle(rect)}>
                 <div className="panel-hdr"><span className="panel-title">{hasLib ? 'From the Library · On This Day' : panelTitle(type)}</span>{hasLib && pi === 1 ? <span className="panel-caption" ref={setCapHost} /> : null}{moveText ? <span className="panel-caption"><span title={lines.join(' · ')}>{lines.join(' · ')}</span></span> : null}<span className="panel-countdown">{countdown}</span></div>
                 <div className="panel-body">
                   {moveText
                     ? (photo || !cur.artUrl ? null : <div className="panel-art"><img src={cur.artUrl} alt="" referrerPolicy="no-referrer" /></div>)
                     : hasLib
-                    ? <div className="panel-lines arch-lines"><ArchiveOnThisDay items={data.archiveItems} rush={data.onThisDay} stories={rankedStories} nowMs={nowMs} compact={compact} big={pi === 1} captionHost={pi === 1 ? capHost : null} onOpenStory={(item, label, el) => setOpenStory({ item, label, el })} /></div>
+                    ? <div className="panel-lines arch-lines"><ArchiveOnThisDay headlines={data.headlines} items={data.archiveItems} rush={data.onThisDay} stories={rankedStories} nowMs={nowMs} compact={compact} big={pi === 1} captionHost={pi === 1 ? capHost : null} onOpenStory={(item, label, el) => setOpenStory({ item, label, el })} /></div>
                     : type === 'Digest'
                       ? <div className="panel-lines pc-lines"><PanelCarousel items={lines.map((l) => l.replace(/^[•\s]+/, ''))} nowMs={nowMs} /></div>
                       : <div className={`panel-lines${type === 'Show card' ? ' pl-show' : ''}`}>{(compact && type === 'Show card' ? [lines[0], lines[2] ?? lines[1]] : lines.slice(0, compact ? 2 : lines.length)).map((l, i) => <div key={i} className="panel-line-item">{l}</div>)}</div>}

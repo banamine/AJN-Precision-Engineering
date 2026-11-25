@@ -53,6 +53,9 @@ export function levelKey(kind: 'podcast' | 'live' | 'library' | null, loadedItem
 
 /** Starting guess for sources with no remembered level yet (typical mastered music sits near -14 dBFS RMS); real measurement replaces it within seconds. */
 export const DEFAULT_LEVEL_DB: Record<string, number> = { live: -14, library: -14 };
+/** Typical speech level (RMS dBFS) used only for a show that has never been measured. Talk starts MUSIC_START_BELOW_DB under its level, rises into the measured one once, then stays (rise and stay, same as music). */
+export const DEFAULT_SPEECH_DB = -20;
+export function defaultLevelDb(key: string): number | undefined { return DEFAULT_LEVEL_DB[key] ?? (key.startsWith('podcast:') ? DEFAULT_SPEECH_DB : undefined); }
 
 /* Podcast-to-music blend: music is matched to what the listener was just hearing, may sit a little above it, and only ever moves slowly. */
 export const MUSIC_OVER_DB = 3;            // music may sit this far above the podcast it follows (owner rule: music can be louder than talk, talk must never scream)

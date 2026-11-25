@@ -1,0 +1,6 @@
+Desk text fix (2026-11-25): story headlines showed raw HTML codes (for example &#039; instead of an apostrophe). Copy each file over the same path.
+ src/desk/decodeEntities.ts        NEW  decodes &#039; &amp; &quot; etc. (once, pure function)
+ src/desk/decodeEntities.test.ts   NEW  2 tests (run: npx tsx src/desk/decodeEntities.test.ts)
+ src/desk/useDesk.ts               Desk page decodes headline/lead/source/excerpt after loading /api/desk
+ src/onair/useDeskStories.ts       On Air panels do the same
+Verified here: tests pass, tsc clean, vite build OK. Not verified: how it looks on screen.

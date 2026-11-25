@@ -1,0 +1,9 @@
+On Air: story card layout + talk "rise and stay" (2026-11-25). Copy each file over the same path (all are full files).
+ src/onair/onair.css            story card in the big panel: small page thumbnail LEFT, large headline + lead RIGHT
+ src/onair/ArchiveOnThisDay.tsx unchanged since the stories fix (included so the set is complete)
+ src/onair/loudness.ts          adds DEFAULT_SPEECH_DB + defaultLevelDb()
+ src/onair/useOnAirPlayout.ts   talk now follows the same rule as music: starts 6 dB under its level, rises once, never turned down in the block
+ src/onair/loudness.test.ts     new test block (talk rise-and-stay)
+Verified here: loudness tests pass, tsc clean, vite build OK.
+NOT verified: how the story card looks on screen (checked by your eye on the test link), and the audio by ear.
+Not changed: package.json files already define "build" (root and scripts/), so there is nothing to add for the Publish error.

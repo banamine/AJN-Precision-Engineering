@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LevelEstimator, levelKey, rmsDb, slewTrim, trimFor, MIN_TRIM, TARGET_DB, relativeTrim, outputDb, MUSIC_OVER_DB, musicTrimNext, musicCreepNext } from './loudness';
+import { LevelEstimator, levelKey, rmsDb, slewTrim, trimFor, MIN_TRIM, TARGET_DB, relativeTrim, outputDb, MUSIC_OVER_DB, musicTrimNext, musicCreepNext, defaultLevelDb, DEFAULT_SPEECH_DB, MUSIC_START_BELOW_DB } from './loudness';
 
 test('rmsDb: full-scale square is 0 dB, half amplitude is about -6 dB, silence is -120', () => {
   assert.ok(Math.abs(rmsDb([1, -1, 1, -1])) < 0.01);
@@ -80,4 +80,19 @@ test('the music starts 6 dB under its guess, so a louder-than-guessed track is o
   const one = musicCreepNext(0.2, 1); assert.ok(one > 0.2 && one < 0.22, 'about 0.25 dB per second');
   assert.equal(musicCreepNext(1, 1), 1);
   console.log('music creep tests ok');
+}
+
+{ // talk rises and stays: a show that starts under its level rises into it once, and a later lower measurement never turns it down
+  assert.equal(defaultLevelDb('podcast:paul harvey'), DEFAULT_SPEECH_DB);
+  assert.equal(defaultLevelDb('library'), -14);
+  assert.equal(defaultLevelDb('other'), undefined);
+  const target = trimFor(-20); let a = Math.max(MIN_TRIM, target * Math.pow(10, -MUSIC_START_BELOW_DB / 20)); let settled = false; const trace: number[] = [];
+  for (let i = 0; i < 200; i++) { a = musicTrimNext(a, target, 0.1, settled); if (a === target) settled = true; trace.push(a); }
+  assert.ok(settled && trace[0] < target, 'starts under, ends at its level');
+  const noisy = trimFor(-14); // a later measurement says the show is louder than first thought
+  const before = a; for (let i = 0; i < 50; i++) a = musicTrimNext(a, noisy, 0.1, true);
+  assert.equal(a, before, 'settled talk is never turned down');
+  const quieter = trimFor(-30); for (let i = 0; i < 50; i++) a = musicTrimNext(a, quieter, 0.1, true);
+  assert.ok(a >= before, 'a quieter reading may only raise it');
+  console.log('talk rise-and-stay tests ok');
 }

@@ -123,12 +123,32 @@ export function useOnAirData(_edition: Edition | null, nowMs: number, headlineMa
     return () => { alive = false; ctl.abort(); if (timer) window.clearTimeout(timer); };
   }, [denverDay]);
 
+  // More news: 13 public RSS feeds fetched by the server (/api/onair/extra-news). Failure leaves the digest headlines as they were; nothing is invented.
+  const [extraNews, setExtraNews] = useState<Headline[]>([]);
+  useEffect(() => {
+    let alive = true, timer: number | undefined; const ctl = new AbortController();
+    const load = async (): Promise<void> => {
+      let next = 15 * 60_000;
+      try {
+        const r = await fetch('/api/onair/extra-news', { signal: ctl.signal, cache: 'no-store' });
+        const j = (await r.json().catch(() => null)) as { status?: string; items?: Array<{ id: string; title: string; source: string; publishedAt: string }> } | null;
+        if (r.ok && j?.status === 'ok' && Array.isArray(j.items)) { if (alive) setExtraNews(j.items.filter((i) => i && i.title && Number.isFinite(Date.parse(i.publishedAt))).map((i) => ({ id: i.id, text: i.title, publishedMs: Date.parse(i.publishedAt), source: i.source }))); }
+        else next = 2 * 60_000;
+      } catch (e) { if ((e as Error).name === 'AbortError') return; next = 2 * 60_000; }
+      if (alive) timer = window.setTimeout(() => { void load(); }, next);
+    };
+    void load();
+    return () => { alive = false; ctl.abort(); if (timer) window.clearTimeout(timer); };
+  }, []);
+
   const dig = digest.data?.digest ?? null;
   const headlines = useMemo<Headline[]>(() => {
     const items = (dig?.top ?? []).filter((i) => i.publishedAt && Number.isFinite(Date.parse(i.publishedAt)));
-    const mapped = items.map((i) => ({ id: i.id, text: i.title, publishedMs: Date.parse(i.publishedAt as string), source: i.source }));
+    const mapped = items.map((i) => ({ id: i.id, text: i.title, publishedMs: Date.parse(i.publishedAt as string), source: i.source }))
+    const seenText = new Set(mapped.map((m) => m.text.toLowerCase()));
+    for (const x of extraNews) if (!seenText.has(x.text.toLowerCase())) { seenText.add(x.text.toLowerCase()); mapped.push(x); }
     return (E.filterFreshHeadlines(mapped, nowMs, headlineMaxAgeHours) as Headline[]).sort((a, b) => b.publishedMs - a.publishedMs);
-  }, [dig, Math.floor(nowMs / 60_000), headlineMaxAgeHours]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dig, extraNews, Math.floor(nowMs / 60_000), headlineMaxAgeHours]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const digestLines = useMemo(() => (dig?.briefing ?? []).slice(0, 4).map((b) => `• ${b.headline}`), [dig]);
   const weatherLines = useMemo<string[] | null>(() => {

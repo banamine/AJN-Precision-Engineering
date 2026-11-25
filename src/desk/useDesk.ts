@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DeskFeed, DeskItem } from '../../server/desk';
+import { decodeDeskItem } from './decodeEntities';
 
 export type { DeskItem, DeskFeed };
 export type DeskState =
@@ -29,7 +30,7 @@ export function useDesk(): DeskState & { retry: () => void } {
           setState({ phase: 'error', message: body?.error || `The desk could not be loaded (HTTP ${res.status}).` });
           return;
         }
-        setState({ phase: 'ready', feed: body as DeskFeed });
+        setState({ phase: 'ready', feed: { ...(body as DeskFeed), items: (body as DeskFeed).items.map(decodeDeskItem) } });
       } catch (e) {
         if (ctl.signal.aborted) return;
         setState({ phase: 'error', message: e instanceof Error ? e.message : 'The desk could not be loaded.' });
