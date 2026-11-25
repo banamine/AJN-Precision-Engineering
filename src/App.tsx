@@ -1,3 +1,4 @@
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Destination, NowPlayingMedia, RecentlyPlayedItem, PlayProgramCallback } from './types';
 import { Navigation } from './components/Navigation';
@@ -444,12 +445,12 @@ export default function App() {
         )}
         {destination === 'news-cube' && (
           <div key="view-news-cube" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
-            <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading News Cube…</p>}>
+            <ErrorBoundary label="News Cube"><Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading News Cube…</p>}>
               <NewsCubePage
                 startExistingPlayback={startCubeArticlePlayback}
                 stopExistingPlayback={pauseExistingPlayerForCube}
               />
-            </Suspense>
+            </Suspense></ErrorBoundary>
           </div>
         )}
         {destination === 'radio' && (
@@ -484,19 +485,19 @@ export default function App() {
         )}
         {destination === 'weather' && (
           <div key="view-weather" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
-            <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading Weather…</p>}><WeatherView /></Suspense>
+            <ErrorBoundary label="Weather"><Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading Weather…</p>}><WeatherView /></Suspense></ErrorBoundary>
           </div>
         )}
         {destination === 'on-air' && (
           <div key="view-on-air" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
-            <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading On Air…</p>}>
+            <ErrorBoundary label="On Air"><Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading On Air…</p>}>
               <OnAirPage stopExistingPlayback={pauseExistingPlayerForCube} />
-            </Suspense>
+            </Suspense></ErrorBoundary>
           </div>
         )}
         {destination === 'desk' && (
           <div key="view-desk" data-testid="scroll-region" className="ajn-scroll-region view-fade-in w-full">
-            <Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading Declassified Desk…</p>}><DeskView /></Suspense>
+            <ErrorBoundary label="Declassified Desk"><Suspense fallback={<p role="status" className="text-sm text-neutral-400">Loading Declassified Desk…</p>}><DeskView /></Suspense></ErrorBoundary>
           </div>
         )}
         {destination === 'dev' && (

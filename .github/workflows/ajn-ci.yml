@@ -79,6 +79,8 @@ jobs:
         run: npm run test:movies-classics-producer
       - name: Movies Classics integration regression
         run: npm run test:movies-classics
+      - name: Static assets and SPA fallback regression
+        run: npm run test:static-spa
       - name: AJN RSS canonical regression
         run: npm run test:ajn-rss-canonical
       - name: AJN audio canonical regression

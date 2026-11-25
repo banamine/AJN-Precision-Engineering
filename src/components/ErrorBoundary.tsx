@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { isExtensionNoise } from "../utils/extensionNoise";
 
 interface Props { label: string; children: ReactNode }
 interface State { error: Error | null }
@@ -8,6 +9,7 @@ export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
   static getDerivedStateFromError(error: Error): State { return { error }; }
   componentDidCatch(error: Error, info: ErrorInfo) {
+    if (isExtensionNoise(error.stack || info.componentStack)) return;
     console.error(`[ErrorBoundary:${this.props.label}]`, error.message, info.componentStack);
   }
   render() {
@@ -19,6 +21,10 @@ export class ErrorBoundary extends Component<Props, State> {
         <button type="button" onClick={() => this.setState({ error: null })}
           className="mt-3 rounded-md border border-red-700 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
           Try again
+        </button>
+        <button type="button" onClick={() => window.location.reload()}
+          className="ml-2 mt-3 rounded-md border border-red-700 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+          Reload page
         </button>
       </div>
     );

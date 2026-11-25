@@ -43,6 +43,7 @@ import { hlsProxyAllowed, rewritePlaylist } from './server/hlsPlaylistProxy';
 import express,{Request,Response} from 'express';
 import path from 'path';
 import {createServer as createViteServer} from 'vite';
+import {mountStaticSpa,isProductionRuntime,resolveDistDir} from './server/staticSpa.ts';
 import {searchTVNews, collapseRepeatAirings} from './channels.js';
 import {buildChannelFromSearch} from './archive-discovery';
 import {
@@ -1055,7 +1056,7 @@ app.get('/api/archive/metadata',async(req,res)=>{ const v=validateArchivePath((r
 app.use('/api',(req,res)=>res.status(404).json({error:'Not found',path:req.originalUrl}));
 
 async function startServer(){
- if(process.env.NODE_ENV!=='production'){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{app.use(express.static(path.join(process.cwd(),'dist')));app.get('*',(_req,res)=>res.sendFile(path.join(process.cwd(),'dist','index.html')))}
+ if(!isProductionRuntime()){const vite=await createViteServer({server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares)} else{mountStaticSpa(app,resolveDistDir())}
  app.listen(PORT,'0.0.0.0',()=>{console.log(`[AJN] Integrated Server running at http://0.0.0.0:${PORT}`); if(process.env.NODE_ENV!=='test'){void refreshDeskSnapshot().then(()=>console.log('[AJN] Desk snapshot:',deskSnap?`${deskSnap.feed.count} cards from ${deskSnap.source}`:'none yet (will build live on first request)')); setInterval(()=>{void refreshDeskSnapshot();},6*3600_000).unref();} /* Health prober runs regardless of warmers: it sends nothing while Archive is ok, and is the only thing that clears a stale 'down' when no one is playing. */ if(process.env.NODE_ENV!=='test'){startArchiveHealthProber({health:archiveHealth,fetchImpl:fetch,controlUrl:process.env.AJN_CONTROL_PROBE_URL});} if(process.env.AJN_BOOT_WARMERS!=='1'){console.log('[AJN] Archive boot warmers disabled (set AJN_BOOT_WARMERS=1 to enable)');return;} if(process.env.NODE_ENV!=='test'){ for(const id of HOME_NOW_GUIDES) guideSnapshot(id).catch(()=>{}); /* warm the Home carousel snapshots so the first visitor does not wait */ refreshMoviesClassicsFromArchive().then(r=>console.log('[AJN] Movies & Classics resolved from Archive metadata',JSON.stringify({kept:r.kept.length,unverified:r.unverified.length,replaced:r.replaced.length,dropped:r.dropped.map(d=>d.identifier)}))).catch(e=>console.error('[AJN] Movies & Classics metadata refresh failed; using stored manifest:',e?.message)); buildChannelFromSearch('collection:SciFi_Horror','archive-scifi','Sci-Fi Horror Archive').then(c=>console.log(`[AJN] Built Archive channel: ${c.name} with ${c.playlist.length} assets`)).catch(e=>console.error('[AJN] Failed to build Archive channel:',e));}
   // Warm the guides one at a time (Archive rate-limits bursts) so the first
   // viewer gets a filled grid instead of waiting on every source.
