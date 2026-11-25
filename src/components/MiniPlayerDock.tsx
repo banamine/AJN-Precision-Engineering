@@ -340,7 +340,7 @@ export function MiniPlayerDock({
         </button>
         {isRadio && (
           <button type="button" data-testid="dock-full-player" onClick={onOpenFullPlayer} aria-label="Open Full Player" title="Open Full Player"
-            className="ajn-dock-expand flex h-12 min-h-[48px] min-w-[48px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--ajn-line)] px-2 text-xs font-semibold cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2">
+            className="ajn-dock-expand flex h-12 !min-h-[48px] min-w-[48px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--ajn-line)] px-2 text-xs font-semibold cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2">
             <Tv className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">Full player</span>
           </button>
         )}

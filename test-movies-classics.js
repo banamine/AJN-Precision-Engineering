@@ -24,11 +24,11 @@ assert.equal(new Set(wormwood.map((program) => program.assetId)).size, 6, 'Wormw
 assert.ok(getAllGuides().some((guide) => guide.id === MOVIES_CLASSICS_GUIDE_ID), 'Movies Classics guide must be registered');
 
 const schedule = await getScheduleForGuide(MOVIES_CLASSICS_GUIDE_ID, new Date('2026-10-07T12:00:00Z'));
-// The compiled AJN Classic Movies network (classic-movies) is published first; the curated Vault follows it.
+// The compiled AJN Classic Movies network (classic-movies) is published first, then the three ajn247-movies-* genre channels; the curated Vault follows them.
 const vaultIndex = schedule.findIndex((c) => c.id === MOVIES_CLASSICS_CHANNEL_ID);
 assert.equal(schedule[0].id, 'classic-movies', 'compiled Classic Movies network is listed first');
-assert.equal(vaultIndex, 1, 'curated Cinema Classics Vault is listed immediately after it');
-assert.ok(schedule.slice(2).every((c) => c.id.startsWith('mx-')), 'only the extra mx-* user channels follow the Vault');
+assert.ok(schedule.slice(1, vaultIndex).length === 3 && schedule.slice(1, vaultIndex).every((c) => c.id.startsWith('ajn247-movies-')), 'the three ajn247-movies-* genre channels sit between the network and the Vault');
+assert.ok(schedule.slice(vaultIndex + 1).every((c) => c.id.startsWith('mx-')), 'only the extra mx-* user channels follow the Vault');
 const vault = schedule[vaultIndex];
 assert.equal(vault.guideId, MOVIES_CLASSICS_GUIDE_ID);
 assert.equal(vault.programs.length, 15, 'Movies Classics rotates only the films that start within this UTC day');
