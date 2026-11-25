@@ -80,6 +80,25 @@
         </div>
       </div>
     </div>
+    <script>
+      /* Stale-bundle recovery: if a hashed /assets/ file is gone after a deploy, reload ONCE (30 s cooldown) to fetch the fresh shell. */
+      (function () {
+        var KEY = 'ajn-stale-reload-at', WINDOW_MS = 30000;
+        window.ajnTryStaleReload = function () {
+          try {
+            var last = Number(sessionStorage.getItem(KEY)) || 0;
+            if (Date.now() - last < WINDOW_MS) return false;
+            sessionStorage.setItem(KEY, String(Date.now()));
+          } catch (e) { return false; }
+          location.reload();
+          return true;
+        };
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK') && /\/assets\//.test(t.src || t.href || '')) window.ajnTryStaleReload();
+        }, true);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
