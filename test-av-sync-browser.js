@@ -113,7 +113,8 @@ try {
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/avsync-1-audio-10min.png` });
 
   // --- Mini video: audio keeps leading
-  await domClick('[data-testid="av-mini"]');
+  // The mini video now opens by itself for an episode with a paired video (see SyncedVideoPip); only press the button if it is not already open.
+  if (await page.$eval('[data-testid="av-mini"]', (el) => el.getAttribute('aria-pressed')) !== 'true') await domClick('[data-testid="av-mini"]');
   check(await waitFor(() => page.$('#synced-video-pip video')), 'mini video overlay opens');
   const pip = await waitFor(async () => { const p = await pipVideo(); return p && p.ready >= 2 && near(p.t, (await media()).t, 1.2) && !p.paused ? p : null; }, 20000);
   check(Boolean(pip), 'mini video starts at the audio position and plays');
