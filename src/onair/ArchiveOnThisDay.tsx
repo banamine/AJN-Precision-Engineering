@@ -1,7 +1,7 @@
 /* "From the Library · On This Day" panel body. One entry at a time: Declassified Desk stories (news-article cards, click to open the story window),
  * real Archive items from the library, and the library recording. Full text wrapped, never ellipsised by line.
  * Library items are display only: no links leave the page. */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ArchiveItem, OnThisDay } from './useOnAirData';
 import type { RankedStory } from '../desk/onThisDay';
@@ -14,18 +14,56 @@ import type { DeskItem } from '../desk/useDesk';
 export const ARCHIVE_DWELL_MS = ITEM_DWELL_MS;
 const KIND: Record<ArchiveItem['mediatype'], string> = { texts: 'READ', audio: 'LISTEN', movies: 'WATCH' };
 
-function sourceColor(source: string): { bg: string; fg: string } {
+function sourceColor(source: string): { bg: string; fg: string; solid: string } {
   let hash = 0;
   for (let i = 0; i < source.length; i++) hash = (hash * 31 + source.charCodeAt(i)) % 1000;
   const hue = (hash % 8) * (360 / 8);
   return {
     bg: `hsla(${hue}, 70%, 45%, 0.25)`,
     fg: `hsl(${hue}, 85%, 75%)`,
+    solid: `hsl(${hue}, 62%, 34%)`,
   };
+}
+
+
+const initialsOf = (source: string): string => { const w = source.trim().split(/\s+/).filter(Boolean); return (w.length > 1 ? w.map((x) => x[0]).join('') : source.trim()).slice(0, 3).toUpperCase(); };
+/** One news row. Picture row when there is a picture or a blurb (a coloured block with the outlet's initials stands in for a missing or failed picture),
+ *  slim headline-only row otherwise (X, Rumble, YouTube and plain feed items). All outside text is rendered as plain text; the link is never shown,
+ *  the row opens the source article in a new tab (http/https only) without touching playback. */
+function NewsRow({ h, nowMs }: { h: Headline; nowMs: number }) {
+  const [imgBad, setImgBad] = useState(false);
+  const sc = sourceColor(h.source);
+  const pic = !!(h.image || h.blurb);
+  const url = h.url && /^https?:\/\//i.test(h.url) ? h.url : null;
+  const open = (): void => { if (url) window.open(url, '_blank', 'noopener,noreferrer'); };
+  const link = url ? { role: 'link' as const, tabIndex: 0, 'aria-label': `Open source article: ${h.text}`, onClick: open, onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } } } : {};
+  const meta = (
+    <span className="arch-news-meta">
+      <span className="arch-source-pill" data-platform={h.platform ?? undefined} style={h.platform ? undefined : { background: sc.bg, color: sc.fg }}>{h.source}</span>
+      <span className="arch-news-age">{E.relativeAge(h.publishedMs, nowMs)}</span>
+    </span>
+  );
+  return (
+    <span className={`arch-news-row ${pic ? 'is-picture' : 'is-slim'}${url ? ' is-link' : ''}`} data-testid="onair-news-row" {...link}>
+      {pic && (
+        <span className="arch-news-thumb">
+          {h.image && !imgBad
+            ? <img src={h.image} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImgBad(true)} />
+            : <span className="arch-news-fallback" style={{ background: `linear-gradient(135deg, ${sc.solid} 0%, #0d121d 100%)` }}>{initialsOf(h.source)}</span>}
+        </span>
+      )}
+      <span className="arch-news-body">
+        {meta}
+        <span className="arch-news-head">{h.text}</span>
+        {pic && h.blurb && <span className="arch-news-blurb">{h.blurb}</span>}
+      </span>
+    </span>
+  );
 }
 
 export default function ArchiveOnThisDay({ items, rush, stories = [], headlines = [], nowMs, compact, onOpenStory, big, captionHost }: { headlines?: Headline[]; big?: boolean; captionHost?: HTMLElement | null; items: ArchiveItem[]; rush: OnThisDay | null; stories?: RankedStory[]; nowMs: number; compact: boolean; onOpenStory?: (item: DeskItem, dateLabel: string, el: HTMLElement) => void }) {
   const [bad, setBad] = useState<Record<string, boolean>>({});
+  const bar = useRef({ key: '', delay: 0, pct: 0 });
   // Big panel with real Declassified Desk stories: the stories run on their own (no scanned-page slides between them).
   const storiesOnly = !!big && stories.length > 0;
   // Current news (real headlines only; none means no news slides) runs in the big panel between the stories.
@@ -37,24 +75,16 @@ export default function ArchiveOnThisDay({ items, rush, stories = [], headlines 
   const { entry, n, total } = pick;
   const dwell = dwellOf(entry);
   const counter = total > 1 ? <span className="arch-count">{n}/{total}</span> : null;
-  const progressBar = big ? <div className="slide-progress-bar" key={`prog-${entry.kind}-${entry.index}`} style={{ animationDuration: `${dwell}ms` }} /> : null;
+  // The bar starts where the slide really is (a page loaded mid-slide does not restart it), and keeps that start while the page re-renders.
+  const barKey = `prog-${entry.kind}-${entry.index}-${pick.round}`;
+  if (bar.current.key !== barKey) bar.current = { key: barKey, delay: -pick.elapsedMs, pct: Math.round((pick.elapsedMs / dwell) * 100) };
+  const progressBar = big ? <div className="slide-progress-bar" key={barKey} style={{ animationDuration: `${dwell}ms`, animationDelay: `${bar.current.delay}ms`, ['--elapsed' as string]: `${bar.current.pct}%` }} /> : null;
   if (entry.kind === 'news') {
     const slice = newsPool.slice(entry.index * NEWS_PER_SLIDE, (entry.index + 1) * NEWS_PER_SLIDE);
     return (
       <div className="arch-news" key={`news-${entry.index}`} data-testid="onair-news-slide" data-kind="news">
         <span className="arch-news-label">NEWS NOW</span>
-        {slice.map((h) => {
-          const sc = sourceColor(h.source);
-          return (
-            <span className="arch-news-row" key={h.id}>
-              <span className="arch-news-head">{h.text}</span>
-              <span className="arch-news-src">
-                <span className="arch-source-pill" style={{ background: sc.bg, color: sc.fg, padding: '2px 8px', borderRadius: '4px', marginRight: '6px', fontWeight: 600 }}>{h.source}</span>
-                {E.relativeAge(h.publishedMs, nowMs)}
-              </span>
-            </span>
-          );
-        })}
+        <span className="arch-news-stack">{slice.map((h) => <NewsRow key={h.id} h={h} nowMs={nowMs} />)}</span>
         {counter}
         {progressBar}
       </div>
@@ -65,7 +95,7 @@ export default function ArchiveOnThisDay({ items, rush, stories = [], headlines 
     const isScan = /scan|page|doc/i.test(st.thumbUrl);
     return (
       <button type="button" className={compact ? 'arch-story compact' : 'arch-story'} key={`story-${st.id}`} onClick={(e) => onOpenStory?.(st, label, e.currentTarget)} data-testid="desk-story-item" aria-label={`Open story: ${st.headline}`} data-kind="story">
-        {!bad[st.id] && <img className="arch-story-img" style={isScan ? { objectFit: 'contain', background: '#0b0d14' } : { objectFit: 'cover', objectPosition: 'center 30%' }} src={st.thumbUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad((b) => ({ ...b, [st.id]: true }))} />}
+        {(!st.thumbUrl || bad[st.id]) ? <span className="arch-story-nophoto" aria-hidden="true">{initialsOf(st.source)}</span> : <img className="arch-story-img" style={isScan ? { objectFit: 'contain', background: '#0b0d14' } : { objectFit: 'cover', objectPosition: 'center 30%' }} src={st.thumbUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad((b) => ({ ...b, [st.id]: true }))} />}
         <span className="arch-story-text">
           <span className="arch-story-dateline">{label} · {st.source}</span>
           <span className="arch-story-head">{st.headline}</span>

@@ -5,7 +5,7 @@ export const ITEM_DWELL_MS = 14000;
 export const STORY_DWELL_MS = 22000;
 export const NEWS_DWELL_MS = 18000;
 /** Headlines shown per news slide, and the most slides in one cycle. */
-export const NEWS_PER_SLIDE = 4;
+export const NEWS_PER_SLIDE = 3;
 export const NEWS_MAX_SLIDES = 3;
 
 export type EntryKind = 'story' | 'item' | 'rush' | 'news';
@@ -38,12 +38,13 @@ export function buildEntries(storyCount: number, nearCount: number, itemCount: n
 }
 export const dwellOf = (e: Entry): number => (e.kind === 'story' ? STORY_DWELL_MS : e.kind === 'news' ? NEWS_DWELL_MS : ITEM_DWELL_MS);
 
-export function pickEntry(entries: Entry[], nowMs: number): { entry: Entry; n: number; total: number } | null {
+export function pickEntry(entries: Entry[], nowMs: number): { entry: Entry; n: number; total: number; elapsedMs: number; round: number } | null {
   if (entries.length === 0) return null;
   const cycle = entries.reduce((a, e) => a + dwellOf(e), 0);
+  const round = Math.floor(nowMs / cycle);
   let t = ((nowMs % cycle) + cycle) % cycle;
-  for (let n = 0; n < entries.length; n++) { const d = dwellOf(entries[n]); if (t < d) return { entry: entries[n], n: n + 1, total: entries.length }; t -= d; }
-  return { entry: entries[0], n: 1, total: entries.length };
+  for (let n = 0; n < entries.length; n++) { const d = dwellOf(entries[n]); if (t < d) return { entry: entries[n], n: n + 1, total: entries.length, elapsedMs: t, round }; t -= d; }
+  return { entry: entries[0], n: 1, total: entries.length, elapsedMs: 0, round };
 }
 
 /** Headlines for the news slides: one from each source in turn (sources ordered by their newest item), so one busy feed cannot fill every slide. */

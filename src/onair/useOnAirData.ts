@@ -5,16 +5,18 @@ import { useDigest } from '../hooks/useDigest';
 import { AJN_PLAYOUT as E } from './engine.js';
 import { PREFS_KEY, defaultUnits, describeCode, forecastUrl, parseForecast, parsePrefs, placeLabel, tempUnit, toTemp, toWind, windUnit, type WeatherPlace, type WeatherReport } from '../utils/weather';
 import type { Edition } from '../utils/dailyEdition';
+import { splitNews } from './newsMerge';
 import type { CityPhotoResponse, CityPhoto } from '../../server/cityPhotos';
 /** Same key the server uses for the city (see server/cityPhotos.ts CITY_CATEGORIES). */
 export const cityKeyOf = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-export interface Headline { id: string; text: string; publishedMs: number; source: string }
+/** A news item. `url`, `image`, `blurb` and `platform` come from Citizen Free Press / the extra feeds; text is shown as plain text only. */
+export interface Headline { id: string; text: string; publishedMs: number; source: string; url?: string; image?: string; blurb?: string; platform?: 'x' | 'rumble' | 'youtube' | 'archive' }
 export interface OnThisDay { date: string; title: string }
 /** One real Archive.org item from /api/onair/on-this-day (usgovernmentmirrors, dated today's month/day in an earlier year). */
 export interface ArchiveItem { identifier: string; title: string; collectionName: string; date: string; year: number; mediatype: 'texts' | 'audio' | 'movies'; thumbnail: string; url: string }
 export interface OnAirData {
-  headlines: Headline[]; digestLines: string[]; weatherLines: string[] | null; onThisDay: OnThisDay | null; archiveItems: ArchiveItem[];
+  headlines: Headline[]; /** News slide pool (48 h); `headlines` is the ticker (short window). */ newsItems: Headline[]; digestLines: string[]; weatherLines: string[] | null; onThisDay: OnThisDay | null; archiveItems: ArchiveItem[];
   /** Weather card background for the city on screen (null until loaded, or when none is available). */
   weatherPhoto: CityPhoto | null;
   digestStatus: 'loading' | 'ready' | 'error';
@@ -131,8 +133,8 @@ export function useOnAirData(_edition: Edition | null, nowMs: number, headlineMa
       let next = 15 * 60_000;
       try {
         const r = await fetch('/api/onair/extra-news', { signal: ctl.signal, cache: 'no-store' });
-        const j = (await r.json().catch(() => null)) as { status?: string; items?: Array<{ id: string; title: string; source: string; publishedAt: string }> } | null;
-        if (r.ok && j?.status === 'ok' && Array.isArray(j.items)) { if (alive) setExtraNews(j.items.filter((i) => i && i.title && Number.isFinite(Date.parse(i.publishedAt))).map((i) => ({ id: i.id, text: i.title, publishedMs: Date.parse(i.publishedAt), source: i.source }))); }
+        const j = (await r.json().catch(() => null)) as { status?: string; items?: Array<{ id: string; title: string; source: string; publishedAt: string; url?: string }> } | null;
+        if (r.ok && j?.status === 'ok' && Array.isArray(j.items)) { if (alive) setExtraNews(j.items.filter((i) => i && i.title && Number.isFinite(Date.parse(i.publishedAt))).map((i) => ({ id: i.id, text: i.title, publishedMs: Date.parse(i.publishedAt), source: i.source, url: typeof i.url === 'string' && /^https:\/\//.test(i.url) ? i.url : undefined }))); }
         else next = 2 * 60_000;
       } catch (e) { if ((e as Error).name === 'AbortError') return; next = 2 * 60_000; }
       if (alive) timer = window.setTimeout(() => { void load(); }, next);
@@ -141,14 +143,35 @@ export function useOnAirData(_edition: Edition | null, nowMs: number, headlineMa
     return () => { alive = false; ctl.abort(); if (timer) window.clearTimeout(timer); };
   }, []);
 
+  // Citizen Free Press: the server reads the public feed slowly (one request a minute, as the site asks) and sends only finished items. Failure or an empty list adds nothing.
+  const [cfpNews, setCfpNews] = useState<Headline[]>([]);
+  useEffect(() => {
+    let alive = true, timer: number | undefined; const ctl = new AbortController();
+    const load = async (): Promise<void> => {
+      let next = 2 * 60_000;
+      try {
+        const r = await fetch('/api/onair/cfp-news', { signal: ctl.signal, cache: 'no-store' });
+        const j = (await r.json().catch(() => null)) as { status?: string; pending?: number; items?: Array<{ id: string; title: string; url: string; outlet: string; publishedAt: string; image: string | null; blurb: string | null; platform: Headline['platform'] | null }> } | null;
+        if (r.ok && j && Array.isArray(j.items)) {
+          const items = j.items.filter((i) => i && i.title && i.outlet && /^https?:\/\//.test(i.url) && Number.isFinite(Date.parse(i.publishedAt)))
+            .map((i): Headline => ({ id: i.id, text: i.title, publishedMs: Date.parse(i.publishedAt), source: i.outlet, url: i.url, image: i.image && /^https:\/\//.test(i.image) ? i.image : undefined, blurb: i.blurb || undefined, platform: i.platform || undefined }));
+          if (alive) setCfpNews(items);
+          next = j.status === 'building' || (j.pending ?? 0) > 0 ? 60_000 : 10 * 60_000;
+        }
+      } catch (e) { if ((e as Error).name === 'AbortError') return; }
+      if (alive) timer = window.setTimeout(() => { void load(); }, next);
+    };
+    void load();
+    return () => { alive = false; ctl.abort(); if (timer) window.clearTimeout(timer); };
+  }, []);
+
   const dig = digest.data?.digest ?? null;
-  const headlines = useMemo<Headline[]>(() => {
+  const { headlines, newsItems } = useMemo(() => {
     const items = (dig?.top ?? []).filter((i) => i.publishedAt && Number.isFinite(Date.parse(i.publishedAt)));
-    const mapped = items.map((i) => ({ id: i.id, text: i.title, publishedMs: Date.parse(i.publishedAt as string), source: i.source }))
-    const seenText = new Set(mapped.map((m) => m.text.toLowerCase()));
-    for (const x of extraNews) if (!seenText.has(x.text.toLowerCase())) { seenText.add(x.text.toLowerCase()); mapped.push(x); }
-    return (E.filterFreshHeadlines(mapped, nowMs, headlineMaxAgeHours) as Headline[]).sort((a, b) => b.publishedMs - a.publishedMs);
-  }, [dig, extraNews, Math.floor(nowMs / 60_000), headlineMaxAgeHours]); // eslint-disable-line react-hooks/exhaustive-deps
+    const mapped = items.map((i): Headline => ({ id: i.id, text: i.title, publishedMs: Date.parse(i.publishedAt as string), source: i.source }));
+    const { ticker, slide } = splitNews([...mapped, ...extraNews, ...cfpNews], nowMs, headlineMaxAgeHours);
+    return { headlines: ticker, newsItems: slide };
+  }, [dig, extraNews, cfpNews, Math.floor(nowMs / 60_000), headlineMaxAgeHours]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const digestLines = useMemo(() => (dig?.briefing ?? []).slice(0, 4).map((b) => `• ${b.headline}`), [dig]);
   const weatherLines = useMemo<string[] | null>(() => {
@@ -160,5 +183,5 @@ export function useOnAirData(_edition: Edition | null, nowMs: number, headlineMa
       d0 ? `Today: high ${toTemp(d0.high, units)}${tempUnit(units)} · low ${toTemp(d0.low, units)}${tempUnit(units)}` : '',
     ].filter(Boolean);
   }, [weather]);
-  return { headlines, digestLines, weatherLines, onThisDay, archiveItems, weatherPhoto, digestStatus: digest.phase };
+  return { headlines, newsItems, digestLines, weatherLines, onThisDay, archiveItems, weatherPhoto, digestStatus: digest.phase };
 }

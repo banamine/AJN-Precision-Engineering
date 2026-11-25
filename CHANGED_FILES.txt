@@ -1,0 +1,4 @@
+AJN On Air redesign + news slide + Citizen Free Press — drop-in on top of the 4:57 AM snapshot (2026-11-25)
+NEW:     server/cfpNews.ts, server/cfpNews.test.ts, src/onair/newsMerge.ts, src/onair/newsMerge.test.ts, src/onair/storyReadable.ts, src/onair/storyReadable.test.ts
+CHANGED: package.json, server.ts, server/extraNews.ts, src/onair/ArchiveOnThisDay.tsx, src/onair/OnAirPage.tsx, src/onair/PanelCarousel.tsx, src/onair/archiveEntries.ts, src/onair/archiveEntries.test.ts, src/onair/onair.css, src/onair/useOnAirData.ts
+Includes the earlier gap fix (ajn-onair-fix-gap.zip).

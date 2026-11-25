@@ -26,6 +26,7 @@ import { denverDateKey, denverMidnight } from '../utils/dailyEdition';
 import { useDailyEdition } from '../hooks/useDailyEdition';
 import { useLiveRadioNowPlaying } from '../hooks/useLiveRadioNowPlaying';
 import { ShowArt } from '../components/ShowArt';
+import { isReadableTitle } from './storyReadable';
 import OnAirCaptions, { archivePathOf } from './OnAirCaptions';
 import { useCaptionTrack } from '../news/captions/useCaptionTrack';
 import './onair.css';
@@ -160,7 +161,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   // Declassified Desk stories: near-date ones first, then the rest (see desk/onThisDay.ts). Click opens the story window.
   const deskStories = useDeskStories();
   const todayMD = (() => { const p = E.denverParts(nowMs) as { month: number; day: number }; return { month: p.month, day: p.day }; })();
-  const rankedStories = useMemo(() => rankForToday(deskStories, todayMD), [deskStories, todayMD.month, todayMD.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rankedStories = useMemo(() => rankForToday(deskStories.filter((d) => isReadableTitle(d.headline)), todayMD), [deskStories, todayMD.month, todayMD.day]); // eslint-disable-line react-hooks/exhaustive-deps
   const [openStory, setOpenStory] = useState<{ item: DeskItem; label: string; el: HTMLElement | null } | null>(null);
   const [capHost, setCapHost] = useState<HTMLElement | null>(null);
   const [savedStories, setSavedStories] = useState<DeskItem[]>(() => loadSaved());
@@ -187,11 +188,13 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
   };
   const panelTypes = cur ? (E.pickPanels({ dwellSec: params.panelDwellSec, libraryUnreachable: !!machine?.libraryUnreachable && rankedStories.length === 0 && data.archiveItems.length === 0 }, PANEL_CATALOG, availability, dp, cur.type, nowMs) as string[]) : [];
 
-  const whenLines = nextAirings(list, nowMs, [
+  const whenLinesAll = nextAirings(list, nowMs, [
     { label: 'Alex Jones', re: /alex jones|infowars/i }, { label: 'Fox News', re: /fox news/i },
     { label: 'CNN', re: /\bcnn\b/i }, { label: 'BBC News', re: /\bbbc\b/i },
     { label: 'Coast to Coast', re: /coast to coast/i }, { label: 'Paul Harvey', re: /paul harvey/i },
   ], drift);
+  // Shows that are outside the schedule window are noise on a board card: show only real upcoming times.
+  const whenLines = whenLinesAll.filter((l) => !/not in the current schedule window/i.test(l));
   const wdName = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'long' }).format(new Date(nowMs));
   const nowLines = [
     `${new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit' }).format(new Date(nowMs))} Denver`,
@@ -209,7 +212,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
     if (type === 'On this day') return data.onThisDay ? [`On this day · ${data.onThisDay.date}`, data.onThisDay.title, 'Library recording'] : [];
     if (type === 'Live now') return ['AJN Radio · Live 109', 'Classic Rock 109 · Classic Hits 109', cur.type === 'music' && effSrc === 'Live 109' ? `On air: ${cur.musicStation}` : 'Between podcasts'];
     if (type === 'Still to come') return stillLines;
-    if (type === 'Station ID card') return whenLines;
+    if (type === 'Station ID card') return whenLines.length ? whenLines : ['No listed show airs in the current schedule window'];
     if (type === 'Clock card') return nowLines;
     return [type];
   };
@@ -248,7 +251,8 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
               </div>
               <div className="meta-subline">Segment {cur.index} of {list.length}</div>
             </div>
-          </div></div>
+          </div>
+          <OnAirCaptions state={captionState} /></div>
           <div className="stage-bottom">
             <div className="progress-wrap">
               <div className="progress-track"><div className={onAir ? 'progress-fill on-air-bar' : 'progress-fill'} style={{ width: `${p.toFixed(1)}%` }} /></div>
@@ -258,9 +262,8 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
           </div>
         </div>
         <div className="stage-side">
-          <OnAirCaptions state={captionState} />
           <div className="side-heading"><span>Coming up</span></div>
-          <div className="transcript-lines">{(captionState.phase === 'off' ? ups : ups.slice(0, 2)).length ? (captionState.phase === 'off' ? ups : ups.slice(0, 2)).map((u) => <div key={u} className="transcript-line single"><span>{u}</span></div>) : <div className="transcript-line single"><span>Nothing scheduled after this</span></div>}</div>
+          <div className="transcript-lines">{ups.length ? ups.map((u) => <div key={u} className="transcript-line single"><span>{u}</span></div>) : <div className="transcript-line single"><span>Nothing scheduled after this</span></div>}</div>
         </div>
       </>);
     }
@@ -389,7 +392,7 @@ export default function OnAirPage({ stopExistingPlayback }: { stopExistingPlayba
                   {moveText
                     ? (photo || !cur.artUrl ? null : <div className="panel-art"><img src={cur.artUrl} alt="" referrerPolicy="no-referrer" /></div>)
                     : hasLib
-                    ? <div className="panel-lines arch-lines"><ArchiveOnThisDay headlines={data.headlines} items={data.archiveItems} rush={data.onThisDay} stories={rankedStories} nowMs={nowMs} compact={compact} big={pi === 1} captionHost={pi === 1 ? capHost : null} onOpenStory={(item, label, el) => setOpenStory({ item, label, el })} /></div>
+                    ? <div className="panel-lines arch-lines"><ArchiveOnThisDay headlines={data.newsItems} items={data.archiveItems} rush={data.onThisDay} stories={rankedStories} nowMs={nowMs} compact={compact} big={pi === 1} captionHost={pi === 1 ? capHost : null} onOpenStory={(item, label, el) => setOpenStory({ item, label, el })} /></div>
                     : type === 'Digest'
                       ? <div className="panel-lines pc-lines"><PanelCarousel items={lines.map((l) => l.replace(/^[•\s]+/, ''))} nowMs={nowMs} /></div>
                       : <div className={`panel-lines${type === 'Show card' ? ' pl-show' : ''}`}>{(compact && type === 'Show card' ? [lines[0], lines[2] ?? lines[1]] : lines.slice(0, compact ? 2 : lines.length)).map((l, i) => <div key={i} className="panel-line-item">{l}</div>)}</div>}

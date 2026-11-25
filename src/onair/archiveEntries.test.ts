@@ -18,4 +18,4 @@ assert.deepEqual(buildEntries(0, 0, 0, false, 1), [{ kind: 'news', index: 0 }]);
 
 const hl = [{ source: 'A', publishedMs: 9 }, { source: 'A', publishedMs: 8 }, { source: 'A', publishedMs: 7 }, { source: 'B', publishedMs: 6 }, { source: 'C', publishedMs: 5 }];
 assert.deepEqual(diverseHeadlines(hl, 4).map((x) => `${x.source}${x.publishedMs}`), ['A9', 'B6', 'C5', 'A8']);
-assert.equal(diverseHeadlines([], 4).length, 0);
+assert.equal(diverseHeadlines([], 4).length, 0);{ const w = pickEntry(e, STORY_DWELL_MS + 5000)!; assert.equal(w.n, 2); assert.equal(w.elapsedMs, 5000, 'elapsed inside the slide'); assert.equal(pickEntry(e, cycle + 1)!.round, 1); assert.equal(pickEntry(e, cycle - 1)!.round, 0); console.log('archiveEntries elapsed/round ok'); }

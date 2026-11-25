@@ -43,7 +43,7 @@ function tag(block: string, name: string): string | undefined {
   const m = new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, 'i').exec(block);
   return m ? m[1].trim() : undefined;
 }
-const clean = (s: string): string => decode(decode(s).replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+export const clean = (s: string): string => decode(decode(s).replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
 const hash = (s: string): string => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
 
 /** Parse RSS 2.0 `<item>` blocks. Items without a title, an https link or a valid, not-future date are dropped (no invented dates). Newest first. */

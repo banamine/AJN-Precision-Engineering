@@ -29,6 +29,7 @@ import { safeFetch, readTextCapped, SafeFetchError, PLAYLIST_MAX_BYTES, anyPubli
 import { proxySliceRange } from './server/proxyRange';
 import { getDigestState } from './server/newsDigest';
 import { getExtraNews } from './server/extraNews';
+import { getCfpNews } from './server/cfpNews';
 import { unplayableReason } from './server/sources/archiveLinks';
 import { Readable } from 'node:stream';
 import { gzip as gzipCb } from 'node:zlib';
@@ -522,6 +523,7 @@ app.get('/api/news/version',async(_req,res)=>{res.set('Cache-Control','no-store'
 app.get('/api/digest',async(_req,res)=>{const st=await getDigestState();res.set('Cache-Control','no-store');if(!st.digest)return res.status(503).json({status:st.status,error:st.error??'digest not loaded yet'});return res.json(st);});
 // Extra news headlines for On Air (13 public RSS feeds, headlines and links only, in memory). 503 only when no feed has ever loaded; per-feed status is always included.
 app.get('/api/onair/extra-news',async(_req,res)=>{const st=await getExtraNews();res.set('Cache-Control','no-store');if(!st.items.length)return res.status(503).json({status:'error',feeds:st.feeds,error:'no extra news feed has loaded yet'});return res.json({status:'ok',...st});});
+app.get('/api/onair/cfp-news',(_req,res)=>{const st=getCfpNews();res.set('Cache-Control','no-store');return res.status(st.status==='error'?503:200).json(st);});
 app.get('/api/playlists',(_req,res)=>{const playlists=getAllPlaylists();res.json({playlists,total:playlists.length});});
 app.get('/api/playlists/:playlistId',(req,res)=>{const p=getPlaylistById(req.params.playlistId);if(!p)return res.status(404).json({error:`Playlist not found: ${req.params.playlistId}`});res.json(p);});
 app.post('/api/playlists/:playlistId/sync',(req,res)=>{const r=syncPlaylist(req.params.playlistId,req.body?.customM3u);if(!r.success)return res.status(400).json({error:`Failed to sync playlist ${req.params.playlistId}`,playlist:r.playlist});res.json({message:`Playlist ${req.params.playlistId} synchronized successfully`,playlist:r.playlist,ingestedCount:r.count});});

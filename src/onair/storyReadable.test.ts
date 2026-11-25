@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { isReadableTitle } from './storyReadable';
+assert.equal(isReadableTitle('Project Blue Book: Sighting Report Summary'), true);
+assert.equal(isReadableTitle("Cuban Missile Crisis — Executive Committee Notes"), true);
+assert.equal(isReadableTitle('i ~ . l | ; ,, rn  -- ti'), false);
+assert.equal(isReadableTitle('|||~~~ ;;;; ####'), false);
+assert.equal(isReadableTitle('t i l e s a b c d'), false);
+assert.equal(isReadableTitle('xqzvbnmpl report'), false);
+assert.equal(isReadableTitle(''), false);
+console.log('storyReadable ok');

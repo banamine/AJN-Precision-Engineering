@@ -725,7 +725,7 @@
 @media (prefers-reduced-motion: reduce) { .onair-root .lt-snap { animation: none; } }
 
 /* Weather card with the city photo behind the text: dimmed and slightly blurred, with a dark wash so the text stays readable. */
-.onair-root .frame-panel.has-photo { position: relative; overflow: hidden; isolation: isolate; }
+.onair-root .frame-panel.has-photo { position: absolute; overflow: hidden; isolation: isolate; }
 .onair-root .frame-panel.has-photo::before { content: ''; position: absolute; inset: calc(-6 * var(--u)); z-index: -2; background-image: var(--photo); background-size: cover; background-position: center; filter: blur(1.5px) saturate(1.05); opacity: 0.6; }
 .onair-root .frame-panel.has-photo::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(8, 11, 20, 0.55) 0%, rgba(8, 11, 20, 0.72) 100%); }
 .onair-root .frame-panel.has-photo .panel-lines { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85); }
@@ -868,7 +868,7 @@
   border: 1px solid rgba(var(--accent-rgb), 0.4);
   box-shadow: 0 0 calc(24 * var(--u)) rgba(var(--accent-rgb), 0.25);
   border-radius: calc(20 * var(--u));
-  position: relative;
+  position: absolute; /* was relative: it overrode .frame-box and pushed the panel off its slot (gap + cut-off) */
   overflow: hidden;
 }
 
@@ -1028,3 +1028,69 @@
 .onair-root .ticker-track { font-size: calc(28 * var(--u)); }
 
 
+
+/* ROUND 3 FIXES (2026-11-25) */
+/* top slot panel is a rotating card (Now, Weather, Show...): smaller text, one line per row, so nothing is cut off */
+.onair-root .frame-panel:not(.frame-panel-big) .panel-lines:not(.pl-show):not(.pc-lines):not(.arch-lines) { font-size: calc(28 * var(--u)); line-height: 1.15; gap: calc(2 * var(--u)); }
+.onair-root .frame-panel:not(.frame-panel-big) .panel-lines:not(.pl-show):not(.pc-lines):not(.arch-lines) .panel-line-item { padding-bottom: 0; border-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* list cards in the big panel (When does it play, Now, Tonight): readable but they fit; long lines end with an ellipsis */
+.onair-root .frame-panel.frame-panel-big .panel-lines:not(.arch-lines):not(.pc-lines) { font-size: calc(38 * var(--u)); justify-content: space-evenly; }
+.onair-root .frame-panel.frame-panel-big .panel-lines:not(.arch-lines):not(.pc-lines) .panel-line-item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* news slide: start at the top of the panel and spread the rows over the full height (no big gap above, nothing below the edge) */
+.onair-root .frame-panel-big .arch-lines { justify-content: flex-start; padding-top: calc(4 * var(--u)); }
+.onair-root .frame-panel-big .arch-news { flex: 1 1 auto; min-height: 0; justify-content: space-evenly; height: 100%; overflow: hidden; }
+.onair-root .frame-panel-big .arch-news-row { flex: 0 1 auto; min-height: 0; overflow: hidden; }
+/* top card: Digest lines fit in two lines */
+.onair-root .frame-panel:not(.frame-panel-big) .pc-lines { font-size: calc(30 * var(--u)); line-height: 1.15; }
+.onair-root .frame-panel:not(.frame-panel-big) .pc-lines * { font-size: inherit; }
+/* story card: picture fills the full height of its column; the text always ends with the dateline above the progress bar */
+.onair-root .frame-panel-big .arch-story:not(.compact) { align-items: stretch; padding-bottom: calc(10 * var(--u)); }
+.onair-root .frame-panel-big .arch-story:not(.compact) .arch-story-img { flex: 0 0 36%; width: 36%; height: 100%; max-height: none; aspect-ratio: auto; object-fit: cover; object-position: center 25%; border-radius: calc(14 * var(--u)); }
+.onair-root .frame-panel-big .arch-story:not(.compact) .arch-story-head { font-size: calc(54 * var(--u)); -webkit-line-clamp: 3; }
+.onair-root .frame-panel-big .arch-story:not(.compact) .arch-story-lead { font-size: calc(36 * var(--u)); -webkit-line-clamp: 6; flex: 0 1 auto; }
+.onair-root .frame-panel-big .arch-story:not(.compact) .arch-story-dateline { flex: none; margin-top: auto; }
+.onair-root .frame-panel.frame-panel-big .panel-lines:not(.arch-lines):not(.pc-lines) { font-size: calc(36 * var(--u)); }
+.onair-root .frame-panel.frame-panel-big .panel-lines:not(.arch-lines):not(.pc-lines) .panel-line-item { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+
+/* ===== ROUND 4 (2026-11-25): news rows with picture + blurb, outlet pills, mockup revision 3 ===== */
+/* News slide: label on top, then up to three rows. Picture rows get a bigger share than slim rows; with fewer rows they sit at the top
+   (flex-start) and stop growing at their max height, so a one- or two-story slide never floats with a gap in the middle. */
+.onair-root .frame-panel-big .arch-news { display: flex; flex-direction: column; gap: calc(10 * var(--u)); height: 100%; min-height: 0; justify-content: flex-start; overflow: hidden; }
+.onair-root .arch-news-label { flex: 0 0 auto; }
+.onair-root .arch-news-stack { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: calc(10 * var(--u)); padding-bottom: calc(8 * var(--u)); }
+.onair-root .arch-news-row { box-sizing: border-box; min-height: 0; overflow: hidden; border-radius: calc(10 * var(--u)); background: rgba(8, 11, 18, 0.72); border: calc(1 * var(--u)) solid rgba(255, 255, 255, 0.10); display: flex; flex-direction: row; text-align: left; }
+.onair-root .arch-news-row.is-picture { flex: 1.35 1 0; max-height: calc(190 * var(--u)); }
+.onair-root .arch-news-row.is-slim { flex: 0.85 1 0; max-height: calc(120 * var(--u)); }
+.onair-root .arch-news-row.is-link { cursor: pointer; transition: border-color 180ms ease, background 180ms ease; }
+.onair-root .arch-news-row.is-link:hover, .onair-root .arch-news-row.is-link:focus-visible { border-color: rgba(255, 255, 255, 0.32); background: rgba(14, 19, 31, 0.92); outline: none; }
+.onair-root .arch-news-thumb { flex: 0 0 30%; width: 30%; height: 100%; min-height: 0; overflow: hidden; background: #0b0f18; border-right: calc(1 * var(--u)) solid rgba(255, 255, 255, 0.10); }
+.onair-root .arch-news-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+.onair-root .arch-news-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; letter-spacing: 0.06em; font-size: calc(40 * var(--u)); text-shadow: 0 calc(2 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, 0.45); }
+.onair-root .arch-news-body { flex: 1 1 0; min-width: 0; min-height: 0; padding: calc(8 * var(--u)) calc(14 * var(--u)); display: flex; flex-direction: column; justify-content: center; gap: calc(3 * var(--u)); overflow: hidden; }
+.onair-root .arch-news-meta { display: flex; align-items: center; justify-content: space-between; gap: calc(10 * var(--u)); min-width: 0; flex: 0 0 auto; }
+.onair-root .arch-source-pill { flex: 0 1 auto; min-width: 0; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: calc(2 * var(--u)) calc(9 * var(--u)); border-radius: calc(5 * var(--u)); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; font-size: max(12px, calc(20 * var(--u))); line-height: 1.2; }
+.onair-root .arch-source-pill[data-platform] { color: #fff; border: calc(1 * var(--u)) solid rgba(255, 255, 255, 0.22); }
+.onair-root .arch-source-pill[data-platform="x"] { background: #18181b; border-color: rgba(255, 255, 255, 0.4); }
+.onair-root .arch-source-pill[data-platform="rumble"] { background: #16a34a; }
+.onair-root .arch-source-pill[data-platform="youtube"] { background: #991b1b; }
+.onair-root .arch-source-pill[data-platform="archive"] { background: #475569; }
+.onair-root .arch-news-age { flex: 0 0 auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: max(12px, calc(20 * var(--u))); opacity: 0.75; white-space: nowrap; }
+.onair-root .arch-news-head { font-size: calc(30 * var(--u)); line-height: 1.2; font-weight: 700; color: #fff; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.onair-root .arch-news-row.is-slim .arch-news-head { font-size: calc(28 * var(--u)); }
+.onair-root .arch-news-blurb { font-size: max(12px, calc(21 * var(--u))); line-height: 1.3; color: var(--muted, #9aa6b8); overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+/* Progress bar: shows the real position in the slide. With reduced motion it does not animate, but still shows how far into the slide it was when drawn. */
+@media (prefers-reduced-motion: reduce) { .onair-root .slide-progress-bar { animation: none !important; width: var(--elapsed, 0%); } }
+
+/* ROUND 5: captions sit in the left stage under the cover art; Coming Up keeps all its rows. */
+.onair-root .stage-hero-center { flex-direction: column; gap: calc(10 * var(--u)); }
+.onair-root .stage-hero-center > .cover-row { flex: 1 1 0; min-height: 0; width: 100%; }
+.onair-root .stage-hero-center > .onair-captions { flex: 0 1 34%; width: 100%; margin: 0; min-height: calc(90 * var(--u)); }
+/* Desk story with no photo: coloured block instead of an empty hole. */
+.onair-root .arch-story-nophoto { flex: 0 0 30%; align-self: stretch; display: flex; align-items: center; justify-content: center; border-radius: calc(12 * var(--u)); background: linear-gradient(135deg, color-mix(in srgb, var(--accent, #38bdf8) 55%, #0b0d14), #0b0d14); font-size: calc(64 * var(--u)); font-weight: 800; letter-spacing: .04em; color: rgba(255,255,255,.75); }
+
+/* ROUND 5: 12px floor for small labels. */
+.onair-root .arch-count { font-size: max(12px, calc(20 * var(--u))); }
+.onair-root .frame-panel .panel-countdown, .onair-root .panel-countdown, .onair-root .panel-countdown * { font-size: max(12px, calc(20 * var(--u))); }
+.onair-root .frame-panel .role-tag, .onair-root .screen-frame .role-tag, .onair-root .role-tag { font-size: max(12px, calc(18 * var(--u))); }
+.onair-root .ticker-label, .onair-root .frame-lower-third .ticker-label { font-size: max(12px, calc(18 * var(--u))); }
+.onair-root .lt-pill strong { font-size: max(12px, calc(18 * var(--u))); }
