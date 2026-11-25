@@ -646,7 +646,6 @@
 
 .onair-root .ticker-track.onair-ticker { position: static; display: inline-block; white-space: nowrap; transform: none; animation: onairTicker 60s linear infinite; }
 @keyframes onairTicker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .onair-root .ticker-track.onair-ticker { animation-duration: 240s !important; } }
 .onair-root.clean-view .onair-debug { position: fixed; left: 0; bottom: 0; max-width: 40vw; z-index: 2; opacity: .85; }
 .onair-root .onair-spectrum { width: 100%; margin-top: calc(22 * var(--u)); }
 .onair-root .onair-spectrum canvas { display: block; width: 100%; height: calc(84 * var(--u)); }
