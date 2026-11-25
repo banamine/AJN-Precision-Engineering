@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { corsModeFor, podcastAllowsMeter, NO_METER_MARK } from './src/utils/mediaRoute.ts';
+const u = 'https://www.podtrac.com/pts/redirect.mp3/x.mp3';
+assert.equal(corsModeFor(u, false), undefined, 'external audio stays native by default');
+assert.equal(podcastAllowsMeter('pod-tucker-carlson-abc'), true);
+assert.equal(podcastAllowsMeter('pod-trish-regan-1'), true);
+for (const id of ['pod-the-quash-1', 'pod-quash-1', 'pod-bannon-war-room-1', 'pod-ben-ferguson-1', 'pod-clay-buck-1', 'pod-savage-nation-1', undefined]) assert.equal(podcastAllowsMeter(id as any), false, String(id));
+assert.equal(corsModeFor(u, false, 'pod-tucker-carlson-abc'), 'anonymous');
+assert.equal(corsModeFor(u + NO_METER_MARK, false, 'pod-tucker-carlson-abc'), undefined, 'after fallback: native');
+assert.equal(corsModeFor('/api/archive/proxy?path=x', false), 'anonymous', 'Archive proxy keeps its meter');
+console.log('podcast meter flags: all passed');
