@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { DEFAULT_DRAWER_PREFS, PREVIEW_COUNT, RADIO_DRAWERS_KEY, latestResumable, nextDrawerStage, readRadioDrawerPrefs, stageLimit, toggleDrawer, writeRadioDrawerPrefs } from './src/utils/radioDrawers';
+const mem = new Map<string, string>(); const st = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) };
+assert.deepEqual(readRadioDrawerPrefs(st), DEFAULT_DRAWER_PREFS);
+writeRadioDrawerPrefs({ findOpen: true, listenStage: 'full', fullShowsStage: 'closed', briefingStage: 'preview' }, st);
+assert.deepEqual(readRadioDrawerPrefs(st), { findOpen: true, listenStage: 'full', fullShowsStage: 'closed', briefingStage: 'preview' });
+mem.set(RADIO_DRAWERS_KEY, '{bad'); assert.deepEqual(readRadioDrawerPrefs(st), DEFAULT_DRAWER_PREFS, 'corrupt JSON -> defaults');
+mem.set(RADIO_DRAWERS_KEY, JSON.stringify({ findOpen: 'yes', listenStage: 'huge', fullShowsStage: 'full' })); assert.deepEqual(readRadioDrawerPrefs(st), { ...DEFAULT_DRAWER_PREFS, fullShowsStage: 'full' }, 'bad fields fall back one by one');
+assert.deepEqual(readRadioDrawerPrefs(null), DEFAULT_DRAWER_PREFS);
+assert.equal(toggleDrawer('closed'), 'preview'); assert.equal(toggleDrawer('full'), 'closed'); assert.equal(toggleDrawer('preview'), 'closed');
+assert.equal(nextDrawerStage('preview'), 'full'); assert.equal(nextDrawerStage('full'), 'preview'); assert.equal(nextDrawerStage('closed'), 'preview');
+assert.equal(stageLimit('closed', 10), 0); assert.equal(stageLimit('preview', 10), PREVIEW_COUNT); assert.equal(stageLimit('preview', 2), 2); assert.equal(stageLimit('full', 10), 10);
+const entries = [{ id: 'a' }, { id: 'b' }];
+assert.equal(latestResumable([], entries), null);
+assert.equal(latestResumable([{ id: 'x', programId: 'a', progressSeconds: 3, updatedAt: 9 }], entries), null, 'under 5 s is not resumable');
+const r = latestResumable([{ id: 'x', programId: 'a', progressSeconds: 60, updatedAt: 1 }, { id: 'y', programId: 'b:video', progressSeconds: 30, updatedAt: 5 }, { id: 'z', programId: 'nope', progressSeconds: 99, updatedAt: 9 }], entries);
+assert.deepEqual(r && { id: r.entry.id, s: r.seconds, v: r.video }, { id: 'b', s: 30, v: true }, 'newest matching item wins; video id maps back to its entry');
+console.log('radio-drawers ok');

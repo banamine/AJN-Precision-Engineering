@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { LibraryView } from './src/components/LibraryView';
+import { SearchScopeStrip } from './src/components/SearchScopeStrip';
+const lib = renderToStaticMarkup(<LibraryView onPlayProgram={() => {}} />);
+assert.match(lib, /id="library-filter-input"/); assert.match(lib, /role="combobox"/);
+assert.match(lib, /data-testid="search-scope-strip"/); assert.match(lib, /Media Archive Library/); assert.match(lib, /TV News Archive/);
+assert.match(lib, /data-testid="search-scope-library"[^>]*aria-pressed="true"/);
+assert.doesNotMatch(lib, /library-ghost/, 'no ghost with an empty box');
+let went = ''; const strip = renderToStaticMarkup(<SearchScopeStrip active="tvnews" go={(h) => { went = h; }} />);
+assert.match(strip, /search-scope-tvnews"[^>]*aria-pressed="true"/); assert.equal(went, '');
+console.log('unified-search view ok');

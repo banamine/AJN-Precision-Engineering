@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { NewsCarouselView, stepIndex } from './src/components/NewsCarousel';
+const items = [{ id: '1', title: 'Story A', url: 'https://x.test/a', source: 'AP', excerpt: null, publishedAt: null, imageUrl: null }, { id: '2', title: 'Story B', url: 'https://x.test/b', source: 'BBC', excerpt: null, publishedAt: null, imageUrl: 'https://x.test/i.jpg' }];
+assert.equal(stepIndex(0, -1, 2), 1); assert.equal(stepIndex(1, 1, 2), 0); assert.equal(stepIndex(0, 1, 0), 0);
+const noop = (): void => {};
+const html = renderToStaticMarkup(<NewsCarouselView items={items} index={1} onStep={noop} onPause={noop} notice="Digest 2 h old" />);
+assert.match(html, /Story B/); assert.match(html, /BBC/); assert.match(html, /2 \/ 2/); assert.match(html, /ck-key/); assert.match(html, /Digest 2 h old/);
+assert.match(renderToStaticMarkup(<NewsCarouselView items={[]} index={0} onStep={noop} onPause={noop} notice={null} />), /No digest stories/);
+console.log('news-carousel ok');
