@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { isExtensionNoise } from "../utils/extensionNoise";
 
 interface Props { label: string; children: ReactNode }
 interface State { error: Error | null }
@@ -8,6 +9,7 @@ export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
   static getDerivedStateFromError(error: Error): State { return { error }; }
   componentDidCatch(error: Error, info: ErrorInfo) {
+    if (isExtensionNoise(error.stack || info.componentStack)) return;
     console.error(`[ErrorBoundary:${this.props.label}]`, error.message, info.componentStack);
   }
   render() {
