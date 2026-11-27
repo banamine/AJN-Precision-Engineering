@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
+import { DIAL_MAX, DIAL_SLIDER_STEP, dialFromGain, gainFromDial, dialText } from '../utils/volumeScale';
 import { createPortal } from 'react-dom';
 import { Radio, X, ChevronDown, Play, Pause, Volume2, VolumeX, Maximize2, Expand, Shrink } from 'lucide-react';
 import type { Destination, NowPlayingMedia, PlayProgramCallback } from '../types';
@@ -266,8 +267,8 @@ export function RadioDock({ nowPlaying, onPlay, onNavigate, miniPlayerShowing }:
                 className="ck-key ck-key--icon shrink-0">
                 {media.muted ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
               </button>
-              <input type="range" min={0} max={1} step={0.05} value={media.volume} disabled={!media.attached} data-testid="radio-dock-volume" aria-label="Volume"
-                onChange={(e) => media.setVolume(Number(e.currentTarget.value))}
+              <input type="range" min={0} max={DIAL_MAX} step={DIAL_SLIDER_STEP} value={dialFromGain(media.volume)} aria-valuetext={dialText(media.volume)} disabled={!media.attached} data-testid="radio-dock-volume" aria-label="Volume"
+                onChange={(e) => media.setVolume(gainFromDial(Number(e.currentTarget.value)))}
                 className="w-20 shrink-0 accent-[var(--ajn-accent)] sm:w-24" />
               <button type="button" onClick={() => { hide(); onNavigate('player'); }} aria-label="Open the full player (visualizer)" title="Full player and visualizer"
                 className="ck-key ck-key--icon shrink-0">

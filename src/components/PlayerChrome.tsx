@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DIAL_MAX, DIAL_SLIDER_STEP, dialFromGain, gainFromDial, dialText } from '../utils/volumeScale';
 import FixedQueueViewport from "./FixedQueueViewport";
 import { createScrubber } from "../utils/seekScrub";
 import { skipMedia, skipLabel, skipAriaLabel, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../utils/podcastSkip";
@@ -8,6 +9,10 @@ import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, PictureInPicture2, A
 import type { AnalyzerState } from "./AudioVisualizerOverlay";
 import type { Program, RecentlyPlayedItem } from "../types";
 import { cleanArchiveMusicFilename } from "../utils/archiveMusicTitle";
+
+/** iPhone/iPad Safari ignores script volume (it is read-only), so a slider there would do nothing. Hide it only there. */
+const IOS_VOLUME_LOCKED = typeof navigator !== 'undefined'
+  && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints ?? 0) > 1));
 
 export const HUD_HIDE_MS = 2500;
 
@@ -35,6 +40,8 @@ export function formatClock(sec: number): string {
 }
 
 interface PlayerChromeProps {
+  /** Skip-silence control for podcasts (hidden for everything else). */
+  silenceSkip?: { state: "hidden" | "unreadable" | "off" | "on"; savedSec: number; toggle: () => void };
   /** Podcast episode being played (ad-break prompt + ad-seconds line). Omit/null for everything else. */
   adSkipSource?: AdSkipSource | null;
   mediaRef: React.RefObject<HTMLMediaElement | null>;
@@ -156,12 +163,25 @@ export function PlayerChrome(p: PlayerChromeProps) {
     if (!p.isPlaying) { clearTimer(); setVisible(true); } else wake();
   }, [p.isPlaying, p.isVideo, wake]);
 
+  // Smooth playhead: timeupdate only fires ~4x a second, so while playing also follow the clock every frame (re-render only when it moved ≥ 50 ms).
+  useEffect(() => {
+    const m = p.mediaRef.current;
+    if (!p.isPlaying || !m) return;
+    let raf = 0;
+    const tick = () => { setTime((cur) => (Math.abs(cur.t - m.currentTime) < 0.05 ? cur : { ...cur, t: m.currentTime })); raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [p.isPlaying, p.mediaRef]);
+
   // LIVE only when the browser reports an endless duration (a real live stream). While metadata is still
   // loading (or a stalled archive file never reports one) the duration is NaN/0: that is "unknown", never LIVE.
   const live = time.d === Infinity;
   const noDuration = !(Number.isFinite(time.d) && time.d > 0);
   // While the bar is being dragged the thumb and clock follow the DRAFT; the media is sought once, on release (see utils/seekScrub.ts).
   const shownT = draft !== null && !noDuration ? Math.min(draft, time.d) : time.t;
+  // 0.1 s resolution (the old 1000-step bar moved 10 s per notch on a 3-hour show)
+  const seekMax = noDuration ? 1 : Math.max(1, Math.round(time.d * 10));
+  const seekText = noDuration ? "unknown" : `${formatClock(shownT)} of ${formatClock(time.d)}`;
   const pct = noDuration ? 0 : Math.min(100, (shownT / time.d) * 100);
   const bufPct = noDuration ? 0 : Math.min(100, (time.b / time.d) * 100);
   const clockLabel = live ? <span className="text-red-400">LIVE ●</span> : noDuration ? <span className="text-neutral-400">Loading…</span> : `${formatClock(shownT)} / ${formatClock(time.d)}`;
@@ -177,7 +197,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
   };
 
   const seek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!noDuration) scrubber.update((Number(e.target.value) / 1000) * time.d);
+    if (!noDuration) scrubber.update(Number(e.target.value) / 10);
   };
 
   const btn = "flex h-8 w-8 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-neutral-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400";
@@ -219,9 +239,9 @@ export function PlayerChrome(p: PlayerChromeProps) {
           <span className="sr-only">{p.isMuted ? "Muted" : "Unmuted"}</span>
         </button>
         <input
-          type="range" min={0} max={1} step={0.05}
-          value={p.isMuted ? 0 : p.volume}
-          onChange={(e) => p.onVolume(Number(e.target.value))}
+          type="range" min={0} max={DIAL_MAX} step={DIAL_SLIDER_STEP}
+          value={dialFromGain(p.isMuted ? 0 : p.volume)} aria-valuetext={dialText(p.isMuted ? 0 : p.volume)}
+          onChange={(e) => p.onVolume(gainFromDial(Number(e.target.value)))}
           aria-label="Volume"
           className="hidden h-1 w-0 cursor-pointer appearance-none overflow-hidden rounded bg-neutral-700 accent-[#E06D3B] opacity-0 transition-all duration-200 group-hover:ml-1 group-hover:w-20 group-hover:opacity-100 group-focus-within:ml-1 group-focus-within:w-20 group-focus-within:opacity-100 sm:block"
         />
@@ -234,9 +254,10 @@ export function PlayerChrome(p: PlayerChromeProps) {
           <div className="absolute inset-y-0 left-0 bg-neutral-500/70" style={{ width: `${bufPct}%` }} />
           <div className="absolute inset-y-0 left-0 bg-sky-400" style={{ width: `${pct}%` }} />
         </div>
+        {draft !== null && !noDuration && <span data-testid="seek-bubble" aria-hidden="true" className="pointer-events-none absolute -top-7 z-20 -translate-x-1/2 rounded-md bg-black/85 px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-white ring-1 ring-white/20" style={{ left: `${Math.min(96, Math.max(4, pct))}%` }}>{formatClock(shownT)}</span>}
         <input
-          type="range" min={0} max={1000} step={1}
-          value={Math.round(pct * 10)}
+          type="range" min={0} max={seekMax} step={1}
+          value={Math.round(shownT * 10)} aria-valuetext={seekText}
           onChange={seek}
           onPointerDown={() => scrubber.begin()}
           onPointerUp={() => scrubber.end()}
@@ -300,13 +321,13 @@ export function PlayerChrome(p: PlayerChromeProps) {
     if (flashTimer.current) window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setSkipFlash(null), 1500);
   };
-  const skipChip = "inline-flex h-9 min-w-[3.25rem] items-center justify-center gap-1 rounded-lg border border-white/15 bg-white/10 px-2.5 text-xs font-bold tabular-nums text-neutral-100 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-white/10";
+  const skipChip = "inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 rounded-lg border border-white/15 bg-white/10 px-1 sm:h-9 sm:w-auto sm:min-w-[3.25rem] sm:px-2.5 text-xs font-bold tabular-nums text-neutral-100 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-white/10";
   const tbtn = `${btn} disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent`;
   // Dedicated bottom-docked glass bar: its own row under the stage, so it never covers the visualizer or the art.
   const audioBar = (
     <div data-testid="audio-controls" className="relative z-10 border-t border-white/10 bg-[rgba(15,15,20,0.85)] px-3 pb-2 pt-2 backdrop-blur-[12px] sm:px-4">
       <div data-testid="player-transport" onMouseEnter={() => { hoverRef.current = true; }} onMouseLeave={() => { hoverRef.current = false; }}
-        className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        className="grid grid-cols-1 items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-y-1">
         {/* left: thumbnail + title/artist */}
         <div className="flex min-w-0 items-center gap-3">
           {p.thumbnailUrl
@@ -320,7 +341,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
           </div>
         </div>
         {/* centre: transport */}
-        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-1">
           <button type="button" className={tbtn} onClick={p.onPrev} disabled={!p.onPrev} aria-label="Previous track" title="Previous"><SkipBack className="h-4 w-4 sm:h-5 sm:w-5" /></button>
           <button type="button" className={`${btn} !h-10 !w-10 rounded-full bg-white/10`} onClick={p.onTogglePlay} aria-label={p.isPlaying ? "Pause" : "Play"} title="Play/Pause (Space)">
             {p.isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
@@ -331,7 +352,7 @@ export function PlayerChrome(p: PlayerChromeProps) {
           )}
         </div>
         {/* right: volume, analyzer, visualizer */}
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-center gap-1.5 sm:justify-end sm:gap-1">
           <div className="group flex items-center">
             <button
               type="button"
@@ -350,8 +371,8 @@ export function PlayerChrome(p: PlayerChromeProps) {
               {p.isMuted ? <VolumeX className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" /> : <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />}
               <span className="sr-only">{p.isMuted ? "Muted" : "Unmuted"}</span>
             </button>
-            <input type="range" min={0} max={1} step={0.05} value={p.isMuted ? 0 : p.volume} onChange={(e) => p.onVolume(Number(e.target.value))} aria-label="Volume"
-              className="ml-1 hidden h-1 w-20 cursor-pointer appearance-none rounded bg-neutral-700 accent-[#E06D3B] md:block" />
+            <input type="range" min={0} max={DIAL_MAX} step={DIAL_SLIDER_STEP} value={dialFromGain(p.isMuted ? 0 : p.volume)} aria-valuetext={dialText(p.isMuted ? 0 : p.volume)} onChange={(e) => p.onVolume(gainFromDial(Number(e.target.value)))} aria-label="Volume"
+              className={`ml-1 h-1 w-24 cursor-pointer appearance-none rounded bg-neutral-700 accent-[#E06D3B] sm:w-20 ${IOS_VOLUME_LOCKED ? "hidden" : ""}`} data-testid="player-volume-slider" />
           </div>
           <button type="button" data-testid="analyzer-pill" data-state={p.analyzerState} onClick={p.onToggleDiagnostics} disabled={!p.onToggleDiagnostics}
             aria-label={PILL[p.analyzerState].label}
@@ -366,14 +387,21 @@ export function PlayerChrome(p: PlayerChromeProps) {
       </div>
       {/* skip row: labelled jump buttons, visible on every width (on-demand audio only; hidden for live) */}
       {!live && (
-        <div data-testid="skip-row" role="group" aria-label="Skip" className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+        <div data-testid="skip-row" role="group" aria-label="Skip" className="mt-2 grid grid-cols-5 items-center gap-1.5 sm:mt-1 sm:flex sm:flex-wrap sm:justify-center">
           {SKIP_BACK_SECONDS.map((sec) => (
-            <button key={sec} type="button" data-testid={`skip-back-${sec}`} className={skipChip} onClick={() => skip(-sec)} disabled={noDuration} aria-label={skipAriaLabel(-sec)} title={skipAriaLabel(-sec)}><Rewind className="h-3.5 w-3.5" aria-hidden="true" />{skipLabel(-sec)}</button>
+            <button key={sec} type="button" data-testid={`skip-back-${sec}`} className={skipChip} onClick={() => skip(-sec)} disabled={noDuration} aria-label={skipAriaLabel(-sec)} title={skipAriaLabel(-sec)}><Rewind className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />{skipLabel(-sec)}</button>
           ))}
           {SKIP_FORWARD_SECONDS.map((sec) => (
-            <button key={sec} type="button" data-testid={`skip-fwd-${sec}`} className={skipChip} onClick={() => skip(sec)} disabled={noDuration} aria-label={skipAriaLabel(sec)} title={skipAriaLabel(sec)}><FastForward className="h-3.5 w-3.5" aria-hidden="true" />{skipLabel(sec)}</button>
+            <button key={sec} type="button" data-testid={`skip-fwd-${sec}`} className={skipChip} onClick={() => skip(sec)} disabled={noDuration} aria-label={skipAriaLabel(sec)} title={skipAriaLabel(sec)}><FastForward className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />{skipLabel(sec)}</button>
           ))}
-          <span data-testid="skip-flash" role="status" aria-live="polite" className={`min-w-[9.5rem] text-center font-mono text-[11px] tabular-nums text-amber-200 ${skipFlash ? "opacity-100" : "opacity-0"}`}>{skipFlash ? skipFlash.text : "\u00A0"}</span>
+          <span data-testid="skip-flash" role="status" aria-live="polite" className={`col-span-5 min-w-[9.5rem] text-center font-mono text-[11px] tabular-nums text-amber-200 ${skipFlash ? "opacity-100" : "opacity-0"}`}>{skipFlash ? skipFlash.text : "\u00A0"}</span>
+          {p.silenceSkip && p.silenceSkip.state !== "hidden" && (
+            <button type="button" data-testid="silence-skip-toggle" aria-pressed={p.silenceSkip.state === "on"} disabled={p.silenceSkip.state === "unreadable"} onClick={p.silenceSkip.toggle}
+              title={p.silenceSkip.state === "unreadable" ? "This show's audio can't be read by the browser, so silence can't be detected" : "Plays pauses longer than half a second at 4× speed. Captions and resume position stay in step."}
+              className={`col-span-5 mx-auto inline-flex min-h-9 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 disabled:cursor-default disabled:opacity-50 sm:col-auto ${p.silenceSkip.state === "on" ? "border-emerald-400/60 bg-emerald-400/15 text-emerald-200" : "border-white/15 bg-white/5 text-neutral-200 hover:bg-white/10"}`}>
+              {p.silenceSkip.state === "unreadable" ? "Skip silence: unavailable for this show" : p.silenceSkip.state === "on" ? `Skip silence: on${p.silenceSkip.savedSec > 0 ? ` · saved ${formatClock(p.silenceSkip.savedSec)}` : ""}` : "Skip silence: off"}
+            </button>
+          )}
         </div>
       )}
       {!live && adSkip.active && <AdSkipPanel view={adSkip.view} onAccept={adSkip.accept} onDismiss={adSkip.dismiss} onMode={adSkip.setMode} />}
@@ -385,7 +413,8 @@ export function PlayerChrome(p: PlayerChromeProps) {
             <div className="absolute inset-y-0 left-0 bg-neutral-500/70" style={{ width: `${bufPct}%` }} />
             <div className="absolute inset-y-0 left-0 bg-sky-400" style={{ width: `${pct}%` }} />
           </div>
-          <input type="range" min={0} max={1000} step={1} value={Math.round(pct * 10)} onChange={seek} disabled={noDuration} aria-label="Seek"
+          {draft !== null && !noDuration && <span data-testid="seek-bubble" aria-hidden="true" className="pointer-events-none absolute -top-7 z-20 -translate-x-1/2 rounded-md bg-black/85 px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-white ring-1 ring-white/20" style={{ left: `${Math.min(96, Math.max(4, pct))}%` }}>{formatClock(shownT)}</span>}
+          <input type="range" min={0} max={seekMax} step={1} value={Math.round(shownT * 10)} aria-valuetext={seekText} onChange={seek} onPointerDown={() => scrubber.begin()} onPointerUp={() => scrubber.end()} onPointerCancel={() => scrubber.end()} onBlur={() => scrubber.end()} disabled={noDuration} aria-label="Seek"
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default" />
         </div>
       </div>
@@ -459,10 +488,11 @@ export function PlayerChrome(p: PlayerChromeProps) {
               <input
                 type="range"
                 min={0}
-                max={1}
-                step={0.05}
-                value={p.isMuted ? 0 : p.volume}
-                onChange={(event) => p.onVolume(Number(event.target.value))}
+                max={DIAL_MAX}
+                step={DIAL_SLIDER_STEP}
+                value={dialFromGain(p.isMuted ? 0 : p.volume)}
+                aria-valuetext={dialText(p.isMuted ? 0 : p.volume)}
+                onChange={(event) => p.onVolume(gainFromDial(Number(event.target.value)))}
                 aria-label="Volume"
                 className="h-11 w-16 cursor-pointer accent-[#E06D3B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 sm:w-24"
               />

@@ -1,7 +1,7 @@
 /* Watch Later: a local-only list of things to come back to. Two ways in:
  *  - manual (the bookmark button in the player), and
  *  - automatic: once you have played at least half of an item and have NOT finished it.
- * Finishing an item removes it. Never synced to the cloud (local storage only). Versioned envelope like mediaFavorites. */
+ * Finishing an item removes it. Synced across devices by useCloudSync (the signed-in user's own cloud copy); local storage stays the offline source. Versioned envelope like mediaFavorites. */
 import type { NowPlayingMedia } from '../types';
 
 export const WATCH_LATER_KEY = 'ajn.watchLater.v1';
@@ -11,7 +11,7 @@ export const FINISHED_FRACTION = 0.95;
 export type WatchLaterReason = 'manual' | 'auto-half';
 
 export interface WatchLaterItem extends NowPlayingMedia {
-  id: string; savedAt: number; progressSeconds: number; durationSeconds?: number; reason: WatchLaterReason;
+  id: string; savedAt: number; /** last change (add / position update): the cloud sync picks the newest version per item */ updatedAt?: number; progressSeconds: number; durationSeconds?: number; reason: WatchLaterReason;
 }
 
 /** Live radio / live streams have no timeline to come back to. */
@@ -31,10 +31,10 @@ export function addWatchLater(list: WatchLaterItem[], id: string, media: NowPlay
   const progress = Number.isFinite(opts.progressSeconds) && (opts.progressSeconds as number) >= 0 ? (opts.progressSeconds as number) : 0;
   const dur = Number.isFinite(opts.durationSeconds) && (opts.durationSeconds as number) > 0 ? opts.durationSeconds : undefined;
   if (existing) { // already saved: refresh position, keep the original reason and order
-    return { list: list.map((w) => (w.id === id ? { ...w, progressSeconds: progress, durationSeconds: dur ?? w.durationSeconds } : w)), added: false, full: false, live: false };
+    return { list: list.map((w) => (w.id === id ? { ...w, progressSeconds: progress, durationSeconds: dur ?? w.durationSeconds, updatedAt: now } : w)), added: false, full: false, live: false };
   }
   if (list.length >= WATCH_LATER_LIMIT) return { list, added: false, full: true, live: false };
-  return { list: [{ ...clean(media), id, savedAt: now, progressSeconds: progress, durationSeconds: dur, reason: opts.reason }, ...list], added: true, full: false, live: false };
+  return { list: [{ ...clean(media), id, savedAt: now, updatedAt: now, progressSeconds: progress, durationSeconds: dur, reason: opts.reason }, ...list], added: true, full: false, live: false };
 }
 /** Move `fromId` to where `toId` is. Moving down lands after the target, moving up lands before it. Unknown ids leave the list as it was. */
 export function moveWatchLater(list: WatchLaterItem[], fromId: string, toId: string): WatchLaterItem[] {

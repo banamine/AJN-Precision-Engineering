@@ -1,4 +1,8 @@
 import { scheduleResumePromptFade } from "./utils/resumePromptFade";
+import { stepGain } from "./utils/volumeScale";
+import { useSilenceSkip } from "./hooks/useSilenceSkip";
+import { FADE_TABLE, audioFadeEnabled, fadeInElement } from "./utils/audioFade";
+import { podcastArtFor } from './utils/podcastArt';
 import { clampStart } from "./utils/avSync";
 import { attachPlayTimeline } from "./utils/playTimeline";
 import { createProgressWatchdog } from "./utils/progressWatchdog";
@@ -185,7 +189,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const [failedArts, setFailedArts] = useState<string[]>([]);
   // Rush Limbaugh on-demand has no usable Archive cover (it came back blank white), so it gets the supplied picture first.
   const rushArt = nowPlaying?.channelId === "rush-vod" || /limbaugh/i.test(`${nowPlaying?.title ?? ""} ${title ?? ""}`) ? "/ajn-art/rush-limbaugh.jpg" : undefined;
-  const artUrl = [rushArt, folderArt[0]?.url, nowPlaying?.thumbnailUrl, itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
+  const artUrl = [rushArt, folderArt[0]?.url, nowPlaying?.thumbnailUrl, podcastArtFor(nowPlaying?.channelId), itemArt].find((u): u is string => Boolean(u) && !failedArts.includes(u as string));
   const markArtFailed = (u?: string | null): void => { if (u) setFailedArts((prev) => (prev.includes(u) ? prev : [...prev, u])); };
   const archiveTrack = useMemo(
     () => cleanArchiveMusicFilename(nowPlaying?.archivePath ?? activeSrc),
@@ -216,7 +220,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // it (a re-run calls load(), which aborts the play() in flight).
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
-  const { diagnosticsAnalyserRef, resumeAudioContext } = useAudioNormalization(
+  const { diagnosticsAnalyserRef, resumeAudioContext, declickMaster } = useAudioNormalization(
     mediaRef,
     isVideo ? "video" : "audio",
     activeSrc,
@@ -321,6 +325,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     el.setAttribute("data-testid", "audio-element");
     host.replaceChildren(el);
     mediaRef.current = el;
+    // Fade IN a fresh track (speech 0.5 s equal-power; music 3 s S-curve). Never on live streams or a session restored paused; the slider ends it; iOS (read-only volume) skips it.
+    fadeCancelRef.current?.(); fadeCancelRef.current = null;
+    if (audioFadeEnabled() && !nowPlayingRef.current?.isLive && !nowPlayingRef.current?.restoredPaused) fadeCancelRef.current = fadeInElement(el, archiveMusicModeRef.current ? "music" : "speech");
     attachPlayTimeline(el, { restored: Boolean(nowPlayingRef.current?.restoredPaused && !restoreHandledRef.current), src: activeSrc, startAtSeconds: nowPlayingRef.current?.startAtSeconds });
   }, [isVideo, activeSrc, disposePreload]);
   // Leaving the player: release the playing element and any warm one.
@@ -1109,14 +1116,24 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     return () => { evs.forEach((e) => media.removeEventListener(e, update)); media.removeEventListener("timeupdate", throttled); };
   }, [activeSrc, isVideo]);
 
+  // Skip silence: podcasts / spoken on-demand audio only (never music, live, video, On Air); needs a source the analyser can really hear.
+  const getMediaEl = useCallback(() => mediaRef.current, []);
+  const spokenOnDemand = !isVideo && !archiveMusicMode && !nowPlaying?.isLive && nowPlaying?.mediaType === "audio" && (String(nowPlaying?.programId ?? "").startsWith("pod-") || nowPlaying?.guideId === "audio-podcasts");
+  const silenceSkip = useSilenceSkip(getMediaEl, analyserNode, spokenOnDemand, Boolean(analyserNode) && analyzerState !== "unavailable", activeSrc ?? "");
+  const pauseTimerRef = useRef<number | null>(null);
+  const fadeCancelRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => { fadeCancelRef.current?.(); if (pauseTimerRef.current) window.clearTimeout(pauseTimerRef.current); }, []);
   const play = async () => {
     const media = mediaRef.current;
     if (!media) return;
     unmuteForResume();
     resumeAudioContext();
     setStatusText("Starting playback…");
+    if (pauseTimerRef.current) { window.clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null; declickMaster(media, "restore", 0); } // a pause was still pending
     try {
+      const soft = media.paused && declickMaster(media, 0, 0);
       await media.play();
+      if (soft) declickMaster(media, "restore", FADE_TABLE.declick.ms);
       if (!media.paused) reportPlaying();
     } catch (error) {
       // A newer load superseded this play(); the new source starts on its own.
@@ -1132,7 +1149,17 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
       });
     }
   };
-  const pause = () => mediaRef.current?.pause();
+  const pause = () => {
+    const m = mediaRef.current;
+    if (!m) return;
+    // Click-free stop on the Web Audio chain: master gain to 0 over 8 ms, pause, then restore the level while nothing is playing.
+    if (declickMaster(m, 0, FADE_TABLE.declick.ms)) {
+      if (pauseTimerRef.current) window.clearTimeout(pauseTimerRef.current);
+      pauseTimerRef.current = window.setTimeout(() => { pauseTimerRef.current = null; m.pause(); declickMaster(m, "restore", 0); }, FADE_TABLE.declick.ms + 6);
+      return;
+    }
+    m.pause();
+  };
 
   const resume = async () => {
     const media = mediaRef.current;
@@ -1254,8 +1281,8 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
           media.currentTime = Math.min(media.duration - 0.5, Math.max(0, media.currentTime + seekDelta(action, e.key, e.shiftKey)));
           break;
         }
-        case "volume-up": media.volume = Math.min(1, Math.round((media.volume + 0.1) * 10) / 10); setVolume(media.volume); break;
-        case "volume-down": media.volume = Math.max(0, Math.round((media.volume - 0.1) * 10) / 10); setVolume(media.volume); break;
+        case "volume-up": media.volume = stepGain(media.volume, 1); setVolume(media.volume); break;
+        case "volume-down": media.volume = stepGain(media.volume, -1); setVolume(media.volume); break;
       }
       e.preventDefault();
     };
@@ -1386,7 +1413,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
               ))}
             </>
           )}
-          {podcastStageSource && <PodcastStage getMedia={() => mediaRef.current} source={podcastStageSource} analyser={analyserNode} meter={Boolean(analyserNode) && analyzerState !== "unavailable"} artUrl={artUrl} title={title} />}
+          {podcastStageSource && <PodcastStage getMedia={() => mediaRef.current} source={podcastStageSource} analyser={analyserNode} meter={Boolean(analyserNode) && analyzerState !== "unavailable"} artUrl={artUrl} title={title} showName={nowPlaying?.subtitle} />}
           <div ref={audioHostRef} data-testid="audio-host" className="absolute left-0 top-0 h-0 w-0 overflow-hidden" />
         </div>
       )}
@@ -1456,6 +1483,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
         visualizerLockedOn={radioBriefingOn}
         onToggleVisualizer={() => setVisualizerOn((v) => !v)}
         analyzerState={analyzerState}
+        silenceSkip={silenceSkip}
         diagnosticsOpen={diagnosticsOpen}
         thumbnailUrl={radioBriefingOn ? undefined : artUrl}
         onThumbnailError={() => markArtFailed(artUrl)}

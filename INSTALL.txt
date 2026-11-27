@@ -1,17 +1,14 @@
-AJN On Air v8 (2026-11-23), cumulative: includes everything from v7 (clock plan, Rush slots, weather rotation, clean view removed, stage fit).
-Unzip over the project root (same paths, full files), then publish via Builder.
-New in v8:
-- "Missed shows" is gone. "Still to come" lists today's shows that have not started (a show leaves the list at its start second).
-- Coming up (3 shows) is always visible, including during music. Bottom row: NOW stays; the other two panels snap through the rest of the daypart (after the Coming up three).
-- One ticker only (the Headlines panel and Around the clock panel are removed).
-- Countdowns never show a minus sign; at zero they say Finishing.
-- Evening (6 pm Denver, shared constant in dayparts.ts): current Alex Jones shows (AJN feed, last 4 days, newest first) lead; before 6 pm the archive plays.
-- Weather card: Wikimedia Commons photo of the city behind the text (route /api/onair/city-photo, public domain / CC0 / CC BY only, credit shown). A page reload picks different photos.
-- Video picture is larger; right-hand list is narrower.
-Check after publishing: /api/onair/city-photo?city=chicago&seed=abc should return status ok; /api/onair/filler should list "ajfresh" clips when the AJN feed is reachable.
+AJN audio pass — volume scale, fades, de-click, skip silence, On Air levels, probe (Nov 27)
+Unzip over the project root (34 full files). This zip also contains the two earlier drop-ins
+(now-playing art + mobile spacing; seek precision + dock blur + Watch Later sync), so it is the only zip you need.
 
-v8b: stage fit allowance tightened (200px -> 150px, measured from your screenshot) so the stage is larger in short windows.
+Checks (all passed here):
+  npx tsx test-volume-scale.ts   test-audio-fade.ts   test-silence-skip.ts   src/onair/dayparts.test.ts   test-cloud-sync-merge.ts
+  node test-silence-skip.mjs     (real Chrome + real audio: a 3 s pause plays in ~1.3 s)
 
-v8c: On Air frame sits 8 px below the nav row and 8 px above the dock (top padding on On Air reduced, allowance 136px).
+PHASE 0 — you run this (the cloud sandbox cannot reach the feeds):
+  node tools/probe-podcast-cors.mjs            -> tools/out/podcast-cors-report.md (read it)
+  node tools/probe-podcast-cors.mjs --apply    -> writes corsVerified/meterVia on the unflagged shows (keeps a .bak), then git diff
+Until a show is flagged, Skip silence shows "unavailable for this show" and the meter stays "no signal" — honest, not hidden.
 
-v8d: the stage frame fills the whole space between the nav row and the dock, edge to edge (layout takes the box shape; stageSize.ts). Side padding on On Air reduced to 8 px.
+Delete if still present: src/components/ListenCarousel.tsx, test-listen-carousel.*

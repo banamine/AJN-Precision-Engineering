@@ -694,13 +694,13 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
       {!archiveMusicOn && <FullShowStatus />}
       {stationTheme && <StationBanner theme={stationTheme} title={nowPlaying.title} subtitle={nowPlaying.subtitle} />}
       {!archiveMusicOn && onToggleFavorite && (
-        <div className="flex items-center justify-between gap-3">
-          <span className="min-w-0 truncate text-sm font-semibold text-neutral-100" data-testid="player-title">{nowPlaying.title}</span>
-          <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <span className="min-w-0 basis-full truncate text-sm font-semibold text-neutral-100 sm:basis-auto sm:flex-1" data-testid="player-title">{nowPlaying.title}</span>
+          <div className="flex shrink-0 flex-wrap items-center gap-2.5">
             <button type="button" data-testid="player-heart" aria-pressed={isFavorite} onClick={onToggleFavorite}
               aria-label={isFavorite ? `Remove ${nowPlaying.title} from favorites` : `Add ${nowPlaying.title} to favorites`}
               title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isFavorite ? "border-rose-500/60 bg-rose-500/10 text-rose-300" : "border-neutral-700 text-neutral-300 hover:border-rose-500/50 hover:text-rose-300"}`}>
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isFavorite ? "border-rose-500/60 bg-rose-500/10 text-rose-300" : "border-neutral-700 text-neutral-300 hover:border-rose-500/50 hover:text-rose-300"}`}>
               <Heart className={`h-4 w-4 ${isFavorite ? "fill-rose-500 text-rose-500" : ""}`} aria-hidden="true" />
               {isFavorite ? "Favorited" : "Favorite"}
             </button>
@@ -708,7 +708,7 @@ export function PlayerView({ nowPlaying, onSelectProgram, onProgress, onNavigate
               <button type="button" data-testid="player-watch-later" aria-pressed={isWatchLater} onClick={onToggleWatchLater}
                 aria-label={isWatchLater ? `Remove ${nowPlaying.title} from Watch Later` : `Save ${nowPlaying.title} to Watch Later`}
                 title={isWatchLater ? "Remove from Watch Later" : "Save to Watch Later"}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${isWatchLater ? "border-sky-500/60 bg-sky-500/10 text-sky-300" : "border-neutral-700 text-neutral-300 hover:border-sky-500/50 hover:text-sky-300"}`}>
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${isWatchLater ? "border-sky-500/60 bg-sky-500/10 text-sky-300" : "border-neutral-700 text-neutral-300 hover:border-sky-500/50 hover:text-sky-300"}`}>
                 <Bookmark className={`h-4 w-4 ${isWatchLater ? "fill-sky-500 text-sky-500" : ""}`} aria-hidden="true" />
                 {isWatchLater ? "Saved" : "Watch Later"}
               </button>

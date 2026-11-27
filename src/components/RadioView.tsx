@@ -6,11 +6,14 @@ import { AvSyncControls } from './AvSyncControls';
 import { loadAjnFeeds } from '../services/ajnFeeds';
 import { buildRadioCatalog, type RadioEntry, type RadioFeedItem } from '../utils/ajnRadioCatalog';
 import { AJN_CHANNEL_LABELS, formatAirDate, type AjnChannel } from '../utils/ajnClassify';
+import { ShowArt } from './ShowArt';
+import { podcastArtFor } from '../utils/podcastArt';
 import { filterEntries, formatClock, isPlayingEntry, neighbour, showChips, showInitials, showKey, showLabel, typeChips, typeKey, typeLabel, type RadioFilter, type RadioSort } from '../utils/ajnRadioBrowse';
 import { dayKindLabel, groupShowDays, planFullShow, type FullShowMode, type ShowDay } from '../utils/ajnShowGroups';
 import { clearShowQueue, startShowQueue } from '../utils/showQueue';
 import { buildMusicItems, buildPodcastItems, interleaveByShow, loadConcertItems, loadSpokenItems, type ListenItem, type SpokenCatalog } from '../utils/listenCatalog';
 import { ListenBrowser } from './ListenBrowser';
+import { ListenAlertsPanel } from './ListenAlertsPanel';
 import { useListenDeck } from '../hooks/useListenDeck';
 import { RumbleLiveBadge } from './RumbleLiveBadge';
 import { FullShowStatus } from './FullShowStatus';
@@ -76,6 +79,7 @@ function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onPlayPr
   const previous = neighbour(list, programId, 1); // list is newest first: the next row down is the previous broadcast
   const next = neighbour(list, programId, -1);
   const live = Boolean(nowPlaying?.isLive);
+  const npArt = nowPlaying ? podcastArtFor(nowPlaying.channelId) ?? nowPlaying.thumbnailUrl : undefined;
   const percent = media.duration > 0 ? Math.min(100, (media.currentTime / media.duration) * 100) : 0;
   const pill = !nowPlaying ? { cls: 'idle', text: 'NOTHING PLAYING' }
     : live ? { cls: 'live', text: 'LIVE AUDIO' }
@@ -84,7 +88,9 @@ function NowPlayingPanel({ nowPlaying, playingEntry, list, onPlayEntry, onPlayPr
   return (
     <section className="ajr-now" aria-label="Now playing" data-testid="radio-now-playing">
       <FullShowStatus className="col-span-full" />
-      <div className="ajr-now-art" aria-hidden="true"><div className="ajr-art-sun" /><div className="ajr-art-horizon" /><span className="ajr-art-index">AJN{playingEntry ? ` — ${showInitials(playingEntry)}` : ''}</span></div>
+      {npArt || (nowPlaying && !playingEntry)
+        ? <div className="ajr-now-art" aria-hidden="true" data-testid="radio-now-art"><ShowArt label={nowPlaying?.subtitle || nowPlaying?.title || 'AJN'} mediaType="audio" src={npArt} className="h-full w-full [&_.text-3xl]:!text-2xl" /></div>
+        : <div className="ajr-now-art" aria-hidden="true"><div className="ajr-art-sun" /><div className="ajr-art-horizon" /><span className="ajr-art-index">AJN{playingEntry ? ` — ${showInitials(playingEntry)}` : ''}</span></div>}
       <div>
         <div className="ajr-label"><span className={`ajr-eq ${nowPlaying && !media.paused ? 'on' : ''}`} aria-hidden="true"><i /><i /><i /></span>NOW PLAYING<RumbleLiveBadge nowPlaying={nowPlaying} onNavigate={onNavigate} className="ml-2 align-middle" /></div>
         <div className="ajr-track-title" data-testid="radio-now-title">{nowPlaying ? nowPlaying.title : 'Nothing playing'}</div>
@@ -285,6 +291,7 @@ export function RadioView({ onPlayProgram, nowPlaying = null, recentlyPlayed = [
         {findOpen && (
   <ListenBrowser music={music} concerts={concerts} podcasts={podcastEps} concertsError={concertsError} loadConcerts={loadConcerts} spokenLoaded={spoken !== null} spokenError={spokenError} feedsDown={spoken?.feedsDown ?? []} loadSpoken={loadSpoken} playingProgramId={nowPlaying?.programId} onPlay={playItem} presetFor={presetFor} />
         )}
+        <ListenAlertsPanel onPlayProgram={onPlayProgram} />
       </section>
             ) },
             { key: "listen", title: `Listen back · ${catalog.radio.length} AJN Radio`, defaultOpenWide: true, defaultOpenNarrow: false, className: "[column-span:all]", content: (

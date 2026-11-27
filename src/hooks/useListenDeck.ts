@@ -50,7 +50,7 @@ export function useListenDeck(onPlayProgram: PlayProgramCallback, enabled = true
     const first = item.tracks()[0];
     return first ? { itemId: item.id, title: item.title, subtitle: item.subtitle, src: first.src, channelId: item.channelId, guideId: item.guideId, programId: first.programId } : null;
   }, []);
-  const toDeck = useCallback((list: readonly ListenItem[]) => list.map((item) => ({ id: item.id, title: item.title, subtitle: item.subtitle, publishedAt: item.publishedAt, play: () => playItem(item), preset: presetFor(item) ?? { itemId: item.id, title: item.title, src: '' } })), [playItem, presetFor]);
+  const toDeck = useCallback((list: readonly ListenItem[]) => list.map((item) => ({ id: item.id, title: item.title, subtitle: item.subtitle, publishedAt: item.publishedAt, logo: item.logo, play: () => playItem(item), preset: presetFor(item) ?? { itemId: item.id, title: item.title, src: '' } })), [playItem, presetFor]);
   const podcastsNote = spokenError ? `Podcast list unavailable: ${spokenError}` : !spoken ? (enabled ? 'Loading more podcasts…' : undefined)
     : spoken.feedsDown.length ? `${spoken.feedsDown.length} podcast feed${spoken.feedsDown.length === 1 ? '' : 's'} could not be read by the server` : undefined;
   const deckSources = useMemo(() => ({

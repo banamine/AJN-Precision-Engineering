@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { DIAL_MAX, DIAL_SLIDER_STEP, dialFromGain, gainFromDial, dialText } from '../utils/volumeScale';
 import { Play, Pause, Maximize2, X, Tv, Radio, Volume2, VolumeX, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { NowPlayingMedia, Destination, PlayProgramCallback } from '../types';
 import { AvSyncControls } from './AvSyncControls';
@@ -271,8 +272,8 @@ export function MiniPlayerDock({
 
       {/* Actions */}
       <div className="relative flex shrink-0 items-center gap-0.5 sm:gap-1">
-        <input type="range" min={0} max={1} step={0.05} value={volume} data-testid="dock-volume-inline" aria-label="Volume"
-          onChange={(event) => { const v = Number(event.currentTarget.value); persistVolume(v); setVolume(v); }}
+        <input type="range" min={0} max={DIAL_MAX} step={DIAL_SLIDER_STEP} value={dialFromGain(volume)} aria-valuetext={dialText(volume)} data-testid="dock-volume-inline" aria-label="Volume"
+          onChange={(event) => { const v = gainFromDial(Number(event.currentTarget.value)); persistVolume(v); setVolume(v); }}
           className="hidden w-24 accent-[var(--ajn-accent)] md:block" />
         <button
           type="button"
@@ -311,11 +312,12 @@ export function MiniPlayerDock({
               <input
                 type="range"
                 min={0}
-                max={1}
-                step={0.05}
-                value={volume}
+                max={DIAL_MAX}
+                step={DIAL_SLIDER_STEP}
+                value={dialFromGain(volume)}
+                aria-valuetext={dialText(volume)}
                 onChange={(event) => {
-                  const nextVolume = Number(event.currentTarget.value);
+                  const nextVolume = gainFromDial(Number(event.currentTarget.value));
                   persistVolume(nextVolume);
                   setVolume(nextVolume);
                 }}

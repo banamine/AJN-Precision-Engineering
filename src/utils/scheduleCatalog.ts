@@ -65,36 +65,69 @@ export async function loadFmPools(): Promise<SchedPool[]> {
   return items.length ? [{ id: 'fm-broadcasts', label: 'FM Broadcasts', bank: 'fm', items }] : [];
 }
 
-interface SpokenProg { id: string; title: string; mediaUrl?: string; metadata?: { durationSeconds?: number; durationEstimated?: boolean } }
+interface SpokenProg { id: string; title: string; mediaUrl?: string; metadata?: { durationSeconds?: number; durationEstimated?: boolean; airedUtc?: string; backCatalog?: boolean } }
 interface SpokenCh { id: string; name: string; group?: string; programs?: SpokenProg[] }
 const SPOKEN_POOL_GROUPS: { group: string; id: string; label: string }[] = [
   { group: 'Podcast', id: 'spoken-all-podcasts', label: 'All podcasts' },
   { group: 'Talk Radio', id: 'spoken-all-talk', label: 'All talk radio' },
   { group: 'Old-Time Radio', id: 'spoken-all-otr', label: 'All old-time radio' },
 ];
+const DAY_MS = 86_400_000;
+const MAX_MERGED_TRACKS = 600; // the newest 600 across all shows; older ones drop off the end
+const pubOf = (p: SpokenProg): number | null => { const t = p.metadata?.backCatalog ? NaN : Date.parse(p.metadata?.airedUtc ?? ''); return Number.isFinite(t) && t > Date.UTC(2000, 0, 1) ? t : null; };
+/** One show's episodes: dated ones newest first, then undated (Archive back-catalog) in their original order. */
+export function freshFirst<T extends SpokenProg>(list: readonly T[]): T[] {
+  const dated = list.filter((p) => pubOf(p) !== null).sort((a, b) => (pubOf(b) as number) - (pubOf(a) as number));
+  return [...dated, ...list.filter((p) => pubOf(p) === null)];
+}
+/** Many shows at once: today's episodes from every show first, then yesterday's, and so on (UTC days). Inside a day the shows take turns,
+ *  newest first. Undated episodes come last, shows taking turns. Pure and deterministic, so every listener gets the same order. */
+export function freshFirstAcross<T extends SpokenProg>(perShow: readonly (readonly T[])[]): T[] {
+  const dated: { p: T; t: number; show: number }[] = []; const undated: T[][] = perShow.map(() => []);
+  perShow.forEach((list, show) => list.forEach((p) => { const t = pubOf(p); if (t === null) undated[show].push(p); else dated.push({ p, t, show }); }));
+  const days = [...new Set(dated.map((d) => Math.floor(d.t / DAY_MS)))].sort((a, b) => b - a);
+  const out: T[] = [];
+  for (const day of days) {
+    const lanes = new Map<number, T[]>();
+    for (const d of dated.filter((x) => Math.floor(x.t / DAY_MS) === day).sort((a, b) => b.t - a.t)) (lanes.get(d.show) ?? lanes.set(d.show, []).get(d.show)!).push(d.p);
+    const order = [...lanes.keys()].sort((a, b) => a - b); let more = true;
+    for (let r = 0; more; r++) { more = false; for (const k of order) { const v = lanes.get(k)![r]; if (v) { out.push(v); more = true; } } }
+  }
+  for (let r = 0, more = true; more; r++) { more = false; for (const l of undated) if (l[r]) { out.push(l[r]); more = true; } }
+  return out;
+}
 /** Pure: podcast / talk-radio / old-time-radio pools from the server's Audio & Podcasts guide.
  *  Only episodes with a REAL duration (feed or Archive metadata, never the server's 45-minute placeholder) and a media URL are scheduled;
  *  each show is one item (episodes in the server's order), so round-robin mixes shows. Pools: one per group, then one per show. */
 export function buildSpokenPools(channels: readonly SpokenCh[]): SchedPool[] {
-  const shows: { group: string; item: SchedItem; label: string; poolId: string }[] = [];
+  const shows: { group: string; item: SchedItem; label: string; poolId: string; progs: SpokenProg[]; name: string; chId: string }[] = [];
   for (const ch of channels) {
     if (!ch.group || !SPOKEN_POOL_GROUPS.some((g) => g.group === ch.group)) continue;
     const seen = new Set<string>();
-    const progs = (ch.programs ?? []).filter((p) => {
+    const progs = freshFirst((ch.programs ?? []).filter((p) => {
       const d = p.metadata?.durationSeconds;
       if (!p.mediaUrl || !p.title || seen.has(p.mediaUrl) || p.metadata?.durationEstimated || !(typeof d === 'number' && d > 0)) return false;
       seen.add(p.mediaUrl); return true;
-    }).slice(0, MAX_TRACKS);
+    })).slice(0, MAX_TRACKS);
     if (!progs.length) continue;
     const poolId = `spoken-${ch.id}`;
     const tracks: SchedTrack[] = progs.map((p, i) => ({ programId: p.id, archiveId: p.id, partNo: i + 1, bank: 'podcasts', poolId, channelId: ch.id, guideId: 'audio-podcasts',
       title: p.title, subtitle: ch.name, src: p.mediaUrl as string, durationSeconds: realDuration(p.metadata?.durationSeconds) }));
-    shows.push({ group: ch.group, item: { id: ch.id, tracks }, label: ch.name, poolId });
+    shows.push({ group: ch.group, item: { id: ch.id, tracks }, label: ch.name, poolId, progs, name: ch.name, chId: ch.id });
   }
   const out: SchedPool[] = [];
   for (const g of SPOKEN_POOL_GROUPS) {
-    const items = shows.filter((s) => s.group === g.group).map((s) => s.item);
-    if (items.length) out.push({ id: g.id, label: g.label, bank: 'podcasts', items });
+    const inGroup = shows.filter((s) => s.group === g.group);
+    if (!inGroup.length) continue;
+    if (g.group === 'Podcast') {
+      // All podcasts: one fresh-first line (today's episodes from every show, then yesterday's ...), so the clock never airs a day-old episode before a newer one.
+      const owner = new Map<SpokenProg, typeof inGroup[number]>();
+      inGroup.forEach((s) => s.progs.forEach((p) => owner.set(p, s)));
+      const merged = freshFirstAcross(inGroup.map((s) => s.progs)).slice(0, MAX_MERGED_TRACKS);
+      const tracks: SchedTrack[] = merged.map((p, i) => { const o = owner.get(p)!; return { programId: p.id, archiveId: p.id, partNo: i + 1, bank: 'podcasts' as const, poolId: g.id, channelId: o.chId, guideId: 'audio-podcasts',
+        title: p.title, subtitle: o.name, src: p.mediaUrl as string, durationSeconds: realDuration(p.metadata?.durationSeconds) }; });
+      out.push({ id: g.id, label: g.label, bank: 'podcasts', items: [{ id: g.id, tracks }] });
+    } else out.push({ id: g.id, label: g.label, bank: 'podcasts', items: inGroup.map((s) => s.item) });
   }
   return [...out, ...shows.sort((a, b) => a.label.localeCompare(b.label)).map((s) => ({ id: s.poolId, label: s.label, bank: 'podcasts' as const, items: [s.item] }))];
 }

@@ -180,7 +180,7 @@ export default function App() {
     window.addEventListener('pagehide', flush);
     return () => window.removeEventListener('pagehide', flush);
   }, [history]);
-  const sync = useCloudSync({ favorites, setFavorites, history, setHistory });
+  const sync = useCloudSync({ favorites, setFavorites, watchLater: watchLaterEntries, setWatchLater: setWatchLaterEntries, history, setHistory });
   const suggestCandidates = useMemo(
     () => buildSuggestCandidates(recentSearches, favorites.map((f) => f.title), history.map((h) => h.title)),
     [recentSearches, favorites, history],

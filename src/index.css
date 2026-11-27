@@ -294,3 +294,26 @@
 @media (prefers-reduced-motion: reduce) {
   .ajn-queue-scroll { scroll-behavior: auto; scroll-snap-type: none; }
 }
+
+/* Docks float over page content: frosted glass so they read as a separate layer.
+ * The redesign theme sets an opaque !important background on .ajn-dock, so the blur needs a translucent one that out-ranks it. */
+.ajn-redesign-surface.ajn-dock.mini-player-dock,
+.ajn-platform-shell .ajn-redesign-surface.ajn-dock.mini-player-dock,
+#persistent-mini-player.ajn-dock,
+#radio-dock-panel {
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  backdrop-filter: blur(14px) saturate(1.25);
+}
+.ajn-redesign-surface.ajn-dock.mini-player-dock,
+.ajn-platform-shell .ajn-redesign-surface.ajn-dock.mini-player-dock { background: rgba(24, 27, 36, 0.72) !important; }
+#radio-dock-panel { background-color: rgba(10, 10, 14, 0.78); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ajn-redesign-surface.ajn-dock.mini-player-dock,
+  .ajn-platform-shell .ajn-redesign-surface.ajn-dock.mini-player-dock { background: rgba(24, 27, 36, 0.97) !important; }
+  #radio-dock-panel { background-color: rgba(10, 10, 14, 0.97); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ajn-redesign-surface.ajn-dock.mini-player-dock,
+  .ajn-platform-shell .ajn-redesign-surface.ajn-dock.mini-player-dock { background: #181B24 !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  #radio-dock-panel { background-color: #0a0a0e; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

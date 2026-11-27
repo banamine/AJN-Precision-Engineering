@@ -3,15 +3,17 @@ import type { NowPlayingMedia, PlayProgramCallback } from '../types';
 import { RadioSpectrum } from './RadioSpectrum';
 import { useScheduleController } from '../hooks/useScheduleController';
 import { buildMusicPools, loadConcertPools, loadFmPools, loadPodcastPools } from '../utils/scheduleCatalog';
+import { markRows, DAYPART_SPAN } from '../utils/listenDayparts';
+import { DeckMiniPanels } from './DeckMiniPanels';
 import { formatClock, formatDuration, formatRepeat, loopSeconds, DAY_MS, type SchedPool, type ScheduleBank } from '../utils/roundRobinSchedule';
 
-interface Props { bank: ScheduleBank; onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null; playingNow?: boolean }
+interface Props { bank: ScheduleBank; onPlayProgram: PlayProgramCallback; nowPlaying?: NowPlayingMedia | null; playingNow?: boolean; onOpenPlayer?: () => void }
 export const GENRE_KEYS_MAX = 8;
 const ROW_LABELS = ['Next', 'Later', 'Then'] as const;
 const BANK_LABEL: Record<ScheduleBank, string> = { music: 'Music channels', concerts: 'Live concerts', fm: 'FM broadcasts', podcasts: 'Podcasts' };
 
 /** Spectrum & 24-Hour Schedule Deck: the right-hand Head Unit panel while Archive Music is selected. */
-export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Props): ReactElement {
+export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow, onOpenPlayer }: Props): ReactElement {
   const musicPools = useMemo(() => buildMusicPools(), []);
   const [loaded, setLoaded] = useState<Partial<Record<ScheduleBank, SchedPool[]>>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -32,6 +34,7 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
   }, [pools, chosen, bank, nowPlaying?.channelId]);
 
   const c = useScheduleController(pool, onPlayProgram, nowPlaying?.programId, true);
+  const markers = useMemo(() => markRows(c.upcoming.map((r) => r.startUtcMs), Date.now()), [c.upcoming]);
   // Direct-tune genre keys: pick a real pool and start it. The controller follows `pool`, so tune once it has switched.
   const [tuneWanted, setTuneWanted] = useState<string | null>(null);
   useEffect(() => { if (tuneWanted && pool?.id === tuneWanted) { setTuneWanted(null); c.tune(); } }, [tuneWanted, pool?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -61,27 +64,24 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
 
   return (
     <div data-testid="schedule-deck" className="flex h-full flex-col gap-2">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-widest">
-        <span className="text-[#E06D3B]">Spectrum · 24h schedule</span>
-        <div role="group" aria-label="Schedule mode" className="flex gap-1">
-          <button type="button" data-testid="schedule-mode-clock" aria-pressed={c.mode !== 'shuffle'} disabled={!c.clockEligible} onClick={() => c.setMode('clock24h')}
-            className="ck-key ck-key--sm">24h Clock</button>
-          <button type="button" data-testid="schedule-mode-shuffle" aria-pressed={c.mode === 'shuffle'} onClick={() => c.setMode('shuffle')}
-            className="ck-key ck-key--sm">Shuffle</button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-300">
+        <span className="sr-only">Spectrum · 24h schedule</span>
         {pools && pools.length > 1 ? (
           <select aria-label={`${BANK_LABEL[bank]} pool`} data-testid="schedule-pool" value={pool?.id ?? ''} onChange={(e) => { const id = e.currentTarget.value; setChosen((s) => ({ ...s, [bank]: id })); }}
             className="min-h-[40px] min-w-0 max-w-full flex-1 rounded-md border border-white/15 bg-black/40 px-2 text-xs text-white focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]">
             {pools.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
         ) : <span className="min-w-0 flex-1 truncate">{pool?.label ?? BANK_LABEL[bank]}</span>}
+        <div role="group" aria-label="Schedule mode" className="flex shrink-0 gap-1">
+          <button type="button" data-testid="schedule-mode-clock" aria-pressed={c.mode !== 'shuffle'} disabled={!c.clockEligible} onClick={() => c.setMode('clock24h')}
+            className="ck-key ck-key--sm">24h Clock</button>
+          <button type="button" data-testid="schedule-mode-shuffle" aria-pressed={c.mode === 'shuffle'} onClick={() => c.setMode('shuffle')}
+            className="ck-key ck-key--sm">Shuffle</button>
+        </div>
         {c.tuned && c.mode === 'off-schedule' && <button type="button" data-testid="schedule-return-live" onClick={c.returnToLive} className="ck-key ck-key--sm is-latched">Return to live</button>}
         {!c.tuned && pool && <button type="button" data-testid="schedule-tune" onClick={() => { beginLoading(pool.label); c.tune(); }} className="ck-key ck-key--sm">{c.mode === 'shuffle' ? 'Play shuffle' : 'Tune live'}</button>}
       </div>
-      {pools && pools.length > 1 && (
+      {pools && pools.length > 1 && bank !== 'podcasts' && (   /* podcasts: the pool dropdown above already lists every show and group, so no second row of buttons */
         <div role="group" aria-label={`${BANK_LABEL[bank]} direct tune`} data-testid="schedule-genre-keys" className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
           {pools.slice(0, GENRE_KEYS_MAX).map((p) => (
             <button key={p.id} type="button" data-testid="schedule-genre-key" aria-pressed={pool?.id === p.id && c.tuned} title={`Tune ${p.label}`} onClick={() => directTune(p.id)} className="ck-key ck-key--sm h-auto min-w-0 w-full justify-center whitespace-normal text-center text-[11px] leading-tight [overflow-wrap:anywhere]">{p.label}</button>
@@ -99,7 +99,7 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
       {repeat && <p className="text-[11px] tabular-nums text-slate-300">{repeat}</p>}
 
       <div className="relative overflow-hidden rounded-xl">
-        <RadioSpectrum className="!h-28" playing={Boolean(playingNow)} />
+        <RadioSpectrum className="!h-24" playing={Boolean(playingNow)} />
         <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/45 to-black/25 p-3">
           {c.now ? (<>
             <div role="status" aria-live="polite" className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#E06D3B]">{status}</div>
@@ -115,9 +115,16 @@ export function ScheduleDeck({ bank, onPlayProgram, nowPlaying, playingNow }: Pr
       </div>
       {c.note && <p role="status" data-testid="schedule-note" className="text-[11px] text-amber-300">{c.note}</p>}
 
-      <ol aria-label="Up next" className="ajn-queue-scroll ajn-queue-scroll--side flex flex-col gap-1.5">
+      <DeckMiniPanels c={c} nowPlaying={nowPlaying} onOpenPlayer={onOpenPlayer} />
+      <ol aria-label="Up next (full list, also shown in the mini panel)" className="hidden">
         {c.upcoming.map((r, i) => (
           <li key={`${r.track.programId}-${i}`}>
+            {(markers[i]?.day || markers[i]?.daypart) && (
+              <div data-testid="schedule-marker" className="mb-1 mt-1 flex items-center gap-2 border-t border-[#d4af37]/30 pt-1 text-[10px] font-bold uppercase tracking-wider text-[#e9c964]">
+                {markers[i]?.day && <span>{markers[i]?.day}</span>}
+                {markers[i]?.daypart && <span className="font-normal text-slate-300">{markers[i]?.daypart} · {DAYPART_SPAN[markers[i]!.daypart!]} MT</span>}
+              </div>
+            )}
             <button type="button" data-testid={`schedule-next-${i}`} onClick={() => c.pickUpcoming(i)} disabled={r.failed}
               className="ck-key ck-key--row ck-key--sm min-h-[44px] min-w-0 gap-2 text-xs">
               <span className="w-10 shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">{ROW_LABELS[i]}</span>

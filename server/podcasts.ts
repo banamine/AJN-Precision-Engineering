@@ -237,6 +237,8 @@ export async function findEpisodeByUrl(url: string, waitMs = FIRST_LOAD_WAIT_MS 
   }
   return null;
 }
+/** Starts (or joins) the feed refresh and resolves when it is done. Used by the Listen Alerts index so it builds from fresh feeds. */
+export function ensurePodcastFeeds(now: Date = new Date()): Promise<void> { return ensureFresh(now); }
 export function podcastStates(): PodcastState[] { return PODCAST_SOURCES.filter((s) => s.enabled).map((s) => cache.get(s.id)).filter(Boolean) as PodcastState[]; }
 
 
@@ -249,7 +251,7 @@ export function buildPodcastChannels(guideId: string, now: Date, layout: (p: Pro
     if (!state) { out.push({ ...row, group: 'Podcast', programs: [], sourceStatus: 'loading', sourceError: 'loading podcast feed — refresh in a minute' }); continue; }
     if (!state.episodes.length) { out.push({ ...row, group: 'Podcast', programs: [], sourceStatus: 'upstream_error', sourceError: state.error ?? 'no playable episodes' }); continue; }
     out.push({ ...row, logo: smallArtwork(state.imageUrl), group: 'Podcast',
-      programs: layout([...toPrograms(state, guideId, now), ...archivePrograms(source, guideId)], 45, now, 160),
+      programs: layoutFreshFirstStack([...toPrograms(state, guideId, now), ...archivePrograms(source, guideId)], now, { defaultMinutes: 45 }),  // newest episode first, then older ones in date order; never a looping mix
       sourceStatus: stalenessOf(state, now)?.stale ? 'stale' : state.status === 'ok' ? 'ok' : 'partial',
       sourceError: [stalenessOf(state, now)?.stale ? `Feed inactive: last episode ${formatPublished(stalenessOf(state, now)!.newestAt)} (${stalenessOf(state, now)!.ageDays} days ago)` : '', state.error].filter(Boolean).join('; ') || undefined,
       rejected: state.rejected.length ? state.rejected : undefined });

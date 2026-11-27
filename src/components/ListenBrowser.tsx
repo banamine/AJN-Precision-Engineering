@@ -56,7 +56,7 @@ export function ListenBrowser({ music, concerts, podcasts, concertsError, loadCo
 
   return (
     <section className="ajr-section" id="ajr-find" aria-label="Find music, concerts and podcasts" data-testid="listen-browser">
-      <div className="ajr-heading"><div><div className="ajr-label">ARCHIVE MUSIC · LIVE CONCERTS · PODCASTS</div><h2>Find &amp; <em>save.</em></h2></div><span className="ajr-aside">PLAY IT, OR PUT IT ON A KEY OF THE DECK.</span></div>
+      <div className="ajr-heading"><div><div className="ajr-label">LIBRARY MUSIC · LIVE CONCERTS · PODCASTS</div><h2>Find &amp; <em>save.</em></h2></div><span className="ajr-aside">PLAY IT, OR PUT IT ON A KEY OF THE DECK.</span></div>
       <div className="ajr-chips" role="group" aria-label="Source">
         {TABS.map((t) => <button key={t.id} type="button" data-testid={`listen-tab-${t.id}`} aria-pressed={tab === t.id} className={`ajr-chip${tab === t.id ? ' selected' : ''}`} onClick={() => pick(t.id)}>{t.label.toUpperCase()}</button>)}
       </div>

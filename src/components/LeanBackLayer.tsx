@@ -1,5 +1,6 @@
 // Lean-back mode (Dusk skin, user toggle in Appearance; never auto-guessed): D-pad spatial focus, Back/Home keys, and the 16-button on-screen remote (R toggles it).
 // The remote sends the same actions as the keyboard: on the Player page it dispatches the same keys the player already listens for.
+import { stepGain } from '../utils/volumeScale';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { backPlan, onPlayerPage, pickNext, remotePlan, REMOTE_BUTTONS, type Dir, type RemoteId, type RemoteStep } from '../leanback/leanNav';
 
@@ -84,7 +85,7 @@ export function LeanBackLayer() {
         if (!m) return 'Nothing is playing';
         if (step.op === 'toggle') { if (m.paused) void m.play().catch(() => setReadout('Last: Play/Pause (the browser blocked playback)')); else m.pause(); }
         else if (step.op === 'mute') m.muted = !m.muted;
-        else m.volume = Math.min(1, Math.max(0, Math.round((m.volume + (step.op === 'vol+' ? 0.1 : -0.1)) * 10) / 10));
+        else m.volume = stepGain(m.volume, step.op === 'vol+' ? 1 : -1);
         return null;
       }
       case 'none': return step.reason;

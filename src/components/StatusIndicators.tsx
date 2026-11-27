@@ -125,7 +125,7 @@ export function StatusIndicatorsView({ indicators, newsSnapshot, onPlayProgram, 
               ref={(el) => { triggerRefs.current.set(ind.id, el); }}
               data-testid={`status-indicator-${ind.id}`}
               data-tone={ind.tone}
-              aria-label={`${ind.service} status: ${ind.label}${ind.count ? `, ${ind.count} new` : ''}. Show details.`}
+              aria-label={`${ind.service} status: ${ind.label}${ind.count ? `, ${ind.count} ${ind.countNoun ?? 'new'}` : ''}. Show details.`}
               aria-expanded={isOpen}
               aria-controls={reportId}
               aria-describedby={showTip ? tipDomId : undefined}

@@ -37,3 +37,15 @@ assert.equal(cycleStart(0, 5, 2), 0); assert.equal(cycleStart(8000, 5, 2), 2); a
 // countdown never negative
 assert.equal(remainingLabel(-3, (s) => String(s)), 'Finishing'); assert.equal(remainingLabel(61, (s) => `${s}s`), '61s');
 console.log('dayparts + scheduleView ok');
+
+// ── Phase 4: levels (dial) and crossfade shape
+{
+  const { DAYPART_DIAL, daypartTrim, equalPowerLevel } = await import('./dayparts');
+  const near = (a: number, b: number, e = 1e-9) => { if (!(Math.abs(a - b) < e)) throw new Error(`${a} vs ${b}`); };
+  near(daypartTrim('Morning'), 1); near(daypartTrim('Afternoon'), 1); near(daypartTrim('Evening'), 1);
+  near(daypartTrim('Late Night'), 0.25, 1e-9);                               // dial 7.5 vs regular 15 → (7.5/15)² = 0.25 ≈ −12 dB
+  if (!(DAYPART_DIAL['Late Night'] >= 5 && DAYPART_DIAL['Late Night'] <= 15)) throw new Error('late-night dial out of range');
+  for (const p of [0, 0.2, 0.5, 0.8, 1]) { const r = equalPowerLevel(p), f = equalPowerLevel(1 - p); near(r * r + f * f, 1, 1e-9); }   // constant power across a crossfade
+  near(equalPowerLevel(0), 0); near(equalPowerLevel(1), 1); near(equalPowerLevel(NaN), 0);
+  console.log('dayparts levels + equal power ok');
+}

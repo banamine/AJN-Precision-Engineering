@@ -6,6 +6,9 @@ import { MEDIA_FAVORITES_LIMIT } from '../utils/mediaFavorites';
 import type { HistoryEntry } from '../utils/historyStore';
 import { HISTORY_LIMIT } from '../utils/historyStore';
 
+import type { WatchLaterItem } from '../utils/watchLater';
+import { WATCH_LATER_LIMIT } from '../utils/watchLater';
+
 export const CLOCK_SKEW_MS = 5 * 60_000;
 export type Tombs = Record<string, number>;
 export const clampTs = (ts: number, now: number): number => (Number.isFinite(ts) ? Math.min(ts, now + CLOCK_SKEW_MS) : 0);
@@ -88,4 +91,35 @@ export function mergeHistory(local: HistoryEntry[], tombs: Tombs, clearedAt: num
   }
   entries.sort((a, b) => b.playedAt - a.playedAt);
   return { entries: entries.slice(0, HISTORY_LIMIT), tombs: outTombs, clearedAt: cleared, push, deleteIds, setCleared: cleared > clampTs(remoteClearedAt, now) };
+}
+
+export type RemoteWL = WatchLaterItem & { updatedAt: number; deleted?: boolean };
+const wlTs = (w: { updatedAt?: number; savedAt: number }, now: number) => clampTs(w.updatedAt ?? w.savedAt, now);
+export interface WLMergeResult { list: WatchLaterItem[]; tombs: Tombs; push: RemoteWL[]; overLimit: boolean }
+/** Watch Later: same rule as favorites (newest change per item wins; a removal is a tombstone), but the LIST ORDER is the user's:
+ *  items already on this device keep their place, items that arrive from another device go on top (newest first). Reordering is not synced. */
+export function mergeWatchLater(local: WatchLaterItem[], tombs: Tombs, remote: RemoteWL[], now: number): WLMergeResult {
+  const best = new Map<string, Cand<WatchLaterItem>>();
+  const add = (id: string, c: Cand<WatchLaterItem>) => best.set(id, pick(best.get(id), c)!);
+  for (const w of local) add(w.id, { ts: wlTs(w, now), deleted: false, item: w, source: 'local' });
+  for (const [id, ts] of Object.entries(tombs)) add(id, { ts: clampTs(ts, now), deleted: true, source: 'local' });
+  const remoteById = new Map<string, RemoteWL>();
+  for (const r of remote) {
+    if (!validRemote(r)) continue;
+    const item = r.deleted ? r : { ...r, progressSeconds: Number.isFinite(r.progressSeconds) && r.progressSeconds >= 0 ? r.progressSeconds : 0, reason: r.reason === 'auto-half' ? 'auto-half' : 'manual', savedAt: Number.isFinite(r.savedAt) ? r.savedAt : (r.updatedAt ?? 0) } as RemoteWL;
+    remoteById.set(r.id, item); add(r.id, { ts: wlTs(item, now), deleted: !!r.deleted, item, source: 'remote' });
+  }
+  const outTombs: Tombs = {}; const push: RemoteWL[] = []; const won = new Map<string, WatchLaterItem>();
+  for (const [id, c] of best) {
+    if (c.deleted) outTombs[id] = c.ts; else if (c.item) { const { deleted, ...rest } = c.item as RemoteWL; void deleted; won.set(id, { ...rest, updatedAt: c.ts }); }
+    if (c.source === 'local') {
+      const r = remoteById.get(id);
+      if (!r || wlTs(r, now) !== c.ts || !!r.deleted !== c.deleted) push.push(c.deleted ? ({ id, updatedAt: c.ts, deleted: true } as unknown as RemoteWL) : ({ ...(won.get(id) as WatchLaterItem), updatedAt: c.ts } as RemoteWL));
+    }
+  }
+  const localIds = new Set(local.map((w) => w.id));
+  const fresh = [...won.values()].filter((w) => !localIds.has(w.id)).sort((a, b) => b.savedAt - a.savedAt);
+  const kept = local.map((w) => won.get(w.id)).filter((w): w is WatchLaterItem => Boolean(w));
+  const all = [...fresh, ...kept];
+  return { list: all.slice(0, WATCH_LATER_LIMIT), tombs: outTombs, push, overLimit: all.length > WATCH_LATER_LIMIT };
 }

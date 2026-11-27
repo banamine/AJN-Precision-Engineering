@@ -29,6 +29,8 @@ export interface ServiceIndicator {
   pulseKey: string | null;
   /** Small count badge (e.g. number of new shows). */
   count: number | null;
+  /** What the count counts, for the accessible label. Default "new" (new shows). */
+  countNoun?: string;
 }
 
 const clock = (ms: number | null | undefined): string | null => {
@@ -155,12 +157,12 @@ export function describeNewsStatus(snapshot: NewsReadySnapshot, intervalMinutes 
     const latest = Number.isFinite(latestAiredAtMs) ? clock(latestAiredAtMs) : null;
     return {
       ...base, tone: 'warn', label: 'News stale', shortLabel: 'News',
-      tooltip: 'One or more Cable TV news channels only have recordings older than 48 hours.',
+      tooltip: 'Some Cable TV news channels only have recordings older than 48 hours. The number is how many channels are behind. Tap for details.',
       detail: [
         `${staleChannelCount || 1} Cable TV news channel${(staleChannelCount || 1) === 1 ? '' : 's'} have no recordings from the last 48 hours${latest ? `; newest available aired ${latest}` : ''}.`,
         snapshot.phase === 'error' ? `The last refresh check failed${checked ? ` at ${checked}` : ''}.` : 'Newer recordings have not loaded yet.',
       ],
-      pulseKey: null, count: staleChannelCount || 1,
+      pulseKey: null, count: staleChannelCount || 1, countNoun: 'channels behind',
     };
   }
   if (unknownChannelCount > 0) {

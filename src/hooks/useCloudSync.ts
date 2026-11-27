@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { FavoriteMedia } from '../utils/mediaFavorites';
+import type { WatchLaterItem } from '../utils/watchLater';
 import type { HistoryEntry } from '../utils/historyStore';
-import { mergeFavorites, mergeHistory } from '../sync/syncMerge';
+import { mergeFavorites, mergeHistory, mergeWatchLater } from '../sync/syncMerge';
 import { syncOnce, type CloudBackend } from '../sync/syncEngine';
 import { emptyLocalState, loadLocalState, loadSyncSettings, saveLocalState, saveSyncSettings, type SyncLocalState, type SyncSettings } from '../sync/syncState';
 import type { SyncUser } from '../sync/cloudBackend';
@@ -12,15 +13,21 @@ export interface CloudSyncApi {
   signIn: () => void; signOut: () => void; syncNow: () => void; setHistorySync: (on: boolean) => void;
   noteFavoriteRemoved: (id: string) => void; noteHistoryRemoved: (id: string) => void; noteHistoryCleared: () => void;
 }
-interface Params { favorites: FavoriteMedia[]; setFavorites: Dispatch<SetStateAction<FavoriteMedia[]>>; history: HistoryEntry[]; setHistory: Dispatch<SetStateAction<HistoryEntry[]>> }
+interface Params { favorites: FavoriteMedia[]; setFavorites: Dispatch<SetStateAction<FavoriteMedia[]>>; watchLater?: WatchLaterItem[]; setWatchLater?: Dispatch<SetStateAction<WatchLaterItem[]>>; history: HistoryEntry[]; setHistory: Dispatch<SetStateAction<HistoryEntry[]>> }
 
 const WAS_SIGNED_IN_KEY = 'ajn.sync.enabled';
 const FAV_DEBOUNCE_MS = 3_000;
+const WL_ADD_REMOVE_DEBOUNCE_MS = 4_000;  // an item added / removed: reach the other devices quickly
+const WL_PROGRESS_DEBOUNCE_MS = 60_000; // only a resume position moved (changes every few seconds while playing)
+const POLL_MS = 3 * 60_000;             // pick up other devices' changes while this tab stays open and visible
 const HIST_DEBOUNCE_MS = 60_000; // resume position changes every few seconds; don't spend Firestore reads on each one
 const MIN_FOCUS_SYNC_MS = 60_000;
 const sameIds = (a: Array<{ id: string }>, b: Array<{ id: string }>, f: (x: any) => number) => a.length === b.length && a.every((x, i) => x.id === b[i].id && f(x) === f(b[i]));
 
-export function useCloudSync({ favorites, setFavorites, history, setHistory }: Params): CloudSyncApi {
+const sameWL = (a: WatchLaterItem[], b: WatchLaterItem[]) => a.length === b.length && a.every((x, i) => x.id === b[i].id && (x.updatedAt ?? x.savedAt) === (b[i].updatedAt ?? b[i].savedAt));
+const idsKey = (l: WatchLaterItem[]) => l.map((w) => w.id).join('\u0001');
+
+export function useCloudSync({ favorites, setFavorites, watchLater, setWatchLater, history, setHistory }: Params): CloudSyncApi {
   const [phase, setPhase] = useState<SyncPhase>('signed-out');
   const [user, setUser] = useState<SyncUser | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +36,13 @@ export function useCloudSync({ favorites, setFavorites, history, setHistory }: P
   const [lastSyncAt, setLastSyncAt] = useState(() => loadLocalState().lastSyncAt);
 
   const favRef = useRef(favorites); favRef.current = favorites;
+  const wlRef = useRef<WatchLaterItem[]>(watchLater ?? []); wlRef.current = watchLater ?? wlRef.current;
   const histRef = useRef(history); histRef.current = history;
   const settingsRef = useRef(settings); settingsRef.current = settings;
   const localRef = useRef<SyncLocalState>(typeof window === 'undefined' ? emptyLocalState() : loadLocalState());
   const backendRef = useRef<CloudBackend | null>(null);
   const runningRef = useRef(false); const againRef = useRef(false); const lastRunRef = useRef(0);
-  const appliedFav = useRef<FavoriteMedia[] | null>(null); const appliedHist = useRef<HistoryEntry[] | null>(null);
+  const appliedFav = useRef<FavoriteMedia[] | null>(null); const appliedHist = useRef<HistoryEntry[] | null>(null); const appliedWL = useRef<WatchLaterItem[] | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
 
   const persist = useCallback((patch: Partial<SyncLocalState>) => { localRef.current = { ...localRef.current, ...patch }; saveLocalState(localRef.current); }, []);
@@ -46,17 +54,19 @@ export function useCloudSync({ favorites, setFavorites, history, setHistory }: P
     try {
       const now = Date.now();
       const syncHistory = settingsRef.current.historySync;
-      const res = await syncOnce(backend, { favorites: favRef.current, favTombs: localRef.current.favTombs, history: histRef.current, histTombs: localRef.current.histTombs, historyClearedAt: localRef.current.historyClearedAt, syncHistory }, now);
+      const res = await syncOnce(backend, { favorites: favRef.current, favTombs: localRef.current.favTombs, watchLater: setWatchLater ? wlRef.current : undefined, wlTombs: localRef.current.wlTombs, history: histRef.current, histTombs: localRef.current.histTombs, historyClearedAt: localRef.current.historyClearedAt, syncHistory }, now);
       // Apply against the CURRENT state (it may have changed during the round trip) using the same remote snapshot; no-ops return the same reference.
       const latestFavTombs = { ...localRef.current.favTombs, ...res.favTombs };
       setFavorites((cur) => { const m = mergeFavorites(cur, latestFavTombs, res.snapshot.remoteFavs, Date.now()).list; if (sameIds(cur, m, (x) => x.savedAt)) return cur; appliedFav.current = m; return m; });
+      const latestWlTombs = { ...localRef.current.wlTombs, ...res.wlTombs };
+      if (setWatchLater) setWatchLater((cur) => { const m = mergeWatchLater(cur, latestWlTombs, res.snapshot.remoteWatchLater, Date.now()).list; if (sameWL(cur, m)) return cur; appliedWL.current = m; return m; });
       let histPatch: Partial<SyncLocalState> = {};
       if (syncHistory && res.snapshot.remoteHist) {
         const snap = res.snapshot;
         setHistory((cur) => { const m = mergeHistory(cur, localRef.current.histTombs, res.historyClearedAt, snap.remoteHist!, snap.remoteClearedAt, Date.now()).entries; if (sameIds(cur, m, (x) => x.updatedAt ?? x.playedAt)) return cur; appliedHist.current = m; return m; });
         histPatch = { histTombs: res.histTombs, historyClearedAt: res.historyClearedAt };
       }
-      persist({ favTombs: latestFavTombs, ...histPatch, lastSyncAt: now });
+      persist({ favTombs: latestFavTombs, wlTombs: latestWlTombs, ...histPatch, lastSyncAt: now });
       setLastSyncAt(now); setPhase('idle');
       setNotice(res.stats.favOverLimit ? 'You have more favorites in the cloud than this app keeps (200). The newest 200 are shown.' : null);
     } catch (e) {
@@ -66,7 +76,7 @@ export function useCloudSync({ favorites, setFavorites, history, setHistory }: P
       runningRef.current = false; lastRunRef.current = Date.now();
       if (againRef.current) { againRef.current = false; window.setTimeout(() => void runSync(), 1500); }
     }
-  }, [persist, setFavorites, setHistory]);
+  }, [persist, setFavorites, setWatchLater, setHistory]);
 
   const attach = useCallback(async () => {
     const { getFirebase, createFirestoreBackend, watchAuth } = await import('../sync/cloudBackend');
@@ -108,6 +118,26 @@ export function useCloudSync({ favorites, setFavorites, history, setHistory }: P
     if (!user || favorites === appliedFav.current) return;
     const t = window.setTimeout(() => void runSync(), FAV_DEBOUNCE_MS); return () => window.clearTimeout(t);
   }, [favorites, user, runSync]);
+  // Watch Later: a removal made here becomes a tombstone (so other devices drop it too). Removals that came from a merge are not ours to report.
+  const prevWL = useRef<WatchLaterItem[]>(watchLater ?? []);
+  useEffect(() => {
+    if (!watchLater) return;
+    const prev = prevWL.current; prevWL.current = watchLater;
+    if (watchLater === appliedWL.current) return;
+    const have = new Set(watchLater.map((w) => w.id)); const gone = prev.filter((w) => !have.has(w.id));
+    if (gone.length) { const t = { ...localRef.current.wlTombs }; const now = Date.now(); for (const w of gone) t[w.id] = now; persist({ wlTombs: t }); }
+  }, [watchLater, persist]);
+  const lastWLIds = useRef<string>(idsKey(watchLater ?? []));
+  useEffect(() => {
+    if (!user || !watchLater || watchLater === appliedWL.current) return;
+    const key = idsKey(watchLater); const structural = key !== lastWLIds.current; lastWLIds.current = key;
+    const t = window.setTimeout(() => void runSync(), structural ? WL_ADD_REMOVE_DEBOUNCE_MS : WL_PROGRESS_DEBOUNCE_MS); return () => window.clearTimeout(t);
+  }, [watchLater, user, runSync]);
+  useEffect(() => {
+    if (!user) return;
+    const id = window.setInterval(() => { if (document.visibilityState === 'visible') void runSync(); }, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [user, runSync]);
   useEffect(() => {
     if (!user || !settings.historySync || history === appliedHist.current) return;
     const t = window.setTimeout(() => void runSync(), HIST_DEBOUNCE_MS); return () => window.clearTimeout(t);

@@ -21,6 +21,14 @@ const MODE_TEST_ID: Record<AudioSourceType, string> = {
   listenback: 'radio-mode-listenback',
 };
 
+const LONG_LABEL: Record<AudioSourceType, string> = { radio: 'LIVE RADIO', music: 'LIBRARY MUSIC', podcasts: 'PODCASTS', listenback: 'LISTEN BACK' };
+const SHORT_LABEL: Record<AudioSourceType, string> = { radio: 'Live', music: 'Music', podcasts: 'Podcasts', listenback: 'Replay' };
+const INFO_FACES = [
+  { src: 'music' as const, rot: 90, border: 'border-cyan-500/45', tint: 'rgba(6, 182, 212, 0.18)', badge: 'bg-cyan-400 text-black', badgeText: 'LIBRARY MUSIC', hintCls: 'text-cyan-300', hint: 'Pick an album below ↓', title: 'Recorded Music & Concert Vault', text: 'Albums, concerts and music videos from the AJN library.' },
+  { src: 'podcasts' as const, rot: 180, border: 'border-pink-500/45', tint: 'rgba(236, 72, 153, 0.18)', badge: 'bg-pink-500 text-white', badgeText: 'PODCASTS', hintCls: 'text-pink-300', hint: 'Pick an episode below ↓', title: 'Syndicated Talk & Daily Editions', text: 'News, talk, true crime, tech and more. Newest episodes first.' },
+  { src: 'listenback' as const, rot: 270, border: 'border-amber-500/45', tint: 'rgba(245, 158, 11, 0.18)', badge: 'bg-amber-400 text-black', badgeText: 'LISTEN BACK', hintCls: 'text-amber-300', hint: 'Pick an hour →', title: 'Hourly Broadcast Archives', text: 'Replay AJN hours; switch to the paired video at the same spot.' },
+];
+
 export const FACTORY_RADIO_PRESETS = [
   { presetNumber: '01', channelId: 'radio:ajn-alex-jones-show', name: 'AJN Alex Jones' },
   { presetNumber: '02', channelId: 'radio:infowars-live-aac', name: 'Infowars Live AAC' },
@@ -107,9 +115,9 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
 
   return (
     <section aria-label="Audio Source Prism" data-testid="source-prism-3d" className="w-full select-none mb-4">
-      {/* Tab Controls */}
-      <div className="flex items-center justify-between gap-2 mb-2.5">
-        <div role="tablist" aria-label="Radio source" className="flex items-center gap-1.5 flex-wrap">
+      {/* Tab controls: one short row (4 equal keys, arrows only where there is room). Swipe or the keys turn the prism. */}
+      <div className="mb-1.5 flex items-center gap-1.5">
+        <div role="tablist" aria-label="Radio source" className="grid min-w-0 flex-1 grid-cols-4 gap-1">
           {SOURCE_ORDER.map((src, i) => (
             <button
               key={src}
@@ -118,64 +126,44 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
               data-testid={MODE_TEST_ID[src]}
               aria-selected={activeSource === src}
               aria-pressed={activeSource === src}
+              aria-label={LONG_LABEL[src]}
               onClick={() => selectByIndex(i)}
-              style={{ minHeight: '48px', minWidth: '48px' }}
-              className={`ck-key ck-key--sm !min-h-[48px] !min-w-[48px] uppercase tracking-wider text-xs font-bold${
-                activeSource === src ? ' is-latched' : ''
-              }`}
+              className={`ck-key ck-key--sm !min-h-[42px] !min-w-0 truncate !px-1 text-[11px] font-bold uppercase tracking-wide sm:text-xs${activeSource === src ? ' is-latched' : ''}`}
             >
-              {i + 1}. {src === 'radio' ? 'LIVE RADIO' : src === 'music' ? 'ARCHIVE MUSIC' : src === 'podcasts' ? 'PODCASTS' : 'LISTEN BACK'}
+              <span>{SHORT_LABEL[src]}</span>
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            data-testid="source-prism-prev"
-            aria-label="Previous source"
-            onClick={() => step(-1)}
-            style={{ minWidth: '48px', minHeight: '48px' }}
-            className="ck-key ck-key--icon w-12 h-12 !min-h-[48px] !min-w-[48px] text-[#E06D3B] text-base font-bold"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            data-testid="source-prism-next"
-            aria-label="Next source"
-            onClick={() => step(1)}
-            style={{ minWidth: '48px', minHeight: '48px' }}
-            className="ck-key ck-key--icon w-12 h-12 !min-h-[48px] !min-w-[48px] text-[#E06D3B] text-base font-bold"
-          >
-            ›
-          </button>
+        <div className="hidden items-center gap-1 sm:flex">
+          <button type="button" data-testid="source-prism-prev" aria-label="Previous source" onClick={() => step(-1)} className="ck-key ck-key--icon !min-h-[42px] !min-w-[42px] text-base font-bold text-[#E06D3B]">‹</button>
+          <button type="button" data-testid="source-prism-next" aria-label="Next source" onClick={() => step(1)} className="ck-key ck-key--icon !min-h-[42px] !min-w-[42px] text-base font-bold text-[#E06D3B]">›</button>
         </div>
       </div>
 
-      {/* 3D Scene Viewport */}
+      {/* 3D Scene Viewport: short (every face fits in one glance) */}
       <div
         ref={sceneRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishDrag}
         onPointerLeave={finishDrag}
-        className="w-full h-[340px] lg:h-[290px] overflow-hidden rounded-2xl relative touch-pan-y"
+        className="relative h-[128px] w-full touch-pan-y overflow-hidden rounded-2xl lg:h-[112px]"
         style={{ perspective: '900px' }}
       >
         <div
           data-testid="source-prism-cylinder"
-          className="w-full h-[340px] lg:h-[290px] relative"
+          className="relative h-[128px] w-full lg:h-[112px]"
           style={{
             transformStyle: 'preserve-3d',
             transition: isDragging ? 'none' : 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
             transform: `translateZ(-${apothemPx}px) rotateY(${displayAngle}deg)`,
           }}
         >
-          {/* Facet 0: Live Radio */}
+          {/* Facet 0: Live Radio (header + the five presets, nothing else) */}
           <div
             role="tabpanel"
             aria-hidden={activeSource !== 'radio'}
-            className={`absolute inset-0 w-full h-full rounded-2xl p-3 sm:p-4 flex flex-col justify-between overflow-hidden border border-[#E06D3B]/45 bg-[#181B24]/95 ${
+            className={`absolute inset-0 flex h-full w-full flex-col gap-1 overflow-hidden rounded-2xl border border-[#E06D3B]/45 bg-[#181B24]/95 p-2 ${
               activeSource === 'radio' ? 'pointer-events-auto' : 'pointer-events-none'
             }`}
             style={{
@@ -184,12 +172,12 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
               background: 'linear-gradient(135deg, rgba(224, 109, 59, 0.18), rgba(15, 17, 23, 0.96))',
             }}
           >
-            <div className="h-8 flex items-center justify-between shrink-0">
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E06D3B] text-black">LIVE RADIO</span>
-              <span className="text-[10px] font-mono text-emerald-400">{isLiveRadio ? '● ON AIR' : 'STANDBY'}</span>
+            <div className="flex shrink-0 items-center justify-between">
+              <span className="rounded bg-[#E06D3B] px-2 py-0.5 text-[10px] font-bold text-black">STARTER STATIONS</span>
+              <span className="font-mono text-[10px] text-emerald-400">{isLiveRadio ? '● ON AIR' : 'STANDBY'}</span>
             </div>
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 my-auto">
-              {FACTORY_RADIO_PRESETS.map((st, index) => {
+            <div className="grid min-h-0 flex-1 grid-cols-3 content-center gap-1">
+              {FACTORY_RADIO_PRESETS.map((st) => {
                 const isActive = nowPlaying?.channelId === st.channelId;
                 return (
                   <button
@@ -198,82 +186,39 @@ export const SourcePrism3D: React.FC<SourcePrism3DProps> = ({
                     aria-pressed={isActive}
                     aria-current={isActive ? 'true' : undefined}
                     onClick={() => onPlayStation?.(st.channelId)}
-                    style={{ minHeight: '52px', minWidth: '48px' }}
-                    className={`ck-key w-full !min-h-[52px] !min-w-[48px] px-2.5 pt-2.5 pb-1.5 text-left !justify-start gap-2${
-                      index === FACTORY_RADIO_PRESETS.length - 1 ? ' col-span-2' : ''
-                    }${isActive ? ' is-latched' : ''}`}
+                    className={`ck-key !min-h-[36px] lg:!min-h-[32px] !min-w-0 w-full !justify-start gap-1 !px-1 !py-0.5 text-left${isActive ? ' is-latched' : ''}`}
                   >
-                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/40 text-[#E06D3B] shrink-0 border border-[#E06D3B]/30">{st.presetNumber}</span>
-                    <span className="text-[11px] sm:text-xs font-bold leading-tight line-clamp-2 break-words text-left">{st.name}</span>
+                    <span className="shrink-0 rounded border border-[#E06D3B]/30 bg-black/40 px-1 font-mono text-[9px] font-bold text-[#E06D3B]">{st.presetNumber}</span>
+                    <span className="line-clamp-2 break-words text-left text-[10px] font-bold leading-[1.1]">{st.name}</span>
                   </button>
                 );
               })}
             </div>
-            <div className="text-[10px] font-mono text-slate-400 border-t border-white/10 pt-1">P01–P05 Live Edge</div>
           </div>
 
-          {/* Facet 1: Archive Music */}
-          <div
-            role="tabpanel"
-            aria-hidden={activeSource !== 'music'}
-            className={`absolute inset-0 w-full h-full rounded-2xl p-4 flex flex-col justify-between overflow-hidden border border-cyan-500/45 bg-[#181B24]/95 ${
-              activeSource === 'music' ? 'pointer-events-auto' : 'pointer-events-none'
-            }`}
-            style={{
-              backfaceVisibility: 'hidden',
-              transform: `rotateY(90deg) translateZ(${apothemPx}px)`,
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(15, 17, 23, 0.96))',
-            }}
-          >
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-400 text-black w-fit">ARCHIVE MUSIC</span>
-            <div className="my-auto">
-              <h3 className="text-lg font-bold text-white">Recorded Music & Concert Vault</h3>
-              <p className="text-xs text-slate-300 mt-1">Real-time Web Audio spectrum enabled via local proxy.</p>
+          {/* Facets 1-3: badge + hint on one line, then headline and one short sentence */}
+          {INFO_FACES.map((f) => (
+            <div
+              key={f.src}
+              role="tabpanel"
+              aria-hidden={activeSource !== f.src}
+              className={`absolute inset-0 flex h-full w-full flex-col justify-center gap-1 overflow-hidden rounded-2xl border bg-[#181B24]/95 p-3 ${f.border} ${
+                activeSource === f.src ? 'pointer-events-auto' : 'pointer-events-none'
+              }`}
+              style={{
+                backfaceVisibility: 'hidden',
+                transform: `rotateY(${f.rot}deg) translateZ(${apothemPx}px)`,
+                background: `linear-gradient(135deg, ${f.tint}, rgba(15, 17, 23, 0.96))`,
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${f.badge}`}>{f.badgeText}</span>
+                <span className={`truncate font-mono text-[10px] ${f.hintCls}`}>{f.hint}</span>
+              </div>
+              <h3 className="m-0 line-clamp-1 text-sm font-bold text-white sm:text-base">{f.title}</h3>
+              <p className="m-0 line-clamp-2 text-[11px] text-slate-300 sm:text-xs">{f.text}</p>
             </div>
-            <span className="text-[10px] font-mono text-cyan-300 border-t border-white/10 pt-1.5">Select an album below ↓</span>
-          </div>
-
-          {/* Facet 2: Podcasts */}
-          <div
-            role="tabpanel"
-            aria-hidden={activeSource !== 'podcasts'}
-            className={`absolute inset-0 w-full h-full rounded-2xl p-4 flex flex-col justify-between overflow-hidden border border-pink-500/45 bg-[#181B24]/95 ${
-              activeSource === 'podcasts' ? 'pointer-events-auto' : 'pointer-events-none'
-            }`}
-            style={{
-              backfaceVisibility: 'hidden',
-              transform: `rotateY(180deg) translateZ(${apothemPx}px)`,
-              background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.18), rgba(15, 17, 23, 0.96))',
-            }}
-          >
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-500 text-white w-fit">PODCAST VENDOR HUBS</span>
-            <div className="my-auto">
-              <h3 className="text-lg font-bold text-white">Syndicated Talk & Daily Editions</h3>
-              <p className="text-xs text-slate-300 mt-1">Daily feeds from Fox News Radio, Infowars, and Rush Limbaugh.</p>
-            </div>
-            <span className="text-[10px] font-mono text-pink-300 border-t border-white/10 pt-1.5">Select an episode below ↓</span>
-          </div>
-
-          {/* Facet 3: Listen Back */}
-          <div
-            role="tabpanel"
-            aria-hidden={activeSource !== 'listenback'}
-            className={`absolute inset-0 w-full h-full rounded-2xl p-4 flex flex-col justify-between overflow-hidden border border-amber-500/45 bg-[#181B24]/95 ${
-              activeSource === 'listenback' ? 'pointer-events-auto' : 'pointer-events-none'
-            }`}
-            style={{
-              backfaceVisibility: 'hidden',
-              transform: `rotateY(270deg) translateZ(${apothemPx}px)`,
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(15, 17, 23, 0.96))',
-            }}
-          >
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-black w-fit">LISTEN BACK</span>
-            <div className="my-auto">
-              <h3 className="text-lg font-bold text-white">Hourly Broadcast Archives</h3>
-              <p className="text-xs text-slate-300 mt-1">Replay AJN hours; switch to the paired video at the same spot.</p>
-            </div>
-            <span className="text-[10px] font-mono text-amber-300 border-t border-white/10 pt-1.5">Select an hour on the right →</span>
-          </div>
+          ))}
         </div>
       </div>
     </section>

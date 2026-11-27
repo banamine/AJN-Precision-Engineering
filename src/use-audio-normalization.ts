@@ -25,6 +25,8 @@ function linearToDb(linear: number): number { if (linear <= 0) return -Infinity;
 export interface AudioNormalizationReturn {
   gainDb: number; setGainDb: (db: number) => void; autoNormalize: boolean; setAutoNormalize: (on: boolean) => void;
   audioContextSuspended: boolean; resumeAudioContext: () => void; setMasterVolume: (vol: number) => void;
+  /** Click-free start/stop: ramp the Web Audio master gain over a few ms. false = this element is not on the Web Audio chain (nothing to do). `to` = 'restore' goes back to the normal level. */
+  declickMaster: (media: HTMLMediaElement | null, to: number | 'restore', ms: number) => boolean;
   bridgeReady: boolean; primeAudioContext: () => void; preAnalyserRef: RefObject<AnalyserNode | null>;
   audioCtxRef: RefObject<AudioContext | null>; diagnosticsAnalyserRef: RefObject<AnalyserNode | null>; diagnosticsReady: boolean;
 }
@@ -190,6 +192,13 @@ export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | nul
   const primeAudioContext = useCallback(() => { getOrCreateContext(); resumeAudioContext(); }, [getOrCreateContext, resumeAudioContext]);
   const applyGain = useCallback((db: number, ramp = false) => { const gainNode = audioRuntime?.gainNode; const ctx = audioRuntime?.ctx; if (!gainNode || !ctx || ctx.state === "closed") return; const linearVal = dbToLinear(db); if (ramp) gainNode.gain.linearRampToValueAtTime(linearVal, ctx.currentTime + RAMP_DURATION_S); else gainNode.gain.setValueAtTime(linearVal, ctx.currentTime); }, []);
   const MASTER_FADE_S = 0.5;
+  const declickMaster = useCallback((media: HTMLMediaElement | null, to: number | "restore", ms: number): boolean => {
+    const node = audioRuntime?.masterVolumeNode; const ctx = audioRuntime?.ctx;
+    if (!node || !ctx || ctx.state !== "running" || !media || audioRuntime?.connectedElement !== media) return false;
+    const target = to === "restore" ? masterVolTargetRef.current ?? 1 : Math.max(0, to); const t = ctx.currentTime;
+    node.gain.cancelScheduledValues(t); node.gain.setValueAtTime(node.gain.value, t); node.gain.linearRampToValueAtTime(target, t + Math.max(0.001, ms / 1000));
+    return true;
+  }, []);
   const setMasterVolume = useCallback((vol: number) => { const node = audioRuntime?.masterVolumeNode; const ctx = audioRuntime?.ctx; if (!node || !ctx || ctx.state === "closed") return; const clamped = Math.max(0, Math.min(1, vol)); masterVolTargetRef.current = clamped; node.gain.cancelScheduledValues(ctx.currentTime); node.gain.setValueAtTime(node.gain.value, ctx.currentTime); node.gain.linearRampToValueAtTime(clamped, ctx.currentTime + MASTER_FADE_S); }, []);
   // Per-kind levelling. A new track no longer inherits the previous track's boost: it starts at the remembered
   // gain for its kind (talk or music), takes a quick first estimate (~0.7 s), then refines at 3 s.
@@ -253,5 +262,5 @@ export function useAudioNormalization(mediaRef: RefObject<HTMLMediaElement | nul
   useEffect(() => { if (!autoNormalize || (playerType !== "video" && playerType !== "hls" && playerType !== "audio")) return; const media = mediaRef.current; if (!media) return; connectMediaElement(media); const onPlaying = () => startNormalizationSampling(); media.addEventListener("playing", onPlaying); return () => media.removeEventListener("playing", onPlaying); }, [autoNormalize, playerType, clipKey, mediaRef, connectMediaElement, startNormalizationSampling]);
   useEffect(() => { const handleGesture = () => { const ctx = audioRuntime?.ctx; if (ctx && ctx.state !== "running") resumeAudioContext(); }; window.addEventListener("pointerdown", handleGesture, { passive: true }); window.addEventListener("keydown", handleGesture); return () => { window.removeEventListener("pointerdown", handleGesture); window.removeEventListener("keydown", handleGesture); }; }, [resumeAudioContext]);
   useEffect(() => { if (!audioRuntime) return; applyGain(gainDbRef.current); }, [gainDb]);
-  return { gainDb, setGainDb, autoNormalize, setAutoNormalize, audioContextSuspended, resumeAudioContext, setMasterVolume, bridgeReady, primeAudioContext, preAnalyserRef, audioCtxRef, diagnosticsAnalyserRef, diagnosticsReady };
+  return { gainDb, setGainDb, autoNormalize, setAutoNormalize, audioContextSuspended, resumeAudioContext, setMasterVolume, declickMaster, bridgeReady, primeAudioContext, preAnalyserRef, audioCtxRef, diagnosticsAnalyserRef, diagnosticsReady };
 }

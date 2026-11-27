@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildMusicPools, loadConcertPools, loadFmPools, buildSpokenPools } from './scheduleCatalog';
+import { buildMusicPools, loadConcertPools, loadFmPools, buildSpokenPools, freshFirst } from './scheduleCatalog';
 import { clockEligible, poolTrackCount, slotAt, slotsAfter, type SchedPool } from './roundRobinSchedule';
 
 const keyOk = (p: SchedPool) => p.items.every((i) => i.tracks.every((t, n) => t.programId === `${t.archiveId}::${n + 1}` && t.partNo === n + 1));
@@ -34,8 +34,23 @@ test('podcasts: only real-duration episodes with media, one item per show, group
     { id: 'z', name: 'Not spoken', group: 'Music', programs: [ep('z1', 100)] },
   ]);
   assert.deepEqual(pools.map((p) => p.id), ['spoken-all-podcasts', 'spoken-all-otr', 'spoken-o', 'spoken-a', 'spoken-b']);
-  assert.deepEqual(pools[0].items.map((i) => i.id), ['a', 'b']);
+  assert.deepEqual(pools[0].items.map((i) => i.id), ['spoken-all-podcasts']);
+  assert.deepEqual(pools[0].items[0].tracks.map((t) => t.programId), ['a1', 'b1', 'a4']);   // undated episodes: shows take turns
   assert.deepEqual(pools[3].items[0].tracks.map((t) => t.programId), ['a1', 'a4']);
   assert.ok(pools.every((p) => clockEligible(p) && p.bank === 'podcasts'));
-  assert.ok(pools[0].items.every((i) => i.tracks.every((t) => t.guideId === 'audio-podcasts' && t.channelId === i.id)));
+  assert.ok(pools[0].items.every((i) => i.tracks.every((t) => t.guideId === 'audio-podcasts')));
+  assert.ok(pools[3].items.every((i) => i.tracks.every((t) => t.channelId === i.id)));
+});
+
+test('podcasts: All podcasts plays today first, then yesterday, then older; shows take turns inside a day', () => {
+  const D = (day: number, hour: number): string => new Date(Date.UTC(2026, 10, day, hour)).toISOString();
+  const ep = (id: string, iso: string) => ({ id, title: id, mediaUrl: `https://x/${id}.mp3`, metadata: { durationSeconds: 1800, airedUtc: iso } });
+  const pools = buildSpokenPools([
+    // listed oldest-first on purpose: the order must not depend on the feed's order
+    { id: 'a', name: 'A', group: 'Podcast', programs: [ep('a24', D(24, 9)), ep('a25', D(25, 9)), ep('a26', D(26, 9)), ep('a26b', D(26, 15))] },
+    { id: 'b', name: 'B', group: 'Podcast', programs: [ep('b25', D(25, 12)), ep('b26', D(26, 11))] },
+  ]);
+  assert.deepEqual(pools[0].items[0].tracks.map((t) => t.programId), ['a26b', 'b26', 'a26', 'a25', 'b25', 'a24']);
+  assert.deepEqual(pools.find((p) => p.id === 'spoken-a')!.items[0].tracks.map((t) => t.programId), ['a26b', 'a26', 'a25', 'a24']);
+  assert.deepEqual(freshFirst([ep('o', D(1, 1)), { id: 'u', title: 'u', mediaUrl: 'x', metadata: { backCatalog: true } }, ep('n', D(2, 1))]).map((p) => p.id), ['n', 'o', 'u']);
 });

@@ -7,9 +7,11 @@ import type { FavoriteMedia } from './src/utils/mediaFavorites.ts';
 import type { HistoryEntry } from './src/utils/historyStore.ts';
 
 class FakeCloud implements CloudBackend {
-  favs = new Map<string, any>(); hist = new Map<string, any>(); cleared = 0; writes = 0;
+  favs = new Map<string, any>(); wl = new Map<string, any>(); hist = new Map<string, any>(); cleared = 0; writes = 0;
   async listFavorites() { return [...this.favs.values()].map((x) => structuredClone(x)); }
   async putFavorites(d: any[]) { d.forEach((x) => { this.writes++; this.favs.set(docIdFor(x.id), structuredClone(x)); }); }
+  async listWatchLater() { return [...this.wl.values()].map((x) => structuredClone(x)); }
+  async putWatchLater(d: any[]) { d.forEach((x) => { this.writes++; this.wl.set(docIdFor(x.id), structuredClone(x)); }); }
   async listHistory() { return [...this.hist.values()].map((x) => structuredClone(x)); }
   async putHistory(d: any[]) { d.forEach((x) => { this.writes++; this.hist.set(docIdFor(x.id), structuredClone(x)); }); }
   async deleteHistory(ids: string[]) { ids.forEach((i) => this.hist.delete(docIdFor(i))); }
@@ -95,6 +97,30 @@ const dev = (o: Partial<SyncInput> = {}): SyncInput => ({ favorites: [], favTomb
   // single-entry removal syncs
   H1 = await syncOnce(c2, { ...H1, history: [], histTombs: { new: clearAt + 800 } }, clearAt + 800);
   H2 = await syncOnce(c2, H2, clearAt + 900); assert.deepEqual(H2.history, [], 'single removal propagated');
+
+  // ── Watch Later: add on A shows on B; removal and newer resume position propagate; order stays local
+  const cw = new FakeCloud();
+  const wlItem = (id: string, ts: number, extra: any = {}) => ({ ...media(id), id, savedAt: ts, updatedAt: ts, progressSeconds: 30, reason: 'manual' as const, ...extra });
+  let WA: any = dev({ watchLater: [wlItem('w1', NOW - 5000)] });
+  WA = await syncOnce(cw, WA, NOW); assert.equal(WA.stats.wlPushed, 1);
+  let WB: any = await syncOnce(cw, dev({ watchLater: [wlItem('w2', NOW - 4000)] }), NOW + 10);
+  assert.deepEqual(WB.watchLater!.map((w) => w.id), ['w1', 'w2'], 'B gets A\'s item on top, keeps its own');
+  assert.equal(WB.stats.wlPushed, 1, 'only B\'s own new item is pushed');
+  WA = await syncOnce(cw, WA, NOW + 20); assert.deepEqual(WA.watchLater!.map((w) => w.id).sort(), ['w1', 'w2'], 'A receives B\'s item');
+  // newer resume position wins
+  WB = await syncOnce(cw, { ...WB, watchLater: WB.watchLater!.map((w) => (w.id === 'w1' ? { ...w, progressSeconds: 900, updatedAt: NOW + 100 } : w)) }, NOW + 100);
+  WA = await syncOnce(cw, WA, NOW + 200); assert.equal(WA.watchLater!.find((w) => w.id === 'w1')!.progressSeconds, 900);
+  // removal on A beats the older copy on B; a stale re-sync does not resurrect it
+  WA = await syncOnce(cw, { ...WA, watchLater: WA.watchLater!.filter((w) => w.id !== 'w1'), wlTombs: { w1: NOW + 300 } }, NOW + 300);
+  WB = await syncOnce(cw, WB, NOW + 400); assert.deepEqual(WB.watchLater!.map((w) => w.id), ['w2'], 'removal propagated');
+  const staleWL = await syncOnce(cw, dev({ watchLater: [wlItem('w1', NOW - 5000)] }), NOW + 500); assert.ok(!staleWL.watchLater!.some((w) => w.id === 'w1'), 'old copy cannot come back');
+  // re-adding AFTER the removal wins everywhere
+  WA = await syncOnce(cw, { ...WA, watchLater: [wlItem('w1', NOW + 600), ...WA.watchLater!] }, NOW + 600);
+  WB = await syncOnce(cw, WB, NOW + 700); assert.ok(WB.watchLater!.some((w) => w.id === 'w1'), 're-add after removal syncs');
+  // local order is kept: B reorders, a sync from A's data does not shuffle it
+  const reordered = [...WB.watchLater!].reverse(); const WB2 = await syncOnce(cw, { ...WB, watchLater: reordered }, NOW + 800);
+  assert.deepEqual(WB2.watchLater!.map((w) => w.id), reordered.map((w) => w.id), 'manual order preserved');
+  assert.deepEqual(parseLocalState(JSON.stringify({ version: 1, wlTombs: { a: 2, b: 'x' } })).wlTombs, { a: 2 });
 
   // ── pure bits
   assert.deepEqual(mergeHistory([], {}, 0, [], 0, NOW).push, []);

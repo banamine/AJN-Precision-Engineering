@@ -209,3 +209,12 @@ body[data-ajn-page="radio"] button#radio-dock-button.fixed{display:none !importa
 .ajr-ticker-lg .ajr-ticker-label{font-size:11px}
 .ajr-ticker-lg .ajr-ticker-item{font-size:17px;font-weight:500;color:#eef3ee;text-shadow:0 1px 3px rgba(0,0,0,.85);padding-right:36px}
 .ajr-ticker-lg .ajr-ticker-item b{font-size:11px;padding:3px 7px}
+
+/* Mini panels inside the deck card */
+@keyframes mini-slide-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+.mini-slide { animation: mini-slide-in .22s ease-out; }
+@media (prefers-reduced-motion: reduce) { .mini-slide { animation: none; } }
+
+/* Now-playing side buttons: readable size and breathing room on phones */
+.ajr-now-side button.ajr-link{font-size:11px;letter-spacing:.14em;line-height:1.2;padding:.75rem 1.25rem .6rem;min-height:44px;border-bottom:1px solid #2C3444}
+.ajr-now-side{gap:12px 14px}

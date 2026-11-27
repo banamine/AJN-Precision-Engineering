@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactElement } from 'react';
+import { DIAL_MAX, DIAL_SLIDER_STEP, DIAL_STEP, dialFromGain, gainFromDial, dialText, stepGain } from '../utils/volumeScale';
 import { Search } from 'lucide-react';
 import { FreshnessTag } from './FreshnessTag';
 import { RadioSpectrum } from './RadioSpectrum';
@@ -38,7 +39,7 @@ export function readPresetView(storage?: { getItem(key: string): string | null }
 /** What the dock knows about the station that is playing right now (the directory record, when the station was picked there). */
 export interface PresetSourceInfo { number?: number; logo?: string; corsVerified?: boolean }
 
-export interface DeckItem { id: string; title: string; subtitle?: string; /** Publish time (epoch ms) of a dated podcast episode. */ publishedAt?: number; play: () => void; /** What a preset key stores for this item. */ preset: AudioPresetInput }
+export interface DeckItem { id: string; title: string; subtitle?: string; /** Publish time (epoch ms) of a dated podcast episode. */ publishedAt?: number; /** Show artwork from the feed; initials are drawn when absent. */ logo?: string; play: () => void; /** What a preset key stores for this item. */ preset: AudioPresetInput }
 export interface DeckSources {
   music: DeckItem[];
   /** null until the concert catalog has loaded (it is fetched on demand). */
@@ -86,6 +87,16 @@ function initialsOf(name: string): string {
   return (first.length >= 2 ? first.slice(0, 2) : first + (letters[1]?.[0] ?? '')).toUpperCase();
 }
 /** Pick-from-the-list panel for Archive Music, Live Concerts and Podcasts (Live Radio has its own station picker). Search narrows the list; a tap plays. */
+/** Small round show art for the picker rows. A feed with no artwork (or art that fails to load) gets the show's initials, never an invented image. */
+function PickerArt({ logo, name, on }: { logo?: string; name: string; on: boolean }): ReactElement {
+  const [bad, setBad] = useState(false);
+  const initials = name.replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '•';
+  return (
+    <span aria-hidden="true" data-testid="radio-deck-art" className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md text-[11px] font-bold ${on ? 'bg-[#F9A56D]/25 text-[#F9A56D] ring-1 ring-[#F9A56D]' : 'bg-white/10 text-neutral-300'}`}>
+      {logo && !bad ? <img src={logo} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false} onError={() => setBad(true)} className="h-full w-full object-cover" /> : initials}
+    </span>
+  );
+}
 function DeckPicker({ label, items, note, playingItem, onPick }: { label: string; items: DeckItem[]; note?: string; playingItem: (it: DeckItem) => boolean; onPick: (it: DeckItem) => void }): ReactElement {
   const [q, setQ] = useState('');
   const needle = q.trim().toLowerCase();
@@ -112,7 +123,7 @@ function DeckPicker({ label, items, note, playingItem, onPick }: { label: string
             <li key={it.id}>
               <button type="button" data-testid="radio-deck-pick" aria-current={on ? 'true' : undefined} onClick={() => onPick(it)}
                 className="ck-key ck-key--row !min-h-[48px] flex-wrap items-center gap-x-2 gap-y-1 rounded-lg !py-1.5">
-                <span aria-hidden="true" className={`text-xs ${on ? 'text-[#F9A56D]' : 'text-neutral-500'}`}>{on ? '▶' : '•'}</span>
+                <PickerArt logo={it.logo} name={it.subtitle ?? it.title} on={on} />
                 <span className="min-w-[8.5rem] flex-1"><span className="block line-clamp-2 break-words text-sm font-semibold">{it.title}</span>{it.subtitle ? <span className="block truncate text-[11px] text-neutral-400">{it.subtitle}</span> : null}</span>
                 <span className="ml-auto shrink-0"><FreshnessTag publishedAt={it.publishedAt} /></span>
               </button>
@@ -432,7 +443,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
               ?? RADIO_PRESET_SLOTS.map((n) => DEFAULT_RADIO_PRESETS[n]).find((p) => p?.channelId === channelId || p?.channelId === normalizedId);
             if (found) tune(found);
           };
-          const volAngle = -135 + vol * 270;
+          const volAngle = -135 + (dialFromGain(vol) / DIAL_MAX) * 270;
           return (
             <div ref={observeNarrow} data-testid="radio-head-unit-grid" className="relative grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-2 md:gap-x-5">
               <div className="space-y-4 md:col-start-1 md:row-start-1">
@@ -475,7 +486,7 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
                 {listenBack ? (
                   <ListenBackDeck onPlayProgram={onPlay} nowPlaying={nowPlaying} onNavigate={onNavigate} />
                 ) : mode !== 'live' ? (
-                  <ScheduleDeck bank={mode === 'podcasts' ? 'podcasts' : sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} />
+                  <ScheduleDeck bank={mode === 'podcasts' ? 'podcasts' : sub} onPlayProgram={onPlay} nowPlaying={nowPlaying} playingNow={playingNow} onOpenPlayer={onNavigate ? () => onNavigate('player') : undefined} />
                 ) : (
                   <LiveSongDeck stationId={playing?.channelId} stationTitle={playing?.title} playing={live || Boolean(playingNow)} />
                 )}
@@ -611,21 +622,21 @@ export function RadioPresetsBar({ station, info, live, onPlay, onNavigate, onLis
                 <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Volume</span>
                 <div className="flex items-center justify-around gap-4">
                 <div className="flex flex-col items-center gap-1.5">
-                  <button type="button" role="slider" data-testid="radio-volume-knob" aria-label="Volume" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(vol * 100)} aria-disabled={!hasPlayer}
+                  <button type="button" role="slider" data-testid="radio-volume-knob" aria-label="Volume" aria-valuemin={0} aria-valuemax={DIAL_MAX} aria-valuenow={Math.round(dialFromGain(vol) * 2) / 2} aria-valuetext={dialText(vol)} aria-disabled={!hasPlayer}
                     onPointerDown={(e) => { volDrag.current = e.clientX; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* optional */ } }}
-                    onPointerMove={(e) => { if (volDrag.current === null) return; const dx = e.clientX - volDrag.current; volDrag.current = e.clientX; setVolume(vol + dx / 140); }}
+                    onPointerMove={(e) => { if (volDrag.current === null) return; const dx = e.clientX - volDrag.current; volDrag.current = e.clientX; setVolume(gainFromDial(dialFromGain(vol) + (dx / 140) * DIAL_MAX)); }}
                     onPointerUp={() => { volDrag.current = null; }} onPointerCancel={() => { volDrag.current = null; }}
-                    onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); setVolume(vol + 0.05); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); setVolume(vol - 0.05); } }}
-                    onWheel={(e) => { if (e.deltaY) setVolume(vol + (e.deltaY < 0 ? 0.05 : -0.05)); }}
+                    onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); setVolume(stepGain(vol, 1)); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); setVolume(stepGain(vol, -1)); } }}
+                    onWheel={(e) => { if (e.deltaY) setVolume(stepGain(vol, e.deltaY < 0 ? 1 : -1, DIAL_STEP / 2)); }}
                     className="relative h-16 w-16 cursor-ew-resize touch-none rounded-full p-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"
-                    style={{ background: `conic-gradient(from -135deg, #E06D3B ${vol * 270}deg, rgba(255,255,255,0.18) ${vol * 270}deg 270deg, transparent 270deg)`, boxShadow: '0 6px 16px rgba(0,0,0,0.6)' }}>
+                    style={{ background: `conic-gradient(from -135deg, #E06D3B ${(dialFromGain(vol) / DIAL_MAX) * 270}deg, rgba(255,255,255,0.18) ${(dialFromGain(vol) / DIAL_MAX) * 270}deg 270deg, transparent 270deg)`, boxShadow: '0 6px 16px rgba(0,0,0,0.6)' }}>
                     <span aria-hidden="true" className="relative block h-full w-full rounded-full" style={{ background: 'conic-gradient(from 180deg, #3b4150, #8d94a1, #3b4150, #1f2430, #8d94a1, #3b4150)', transform: `rotate(${volAngle}deg)`, boxShadow: 'inset 0 2px 2px rgba(255,255,255,0.4), inset 0 -3px 6px rgba(0,0,0,0.7)' }}>
                       <span className="absolute left-1/2 top-1 h-3 w-1 -translate-x-1/2 rounded-full bg-amber-400" />
                     </span>
                   </button>
                 </div>
-                <input type="range" min={0} max={1} step={0.05} value={vol} data-testid="radio-volume-slider" aria-label="Volume" disabled={!hasPlayer}
-                  onChange={(e) => setVolume(Number(e.currentTarget.value))} className="min-w-0 flex-1 accent-[#E06D3B]" />
+                <input type="range" min={0} max={DIAL_MAX} step={DIAL_SLIDER_STEP} value={dialFromGain(vol)} aria-valuetext={dialText(vol)} data-testid="radio-volume-slider" aria-label="Volume" disabled={!hasPlayer}
+                  onChange={(e) => setVolume(gainFromDial(Number(e.currentTarget.value)))} className="min-w-0 flex-1 accent-[#E06D3B]" />
                 <div className="flex flex-col items-center gap-1.5">
                   <button type="button" data-testid="radio-bank-select" aria-label={`Bank select: ${bank === 'presets' ? 'My presets' : 'Recent'}. Press to switch.`} onClick={() => { if (mode === 'live') openBank(bank === 'presets' ? 'recent' : 'presets'); else if (!browse) { setBrowse(true); setListPage(0); } else if (modeItems.length > (listPage + 1) * 5) setListPage((pg) => pg + 1); else { setBrowse(false); setListPage(0); } }}
                     className="relative h-16 w-16 cursor-pointer rounded-full p-1.5 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ajn-accent)]"

@@ -1,4 +1,5 @@
 /* Firestore implementation of CloudBackend. Layout (all under the signed-in user, matching the deployed rules `users/{uid}/**`):
+ *   users/{uid}/watchlater/{docIdFor(itemId)}  same shape (+ progressSeconds, updatedAt)
  *   users/{uid}/favorites/{docIdFor(itemId)}   item fields + savedAt + updatedAt (+ deleted:true for a removal tombstone)
  *   users/{uid}/history/{docIdFor(itemId)}     same, plus plays/playedAt/progressSeconds
  *   users/{uid}/meta/history                   { clearedAt }
@@ -10,7 +11,7 @@ import { getApps, getApp, initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, type Auth, type User } from 'firebase/auth';
 import { getFirestore, writeBatch, doc, getDocs, getDoc, setDoc, collection, type Firestore } from 'firebase/firestore';
 import type { CloudBackend } from './syncEngine';
-import { docIdFor, type RemoteFav, type RemoteHist } from './syncMerge';
+import { docIdFor, type RemoteFav, type RemoteHist, type RemoteWL } from './syncMerge';
 import { FIREBASE_WEB_CONFIG, FIRESTORE_DATABASE_ID } from './firebaseConfig';
 
 export interface SyncUser { uid: string; email: string | null; name: string | null }
@@ -47,7 +48,7 @@ const clean = <T,>(o: T): T => JSON.parse(JSON.stringify(o)); // Firestore rejec
 const CHUNK = 400; // writeBatch limit is 500
 
 export function createFirestoreBackend(db: Firestore, uid: string): CloudBackend {
-  const put = async (sub: 'favorites' | 'history', docs: Array<{ id: string }>) => {
+  const put = async (sub: 'favorites' | 'history' | 'watchlater', docs: Array<{ id: string }>) => {
     for (let i = 0; i < docs.length; i += CHUNK) {
       const batch = writeBatch(db);
       for (const d of docs.slice(i, i + CHUNK)) batch.set(doc(db, 'users', uid, sub, docIdFor(d.id)), clean(d));
@@ -58,6 +59,8 @@ export function createFirestoreBackend(db: Firestore, uid: string): CloudBackend
   return {
     listFavorites: () => list<RemoteFav>('favorites'),
     putFavorites: (docs) => put('favorites', docs),
+    listWatchLater: () => list<RemoteWL>('watchlater'),
+    putWatchLater: (docs) => put('watchlater', docs),
     listHistory: () => list<RemoteHist>('history'),
     putHistory: (docs) => put('history', docs),
     async deleteHistory(ids) {

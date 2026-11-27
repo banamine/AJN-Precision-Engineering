@@ -1,4 +1,5 @@
 import type { ScheduleChannel } from "../types";
+import { rememberChannelArts } from '../utils/podcastArt';
 
 export interface ScheduleCacheEntry {
   channels: ScheduleChannel[];
@@ -17,6 +18,7 @@ export function getCachedSchedule(guideId: string): ScheduleCacheEntry | undefin
 
 export function setCachedSchedule(guideId: string, channels: unknown, now = Date.now()): void {
   if (!Array.isArray(channels) || channels.length === 0) return;
+  rememberChannelArts(channels);
   schedules.set(guideId, { channels: channels as ScheduleChannel[], fetchedAt: now });
 }
 
@@ -27,6 +29,7 @@ export function getCachedLightSchedule(guideId: string): ScheduleCacheEntry | un
 
 export function setCachedLightSchedule(guideId: string, channels: unknown, now = Date.now()): void {
   if (!Array.isArray(channels) || channels.length === 0) return;
+  rememberChannelArts(channels);
   lightSchedules.set(guideId, { channels: channels as ScheduleChannel[], fetchedAt: now });
 }
 

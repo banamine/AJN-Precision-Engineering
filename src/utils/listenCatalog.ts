@@ -8,6 +8,7 @@ import podcastSources from '../data/podcastSources.json';
 import { genreForName } from './musicGenre.ts';
 import type { PlanItem } from './ajnShowGroups.ts';
 import type { AudioBank } from './audioPresets.ts';
+import { rememberPodcastArt } from './podcastArt.ts';
 
 export interface ListenItem {
   id: string;
@@ -22,6 +23,8 @@ export interface ListenItem {
   trackCount: number;
   /** When the episode was PUBLISHED (epoch ms, parsed on the server from the feed's pubDate). Only set for dated podcast episodes; never invented. */
   publishedAt?: number;
+  /** The show's own artwork from its feed (small size). Absent when the feed supplies none; the deck then draws initials, never a made-up picture. */
+  logo?: string;
 }
 
 const MAX_TRACKS = 300;
@@ -93,7 +96,7 @@ export function filterListenItems(items: readonly ListenItem[], query: string, g
 export const listenGenres = (items: readonly ListenItem[]): string[] => [...new Set(items.map((i) => i.genre))].sort((a, b) => a.localeCompare(b));
 
 interface SpokenProgram { id: string; title: string; mediaUrl?: string; description?: string; metadata?: { airedUtc?: string; podcast?: boolean; backCatalog?: boolean } }
-interface SpokenChannel { id: string; name: string; group?: string; sourceStatus?: string; sourceError?: string; programs?: SpokenProgram[] }
+interface SpokenChannel { id: string; name: string; group?: string; logo?: string; sourceStatus?: string; sourceError?: string; programs?: SpokenProgram[] }
 const SPOKEN_GROUPS = new Set(['Podcast', 'Talk Radio', 'Old-Time Radio']);
 export interface SpokenCatalog { items: ListenItem[]; feedsDown: { name: string; reason: string }[] }
 /** Pure: the Podcasts bank from the server's Audio & Podcasts guide (live podcast feeds, talk radio, old-time radio).
@@ -102,6 +105,7 @@ export function buildSpokenItems(channels: readonly SpokenChannel[]): SpokenCata
   const items: ListenItem[] = [];
   const feedsDown: { name: string; reason: string }[] = [];
   for (const ch of channels) {
+    if (ch.group === 'Podcast') rememberPodcastArt(ch.id, ch.logo);
     if (!ch.group || !SPOKEN_GROUPS.has(ch.group)) continue;
     // The schedule lists every airing, so one episode can appear many times. Keep the first airing of each audio file.
     const seenMedia = new Set<string>();
@@ -131,7 +135,7 @@ export function buildSpokenItems(channels: readonly SpokenChannel[]): SpokenCata
         id: `spoken-show-${ch.id}`, bank: 'podcasts', title: ch.name,
         subtitle: `${editions.length} edition${editions.length === 1 ? '' : 's'}`,
         genre: ch.group, channelId: ch.id, guideId: 'audio-podcasts',
-        trackCount: editions.length, publishedAt: newest, tracks: () => parts,
+        trackCount: editions.length, publishedAt: newest, ...(ch.logo ? { logo: ch.logo } : {}), tracks: () => parts,
       });
       continue;
     }
@@ -140,7 +144,7 @@ export function buildSpokenItems(channels: readonly SpokenChannel[]): SpokenCata
       // Only a real feed episode carries a publish date. Talk-radio / old-time-radio rows and Archive back-catalog have none (their slot times are not air dates).
       const pub = ch.group === 'Podcast' && pr.metadata?.podcast && !pr.metadata?.backCatalog ? Date.parse(pr.metadata?.airedUtc ?? '') : NaN;
       items.push({ id, bank: 'podcasts', title: pr.title, subtitle: ch.name, genre: ch.group, channelId: ch.id, guideId: 'audio-podcasts', trackCount: 1,
-        ...(Number.isFinite(pub) && pub > Date.UTC(2000, 0, 1) ? { publishedAt: pub } : {}),
+        ...(Number.isFinite(pub) && pub > Date.UTC(2000, 0, 1) ? { publishedAt: pub } : {}), ...(ch.logo ? { logo: ch.logo } : {}),
         tracks: () => [{ src: pr.mediaUrl as string, mediaType: 'audio' as const, programId: pr.id, title: pr.title, partNo: 1, totalParts: 1 }] });
     }
   }

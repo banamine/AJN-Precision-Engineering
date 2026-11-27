@@ -9,6 +9,8 @@ import { bridgeSrc } from '../utils/mediaRoute';
 import { toPlayableSrc } from '../utils/playableSrc';
 import type { LibTrack } from './libraryTracks';
 import { pickBlockTracks } from './libraryTracks';
+import { daypartForHour, daypartTrim, equalPowerLevel } from './dayparts';
+import { denverParts } from '../utils/listenDayparts';
 import type { LibAlbum } from './libraryTracks';
 import type { MeterState } from './OnAirSpectrum';
 
@@ -243,6 +245,7 @@ export function useOnAirPlayout(opts: { ros: Segment[]; albums: LibAlbum[] | nul
   /** After every engine step: put the engine's volumes on the elements and report real readiness back to the engine. */
   const syncAudio = useCallback((m: Machine): void => {
     const decks = ensureDecks();
+    const trimNow = daypartTrim(daypartForHour(denverParts(Date.now()).hour));
     (['A', 'B'] as DeckId[]).forEach((id) => {
       const el = decks[id], d = m.decks[id], meta = metaRef.current[id];
       // Build 19: same fade shape as the engine (volume / ceiling), but scaled to the source's learned level instead of a fixed per-kind ceiling.
@@ -262,7 +265,9 @@ export function useOnAirPlayout(opts: { ros: Segment[]; albums: LibAlbum[] | nul
         }
       }
       lv.at = nowT;
-      const vol = d.ceiling > 0 && lv.key ? clamp01((d.volume / d.ceiling) * lv.applied) : clamp01(d.volume);
+      // Build 20: equal-power crossfade shape + the daypart trim (late night sits lower). Both only ever lower the level; the engine's own timing is untouched.
+      const shaped = d.ceiling > 0 ? equalPowerLevel(d.volume / d.ceiling) : 1;
+      const vol = clamp01((d.ceiling > 0 && lv.key ? shaped * lv.applied : d.ceiling > 0 ? shaped * d.ceiling : d.volume) * trimNow);
       if (Math.abs(el.volume - vol) > 0.001) el.volume = vol;
       if (vol > 0 && meta.mutedUntilAudible) { el.muted = false; meta.mutedUntilAudible = false; }
       if (d.playing && el.paused && el.getAttribute('src')) void el.play().catch(() => undefined);
