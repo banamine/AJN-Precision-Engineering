@@ -22,7 +22,7 @@ export function MiniRotator({ panels, initial = 0 }: { panels: readonly MiniPane
         <h3 data-testid="mini-title" className="m-0 min-w-0 flex-1 truncate text-center font-serif text-[13px] font-bold text-[#e9c964]" aria-live="polite">{cur.label}</h3>
         <button type="button" data-testid="mini-next" aria-label="Next panel" onClick={() => go(1)} className="ck-key ck-key--sm min-h-[34px] min-w-[34px]">›</button>
       </div>
-      <div key={cur.key} data-testid={`mini-panel-${cur.key}`} role="group" aria-roledescription="slide" aria-label={`${idx + 1} of ${n}: ${cur.label}`} className="mini-slide h-[132px] overflow-hidden text-xs text-slate-200">{cur.content}</div>
+      <div key={cur.key} data-testid={`mini-panel-${cur.key}`} role="group" aria-roledescription="slide" aria-label={`${idx + 1} of ${n}: ${cur.label}`} className="mini-slide h-[148px] overflow-hidden text-xs text-slate-200">{cur.content}</div>
       <nav aria-label="Panel dots" className="flex justify-center">
         {panels.map((p, k) => (
           <button key={p.key} type="button" data-testid={`mini-dot-${p.key}`} aria-label={`${p.label}${p.badge ? ' (new alert)' : ''}`} aria-current={k === idx ? 'step' : undefined} onClick={() => setI(k)} className="flex min-h-[28px] min-w-[36px] items-center justify-center bg-transparent">

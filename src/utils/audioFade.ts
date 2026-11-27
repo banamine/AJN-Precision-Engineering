@@ -23,8 +23,9 @@ export const AUDIO_FADE_IN_MS = 700;
 
 const realClock: FadeClock = {
   now: () => (typeof performance !== 'undefined' ? performance.now() : Date.now()),
-  request: (cb) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(cb) : setTimeout(cb, 16)),
-  cancel: (h) => { if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(h as number); else clearTimeout(h as ReturnType<typeof setTimeout>); },
+  // Timers, not requestAnimationFrame: rAF stops in a background or covered tab, which would freeze a fade-in at silence.
+  request: (cb) => setTimeout(cb, 20),
+  cancel: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
 };
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));

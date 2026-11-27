@@ -220,7 +220,7 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   // it (a re-run calls load(), which aborts the play() in flight).
   const resumeKey = `${RESUME_PREFIX}${nowPlaying?.programId ?? activeSrc}`;
 
-  const { diagnosticsAnalyserRef, resumeAudioContext, declickMaster } = useAudioNormalization(
+  const { diagnosticsAnalyserRef, resumeAudioContext, declickMaster, restoreMaster } = useAudioNormalization(
     mediaRef,
     isVideo ? "video" : "audio",
     activeSrc,
@@ -327,9 +327,13 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     mediaRef.current = el;
     // Fade IN a fresh track (speech 0.5 s equal-power; music 3 s S-curve). Never on live streams or a session restored paused; the slider ends it; iOS (read-only volume) skips it.
     fadeCancelRef.current?.(); fadeCancelRef.current = null;
+    // A pause or play of the previous element may have left the shared master gain at 0: a new element always starts from the listener's level.
+    if (pauseTimerRef.current) { window.clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null; }
+    restoreMaster(0);
+    el.addEventListener("playing", () => { if (!pauseTimerRef.current) restoreMaster(0.005); }); // safety net: whenever sound really starts, the master is at the listener's level
     if (audioFadeEnabled() && !nowPlayingRef.current?.isLive && !nowPlayingRef.current?.restoredPaused) fadeCancelRef.current = fadeInElement(el, archiveMusicModeRef.current ? "music" : "speech");
     attachPlayTimeline(el, { restored: Boolean(nowPlayingRef.current?.restoredPaused && !restoreHandledRef.current), src: activeSrc, startAtSeconds: nowPlayingRef.current?.startAtSeconds });
-  }, [isVideo, activeSrc, disposePreload]);
+  }, [isVideo, activeSrc, disposePreload, restoreMaster]);
   // Leaving the player: release the playing element and any warm one.
   useEffect(() => () => {
     disposePreload();
@@ -1122,20 +1126,22 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
   const silenceSkip = useSilenceSkip(getMediaEl, analyserNode, spokenOnDemand, Boolean(analyserNode) && analyzerState !== "unavailable", activeSrc ?? "");
   const pauseTimerRef = useRef<number | null>(null);
   const fadeCancelRef = useRef<(() => void) | null>(null);
-  useEffect(() => () => { fadeCancelRef.current?.(); if (pauseTimerRef.current) window.clearTimeout(pauseTimerRef.current); }, []);
+  useEffect(() => () => { fadeCancelRef.current?.(); if (pauseTimerRef.current) { window.clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null; } restoreMaster(0); }, [restoreMaster]);
   const play = async () => {
     const media = mediaRef.current;
     if (!media) return;
     unmuteForResume();
     resumeAudioContext();
     setStatusText("Starting playback…");
-    if (pauseTimerRef.current) { window.clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null; declickMaster(media, "restore", 0); } // a pause was still pending
+    if (pauseTimerRef.current) { window.clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null; restoreMaster(0); } // a pause was still pending
+    let soft = false;
     try {
-      const soft = media.paused && declickMaster(media, 0, 0);
+      soft = media.paused && audioFadeEnabled() && declickMaster(media, 0, 0);
       await media.play();
       if (soft) declickMaster(media, "restore", FADE_TABLE.declick.ms);
       if (!media.paused) reportPlaying();
     } catch (error) {
+      if (soft) restoreMaster(0); // play() failed after the master was muted for the click-free start: never leave it silent
       // A newer load superseded this play(); the new source starts on its own.
       if ((error as DOMException)?.name === "AbortError") return;
       const message = error instanceof Error ? error.message : String(error);
@@ -1153,9 +1159,9 @@ export default function MinimalPlayer({ src, title, mediaType = "video", onProgr
     const m = mediaRef.current;
     if (!m) return;
     // Click-free stop on the Web Audio chain: master gain to 0 over 8 ms, pause, then restore the level while nothing is playing.
-    if (declickMaster(m, 0, FADE_TABLE.declick.ms)) {
+    if (audioFadeEnabled() && declickMaster(m, 0, FADE_TABLE.declick.ms)) {
       if (pauseTimerRef.current) window.clearTimeout(pauseTimerRef.current);
-      pauseTimerRef.current = window.setTimeout(() => { pauseTimerRef.current = null; m.pause(); declickMaster(m, "restore", 0); }, FADE_TABLE.declick.ms + 6);
+      pauseTimerRef.current = window.setTimeout(() => { pauseTimerRef.current = null; m.pause(); restoreMaster(0); }, FADE_TABLE.declick.ms + 6);
       return;
     }
     m.pause();
